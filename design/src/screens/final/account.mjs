@@ -182,7 +182,8 @@ export const ROWS = [
       built: [
         { status: 'shipped', what: 'Alerts v1: structure kinds (level touch, tier change, score gate), local store, browser notification, the faulted banner and the Not live / Paused notice.' },
         { status: 'shipped', what: 'Demo seed: one rule, level touch on SPY’s gamma flip (workspace.ts:506-518).' },
-        { status: 'partial', what: 'The six public-data kinds (Q-5), the On this page legend, the SEC strip and the kind reference are built (AlertsPage.tsx, features/alerts/publicRules.ts). Checks run in the reader’s browser against /api/public-data/* when Alerts opens, and the page says so. Left: server-side scheduled checks (nothing checks while no Alerts page is open); the insider cluster check, which needs per-insider Form 4 rows the API doesn’t serve; the EDGAR cadence half of results approaching (notes’ catalysts only today).' },
+        { status: 'partial', what: 'The six public-data kinds (Q-5), the On this page legend, the SEC strip and the kind reference are built (AlertsPage.tsx, features/alerts/publicRules.ts). Checks run in the reader’s browser against /api/public-data/* when Alerts opens, and the page says so. Left to build: the insider cluster check (the ticker wire now carries per-insider Form 4 rows and clusters, InsidersWire.clusters, since 2026-10-15) and the EDGAR cadence half of results approaching (PublicFilingsWire.results now exists; notes’ catalysts only today).' },
+        { status: 'todo', waits: 'owner', ask: 'Q-ALERTS-SERVER', what: 'Server-side scheduled checks: nothing checks while no Alerts page is open. A server check needs somewhere to send a firing, and there is no email service.' },
         { status: 'shipped', what: 'Demo seed: one sample rule per public kind beside the SPY flip touch, and one scenario firing that matches the demo’s sample CFTC report (libs/api/src/lib/demo/alerts.ts).' },
       ],
       rulings: ['Q-5', 'P-1', 'P-2', 'P-3', 'P-9', 'P-13', ...ENV],
@@ -239,7 +240,7 @@ export const ROWS = [
       built: [
         { status: 'shipped', what: 'Demo account panel, seeded risk inputs, read-only AI and brokerage samples (commit 30263978; SettingsPage.tsx:197-230, transport.ts:373-386).' },
         { status: 'shipped', what: 'Signed-out and signed-in account panels, preferences, risk inputs with validation, AI providers, brokerage connect.' },
-        { status: 'todo', what: 'The section rail (deferred by owner ruling D-B; the page is one 760px column).' },
+        { status: 'todo', waits: 'parked', what: 'The section rail (deferred by owner ruling D-B; the page is one 760px column).' },
         { status: 'shipped', what: 'Status tags on each panel (Stored here, Sign in, Read-only sample, the demo account), SettingsPage.tsx panelTags, 2026-10-15.' },
       ],
       rulings: ['P-2', 'P-3', 'P-13', ...ENV],

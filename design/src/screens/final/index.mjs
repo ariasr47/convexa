@@ -12,7 +12,7 @@ import { ROWS as ACCOUNT } from './account.mjs';
 import { ROWS as TRUST } from './trust.mjs';
 import { ROWS as DEEP } from './deep.mjs';
 import { ROWS as PLANNED } from './planned.mjs';
-import { PROGRESS_CSS, progressBoard } from './progress.mjs';
+import { PROGRESS_CSS, TRACKER_CSS, progressBoard, trackerBoard } from './progress.mjs';
 
 export const FINAL_PAGE = { id: 'final', name: 'Final · Convexa v1' };
 
@@ -46,8 +46,11 @@ const GROUPS = [
 const PROGRESS_ROW = {
   key: 'progress',
   label: 'Board map',
-  css: PROGRESS_CSS,
-  boards: [{ id: 'map', title: 'What’s built', w: 1440, h: 3200, body: progressBoard(GROUPS) }],
+  css: PROGRESS_CSS + TRACKER_CSS,
+  boards: [
+    { id: 'map', title: 'What’s built', w: 1440, h: 3200, body: progressBoard(GROUPS) },
+    { id: 'tracker', title: 'Screen tracker', w: 1440, h: 6000, body: trackerBoard(GROUPS) },
+  ],
 };
 
 export const FINAL_ROWS = [PROGRESS_ROW, ...SCREEN_ROWS];

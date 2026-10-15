@@ -6,6 +6,8 @@
 // partly built, and Designed when none are. Items marked `host: true` (the page a planned tool sits
 // on) never count toward a status.
 
+import { ISSUES, OPEN_QUESTIONS, WAITS } from './tracker-data.mjs';
+
 const STATUS = {
   built: { word: 'Built', cls: 'built' },
   progress: { word: 'In progress', cls: 'progress' },
@@ -158,6 +160,175 @@ export function progressBoard(groups) {
         <p class="lead">Every screen on this page, read from its own spec card’s “Built so far” each time the design builds; nothing on this board is typed by hand. A screen is <strong>Built</strong> when every item on its card is shipped, <strong>In progress</strong> when some are shipped or partly built, and <strong>Designed</strong> when none are. A planned tool’s status counts only its own items, not the page it sits on. Board names are the ones in its row, left to right.</p>
       </header>
       ${totals}
+      ${groups.map(group).join('')}
+    </article></div>`;
+  };
+}
+
+// ---- The screen tracker (2026-10-15) -------------------------------------------------------------
+// Every screen with every open item and why it is open (the item's `waits`, default "To build"), the
+// known issues checks found on it (tracker-data.mjs ISSUES), and the owner's open questions with what
+// each one unblocks. Like the map, nothing about a screen is typed here: items come from spec cards.
+
+export const TRACKER_CSS = `
+  .tk { padding: 40px 44px 56px; display: flex; flex-direction: column; gap: 30px; font-size: 13.5px; line-height: 1.5; }
+  .tk .eyebrow { font: 600 11px/1.4 'IBM Plex Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; color: var(--steel); }
+  .tk h1 { margin: 6px 0 0; font-size: 38px; line-height: 1.05; letter-spacing: -0.02em; }
+  .tk .lead { margin: 10px 0 0; max-width: 96ch; color: var(--steel); font-size: 14px; }
+  .tk h2 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+  .tk .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .tk .tile { border: 1px solid var(--line-2); border-radius: 12px; padding: 14px 16px; background: var(--panel); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .tk .tile .h { font: 600 11px/1.4 'IBM Plex Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); }
+  .tk .tile .nums { display: flex; flex-direction: column; gap: 4px; }
+  .tk .tile .row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .tk .tile .n { font: 500 18px/1.2 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .tk .chip { display: inline-block; font: 600 11px/1.6 'IBM Plex Mono', monospace; padding: 0 8px; border-radius: 10px; border: 1px solid var(--line-2); white-space: nowrap; color: var(--phosphor); }
+  .tk .w-build { border-style: solid; }
+  .tk .w-owner { background: var(--phosphor); color: var(--ink); border-color: var(--phosphor); }
+  .tk .w-parked { border-style: dashed; color: var(--steel); }
+  .tk .w-spend { border-style: dotted; color: var(--steel); }
+  .tk .w-decided { border-color: transparent; color: var(--steel); padding-left: 0; }
+  .tk .sv-high { border-width: 2px; }
+  .tk .sv-medium { border-style: solid; }
+  .tk .sv-low { border-style: dotted; color: var(--steel); }
+  .tk .st { display: inline-block; font: 600 11px 'IBM Plex Mono', monospace; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--line-2); white-space: nowrap; }
+  .tk .st.built { color: var(--ink); background: var(--phosphor); border-color: var(--phosphor); }
+  .tk .st.progress { color: var(--phosphor); border-style: dashed; }
+  .tk .st.designed { color: var(--steel); border-style: dotted; }
+  .tk .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; border: 1px solid var(--line-2); margin-top: 8px; }
+  .tk .bar i { display: block; height: 100%; }
+  .tk .bar i.s { background: var(--phosphor); }
+  .tk .bar i.p { background: var(--steel); }
+  .tk .bar i.t { background: repeating-linear-gradient(135deg, transparent 0 3px, var(--line-2) 3px 5px); }
+  .tk .counts { margin-top: 6px; font: 11.5px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .tk table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+  .tk th { text-align: left; font: 600 11px/1.4 'IBM Plex Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding: 6px 10px; border-bottom: 1px solid var(--line-2); }
+  .tk td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tk td.name strong { display: block; font-size: 13.5px; color: var(--phosphor); }
+  .tk td.name .route { display: block; margin-top: 3px; font: 12px/1.4 'IBM Plex Mono', monospace; color: var(--steel); word-break: break-word; }
+  .tk ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .tk li { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px; align-items: baseline; }
+  .tk li .t { color: var(--phosphor); }
+  .tk li .t .ask { color: var(--steel); font: 11.5px 'IBM Plex Mono', monospace; }
+  .tk li.fixed .t { color: var(--steel); text-decoration: line-through; }
+  .tk .env { font: 11px 'IBM Plex Mono', monospace; color: var(--steel); margin-left: 6px; white-space: nowrap; }
+  .tk .none { color: var(--steel); }
+  .tk .grp { display: flex; flex-direction: column; gap: 10px; }
+  .tk .grp-h { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .tk .grp-h .c { font: 500 12px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .tk .qs td.id { font: 600 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .tk .qs td .why { display: block; margin-top: 4px; color: var(--steel); }
+  .tk .qs td .ub { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tk .answered { color: var(--steel); font-size: 12.5px; }
+  .tk .answered b { color: var(--phosphor); font-weight: 600; }
+`;
+
+const SEV_WORD = { high: 'High', medium: 'Medium', low: 'Low' };
+const SEV_ORDER = { high: 0, medium: 1, low: 2 };
+const waitOf = (b) => b.waits ?? 'build';
+/** An open item's gap: a partly built item usually says what shipped first and what's left after a
+ *  marker ("Left:", "Not yet:", …); show the gap, not the part that shipped. */
+const gapText = (b) => {
+  const t = plain(b.what);
+  const m = b.status === 'partial' ? t.match(/(?:Left to build|Left|Not yet|Still not built|Not reachable yet)\s*:\s*/) : null;
+  return clip(m ? t.slice(m.index + m[0].length).replace(/^./, (c) => c.toUpperCase()) : t, 230);
+};
+
+/** The tracker board. `groups` as for progressBoard. */
+export function trackerBoard(groups) {
+  return ({ scheme = 'dark', minHeight = 0 } = {}) => {
+    const rows = groups.flatMap((g) => g.rows);
+    const info = rows.map((r) => {
+      const p = rowProgress(r);
+      const issues = ISSUES.filter((i) => i.screens.includes(r.label)).sort(
+        (a, b) => (a.status === 'fixed') - (b.status === 'fixed') || SEV_ORDER[a.sev] - SEV_ORDER[b.sev],
+      );
+      return { r, p, issues };
+    });
+    const openItems = info.flatMap((x) => x.p.open.map((b) => ({ ...b, screen: x.r.label })));
+    const byWait = Object.fromEntries(Object.keys(WAITS).map((k) => [k, openItems.filter((b) => waitOf(b) === k).length]));
+    const screens = { built: 0, progress: 0, designed: 0 };
+    for (const x of info) screens[x.p.status] += 1;
+    const openIssues = ISSUES.filter((i) => i.status !== 'fixed');
+    const sevCount = (s) => openIssues.filter((i) => i.sev === s).length;
+    const questions = OPEN_QUESTIONS.filter((q) => q.status !== 'answered');
+    const answered = OPEN_QUESTIONS.filter((q) => q.status === 'answered');
+
+    const row = (k, n, label) => `<div class="row"><span>${label ?? k}</span><span class="n">${n}</span></div>`;
+    const tiles = `<div class="tiles">
+      <div class="tile"><span class="h">Screens · ${rows.length}</span><div class="nums">
+        ${row('built', screens.built, '<span class="st built">Built</span>')}
+        ${row('progress', screens.progress, '<span class="st progress">In progress</span>')}
+        ${row('designed', screens.designed, '<span class="st designed">Designed</span>')}
+      </div></div>
+      <div class="tile"><span class="h">Open items · ${openItems.length}</span><div class="nums">
+        ${Object.entries(WAITS).map(([k, w]) => row(k, byWait[k], `<span class="chip w-${k}">${w.word}</span>`)).join('')}
+      </div></div>
+      <div class="tile"><span class="h">Known issues open · ${openIssues.length}</span><div class="nums">
+        ${['high', 'medium', 'low'].map((s) => row(s, sevCount(s), `<span class="chip sv-${s}">${SEV_WORD[s]}</span>`)).join('')}
+        ${row('fixed', ISSUES.length - openIssues.length, '<span class="none">Fixed</span>')}
+      </div></div>
+      <div class="tile"><span class="h">Waiting on you</span><div class="nums">
+        ${row('q', questions.length, 'Open questions')}
+        ${row('qi', byWait.owner, 'Items they hold')}
+        ${row('a', answered.length, '<span class="none">Answered</span>')}
+      </div></div>
+    </div>`;
+
+    const unblocks = (q) => {
+      const its = openItems.filter((b) => b.ask === q.id);
+      const names = [...new Set(its.map((b) => b.screen))];
+      return names.length ? `<div class="ub">${names.map((n) => `<span class="chip">${n}</span>`).join('')}</div>` : '<span class="none">No card item; see why</span>';
+    };
+    const qTable = `<section class="grp qs">
+      <div class="grp-h"><h2>Waiting on you</h2><span class="c">${questions.length} open question${questions.length === 1 ? '' : 's'}</span></div>
+      <table>
+        <colgroup><col style="width: 11%;"><col style="width: 55%;"><col></colgroup>
+        <thead><tr><th>Question</th><th>What’s asked, and why</th><th>Screens it holds</th></tr></thead>
+        <tbody>${questions.map((q) => `<tr><td class="id">${q.id}</td><td>${q.ask}<span class="why">${q.why}</span></td><td>${unblocks(q)}</td></tr>`).join('')}</tbody>
+      </table>
+      ${answered.length ? `<p class="answered">Answered: ${answered.map((q) => `<b>${q.id}</b> ${q.answer}`).join(' · ')}</p>` : ''}
+    </section>`;
+
+    const group = (g) => {
+      const xs = info.filter((x) => g.rows.includes(x.r));
+      const nOpen = xs.reduce((a, x) => a + x.p.open.length, 0);
+      const nIss = xs.reduce((a, x) => a + x.issues.filter((i) => i.status !== 'fixed').length, 0);
+      const body = xs
+        .map(({ r, p, issues }) => {
+          const s = STATUS[p.status];
+          const items = p.open.length
+            ? `<ul>${p.open.map((b) => `<li><span class="chip w-${waitOf(b)}">${WAITS[waitOf(b)].word}</span><span class="t">${gapText(b)}${b.ask ? ` <span class="ask">${b.ask}</span>` : ''}</span></li>`).join('')}</ul>`
+            : '<span class="none">Nothing open</span>';
+          const iss = issues.length
+            ? `<ul>${issues.map((i) => `<li class="${i.status === 'fixed' ? 'fixed' : ''}"><span class="chip sv-${i.sev}">${i.id}</span><span class="t">${i.title}<span class="env">${i.env}${i.status === 'fixed' ? ` · fixed${i.commit ? ` ${i.commit}` : ''}` : ''}</span></span></li>`).join('')}</ul>`
+            : '<span class="none">None known</span>';
+          return `<tr>
+            <td class="name"><strong>${r.label}</strong>${r.spec?.route ? `<span class="route">${r.spec.route}</span>` : ''}</td>
+            <td><span class="st ${s.cls}">${s.word}</span>${bar(p)}<div class="counts">${p.shipped}/${p.total} shipped${issues.some((i) => i.status !== 'fixed') ? ` · ${issues.filter((i) => i.status !== 'fixed').length} issue${issues.filter((i) => i.status !== 'fixed').length === 1 ? '' : 's'} open` : ''}</div></td>
+            <td>${items}</td>
+            <td>${iss}</td>
+          </tr>`;
+        })
+        .join('');
+      return `<section class="grp">
+        <div class="grp-h"><h2>${g.label}</h2><span class="c">${g.rows.length} screen${g.rows.length === 1 ? '' : 's'} · ${nOpen} open item${nOpen === 1 ? '' : 's'} · ${nIss} known issue${nIss === 1 ? '' : 's'} open</span></div>
+        <table>
+          <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
+          <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </section>`;
+    };
+
+    return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><article class="tk" aria-label="Screen tracker">
+      <header>
+        <div class="eyebrow">Final · Convexa v1 · screen tracker</div>
+        <h1 class="display">Screen tracker</h1>
+        <p class="lead">Every screen, every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>, which records answers and fixes rather than deleting them. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
+      </header>
+      ${tiles}
+      ${qTable}
       ${groups.map(group).join('')}
     </article></div>`;
   };

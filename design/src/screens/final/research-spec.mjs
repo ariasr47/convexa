@@ -178,7 +178,7 @@ export const SCORECARD_SPEC = {
     { status: 'shipped', what: 'Calibration draws each bin’s 95% Wilson interval with n above it and one dot size, named in the subtitle and listed in the table twin (wilson.ts, tested by hand-worked values including n = 0, p = 0 and p = 1); drawn at its container’s width, the busy middle bins keep n in the table only on a narrow plot (2026-10-15).' },
     { status: 'shipped', what: 'By month: three-letter months (a new year as “Jan ’27”), a past-due column first so the bars sum to every open call; the signal track record says Not live with “See it on the demo →” (2026-10-15).' },
     { status: 'shipped', what: 'Staging reads the sample notes’ ledger on the Oct 7 scenario (libs/api demo research-ledger.ts, loaded on demand): 34 open, 31 with a probability, 264 scored in an authored history, Brier 0.198, calibration and authored sample signal grades, all dashed (2026-10-15).' },
-    { status: 'todo', what: 'Grading signals at all: needs a licensed daily price history.' },
+    { status: 'todo', waits: 'spend', what: 'Grading signals at all: needs a licensed daily price history.' },
   ],
   rulings: ['P-1', 'P-2', 'P-3', 'P-8', 'P-9', 'P-10', 'P-13', 'Env 2026-10-14'],
   code: [`${R}/ScorecardPage.tsx (SignalsOff :650-723, ByMonth :404-508, Calibration :510-648)`, 'tools/research-notes (scoreForecasts)', 'research/<TICKER>/*.md forecasts blocks', 'design/src/data/charts.mjs (CALIB, wilson)'],

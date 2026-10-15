@@ -4,6 +4,7 @@
 // how much of it is built, and the checks that prove it. Content lives in each row's `spec` object.
 import { icon } from '../../lib.mjs';
 import { stateTag } from '../../components/data-states.mjs';
+import { WAITS } from './tracker-data.mjs';
 
 export const SPEC_CSS = `
   .fs { padding: 40px 40px 48px; display: flex; flex-direction: column; gap: 26px; font-size: 13.5px; line-height: 1.55; }
@@ -33,6 +34,7 @@ export const SPEC_CSS = `
   .fs .bs.shipped { color: var(--phosphor); }
   .fs .bs.partial { color: var(--phosphor); border-style: dashed; }
   .fs .bs.todo { color: var(--steel); border-style: dotted; }
+  .fs .built .why { display: inline-block; margin-left: 6px; font: 600 11px 'IBM Plex Mono', monospace; color: var(--steel); white-space: nowrap; }
 `;
 
 const BUILT = { shipped: 'Shipped', partial: 'Partly built', todo: 'Designed, not built' };
@@ -61,7 +63,7 @@ export function specBody(spec, { scheme = 'dark', minHeight = 0 } = {}) {
     ? `<section><h2>States</h2><div class="states">${spec.states.map((x) => `<span class="w">${tags(x.tag)}</span><span>${x.when}</span>`).join('')}</div></section>`
     : '';
   const built = spec.built?.length
-    ? `<section><h2>Built so far</h2><div class="built">${spec.built.map((b) => `<span class="bs ${b.status}">${BUILT[b.status]}</span><span>${b.what}</span>`).join('')}</div></section>`
+    ? `<section><h2>Built so far</h2><div class="built">${spec.built.map((b) => `<span class="bs ${b.status}">${BUILT[b.status]}</span><span>${b.what}${b.status !== 'shipped' ? `<span class="why">· ${WAITS[b.waits ?? 'build'].word}${b.ask ? ` (${b.ask})` : ''}</span>` : ''}</span>`).join('')}</div></section>`
     : '';
   return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><article class="fs" aria-label="${spec.title} · spec">
     <header><div class="eyebrow">Final · Convexa v1 · spec · Oct 14, 2026</div><h1 class="display">${spec.title}</h1>${spec.route ? `<span class="route">${spec.route}</span>` : ''}<p class="job">${spec.job}</p></header>

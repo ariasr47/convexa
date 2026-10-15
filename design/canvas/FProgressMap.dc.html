@@ -709,9 +709,60 @@
   .pm .next { color: var(--phosphor); }
   .pm .next .more { display: block; margin-top: 4px; color: var(--steel); font-size: 12px; }
   .pm .next .none { color: var(--steel); }
+
+  .tk { padding: 40px 44px 56px; display: flex; flex-direction: column; gap: 30px; font-size: 13.5px; line-height: 1.5; }
+  .tk .eyebrow { font: 600 11px/1.4 'IBM Plex Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; color: var(--steel); }
+  .tk h1 { margin: 6px 0 0; font-size: 38px; line-height: 1.05; letter-spacing: -0.02em; }
+  .tk .lead { margin: 10px 0 0; max-width: 96ch; color: var(--steel); font-size: 14px; }
+  .tk h2 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+  .tk .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .tk .tile { border: 1px solid var(--line-2); border-radius: 12px; padding: 14px 16px; background: var(--panel); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .tk .tile .h { font: 600 11px/1.4 'IBM Plex Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); }
+  .tk .tile .nums { display: flex; flex-direction: column; gap: 4px; }
+  .tk .tile .row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .tk .tile .n { font: 500 18px/1.2 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .tk .chip { display: inline-block; font: 600 11px/1.6 'IBM Plex Mono', monospace; padding: 0 8px; border-radius: 10px; border: 1px solid var(--line-2); white-space: nowrap; color: var(--phosphor); }
+  .tk .w-build { border-style: solid; }
+  .tk .w-owner { background: var(--phosphor); color: var(--ink); border-color: var(--phosphor); }
+  .tk .w-parked { border-style: dashed; color: var(--steel); }
+  .tk .w-spend { border-style: dotted; color: var(--steel); }
+  .tk .w-decided { border-color: transparent; color: var(--steel); padding-left: 0; }
+  .tk .sv-high { border-width: 2px; }
+  .tk .sv-medium { border-style: solid; }
+  .tk .sv-low { border-style: dotted; color: var(--steel); }
+  .tk .st { display: inline-block; font: 600 11px 'IBM Plex Mono', monospace; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--line-2); white-space: nowrap; }
+  .tk .st.built { color: var(--ink); background: var(--phosphor); border-color: var(--phosphor); }
+  .tk .st.progress { color: var(--phosphor); border-style: dashed; }
+  .tk .st.designed { color: var(--steel); border-style: dotted; }
+  .tk .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; border: 1px solid var(--line-2); margin-top: 8px; }
+  .tk .bar i { display: block; height: 100%; }
+  .tk .bar i.s { background: var(--phosphor); }
+  .tk .bar i.p { background: var(--steel); }
+  .tk .bar i.t { background: repeating-linear-gradient(135deg, transparent 0 3px, var(--line-2) 3px 5px); }
+  .tk .counts { margin-top: 6px; font: 11.5px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .tk table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+  .tk th { text-align: left; font: 600 11px/1.4 'IBM Plex Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding: 6px 10px; border-bottom: 1px solid var(--line-2); }
+  .tk td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tk td.name strong { display: block; font-size: 13.5px; color: var(--phosphor); }
+  .tk td.name .route { display: block; margin-top: 3px; font: 12px/1.4 'IBM Plex Mono', monospace; color: var(--steel); word-break: break-word; }
+  .tk ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .tk li { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px; align-items: baseline; }
+  .tk li .t { color: var(--phosphor); }
+  .tk li .t .ask { color: var(--steel); font: 11.5px 'IBM Plex Mono', monospace; }
+  .tk li.fixed .t { color: var(--steel); text-decoration: line-through; }
+  .tk .env { font: 11px 'IBM Plex Mono', monospace; color: var(--steel); margin-left: 6px; white-space: nowrap; }
+  .tk .none { color: var(--steel); }
+  .tk .grp { display: flex; flex-direction: column; gap: 10px; }
+  .tk .grp-h { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .tk .grp-h .c { font: 500 12px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .tk .qs td.id { font: 600 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .tk .qs td .why { display: block; margin-top: 4px; color: var(--steel); }
+  .tk .qs td .ub { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tk .answered { color: var(--steel); font-size: 12.5px; }
+  .tk .answered b { color: var(--phosphor); font-weight: 600; }
 </style>
 </helmet>
-<div class="v4" data-scheme="dark" style="width: 100%; min-height: 3917px; background: var(--ink); color: var(--phosphor);"><article class="pm" aria-label="Board map">
+<div class="v4" data-scheme="dark" style="width: 100%; min-height: 3752px; background: var(--ink); color: var(--phosphor);"><article class="pm" aria-label="Board map">
       <header>
         <div class="eyebrow">Final · Convexa v1 · board map</div>
         <h1 class="display">What’s built</h1>
@@ -719,179 +770,179 @@
       </header>
       <div class="tot">
       <div><span class="n">33</span><span class="l">screens on this page · 200 boards</span></div>
-      <div><span class="n">1</span><span class="l">built: every item on the card shipped</span></div>
-      <div><span class="n">25</span><span class="l">in progress: some shipped or partly built</span></div>
-      <div><span class="n">7</span><span class="l">designed, not started</span></div>
+      <div><span class="n">18</span><span class="l">built: every item on the card shipped</span></div>
+      <div><span class="n">10</span><span class="l">in progress: some shipped or partly built</span></div>
+      <div><span class="n">5</span><span class="l">designed, not started</span></div>
     </div>
     <div style="display: flex; flex-direction: column; gap: 8px;">
-      <div class="bar" role="img" aria-label="76 shipped, 35 partly built, 36 designed, of 147"><i class="s" style="width: 51.70068027210885%;"></i><i class="p" style="width: 23.809523809523807%;"></i><i class="t" style="width: 24.489795918367346%;"></i></div>
+      <div class="bar" role="img" aria-label="146 shipped, 4 partly built, 13 designed, of 163"><i class="s" style="width: 89.57055214723927%;"></i><i class="p" style="width: 2.4539877300613497%;"></i><i class="t" style="width: 7.975460122699387%;"></i></div>
       <div class="key">
-        <span><i style="background: var(--phosphor); border-color: var(--phosphor);"></i>Shipped · 76 (52%)</span>
-        <span><i style="background: var(--steel); border-color: var(--steel);"></i>Partly built · 35</span>
-        <span><i style="background: repeating-linear-gradient(135deg, transparent 0 3px, var(--line-2) 3px 5px);"></i>Designed, not built · 36</span>
-        <span>of 147 items across every spec card</span>
+        <span><i style="background: var(--phosphor); border-color: var(--phosphor);"></i>Shipped · 146 (90%)</span>
+        <span><i style="background: var(--steel); border-color: var(--steel);"></i>Partly built · 4</span>
+        <span><i style="background: repeating-linear-gradient(135deg, transparent 0 3px, var(--line-2) 3px 5px);"></i>Designed, not built · 13</span>
+        <span>of 163 items across every spec card</span>
       </div>
     </div>
       <section class="grp">
-        <div class="grp-h"><h2>Foundations</h2><span class="c">1 screen · 4/5 items shipped</span></div>
+        <div class="grp-h"><h2>Foundations</h2><span class="c">1 screen · 5/5 items shipped</span></div>
         <table>
           <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Foundations</strong><span class="route">every route</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="4 shipped, 1 partly built, 0 designed, of 5"><i class="s" style="width: 80%;"></i><i class="p" style="width: 20%;"></i></div><div class="counts">4/5 shipped · 1 partly</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>StateMatrix</span><span>ChartSystem</span><span>ChartStates</span><span>ThirdParty</span></div></td>
-            <td class="next">Charts on the frame (2026-10-15): every Research chart (Markets, positioning by group, Scorecard, short interest and short-sale volume) and every chart inside a note; the ticker desk’s …</td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Shell and site</h2><span class="c">6 screens · 10/26 items shipped</span></div>
+        <div class="grp-h"><h2>Shell and site</h2><span class="c">6 screens · 29/29 items shipped</span></div>
         <table>
           <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Global shell</strong><span class="route">every route inside the shell</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="3 shipped, 3 partly built, 1 designed, of 7"><i class="s" style="width: 42.857142857142854%;"></i><i class="p" style="width: 42.857142857142854%;"></i><i class="t" style="width: 14.285714285714285%;"></i></div><div class="counts">3/7 shipped · 3 partly · 1 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="9 shipped, 0 partly built, 0 designed, of 9"><i class="s" style="width: 100%;"></i></div><div class="counts">9/9 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>StagingPhone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Bar links: shipped “Read research” and “Try the full demo →”; designed “What’s live” (→ /methodology#data) and “See the full demo →”.<span class="more">+ 3 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Landing</strong><span class="route">/</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="3 shipped, 2 partly built, 1 designed, of 6"><i class="s" style="width: 50%;"></i><i class="p" style="width: 33.33333333333333%;"></i><i class="t" style="width: 16.666666666666664%;"></i></div><div class="counts">3/6 shipped · 2 partly · 1 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Hero: shipped GammaSurfaceHero is a static isometric SVG with an amber / green / red ridge legend; designed: the F1 WebGL surface with its static projection, the flip in phosphor, labels on …<span class="more">+ 2 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Methodology</strong><span class="route">/methodology (deep link /methodology#data)</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="1 shipped, 0 partly built, 1 designed, of 2"><i class="s" style="width: 50%;"></i><i class="t" style="width: 50%;"></i></div><div class="counts">1/2 shipped · 1 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="3 shipped, 0 partly built, 0 designed, of 3"><i class="s" style="width: 100%;"></i></div><div class="counts">3/3 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Production</span><span>Staging</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">“What’s live on this site” (#data) in both forms, and the state-word list. The bar links to #data once it exists.</td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Blog</strong><span class="route">/blog and /blog/how-we-read-dealer-structure.html</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="1 shipped, 3 partly built, 0 designed, of 4"><i class="s" style="width: 25%;"></i><i class="p" style="width: 75%;"></i></div><div class="counts">1/4 shipped · 3 partly</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 0 designed, of 4"><i class="s" style="width: 100%;"></i></div><div class="counts">4/4 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Index</span><span>Post</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">The post is a standalone page with a back link and no bar, nav or footer; designed: inside the shell.<span class="more">+ 2 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>404 and route fallback</strong><span class="route">* (any unmatched path inside the shell) · every lazy route’s loading and failure</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="1 shipped, 2 partly built, 1 designed, of 4"><i class="s" style="width: 25%;"></i><i class="p" style="width: 50%;"></i><i class="t" style="width: 25%;"></i></div><div class="counts">1/4 shipped · 2 partly · 1 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 0 designed, of 4"><i class="s" style="width: 100%;"></i></div><div class="counts">4/4 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Both</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">404 body says “Ticker analysis is free; the rest is behind a sign-in.”, untrue on staging; designed copy is the same in both.<span class="more">+ 2 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Operator</strong><span class="route">/_ops/metrics and /_ops/research (unlinked)</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="1 shipped, 2 partly built, 0 designed, of 3"><i class="s" style="width: 33.33333333333333%;"></i><i class="p" style="width: 66.66666666666666%;"></i></div><div class="counts">1/3 shipped · 2 partly</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="3 shipped, 0 partly built, 0 designed, of 3"><i class="s" style="width: 100%;"></i></div><div class="counts">3/3 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Production</span><span>Archive</span><span>Staging</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">The latency trend draws every stage as a line on one chart in chartCategorical; designed: small multiples past three series (P-9).<span class="more">+ 1 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Ticker</h2><span class="c">3 screens · 19/28 items shipped</span></div>
+        <div class="grp-h"><h2>Ticker</h2><span class="c">3 screens · 28/29 items shipped</span></div>
         <table>
           <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Ticker desk</strong><span class="route">/ticker/:ticker · Overview</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="10 shipped, 1 partly built, 0 designed, of 11"><i class="s" style="width: 90.9090909090909%;"></i><i class="p" style="width: 9.090909090909092%;"></i></div><div class="counts">10/11 shipped · 1 partly</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="11 shipped, 0 partly built, 0 designed, of 11"><i class="s" style="width: 100%;"></i></div><div class="counts">11/11 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Short interest on the desk is the research card (figure and bar strip), not the titled v5 bar chart drawn here.</td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Technical tab</strong><span class="route">/ticker/:symbol/technical-analysis</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="3 shipped, 2 partly built, 2 designed, of 7"><i class="s" style="width: 42.857142857142854%;"></i><i class="p" style="width: 28.57142857142857%;"></i><i class="t" style="width: 28.57142857142857%;"></i></div><div class="counts">3/7 shipped · 2 partly · 2 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="7 shipped, 0 partly built, 0 designed, of 7"><i class="s" style="width: 100%;"></i></div><div class="counts">7/7 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">No timeout: a stalled script waits forever (only script.onerror, Embed:78). 12 s designed.<span class="more">+ 3 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Research tab · note</strong><span class="route">/ticker/:symbol/research · /ticker/:symbol/research/:slug</span></td>
             <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="6 shipped, 1 partly built, 3 designed, of 10"><i class="s" style="width: 60%;"></i><i class="p" style="width: 10%;"></i><i class="t" style="width: 30%;"></i></div><div class="counts">6/10 shipped · 1 partly · 3 not built</div></td>
+            <td><div class="bar" role="img" aria-label="10 shipped, 0 partly built, 1 designed, of 11"><i class="s" style="width: 90.9090909090909%;"></i><i class="t" style="width: 9.090909090909092%;"></i></div><div class="counts">10/11 shipped · 1 not built</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Filing events (10-Q, 10-K) on a column chart’s x lane: the note’s chart block carries no filing dates. A guidance label the parser can’t read (“~$269M implied”) draws no whisker.<span class="more">+ 3 more open on its spec card</span></td>
+            <td class="next">Filing events (10-Q, 10-K) on a column chart’s x lane: the note’s chart block carries no filing dates. A guidance label the parser can’t read (“~$269M implied”) draws no whisker. Needs …</td>
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Research</h2><span class="c">4 screens · 10/21 items shipped</span></div>
+        <div class="grp-h"><h2>Research</h2><span class="c">4 screens · 22/23 items shipped</span></div>
         <table>
           <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Research · Notes</strong><span class="route">/research</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="4 shipped, 1 partly built, 1 designed, of 6"><i class="s" style="width: 66.66666666666666%;"></i><i class="p" style="width: 16.666666666666664%;"></i><i class="t" style="width: 16.666666666666664%;"></i></div><div class="counts">4/6 shipped · 1 partly · 1 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="7 shipped, 0 partly built, 0 designed, of 7"><i class="s" style="width: 100%;"></i></div><div class="counts">7/7 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Staging: the demo build replaces the cards with a DemoNotice panel (6 links) while the tab badges still count the 14 live notes and 77 forecasts.<span class="more">+ 1 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Research · Markets</strong><span class="route">/research/markets</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="3 shipped, 1 partly built, 0 designed, of 4"><i class="s" style="width: 75%;"></i><i class="p" style="width: 25%;"></i></div><div class="counts">3/4 shipped · 1 partly</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 0 designed, of 4"><i class="s" style="width: 100%;"></i></div><div class="counts">4/4 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Rates tag reads “Updated” even when only a stale copy shows (Markets doesn’t use publicDataWord).</td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Research · Filings</strong><span class="route">/research/filings</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="2 shipped, 2 partly built, 2 designed, of 6"><i class="s" style="width: 33.33333333333333%;"></i><i class="p" style="width: 33.33333333333333%;"></i><i class="t" style="width: 33.33333333333333%;"></i></div><div class="counts">2/6 shipped · 2 partly · 2 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="7 shipped, 0 partly built, 0 designed, of 7"><i class="s" style="width: 100%;"></i></div><div class="counts">7/7 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>ProductionSetup</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Not set up copy is operator-first and hides Expected; final leads with reader copy and folds the operator line.<span class="more">+ 3 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Research · Scorecard</strong><span class="route">/research/scorecard</span></td>
             <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="1 shipped, 3 partly built, 1 designed, of 5"><i class="s" style="width: 20%;"></i><i class="p" style="width: 60%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">1/5 shipped · 3 partly · 1 not built</div></td>
+            <td><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 1 designed, of 5"><i class="s" style="width: 80%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">4/5 shipped · 1 not built</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Calibration has no Wilson intervals; n only in the aria-label; dot size encodes n with no legend.<span class="more">+ 3 more open on its spec card</span></td>
+            <td class="next">Grading signals at all: needs a licensed daily price history.</td>
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Account</h2><span class="c">5 screens · 12/25 items shipped</span></div>
+        <div class="grp-h"><h2>Account</h2><span class="c">5 screens · 24/27 items shipped</span></div>
         <table>
           <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Scanner</strong><span class="route">/scanner</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="4 shipped, 2 partly built, 2 designed, of 8"><i class="s" style="width: 50%;"></i><i class="p" style="width: 25%;"></i><i class="t" style="width: 25%;"></i></div><div class="counts">4/8 shipped · 2 partly · 2 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="8 shipped, 0 partly built, 0 designed, of 8"><i class="s" style="width: 100%;"></i></div><div class="counts">8/8 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>ProductionSignedIn</span><span>Phone</span><span>StagingPhone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Demo scan change: every row still returns +0.42% (transport.ts), not the scenario’s own close-to-close change.<span class="more">+ 3 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Positions</strong><span class="route">/positions</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="3 shipped, 1 partly built, 1 designed, of 5"><i class="s" style="width: 60%;"></i><i class="p" style="width: 20%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">3/5 shipped · 1 partly · 1 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>StagingPhone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Wall copy: shipped says “Private testing — invited accounts only” and “Open free Ticker →”; the board says sign-ups are closed and “Open a ticker desk”.<span class="more">+ 1 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Alerts</strong><span class="route">/alerts</span></td>
             <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="2 shipped, 0 partly built, 2 designed, of 4"><i class="s" style="width: 50%;"></i><i class="t" style="width: 50%;"></i></div><div class="counts">2/4 shipped · 2 not built</div></td>
+            <td><div class="bar" role="img" aria-label="3 shipped, 1 partly built, 1 designed, of 5"><i class="s" style="width: 60%;"></i><i class="p" style="width: 20%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">3/5 shipped · 1 partly · 1 not built</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">The six public-data kinds (Q-5), the On this page legend, the SEC strip, the kind reference, and server-side checks against /api/public-data/*.<span class="more">+ 1 more open on its spec card</span></td>
+            <td class="next">The six public-data kinds (Q-5), the On this page legend, the SEC strip and the kind reference are built (AlertsPage.tsx, features/alerts/publicRules.ts). Checks run in the reader’s browser …<span class="more">+ 1 more open on its spec card</span></td>
           </tr><tr>
             <td class="name"><strong>Settings</strong><span class="route">/settings</span></td>
             <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="2 shipped, 0 partly built, 2 designed, of 4"><i class="s" style="width: 50%;"></i><i class="t" style="width: 50%;"></i></div><div class="counts">2/4 shipped · 2 not built</div></td>
+            <td><div class="bar" role="img" aria-label="3 shipped, 0 partly built, 1 designed, of 4"><i class="s" style="width: 75%;"></i><i class="t" style="width: 25%;"></i></div><div class="counts">3/4 shipped · 1 not built</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">The section rail (deferred by owner ruling D-B; the page is one 760px column).<span class="more">+ 1 more open on its spec card</span></td>
+            <td class="next">The section rail (deferred by owner ruling D-B; the page is one 760px column).</td>
           </tr><tr>
             <td class="name"><strong>Overlays</strong><span class="route">dialogs, drawer and sheets on every route</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="1 shipped, 1 partly built, 2 designed, of 4"><i class="s" style="width: 25%;"></i><i class="p" style="width: 25%;"></i><i class="t" style="width: 50%;"></i></div><div class="counts">1/4 shipped · 1 partly · 2 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 0 designed, of 4"><i class="s" style="width: 100%;"></i></div><div class="counts">4/4 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>SignIn</span><span>TradeEntry</span><span>OrderDetail</span><span>Persona</span><span>ViewEditor</span><span>WhatsSent</span><span>AlertFlow</span><span>Phone</span><span>States</span></div></td>
-            <td class="next">Production trade entry: Market and Limit gating on the live quote is shipped; the reason line on the control and a demo link are not.<span class="more">+ 2 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Trust pages</h2><span class="c">3 screens · 9/13 items shipped</span></div>
+        <div class="grp-h"><h2>Trust pages</h2><span class="c">3 screens · 12/15 items shipped</span></div>
         <table>
           <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Data sources and credits</strong><span class="route">/credits (proposed; deep links /credits#treasury, #cftc, #finra-si, #finra-shvol, #sec, #tradingview, #massive)</span></td>
             <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="3 shipped, 1 partly built, 1 designed, of 5"><i class="s" style="width: 60%;"></i><i class="p" style="width: 20%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">3/5 shipped · 1 partly · 1 not built</div></td>
+            <td><div class="bar" role="img" aria-label="6 shipped, 1 partly built, 0 designed, of 7"><i class="s" style="width: 85.71428571428571%;"></i><i class="p" style="width: 14.285714285714285%;"></i></div><div class="counts">6/7 shipped · 1 partly</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">The sources endpoint (one row per source with state, as_of, checked_at), and the card deep links from each provenance chip on the site.<span class="more">+ 1 more open on its spec card</span></td>
+            <td class="next">No separate GET /api/public-data/sources: a new operation grows the frozen precutover operation baseline, so the rows ride the two answers the page already reads.</td>
           </tr><tr>
             <td class="name"><strong>Privacy</strong><span class="route">/privacy (proposed)</span></td>
             <td><span class="st progress">In progress</span></td>
@@ -907,41 +958,41 @@
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Deeper surfaces</h2><span class="c">2 screens · 4/11 items shipped</span></div>
+        <div class="grp-h"><h2>Deeper surfaces</h2><span class="c">2 screens · 10/11 items shipped</span></div>
         <table>
           <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>AI read</strong><span class="route">/ticker/:ticker · the read panel, its drawers and the phone sheet</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="3 shipped, 1 partly built, 2 designed, of 6"><i class="s" style="width: 50%;"></i><i class="p" style="width: 16.666666666666664%;"></i><i class="t" style="width: 33.33333333333333%;"></i></div><div class="counts">3/6 shipped · 1 partly · 2 not built</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Export</span><span>Peek</span><span>Sheet</span><span>Production</span><span>States</span></div></td>
-            <td class="next">Demo export: every category is sent:false, so candidates, risk inputs and open positions read “Not sent — you haven’t set this.”, which is wrong for the demo; the glossary section carries …<span class="more">+ 2 more open on its spec card</span></td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>More overlays</strong><span class="route">dialogs on /positions, /ticker/:ticker, /alerts; /account/reset and /account/invite (proposed)</span></td>
             <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="1 shipped, 3 partly built, 1 designed, of 5"><i class="s" style="width: 20%;"></i><i class="p" style="width: 60%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">1/5 shipped · 3 partly · 1 not built</div></td>
+            <td><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 1 designed, of 5"><i class="s" style="width: 80%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">4/5 shipped · 1 not built</div></td>
             <td><div class="boards"><span>Spec</span><span>Reassess</span><span>Archive</span><span>Expand</span><span>Views</span><span>Notify</span><span>Reset</span><span>ResetPage</span><span>Phone</span><span>States</span></div></td>
-            <td class="next">Reassessment on the demo: the request says source “broker_webull” and “Webull” in its basis though the holding is authored; designed as a demo source and a synthetic basis.<span class="more">+ 3 more open on its spec card</span></td>
+            <td class="next">Account recovery and invitation acceptance: no reset endpoint, no token store, no email sender. The sign-in dialog has only log in / sign up today. Parked by owner (2026-10-14): the privacy …</td>
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Planned · designed, not built</h2><span class="c">9 screens · 8/18 items shipped</span></div>
+        <div class="grp-h"><h2>Planned · designed, not built</h2><span class="c">9 screens · 16/24 items shipped</span></div>
         <table>
           <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Planned · Liquidity</strong><span class="route">/research/markets#liquidity (proposed)</span></td>
-            <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="3 shipped, 1 partly built, 0 designed, of 4"><i class="s" style="width: 75%;"></i><i class="p" style="width: 25%;"></i></div><div class="counts">3/4 shipped · 1 partly</div></td>
+            <td><span class="st built">Built</span></td>
+            <td><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>States</span></div></td>
-            <td class="next">Not yet: event marks on the line (quarter ends, FOMC, tax dates), and a Delayed by source tag when the Fed moves the H.4.1 for a holiday (the frame shows the last Wednesday it has).</td>
+            <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
             <td class="name"><strong>Planned · Calendar</strong><span class="route">/research/markets#coming-up (proposed) · review triggers on /research and each note</span></td>
             <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="0 shipped, 1 partly built, 1 designed, of 2"><i class="p" style="width: 50%;"></i><i class="t" style="width: 50%;"></i></div><div class="counts">0/2 shipped · 1 partly · 1 not built</div></td>
+            <td><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 1 designed, of 5"><i class="s" style="width: 80%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">4/5 shipped · 1 not built</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>States</span></div></td>
-            <td class="next">Status: build. Macro calendar and results-date estimates (both “build” in CANDIDATES.md); no schedule fetcher yet. Un-parked by owner (2026-10-15).<span class="more">+ 1 more open on its spec card</span></td>
+            <td class="next">A release’s reference period (“CPI, September”): left out. Neither saved schedule states one (BLS’s events carry no description; BEA’s file is dates only), and BEA’s own file shows the …</td>
           </tr><tr>
             <td class="name"><strong>Planned · Off-exchange volume</strong><span class="route">/ticker/:symbol/research · public-record band (proposed)</span></td>
             <td><span class="st designed">Designed</span></td>
@@ -950,28 +1001,28 @@
             <td class="next">Status: build / verify. Source reachable; FINRA’s public-display terms unchecked (open question Q-2). Un-parked by owner (2026-10-15).</td>
           </tr><tr>
             <td class="name"><strong>Planned · Insider clusters</strong><span class="route">/ticker/:symbol/research · Insider trades, expanded (proposed)</span></td>
-            <td><span class="st designed">Designed</span></td>
-            <td><div class="bar" role="img" aria-label="1 shipped, 0 partly built, 1 designed, of 2"><i class="s" style="width: 50%;"></i><i class="t" style="width: 50%;"></i></div><div class="counts">1/2 shipped · 1 not built</div></td>
+            <td><span class="st progress">In progress</span></td>
+            <td><div class="bar" role="img" aria-label="2 shipped, 1 partly built, 0 designed, of 3"><i class="s" style="width: 66.66666666666666%;"></i><i class="p" style="width: 33.33333333333333%;"></i></div><div class="counts">2/3 shipped · 1 partly</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>States</span></div></td>
-            <td class="next">Status: build (after the switch). Needs per-transaction Form 4 rows; today’s wire only carries totals. Un-parked by owner (2026-10-15).</td>
+            <td class="next">Built behind SEC_USER_AGENT (“switch”), 2026-10-15: per-transaction Form 4 rows and the windows on the ticker wire (InsidersWire.transactions, .clusters, .sale_windows, .roles; …</td>
           </tr><tr>
             <td class="name"><strong>Planned · Fund holdings (13F)</strong><span class="route">/ticker/:symbol/research · public-record band (proposed)</span></td>
             <td><span class="st designed">Designed</span></td>
             <td><div class="bar" role="img" aria-label="0 shipped, 0 partly built, 1 designed, of 1"><i class="t" style="width: 100%;"></i></div><div class="counts">0/1 shipped · 1 not built</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>States</span></div></td>
-            <td class="next">Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT. Un-parked by owner (2026-10-15).</td>
+            <td class="next">Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved 13F-HR …</td>
           </tr><tr>
             <td class="name"><strong>Planned · Figures against the filing</strong><span class="route">/ticker/:symbol/research · “Checked against the filing” (proposed) · research check in npm run verify</span></td>
-            <td><span class="st designed">Designed</span></td>
-            <td><div class="bar" role="img" aria-label="1 shipped, 0 partly built, 1 designed, of 2"><i class="s" style="width: 50%;"></i><i class="t" style="width: 50%;"></i></div><div class="counts">1/2 shipped · 1 not built</div></td>
+            <td><span class="st progress">In progress</span></td>
+            <td><div class="bar" role="img" aria-label="2 shipped, 1 partly built, 0 designed, of 3"><i class="s" style="width: 66.66666666666666%;"></i><i class="p" style="width: 33.33333333333333%;"></i></div><div class="counts">2/3 shipped · 1 partly</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>States</span></div></td>
-            <td class="next">Status: build. Note figures carry no XBRL concept yet; no comparison exists. Un-parked by owner (2026-10-15).</td>
+            <td class="next">Built behind SEC_USER_AGENT, 2026-10-15: a figure names its concept in the last cell of a metrics or strip row (blocks.mjs, research/README.md); the wire carries each periodic filing’s …</td>
           </tr><tr>
             <td class="name"><strong>Planned · Peers</strong><span class="route">/ticker/:symbol/research · “Against its peers” (proposed)</span></td>
             <td><span class="st designed">Designed</span></td>
             <td><div class="bar" role="img" aria-label="0 shipped, 0 partly built, 1 designed, of 1"><i class="t" style="width: 100%;"></i></div><div class="counts">0/1 shipped · 1 not built</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>States</span></div></td>
-            <td class="next">Status: build. No frames fetcher; peer lists not in note front matter yet. Un-parked by owner (2026-10-15).</td>
+            <td class="next">Status: build. No frames fetcher; peer lists not in note front matter yet. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved XBRL frames response to build against (it needs …</td>
           </tr><tr>
             <td class="name"><strong>Planned · Signal track record</strong><span class="route">/research/scorecard#signals</span></td>
             <td><span class="st designed">Designed</span></td>
@@ -989,7 +1040,7 @@
       </section>
     </article></div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3917}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3752}}'>
 class Component extends DCLogic {}
 </script>
 </body>
