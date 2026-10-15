@@ -127,6 +127,7 @@ function ticker(
   return {
     ticker: 'AMD',
     state: 'live',
+    annual_revenue: [],
     detail: null,
     short_interest_state: state as PublicTicker['short_interest_state'],
     short_interest_detail: null,
