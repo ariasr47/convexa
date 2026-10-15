@@ -15,7 +15,7 @@ Price | $226.32 @ 2026-10-12 | Close; 52-week range $164.27–$243.37 [9][10]
 Market cap | $5.45T @ 2026-10-12 | 24.1B shares × price (calc) [4]
 P/E on FY2028 consensus | 14.2× @ 2026-10-12 | $15.91 EPS from 52 analysts (calc) [13]
 Net cash | $23.2B @ 2026-07-26 | Plus $98.9B of stakes in other companies (calc) [4]
-Operating margin | 66.2% @ Q2 FY2027 | GAAP; 26–33% in FY2017–20 [1][8]
+Operating margin | 66.2% @ Q2 FY2027 | GAAP; 26–33% in FY2017–20 [1][8] | us-gaap:OperatingIncomeLoss / us-gaap:Revenues
 Revenue guide | $108.0B @ Q3 FY2027 | ± 2%; results on Nov 17 [1][3]
 ```
 
@@ -73,26 +73,26 @@ The capex cycle keeps rising | Top-5 hyperscaler capex | ~$800B in 2026, ~$1.3T 
 ## Key numbers | Revenue doubled in a year at a 66% operating margin; cash flow lagged as receivables grew.
 
 ```metrics
-Revenue | $96.2B @ Q2 FY2027 | ▲ 106% YoY | up | Data Center $89.0B; Q3 guide $108.0B ± 2% [1]
-Gross margin, GAAP | 75.0% @ Q2 FY2027 | ▲ 2.6 pts YoY | up | Guided to bottom at 71–72% in Q4, then 72–73% in FY2028 [1][3]
-Operating margin, GAAP | 66.2% @ Q2 FY2027 | ▲ 5.4 pts YoY | up | 60.4% for FY2026 (calc) [1][7]
-EPS, GAAP diluted | $2.46 @ Q2 FY2027 | ▲ 128% YoY | up | Non-GAAP $2.22; the gap is gains on stakes [1]
+Revenue | $96.2B @ Q2 FY2027 | ▲ 106% YoY | up | Data Center $89.0B; Q3 guide $108.0B ± 2% [1] | us-gaap:Revenues
+Gross margin, GAAP | 75.0% @ Q2 FY2027 | ▲ 2.6 pts YoY | up | Guided to bottom at 71–72% in Q4, then 72–73% in FY2028 [1][3] | us-gaap:GrossProfit / us-gaap:Revenues
+Operating margin, GAAP | 66.2% @ Q2 FY2027 | ▲ 5.4 pts YoY | up | 60.4% for FY2026 (calc) [1][7] | us-gaap:OperatingIncomeLoss / us-gaap:Revenues
+EPS, GAAP diluted | $2.46 @ Q2 FY2027 | ▲ 128% YoY | up | Non-GAAP $2.22; the gap is gains on stakes [1] | us-gaap:EarningsPerShareDiluted
 Free cash flow | $21.3B @ Q2 FY2027 | from $48.6B in Q1 | down | Receivables and inventory absorbed cash; DSO 60 days [2]
 Supply and capacity commitments | $279B @ 2026-07-26 | from $119B a quarter earlier | up | Mostly memory; $179B due by the end of FY2028 (calc) [2]
 Equity stakes | $98.9B @ 2026-07-26 | from $35.1B in January (calc) | up | $25B more committed [2][4]
-Diluted shares | 24,285M @ Q2 FY2027 | ▼ 1.0% YoY | down | 94M shares bought back in Q2 for $19.7B [1][4]
+Diluted shares | 24,285M @ Q2 FY2027 | ▼ 1.0% YoY | down | 94M shares bought back in Q2 for $19.7B [1][4] | us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding
 Cash and debt securities | $56.6B @ 2026-07-26 | debt $33.4B | flat | $25B of notes issued in June; $25B commercial paper program undrawn [2][4]
 ```
 
 ## Revenue and earnings quality | Revenue more than doubled in a year, and growth sped up for a fourth straight quarter.
 
 ```chart bar "Quarterly revenue, $M"
-Q1 FY26 | 44062
-Q2 FY26 | 46743
-Q3 FY26 | 57006
-Q4 FY26 | 68127
-Q1 FY27 | 81615
-Q2 FY27 | 96221
+Q1 FY26 | 44062 | | | 10-Q 0001045810-25-000116 2025-05-28
+Q2 FY26 | 46743 | | | 10-Q 0001045810-25-000209 2025-08-27
+Q3 FY26 | 57006 | | | 10-Q 0001045810-25-000230 2025-11-19
+Q4 FY26 | 68127 | | | 10-K 0001045810-26-000021 2026-02-25
+Q1 FY27 | 81615 | | | 10-Q 0001045810-26-000052 2026-05-20
+Q2 FY27 | 96221 | | | 10-Q 0001045810-26-000075 2026-08-26
 Q3 FY27 guide | 108000 | guide | 108,000 ± 2%
 ```
 

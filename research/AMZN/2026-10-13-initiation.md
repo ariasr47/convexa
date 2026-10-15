@@ -60,27 +60,27 @@ The Anthropic mark holds | Carrying value of the stake | $190.4B at June 30 | wa
 ## Key numbers | Sales and profit are growing faster, but capex is now larger than operating cash flow.
 
 ```metrics
-Net sales | $200.6B @ Q2 2026 | ▲ 20% YoY | up | Prime Day moved into Q2; Q3 guide $197–202B [1]
-Operating income | $27.5B @ Q2 2026 | ▲ 43% YoY | up | 13.7% margin; about $1.2B of one-offs inside [1][5]
+Net sales | $200.6B @ Q2 2026 | ▲ 20% YoY | up | Prime Day moved into Q2; Q3 guide $197–202B [1] | us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
+Operating income | $27.5B @ Q2 2026 | ▲ 43% YoY | up | 13.7% margin; about $1.2B of one-offs inside [1][5] | us-gaap:OperatingIncomeLoss
 AWS revenue | $42.2B @ Q2 2026 | ▲ 37% YoY | up | Fastest in 18 quarters; $169B run rate [1]
 AWS backlog | $496B @ 2026-06-30 | ▲ 154% YoY (calc) | up | 6.4-year weighted average life [2][13]
 Advertising revenue | $19.8B @ Q2 2026 | ▲ 26% YoY | up | $76.1B over 12 months (calc) [3]
 Capex, gross | $173.0B @ TTM Q2 2026 | ▲ 61% YoY (calc) | up | Operating cash flow $161.4B over the same 12 months [1]
 Free cash flow | −$7.6B @ TTM Q2 2026 | from +$18.2B | down | −$9.5B after lease and financing repayments (calc) [3]
-Diluted EPS, GAAP | $5.75 @ Q2 2026 | ▲ 242% YoY (calc) | up | $50.5B of private-company marks, mostly Anthropic [1][2]
+Diluted EPS, GAAP | $5.75 @ Q2 2026 | ▲ 242% YoY (calc) | up | $50.5B of private-company marks, mostly Anthropic [1][2] | us-gaap:EarningsPerShareDiluted
 Debt | $132.5B @ 2026-06-30 | from $68.9B in Dec 2025 (calc) | up | $25B more issued after June 30 [2]
 ```
 
 ## Revenue | Sales grew 20% in Q2, but part of that was Prime Day moving into the quarter.
 
 ```chart bar "Quarterly net sales, $B"
-Q4-24 | 187.8
-Q1-25 | 155.7
-Q2-25 | 167.7
-Q3-25 | 180.2
-Q4-25 | 213.4
-Q1-26 | 181.5
-Q2-26 | 200.6
+Q4-24 | 187.8 | | | 10-K 0001018724-25-000004 2025-02-07
+Q1-25 | 155.7 | | | 10-Q 0001018724-25-000036 2025-05-02
+Q2-25 | 167.7 | | | 10-Q 0001018724-25-000086 2025-08-01
+Q3-25 | 180.2 | | | 10-Q 0001018724-25-000123 2025-10-31
+Q4-25 | 213.4 | | | 10-K 0001018724-26-000004 2026-02-06
+Q1-26 | 181.5 | | | 10-Q 0001018724-26-000014 2026-04-30
+Q2-26 | 200.6 | | | 10-Q 0001018724-26-000026 2026-07-31
 Q3-26 guide | 199.5 | guide | 197–202
 ```
 
@@ -126,11 +126,11 @@ All calculated from reported segment results [14][10][3]. North America in 2025 
 ## AWS growth and backlog | Contracted AWS revenue more than doubled in a year, much of it from two AI labs Amazon has invested in.
 
 ```chart bar "AWS performance obligations, contracts over one year, $B"
-Jun-25 | 195
-Sep-25 | 200
-Dec-25 | 244
-Mar-26 | 364
-Jun-26 | 496
+Jun-25 | 195 | | | 10-Q 0001018724-25-000086 2025-08-01
+Sep-25 | 200 | | | 10-Q 0001018724-25-000123 2025-10-31
+Dec-25 | 244 | | | 10-K 0001018724-26-000004 2026-02-06
+Mar-26 | 364 | | | 10-Q 0001018724-26-000014 2026-04-30
+Jun-26 | 496 | | | 10-Q 0001018724-26-000026 2026-07-31
 ```
 
 | Quarter | AWS revenue | Growth, ex-FX | Operating margin | Backlog | Average life |

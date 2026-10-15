@@ -61,10 +61,10 @@ Starship becomes the V3 truck | Orbital flights and recovery | First orbit Sep 2
 ## Key numbers | Revenue nearly doubled in a year, but capex ran at more than twice revenue.
 
 ```metrics
-Revenue · Q2 | $7.81B @ Q2 2026 | ▲ 92% YoY | up | Q1 $4.69B; AI added $1.82B of the $3.74B gain (calc) [2][20]
+Revenue · Q2 | $7.81B @ Q2 2026 | ▲ 92% YoY | up | Q1 $4.69B; AI added $1.82B of the $3.74B gain (calc) [2][20] | us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 Starlink revenue · Q2 | $4.29B @ Q2 2026 | ▲ 66% YoY | up | Above the $3.8B FactSet estimate; operating margin 38.6% (calc) [2][21]
 AI revenue · Q2 | $2.56B @ Q2 2026 | ▲ 247% YoY | up | Operating loss $1.26B; advertising ▼ 14% (calc) [2]
-GAAP operating margin · Q2 | −1.8% @ Q2 2026 | from −23.8% a year ago (calc) | up | Adjusted EBITDA $3.54B, 45% of revenue (calc) [2]
+GAAP operating margin · Q2 | −1.8% @ Q2 2026 | from −23.8% a year ago (calc) | up | Adjusted EBITDA $3.54B, 45% of revenue (calc) [2] | us-gaap:OperatingIncomeLoss / us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 Capex · H1 | $28.5B @ H1 2026 | ▲ from $7.0B | up | AI $23.6B; free cash flow −$25.0B (calc) [2]
 Starlink subscribers | 12.0M @ 2026-06-30 | ▲ 2.0× YoY | up | ARPU $66 a month, from $85 [2]
 Backlog | $47.5B @ 2026-06-30 | 56% due within a year | flat | $14.3B of it already billed as deferred revenue [7]
@@ -79,7 +79,7 @@ Q2 '25 | 4.07
 Q3 '25 | 5.27 | approx | ~$5.27B
 Q4 '25 | 5.27 | approx | ~$5.27B
 Q1 '26 | 4.69
-Q2 '26 | 7.81
+Q2 '26 | 7.81 | | | 10-Q 0001628280-26-052535 2026-08-04
 Dec '26 pace | 25 | guide | ~$25B
 ```
 

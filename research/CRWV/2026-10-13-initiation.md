@@ -62,14 +62,14 @@ GPUs keep earning | Older-GPU pricing | H100 within 10% of start-2025 price; A10
 ## Key numbers | Revenue doubled, but depreciation and interest turn a 59% EBITDA margin into a loss.
 
 ```metrics
-Revenue · Q2 2026 | $2,575M @ Q2 2026 | ▲ 112% YoY | up | Top of the $2.45–2.60B guide. [1]
+Revenue · Q2 2026 | $2,575M @ Q2 2026 | ▲ 112% YoY | up | Top of the $2.45–2.60B guide. [1] | us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 Adj. EBITDA · Q2 2026 | $1,510M @ Q2 2026 | 59% margin | up | Before $1,393M of depreciation and $640M of interest. [1]
-GAAP operating income · Q2 | −$49M @ Q2 2026 | −2% margin | down | Adjusted: $128M (5%). [1]
-Net loss · Q2 2026 | −$626M @ Q2 2026 | ▼ from −$290M | down | −$1.14 per share. [1]
+GAAP operating income · Q2 | −$49M @ Q2 2026 | −2% margin | down | Adjusted: $128M (5%). [1] | us-gaap:OperatingIncomeLoss
+Net loss · Q2 2026 | −$626M @ Q2 2026 | ▼ from −$290M | down | −$1.14 per share. [1] | us-gaap:NetIncomeLoss
 Interest expense, net · Q2 | $640M @ Q2 2026 | ▲ from $267M | down | Q3 guide $860–940M. [1][3]
 Capex · Q2 2026 | $9.4B @ Q2 2026 | FY guide $35–39B | flat | Company definition; cash PP&E purchases $6.4B. [1][3]
 Total debt | $35.1B @ 2026-06-30 | ▲ from $24.9B on Mar 31 | down | $7.5B is current (calc). [1][4]
-Cash | $5.5B @ 2026-06-30 | plus $1.4B restricted | flat | Current ratio 0.46. [1][19]
+Cash | $5.5B @ 2026-06-30 | plus $1.4B restricted | flat | Current ratio 0.46. [1][19] | us-gaap:CashAndCashEquivalentsAtCarryingValue
 Revenue backlog | $104.2B @ 2026-06-30 | ▲ 246% YoY | up | Excludes >$25B signed early in Q3. [1][3]
 Active power | 1.5 GW @ 2026-06-30 | 4.2 GW contracted (Aug 11) | up | Year-end target above 1.85 GW active. [1][3][8]
 FY2026 revenue guide | $12.4–13.2B @ 2026-08-11 | ▲ from $12–13B | up | Exit run-rate $18.5–19.5B. [3]
@@ -79,12 +79,12 @@ Customer prepayments | $9.7B @ 2026-06-30 | deferred revenue | flat | Customers 
 ## Revenue | Revenue has more than doubled a year, and the guide implies Q4 near $4.6B.
 
 ```chart bar "Quarterly revenue, $M (Q4 '26 is implied by the full-year guide, calc)"
-Q1 '25 | 982
-Q2 '25 | 1212
-Q3 '25 | 1365
-Q4 '25 | 1572
-Q1 '26 | 2078
-Q2 '26 | 2575
+Q1 '25 | 982 | | | 10-Q 0001769628-25-000014 2025-05-15
+Q2 '25 | 1212 | | | 10-Q 0001769628-25-000041 2025-08-13
+Q3 '25 | 1365 | | | 10-Q 0001769628-25-000062 2025-11-13
+Q4 '25 | 1572 | | | 10-K 0001769628-26-000104 2026-03-02
+Q1 '26 | 2078 | | | 10-Q 0001769628-26-000222 2026-05-08
+Q2 '26 | 2575 | | | 10-Q 0001769628-26-000366 2026-08-12
 Q3 '26 | 3525 | guide | $3.45–3.60B
 Q4 '26 | 4622 | guide | ~$4.3–4.9B
 ```

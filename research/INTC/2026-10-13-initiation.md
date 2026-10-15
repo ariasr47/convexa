@@ -15,7 +15,7 @@ Price | $101.35 @ 2026-10-12 | Close, −3.2% on the day · 52-week range $32.89
 Market cap | $577B @ 2026-10-12 | 5,692M diluted shares × price (calc); $536B on 5,286M shares outstanding after August (calc) [4][10]
 Net debt and minority claims | $4.6B @ 2026-06-27 | Debt less cash and investments, pro forma for the $23B raise, plus partners' stakes (calc) [2][4]
 EV / revenue | 9.2× @ FY2026 est. | $582B over the ~$63.0B the guide and consensus point to (calc) [1][22]
-GAAP operating margin | 11.1% @ Q2 2026 | Non-GAAP 17.2%; 30.4–32.9% in 2018–2020 [1][9]
+GAAP operating margin | 11.1% @ Q2 2026 | Non-GAAP 17.2%; 30.4–32.9% in 2018–2020 [1][9] | us-gaap:OperatingIncomeLoss / us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 Foundry operating loss | −$2.09B @ Q2 2026 | Outside customers paid $293M of its $5.77B revenue [2][3]
 Capex | >$20B @ FY2026 guide | 2027 guided "significantly above" 2026 [3]
 ```
@@ -61,13 +61,13 @@ Credit stays investment grade | Agency ratings | S&P BBB, Moody's Baa2, Fitch BB
 ## Key numbers | Q2 revenue rose 25% and the products half earns 32%; the foundry still loses $2B a quarter.
 
 ```metrics
-Revenue · Q2 2026 | $16,128M @ Q2 2026 | ▲ 25% YoY | up | $1.8B above the guide midpoint. [1][3]
+Revenue · Q2 2026 | $16,128M @ Q2 2026 | ▲ 25% YoY | up | $1.8B above the guide midpoint. [1][3] | us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 DCAI revenue | $6,262M @ Q2 2026 | ▲ 59% YoY | up | Data center and AI, mostly Xeon; 40% operating margin. [2][3]
 CCPG (client) revenue | $8,877M @ Q2 2026 | ▲ 13% YoY | up | PC units expected down low double digits in 2026. [2][3]
 Intel Products operating income | $4,817M @ Q2 2026 | 32% margin | up | From $2,686M (23%) a year earlier. [2]
 Intel Foundry operating income | −$2,089M @ Q2 2026 | from −$3,168M | up | Outside revenue $293M of $5,765M. [2][3]
 Non-GAAP gross margin | 41.8% @ Q2 2026 | ▲ from 29.7% | up | GAAP 40.4%; Q3 guide 42% non-GAAP. [1]
-GAAP net loss to Intel | −$11,033M @ Q2 2026 | −$2.16 per share | down | A $12.5B mark-to-market on escrowed government shares; non-GAAP EPS $0.42. [2]
+GAAP net loss to Intel | −$11,033M @ Q2 2026 | −$2.16 per share | down | A $12.5B mark-to-market on escrowed government shares; non-GAAP EPS $0.42. [2] | us-gaap:NetIncomeLoss
 Operating cash flow | $7,006M @ Q2 2026 | ▲ from $2,050M | up | Gross capex $2,652M. [2]
 Cash and short-term investments | $29.7B @ 2026-06-27 | plus ~$22.7B raised in August (calc) | flat | Before the August offering. [2][10]
 Total debt | $50.5B @ 2026-06-27 | ▲ from $46.6B at Dec 27 | down | $6.5B of new notes in Q2. [2][4]
@@ -78,13 +78,13 @@ Q3 2026 revenue guide | $15.8–16.8B @ 2026-07-23 | ▲ ~19% YoY at midpoint (c
 ## Revenue | Revenue broke out of a two-year plateau in Q2, and Q3 is guided at about the same level.
 
 ```chart bar "Quarterly revenue, $M"
-Q4 '24 | 14260
-Q1 '25 | 12667
-Q2 '25 | 12859
-Q3 '25 | 13653
-Q4 '25 | 13674
-Q1 '26 | 13577
-Q2 '26 | 16128
+Q4 '24 | 14260 | | | 10-K 0000050863-25-000009 2025-01-31
+Q1 '25 | 12667 | | | 10-Q 0000050863-25-000074 2025-04-25
+Q2 '25 | 12859 | | | 10-Q 0000050863-25-000109 2025-07-24
+Q3 '25 | 13653 | | | 10-Q 0000050863-25-000179 2025-11-06
+Q4 '25 | 13674 | | | 10-K 0000050863-26-000011 2026-01-23
+Q1 '26 | 13577 | | | 10-Q 0000050863-26-000079 2026-04-24
+Q2 '26 | 16128 | | | 10-Q 0000050863-26-000157 2026-07-24
 Q3 '26 | 16300 | guide | $15.8–16.8B
 ```
 

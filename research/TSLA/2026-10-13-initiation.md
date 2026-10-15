@@ -15,7 +15,7 @@ Price | $378.03 @ 2026-10-12 | Close; 52-week range $297.38–$498.83 [10][13]
 Market cap | $1.34T @ 2026-10-12 | 3,555M diluted shares as counted here × price (calc); $1.49T on all 3,950M outstanding [3]
 Net cash | $37.9B @ 2026-06-30 | Includes the SpaceX stake ($3.0B) and bitcoin ($0.7B) (calc) [3]
 EV / operating profit | ~300× @ TTM Q2 2026 | EV $1.31T on $4.37B of operating income (calc) [2]
-Operating margin | 1.4% @ Q2 2026 | 0.9% without regulatory credits (calc) [2]
+Operating margin | 1.4% @ Q2 2026 | 0.9% without regulatory credits (calc) [2] | us-gaap:OperatingIncomeLoss / us-gaap:Revenues
 Capex guide | ~$25B @ FY2026 | $8.5B in 2025 [14][4]
 ```
 
@@ -59,8 +59,8 @@ Optimus ships | Fremont production start | Not started as of the Q2 update | wat
 ## Key numbers | Record revenue in Q2 2026, but operating profit fell 57% as spending rose.
 
 ```metrics
-Revenue | $28.24B @ Q2 2026 | ▲ 26% YoY | up | Record quarter; trailing four quarters $103.6B (calc) [2]
-Operating margin, GAAP | 1.4% @ Q2 2026 | ▼ 2.7 pts YoY | down | 0.9% without regulatory credits (calc) [2]
+Revenue | $28.24B @ Q2 2026 | ▲ 26% YoY | up | Record quarter; trailing four quarters $103.6B (calc) [2] | us-gaap:Revenues
+Operating margin, GAAP | 1.4% @ Q2 2026 | ▼ 2.7 pts YoY | down | 0.9% without regulatory credits (calc) [2] | us-gaap:OperatingIncomeLoss / us-gaap:Revenues
 Auto gross margin ex credits | 16.3% @ Q2 2026 | ▲ 1.3 pts YoY | up | Down from 19.2% in Q1 2026 [2]
 Regulatory credits | $146M @ Q2 2026 | ▼ 67% YoY | down | $2.76B for all of 2024 [2][5]
 Deliveries | 486,532 @ Q3 2026 | ▼ 2.1% YoY | down | Beat the company-compiled consensus of 461,974 [1][33]
@@ -74,13 +74,13 @@ Non-GAAP EPS | $0.33 @ Q2 2026 | ▼ 18% YoY | down | GAAP $0.32; consensus was 
 ## Revenue and earnings quality | Revenue is growing again, but profit now comes from below the operating line.
 
 ```chart bar "Quarterly revenue, $M (Q3-26 is consensus; results Oct 21)"
-Q4-24 | 25707
-Q1-25 | 19335
-Q2-25 | 22496
-Q3-25 | 28095
-Q4-25 | 24901
-Q1-26 | 22387
-Q2-26 | 28236
+Q4-24 | 25707 | | | 10-K 0001628280-25-003063 2025-01-30
+Q1-25 | 19335 | | | 10-Q 0001628280-25-018911 2025-04-23
+Q2-25 | 22496 | | | 10-Q 0001628280-25-035806 2025-07-24
+Q3-25 | 28095 | | | 10-Q 0001628280-25-045968 2025-10-23
+Q4-25 | 24901 | | | 10-K 0001628280-26-003952 2026-01-29
+Q1-26 | 22387 | | | 10-Q 0001628280-26-026673 2026-04-23
+Q2-26 | 28236 | | | 10-Q 0001628280-26-049270 2026-07-23
 Q3-26 consensus | 27890 | approx | ~27,890
 ```
 
