@@ -1,30 +1,24 @@
 /**
- * Blog (`/blog`) — risk-based tests (SPEC §7 item 4; PLAN.md F8).
+ * Blog (`/blog` and `/blog/<slug>.html`) — risk-based tests.
  *
- * What earns a TEST here (invariants / silent regressions):
- *  - Zero data edge: the strict fetch harness, copied in SHAPE from `landing.spec.tsx:57-63`
- *    (throws on any non-auth call) and `:137-141` (zero `EventSource`), extended to this page
- *    per SPEC §7 item 4 — an accidental trader/bundle fetch added to the blog index fails every
- *    test in this file.
- *  - AC-B3: no link on the page leads to a blog document that does not exist — the href
- *    contract (ends `.html`, matches the emitted slug) AND the target file's actual presence on
- *    disk under `public/blog/`.
- *  - Full-document anchors, NOT SPA navigation: the articles are standalone HTML documents; a
- *    RouterLink would try to resolve them client-side and render the 404 shell.
- * What is deliberately NOT tested (visible/intentional → review): the card count and draft-slot
- * absence (AC-B1), the `<h1>` heading, the dek/tag copy wording, the intro sentence wording,
- * ordering, the header prose.
+ * What earns a TEST here (silent regressions):
+ *  - Zero data edge: a strict fetch harness (throws on any non-auth call) and zero `EventSource`, on
+ *    the index and on a post.
+ *  - No dead link and no lost post: every published post has its markdown source, its plain
+ *    no-JavaScript copy, and NO static file at `public/blog/<slug>.html` — one there would win over
+ *    the in-shell route, and the post would silently lose the bar, nav and footer.
+ *  - An address that is not a published post renders the 404 it is handed, never an empty page.
+ * What is deliberately NOT tested (visible → review): copy, card layout, the schematics' look.
  */
 import { render, screen } from '@testing-library/react';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BLOG_ARTICLES, BlogPage } from './BlogPage';
+import { BlogPage } from './BlogPage';
+import { BlogPostPage } from './BlogPostPage';
+import { BLOG_ARTICLES, postBlocks, postPath } from './posts';
 
-/** Walks up from cwd to the Nx workspace root — same idiom as the app's `.structural.spec.ts`
- *  files (e.g. `research-lab-surface.structural.spec.ts:14-21`), duplicated here on purpose so
- *  this colocated spec stays self-contained (no cross-page import). */
 function workspaceRoot(): string {
   let dir = process.cwd();
   for (let i = 0; i < 8; i++) {
@@ -36,12 +30,6 @@ function workspaceRoot(): string {
 
 let fetchMock: ReturnType<typeof vi.fn>;
 let openedEventSources = 0;
-
-const json = (body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
 
 beforeEach(() => {
   openedEventSources = 0;
@@ -56,15 +44,8 @@ beforeEach(() => {
     }
   }
   vi.stubGlobal('EventSource', SilentEventSource as unknown as typeof EventSource);
-
-  // STRICT mock: only the app-wide who-am-I read is allowed; ANY trader/bundle call throws, so the
-  // "zero data edge" invariant is enforced by construction (SPEC §7 item 4).
   fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url.includes('/api/auth/session')) {
-      return json({ authenticated: false, user: null, google_available: false, settings: null });
-    }
-    throw new Error(`Unexpected fetch from BlogPage: ${url}`);
+    throw new Error(`Unexpected fetch from the blog: ${String(input)}`);
   });
   vi.stubGlobal('fetch', fetchMock);
 });
@@ -74,43 +55,55 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** Any NON-AUTH fetch? Mirrors `landing.spec.tsx`'s helper — the who-am-I read is excluded. */
-function calledNonAuth(): boolean {
-  return fetchMock.mock.calls.some((c) => !String(c[0]).includes('/api/auth/'));
-}
-
-function renderBlog() {
-  return render(
-    <MemoryRouter>
-      <BlogPage />
-    </MemoryRouter>,
-  );
-}
-
-describe('BlogPage (/blog)', () => {
-  it('issues no non-auth fetch and opens no EventSource on mount (SPEC §7 item 4)', () => {
-    renderBlog();
-    expect(calledNonAuth()).toBe(false);
+describe('Blog', () => {
+  it('the index and a post issue no fetch and open no EventSource', () => {
+    const slug = BLOG_ARTICLES[0].slug;
+    render(
+      <MemoryRouter>
+        <BlogPage />
+        <BlogPostPage file={`${slug}.html`} notFound={<p>404</p>} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId(`blog-post-${slug}`)).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(openedEventSources).toBe(0);
   });
 
-  it('each card is a plain full-document anchor whose href ends .html (SPEC §4)', () => {
-    renderBlog();
+  it('each card links to its post inside the shell', () => {
+    render(
+      <MemoryRouter>
+        <BlogPage />
+      </MemoryRouter>,
+    );
     for (const a of BLOG_ARTICLES) {
-      const card = screen.getByTestId(`blog-card-${a.slug}`);
-      const anchor = card.querySelector('a');
-      expect(anchor).not.toBeNull();
-      // The href contract: exactly /blog/<slug>.html — the file build_html.py emits.
-      expect(anchor).toHaveAttribute('href', `/blog/${a.slug}.html`);
-      expect(anchor?.getAttribute('href')).toMatch(/\.html$/);
+      const anchor = screen.getByTestId(`blog-card-${a.slug}`).querySelector('a');
+      expect(anchor).toHaveAttribute('href', postPath(a.slug));
     }
   });
 
-  it('every card href resolves to a file that actually exists on disk (AC-B3)', () => {
+  it('every published post has its source and plain copy, and no static file shadows its route', () => {
     const root = workspaceRoot();
     for (const a of BLOG_ARTICLES) {
-      const target = resolve(root, 'apps', 'dashboard', 'public', 'blog', `${a.slug}.html`);
-      expect(existsSync(target), target).toBe(true);
+      expect(postBlocks(a.slug)?.length, a.slug).toBeGreaterThan(0);
+      expect(existsSync(resolve(root, 'docs', 'blog', `${a.slug}.md`))).toBe(true);
+      expect(
+        existsSync(resolve(root, 'apps', 'dashboard', 'public', 'blog', 'plain', `${a.slug}.html`)),
+      ).toBe(true);
+      expect(
+        existsSync(resolve(root, 'apps', 'dashboard', 'public', 'blog', `${a.slug}.html`)),
+      ).toBe(false);
     }
+  });
+
+  it('an address that is not a published post renders the 404 it is handed', () => {
+    render(
+      <MemoryRouter>
+        <BlogPostPage file="how-we-read-gamma.html" notFound={<p data-testid="nf">404</p>} />
+        <BlogPostPage file={BLOG_ARTICLES[0].slug} notFound={<p data-testid="nf2">404</p>} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('nf')).toBeInTheDocument();
+    // The slug without .html is not the post's address either.
+    expect(screen.getByTestId('nf2')).toBeInTheDocument();
   });
 });

@@ -4,9 +4,12 @@
 No dependencies — a small Markdown subset converter (h1/h2/h3, p, ul/ol, blockquote,
 tables, hr, images-as-inline-SVG, `code`/**bold**/*em*/links) tailored to these posts.
 
-Emits each article TWICE from one conversion: here in docs/blog/ (the authoring home)
-and into apps/dashboard/public/blog/ (the deploy path the /blog page links to) — the
-script IS the sync step, so the two copies cannot drift.
+Each article's one source is its markdown here. The site renders it inside the shell at
+/blog/<slug>.html (apps/dashboard/src/app/pages/blog/posts.ts reads the same file at build
+time). This script writes the PLAIN copy for readers without JavaScript (index.html's
+<noscript> links to it): here in docs/blog/ and into apps/dashboard/public/blog/plain/.
+Never write a page to public/blog/<slug>.html itself: a static file there would win over the
+in-shell route and the post would lose the site's bar, nav and footer.
 """
 import html
 import pathlib
@@ -14,7 +17,7 @@ import re
 
 HERE = pathlib.Path(__file__).parent
 REPO = HERE.parent.parent
-PUBLIC = REPO / "apps" / "dashboard" / "public" / "blog"
+PUBLIC = REPO / "apps" / "dashboard" / "public" / "blog" / "plain"
 IMG = HERE / "img"
 
 ARTICLES = [
@@ -136,6 +139,8 @@ TEMPLATE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <meta name="description" content="{description}">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://convexa.pages.dev/blog/{slug}.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Convexa">
 <meta property="og:title" content="{title}">
@@ -178,7 +183,7 @@ TEMPLATE = """<!DOCTYPE html>
   code {{ background:#131A24; border-radius:5px; padding:.08em .35em; font-size:.92em;
     font-family:'IBM Plex Mono',Consolas,Menlo,monospace; }}
   a {{ color:#5E8BC4; }}
-  blockquote {{ margin:1.4em 0; padding:.4em 0 .4em 1.1em; border-left:4px solid #F2A93B;
+  blockquote {{ margin:1.4em 0; padding:.4em 0 .4em 1.1em; border-left:3px solid #8A9BB4;
     font-size:1.05rem; color:#8A9BB4; font-style:italic; }}
   hr {{ border:none; border-top:1px solid rgba(138,155,180,0.25); margin:2.4em 0; }}
   figure {{ margin:1.8em 0; }}

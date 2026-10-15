@@ -24,6 +24,9 @@ vi.mock('@convexa/api', () => ({
   resumeDemoPlayback: resumeDemoPlaybackMock,
   resetDemoWorkspace: resetDemoWorkspaceMock,
   getScan: getScanMock,
+  // A deliberately never-resolving read: these tests only need the palette's list to stay pending.
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  getScanUniverse: () => new Promise(() => {}),
   getMarketDataMode: () => Promise.resolve('live'),
   DEMO_ACCOUNT: { id: 'demo-account', email: 'demo@example.invalid', display_name: 'Demo account' },
 }));
@@ -89,5 +92,47 @@ describe('AppShell · keyboard skip link (spine #6)', () => {
     await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
 
     expect(firstFocusable()?.getAttribute('data-testid')).toBe('skip-to-main');
+  });
+
+  it('the single-key shortcuts never fire while typing, and do outside a field', async () => {
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <MemoryRouter initialEntries={['/x']}>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route path="/x" element={<input aria-label="Note search" data-testid="field" />} />
+              <Route path="/scanner" element={<div data-testid="scanner-route" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+
+    // Typed into a field: the text lands in the field and the shell does nothing.
+    const field = screen.getByTestId('field');
+    await user.click(field);
+    await user.keyboard('/gs?');
+    expect(field).toHaveValue('/gs?');
+    expect(screen.queryByTestId('command-palette')).toBeNull();
+    expect(screen.queryByTestId('shortcuts-sheet')).toBeNull();
+    expect(screen.queryByTestId('scanner-route')).toBeNull();
+
+    // Outside a field: ? opens the sheet, Esc closes it, / opens the palette, g then s goes.
+    field.blur();
+    await user.keyboard('?');
+    expect(await screen.findByTestId('shortcuts-sheet')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByTestId('shortcuts-sheet')).toBeNull());
+
+    await user.keyboard('/');
+    await screen.findByTestId('command-palette');
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
+
+    (document.activeElement as HTMLElement | null)?.blur();
+    await user.keyboard('gs');
+    expect(await screen.findByTestId('scanner-route')).toBeInTheDocument();
   });
 });

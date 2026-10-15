@@ -1,6 +1,6 @@
 import type { ScanRow, SweepHeartbeat } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
-import { isPlausibleTicker, matchSymbols, paletteScoreCell } from './format';
+import { isPlausibleTicker, matchNotes, matchTickers, paletteScoreCell } from './format';
 
 function row(over: Partial<ScanRow> = {}): ScanRow {
   return {
@@ -22,7 +22,7 @@ function row(over: Partial<ScanRow> = {}): ScanRow {
   } as ScanRow;
 }
 
-describe('matchSymbols — P3 prefix-then-substring match on the symbol', () => {
+describe('matchTickers — P3 prefix-then-substring match on the symbol', () => {
   it('ranks prefix matches before substring-only ones, case-insensitively; a blank query returns every row; no match is []', () => {
     const cases: Array<{ name: string; symbols: string[]; query: string; expected: string[] }> = [
       {
@@ -58,12 +58,36 @@ describe('matchSymbols — P3 prefix-then-substring match on the symbol', () => 
       },
     ];
     for (const { name, symbols, query, expected } of cases) {
-      const rows = symbols.map((symbol) => row({ symbol }));
-      const result = matchSymbols(rows, query);
+      const rows = symbols.map((symbol) => ({ symbol, name: null }));
+      const result = matchTickers(rows, query);
       expect(Array.isArray(result), name).toBe(true);
       const got = result.map((r) => r.symbol);
       expect(got, name).toEqual(expected);
     }
+  });
+});
+
+describe('matchTickers / matchNotes — names and notes come after symbols', () => {
+  it('a company-name match follows every symbol match, and a one-letter query never matches names', () => {
+    const rows = [
+      { symbol: 'NVDA', name: 'NVIDIA' },
+      { symbol: 'AMD', name: 'Advanced Micro Devices' },
+      { symbol: 'VNM', name: null },
+    ];
+    expect(matchTickers(rows, 'nv').map((r) => r.symbol)).toEqual(['NVDA']);
+    expect(matchTickers(rows, 'vn').map((r) => r.symbol)).toEqual(['VNM']);
+    expect(matchTickers(rows, 'micro').map((r) => r.symbol)).toEqual(['AMD']);
+    expect(matchTickers(rows, 'i')).toEqual([]);
+  });
+
+  it('notes match by ticker prefix first, then by title, without repeats', () => {
+    const notes = [
+      { ticker: 'NVDA', title: 'Networking guide' },
+      { ticker: 'MU', title: 'Memory cycle and NVDA demand' },
+    ];
+    expect(matchNotes(notes, 'nvda').map((n) => n.ticker)).toEqual(['NVDA', 'MU']);
+    expect(matchNotes(notes, 'm').map((n) => n.ticker)).toEqual(['MU']);
+    expect(matchNotes(notes, '')).toHaveLength(2);
   });
 });
 

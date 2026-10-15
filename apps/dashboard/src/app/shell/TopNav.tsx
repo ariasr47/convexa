@@ -229,7 +229,7 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
             type="button"
             onClick={onOpenPalette}
             data-testid="nav-search-trigger"
-            aria-label="Jump to a ticker"
+            aria-label="Jump to a ticker or note"
             sx={(t) => ({
               display: { xs: 'none', laptop: 'flex' },
               alignItems: 'center',
@@ -252,7 +252,7 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
           >
             <SearchIcon sx={{ fontSize: 16 }} aria-hidden />
             <Box component="span" sx={{ flexGrow: 1, textAlign: 'left' }}>
-              Jump to a ticker…
+              Jump to a ticker or note
             </Box>
             <Box
               component="span"
@@ -295,7 +295,7 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
           </Box>
           <IconButton
             onClick={onOpenPalette}
-            aria-label="Jump to a ticker"
+            aria-label="Jump to a ticker or note"
             data-testid="nav-search-icon"
             // `size="small"` (AC-40 overflow fix): trims the CSS-default hit box a few px on a mouse
             // — real touch devices are unaffected, since `theme.ts`'s `@media (pointer: coarse)`

@@ -24,7 +24,7 @@ Three levels matter most on liquid names:
 
 Walls and flip are related, not the same object. A skewed gamma profile can put walls far from the flip. Treat the flip as a regime boundary and the walls as concentrated gamma levels — not as a single “support/resistance” cartoon.
 
-![Call wall, put wall, and gamma flip on a net-GEX curve](img/walls-and-flip.svg)
+![Call wall, put wall and gamma flip on a net-GEX curve. Schematic — not a chart of any market. The sign is carried by position: above the zero line, dealers long gamma; below, short.](img/walls-and-flip.svg)
 
 ### Dealer sign is a convention
 
@@ -48,7 +48,7 @@ If you compare a wall to the streaming last without reading the basis, you will 
 
 ## Two data speeds — do not mix them
 
-![Live tape versus structure poll](img/two-speed-desk.svg)
+![Live tape versus the structure poll: two clocks on one ticker. Schematic — not a chart of any market.](img/two-speed-desk.svg)
 
 **Live tape** (prices, marks when the stream is healthy) can update from a stream.
 

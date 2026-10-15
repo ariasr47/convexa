@@ -15,19 +15,19 @@
   <text class="sub" x="36" y="66">Same ticker, two clocks. Structure is never “live gamma.”</text>
 
   <!-- left: live -->
-  <rect x="36" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#5E8BC4" stroke-opacity="0.45"/>
-  <text class="pt" x="56" y="128" fill="#5E8BC4">Live tape</text>
+  <rect x="36" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#8A9BB4" stroke-opacity="0.45"/>
+  <text class="pt" x="56" y="128" fill="#8A9BB4">Live tape</text>
   <text class="small" x="56" y="148">stream when healthy</text>
 
   <!-- pulse bars -->
   <g>
-    <rect x="56" y="180" width="12" height="40" rx="3" fill="#5E8BC4" opacity="0.35"/>
-    <rect x="74" y="165" width="12" height="55" rx="3" fill="#5E8BC4" opacity="0.55"/>
-    <rect x="92" y="172" width="12" height="48" rx="3" fill="#5E8BC4" opacity="0.75"/>
-    <rect x="110" y="158" width="12" height="62" rx="3" fill="#5E8BC4"/>
-    <rect x="128" y="170" width="12" height="50" rx="3" fill="#5E8BC4" opacity="0.65"/>
-    <rect x="146" y="162" width="12" height="58" rx="3" fill="#5E8BC4" opacity="0.45"/>
-    <rect x="164" y="175" width="12" height="45" rx="3" fill="#5E8BC4" opacity="0.85"/>
+    <rect x="56" y="180" width="12" height="40" rx="3" fill="#8A9BB4" opacity="0.35"/>
+    <rect x="74" y="165" width="12" height="55" rx="3" fill="#8A9BB4" opacity="0.55"/>
+    <rect x="92" y="172" width="12" height="48" rx="3" fill="#8A9BB4" opacity="0.75"/>
+    <rect x="110" y="158" width="12" height="62" rx="3" fill="#8A9BB4"/>
+    <rect x="128" y="170" width="12" height="50" rx="3" fill="#8A9BB4" opacity="0.65"/>
+    <rect x="146" y="162" width="12" height="58" rx="3" fill="#8A9BB4" opacity="0.45"/>
+    <rect x="164" y="175" width="12" height="45" rx="3" fill="#8A9BB4" opacity="0.85"/>
   </g>
   <text class="chip" x="200" y="195">price · marks</text>
   <g class="bul">
@@ -37,12 +37,12 @@
   </g>
 
   <!-- right: structure -->
-  <rect x="494" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#F2A93B" stroke-opacity="0.5"/>
-  <text class="pt" x="514" y="128" fill="#F2A93B">Structure</text>
+  <rect x="494" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#E9E4D6" stroke-opacity="0.5"/>
+  <text class="pt" x="514" y="128" fill="#E9E4D6">Structure</text>
   <text class="small" x="514" y="148">slower poll · stamped as-of</text>
 
-  <rect x="514" y="168" width="280" height="36" rx="8" fill="#1B2432" stroke="#F2A93B" stroke-opacity="0.4"/>
-  <text class="chip" x="528" y="191" fill="#F2A93B">Structure as-of 2m ago</text>
+  <rect x="514" y="168" width="280" height="36" rx="8" fill="#1B2432" stroke="#E9E4D6" stroke-opacity="0.4"/>
+  <text class="chip" x="528" y="191" fill="#E9E4D6">Structure as-of …</text>
 
   <g class="bul">
     <text x="514" y="236">• score · tier · flip · walls · GEX</text>

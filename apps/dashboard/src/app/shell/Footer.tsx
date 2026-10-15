@@ -24,7 +24,7 @@ export function Footer() {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Stack spacing={1}>
           <ConvexaMark size={16} fontSize="1rem" />
-          <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', rowGap: 0.5 }}>
+          <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap', rowGap: 0.5 }}>
             <Link
               component={RouterLink}
               to="/research"
@@ -54,6 +54,16 @@ export function Footer() {
               data-testid="footer-blog-link"
             >
               Blog — how we read structure
+            </Link>
+            <Link
+              component={RouterLink}
+              to="/settings"
+              variant="caption"
+              underline="hover"
+              sx={{ color: 'text.secondary', width: 'fit-content' }}
+              data-testid="footer-settings-link"
+            >
+              Settings
             </Link>
             {/* The three trust pages (design/src/screens/final/trust.mjs). The Lab that sat here was
                 removed (owner, 2026-10-14): it shipped in neither environment. */}

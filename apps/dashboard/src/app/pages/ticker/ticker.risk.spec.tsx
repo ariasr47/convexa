@@ -459,7 +459,8 @@ describe('Ticker · market data paused (no-vendor-production-posture F2/F2b)', (
     tickerPaused = true;
     renderAt('/ticker/TSLA');
 
-    const panel = await screen.findByRole('status');
+    // Inside the page: the shell's bar above it is a status too ("Couldn’t check what’s live" here).
+    const panel = await within(screen.getByRole('main')).findByRole('status');
     expect(panel).toHaveTextContent('Market data is paused.');
     expect(panel).toHaveTextContent(
       'Convexa isn’t connected to a market-data feed right now, so this desk can’t load prices or ' +

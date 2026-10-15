@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How We Read Dealer Structure</title>
 <meta name="description" content="Walls, the gamma flip, GEX, score, and two data speeds — what Convexa actually computes, on what basis, and where the read is weak.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://convexa.pages.dev/blog/how-we-read-dealer-structure.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Convexa">
 <meta property="og:title" content="How We Read Dealer Structure">
@@ -47,7 +49,7 @@
   code { background:#131A24; border-radius:5px; padding:.08em .35em; font-size:.92em;
     font-family:'IBM Plex Mono',Consolas,Menlo,monospace; }
   a { color:#5E8BC4; }
-  blockquote { margin:1.4em 0; padding:.4em 0 .4em 1.1em; border-left:4px solid #F2A93B;
+  blockquote { margin:1.4em 0; padding:.4em 0 .4em 1.1em; border-left:3px solid #8A9BB4;
     font-size:1.05rem; color:#8A9BB4; font-style:italic; }
   hr { border:none; border-top:1px solid rgba(138,155,180,0.25); margin:2.4em 0; }
   figure { margin:1.8em 0; }
@@ -90,7 +92,7 @@
   </style>
   <rect x="1" y="1" width="958" height="418" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
   <text class="h1" x="36" y="42">Three levels, one curve</text>
-  <text class="sub" x="36" y="66">Analytic net dealer GEX across strikes (schematic — not a live chart).</text>
+  <text class="sub" x="36" y="66">Analytic net dealer GEX across strikes (schematic — not a chart of any market).</text>
 
   <rect x="48" y="96" width="864" height="250" rx="12" fill="#0B0F17" stroke="#8A9BB4" stroke-opacity="0.2"/>
 
@@ -102,27 +104,27 @@
   <text class="small" x="80" y="318">− dealer γ</text>
 
   <path d="M100,280 C180,300 220,290 280,268 C340,245 380,230 430,220 C480,210 520,175 580,150 C640,125 700,130 760,145 C820,160 850,180 870,195"
-        fill="none" stroke="#5E8BC4" stroke-width="2.5"/>
+        fill="none" stroke="#E9E4D6" stroke-width="2.5"/>
 
-  <!-- put wall — warningOrange (fault/negative pole, allowed) -->
-  <line x1="240" y1="120" x2="240" y2="300" stroke="#E07A3F" stroke-width="1.5" stroke-opacity="0.9"/>
-  <circle cx="240" cy="280" r="6" fill="#E07A3F"/>
-  <rect x="168" y="100" width="144" height="26" rx="6" fill="#1B2432" stroke="#E07A3F" stroke-opacity="0.55"/>
-  <text class="chip" x="184" y="118" fill="#E07A3F">Put wall</text>
+  <!-- put wall: context, sign by position and label -->
+  <line x1="240" y1="120" x2="240" y2="300" stroke="#8A9BB4" stroke-width="1.5" stroke-dasharray="5 5"/>
+  <circle cx="240" cy="280" r="6" fill="#8A9BB4"/>
+  <rect x="168" y="100" width="144" height="26" rx="6" fill="#1B2432" stroke="#8A9BB4" stroke-opacity="0.55"/>
+  <text class="chip" x="184" y="118" fill="#8A9BB4">Put wall · −γ</text>
   <text class="small" x="168" y="340">most negative dealer γ</text>
 
-  <!-- gamma flip — brand amber -->
-  <line x1="430" y1="120" x2="430" y2="300" stroke="#F2A93B" stroke-width="2"/>
-  <circle cx="430" cy="220" r="7" fill="#F2A93B"/>
-  <rect x="368" y="100" width="124" height="26" rx="6" fill="#1B2432" stroke="#F2A93B" stroke-opacity="0.55"/>
-  <text class="chip" x="384" y="118" fill="#F2A93B">Gamma flip</text>
+  <!-- gamma flip: emphasis -->
+  <line x1="430" y1="120" x2="430" y2="300" stroke="#E9E4D6" stroke-width="1.5" stroke-dasharray="5 5"/>
+  <circle cx="430" cy="220" r="7" fill="#E9E4D6"/>
+  <rect x="368" y="100" width="124" height="26" rx="6" fill="#1B2432" stroke="#E9E4D6" stroke-opacity="0.55"/>
+  <text class="chip" x="384" y="118" fill="#E9E4D6">Gamma flip</text>
   <text class="small" x="368" y="340">zero-crossing (regime)</text>
 
-  <!-- call wall — signal (positive pole, allowed) -->
-  <line x1="700" y1="120" x2="700" y2="300" stroke="#5E8BC4" stroke-width="1.5" stroke-opacity="0.9"/>
-  <circle cx="700" cy="138" r="6" fill="#5E8BC4"/>
-  <rect x="628" y="100" width="144" height="26" rx="6" fill="#1B2432" stroke="#5E8BC4" stroke-opacity="0.55"/>
-  <text class="chip" x="644" y="118" fill="#5E8BC4">Call wall</text>
+  <!-- call wall: context, sign by position and label -->
+  <line x1="700" y1="120" x2="700" y2="300" stroke="#8A9BB4" stroke-width="1.5" stroke-dasharray="5 5"/>
+  <circle cx="700" cy="138" r="6" fill="#8A9BB4"/>
+  <rect x="628" y="100" width="144" height="26" rx="6" fill="#1B2432" stroke="#8A9BB4" stroke-opacity="0.55"/>
+  <text class="chip" x="644" y="118" fill="#8A9BB4">Call wall · +γ</text>
   <text class="small" x="628" y="340">most positive dealer γ</text>
 
   <circle cx="500" cy="205" r="5" fill="#E9E4D6"/>
@@ -130,7 +132,7 @@
 
   <text class="sub" x="36" y="390">Walls pick extremes of dealer γ · flip is where the curve crosses zero · they can sit far apart when the profile is skewed.</text>
 </svg>
-<figcaption>Call wall, put wall, and gamma flip on a net-GEX curve</figcaption></figure>
+<figcaption>Call wall, put wall and gamma flip on a net-GEX curve. Schematic — not a chart of any market. The sign is carried by position: above the zero line, dealers long gamma; below, short.</figcaption></figure>
 <h3>Dealer sign is a convention</h3>
 <p>Walls use the vendor’s per-contract gamma and a <strong>dealer-sign open-interest convention</strong> (calls short / puts long as the default dealer book). That is a <strong>snapshot convention</strong>, not measured inventory. Real desks can and do differ. When gamma or OI is missing, the tile says unavailable — we do not invent a wall.</p>
 <h3>GEX: raw dollars vs vol-normalized</h3>
@@ -159,19 +161,19 @@
   <text class="sub" x="36" y="66">Same ticker, two clocks. Structure is never “live gamma.”</text>
 
   <!-- left: live -->
-  <rect x="36" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#5E8BC4" stroke-opacity="0.45"/>
-  <text class="pt" x="56" y="128" fill="#5E8BC4">Live tape</text>
+  <rect x="36" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#8A9BB4" stroke-opacity="0.45"/>
+  <text class="pt" x="56" y="128" fill="#8A9BB4">Live tape</text>
   <text class="small" x="56" y="148">stream when healthy</text>
 
   <!-- pulse bars -->
   <g>
-    <rect x="56" y="180" width="12" height="40" rx="3" fill="#5E8BC4" opacity="0.35"/>
-    <rect x="74" y="165" width="12" height="55" rx="3" fill="#5E8BC4" opacity="0.55"/>
-    <rect x="92" y="172" width="12" height="48" rx="3" fill="#5E8BC4" opacity="0.75"/>
-    <rect x="110" y="158" width="12" height="62" rx="3" fill="#5E8BC4"/>
-    <rect x="128" y="170" width="12" height="50" rx="3" fill="#5E8BC4" opacity="0.65"/>
-    <rect x="146" y="162" width="12" height="58" rx="3" fill="#5E8BC4" opacity="0.45"/>
-    <rect x="164" y="175" width="12" height="45" rx="3" fill="#5E8BC4" opacity="0.85"/>
+    <rect x="56" y="180" width="12" height="40" rx="3" fill="#8A9BB4" opacity="0.35"/>
+    <rect x="74" y="165" width="12" height="55" rx="3" fill="#8A9BB4" opacity="0.55"/>
+    <rect x="92" y="172" width="12" height="48" rx="3" fill="#8A9BB4" opacity="0.75"/>
+    <rect x="110" y="158" width="12" height="62" rx="3" fill="#8A9BB4"/>
+    <rect x="128" y="170" width="12" height="50" rx="3" fill="#8A9BB4" opacity="0.65"/>
+    <rect x="146" y="162" width="12" height="58" rx="3" fill="#8A9BB4" opacity="0.45"/>
+    <rect x="164" y="175" width="12" height="45" rx="3" fill="#8A9BB4" opacity="0.85"/>
   </g>
   <text class="chip" x="200" y="195">price · marks</text>
   <g class="bul">
@@ -181,12 +183,12 @@
   </g>
 
   <!-- right: structure -->
-  <rect x="494" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#F2A93B" stroke-opacity="0.5"/>
-  <text class="pt" x="514" y="128" fill="#F2A93B">Structure</text>
+  <rect x="494" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#E9E4D6" stroke-opacity="0.5"/>
+  <text class="pt" x="514" y="128" fill="#E9E4D6">Structure</text>
   <text class="small" x="514" y="148">slower poll · stamped as-of</text>
 
-  <rect x="514" y="168" width="280" height="36" rx="8" fill="#1B2432" stroke="#F2A93B" stroke-opacity="0.4"/>
-  <text class="chip" x="528" y="191" fill="#F2A93B">Structure as-of 2m ago</text>
+  <rect x="514" y="168" width="280" height="36" rx="8" fill="#1B2432" stroke="#E9E4D6" stroke-opacity="0.4"/>
+  <text class="chip" x="528" y="191" fill="#E9E4D6">Structure as-of …</text>
 
   <g class="bul">
     <text x="514" y="236">• score · tier · flip · walls · GEX</text>
@@ -197,7 +199,7 @@
 
   <text class="sub" x="36" y="376">Mixing a live last with an unstamped wall invents urgency. Read the basis and the as-of stamp.</text>
 </svg>
-<figcaption>Live tape versus structure poll</figcaption></figure>
+<figcaption>Live tape versus the structure poll: two clocks on one ticker. Schematic — not a chart of any market.</figcaption></figure>
 <p><strong>Live tape</strong> (prices, marks when the stream is healthy) can update from a stream.</p>
 <p><strong>Structure</strong> — score, tier, flip, walls, GEX, setups — refreshes on a slower poll (about every few minutes, sooner for names that just moved). The scanner and ticker say <strong>“Structure as-of …”</strong> for that path on purpose.</p>
 <p>When the live stream drops, live tiles dim and say offline. Structure tiles stay readable at their last snapshot. A quiet tape is not a blank desk. A structure poll is not “live gamma.”</p>

@@ -9,4 +9,7 @@ export const NOT_FOUND_COPY = {
   body: 'The address may be old or mistyped. The desk is one symbol away.',
   primary: 'Open the Ticker →',
   secondary: 'Home',
+  /** After the shortcut, which is drawn as keys. Hidden on touch, where there is no keyboard. */
+  hintBefore: 'or press',
+  hintAfter: 'to jump to a ticker or note',
 } as const;
