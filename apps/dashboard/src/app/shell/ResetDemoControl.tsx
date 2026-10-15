@@ -4,7 +4,11 @@
  * focus, closes on Esc or “Keep my changes”, and focus returns to the button
  * (shared/a11y/modalFocusHandoff.ts).
  *
- * Design: design/src/screens/final/shell-site-front.mjs (shellStates, “Reset demo data · confirm”).
+ * Two placements share the one confirmation: the demo bar (`placement="bar"`, a quiet text button)
+ * and the phone drawer (`placement="drawer"`, a full-width secondary button, its own testid).
+ *
+ * Design: design/src/screens/final/shell-site-front.mjs (shellStates, “Reset demo data · confirm”)
+ * and shell-site-kit.mjs drawerF.
  */
 import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
@@ -13,7 +17,14 @@ import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
 import { useId, useRef, useState } from 'react';
 
-export function ResetDemoControl({ onReset }: { onReset: () => void }) {
+export function ResetDemoControl({
+  onReset,
+  placement = 'bar',
+}: {
+  onReset: () => void;
+  placement?: 'bar' | 'drawer';
+}) {
+  const drawer = placement === 'drawer';
   const anchor = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const titleId = useId();
@@ -22,12 +33,22 @@ export function ResetDemoControl({ onReset }: { onReset: () => void }) {
     <>
       <Button
         ref={anchor}
-        size="small"
+        size={drawer ? 'medium' : 'small'}
+        variant={drawer ? 'outlined' : 'text'}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        data-testid="demo-reset"
-        sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
+        data-testid={drawer ? 'nav-drawer-reset' : 'demo-reset'}
+        sx={(theme) =>
+          drawer
+            ? {
+                minHeight: 44,
+                justifyContent: 'flex-start',
+                color: 'text.primary',
+                borderColor: 'divider',
+              }
+            : { minHeight: 44, color: extrasFor(theme).textAmber }
+        }
       >
         Reset demo data
       </Button>

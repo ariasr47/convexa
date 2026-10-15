@@ -10,16 +10,26 @@
  * opens a temporary Drawer (the drawer's links unmount when closed, so they don't duplicate the inline
  * `nav-*` testids). The wordmark + AccountControl stay in the bar at every width.
  *
+ * Under the five links the drawer carries the account rows (design/src/screens/final/
+ * shell-site-kit.mjs drawerF): production has Settings, “Log in” while signed out (sign-ups are
+ * closed, so never “Sign up”) and “What’s live on this site” (/methodology#data); staging has the
+ * demo account's line, Settings and “Reset demo data”, which asks first through the same
+ * confirmation as the demo bar. Staging never says “Log in”.
+ *
  * Binding (AC-Inv-7 / `[operator-vs-trader-path-separation]`): NO link/button to `/_ops/metrics` —
  * the operator route is reachable only by typing the URL.
  */
 import { AccountControl } from '@/features/auth/AccountControl';
+import { useAuth } from '@/features/auth/AuthContext';
+import { useAuthDialog } from '@/features/auth/AuthDialogProvider';
+import { avatarInitial } from '@/features/auth/avatar';
 import {
   prefetchPositionsRoute,
   prefetchScannerRoute,
   prefetchTickerRoute,
 } from '@/shared/lib/prefetchRoutes';
 import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { dataMode, resetDemoWorkspace } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -39,6 +49,7 @@ import useScrollTrigger from '@mui/material/useScrollTrigger';
 import { useState } from 'react';
 import { NavLink, Link as RouterLink, useLocation } from 'react-router-dom';
 import { ConvexaMark } from './ConvexaMark';
+import { ResetDemoControl } from './ResetDemoControl';
 
 interface NavEntry {
   label: string;
@@ -392,8 +403,103 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
             );
           })}
         </List>
+        <Divider />
+        <DrawerAccountRows onNavigate={() => setDrawerOpen(false)} />
       </Drawer>
     </AppBar>
+  );
+}
+
+/** The quieter 48px rows under the five links (drawerF's `a.q`). */
+const quietRowSx = {
+  minHeight: 48,
+  fontSize: 14,
+  fontWeight: 500,
+  color: 'text.secondary',
+  '&:hover': { color: 'text.primary' },
+} as const;
+
+/** The drawer's account rows. `onNavigate` closes the drawer before a link or the sign-in dialog
+ *  takes over; the reset confirmation opens over the drawer and keeps it open. */
+function DrawerAccountRows({ onNavigate }: { onNavigate: () => void }) {
+  const auth = useAuth();
+  const { openAuth } = useAuthDialog();
+  const demo = dataMode === 'demo';
+  return (
+    <List component="div" aria-label="Account" sx={{ py: 1 }} data-testid="nav-drawer-account">
+      {demo && (
+        <Box
+          data-testid="nav-drawer-demo-account"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.25,
+            minHeight: 48,
+            px: 2,
+            fontSize: 14,
+            color: 'text.secondary',
+          }}
+        >
+          <Box
+            component="span"
+            aria-hidden
+            sx={(t) => ({
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              flex: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 12,
+              fontWeight: 600,
+              bgcolor: extrasFor(t).panelRaised2,
+              color: 'text.primary',
+            })}
+          >
+            {avatarInitial(auth.user)}
+          </Box>
+          {auth.user?.display_name || 'Demo account'}
+        </Box>
+      )}
+      <ListItemButton
+        component={RouterLink}
+        to="/settings"
+        onClick={onNavigate}
+        data-testid="nav-drawer-settings"
+        sx={quietRowSx}
+      >
+        Settings
+      </ListItemButton>
+      {!demo && auth.ready && !auth.authenticated && (
+        <ListItemButton
+          onClick={() => {
+            onNavigate();
+            openAuth({ mode: 'login' });
+          }}
+          data-testid="nav-drawer-login"
+          sx={quietRowSx}
+        >
+          Log in
+        </ListItemButton>
+      )}
+      {!demo && (
+        <ListItemButton
+          component={RouterLink}
+          to="/methodology#data"
+          onClick={onNavigate}
+          data-testid="nav-drawer-whats-live"
+          sx={quietRowSx}
+        >
+          What’s live on this site
+        </ListItemButton>
+      )}
+      {demo && (
+        <Box sx={{ px: 1.25, pt: 0.5, display: 'flex', flexDirection: 'column' }}>
+          <ResetDemoControl onReset={resetDemoWorkspace} placement="drawer" />
+        </Box>
+      )}
+    </List>
   );
 }
 
