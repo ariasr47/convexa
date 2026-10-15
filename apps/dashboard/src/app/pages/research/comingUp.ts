@@ -6,7 +6,17 @@
  *
  * Pure: the section (ComingUpSection.tsx) feeds it the API's answers and the notes' dates.
  */
-import type { PublicRelease, PublicResultsWindow } from '@convexa/api';
+import type { ChartStatus } from '@/shared/charts/frame/frameTitle';
+import { sourceStateWord, type DataStateKey } from '@/shared/dataState/vocabulary';
+import type {
+  PublicCalendar,
+  PublicDataState,
+  PublicFilings,
+  PublicRelease,
+  PublicResultsWindow,
+  PublicSource,
+} from '@convexa/api';
+import type { AgingEvent } from './types';
 
 export type CalKind = 'macro' | 'note' | 'est';
 
@@ -34,10 +44,39 @@ export interface CalWeek {
   events: CalEvent[];
 }
 
+/** A results date a note gives: one day, or a range (a window, a month) from `date` to `end`. */
 export interface NoteResult {
   ticker: string;
   date: string;
+  /** The range's last day; absent or equal to `date` for a single day. */
+  end?: string | null;
   label: string;
+}
+
+const RESULTS = /\bresults\b|\bearnings\b/i;
+
+/**
+ * The results dates in a note's own catalysts: unresolved, with a start and an end, whatever their
+ * kind. A day is a day; a window ("Oct 27–30") or a month ("Nov 2026") is a range. Keeping only days
+ * dropped AMZN, CRWV, SPCX and CBRS from the calendar (W1-38).
+ */
+export function noteResultsOf(ticker: string, events: readonly AgingEvent[]): NoteResult[] {
+  return events
+    .filter(
+      (e) =>
+        e.kind === 'catalyst' &&
+        !e.resolved &&
+        !!e.when.start &&
+        !!e.when.end &&
+        e.when.start <= e.when.end &&
+        RESULTS.test(e.label),
+    )
+    .map((e) => ({
+      ticker,
+      date: e.when.start as string,
+      end: e.when.end === e.when.start ? null : e.when.end,
+      label: e.label,
+    }));
 }
 
 const DAY_MS = 86_400_000;
@@ -97,14 +136,18 @@ export function buildComingUp({
     });
   }
 
-  // A note's date for a company wins over any estimate for it.
+  // A note's date for a company wins over any estimate for it: any results date of its own still
+  // ahead, inside the six weeks or after them (an estimate must never contradict the note).
   const dated = new Set<string>();
   for (const n of noteResults) {
-    if (!follows.has(n.ticker) || !inRange(n.date)) continue;
-    dated.add(n.ticker);
+    if (!follows.has(n.ticker)) continue;
+    const end = n.end ?? n.date;
+    if (end >= today) dated.add(n.ticker);
+    // Drawn when any part of it falls in the six weeks; a range that opened earlier sits on Monday.
+    if (end < from || n.date > to) continue;
     events.push({
-      date: n.date,
-      end: null,
+      date: n.date < from ? from : n.date,
+      end: end === n.date ? null : end,
       label: `${n.ticker} ${n.label}`,
       source: demo ? 'Sample date' : 'From the note',
       kind: 'note',
@@ -140,18 +183,179 @@ export function buildComingUp({
       KIND_ORDER[a.kind] - KIND_ORDER[b.kind] ||
       a.label.localeCompare(b.label),
   );
+  // The columns are Monday to Friday: a range that opens on a weekend (CBRS's "Nov 2026" from Sun
+  // Nov 1) belongs to the week after, never the column that ended the Friday before. The last
+  // weekend stays in the last column.
+  const last = addDays(from, (WEEKS - 1) * 7);
+  const columnOf = (day: string) => {
+    const weekday = new Date(ms(day)).getUTCDay();
+    const monday = weekday === 0 || weekday === 6 ? addDays(mondayOf(day), 7) : mondayOf(day);
+    return monday > last ? last : monday;
+  };
   const weeks: CalWeek[] = Array.from({ length: WEEKS }, (_, i) => {
     const start = addDays(from, i * 7);
-    const next = addDays(start, 7);
     return {
       start,
       end: addDays(start, 4),
-      events: events.filter((e) => e.date >= start && e.date < next),
+      events: events.filter((e) => columnOf(e.date) === start),
     };
   });
+  // The claim counts companies still to report: a results date earlier this week stays in its
+  // column (it may still make a note due) but has already happened (W1-36).
   const reporting = [
-    ...new Set(events.filter((e) => e.ticker !== null).map((e) => e.ticker as string)),
+    ...new Set(
+      events
+        .filter((e) => e.ticker !== null && (e.end ?? e.date) >= today)
+        .map((e) => e.ticker as string),
+    ),
   ].sort();
   const fomc = events.find((e) => e.label === 'FOMC statement' && e.date >= today)?.date ?? null;
   return { weeks, from, to, reporting, fomc };
+}
+
+/** Where the estimated results windows stand this cycle (PublicFilings, through usePublicFilings). */
+export interface SecEstimates {
+  /** The SEC part's state word for the frame's tag, or null when it has nothing to add. */
+  word: DataStateKey | null;
+  /** The estimates are missing: our request failed, EDGAR didn't answer, or an API from before
+   *  the windows sent none. Unknown, not empty. */
+  missing: boolean;
+  /** SEC isn't set up on this server: the notes' dates are all there is, by design. */
+  notSet: boolean;
+}
+
+export function secEstimates({
+  demo,
+  loading,
+  error,
+  data,
+}: {
+  demo: boolean;
+  loading: boolean;
+  error: string | null;
+  data: PublicFilings | null;
+}): SecEstimates {
+  if (demo) return { word: null, missing: false, notSet: false };
+  const row = data?.sources?.find((r) => r.id === 'sec');
+  const notSet = data?.state === 'not_configured' || row?.state === 'not_set_up';
+  const word: DataStateKey | null = error
+    ? 'couldntLoad'
+    : data?.state === 'unavailable' || row?.state === 'source_down'
+      ? 'sourceDown'
+      : notSet
+        ? 'notSetUp'
+        : row?.state === 'last_good'
+          ? 'lastGood'
+          : null;
+  const missing =
+    !loading &&
+    !notSet &&
+    (word === 'couldntLoad' ||
+      word === 'sourceDown' ||
+      (data?.state === 'live' && data.results === undefined));
+  return { word, missing, notSet };
+}
+
+/**
+ * The frame's title state, tag and whether its count is a floor. Unknowns are never stated as
+ * facts (W1-37): every schedule down with nothing in the grid says the dates are unknown, not
+ * "Nothing scheduled"; an EDGAR outage tags the frame and makes the claim "at least". Off is
+ * checked before the missing calendar, since PUBLIC_DATA=off also sends calendar:null (W1-39).
+ */
+export function comingUpState({
+  demo,
+  loading,
+  markets,
+  schedules,
+  sec,
+  count,
+}: {
+  demo: boolean;
+  loading: boolean;
+  /** null: Convexa's server didn't answer. */
+  markets: { state: PublicDataState; calendar: PublicCalendar | null } | null;
+  /** The four schedule rows of PublicMarkets.sources. */
+  schedules: readonly PublicSource[];
+  sec: SecEstimates;
+  /** Events in the grid. */
+  count: number;
+}): {
+  status: ChartStatus;
+  tag: { state: DataStateKey; detail?: string } | undefined;
+  atLeast: boolean;
+} {
+  const off = markets?.state === 'off';
+  const schedulesDown = !demo && !!markets && !off && markets.calendar === null;
+  const status: ChartStatus = loading
+    ? { kind: 'loading' }
+    : !markets
+      ? {
+          kind: 'message',
+          tone: 'warn',
+          text: 'The calendar didn’t load.',
+          cause: 'Convexa’s server didn’t answer. Each note still lists its own dates.',
+        }
+      : off
+        ? {
+            kind: 'message',
+            tone: 'quiet',
+            text: 'Public data is switched off on this server.',
+            cause:
+              'The agencies’ schedules come through Convexa’s API, which has them turned off. Each note still lists its own dates.',
+          }
+        : count === 0 && schedulesDown
+          ? {
+              kind: 'message',
+              tone: 'warn',
+              text: 'The agencies’ schedules didn’t answer; dates are unknown.',
+              cause: sec.missing
+                ? 'Results estimates from SEC filings are missing this cycle too. Each note still lists its own dates.'
+                : 'No note gives a results date in the next six weeks. Each note still lists its own dates.',
+            }
+          : count === 0 && (sec.missing || sec.notSet)
+            ? {
+                kind: 'message',
+                tone: sec.missing ? 'warn' : 'quiet',
+                text: 'No dates known for the next six weeks.',
+                cause: sec.missing
+                  ? 'Results estimates from SEC filings are missing this cycle, so a company’s results could still fall here. No note gives a date in these weeks.'
+                  : 'Results estimates need SEC filings, which aren’t set up on this site yet. No note gives a date in these weeks.',
+              }
+            : count === 0
+              ? {
+                  kind: 'message',
+                  tone: 'quiet',
+                  text: 'Nothing scheduled in the next six weeks.',
+                  cause:
+                    'Fed, BLS, BEA and Treasury releases and the followed companies’ results appear here as their dates are set.',
+                }
+              : { kind: 'ready' };
+  const tag = demo
+    ? ({ state: 'demo' } as const)
+    : off
+      ? ({ state: 'off' } as const)
+      : schedulesDown
+        ? ({ state: 'sourceDown', detail: 'schedules' } as const)
+        : schedules.length
+          ? scheduleTag(schedules, sec.word)
+          : undefined;
+  return { status, tag, atLeast: !demo && (sec.missing || sec.notSet) };
+}
+
+/** The worst of the four schedule rows and of the SEC part the estimated windows come from. */
+function scheduleTag(
+  rows: readonly PublicSource[],
+  sec: DataStateKey | null,
+): { state: DataStateKey; detail?: string } {
+  const words = rows.map((r) => sourceStateWord(r.state));
+  if (sec === 'couldntLoad') return { state: 'couldntLoad', detail: 'filings' };
+  for (const worst of ['sourceDown', 'lastGood', 'notSetUp', 'off'] as const) {
+    if (words.includes(worst)) return { state: worst };
+    if (sec === worst) return { state: worst, detail: 'SEC EDGAR' };
+  }
+  const read = rows
+    .map((r) => r.checked_at)
+    .filter((t): t is string => !!t)
+    .sort()[0];
+  return { state: 'updated', detail: read ? `read ${shortDay(read)}` : undefined };
 }

@@ -10,59 +10,40 @@
  * section then draws nothing. The demo build draws the scenario's sample calendar, dashed.
  */
 import { ChartFrame } from '@/shared/charts/frame';
-import { sourceStateWord, type DataStateKey } from '@/shared/dataState/vocabulary';
 import {
   dataMode,
   DEMO_CALENDAR_TODAY,
   DEMO_FOLLOWED,
   DEMO_NOTE_RESULTS,
   type PublicMarkets,
-  type PublicSource,
 } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { alpha } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { localToday, researchIndex } from 'virtual:convexa-research';
-import { buildComingUp, shortDay, type CalEvent, type NoteResult } from './comingUp';
+import {
+  buildComingUp,
+  comingUpState,
+  noteResultsOf,
+  secEstimates,
+  shortDay,
+  type CalEvent,
+  type NoteResult,
+} from './comingUp';
 import { usePublicFilings, type Read } from './publicData';
 import { StaleNote } from './publicUi';
 import { MONO } from './ui';
 
 const SCHEDULE_IDS = ['fed-fomc', 'bls', 'bea', 'treasury-qr'];
 const METRIC = 'Releases and results, next six weeks';
-const RESULTS = /\bresults\b|\bearnings\b/i;
-
-/** The followed companies and the results dates their notes give (a day, not a month). */
+/** The followed companies and the results dates their notes give: a day, a window or a month. */
 function fromNotes(): { followed: string[]; noteResults: NoteResult[] } {
   const rows = researchIndex.filter((r) => !r.latest.notFollowingSince);
   return {
     followed: rows.map((r) => r.ticker),
-    noteResults: rows.flatMap((r) =>
-      r.latest.aging.events
-        .filter(
-          (e) =>
-            e.kind === 'catalyst' &&
-            !e.resolved &&
-            e.when.kind === 'day' &&
-            !!e.when.start &&
-            RESULTS.test(e.label),
-        )
-        .map((e) => ({ ticker: r.ticker, date: e.when.start as string, label: e.label })),
-    ),
+    noteResults: rows.flatMap((r) => noteResultsOf(r.ticker, r.latest.aging.events)),
   };
-}
-
-/** The schedules' state for the frame's tag: the worst of the four rows. */
-function scheduleTag(rows: PublicSource[]): { state: DataStateKey; detail?: string } {
-  const words = rows.map((r) => sourceStateWord(r.state));
-  for (const worst of ['sourceDown', 'lastGood', 'notSetUp', 'off'] as const)
-    if (words.includes(worst)) return { state: worst };
-  const read = rows
-    .map((r) => r.checked_at)
-    .filter((t): t is string => !!t)
-    .sort()[0];
-  return { state: 'updated', detail: read ? `read ${shortDay(read)}` : undefined };
 }
 
 export function ComingUpSection({ read }: { read: Read<PublicMarkets> }) {
@@ -95,51 +76,22 @@ export function ComingUpSection({ read }: { read: Read<PublicMarkets> }) {
 
   const rows = (markets?.sources ?? []).filter((r) => SCHEDULE_IDS.includes(r.id));
   const behind = rows.filter((r) => r.state === 'last_good' || r.state === 'source_down');
-  const secRow = filings.data?.sources?.find((r) => r.id === 'sec');
-  const secNotSet =
-    !demo && (filings.data?.state === 'not_configured' || secRow?.state === 'not_set_up');
+  const sec = secEstimates({ demo, ...filings });
   const moved = built.weeks.flatMap((w) => w.events).filter((e) => e.movedFrom);
   const count = built.weeks.reduce((n, w) => n + w.events.length, 0);
-
-  const status = read.loading
-    ? ({ kind: 'loading' } as const)
-    : !markets
-      ? ({
-          kind: 'message',
-          tone: 'warn',
-          text: 'The calendar didn’t load.',
-          cause: 'Convexa’s server didn’t answer. Each note still lists its own dates.',
-        } as const)
-      : markets.state === 'off'
-        ? ({
-            kind: 'message',
-            tone: 'quiet',
-            text: 'Public data is switched off on this server.',
-            cause:
-              'The agencies’ schedules come through Convexa’s API, which has them turned off. Each note still lists its own dates.',
-          } as const)
-        : count === 0
-          ? ({
-              kind: 'message',
-              tone: 'quiet',
-              text: 'Nothing scheduled in the next six weeks.',
-              cause:
-                'Fed, BLS, BEA and Treasury releases and the followed companies’ results appear here as their dates are set.',
-            } as const)
-          : ({ kind: 'ready' } as const);
+  const { status, tag, atLeast } = comingUpState({
+    demo,
+    loading: read.loading || filings.loading,
+    markets: markets ? { state: markets.state, calendar: markets.calendar ?? null } : null,
+    schedules: rows,
+    sec,
+    count,
+  });
 
   const followedWord = demo
     ? `${built.reporting.length} of the ${notes.followed.length} demo names`
     : `${built.reporting.length} of the ${notes.followed.length} followed companies`;
-  const finding = `${demo ? 'In the sample, ' : ''}${followedWord} ${built.reporting.length === 1 ? 'reports' : 'report'} in the next six weeks${built.fomc ? `; the Fed decides on ${shortDay(built.fomc)}` : ''}`;
-
-  const tag = demo
-    ? ({ state: 'demo' } as const)
-    : calendar === null
-      ? ({ state: 'sourceDown' } as const)
-      : rows.length
-        ? scheduleTag(rows)
-        : undefined;
+  const finding = `${demo ? 'In the sample, ' : atLeast ? 'At least ' : ''}${followedWord} ${built.reporting.length === 1 ? 'reports' : 'report'} in the next six weeks${built.fomc ? `; the Fed decides on ${shortDay(built.fomc)}` : ''}`;
 
   return (
     <Box component="section" id="coming-up" sx={{ scrollMarginTop: { xs: 72, md: 80 } }}>
@@ -208,7 +160,13 @@ export function ComingUpSection({ read }: { read: Read<PublicMarkets> }) {
                 {`${e.source.split(' · ')[0]} moved the ${e.label} from ${shortDay(e.movedFrom as string)} to ${shortDay(e.date)}.`}
               </Box>
             ))}
-          {secNotSet && (
+          {sec.missing && (
+            <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary' }}>
+              Results estimates from SEC filings are missing this cycle, so only the notes’ own
+              results dates show; the count is a floor.
+            </Box>
+          )}
+          {sec.notSet && (
             <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary' }}>
               Results dates come from the notes only. Estimating the rest needs SEC filings, which
               aren’t set up on this site yet.
