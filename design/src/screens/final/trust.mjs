@@ -123,7 +123,7 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'The /privacy route and page (pages/trust/PrivacyPage.tsx, 2026-10-14), every claim checked against the code: the eight live keys and the demo’s four, the auth store, CSP, the four AI providers, Webull keys stored but never sent.' },
-        { status: 'todo', waits: 'owner', ask: 'Q-PRIVACY', what: 'A contact address (PRIVACY_CONTACT in PrivacyPage.tsx); until the owner supplies one, the page says to ask the site’s owner.' },
+        { status: 'todo', what: 'A contact address (PRIVACY_CONTACT in PrivacyPage.tsx); until the owner supplies one, the page says to ask the site’s owner.' },
         { status: 'shipped', what: 'The behaviour it describes: local-only signed-out data, encrypted AI and Webull keys, HttpOnly session cookie, TradingView’s privacy line, the “What’s sent” drawer, Reset demo data.' },
         { status: 'todo', waits: 'parked', what: 'No self-serve account deletion exists (no endpoint in routes/auth.rs); the page says to ask the owner. Parked by owner (2026-10-14): the privacy page says to ask the owner.' },
         FOOTER_BUILT,

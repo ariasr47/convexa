@@ -120,7 +120,7 @@ export const OTC_SPEC = {
     'FINRA’s attribution line from the existing short-data cards appears under the band.',
   ],
   built: [
-    { status: 'todo', waits: 'owner', ask: 'Q-FINRA', what: 'Status: build / verify. Source reachable; FINRA’s public-display terms unchecked (open question Q-2). Un-parked by owner (2026-10-15).' },
+    { status: 'todo', waits: 'owner', ask: 'Q-FINRA-TERMS', what: 'Status: build / verify. Source reachable; FINRA’s public-display terms unchecked (open question Q-2). Un-parked by owner (2026-10-15).' },
     { status: 'shipped', what: 'The band’s neighbours: FINRA short interest and short-sale volume cards (live).', host: true },
   ],
   rulings: ['P-1', ...CORE],
@@ -157,7 +157,7 @@ export const CLUSTERS_SPEC = {
     'With SEC_USER_AGENT unset the card says Not set up, not empty.',
   ],
   built: [
-    { status: 'partial', waits: 'owner', ask: 'Q-SEC-LOCAL', what: 'Built behind SEC_USER_AGENT (“switch”), 2026-10-15: per-transaction Form 4 rows and the windows on the ticker wire (InsidersWire.transactions, .clusters, .sale_windows, .roles; insider_trades.rs, the cluster rules tested), and the Insider trades · 12 months section in the public-record band, dots by trade date, rings and filled dots, each linked to its filing (InsiderClusters.tsx). Production shows it since SEC_USER_AGENT was set (2026-10-15). Left: the timeline reads at most 80 Form 4s a year, and says how far back it reaches when a filer files more.' },
+    { status: 'partial', what: 'Built behind SEC_USER_AGENT (“switch”), 2026-10-15: per-transaction Form 4 rows and the windows on the ticker wire (InsidersWire.transactions, .clusters, .sale_windows, .roles; insider_trades.rs, the cluster rules tested), and the Insider trades · 12 months section in the public-record band, dots by trade date, rings and filled dots, each linked to its filing (InsiderClusters.tsx). Production shows it since SEC_USER_AGENT was set (2026-10-15). Left: the timeline reads at most 80 Form 4s a year, and says how far back it reaches when a filer files more.' },
     { status: 'shipped', what: 'Staging (2026-10-15): the demo research route carries the same section in a “Public record” band under the sample note, on the demo transport’s sample (one buying cluster, three directors in September), dashed and hatched, “Demo · shaped like SEC Form 4”; answered in the browser, no request leaves it. SPY and QQQ say they are funds that file no Form 4s (ResearchView.tsx DemoPublicRecord).' },
     { status: 'shipped', what: 'Insider trades card (90-day sales, buys, plan count) behind SEC_USER_AGENT: “switch”.', host: true },
   ],
@@ -194,7 +194,7 @@ export const HOLDERS_SPEC = {
     'The subtitle says 13F covers long US-listed positions only.',
     'Holder names appear as filed (the board shows placeholders).',
   ],
-  built: [{ status: 'todo', waits: 'owner', ask: 'Q-SEC-LOCAL', what: 'Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved 13F-HR response to build against (it needs a filer’s 13F-HR filing index and its information-table XML, saved under apps/api/tests/fixtures/public_data/).' }],
+  built: [{ status: 'todo', what: 'Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved 13F-HR response to build against (it needs a filer’s 13F-HR filing index and its information-table XML, saved under apps/api/tests/fixtures/public_data/).' }],
   rulings: [...CORE],
   code: ['apps/api/src/services/public_data/edgar_13f.rs (new)', 'apps/api/src/routes/public_data.rs · PublicTickerWire.holders (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx'],
 };
@@ -229,7 +229,7 @@ export const XBRL_SPEC = {
     'Concepts with no standard tag say “Not tagged · cites the filing”, never a dash alone.',
   ],
   built: [
-    { status: 'partial', waits: 'owner', ask: 'Q-NOTES', what: 'Built behind SEC_USER_AGENT, 2026-10-15: a figure names its concept in the last cell of a metrics or strip row (blocks.mjs, research/README.md); the wire carries each periodic filing’s fiscal period and own-period tagged values and five years of revenue as filed (PeriodicFilingWire.tagged, PublicTickerWire.annual_revenue; filed_figures.rs); one comparison, tested for precision, units and scale and period matching, runs on the note page and in tools/research-notes/check-filings.mjs against saved company facts (FiledFigures.tsx, filing-check.mjs). Left: no note names a concept yet (the owner’s notes are unedited), so production reads “not linked yet”; check-filings.mjs is not yet a step of npm run verify; 10-Q cash-flow figures are year-to-date, so a quarterly free cash flow reads “Not tagged in the filing”.' },
+    { status: 'partial', what: 'Built behind SEC_USER_AGENT, 2026-10-15: a figure names its concept in the last cell of a metrics or strip row (blocks.mjs, research/README.md); the wire carries each periodic filing’s fiscal period and own-period tagged values and five years of revenue as filed (PeriodicFilingWire.tagged, PublicTickerWire.annual_revenue; filed_figures.rs); one comparison, tested for precision, units and scale and period matching, runs on the note page and in tools/research-notes/check-filings.mjs against saved company facts (FiledFigures.tsx, filing-check.mjs). Left: no note names a concept yet (the owner’s notes are unedited), so production reads “not linked yet”; check-filings.mjs is not yet a step of npm run verify; 10-Q cash-flow figures are year-to-date, so a quarterly free cash flow reads “Not tagged in the filing”.' },
     { status: 'shipped', what: 'Staging (2026-10-15): the same section in the sample note’s “Public record” band: four sample figures against the sample 10-Q, diluted EPS a cent off and flagged Differs, and five sample years of revenue as filed, for MSFT, NVDA and TSLA; AAPL says the sample authors no quarterly report for it (ResearchView.tsx DemoPublicRecord, FiledFigures.tsx).' },
     { status: 'shipped', what: 'Reported figures in the Filings detail (FactWire, six concepts) behind SEC_USER_AGENT: “switch”.', host: true },
   ],
@@ -263,7 +263,7 @@ export const PEERS_SPEC = {
     'The subtitle names the calendar quarter and the note explains fiscal-quarter mapping.',
     'Missing filers are named in the as-of line.',
   ],
-  built: [{ status: 'todo', waits: 'owner', ask: 'Q-SEC-LOCAL', what: 'Status: build. No frames fetcher; peer lists not in note front matter yet. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved XBRL frames response to build against (it needs the SEC frames answers us-gaap/GrossProfit/USD/CY2026Q2, us-gaap/Revenues/USD/CY2026Q2 and us-gaap/Revenues/USD/CY2025Q2).' }],
+  built: [{ status: 'todo', what: 'Status: build. No frames fetcher; peer lists not in note front matter yet. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved XBRL frames response to build against (it needs the SEC frames answers us-gaap/GrossProfit/USD/CY2026Q2, us-gaap/Revenues/USD/CY2026Q2 and us-gaap/Revenues/USD/CY2025Q2).' }],
   rulings: [...CORE],
   code: ['apps/api/src/services/public_data/xbrl_frames.rs (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx'],
 };

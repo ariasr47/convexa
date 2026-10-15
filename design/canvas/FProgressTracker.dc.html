@@ -758,11 +758,11 @@
   .tk .qs td.id { font: 600 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
   .tk .qs td .why { display: block; margin-top: 4px; color: var(--steel); }
   .tk .qs td .ub { display: flex; flex-wrap: wrap; gap: 4px; }
-  .tk .answered { color: var(--steel); font-size: 12.5px; }
-  .tk .answered b { color: var(--phosphor); font-weight: 600; }
+  .tk table.answered td { color: var(--steel); }
+  .tk table.answered td b { color: var(--phosphor); font-weight: 500; }
 </style>
 </helmet>
-<div class="v4" data-scheme="dark" style="width: 100%; min-height: 5681px; background: var(--ink); color: var(--phosphor);"><article class="tk" aria-label="Screen tracker">
+<div class="v4" data-scheme="dark" style="width: 100%; min-height: 5754px; background: var(--ink); color: var(--phosphor);"><article class="tk" aria-label="Screen tracker">
       <header>
         <div class="eyebrow">Final · Convexa v1 · screen tracker</div>
         <h1 class="display">Screen tracker</h1>
@@ -775,26 +775,31 @@
         <div class="row"><span><span class="st designed">Designed</span></span><span class="n">5</span></div>
       </div></div>
       <div class="tile"><span class="h">Open items · 17</span><div class="nums">
-        <div class="row"><span><span class="chip w-build">To build</span></span><span class="n">1</span></div><div class="row"><span><span class="chip w-owner">Waiting on you</span></span><span class="n">8</span></div><div class="row"><span><span class="chip w-parked">Parked by you</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-spend">Needs paid data</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-decided">Left out on purpose</span></span><span class="n">2</span></div>
+        <div class="row"><span><span class="chip w-build">To build</span></span><span class="n">7</span></div><div class="row"><span><span class="chip w-owner">Waiting on you</span></span><span class="n">1</span></div><div class="row"><span><span class="chip w-parked">Parked by you</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-spend">Needs paid data</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-decided">Left out on purpose</span></span><span class="n">3</span></div>
       </div></div>
       <div class="tile"><span class="h">Known issues open · 26</span><div class="nums">
         <div class="row"><span><span class="chip sv-high">High</span></span><span class="n">6</span></div><div class="row"><span><span class="chip sv-medium">Medium</span></span><span class="n">9</span></div><div class="row"><span><span class="chip sv-low">Low</span></span><span class="n">11</span></div>
         <div class="row"><span><span class="none">Fixed</span></span><span class="n">0</span></div>
       </div></div>
       <div class="tile"><span class="h">Waiting on you</span><div class="nums">
-        <div class="row"><span>Open questions</span><span class="n">9</span></div>
-        <div class="row"><span>Items they hold</span><span class="n">8</span></div>
-        <div class="row"><span><span class="none">Answered</span></span><span class="n">1</span></div>
+        <div class="row"><span>Open questions</span><span class="n">1</span></div>
+        <div class="row"><span>Items they hold</span><span class="n">1</span></div>
+        <div class="row"><span><span class="none">Answered</span></span><span class="n">10</span></div>
       </div></div>
     </div>
       <section class="grp qs">
-      <div class="grp-h"><h2>Waiting on you</h2><span class="c">9 open questions</span></div>
+      <div class="grp-h"><h2>Waiting on you</h2><span class="c">1 open question</span></div>
       <table>
         <colgroup><col style="width: 11%;"><col style="width: 55%;"><col></colgroup>
         <thead><tr><th>Question</th><th>What’s asked, and why</th><th>Screens it holds</th></tr></thead>
-        <tbody><tr><td class="id">Q-SEC-LOCAL</td><td>May build lanes use the production SEC_USER_AGENT string locally to save real SEC responses?<span class="why">Unblocks 13F holdings and Peers, and a real-data check of insider clusters and figures against the filing (their saved Form 4 and company-facts files are illustrative).</span></td><td><div class="ub"><span class="chip">Planned · Insider clusters</span><span class="chip">Planned · Fund holdings (13F)</span><span class="chip">Planned · Peers</span></div></td></tr><tr><td class="id">Q-NOTES</td><td>May build lanes add XBRL concept names and a filing column to your published notes, or will you?<span class="why">Figures against the filing reads “not linked yet” until a note names its concepts; filing events need each chart block to say which filing reported each bar.</span></td><td><div class="ub"><span class="chip">Research tab · note</span><span class="chip">Planned · Figures against the filing</span></div></td></tr><tr><td class="id">Q-PRIVACY</td><td>A privacy contact address, or rule that “ask the site’s owner” is final.<span class="why">Closes the Privacy page’s last open item.</span></td><td><div class="ub"><span class="chip">Privacy</span></div></td></tr><tr><td class="id">Q-FINRA</td><td>Do FINRA’s display terms allow short interest, Reg SHO daily volume and OTC data on a public site (Q-2)?<span class="why">Off-exchange volume waits on it, and FINRA short interest and short-sale volume are already live on production.</span></td><td><div class="ub"><span class="chip">Planned · Off-exchange volume</span></div></td></tr><tr><td class="id">Q-ALERTS-SERVER</td><td>Should public-data alerts be checked on the server?<span class="why">Today the reader’s browser checks them while Alerts is open. Server checks need somewhere to send a firing (there is no email service), so this is a product call.</span></td><td><div class="ub"><span class="chip">Alerts</span></div></td></tr><tr><td class="id">Q-STORED-HERE</td><td>Add “Stored here” to P-2’s closed list of state words, or reword the Settings tags?<span class="why">The Settings board uses it; the canon’s list doesn’t have it.</span></td><td><span class="none">No card item; see why</span></td></tr><tr><td class="id">Q-COMING-UP</td><td>Staging /research Coming up: the Notes index board (empty) or the Calendar board (every sample note due)?<span class="why">The two boards disagree; the build follows the Notes index board.</span></td><td><span class="none">No card item; see why</span></td></tr><tr><td class="id">Q-REVIEW-DUE</td><td>Every valued note turns Review due on Oct 29, the day after the FOMC decision. Keep that rule?<span class="why">The Calendar rule makes every valued note due after each FOMC; it will touch your production notes on the next push.</span></td><td><span class="none">No card item; see why</span></td></tr><tr><td class="id">Q-RECENT-PAGES</td><td>Should ⌘K Recent also list pages (as the board shows), not just tickers?<span class="why">It needs one more browser storage key and a line on the Privacy page.</span></td><td><span class="none">No card item; see why</span></td></tr></tbody>
+        <tbody><tr><td class="id">Q-FINRA-TERMS</td><td>Do FINRA’s display terms allow its short interest, Reg SHO short-sale volume and OTC data on a public site?<span class="why">The owner is researching it (Q-2). Until then production shows FINRA data as Off; a yes flips one code constant and builds Off-exchange volume.</span></td><td><div class="ub"><span class="chip">Planned · Off-exchange volume</span></div></td></tr></tbody>
       </table>
-      <p class="answered">Answered: <b>Q-AMBER</b> A: the boards win; amber stays on the one primary action (DESIGN_SYSTEM.md Amendments, 2026-10-15).</p>
+      <div class="grp-h"><h2>Answered</h2><span class="c">10, kept as the record</span></div>
+      <table class="answered">
+        <colgroup><col style="width: 15%;"><col style="width: 40%;"><col></colgroup>
+        <thead><tr><th>Question</th><th>What was asked</th><th>Answer</th></tr></thead>
+        <tbody><tr><td class="id">Q-SEC-LOCAL<span class="why">2026-10-15</span></td><td>May build lanes use the production SEC_USER_AGENT string locally to save real SEC responses?</td><td><b>Yes: lanes may use the production SEC_USER_AGENT value locally, for sec.gov only, to save real responses.</b></td></tr><tr><td class="id">Q-NOTES<span class="why">2026-10-15</span></td><td>May build lanes add XBRL concept names and a filing column to your published notes, or will you?</td><td><b>Yes, metadata only (concept cells and a filing column); every note diff is shown with the push.</b></td></tr><tr><td class="id">Q-PRIVACY<span class="why">2026-10-15</span></td><td>A privacy contact address, or rule that “ask the site’s owner” is final.</td><td><b>The owner’s public GitHub profile is the contact route.</b></td></tr><tr><td class="id">Q-FINRA<span class="why">2026-10-15</span></td><td>Do FINRA’s display terms allow short interest, Reg SHO daily volume and OTC data on a public site (Q-2)?</td><td><b>Interim: FINRA data on staging only; production shows it as Off until the owner confirms the terms (Q-FINRA-TERMS).</b></td></tr><tr><td class="id">Q-ALERTS-SERVER<span class="why">2026-10-15</span></td><td>Should public-data alerts be checked on the server?</td><td><b>No: alerts stay browser-checked, and the page says so.</b></td></tr><tr><td class="id">Q-STORED-HERE<span class="why">2026-10-15</span></td><td>Add “Stored here” to P-2’s closed list of state words, or reword the Settings tags?</td><td><b>Yes: “Stored here” joins P-2’s state words.</b></td></tr><tr><td class="id">Q-COMING-UP<span class="why">2026-10-15</span></td><td>Staging /research Coming up: the Notes index board (empty) or the Calendar board (every sample note due)?</td><td><b>The Calendar board: staging shows the sample notes’ review triggers.</b></td></tr><tr><td class="id">Q-REVIEW-DUE<span class="why">2026-10-15</span></td><td>Every valued note turns Review due on Oct 29, the day after the FOMC decision. Keep that rule?</td><td><b>Keep it: every valued note turns Review due the day after each FOMC.</b></td></tr><tr><td class="id">Q-RECENT-PAGES<span class="why">2026-10-15</span></td><td>Should ⌘K Recent also list pages (as the board shows), not just tickers?</td><td><b>No: ⌘K Recent lists tickers only.</b></td></tr><tr><td class="id">Q-AMBER<span class="why">2026-10-15</span></td><td>Outlined and text buttons: neutral as the boards draw them, or amber as the 2026-10-13 theme default?</td><td><b>A: the boards win; amber stays on the one primary action (DESIGN_SYSTEM.md Amendments, 2026-10-15).</b></td></tr></tbody>
+      </table>
     </section>
       <section class="grp">
         <div class="grp-h"><h2>Foundations</h2><span class="c">1 screen · 0 open items · 1 known issue open</span></div>
@@ -863,7 +868,7 @@
           </tr><tr>
             <td class="name"><strong>Research tab · note</strong><span class="route">/ticker/:symbol/research · /ticker/:symbol/research/:slug</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="10 shipped, 0 partly built, 1 designed, of 11"><i class="s" style="width: 90.9090909090909%;"></i><i class="t" style="width: 9.090909090909092%;"></i></div><div class="counts">10/11 shipped · 2 issues open</div></td>
-            <td><ul><li><span class="chip w-owner">Waiting on you</span><span class="t">Filing events (10-Q, 10-K) on a column chart’s x lane: the note’s chart block carries no filing dates. A guidance label the parser can’t read (“~$269M implied”) draws no whisker. Needs authored data (2026-10-15): a chart row names … <span class="ask">Q-NOTES</span></span></li></ul></td>
+            <td><ul><li><span class="chip w-build">To build</span><span class="t">Filing events (10-Q, 10-K) on a column chart’s x lane: the note’s chart block carries no filing dates. A guidance label the parser can’t read (“~$269M implied”) draws no whisker. Needs authored data (2026-10-15): a chart row names …</span></li></ul></td>
             <td><ul><li class=""><span class="chip sv-high">D-01</span><span class="t">Note tables wrap one or two characters a line on phones and split numbers on desktop<span class="env">production</span></span></li><li class=""><span class="chip sv-low">D-21</span><span class="t">Demo note lacks chart, rail and tag; live note says “gTC Berlin”; “All research” cut off at 390<span class="env">both</span></span></li></ul></td>
           </tr></tbody>
         </table>
@@ -912,7 +917,7 @@
           </tr><tr>
             <td class="name"><strong>Alerts</strong><span class="route">/alerts</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="3 shipped, 1 partly built, 1 designed, of 5"><i class="s" style="width: 60%;"></i><i class="p" style="width: 20%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">3/5 shipped · 1 issue open</div></td>
-            <td><ul><li><span class="chip w-build">To build</span><span class="t">The insider cluster check (the ticker wire now carries per-insider Form 4 rows and clusters, InsidersWire.clusters, since 2026-10-15) and the EDGAR cadence half of results approaching (PublicFilingsWire.results now exists; notes’ …</span></li><li><span class="chip w-owner">Waiting on you</span><span class="t">Server-side scheduled checks: nothing checks while no Alerts page is open. A server check needs somewhere to send a firing, and there is no email service. <span class="ask">Q-ALERTS-SERVER</span></span></li></ul></td>
+            <td><ul><li><span class="chip w-build">To build</span><span class="t">The insider cluster check (the ticker wire now carries per-insider Form 4 rows and clusters, InsidersWire.clusters, since 2026-10-15) and the EDGAR cadence half of results approaching (PublicFilingsWire.results now exists; notes’ …</span></li><li><span class="chip w-decided">Left out on purpose</span><span class="t">Server-side scheduled checks: left out by owner ruling (2026-10-15, answer 5). The reader’s browser checks while Alerts is open, and the page says so; a server check would need somewhere to send a firing, and there is no email …</span></li></ul></td>
             <td><ul><li class=""><span class="chip sv-low">D-23</span><span class="t">Green PAPER chip; Settings forms and “25000”; walls column shows one wall; seeded rule shows only “Gamma flip”<span class="env">both</span></span></li></ul></td>
           </tr><tr>
             <td class="name"><strong>Settings</strong><span class="route">/settings</span></td>
@@ -939,7 +944,7 @@
           </tr><tr>
             <td class="name"><strong>Privacy</strong><span class="route">/privacy (proposed)</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="3 shipped, 0 partly built, 2 designed, of 5"><i class="s" style="width: 60%;"></i><i class="t" style="width: 40%;"></i></div><div class="counts">3/5 shipped · 1 issue open</div></td>
-            <td><ul><li><span class="chip w-owner">Waiting on you</span><span class="t">A contact address (PRIVACY_CONTACT in PrivacyPage.tsx); until the owner supplies one, the page says to ask the site’s owner. <span class="ask">Q-PRIVACY</span></span></li><li><span class="chip w-parked">Parked by you</span><span class="t">No self-serve account deletion exists (no endpoint in routes/auth.rs); the page says to ask the owner. Parked by owner (2026-10-14): the privacy page says to ask the owner.</span></li></ul></td>
+            <td><ul><li><span class="chip w-build">To build</span><span class="t">A contact address (PRIVACY_CONTACT in PrivacyPage.tsx); until the owner supplies one, the page says to ask the site’s owner.</span></li><li><span class="chip w-parked">Parked by you</span><span class="t">No self-serve account deletion exists (no endpoint in routes/auth.rs); the page says to ask the owner. Parked by owner (2026-10-14): the privacy page says to ask the owner.</span></li></ul></td>
             <td><ul><li class=""><span class="chip sv-low">D-24</span><span class="t">Calibration labels overlap; index filter chips missing; trust-page headings differ<span class="env">both</span></span></li></ul></td>
           </tr><tr>
             <td class="name"><strong>Terms and disclaimer</strong><span class="route">/terms (proposed)</span></td>
@@ -983,27 +988,27 @@
           </tr><tr>
             <td class="name"><strong>Planned · Off-exchange volume</strong><span class="route">/ticker/:symbol/research · public-record band (proposed)</span></td>
             <td><span class="st designed">Designed</span><div class="bar" role="img" aria-label="1 shipped, 0 partly built, 1 designed, of 2"><i class="s" style="width: 50%;"></i><i class="t" style="width: 50%;"></i></div><div class="counts">1/2 shipped</div></td>
-            <td><ul><li><span class="chip w-owner">Waiting on you</span><span class="t">Status: build / verify. Source reachable; FINRA’s public-display terms unchecked (open question Q-2). Un-parked by owner (2026-10-15). <span class="ask">Q-FINRA</span></span></li></ul></td>
+            <td><ul><li><span class="chip w-owner">Waiting on you</span><span class="t">Status: build / verify. Source reachable; FINRA’s public-display terms unchecked (open question Q-2). Un-parked by owner (2026-10-15). <span class="ask">Q-FINRA-TERMS</span></span></li></ul></td>
             <td><span class="none">None known</span></td>
           </tr><tr>
             <td class="name"><strong>Planned · Insider clusters</strong><span class="route">/ticker/:symbol/research · Insider trades, expanded (proposed)</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="2 shipped, 1 partly built, 0 designed, of 3"><i class="s" style="width: 66.66666666666666%;"></i><i class="p" style="width: 33.33333333333333%;"></i></div><div class="counts">2/3 shipped</div></td>
-            <td><ul><li><span class="chip w-owner">Waiting on you</span><span class="t">The timeline reads at most 80 Form 4s a year, and says how far back it reaches when a filer files more. <span class="ask">Q-SEC-LOCAL</span></span></li></ul></td>
+            <td><ul><li><span class="chip w-build">To build</span><span class="t">The timeline reads at most 80 Form 4s a year, and says how far back it reaches when a filer files more.</span></li></ul></td>
             <td><span class="none">None known</span></td>
           </tr><tr>
             <td class="name"><strong>Planned · Fund holdings (13F)</strong><span class="route">/ticker/:symbol/research · public-record band (proposed)</span></td>
             <td><span class="st designed">Designed</span><div class="bar" role="img" aria-label="0 shipped, 0 partly built, 1 designed, of 1"><i class="t" style="width: 100%;"></i></div><div class="counts">0/1 shipped</div></td>
-            <td><ul><li><span class="chip w-owner">Waiting on you</span><span class="t">Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved 13F-HR response to build against (it needs a … <span class="ask">Q-SEC-LOCAL</span></span></li></ul></td>
+            <td><ul><li><span class="chip w-build">To build</span><span class="t">Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved 13F-HR response to build against (it needs a …</span></li></ul></td>
             <td><span class="none">None known</span></td>
           </tr><tr>
             <td class="name"><strong>Planned · Figures against the filing</strong><span class="route">/ticker/:symbol/research · “Checked against the filing” (proposed) · research check in npm run verify</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="2 shipped, 1 partly built, 0 designed, of 3"><i class="s" style="width: 66.66666666666666%;"></i><i class="p" style="width: 33.33333333333333%;"></i></div><div class="counts">2/3 shipped</div></td>
-            <td><ul><li><span class="chip w-owner">Waiting on you</span><span class="t">No note names a concept yet (the owner’s notes are unedited), so production reads “not linked yet”; check-filings.mjs is not yet a step of npm run verify; 10-Q cash-flow figures are year-to-date, so a quarterly free cash flow … <span class="ask">Q-NOTES</span></span></li></ul></td>
+            <td><ul><li><span class="chip w-build">To build</span><span class="t">No note names a concept yet (the owner’s notes are unedited), so production reads “not linked yet”; check-filings.mjs is not yet a step of npm run verify; 10-Q cash-flow figures are year-to-date, so a quarterly free cash flow …</span></li></ul></td>
             <td><span class="none">None known</span></td>
           </tr><tr>
             <td class="name"><strong>Planned · Peers</strong><span class="route">/ticker/:symbol/research · “Against its peers” (proposed)</span></td>
             <td><span class="st designed">Designed</span><div class="bar" role="img" aria-label="0 shipped, 0 partly built, 1 designed, of 1"><i class="t" style="width: 100%;"></i></div><div class="counts">0/1 shipped</div></td>
-            <td><ul><li><span class="chip w-owner">Waiting on you</span><span class="t">Status: build. No frames fetcher; peer lists not in note front matter yet. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved XBRL frames response to build against (it needs the SEC frames answers … <span class="ask">Q-SEC-LOCAL</span></span></li></ul></td>
+            <td><ul><li><span class="chip w-build">To build</span><span class="t">Status: build. No frames fetcher; peer lists not in note front matter yet. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved XBRL frames response to build against (it needs the SEC frames answers …</span></li></ul></td>
             <td><span class="none">None known</span></td>
           </tr><tr>
             <td class="name"><strong>Planned · Signal track record</strong><span class="route">/research/scorecard#signals</span></td>
@@ -1020,7 +1025,7 @@
       </section>
     </article></div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":5681}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":5754}}'>
 class Component extends DCLogic {}
 </script>
 </body>

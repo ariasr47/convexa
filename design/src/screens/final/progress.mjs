@@ -219,8 +219,8 @@ export const TRACKER_CSS = `
   .tk .qs td.id { font: 600 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
   .tk .qs td .why { display: block; margin-top: 4px; color: var(--steel); }
   .tk .qs td .ub { display: flex; flex-wrap: wrap; gap: 4px; }
-  .tk .answered { color: var(--steel); font-size: 12.5px; }
-  .tk .answered b { color: var(--phosphor); font-weight: 600; }
+  .tk table.answered td { color: var(--steel); }
+  .tk table.answered td b { color: var(--phosphor); font-weight: 500; }
 `;
 
 const SEV_WORD = { high: 'High', medium: 'Medium', low: 'Low' };
@@ -287,7 +287,12 @@ export function trackerBoard(groups) {
         <thead><tr><th>Question</th><th>What’s asked, and why</th><th>Screens it holds</th></tr></thead>
         <tbody>${questions.map((q) => `<tr><td class="id">${q.id}</td><td>${q.ask}<span class="why">${q.why}</span></td><td>${unblocks(q)}</td></tr>`).join('')}</tbody>
       </table>
-      ${answered.length ? `<p class="answered">Answered: ${answered.map((q) => `<b>${q.id}</b> ${q.answer}`).join(' · ')}</p>` : ''}
+      ${answered.length ? `<div class="grp-h"><h2>Answered</h2><span class="c">${answered.length}, kept as the record</span></div>
+      <table class="answered">
+        <colgroup><col style="width: 15%;"><col style="width: 40%;"><col></colgroup>
+        <thead><tr><th>Question</th><th>What was asked</th><th>Answer</th></tr></thead>
+        <tbody>${answered.map((q) => `<tr><td class="id">${q.id}<span class="why">${q.answered ?? q.asked}</span></td><td>${q.ask}</td><td><b>${q.answer}</b></td></tr>`).join('')}</tbody>
+      </table>` : ''}
     </section>`;
 
     const group = (g) => {
