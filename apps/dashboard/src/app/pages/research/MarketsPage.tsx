@@ -12,6 +12,7 @@ import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { researchIndex } from 'virtual:convexa-research';
+import { ComingUpSection } from './ComingUpSection';
 import { FOMC_CHECKED, FOMC_SOURCE, fomcInSeries } from './fomc';
 import { formatNoteDate, formatShortDate } from './format';
 import { LiquiditySection } from './LiquiditySection';
@@ -190,6 +191,8 @@ export function MarketsPage() {
             ) : null}
           </>
         )}
+
+        <ComingUpSection read={read} />
 
         <Disclaimer>
           Rates: U.S. Department of the Treasury, Daily Treasury Par Yield Curve and Par Real Yield

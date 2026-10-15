@@ -1,5 +1,6 @@
 export * from './lib/broker';
 export * from './lib/convexa';
+export { DEMO_CALENDAR_TODAY, DEMO_FOLLOWED, DEMO_NOTE_RESULTS } from './lib/demo/calendar';
 export * from './lib/demo/mode';
 export * from './lib/demo/streams';
 export * from './lib/demo/views';

@@ -79,7 +79,9 @@ export const CALENDAR_SPEC = {
     'Staging: only the demo’s six names appear; no request leaves the browser.',
   ],
   built: [
-    { status: 'todo', what: 'Status: build. Macro calendar and results-date estimates (both “build” in CANDIDATES.md); no schedule fetcher yet. Un-parked by owner (2026-10-15).' },
+    { status: 'shipped', what: 'API (2026-10-15): PublicMarketsWire.calendar from the Fed’s FOMC calendar page, BLS’s iCalendar schedule (CPI, PPI, jobs report), BEA’s release-dates file (GDP, PCE) and Treasury’s refunding page (the next refunding statement), all keyless, read twice a day; a release that moves carries the date it moved from (calendar.rs, tested against real saved answers). PublicFilingsWire.results: each company’s expected window from its last four 8-K 2.02 dates, or its 10-Q and 10-K dates (needs SEC_USER_AGENT).' },
+    { status: 'shipped', what: 'The section on /research/markets#coming-up (ComingUpSection.tsx): six week columns of releases, the notes’ dated results and dashed estimated windows; each results row names its note, the FOMC every valued note; the claim counts the companies in the grid; without SEC_USER_AGENT the rows keep the notes’ dates and say so. The demo draws the scenario’s sample calendar (libs/api/src/lib/demo/calendar.ts).' },
+    { status: 'partial', what: 'Not yet: review triggers from the calendar on /research and on each note, and a release’s reference period (“CPI”, not “CPI, September”: the schedules don’t state it).' },
     { status: 'partial', what: 'The notes’ own catalysts already drive “Coming up” on /research and the note’s “comes due” card (build time).' },
   ],
   rulings: [...CORE],
