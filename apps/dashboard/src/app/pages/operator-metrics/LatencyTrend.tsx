@@ -286,7 +286,10 @@ export function LatencyTrend({ trend }: { trend: Trend }) {
         const v = r[k];
         if (typeof v === 'number' && Number.isFinite(v) && v > m) m = v;
       }
-    return m > 0 ? Math.ceil(m * 1.1) : 1;
+    if (m <= 0) return 1;
+    // A round ceiling (1, 2 or 5 × 10ⁿ above the largest value), so the shared axis reads cleanly.
+    const p = 10 ** Math.floor(Math.log10(m));
+    return [1, 2, 5, 10].map((k) => k * p).find((c) => c >= m * 1.05) ?? 10 * p;
   }, [chartData, lineKeys]);
 
   // Message states keep the frame and name the metric (P-10); a gap, never a blank or a 0.
@@ -314,11 +317,13 @@ export function LatencyTrend({ trend }: { trend: Trend }) {
     ? `${pctl} latency by bundle stage, ${unit}, the last ${horizonMin} minutes · one panel per stage, shared scale (P-9)`
     : `${pctlHidden ? '' : `${pctl} `}${METRIC_LABELS[metric].toLowerCase()}, ${unit}, the last ${horizonMin} minutes${scope === 'global' ? '' : ` · ${scope}`}`;
 
-  const tag: { state: DataStateKey; detail?: string } = error
-    ? { state: 'lastGood', detail: 'couldn’t refresh' }
-    : paused || autoPaused
-      ? { state: 'paused' }
-      : { state: 'updated', detail: `polled every ${cadenceSec} s` };
+  const tag: { state: DataStateKey; detail?: string } = instrumentationOff
+    ? { state: 'off', detail: 'instrumentation' }
+    : error
+      ? { state: 'lastGood', detail: 'couldn’t refresh' }
+      : paused || autoPaused
+        ? { state: 'paused' }
+        : { state: 'updated', detail: `polled every ${cadenceSec} s` };
 
   const table: TableTwinData | undefined = hasValues
     ? {
