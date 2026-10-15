@@ -8,7 +8,7 @@
  *   script runs. Same labels, same readout, and the arrow keys still move the probe.
  * - The WebGL2 view (`heroGl.ts`): no dependency, render on demand (no frames while idle), no
  *   autoplay, a runtime pixel-ratio ladder. It replaces the projection after its first frame. It
- *   ships OFF for now (`HERO_WEBGL_SHIPS` below): P-15's frame-time condition wasn't met as written.
+ *   ships ON (`HERO_WEBGL_SHIPS` below, owner ruling 2026-10-15).
  *
  * P-11: sign reads by position (above or below the zero plane) and by the +γ / −γ labels, never by hue
  * alone. P-15: the flip is phosphor, not amber; production labels the panel "Illustrative sample".
@@ -58,12 +58,11 @@ const CAPTION_ID = 'gs-sample-caption';
  * p95 18.4 and 18.4 ms, against an empty page's bare rAF p95 of 18.6 and 18.2 ms just before each run
  * (an earlier pair: 17.6 / 17.6 against 17.6; headless: 16.8 / 16.8). The Mac was driving a 60 Hz display,
  * so the interval is the display's clock, not the hero (p95 0.4–0.5 ms script and 0.1 ms GPU per frame,
- * 0 idle frames). That is over the bar as written, so per the owner's
- * instruction the WebGL view ships OFF and the page shows the static projection until the owner rules
- * on the numbers. Turning it on is this one constant; `window.__HERO_WEBGL__ = true` before load turns
- * it on for a measurement of the shipped build.
+ * 0 idle frames). The owner ruled on these numbers (2026-10-15, DESIGN_SYSTEM.md Amendments): the
+ * condition is read as the hero's own work per frame, since the display caps the interval, so the WebGL
+ * view ships. Turning it off is this one constant.
  */
-const HERO_WEBGL_SHIPS = false;
+const HERO_WEBGL_SHIPS = true;
 
 type Mode = 'poster' | 'webgl' | 'fallback';
 
