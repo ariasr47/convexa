@@ -12,6 +12,7 @@ import { ROWS as ACCOUNT } from './account.mjs';
 import { ROWS as TRUST } from './trust.mjs';
 import { ROWS as DEEP } from './deep.mjs';
 import { ROWS as PLANNED } from './planned.mjs';
+import { PROGRESS_CSS, progressBoard } from './progress.mjs';
 
 export const FINAL_PAGE = { id: 'final', name: 'Final · Convexa v1' };
 
@@ -27,7 +28,29 @@ function assemble(base, extra) {
   }
   return [...rows, ...extra.filter((x) => x.section === 'planned')];
 }
-export const FINAL_ROWS = assemble([...FOUNDATIONS, ...SHELL_SITE, ...TICKER, ...RESEARCH, ...ACCOUNT], [...TRUST, ...DEEP, ...PLANNED]);
+const SCREEN_ROWS = assemble([...FOUNDATIONS, ...SHELL_SITE, ...TICKER, ...RESEARCH, ...ACCOUNT], [...TRUST, ...DEEP, ...PLANNED]);
+
+/** The board map's groups: one per source module, rows in their page order. */
+const GROUPS = [
+  ['Foundations', FOUNDATIONS],
+  ['Shell and site', SHELL_SITE],
+  ['Ticker', TICKER],
+  ['Research', RESEARCH],
+  ['Account', ACCOUNT],
+  ['Trust pages', TRUST],
+  ['Deeper surfaces', DEEP],
+  ['Planned · designed, not built', PLANNED],
+].map(([label, mod]) => ({ label, rows: SCREEN_ROWS.filter((r) => mod.includes(r)) }));
+
+/** The first row: the board map, generated from every other row's spec card (progress.mjs). */
+const PROGRESS_ROW = {
+  key: 'progress',
+  label: 'Board map',
+  css: PROGRESS_CSS,
+  boards: [{ id: 'map', title: 'What’s built', w: 1440, h: 3200, body: progressBoard(GROUPS) }],
+};
+
+export const FINAL_ROWS = [PROGRESS_ROW, ...SCREEN_ROWS];
 
 const pascal = (s) => s.replace(/(^|[-_ ])(\w)/g, (_, __, c) => c.toUpperCase());
 const SPEC_W = 760;
