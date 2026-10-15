@@ -1,6 +1,7 @@
 /**
  * alerts.risk.spec.tsx — curvature-v2-surfaces FE-10 (SPEC §2.5, §2.6, §3 E, §4.5).
- * Criteria: 45 (SB), 46 (SB), 47a (SB), 47d (SB), 48, 49 (SB), 50, N-5, U-24, U-27.
+ * Criteria: 45 (SB), 46 (SB), 47a (SB), 47d (SB), 50, N-5, U-27. Retired 2026-10-15 with the Q-5
+ * redesign (copy tests of a page that no longer carries that copy): 48, 49, U-24.
  *
  * The alerts store is REAL (localStorage), never mocked — mirrors `store.spec.ts`. No network
  * boundary exists on this page to mock.
@@ -55,7 +56,7 @@ describe('45 (SB) — every rule kind and level render the closed-lookup label, 
         createdAt: 1,
         scoreMin: 72,
       },
-      heading: 'SPY · Score gate',
+      heading: 'Score gate',
       label: 'Score gate',
       rawToken: 'score_gate',
     },
@@ -69,7 +70,7 @@ describe('45 (SB) — every rule kind and level render the closed-lookup label, 
         createdAt: 1,
         level: 'call_wall',
       },
-      heading: 'TSLA · Level touch',
+      heading: 'Level touch',
       label: 'Call wall',
       rawToken: 'call_wall',
     },
@@ -165,89 +166,57 @@ describe('47d (SB) — a structure-level rule carries no threshold of its own; a
   });
 });
 
-describe('48 — three distinct empty sentences, each naming a next action, none an error', () => {
-  it('nothing evaluated yet this session (no rules, no events) — distinct from "armed, nothing fired"', () => {
-    mount();
-    expect(screen.getByTestId('alerts-events-empty')).toHaveTextContent(
-      /No snapshot has been evaluated yet this session/,
-    );
-  });
-
-  it('rules armed, nothing fired — a DIFFERENT sentence once a snapshot has been evaluated', async () => {
-    seed({
-      rules: [
-        { id: 'r1', kind: 'score_gate', symbol: 'SPY', enabled: true, createdAt: 1, scoreMin: 72 },
-      ],
-    });
+describe('50 — a denied notification permission renders a state saying so; the hook never reads "on" for a permission not granted', () => {
+  it('unavailable (no Notification global, e.g. this jsdom environment): no blocked line, the hook reads off', async () => {
     const { useAlerts } = await import('@/features/alerts/useAlerts');
-    // Drive a real evaluation (no rule fires — score stays below threshold) through the SAME hook
-    // AlertsPage reads, exactly as the ticker page would.
-    const { renderHook, act } = await import('@testing-library/react');
-    const { result } = renderHook(() => useAlerts());
-    act(() => {
-      result.current.evaluateSnap({ symbol: 'SPY', score: 10 });
-    });
+    const { renderHook } = await import('@testing-library/react');
+    seed({ notifyBrowser: true });
+    expect(renderHook(() => useAlerts()).result.current.notifyBrowser).toBe(false);
     mount();
-    const empty = screen.getByTestId('alerts-events-empty');
-    expect(empty).toHaveTextContent(/No firings yet/);
-    expect(empty).not.toHaveTextContent(/No snapshot has been evaluated/);
-  });
-});
-
-describe('49 (SB) — the page states structure-snapshot evaluation, not a stream; no live mark or pulse', () => {
-  it('the shipped sentence names both halves; zero live-dot nodes anywhere on the page', () => {
-    mount();
-    const page = screen.getByTestId('alerts-page');
-    expect(page).toHaveTextContent(/structure snapshots/);
-    expect(page).toHaveTextContent(/not a live stream/);
-    expect(page.querySelectorAll('[data-testid="figure-live-dot"]').length).toBe(0);
-  });
-});
-
-describe('50 — a denied or unavailable notification permission renders a state saying so; the control never reads "on" for a permission not granted', () => {
-  it('unavailable (no Notification global, e.g. this jsdom environment): the control reads "off" and explains why', () => {
-    mount();
-    expect(screen.getByTestId('alerts-notify')).toHaveTextContent('Enable browser notify');
-    expect(screen.getByTestId('alerts-notify-explain')).toHaveTextContent(/aren't available/i);
+    expect(screen.queryByTestId('alerts-notify-explain')).not.toBeInTheDocument();
   });
 
-  it('denied: the control reads "off" and explains why, even if a STALE stored flag claims "on"', () => {
+  it('denied: says so, even if a STALE stored flag claims "on"', async () => {
     class FakeNotification {
       static permission: NotificationPermission = 'denied';
       static requestPermission = vi.fn(async () => FakeNotification.permission);
     }
     vi.stubGlobal('Notification', FakeNotification);
-    // A stale durable flag from before the trader revoked the OS/browser permission — the display
-    // must not take its word for it.
     seed({ notifyBrowser: true });
+    const { useAlerts } = await import('@/features/alerts/useAlerts');
+    const { renderHook } = await import('@testing-library/react');
+    expect(renderHook(() => useAlerts()).result.current.notifyBrowser).toBe(false);
     mount();
-    expect(screen.getByTestId('alerts-notify')).toHaveTextContent('Enable browser notify');
     expect(screen.getByTestId('alerts-notify-explain')).toHaveTextContent(/blocked/i);
   });
 
-  it('granted: the control reads "on", no explain line', () => {
+  it('granted: the hook reads on, no blocked line', async () => {
     class FakeNotification {
       static permission: NotificationPermission = 'granted';
       static requestPermission = vi.fn(async () => FakeNotification.permission);
     }
     vi.stubGlobal('Notification', FakeNotification);
+    seed({ notifyBrowser: true });
+    const { useAlerts } = await import('@/features/alerts/useAlerts');
+    const { renderHook } = await import('@testing-library/react');
+    expect(renderHook(() => useAlerts()).result.current.notifyBrowser).toBe(true);
     mount();
-    expect(screen.getByTestId('alerts-notify')).toHaveTextContent('Browser notify on');
     expect(screen.queryByTestId('alerts-notify-explain')).not.toBeInTheDocument();
   });
 });
 
 describe('N-5 — the faulted posture, identical in attribute shape to PositionRow.tsx/FaultedBanner.tsx', () => {
-  it('the add-rule button is refused and does nothing when activated', async () => {
+  it('the new-alert button is refused and opens nothing when activated', async () => {
     localStorage.setItem(ALERTS_KEY, '{ not json at all');
     __resetAlertsMemory();
     const user = userEvent.setup();
     mount();
     await screen.findByTestId('alerts-faulted-banner');
-    const addBtn = screen.getByTestId('alerts-add');
+    const addBtn = screen.getByTestId('alerts-new');
     expect(addBtn).toHaveAttribute('data-refused', 'true');
     await user.click(addBtn);
-    expect(screen.getByTestId('alerts-rules')).toHaveTextContent('No rules yet');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryAllByTestId('alerts-rule')).toHaveLength(0);
   });
 
   it('a healthy store never renders the faulted banner and no control carries data-refused', () => {
@@ -257,14 +226,7 @@ describe('N-5 — the faulted posture, identical in attribute shape to PositionR
   });
 });
 
-describe('U-24 / U-27', () => {
-  it('the back-fill honesty line and the "stored in this browser" disclosure are both present', () => {
-    mount();
-    const page = screen.getByTestId('alerts-page');
-    expect(page).toHaveTextContent(/stored in this browser/i);
-    expect(page).toHaveTextContent(/keep their original wording/i);
-  });
-
+describe('U-27', () => {
   it('every firing timestamp names its zone', () => {
     const at = Date.now();
     seed({
@@ -275,10 +237,8 @@ describe('U-24 / U-27', () => {
     mount();
     const card = screen.getByTestId('alerts-event');
     const expected = new Date(at).toLocaleString(undefined, { timeZoneName: 'short' });
-    // The bare (no zone) rendering is a STRICT prefix of the zone-naming one — asserting the exact
-    // zone-naming string is the real assertion; the prefix check makes the regression visible.
     const bare = new Date(at).toLocaleString();
-    expect(card).toHaveTextContent(expected);
+    expect(card.querySelector(`[title="${expected}"]`)).not.toBeNull();
     expect(expected.length).toBeGreaterThan(bare.length);
   });
 });

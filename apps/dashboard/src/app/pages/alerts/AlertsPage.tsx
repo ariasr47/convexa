@@ -1,39 +1,42 @@
 /**
- * /alerts — manage structure alert rules + recent firings (v1).
- * Static page chrome; evaluation runs on ticker/scan snapshots elsewhere.
+ * /alerts — alerts on public data (Q-5) beside the structure alerts of v1. Design: the Alerts card in
+ * design/src/screens/final/account.mjs, boards design/site/final-alerts-*.html.
  *
- * curvature-v2-surfaces FE-10 (SPEC §2.5, §2.6, §3 E, §4.5): closed lookups replace raw wire
- * tokens (45); thresholds render by type with the closed-nine `not set` where a value is absent
- * (46, 47a/47b); the unread marker moves off the coloured edge alone (44); three distinct empty
- * sentences (48); the read-fault latch's faulted posture (N-5, identical in shape to
- * `PositionRow.tsx:122-127`'s `Refused`/`FaultedBanner`, mirrored locally rather than importing the
- * trading domain into alerts — carried debt, FE-14 item 7).
+ * Production: the six public-data kinds, each with its source, its delay and its state word (P-2); SEC
+ * kinds save but say Not set up until SEC_USER_AGENT is set (Q-4); structure kinds are Not live with a
+ * link to the demo. This browser checks the public kinds when the page opens (usePublicChecks), and the
+ * page says so: no server checks them yet.
+ * Staging: the demo account's seed (libs/api/src/lib/demo/alerts.ts), every rule and firing a Sample;
+ * the demo never checks on its own.
+ *
+ * The read-fault latch's faulted posture (N-5) is unchanged: identical in shape to
+ * `PositionRow.tsx`'s `Refused`/`FaultedBanner`, mirrored locally rather than importing the trading
+ * domain into alerts.
  */
-import { KINDS, KIND_LABEL, LEVELS, LEVEL_LABEL, NOT_SET } from '@/features/alerts/labels';
+import { PUBLIC_KIND, PUBLIC_KINDS, isPublicKind, isStructureKind } from '@/features/alerts/kinds';
+import { KIND_LABEL, LEVEL_LABEL, NOT_SET } from '@/features/alerts/labels';
+import { fmtDay, ruleWhat } from '@/features/alerts/publicRules';
 import { alertsReadFaulted } from '@/features/alerts/store';
-import type { AlertKind, AlertRule, LevelRef } from '@/features/alerts/types';
+import type { AlertEvent, AlertRule } from '@/features/alerts/types';
 import { useAlerts } from '@/features/alerts/useAlerts';
+import { followedTickers, usePublicChecks } from '@/features/alerts/usePublicChecks';
+import { ProvenanceChip } from '@/pages/research/publicUi';
+import { DISPLAY, MONO } from '@/pages/research/ui';
 import { NOT_RECORDED } from '@/shared/copy/notANumber';
-import { marketDataOff } from '@/shared/dataState/marketData';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { faceFor } from '@/shared/figure';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
-import { extrasFor } from '@/shared/theme/tokens';
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
-import PauseCircleOutlinedIcon from '@mui/icons-material/PauseCircleOutlined';
+import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
+import { dataMode } from '@convexa/api';
+import AddIcon from '@mui/icons-material/Add';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import FormControl from '@mui/material/FormControl';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import InputAdornment from '@mui/material/InputAdornment';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import Stack from '@mui/material/Stack';
+import Link from '@mui/material/Link';
+import Snackbar from '@mui/material/Snackbar';
 import type { SxProps, Theme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
-import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import {
@@ -45,15 +48,16 @@ import {
   type ReactElement,
 } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-
-/** The three score-gate quick presets (design/src/screens/alerts.mjs:23, `50 · 70 · 85`) — they
- *  fill the SAME `scoreMin` field the number input already drives; no second source of truth. */
-const SCORE_PRESETS = [50, 70, 85] as const;
-
-/** Rules-list filter (design/src/screens/alerts.mjs:30, `All · Armed · Paused`) — a READ-side
- *  derivation over `a.rules`, never a store write; default `all` renders every rule, exactly as
- *  the page did before this control existed. */
-type RuleFilter = 'all' | 'armed' | 'paused';
+import {
+  KindGlyph,
+  Panel,
+  SecStrip,
+  checksLine,
+  kindState,
+  ruleState,
+  type SiteContext,
+} from './alertsUi';
+import { NewAlertDialog, type Draft } from './NewAlertDialog';
 
 // ---- The faulted posture — a small LOCAL mirror of `PositionRow.tsx:122-127`'s attribute set -----
 // (PLAN FE-10 note 7: the test asserts the SAME attribute set as `Refused` so the two cannot drift
@@ -64,18 +68,6 @@ const ALERTS_FAULTED_BANNER_ID = 'alerts-faulted-banner';
 const ALERTS_WRITE_REFUSED_TIP =
   "Paused — Convexa couldn't read your saved alerts and won't save anything new until that's " +
   'sorted. Your existing rules are untouched.';
-
-// GATE Z, finding 3 (criterion 66): MUI `Select` self-duplicates its own class
-// (`&.${selectClasses.select}`, `Select/SelectInput.js`) to "win specificity over the input
-// base" at (0,2,0) — a bare `[role="combobox"]` (0,1,0) or a scoped `sx` descendant selector tied
-// at (0,2,0) both lose that fight (confirmed by measuring computed `min-height` in a real
-// browser). Doubling the SAME class ourselves reaches (0,3,0), which wins unconditionally —
-// `theme.ts`'s own coarse-pointer floor comment points here as the pattern.
-const selectCoarseFloorSx = {
-  '@media (pointer: coarse)': {
-    '& .MuiSelect-select.MuiSelect-select': { minHeight: 44 },
-  },
-} as const;
 
 const alertsRefusedSx = {
   color: 'action.disabled',
@@ -140,7 +132,7 @@ function AlertsFaultedBanner() {
         borderColor: 'warning.main',
         borderRadius: 1,
         p: '10px 12px',
-        mb: 3,
+        mb: 0,
       }}
     >
       <WarningAmberIcon fontSize="small" aria-hidden sx={{ color: 'warning.main', mt: '1px' }} />
@@ -241,518 +233,828 @@ function RuleSummary({ rule }: { rule: AlertRule }) {
   return <>any tier transition</>;
 }
 
+// ---- the page -----------------------------------------------------------------------------------
+
+const ALERTS_LEAD =
+  'Alerts on public data: filings, insider clusters, results dates, futures positioning, short interest and your own notes. Each says where it reads from and how late that source is.';
+
+const SUGGESTIONS: { text: string; draft: Draft }[] = [
+  {
+    text: 'When leveraged funds in 10-year notes reach a 3-year extreme',
+    draft: {
+      kind: 'cftc',
+      symbol: '043602',
+      marketName: '10-year T-note',
+      group: 'leveraged_funds',
+      extreme: 'either',
+      closeness: 'within5',
+    },
+  },
+  {
+    text: 'When NVDA’s shares short move more than 15% between settlements',
+    draft: { kind: 'si', symbol: 'NVDA', siMode: 'change', changePct: 15 },
+  },
+  {
+    text: 'When your NVDA note is due for review',
+    draft: { kind: 'note', symbol: 'NVDA', days: 7 },
+  },
+];
+
+const LEGEND_ORDER: DataStateKey[] = [
+  'updated',
+  'delayed',
+  'computed',
+  'notSetUp',
+  'sourceDown',
+  'notLive',
+  'off',
+];
+
+/** The day it fired: when this browser's check found it (the publication's own date rides in its
+ *  detail and source chip), or, for the demo's scenario firing, the scenario's day. */
+function eventDay(e: AlertEvent): string {
+  if (e.sample && e.date) return fmtDay(e.date, false);
+  return new Date(e.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 export function AlertsPage() {
   const a = useAlerts();
   const faulted = alertsReadFaulted();
   const marketDataMode = useMarketDataMode();
-  const [symbol, setSymbol] = useState('SPY');
-  const [kind, setKind] = useState<AlertKind>('score_gate');
-  const [level, setLevel] = useState<LevelRef>('gamma_flip');
-  const [scoreMin, setScoreMin] = useState(70);
-  const [priceThreshold, setPriceThreshold] = useState(500);
-  const [ruleFilter, setRuleFilter] = useState<RuleFilter>('all');
+  const demo = dataMode === 'demo';
+  const checks = usePublicChecks(a.rules);
+  const ctx: SiteContext = {
+    demo,
+    sec: demo ? 'live' : checks.sec,
+    structureLive: demo || marketDataMode === 'live',
+  };
+  const followed = useMemo(() => followedTickers(), []);
+  const [dialog, setDialog] = useState<{ open: boolean; start: Draft | null }>({
+    open: false,
+    start: null,
+  });
+  const [toast, setToast] = useState<string | null>(null);
+  const checking = checks.phase === 'checking' || checks.phase === 'idle';
 
-  const filteredRules = useMemo(() => {
-    if (ruleFilter === 'armed') return a.rules.filter((r) => r.enabled);
-    if (ruleFilter === 'paused') return a.rules.filter((r) => !r.enabled);
-    return a.rules;
-  }, [a.rules, ruleFilter]);
+  const states = a.rules.map((r) => ({ rule: r, ...ruleState(r, ctx, checking) }));
+  const structureCount = a.rules.filter((r) => isStructureKind(r.kind)).length;
 
-  const add = () => {
-    a.addRule({
-      kind,
-      symbol,
-      level: kind === 'level_touch' ? level : undefined,
-      scoreMin: kind === 'score_gate' ? scoreMin : undefined,
-      priceThreshold: kind === 'level_touch' && level === 'price' ? priceThreshold : undefined,
-    });
+  const legend = demo
+    ? [
+        { state: 'demo' as DataStateKey, n: null as number | null },
+        { state: 'sample' as DataStateKey, n: a.rules.length },
+      ]
+    : [
+        ...LEGEND_ORDER.filter((k) => k !== 'notLive' || ctx.structureLive)
+          .map((k) => ({ state: k, n: states.filter((s) => s.state === k).length }))
+          .filter((x) => x.n > 0),
+        ...(ctx.structureLive ? [] : [{ state: 'notLive' as DataStateKey, n: structureCount }]),
+      ];
+
+  const openNew = (start: Draft | null = null) => {
+    if (faulted) return;
+    setDialog({ open: true, start });
+  };
+  const close = () => setDialog((d) => ({ ...d, open: false }));
+
+  const onSave = (draft: Draft): boolean => {
+    const pub = isPublicKind(draft.kind) ? PUBLIC_KIND[draft.kind] : null;
+    if (draft.id) {
+      const existing = a.rules.find((r) => r.id === draft.id);
+      if (!existing) return false;
+      // New settings: the next check starts fresh, but what already fired stays fired.
+      const ok = a.upsertRule({
+        ...existing,
+        ...draft,
+        id: existing.id,
+        check: undefined,
+        inZone: undefined,
+      });
+      if (!ok) return false;
+      close();
+      setToast('Alert saved.');
+      return true;
+    }
+    const { rule, saved } = a.addRule(draft);
+    if (!saved) {
+      a.removeRule(rule.id);
+      return false;
+    }
+    close();
+    setToast(
+      demo
+        ? 'Alert saved in this browser’s demo workspace. The demo doesn’t check it.'
+        : pub?.sec === 'needs' && ctx.sec !== 'live'
+          ? 'Alert saved. It checks EDGAR once SEC access is set up.'
+          : isStructureKind(draft.kind)
+            ? 'Alert saved. It checks while a ticker desk is open.'
+            : 'Alert saved. Convexa checks it now, and each time you open Alerts.',
+    );
+    return true;
   };
 
-  // Criterion 50 — a denied/unavailable permission renders a state SAYING SO; the control itself
-  // (`a.notifyBrowser`, computed in `useAlerts` from the ACTUAL `Notification.permission`) already
-  // never reads as "on" for a permission the browser did not grant.
-  const notifyExplain =
-    a.notifyPermission === 'denied'
-      ? 'Browser notifications are blocked for this site. Alerts still show here, but nothing pops from the browser.'
-      : a.notifyPermission === 'unavailable'
-        ? "Browser notifications aren't available in this browser. Alerts still show here."
-        : null;
+  const openExisting = (id: string) => {
+    close();
+    window.setTimeout(() => {
+      const el = document.getElementById(`alert-rule-${id}`);
+      el?.scrollIntoView({ block: 'center' });
+      el?.focus();
+    }, 250);
+  };
 
-  const RULE_FILTERS: { key: RuleFilter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'armed', label: 'Armed' },
-    { key: 'paused', label: 'Paused' },
-  ];
-  const filterPillSx = (active: boolean) => ({
-    cursor: 'pointer',
-    border: '1px solid',
-    font: 'inherit',
-    fontSize: '0.72rem',
-    fontWeight: 600,
-    borderRadius: 999,
-    padding: '3px 10px',
-    minHeight: 26,
-    ...(active
-      ? { bgcolor: 'primary.main', color: 'primary.contrastText', borderColor: 'primary.main' }
-      : { background: 'transparent', color: 'text.secondary', borderColor: 'divider' }),
-  });
+  const notifyLine =
+    !demo && a.notifyPermission === 'denied'
+      ? 'Browser notifications are blocked for this site. Allow them in your browser’s site settings; firings still appear here.'
+      : null;
 
   return (
     <Box
       data-testid="alerts-page"
       sx={{
-        maxWidth: 1160,
+        maxWidth: 1240,
         mx: 'auto',
         px: { xs: 2, sm: 3 },
-        py: { xs: 2, md: 4 },
+        py: { xs: 3, md: 4 },
         pb: 'max(2rem, env(safe-area-inset-bottom))',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2.5,
       }}
     >
-      <Stack spacing={1} sx={{ mb: 3 }}>
-        <Typography component="h1" variant="h4" sx={{ fontWeight: 700, m: 0 }}>
-          Alerts
-        </Typography>
-        {/* Criterion 49: rules evaluate on structure snapshots, not a stream — no live mark or
-            pulse anywhere on this page. */}
-        <Typography variant="body2" color="text.secondary" sx={{ m: 0 }}>
-          Level-touch, tier-change, and score-gate on structure snapshots — not a live stream. Open
-          a ticker so rules can evaluate; optional browser notifications after you allow them.
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          See <RouterLink to="/methodology">Methodology</RouterLink> for two-speed structure vs
-          tape.
-        </Typography>
-      </Stack>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px', alignItems: 'flex-end' }}>
+        <Box sx={{ flex: '999 1 480px', minWidth: 0 }}>
+          <Typography
+            component="h1"
+            sx={{
+              ...DISPLAY,
+              m: 0,
+              fontSize: 'clamp(30px, 3vw, 40px)',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Alerts
+          </Typography>
+          <Typography
+            sx={{
+              m: '6px 0 0',
+              maxWidth: '72ch',
+              color: 'text.secondary',
+              fontSize: 14.5,
+              lineHeight: 1.55,
+            }}
+          >
+            {ALERTS_LEAD}{' '}
+            {demo
+              ? 'In the demo every kind, structure included, is a sample on the Oct 7 scenario.'
+              : ctx.structureLive
+                ? 'Structure alerts check while a ticker desk is open.'
+                : 'Structure alerts need the options feed, which isn’t live on this site.'}
+          </Typography>
+        </Box>
+        <AlertsRefused when={faulted}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => openNew()}
+            data-testid="alerts-new"
+            sx={{ minHeight: 44 }}
+          >
+            New alert
+          </Button>
+        </AlertsRefused>
+      </Box>
 
       {faulted && <AlertsFaultedBanner />}
-      {/* Rules evaluate on structure snapshots, and none arrive while market data is not live
-          (no paid feed, canon P-1) or paused (an operator paused one). */}
-      {marketDataOff(marketDataMode) && (
-        <Alert severity="info" icon={<PauseCircleOutlinedIcon />} role="status" sx={{ mb: 3 }}>
-          {marketDataMode === 'not_live'
-            ? 'Options data isn’t live on this site, so no rule can fire. Rules you add stay saved in this browser.'
-            : 'Live market data is paused, so no rule can fire right now. Rules you add stay saved in this browser.'}
-        </Alert>
-      )}
 
-      {/* Two columns at ≥ laptop (1100px, `theme.ts:93`) — design/src/screens/alerts.mjs:6,
-          `minmax(0,5fr) minmax(0,7fr)`: the New rule composer beside Rules + Fired. One column
-          below. The composer's 5fr share stays ≤ 45% of this grid's width at every checked
-          width — a CSS fraction, not a pixel cap, so it holds at 1280/1440 by construction. */}
+      <Box
+        role="group"
+        aria-label="On this page"
+        data-testid="alerts-legend"
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '8px 12px',
+          p: '10px 14px',
+          borderRadius: '10px',
+          border: 1,
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+        }}
+      >
+        <Box
+          component="span"
+          sx={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+          }}
+        >
+          On this page
+        </Box>
+        {legend.map((l) => (
+          <Box
+            key={l.state}
+            component="span"
+            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
+          >
+            <DataStateTag state={l.state} detail={l.state === 'notLive' ? null : undefined} />
+            {l.state === 'notLive' && (
+              <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                structure alerts
+              </Box>
+            )}
+            {l.n !== null && (
+              <Box component="span" sx={{ ...MONO, fontSize: 12 }}>
+                {l.n}
+              </Box>
+            )}
+          </Box>
+        ))}
+      </Box>
+
+      {!demo && checks.sec === 'not_configured' && <SecStrip />}
+
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr', laptop: 'minmax(0, 5fr) minmax(0, 7fr)' },
-          gap: '20px',
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 7fr) minmax(0, 5fr)' },
+          gap: 2,
           alignItems: 'start',
         }}
       >
-        {/* ---- New rule composer ---- */}
-        <Stack
-          spacing={2}
-          data-testid="alerts-composer"
+        {/* Under 900px the two columns dissolve into one ordered list: rules, fired, structure, the kind
+            reference (the phone board's order). */}
+        <Box
           sx={{
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: '10px',
-            p: 2,
+            display: { xs: 'contents', md: 'flex' },
+            flexDirection: 'column',
+            gap: 2,
             minWidth: 0,
           }}
         >
-          <Box>
-            <Typography component="h2" variant="subtitle1" sx={{ fontWeight: 700, m: 0 }}>
-              New rule
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Rules evaluate against structure snapshots while a ticker desk is open — not a
-              background stream.
-            </Typography>
-          </Box>
-          <TextField
-            label="Symbol"
-            size="small"
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-            slotProps={{ htmlInput: { 'aria-label': 'Alert symbol' } }}
-          />
-          <FormControl size="small">
-            <InputLabel id="alert-kind">Kind</InputLabel>
-            <Select
-              labelId="alert-kind"
-              label="Kind"
-              value={kind}
-              onChange={(e) => setKind(e.target.value as AlertKind)}
-              sx={selectCoarseFloorSx}
-            >
-              {KINDS.map((k) => (
-                <MenuItem key={k.value} value={k.value}>
-                  {k.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {kind === 'score_gate' && (
-            <Stack spacing={1}>
-              <TextField
-                label="Score ≥"
-                type="number"
-                size="small"
-                value={scoreMin}
-                onChange={(e) => setScoreMin(Number(e.target.value))}
-              />
-              {/* Score presets (design/src/screens/alerts.mjs:23) — fill the SAME field above;
-                  purely a shortcut, never a second value. */}
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                {SCORE_PRESETS.map((v) => (
-                  <Box
-                    key={v}
-                    component="button"
-                    type="button"
-                    onClick={() => setScoreMin(v)}
-                    aria-pressed={scoreMin === v}
-                    data-testid={`alerts-score-preset-${v}`}
-                    sx={filterPillSx(scoreMin === v)}
-                  >
-                    {v}
-                  </Box>
-                ))}
-                {/* No "Prime starts around N" caption (the design mock carries one): the tier band
-                    is a server setting the client never receives — `TIER_PRIME_SCORE` defaults
-                    to 75 and Prime also needs an AI read — so any number here would be a claim
-                    the data does not vouch for. */}
-              </Stack>
-            </Stack>
-          )}
-          {kind === 'level_touch' && (
-            <>
-              <FormControl size="small">
-                <InputLabel id="alert-level">Level</InputLabel>
-                <Select
-                  labelId="alert-level"
-                  label="Level"
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value as LevelRef)}
-                  sx={selectCoarseFloorSx}
-                >
-                  {LEVELS.map((l) => (
-                    <MenuItem key={l.value} value={l.value}>
-                      {l.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              {level === 'price' && (
-                // Criterion 47c (review): the unit rides the CONTROL itself, not just the label —
-                // a `$` adornment, never a bare number whose unit is only implied.
-                <TextField
-                  label="Price threshold"
-                  type="number"
-                  size="small"
-                  value={priceThreshold}
-                  onChange={(e) => setPriceThreshold(Number(e.target.value))}
-                  slotProps={{
-                    input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
-                  }}
-                />
-              )}
-            </>
-          )}
-          {/* The browser-notifications row (design/src/screens/alerts.mjs:24) — one recessed row
-              holding the explanation and the (unchanged) notify button. */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              p: '10px 12px',
-              borderRadius: '8px',
-              bgcolor: (t) => extrasFor(t).well,
-              border: '1px solid',
-              borderColor: 'divider',
-              flexWrap: 'wrap',
-            }}
+          <Panel
+            sx={{ order: { xs: 1, md: 0 } }}
+            title="Your alerts"
+            tag={
+              <Box
+                component="span"
+                sx={{ ...MONO, fontSize: 12, px: 1, borderRadius: 1, bgcolor: 'action.hover' }}
+              >
+                {a.rules.length}
+              </Box>
+            }
           >
-            <NotificationsNoneOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-            <Typography variant="caption" color="text.secondary" sx={{ flex: '1 1 160px' }}>
-              Fired alerts are listed here. Browser notifications, once allowed, also pop while a
-              desk is open.
-            </Typography>
-            <AlertsRefused when={faulted}>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => void a.requestBrowserPermission()}
-                data-testid="alerts-notify"
-                sx={{ minHeight: 44 }}
-              >
-                {a.notifyBrowser ? 'Browser notify on' : 'Enable browser notify'}
-              </Button>
-            </AlertsRefused>
-          </Box>
-          {notifyExplain && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              data-testid="alerts-notify-explain"
-            >
-              {notifyExplain}
-            </Typography>
-          )}
-          <Stack
-            direction="row"
-            spacing={1.5}
-            useFlexGap
-            sx={{ flexWrap: 'wrap', alignItems: 'center' }}
-          >
-            <AlertsRefused when={faulted}>
-              <Button
-                variant="contained"
-                onClick={add}
-                data-testid="alerts-add"
-                sx={{ minHeight: 44 }}
-              >
-                Add rule
-              </Button>
-            </AlertsRefused>
-            <Typography variant="caption" color="text.secondary">
-              Stored in this browser · {a.rules.length} rule{a.rules.length === 1 ? '' : 's'}
-            </Typography>
-          </Stack>
-        </Stack>
-
-        {/* ---- Rules + Fired ---- */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
-          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '10px', p: 2 }}>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ alignItems: 'center', flexWrap: 'wrap', mb: 1 }}
-            >
-              <Typography component="h2" variant="h6" sx={{ fontWeight: 700, m: 0 }}>
-                Rules ({a.rules.length})
-              </Typography>
-              <Box sx={{ flex: 1 }} />
-              {/* Rules filter (design/src/screens/alerts.mjs:30) — a read-side view over the SAME
-                  `a.rules`, default `all`, never a store write. */}
-              <Stack
-                direction="row"
-                spacing={0.5}
-                data-testid="alerts-rule-filter"
-                sx={{ alignItems: 'center' }}
-              >
-                {RULE_FILTERS.map((f) => (
-                  <Box
-                    key={f.key}
-                    component="button"
-                    type="button"
-                    onClick={() => setRuleFilter(f.key)}
-                    aria-pressed={ruleFilter === f.key}
-                    data-testid={`alerts-rule-filter-${f.key}`}
-                    sx={filterPillSx(ruleFilter === f.key)}
-                  >
-                    {f.label}
-                  </Box>
-                ))}
-              </Stack>
-            </Stack>
-            <Stack spacing={1} data-testid="alerts-rules">
-              {a.rules.length === 0 && (
-                <Typography variant="body2" color="text.secondary">
-                  No rules yet — add a score gate on SPY to try the path.
-                </Typography>
-              )}
-              {a.rules.length > 0 && filteredRules.length === 0 && (
-                <Typography variant="body2" color="text.secondary">
-                  No rules match this filter.
-                </Typography>
-              )}
-              {filteredRules.map((r) => (
-                <Box
-                  key={r.id}
-                  data-testid="alerts-rule"
-                  sx={{
-                    p: 1.5,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                    display: 'flex',
-                    gap: 1,
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <FormControlLabel
-                    control={
-                      <AlertsRefused when={faulted}>
-                        <Switch
-                          checked={r.enabled}
-                          onChange={(_, on) => {
-                            if (faulted) return; // defense in depth alongside AlertsRefused's own swallow
-                            a.upsertRule({ ...r, enabled: on });
-                          }}
-                          size="small"
-                        />
-                      </AlertsRefused>
-                    }
-                    label={`${r.symbol} · ${KIND_LABEL[r.kind]}`}
-                    // GATE Z (criterion 66, curvature-v2-surfaces phase 3): a `Switch`/`FormControlLabel`
-                    // renders a `<label>`/`<span>` pair, neither of which matches `theme.ts`'s coarse-pointer
-                    // floor selector (`button, [role="button"], a`), so the floor never applied here — the
-                    // label's own effective hit area measured 163.3×24.75 at 393px/coarse, under the 44px
-                    // floor in height. Width already clears 44px; only height needed a coarse-pointer floor,
-                    // scoped so desktop density is unchanged.
-                    sx={{ '@media (pointer: coarse)': { minHeight: 44 } }}
+            <Box data-testid="alerts-rules">
+              {a.rules.length === 0 ? (
+                <Suggestions demo={demo} ctx={ctx} onPick={(d) => openNew(d)} faulted={faulted} />
+              ) : (
+                states.map(({ rule, state, detail, last }) => (
+                  <RuleRow
+                    key={rule.id}
+                    rule={rule}
+                    state={state}
+                    detail={detail}
+                    last={last}
+                    faulted={faulted}
+                    onToggle={(on) => a.upsertRule({ ...rule, enabled: on })}
+                    onEdit={() => openNew({ ...rule })}
                   />
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ flex: 1 }}
-                    data-testid="alerts-rule-summary"
-                  >
-                    <RuleSummary rule={r} />
-                  </Typography>
-                  <AlertsRefused when={faulted}>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        if (faulted) return;
-                        a.removeRule(r.id);
-                      }}
-                      // GATE Z (criterion 66): the inline `minHeight: 40` compiles to a class
-                      // (specificity 0,1,0) which beats `theme.ts`'s plain-element coarse-pointer floor
-                      // selector (0,0,1) regardless of the media query, so the global 44px floor never
-                      // reached this button — measured 64×40 at 393px/coarse. The nested `@media` rule
-                      // below is emitted into the SAME class, so it wins the cascade only when the
-                      // condition matches; desktop/fine-pointer stays 40 exactly as shipped.
-                      sx={{
-                        minHeight: 40,
-                        '@media (pointer: coarse)': { minHeight: 44, minWidth: 44 },
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </AlertsRefused>
-                </Box>
-              ))}
-            </Stack>
-          </Box>
-
-          <Box
-            sx={{
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: '10px',
-              p: 2,
-              bgcolor: (t) => extrasFor(t).well,
-            }}
-          >
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ alignItems: 'center', flexWrap: 'wrap', mb: 1 }}
-            >
-              <Typography component="h2" variant="h6" sx={{ fontWeight: 700, m: 0 }}>
-                Recent ({a.events.length})
-              </Typography>
-              <Box sx={{ flex: 1 }} />
-              {/* "Mark N read" acts on THIS list (`markAllEventsRead`), so it lives on this
-                  header — same element, text and handler as before, only its home moved. */}
-              {a.unread > 0 && (
-                <AlertsRefused when={faulted}>
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => a.markAllEventsRead()}
-                    sx={{ minHeight: 44 }}
-                  >
-                    Mark {a.unread} read
-                  </Button>
-                </AlertsRefused>
+                ))
               )}
-            </Stack>
-            {/* U-24: the back-fill honesty line + the "stored in this browser" durable disclosure. */}
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-              Stored in this browser only — not synced to your account or across devices. Firings
-              recorded before this update keep their original wording; new firings use the labels
-              above.
+            </Box>
+            <Typography sx={{ m: 0, fontSize: 12.5, color: 'text.secondary' }}>
+              {demo
+                ? 'Saved in this browser’s demo workspace. Reset demo data puts the seed back.'
+                : 'Kept in this browser. Sign in to keep them on your account.'}
             </Typography>
-            <Stack spacing={1} data-testid="alerts-events">
-              {a.events.length === 0 &&
-                (!a.hasEvaluated ? (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    data-testid="alerts-events-empty"
-                  >
-                    No snapshot has been evaluated yet this session — open a ticker so rules can
-                    evaluate.
-                  </Typography>
-                ) : (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    data-testid="alerts-events-empty"
-                  >
-                    No firings yet — open a ticker so a new snapshot can be evaluated against your
-                    rules.
-                  </Typography>
-                ))}
-              {a.events.slice(0, 20).map((e) => (
-                <Box
-                  key={e.id}
-                  data-testid="alerts-event"
-                  data-read={e.read ? 'true' : 'false'}
-                  sx={{
-                    p: 1.25,
-                    // The coloured edge is now REDUNDANT, never the sole carrier of the distinction
-                    // (criterion 44) — the label row + type below carry it, and the two states are
-                    // still distinguishable with colour removed entirely.
-                    borderLeft: 3,
-                    borderColor: e.read ? 'divider' : 'primary.main',
-                    pl: 1.5,
-                    bgcolor: 'background.paper',
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    sx={{ alignItems: 'baseline', flexWrap: 'wrap' }}
-                  >
-                    {!e.read && (
-                      <Typography
-                        component="span"
-                        variant="caption"
-                        data-testid="alerts-event-unread-label"
-                        sx={{
-                          fontWeight: 800,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.06em',
-                          color: 'text.primary',
-                        }}
-                      >
-                        Unread
-                      </Typography>
-                    )}
-                    {/* Stored `message` renders VERBATIM — no re-labelling of history (U-23a). */}
-                    <Typography variant="body2" sx={{ fontWeight: e.read ? 400 : 700 }}>
-                      {e.message}
-                    </Typography>
-                  </Stack>
-                  {e.detail && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                      {e.detail}
-                    </Typography>
-                  )}
-                  {/* U-27: every firing timestamp names its zone. */}
-                  <Typography variant="caption" color="text.disabled">
-                    {new Date(e.at).toLocaleString(undefined, { timeZoneName: 'short' })}
-                  </Typography>
+          </Panel>
+          <Panel title="What each kind watches" sx={{ order: { xs: 4, md: 0 } }}>
+            <KindReference ctx={ctx} />
+          </Panel>
+        </Box>
+
+        <Box
+          sx={{
+            display: { xs: 'contents', md: 'flex' },
+            flexDirection: 'column',
+            gap: 2,
+            minWidth: 0,
+          }}
+        >
+          <Panel
+            sx={{ order: { xs: 2, md: 0 } }}
+            title="Fired"
+            sample={demo}
+            tag={
+              demo ? (
+                <DataStateTag state="sample" />
+              ) : checks.phase === 'done' ? (
+                <DataStateTag
+                  state="updated"
+                  detail={`checked ${new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`}
+                />
+              ) : (
+                <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                  Checking…
                 </Box>
-              ))}
-            </Stack>
-          </Box>
+              )
+            }
+          >
+            <Box data-testid="alerts-events">
+              {a.events.length === 0 ? (
+                <Typography
+                  data-testid="alerts-events-empty"
+                  sx={{ m: 0, fontSize: 13, color: 'text.secondary' }}
+                >
+                  Nothing has fired yet.
+                </Typography>
+              ) : (
+                a.events.slice(0, 20).map((e) => <FireRow key={e.id} e={e} />)
+              )}
+            </Box>
+            <Typography sx={{ m: 0, fontSize: 12.5, color: 'text.secondary', lineHeight: 1.5 }}>
+              {demo
+                ? 'Alerts never fire in the demo on their own; this firing is part of the scenario. Nothing here was published by a source.'
+                : 'Convexa checks your public-data alerts when you open this page, in this browser. Nothing checks them while no Alerts page is open.'}
+            </Typography>
+            {notifyLine && (
+              <Box
+                sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', flexWrap: 'wrap' }}
+                data-testid="alerts-notify-explain"
+              >
+                <DataStateTag state="notSetUp" detail="Blocked here" />
+                <Typography
+                  sx={{ m: 0, fontSize: 12.5, color: 'text.secondary', flex: '1 1 220px' }}
+                >
+                  {notifyLine}
+                </Typography>
+              </Box>
+            )}
+          </Panel>
+          {!ctx.structureLive && (
+            <Panel
+              sx={{ order: { xs: 3, md: 0 } }}
+              title="Structure alerts"
+              label="Structure alerts, not live"
+              tag={<DataStateTag state="notLive" />}
+            >
+              <Typography sx={{ m: 0, fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}>
+                <Box component="strong" sx={{ color: 'text.primary' }}>
+                  Would watch
+                </Box>{' '}
+                score gate, tier change, level touch on any ticker’s options.
+              </Typography>
+              <Typography sx={{ m: 0, fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}>
+                <Box component="strong" sx={{ color: 'text.primary' }}>
+                  Off because
+                </Box>{' '}
+                they read the options chain, a paid feed this site doesn’t run.
+              </Typography>
+              <Link
+                href={`${STAGING_DEMO_URL}/alerts`}
+                sx={{ fontSize: 13, fontWeight: 600, minHeight: 24, alignSelf: 'flex-start' }}
+              >
+                See it on the demo →
+              </Link>
+            </Panel>
+          )}
         </Box>
       </Box>
+
+      <NewAlertDialog
+        open={dialog.open}
+        start={dialog.start}
+        ctx={ctx}
+        followed={followed}
+        rules={a.rules}
+        notifyPermission={a.notifyPermission}
+        requestPermission={a.requestBrowserPermission}
+        onClose={close}
+        onSave={onSave}
+        onRemove={(id) => {
+          a.removeRule(id);
+          close();
+          setToast('Alert removed.');
+        }}
+        onOpenExisting={openExisting}
+      />
+      <Snackbar
+        open={toast !== null}
+        autoHideDuration={6000}
+        onClose={() => setToast(null)}
+        message={toast}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
+    </Box>
+  );
+}
+
+function RuleRow({
+  rule,
+  state,
+  detail,
+  last,
+  faulted,
+  onToggle,
+  onEdit,
+}: {
+  rule: AlertRule;
+  state: DataStateKey;
+  detail?: string;
+  last: string;
+  faulted: boolean;
+  onToggle: (on: boolean) => void;
+  onEdit: () => void;
+}) {
+  const name = KIND_LABEL[rule.kind];
+  const subject = rule.kind === 'cftc' ? (rule.marketName ?? rule.symbol) : rule.symbol;
+  const what = isPublicKind(rule.kind) ? ruleWhat(rule) : <RuleSummary rule={rule} />;
+  return (
+    <Box
+      id={`alert-rule-${rule.id}`}
+      tabIndex={-1}
+      data-testid="alerts-rule"
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: '170px minmax(0, 1fr)' },
+        gap: '8px 16px',
+        py: 1.75,
+        borderTop: 1,
+        borderColor: 'divider',
+        '&:first-of-type': { borderTop: 0, pt: 0.5 },
+        outline: 'none',
+        '&:focus-visible': { boxShadow: (t) => `0 0 0 2px ${t.palette.primary.main}` },
+      }}
+    >
+      <Box
+        component="span"
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 1,
+          fontSize: 12.5,
+          fontWeight: 600,
+          color: rule.enabled ? 'text.primary' : 'text.secondary',
+          alignSelf: 'start',
+          pt: '1px',
+        }}
+      >
+        <KindGlyph kind={rule.kind} />
+        {name}
+      </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0 }}>
+        <Box
+          component="b"
+          sx={{
+            ...MONO,
+            fontSize: 13.5,
+            fontWeight: 600,
+            color: rule.enabled ? 'text.primary' : 'text.secondary',
+          }}
+        >
+          {subject}
+        </Box>
+        <Box
+          component="span"
+          data-testid="alerts-rule-summary"
+          sx={{ fontSize: 12.5, color: 'text.secondary', lineHeight: 1.45 }}
+        >
+          {what}
+        </Box>
+      </Box>
+      <Box
+        sx={{
+          gridColumn: { xs: '1', sm: '2' },
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '8px 12px',
+        }}
+      >
+        <DataStateTag state={state} detail={detail} />
+        <Box
+          component="span"
+          sx={{
+            ...MONO,
+            fontSize: 11,
+            color: 'text.secondary',
+            minWidth: 0,
+            overflowWrap: 'anywhere',
+          }}
+        >
+          {last}
+        </Box>
+        <AlertsRefused when={faulted}>
+          <Switch
+            checked={rule.enabled}
+            onChange={(_, on) => {
+              if (faulted) return;
+              onToggle(on);
+            }}
+            slotProps={{
+              input: { 'aria-label': `${name} for ${subject}: ${rule.enabled ? 'on' : 'off'}` },
+            }}
+            color="default"
+          />
+        </AlertsRefused>
+        <AlertsRefused when={faulted}>
+          <Button
+            variant="text"
+            size="small"
+            color="inherit"
+            onClick={() => {
+              if (faulted) return;
+              onEdit();
+            }}
+            aria-label={`Edit ${name} for ${subject}`}
+            sx={{
+              ml: 'auto',
+              minHeight: 40,
+              '@media (pointer: coarse)': { minHeight: 44, minWidth: 44 },
+            }}
+          >
+            Edit
+          </Button>
+        </AlertsRefused>
+      </Box>
+    </Box>
+  );
+}
+
+function FireRow({ e }: { e: AlertEvent }) {
+  const external = e.link?.href.startsWith('http');
+  return (
+    <Box
+      data-testid="alerts-event"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 0.75,
+        py: 1.5,
+        borderTop: 1,
+        borderColor: 'divider',
+        '&:first-of-type': { borderTop: 0, pt: 0 },
+      }}
+    >
+      <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'baseline' }}>
+        <Box
+          component="span"
+          title={new Date(e.at).toLocaleString(undefined, { timeZoneName: 'short' })}
+          sx={{ ...MONO, fontSize: 12, color: 'text.secondary', minWidth: 44, flex: 'none' }}
+        >
+          {eventDay(e)}
+        </Box>
+        <Box component="b" sx={{ fontSize: 13.5, lineHeight: 1.4 }}>
+          {e.message}
+        </Box>
+      </Box>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '8px 12px',
+          alignItems: 'center',
+          pl: { xs: 0, sm: '54px' },
+        }}
+      >
+        {e.detail && (
+          <Box
+            component="span"
+            sx={{ fontSize: 12.5, color: 'text.secondary', flex: '1 1 240px', lineHeight: 1.45 }}
+          >
+            {e.detail}
+          </Box>
+        )}
+        {e.source && <ProvenanceChip text={e.source} kind={e.sample ? 'sample' : 'primary'} />}
+        {e.link &&
+          (external ? (
+            <Link
+              href={e.link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ fontSize: 13, minHeight: 24, display: 'inline-flex', alignItems: 'center' }}
+            >
+              {`${e.link.label} →`}
+            </Link>
+          ) : (
+            <Link
+              component={RouterLink}
+              to={e.link.href}
+              sx={{ fontSize: 13, minHeight: 24, display: 'inline-flex', alignItems: 'center' }}
+            >
+              {`${e.link.label} →`}
+            </Link>
+          ))}
+      </Box>
+    </Box>
+  );
+}
+
+function Suggestions({
+  demo,
+  ctx,
+  onPick,
+  faulted,
+}: {
+  demo: boolean;
+  ctx: SiteContext;
+  onPick: (d: Draft) => void;
+  faulted: boolean;
+}) {
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+      <Box component="strong" sx={{ fontSize: 14 }}>
+        No alerts yet.
+      </Box>
+      <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
+        {demo ? 'These work on the demo’s sample data:' : 'These work on this site today:'}
+      </Box>
+      {SUGGESTIONS.map((s) => {
+        const info = PUBLIC_KIND[s.draft.kind as keyof typeof PUBLIC_KIND];
+        const st = kindState(s.draft.kind, ctx);
+        return (
+          <AlertsRefused key={s.text} when={faulted}>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => !faulted && onPick(s.draft)}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: 0.75,
+                p: 1.5,
+                minHeight: 44,
+                width: '100%',
+                borderRadius: '10px',
+                border: 1,
+                borderColor: 'divider',
+                bgcolor: 'transparent',
+                color: 'text.primary',
+                font: 'inherit',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-flex',
+                  gap: 1,
+                  alignItems: 'center',
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                }}
+              >
+                <KindGlyph kind={s.draft.kind} />
+                {s.text}
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                <ProvenanceChip
+                  text={demo ? `Sample · shaped like ${info.chip}` : info.chip}
+                  kind={demo ? 'sample' : 'primary'}
+                />
+                <DataStateTag state={st.state} detail={st.detail} />
+              </Box>
+            </Box>
+          </AlertsRefused>
+        );
+      })}
+    </Box>
+  );
+}
+
+/** The kind reference: what each kind watches, its source and delay, and its state here. A table
+ *  that stacks into rows under 900px. */
+function KindReference({ ctx }: { ctx: SiteContext }) {
+  const head = {
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'text.secondary',
+    textAlign: 'left',
+    p: '8px',
+    borderBottom: 1,
+    borderColor: 'divider',
+  } as const;
+  const cell = {
+    p: '10px 8px',
+    borderBottom: 1,
+    borderColor: 'divider',
+    verticalAlign: 'top',
+    color: 'text.secondary',
+    lineHeight: 1.45,
+  } as const;
+  return (
+    <Box
+      component="table"
+      sx={{
+        width: '100%',
+        borderCollapse: 'collapse',
+        fontSize: 12.5,
+        '@media (max-width: 899px)': {
+          '& thead': { display: 'none' },
+          '& tr': {
+            display: 'grid',
+            gridTemplateColumns: '1fr',
+            py: 1,
+            borderBottom: 1,
+            borderColor: 'divider',
+          },
+          '& td': { border: 0, p: '2px 0' },
+        },
+      }}
+    >
+      <thead>
+        <tr>
+          <Box component="th" sx={head}>
+            Kind
+          </Box>
+          <Box component="th" sx={head}>
+            Fires when
+          </Box>
+          <Box component="th" sx={head}>
+            Source · delay
+          </Box>
+          <Box component="th" sx={head}>
+            {ctx.demo ? 'In the demo' : 'On this site'}
+          </Box>
+        </tr>
+      </thead>
+      <tbody>
+        {PUBLIC_KINDS.map((k) => {
+          const st = kindState(k.key, ctx);
+          return (
+            <tr key={k.key}>
+              <Box
+                component="td"
+                sx={{
+                  ...cell,
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  whiteSpace: { md: 'nowrap' },
+                }}
+              >
+                {k.name}
+              </Box>
+              <Box component="td" sx={cell}>{`${k.fires}.`}</Box>
+              <Box component="td" sx={cell}>
+                <ProvenanceChip
+                  text={ctx.demo ? `Sample · shaped like ${k.chip}` : k.chip}
+                  kind={ctx.demo ? 'sample' : 'primary'}
+                />
+                <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
+                  {`${k.delay}.`}
+                  {!ctx.demo && ` ${checksLine(k.key)}`}
+                </Box>
+              </Box>
+              <Box
+                component="td"
+                sx={{ ...cell, '& [data-state]': { whiteSpace: { md: 'nowrap' } } }}
+              >
+                <DataStateTag state={st.state} detail={st.detail} />
+              </Box>
+            </tr>
+          );
+        })}
+        <tr>
+          <Box
+            component="td"
+            sx={{
+              ...cell,
+              color: ctx.structureLive ? 'text.primary' : 'text.secondary',
+              fontWeight: 600,
+            }}
+          >
+            Score, tier, level touch
+          </Box>
+          <Box component="td" sx={cell}>
+            Structure moves on a ticker’s options.
+          </Box>
+          <Box component="td" sx={cell}>
+            {ctx.demo ? (
+              <>
+                <ProvenanceChip text="Sample · shaped like a Massive options chain" kind="sample" />
+                <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
+                  Checked against the sample tape while a ticker desk is open.
+                </Box>
+              </>
+            ) : ctx.structureLive ? (
+              'The options feed. Checks: while a ticker desk is open.'
+            ) : (
+              'Needs a paid options feed.'
+            )}
+          </Box>
+          <Box component="td" sx={{ ...cell, '& [data-state]': { whiteSpace: { md: 'nowrap' } } }}>
+            <DataStateTag state={kindState('level_touch', ctx).state} />
+          </Box>
+        </tr>
+      </tbody>
     </Box>
   );
 }
