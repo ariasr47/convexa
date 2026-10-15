@@ -15,7 +15,7 @@
  */
 import { extrasFor } from '@/shared/theme/tokens';
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
-import DeleteOutline from '@mui/icons-material/DeleteOutline';
+import DeleteOutline from '@mui/icons-material/DeleteOutlineOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
