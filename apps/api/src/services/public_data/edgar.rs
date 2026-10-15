@@ -259,7 +259,7 @@ pub(crate) struct Form4Summary {
 }
 
 /// Inner text of every `<tag>` element in `xml` (no nesting of the same tag is expected).
-fn elements<'a>(xml: &'a str, tag: &str) -> Vec<&'a str> {
+pub(crate) fn elements<'a>(xml: &'a str, tag: &str) -> Vec<&'a str> {
     let open = format!("<{tag}");
     let close = format!("</{tag}>");
     let mut out = Vec::new();
@@ -288,12 +288,12 @@ fn elements<'a>(xml: &'a str, tag: &str) -> Vec<&'a str> {
     out
 }
 
-fn first_text<'a>(xml: &'a str, tag: &str) -> Option<&'a str> {
+pub(crate) fn first_text<'a>(xml: &'a str, tag: &str) -> Option<&'a str> {
     elements(xml, tag).into_iter().next().map(str::trim)
 }
 
 /// `<transactionShares><value>100</value></transactionShares>` → 100.
-fn value_of(xml: &str, tag: &str) -> Option<f64> {
+pub(crate) fn value_of(xml: &str, tag: &str) -> Option<f64> {
     let element = elements(xml, tag).into_iter().next()?;
     let text = first_text(element, "value")?;
     text.replace(',', "")
@@ -344,6 +344,8 @@ pub(crate) struct FactPoint {
 #[derive(Debug, Default, Clone)]
 pub(crate) struct CompanyFacts {
     pub concepts: HashMap<&'static str, Vec<(String, Vec<FactPoint>)>>,
+    /// The checked concepts a note figure may cite (filed_figures.rs).
+    pub filed: super::filed_figures::FiledFacts,
 }
 
 #[derive(Deserialize)]
@@ -478,7 +480,10 @@ pub(crate) fn parse_company_facts(json: &[u8]) -> Result<CompanyFacts, String> {
         units.sort_by(|a, b| a.0.cmp(&b.0));
         concepts.insert(key, units);
     }
-    Ok(CompanyFacts { concepts })
+    Ok(CompanyFacts {
+        concepts,
+        filed: super::filed_figures::parse_filed_facts(json),
+    })
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -640,6 +645,9 @@ pub(crate) fn periodic_filings(
                         .collect()
                 })
                 .unwrap_or_default(),
+            fiscal_year: None,
+            fiscal_period: None,
+            tagged: Vec::new(),
         })
         .collect()
 }

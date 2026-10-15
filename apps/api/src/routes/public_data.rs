@@ -430,6 +430,111 @@ pub struct InsidersWire {
     /// YYYY-MM-DD of the newest Form 4 in the window.
     #[schema(required = true)]
     pub latest: Option<String>,
+    /// The timeline's period: Form 4s filed in the last `history_days` (365), trades placed by
+    /// trade date. Roles, not names: `roles[i]` names insider `i` ("EVP and CFO", "Director 2").
+    pub history_days: u32,
+    pub roles: Vec<String>,
+    /// Every open-market purchase (P) and sale (S) in those filings, oldest trade first.
+    pub transactions: Vec<InsiderTransactionWire>,
+    /// Buying clusters: 3+ insiders buying on the open market within 10 days, outside any 10b5-1
+    /// plan. Overlapping windows merge into one.
+    pub clusters: Vec<InsiderWindowWire>,
+    /// 3+ insiders selling within 10 days (context, usually plan sales; never a cluster).
+    pub sale_windows: Vec<InsiderWindowWire>,
+    /// Form 4s filed in the period, and how many were read for the timeline.
+    pub history_filings: u32,
+    pub history_filings_read: u32,
+    /// YYYY-MM-DD: when not every filing was read, the oldest filing date the timeline reaches.
+    #[schema(required = true)]
+    pub history_reaches_back_to: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum InsiderTradeKind {
+    Purchase,
+    Sale,
+}
+
+impl From<service::insider_trades::TradeKind> for InsiderTradeKind {
+    fn from(value: service::insider_trades::TradeKind) -> Self {
+        match value {
+            service::insider_trades::TradeKind::Purchase => Self::Purchase,
+            service::insider_trades::TradeKind::Sale => Self::Sale,
+        }
+    }
+}
+
+/// One Form 4 trade (code P or S, non-derivative).
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct InsiderTransactionWire {
+    /// Index into `roles`.
+    pub insider: u32,
+    /// YYYY-MM-DD the trade was made.
+    pub trade_date: String,
+    /// YYYY-MM-DD the Form 4 was filed (up to two business days later).
+    pub filed: String,
+    pub kind: InsiderTradeKind,
+    pub shares: f64,
+    #[schema(required = true)]
+    pub price: Option<f64>,
+    /// The filing is marked as made under a Rule 10b5-1 plan.
+    pub planned: bool,
+    pub accession: String,
+    /// The filing on EDGAR.
+    pub url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct InsiderWindowWire {
+    /// YYYY-MM-DD of the first and last trade in the window.
+    pub from: String,
+    pub to: String,
+    pub insiders: u32,
+    pub trades: u32,
+    pub planned_trades: u32,
+}
+
+impl From<&service::insider_trades::InsiderWindow> for InsiderWindowWire {
+    fn from(w: &service::insider_trades::InsiderWindow) -> Self {
+        Self {
+            from: day(w.from),
+            to: day(w.to),
+            insiders: w.insiders,
+            trades: w.trades,
+            planned_trades: w.planned_trades,
+        }
+    }
+}
+
+/// One checked XBRL concept's value for its filing's own period (quarter, year or period end).
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TaggedFactWire {
+    /// Taxonomy-qualified: `us-gaap:Revenues`.
+    pub concept: String,
+    pub unit: String,
+    pub value: f64,
+    /// YYYY-MM-DD; null for a balance-sheet value.
+    #[schema(required = true)]
+    pub start: Option<String>,
+    pub end: String,
+}
+
+/// One fiscal year's revenue as its annual report first filed it.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AnnualRevenueWire {
+    #[schema(required = true)]
+    pub fiscal_year: Option<i32>,
+    pub period_end: String,
+    pub value: f64,
+    pub unit: String,
+    pub concept: String,
+    pub accession: String,
+    #[schema(required = true)]
+    pub filed: Option<String>,
+    /// A later filing's different value for the same concept and period.
+    #[schema(required = true)]
+    pub restated_value: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -465,6 +570,14 @@ pub struct PeriodicFilingWire {
     #[schema(required = true)]
     pub period_end: Option<String>,
     pub facts: Vec<FactWire>,
+    /// The filer's fiscal year and period for this filing (`fy`, `fp`: 2027, "Q2"); null until its
+    /// XBRL facts are in.
+    #[schema(required = true)]
+    pub fiscal_year: Option<i32>,
+    #[schema(required = true)]
+    pub fiscal_period: Option<String>,
+    /// Every checked concept's value for this filing's own period; empty until its facts are in.
+    pub tagged: Vec<TaggedFactWire>,
 }
 
 /// `GET /api/public-data/tickers/{ticker}`. FINRA parts are null when FINRA has nothing for the
@@ -493,6 +606,8 @@ pub struct PublicTickerWire {
     #[schema(required = true)]
     pub shares_outstanding: Option<DatedValueWire>,
     pub periodic: Vec<PeriodicFilingWire>,
+    /// Annual revenue for the latest five fiscal years, oldest first, as first filed.
+    pub annual_revenue: Vec<AnnualRevenueWire>,
     pub filings: Vec<FilingWire>,
     pub filings_state: PublicDataState,
     #[schema(required = true)]
@@ -553,6 +668,29 @@ impl From<service::TickerReport> for PublicTickerWire {
                 shares_bought: i.shares_bought,
                 planned: i.planned,
                 latest: i.latest.map(day),
+                history_days: i.history.days,
+                transactions: i
+                    .history
+                    .trades
+                    .iter()
+                    .map(|t| InsiderTransactionWire {
+                        insider: t.insider,
+                        trade_date: day(t.trade_date),
+                        filed: day(t.filed),
+                        kind: t.kind.into(),
+                        shares: t.shares,
+                        price: t.price,
+                        planned: t.planned,
+                        accession: t.accession.clone(),
+                        url: t.url.clone(),
+                    })
+                    .collect(),
+                clusters: i.history.clusters.iter().map(Into::into).collect(),
+                sale_windows: i.history.sale_windows.iter().map(Into::into).collect(),
+                history_filings: i.history.filings,
+                history_filings_read: i.history.filings_read,
+                history_reaches_back_to: i.history.reaches_back_to.map(day),
+                roles: i.history.roles,
             }),
             shares_outstanding: t.shares_outstanding.map(|s| DatedValueWire {
                 value: s.value,
@@ -579,6 +717,33 @@ impl From<service::TickerReport> for PublicTickerWire {
                             prior_period_end: f.prior_period_end.map(day),
                         })
                         .collect(),
+                    fiscal_year: p.fiscal_year,
+                    fiscal_period: p.fiscal_period,
+                    tagged: p
+                        .tagged
+                        .into_iter()
+                        .map(|t| TaggedFactWire {
+                            concept: t.concept,
+                            unit: t.unit,
+                            value: t.value,
+                            start: t.start.map(day),
+                            end: day(t.end),
+                        })
+                        .collect(),
+                })
+                .collect(),
+            annual_revenue: t
+                .annual_revenue
+                .into_iter()
+                .map(|r| AnnualRevenueWire {
+                    fiscal_year: r.fiscal_year,
+                    period_end: day(r.period_end),
+                    value: r.value,
+                    unit: r.unit,
+                    concept: r.concept,
+                    accession: r.accession,
+                    filed: r.filed.map(day),
+                    restated_value: r.restated_value,
                 })
                 .collect(),
             filings: t.filings.into_iter().map(Into::into).collect(),
@@ -802,9 +967,18 @@ fn representative_ticker() -> PublicTickerWire {
             shares_bought: 0.0,
             planned: 0,
             latest: None,
+            history_days: 365,
+            roles: Vec::new(),
+            transactions: Vec::new(),
+            clusters: Vec::new(),
+            sale_windows: Vec::new(),
+            history_filings: 0,
+            history_filings_read: 0,
+            history_reaches_back_to: None,
         }),
         shares_outstanding: None,
         periodic: Vec::new(),
+        annual_revenue: Vec::new(),
         filings: vec![representative_filing()],
         filings_state: PublicDataState::Live,
         filings_detail: None,

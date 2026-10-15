@@ -44,6 +44,14 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // precutover baseline stays pinned and four artifacts move. Again the same day for
 // `PublicMarketsWire.liquidity` (`LiquidityWire`, `LiquidityWeekWire`): additive, zero new
 // operations.
+//
+// Re-pinned for the SEC tools (2026-10-15, Wave 1b lane 7): `InsidersWire` gains the 12-month Form 4
+// timeline (`transactions`, `clusters`, `sale_windows`, `roles`, `history_*`), `PeriodicFilingWire`
+// gains `fiscal_year`/`fiscal_period`/`tagged`, and `PublicTickerWire` gains `annual_revenue`
+// (new schemas `InsiderTradeKind`, `InsiderTransactionWire`, `InsiderWindowWire`, `TaggedFactWire`,
+// `AnnualRevenueWire`): additive schema growth, zero new operations, so
+// `precutover-operation-baseline.json` stays pinned to its prior hash and four artifacts move
+// (ledger `route-growth-repins-api-artifact-oracle`).
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -51,19 +59,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "ea133910a522219e5c96104d0bd34f29a1cfa5acf6fb403ec0e50a8b96d7f53b",
+        "4edb5fd5db37fc6bf0921299b705ac0e1bc4c23438ff708ef953673c55c99413",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "9d0ca24449e2bf2149be1c9d5d2491415aa80317c1c216305735dc90fb99a21a",
+        "2aa7de57d4f6bb3c866c63a1b837111e7548cce498fba9cbb8e93feeaabf64c7",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "005ad96c256ac0a3d3134d4545055594c2f2fd6ce039a9a20bb4b63534ba9c08",
+        "72f38b4ffa7143f216f18d2d2d570e94a226e500669a607957d4725038341582",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "fcc945fff93979c74c1784314034874291661d8f8dd387d1c55c1f6e6dc55c33",
+        "35766f5df73bd7cc3c121741db84c90dbb110594ed634bb6070332a5c9885886",
     ),
 ];
 

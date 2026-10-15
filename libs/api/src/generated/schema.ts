@@ -937,6 +937,23 @@ export interface components {
       providers: components['schemas']['AiProviderSlotBody'][];
       storage_available: boolean;
     };
+    /** @description One fiscal year's revenue as its annual report first filed it. */
+    AnnualRevenueWire: {
+      accession: string;
+      concept: string;
+      filed: string | null;
+      /** Format: int32 */
+      fiscal_year: number | null;
+      period_end: string;
+      /**
+       * Format: double
+       * @description A later filing's different value for the same concept and period.
+       */
+      restated_value: number | null;
+      unit: string;
+      /** Format: double */
+      value: number;
+    };
     /** @description The shared framework error envelope emitted by `AppError::into_response`. */
     AppErrorBody: {
       /** @description Only the paused reply (SPEC B5) sets this; every other error body omits the key entirely. */
@@ -1635,6 +1652,41 @@ export interface components {
       status: string;
       warm: components['schemas']['HealthWarm'];
     };
+    /** @enum {string} */
+    InsiderTradeKind: 'purchase' | 'sale';
+    /** @description One Form 4 trade (code P or S, non-derivative). */
+    InsiderTransactionWire: {
+      accession: string;
+      /** @description YYYY-MM-DD the Form 4 was filed (up to two business days later). */
+      filed: string;
+      /**
+       * Format: int32
+       * @description Index into `roles`.
+       */
+      insider: number;
+      kind: components['schemas']['InsiderTradeKind'];
+      /** @description The filing is marked as made under a Rule 10b5-1 plan. */
+      planned: boolean;
+      /** Format: double */
+      price: number | null;
+      /** Format: double */
+      shares: number;
+      /** @description YYYY-MM-DD the trade was made. */
+      trade_date: string;
+      /** @description The filing on EDGAR. */
+      url: string;
+    };
+    InsiderWindowWire: {
+      /** @description YYYY-MM-DD of the first and last trade in the window. */
+      from: string;
+      /** Format: int32 */
+      insiders: number;
+      /** Format: int32 */
+      planned_trades: number;
+      to: string;
+      /** Format: int32 */
+      trades: number;
+    };
     /**
      * @description Form 4 open-market activity over the last `window_days`: `sales`/`buys` count transactions
      *     coded S/P, `planned` counts those in filings marked as made under a Rule 10b5-1 plan.
@@ -1642,13 +1694,36 @@ export interface components {
     InsidersWire: {
       /** Format: int32 */
       buys: number;
+      /**
+       * @description Buying clusters: 3+ insiders buying on the open market within 10 days, outside any 10b5-1
+       *     plan. Overlapping windows merge into one.
+       */
+      clusters: components['schemas']['InsiderWindowWire'][];
       detail: string | null;
       /** Format: int32 */
       filings: number;
+      /**
+       * Format: int32
+       * @description The timeline's period: Form 4s filed in the last `history_days` (365), trades placed by
+       *     trade date. Roles, not names: `roles[i]` names insider `i` ("EVP and CFO", "Director 2").
+       */
+      history_days: number;
+      /**
+       * Format: int32
+       * @description Form 4s filed in the period, and how many were read for the timeline.
+       */
+      history_filings: number;
+      /** Format: int32 */
+      history_filings_read: number;
+      /** @description YYYY-MM-DD: when not every filing was read, the oldest filing date the timeline reaches. */
+      history_reaches_back_to: string | null;
       /** @description YYYY-MM-DD of the newest Form 4 in the window. */
       latest: string | null;
       /** Format: int32 */
       planned: number;
+      roles: string[];
+      /** @description 3+ insiders selling within 10 days (context, usually plan sales; never a cluster). */
+      sale_windows: components['schemas']['InsiderWindowWire'][];
       /** Format: int32 */
       sales: number;
       /** Format: double */
@@ -1656,6 +1731,8 @@ export interface components {
       /** Format: double */
       shares_sold: number;
       state: components['schemas']['PublicDataState'];
+      /** @description Every open-market purchase (P) and sale (S) in those filings, oldest trade first. */
+      transactions: components['schemas']['InsiderTransactionWire'][];
       /** Format: int32 */
       window_days: number;
     };
@@ -2150,8 +2227,17 @@ export interface components {
       accession: string;
       facts: components['schemas']['FactWire'][];
       filed: string;
+      fiscal_period: string | null;
+      /**
+       * Format: int32
+       * @description The filer's fiscal year and period for this filing (`fy`, `fp`: 2027, "Q2"); null until its
+       *     XBRL facts are in.
+       */
+      fiscal_year: number | null;
       form: string;
       period_end: string | null;
+      /** @description Every checked concept's value for this filing's own period; empty until its facts are in. */
+      tagged: components['schemas']['TaggedFactWire'][];
     };
     PersonaWire: {
       builtin: boolean;
@@ -2259,6 +2345,8 @@ export interface components {
      *     ticker or failed with nothing cached; SEC parts carry their own state.
      */
     PublicTickerWire: {
+      /** @description Annual revenue for the latest five fiscal years, oldest first, as first filed. */
+      annual_revenue: components['schemas']['AnnualRevenueWire'][];
       detail: string | null;
       filings: components['schemas']['FilingWire'][];
       filings_detail: string | null;
@@ -2974,6 +3062,17 @@ export interface components {
       universe_size: number;
       /** Format: double */
       updated_at: number;
+    };
+    /** @description One checked XBRL concept's value for its filing's own period (quarter, year or period end). */
+    TaggedFactWire: {
+      /** @description Taxonomy-qualified: `us-gaap:Revenues`. */
+      concept: string;
+      end: string;
+      /** @description YYYY-MM-DD; null for a balance-sheet value. */
+      start: string | null;
+      unit: string;
+      /** Format: double */
+      value: number;
     };
     TapeDayRowDto: {
       clock?: string | null;

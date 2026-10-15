@@ -1884,6 +1884,11 @@ fn register_route_schemas(mut document: OpenApi) -> OpenApi {
     schema!(public_data::DatedValueWire);
     schema!(public_data::PeriodicFilingWire);
     schema!(public_data::FactWire);
+    schema!(public_data::InsiderTradeKind);
+    schema!(public_data::InsiderTransactionWire);
+    schema!(public_data::InsiderWindowWire);
+    schema!(public_data::TaggedFactWire);
+    schema!(public_data::AnnualRevenueWire);
     schema!(recommendation::RecommendationBody);
     schema!(recommendation::OpenPositionsBody);
     schema!(recommendation::OpenPositionsUnderlyingBody);
