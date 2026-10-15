@@ -23,11 +23,14 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette/CommandPalette';
 import { Footer } from './Footer';
 import { MarketDataNotice } from './MarketDataNotice';
+import { ResetDemoControl } from './ResetDemoControl';
+import { GO_TO, GO_TO_WINDOW_MS, isPlainKey, isTypingTarget } from './shortcuts';
+import { ShortcutsSheet } from './ShortcutsSheet';
 import { TopNav } from './TopNav';
 
 export function AppShell() {
@@ -46,17 +49,45 @@ export function AppShell() {
       setPlayback((current) => (current?.playback === clock.playback ? current : clock)),
     );
   }, []);
+  // The single-key shortcuts (shortcuts.ts): `/` opens the palette, `g` then a letter goes to a
+  // section, `?` opens the sheet. Unlike ⌘K these insert text, so none fires while typing or while
+  // a dialog holds focus.
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const navigate = useNavigate();
+  const goPending = useRef<number | null>(null);
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const isOpenShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
       if (isOpenShortcut) {
         event.preventDefault();
         setPaletteOpen(true);
+        return;
+      }
+      if (event.defaultPrevented || event.repeat || !isPlainKey(event)) return;
+      if (isTypingTarget(event.target)) return;
+      const armed = goPending.current !== null && Date.now() - goPending.current <= GO_TO_WINDOW_MS;
+      goPending.current = null;
+      if (armed) {
+        const dest = GO_TO[event.key.toLowerCase()];
+        if (dest && !event.shiftKey) {
+          event.preventDefault();
+          navigate(dest.to);
+          return;
+        }
+      }
+      if (event.key === '/') {
+        event.preventDefault();
+        setPaletteOpen(true);
+      } else if (event.key === '?') {
+        event.preventDefault();
+        setSheetOpen(true);
+      } else if (event.key === 'g' && !event.shiftKey) {
+        goPending.current = Date.now();
       }
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [navigate]);
 
   return (
     <Box
@@ -152,19 +183,21 @@ export function AppShell() {
                 Sample playback complete. Showing the last sample.
               </Typography>
             )}
-            <Button
-              size="small"
-              onClick={resetDemoWorkspace}
-              sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
-            >
-              Reset demo data
-            </Button>
+            <ResetDemoControl onReset={resetDemoWorkspace} />
           </Stack>
         </Box>
       )}
       {dataMode === 'live' && <MarketDataNotice />}
       <TopNav onOpenPalette={() => setPaletteOpen(true)} />
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onOpenShortcuts={() => {
+          setPaletteOpen(false);
+          setSheetOpen(true);
+        }}
+      />
+      <ShortcutsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
       {/* The active in-shell page renders here, inside the app's ONE `<main>` landmark (Stage 0
           item 3). id anchors the skip link (spine #6). The bar above persists across page swaps. */}
       <Box

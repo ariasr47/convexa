@@ -1,51 +1,91 @@
 /**
- * `CommandPalette` — the ⌘K command palette (SPEC §2.6/§4.4). Built on the MUI `Dialog` already in
- * the tree (no new dependency) — the decider is accessibility, not bundle size: this repo owns a
- * measured patch (`shared/a11y/modalFocusHandoff.ts`) wrapping `ModalManager.prototype.add/remove`
- * so `aria-hidden` never lands on a focused subtree, paired with theme-level
- * `MuiModal.defaultProps.disableRestoreFocus` — installed once at `main.tsx`. A non-MUI modal
- * routes around both halves. Escape and backdrop-click close through the Dialog's OWN `onClose`
- * (two different internal code paths, hence AC-26's own test arm) — this file hand-assembles only
- * what Dialog does NOT provide: the roving `aria-activedescendant` combobox pattern.
+ * `CommandPalette` — the ⌘K jump-to box (SPEC §2.6/§4.4; design/src/screens/final/shell-site-kit.mjs
+ * paletteF). Built on the MUI `Dialog` already in the tree — the decider is accessibility: this repo
+ * owns a measured patch (`shared/a11y/modalFocusHandoff.ts`) wrapping `ModalManager` so
+ * `aria-hidden` never lands on a focused subtree and focus returns to where it was on close. Escape
+ * and backdrop-click close through the Dialog's OWN `onClose`; this file hand-assembles only the
+ * roving `aria-activedescendant` combobox.
  *
- * Read-only in phase 1: no write binding, no recents (`convexa.recent-tickers.v1` already ships,
- * but promoting it here is a later phase's module-placement cost, not this phase's).
+ * Three groups under one listbox, in this order: Go to (the five sections, with their `g` keys),
+ * Tickers, Research notes; then “Open X anyway” for a plausible symbol nothing matched exactly.
+ * Where the tickers and notes come from differs by build (usePaletteData): production lists tickers
+ * by name and never calls the scan; staging ranks them by the demo's sample scan.
  */
-import type { ScanRow } from '@convexa/api';
+import { typographyTokens } from '@/shared/theme/tokens';
+import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import InputBase from '@mui/material/InputBase';
 import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GO_TO } from '../shortcuts';
 import { PALETTE_COMMANDS, type PaletteCommand } from './commandTable';
-import { isPlausibleTicker, matchSymbols, paletteScoreCell } from './format';
-import { usePaletteScan } from './usePaletteScan';
+import { isPlausibleTicker, matchNotes, matchTickers, paletteScoreCell } from './format';
+import { usePaletteData, type PaletteNote, type PaletteTicker } from './usePaletteData';
 
 type Item =
   | { kind: 'command'; command: PaletteCommand }
-  | { kind: 'symbol'; row: ScanRow }
+  | { kind: 'ticker'; ticker: PaletteTicker }
+  | { kind: 'note'; note: PaletteNote }
   | { kind: 'open-anyway'; symbol: string };
 
 export interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
+  /** Opens the keyboard shortcuts sheet (the footer's “?”). */
+  onOpenShortcuts?: () => void;
 }
 
 const SKELETON_ROWS = 4;
+const KEY_OF: Record<string, string> = Object.fromEntries(
+  Object.entries(GO_TO).map(([key, dest]) => [dest.to, key]),
+);
 
-export function CommandPalette({ open, onClose }: CommandPaletteProps) {
+const NOTE_DATE = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+function noteDate(date: string | null): string {
+  if (!date) return 'Sample';
+  const d = new Date(`${date}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? date : NOTE_DATE.format(d);
+}
+
+function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      component="kbd"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        px: 0.75,
+        borderRadius: 1,
+        border: '1px solid',
+        borderColor: 'divider',
+        fontFamily: typographyTokens.monoFontFamily,
+        fontSize: 11,
+        lineHeight: 1.6,
+        color: 'text.secondary',
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPaletteProps) {
   const navigate = useNavigate();
-  const scan = usePaletteScan(open);
+  const data = usePaletteData(open);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [nowS, setNowS] = useState(() => Date.now() / 1000);
-  const inputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
+  const listRef = useRef<HTMLDivElement>(null);
 
-  // Reset local state on every OPEN (the dialog is not `keepMounted`, so this also happens for
-  // free on unmount/remount — kept explicit for the case a future caller does keep it mounted).
+  // Reset local state on every OPEN.
   useEffect(() => {
     if (open) {
       setQuery('');
@@ -54,41 +94,59 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     }
   }, [open]);
 
-  const symbolItems: ScanRow[] = useMemo(() => {
-    if (scan.phase !== 'ready' || scan.unavailable) return [];
-    return matchSymbols(scan.rows, query);
-  }, [scan.phase, scan.unavailable, scan.rows, query]);
+  const q = query.trim();
+  const commands = useMemo(
+    () =>
+      q
+        ? PALETTE_COMMANDS.filter((c) => c.label.toLowerCase().startsWith(q.toLowerCase()))
+        : PALETTE_COMMANDS,
+    [q],
+  );
+  const tickers = useMemo(
+    () => (data.tickers.phase === 'ready' ? matchTickers(data.tickers.items, q) : []),
+    [data.tickers, q],
+  );
+  const notes = useMemo(
+    () => (data.notes.phase === 'ready' ? matchNotes(data.notes.items, q) : []),
+    [data.notes, q],
+  );
+  const exact = tickers.some((t) => t.symbol === q.toUpperCase());
+  const showOpenAnyway = isPlausibleTicker(q) && !exact;
+  // The “we checked, nothing matches” line only once both lists have answered (absent ≠ none).
+  const settled = data.tickers.phase !== 'loading' && data.notes.phase !== 'loading';
+  const showNoMatch =
+    settled && q !== '' && commands.length === 0 && tickers.length === 0 && notes.length === 0;
 
-  const showOpenAnyway = isPlausibleTicker(query) && symbolItems.length === 0;
-  // P4: the honest "we checked, there is nothing" claim — ONLY once the read has actually
-  // resolved. During loading we do not yet know, so this line must not render (`[absent-is-not-none]`).
-  const showNoResultsLine =
-    scan.phase === 'ready' &&
-    !scan.unavailable &&
-    !scan.off &&
-    query.trim() !== '' &&
-    symbolItems.length === 0;
+  const items: Item[] = useMemo(
+    () => [
+      ...commands.map((command): Item => ({ kind: 'command', command })),
+      ...tickers.map((ticker): Item => ({ kind: 'ticker', ticker })),
+      ...notes.map((note): Item => ({ kind: 'note', note })),
+      ...(showOpenAnyway ? [{ kind: 'open-anyway', symbol: q.toUpperCase() } as Item] : []),
+    ],
+    [commands, tickers, notes, showOpenAnyway, q],
+  );
 
-  const items: Item[] = useMemo(() => {
-    const commandItems: Item[] = PALETTE_COMMANDS.map((command) => ({ kind: 'command', command }));
-    const rowItems: Item[] = symbolItems.map((row) => ({ kind: 'symbol', row }));
-    const openAnywayItems: Item[] = showOpenAnyway
-      ? [{ kind: 'open-anyway', symbol: query.trim().toUpperCase() }]
-      : [];
-    return [...commandItems, ...rowItems, ...openAnywayItems];
-  }, [symbolItems, showOpenAnyway, query]);
-
-  // P3 — "the first row is pre-selected" — reset on every filter change.
+  // P3 — the first row is pre-selected, again on every filter change.
   useEffect(() => {
     setActiveIndex(0);
   }, [query]);
 
   const clampedActive = Math.min(activeIndex, Math.max(items.length - 1, 0));
-  const activeId = items.length > 0 ? `${listboxId}-option-${clampedActive}` : undefined;
+  const optionId = (i: number) => `${listboxId}-option-${i}`;
+  const activeId = items.length > 0 ? optionId(clampedActive) : undefined;
+
+  // Keep the active row in view as the arrows move through a long list.
+  useEffect(() => {
+    if (!activeId) return;
+    const el = listRef.current?.querySelector<HTMLElement>(`[id="${CSS.escape(activeId)}"]`);
+    el?.scrollIntoView?.({ block: 'nearest' });
+  }, [activeId]);
 
   function activate(item: Item) {
     if (item.kind === 'command') navigate(item.command.to);
-    else if (item.kind === 'symbol') navigate(`/ticker/${item.row.symbol}`);
+    else if (item.kind === 'ticker') navigate(`/ticker/${item.ticker.symbol}`);
+    else if (item.kind === 'note') navigate(item.note.to);
     else navigate(`/ticker/${item.symbol}`);
     onClose();
   }
@@ -104,11 +162,133 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       event.preventDefault();
       const item = items[clampedActive];
       if (item) activate(item);
+    } else if (event.key === '?' && query === '' && onOpenShortcuts) {
+      // The footer advertises “? all shortcuts”; no ticker or note search starts with “?”.
+      event.preventDefault();
+      onOpenShortcuts();
     }
-    // Escape is intentionally NOT handled here — it bubbles to the Dialog's own `onClose` (AC-26's
-    // "share no guaranteed implementation path" note: Escape and backdrop click are Dialog's, not
-    // this handler's, so this file must not shadow either).
+    // Escape is intentionally NOT handled here — it bubbles to the Dialog's own `onClose`.
   }
+
+  // Render rows with their flat index, so the groups share one roving selection.
+  let index = -1;
+  const row = (item: Item, testid: string, children: ReactNode) => {
+    index += 1;
+    const i = index;
+    return (
+      <PaletteRow
+        key={optionId(i)}
+        id={optionId(i)}
+        selected={i === clampedActive}
+        onClick={() => activate(item)}
+        testid={testid}
+      >
+        {children}
+      </PaletteRow>
+    );
+  };
+
+  const commandRows = commands.map((command) =>
+    row(
+      { kind: 'command', command },
+      `palette-command-${command.id}`,
+      <>
+        <Box component="span" sx={{ flexGrow: 1, fontWeight: 600 }}>
+          {command.label}
+        </Box>
+        {KEY_OF[command.to] && (
+          <Box
+            component="span"
+            aria-hidden
+            sx={{ display: { xs: 'none', sm: 'inline-flex' }, gap: 0.5 }}
+          >
+            <Kbd>g</Kbd>
+            <Kbd>{KEY_OF[command.to]}</Kbd>
+          </Box>
+        )}
+      </>,
+    ),
+  );
+
+  const tickerRows = tickers.map((ticker) => {
+    const cell = ticker.row ? paletteScoreCell(ticker.row, data.sweep, nowS) : null;
+    return row(
+      { kind: 'ticker', ticker },
+      `palette-symbol-${ticker.symbol}`,
+      <>
+        <Box
+          component="span"
+          sx={{ fontFamily: typographyTokens.monoFontFamily, fontWeight: 600, minWidth: 56 }}
+        >
+          {ticker.symbol}
+        </Box>
+        <Box component="span" sx={{ color: 'text.secondary', flexGrow: 1, minWidth: 0 }}>
+          {cell ? cell.text : ticker.name}
+        </Box>
+        {cell ? (
+          cell.freshness && (
+            <Box
+              component="span"
+              data-testid={`palette-freshness-${ticker.symbol}`}
+              sx={{ color: 'text.secondary', fontSize: 12 }}
+            >
+              {cell.freshness}
+            </Box>
+          )
+        ) : (
+          <Box
+            component="span"
+            sx={{ color: 'text.secondary', fontSize: 12, whiteSpace: 'nowrap' }}
+          >
+            {ticker.hasNote ? 'note' : 'no note'}
+          </Box>
+        )}
+      </>,
+    );
+  });
+
+  const noteRows = notes.map((note) =>
+    row(
+      { kind: 'note', note },
+      `palette-note-${note.ticker}`,
+      <>
+        <Box component="span" sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Box
+            component="span"
+            sx={{ fontFamily: typographyTokens.monoFontFamily, fontWeight: 600 }}
+          >
+            {note.ticker}
+          </Box>
+          {' · '}
+          {note.title}
+        </Box>
+        <Box component="span" sx={{ color: 'text.secondary', fontSize: 12, whiteSpace: 'nowrap' }}>
+          {noteDate(note.date)}
+        </Box>
+      </>,
+    ),
+  );
+
+  const anywayRow = showOpenAnyway
+    ? row(
+        { kind: 'open-anyway', symbol: q.toUpperCase() },
+        'palette-open-anyway',
+        <span>
+          Open{' '}
+          <Box
+            component="span"
+            sx={{ fontFamily: typographyTokens.monoFontFamily, fontWeight: 600 }}
+          >
+            {q.toUpperCase()}
+          </Box>{' '}
+          anyway →
+        </span>,
+      )
+    : null;
+
+  const footnote = data.ranked
+    ? 'Scores come from the demo’s sample scan.'
+    : 'Scores aren’t live on this site, so tickers list by name.';
 
   return (
     <Dialog
@@ -118,34 +298,28 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       fullWidth
       transitionDuration={{ enter: 160, exit: 120 }}
       data-testid="command-palette"
-      aria-label="Jump to a ticker or a surface"
+      aria-label="Jump to a ticker or note"
       slotProps={{
         paper: {
-          // No local `borderRadius` here (a real, previously-latent defect found while fixing an
-          // unrelated lint warning): the `sx` prop ALWAYS wins over a theme `styleOverrides` class
-          // (that precedence is the whole point of `sx`), so a literal `borderRadius: 2` here would
-          // have overridden — not deferred to — `theme.components.MuiDialog.styleOverrides.paper`'s
-          // declared DIALOG role (16px, ruling 4), rendering this dialog at 2 × `shape.borderRadius`
-          // (24px) instead. Omitting it lets the theme role apply, as every other Dialog in the app
-          // already does.
+          // No local `borderRadius`: the theme's DIALOG role (16px, ruling 4) applies.
           sx: {
             position: 'fixed',
             top: { xs: 16, sm: '12vh' },
             m: 0,
-            maxHeight: '70vh',
+            width: { xs: 'calc(100% - 32px)', sm: undefined },
+            maxHeight: { xs: 'calc(100dvh - 32px)', sm: '76vh' },
           },
         },
       }}
     >
       <Box sx={{ p: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
         <InputBase
-          inputRef={inputRef}
           autoFocus
           fullWidth
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Jump to a ticker…"
+          placeholder="Jump to a ticker or note"
           data-testid="palette-input"
           inputProps={{
             role: 'combobox',
@@ -153,141 +327,141 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             'aria-controls': listboxId,
             'aria-activedescendant': activeId,
             'aria-autocomplete': 'list',
-            'aria-label': 'Jump to a ticker or a surface',
+            'aria-label': 'Jump to a ticker or note',
           }}
           sx={{ fontSize: '1rem', px: 1, py: 0.5 }}
         />
       </Box>
 
       <Box
-        component="ul"
+        ref={listRef}
         role="listbox"
         id={listboxId}
+        aria-label="Results"
         data-testid="palette-listbox"
-        sx={{ listStyle: 'none', m: 0, p: 0, overflowY: 'auto', maxHeight: '50vh' }}
+        sx={{ overflowY: 'auto', flex: '1 1 auto', py: 0.5 }}
       >
-        {items.map((item, i) => {
-          const id = `${listboxId}-option-${i}`;
-          const selected = i === clampedActive;
-          if (item.kind === 'command') {
-            return (
-              <PaletteRow
-                key={id}
-                id={id}
-                selected={selected}
-                onClick={() => activate(item)}
-                testid={`palette-command-${item.command.id}`}
+        {commandRows.length > 0 && <Group label="Go to">{commandRows}</Group>}
+
+        {(data.tickers.phase !== 'ready' || tickerRows.length > 0) && (
+          <Group label={data.ranked ? 'Tickers · ranked by the sample scan' : 'Tickers'}>
+            {tickerRows}
+            {/* Loading: rows at their final height; resolves once, never re-entered. */}
+            {data.tickers.phase === 'loading' &&
+              Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+                <Box key={`skeleton-${i}`} data-testid="palette-skeleton-row" sx={{ px: 2, py: 1 }}>
+                  <Skeleton variant="text" width={`${[70, 54, 62, 48][i]}%`} />
+                </Box>
+              ))}
+            {data.tickers.phase === 'failed' && (
+              <Box
+                data-testid="palette-unavailable"
+                sx={{ display: 'flex', gap: 1, mx: 2, my: 1, alignItems: 'flex-start' }}
               >
-                {item.command.label}
-              </PaletteRow>
-            );
-          }
-          if (item.kind === 'open-anyway') {
-            return (
-              <PaletteRow
-                key={id}
-                id={id}
-                selected={selected}
-                onClick={() => activate(item)}
-                testid="palette-open-anyway"
-              >
-                Open {item.symbol} anyway →
-              </PaletteRow>
-            );
-          }
-          const cell = paletteScoreCell(item.row, scan.sweep, nowS);
-          return (
-            <PaletteRow
-              key={id}
-              id={id}
-              selected={selected}
-              onClick={() => activate(item)}
-              testid={`palette-symbol-${item.row.symbol}`}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                <Typography component="span" sx={{ fontWeight: 700, minWidth: 56 }}>
-                  {item.row.symbol}
-                </Typography>
-                <Typography component="span" sx={{ color: 'text.secondary', flexGrow: 1 }}>
-                  {cell.text}
-                </Typography>
-                {cell.freshness && (
-                  <Typography
-                    component="span"
-                    data-testid={`palette-freshness-${item.row.symbol}`}
-                    sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
-                  >
-                    {cell.freshness}
+                <WarningAmberOutlined
+                  aria-hidden
+                  sx={{ fontSize: 16, color: 'warning.main', mt: '2px' }}
+                />
+                <Box>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+                    Couldn’t search tickers right now.
                   </Typography>
-                )}
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                    Go-to commands and notes still work; the ticker list comes back on the next
+                    open.
+                  </Typography>
+                </Box>
               </Box>
-            </PaletteRow>
-          );
-        })}
-
-        {/* P2a — the LOADING class: skeleton rows, present in the list (a positive observable),
-            never a `0`, never a blank. Resolves once, never re-entered. */}
-        {scan.phase === 'loading' &&
-          Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-            <Box
-              component="li"
-              key={`skeleton-${i}`}
-              data-testid="palette-skeleton-row"
-              sx={{ px: 2, py: 1 }}
-            >
-              <Skeleton variant="text" width="60%" />
-            </Box>
-          ))}
-
-        {/* AC-30 — the ranked read is unavailable; the palette stays otherwise usable. */}
-        {scan.phase === 'ready' && scan.unavailable && (
-          <Box component="li" data-testid="palette-unavailable" sx={{ px: 2, py: 1.5 }}>
-            <Typography sx={{ color: 'text.secondary' }}>
-              Ranked results are unavailable right now.
-            </Typography>
-          </Box>
+            )}
+          </Group>
         )}
 
-        {/* The options feed is off on this site: no ranked read was made, so none is claimed. */}
-        {scan.phase === 'ready' && scan.off && (
-          <Box component="li" data-testid="palette-not-live" sx={{ px: 2, py: 1.5 }}>
-            <Typography sx={{ color: 'text.secondary' }}>
-              Ranked symbols need the options feed, which isn’t live on this site. Type a symbol to
-              open its page.
-            </Typography>
-          </Box>
-        )}
+        {noteRows.length > 0 && <Group label="Research notes">{noteRows}</Group>}
 
-        {/* AC-31 — visibly distinct from AC-30's unavailable copy. */}
-        {showNoResultsLine && (
-          <Box component="li" data-testid="palette-empty" sx={{ px: 2, py: 1.5 }}>
-            <Typography sx={{ color: 'text.secondary' }}>
-              No tracked symbol matches &ldquo;{query.trim()}&rdquo;.
-            </Typography>
+        {showNoMatch && (
+          <Typography
+            data-testid="palette-empty"
+            sx={{ px: 2, pt: 1, pb: 0.5, fontSize: 13, color: 'text.secondary' }}
+          >
+            No ticker or note matches “{q}”.
+          </Typography>
+        )}
+        {anywayRow && (
+          <Box role="group" aria-label="Open a symbol">
+            {anywayRow}
           </Box>
         )}
       </Box>
 
-      {/* AC-33b — advertises exactly these three; the negative arm (spec-level) is verified by
-          the CommandPalette.spec.tsx `every advertised binding resolves to a performed action`. */}
+      {/* Every binding advertised here performs an action (AC-33b). */}
       <Box
         data-testid="palette-footer"
         sx={{
           display: 'flex',
-          gap: 2,
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          columnGap: 2,
+          rowGap: 0.5,
           px: 2,
           py: 1,
           borderTop: '1px solid',
           borderColor: 'divider',
-          fontSize: 11,
+          fontSize: 12,
           color: 'text.secondary',
         }}
       >
-        <span>↑↓ move</span>
-        <span>↵ open ticker</span>
-        <span>esc close</span>
+        <span>
+          <Kbd>↑↓</Kbd> move
+        </span>
+        <span>
+          <Kbd>↵</Kbd> open
+        </span>
+        {onOpenShortcuts && (
+          <Box
+            component="button"
+            type="button"
+            onClick={onOpenShortcuts}
+            sx={{
+              all: 'unset',
+              cursor: 'pointer',
+              display: { xs: 'none', sm: 'inline-flex' },
+              alignItems: 'center',
+              gap: 0.5,
+              '&:focus-visible': { outline: '2px solid', outlineOffset: 2 },
+            }}
+          >
+            <Kbd>?</Kbd> all shortcuts
+          </Box>
+        )}
+        <Box sx={{ flexGrow: 1 }} />
+        <span data-testid="palette-footnote">{footnote}</span>
       </Box>
     </Dialog>
+  );
+}
+
+function Group({ label, children }: { label: string; children: ReactNode }) {
+  const id = useId();
+  return (
+    <Box role="group" aria-labelledby={id} sx={{ pb: 0.5 }}>
+      <Typography
+        id={id}
+        component="div"
+        sx={{
+          px: 2,
+          pt: 1,
+          pb: 0.5,
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: 'text.secondary',
+        }}
+      >
+        {label}
+      </Typography>
+      {children}
+    </Box>
   );
 }
 
@@ -302,11 +476,10 @@ function PaletteRow({
   selected: boolean;
   onClick: () => void;
   testid: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <Box
-      component="li"
       id={id}
       role="option"
       aria-selected={selected}
@@ -315,15 +488,17 @@ function PaletteRow({
       // Mousedown (not click) so the input never loses focus before the click handler runs.
       onMouseDown={(e) => e.preventDefault()}
       sx={(t) => ({
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
         px: 2,
         py: 1,
+        minHeight: 40,
         cursor: 'pointer',
+        fontSize: 14,
         bgcolor: selected ? 'action.selected' : 'transparent',
         color: t.palette.text.primary,
-        // Ruling 5 (curvature-v2-foundations, AC-34): `role="option"` is outside the theme's
-        // coarse-pointer floor selector (`button, [role="button"], a` — `theme.ts:102`), which is
-        // ruling 5's own named example of a control this phase creates that "silently escapes" the
-        // mechanism. Explicit local floor, scoped to coarse pointers only (desktop density unchanged).
+        // Ruling 5 (AC-34): `role="option"` sits outside the theme's coarse-pointer floor.
         '@media (pointer: coarse)': { minHeight: 44 },
       })}
     >

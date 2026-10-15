@@ -4,19 +4,39 @@
  */
 import type { ScanRow, SweepHeartbeat } from '@convexa/api';
 
-/** P3 — "results filter as a prefix-then-substring match on the symbol". Prefix matches sort
- *  before substring-only matches; ties keep the server's own row order (stable sort). */
-export function matchSymbols(rows: ScanRow[], query: string): ScanRow[] {
+/** The palette's ticker rows: symbol prefix first, then symbol substring, then a company-name
+ *  match; each tier keeps the list's own order (A→Z by name, or the sample scan's rank). */
+export function matchTickers<T extends { symbol: string; name: string | null }>(
+  rows: readonly T[],
+  query: string,
+): T[] {
   const q = query.trim().toUpperCase();
-  if (!q) return rows;
-  const prefix: ScanRow[] = [];
-  const substring: ScanRow[] = [];
+  if (!q) return [...rows];
+  const prefix: T[] = [];
+  const substring: T[] = [];
+  const named: T[] = [];
   for (const row of rows) {
     const sym = row.symbol.toUpperCase();
     if (sym.startsWith(q)) prefix.push(row);
     else if (sym.includes(q)) substring.push(row);
+    else if (q.length > 1 && row.name?.toUpperCase().includes(q)) named.push(row);
   }
-  return [...prefix, ...substring];
+  return [...prefix, ...substring, ...named];
+}
+
+/** Research notes whose ticker starts with the query or whose title contains it. */
+export function matchNotes<T extends { ticker: string; title: string }>(
+  notes: readonly T[],
+  query: string,
+): T[] {
+  const q = query.trim().toUpperCase();
+  if (!q) return [...notes];
+  const byTicker = notes.filter((n) => n.ticker.toUpperCase().startsWith(q));
+  const byTitle =
+    q.length > 1
+      ? notes.filter((n) => !byTicker.includes(n) && n.title.toUpperCase().includes(q))
+      : [];
+  return [...byTicker, ...byTitle];
 }
 
 /** AC-31 — "a plausible ticker" gate for the `Open {QUERY} anyway →` action: 1–5 letters, the
