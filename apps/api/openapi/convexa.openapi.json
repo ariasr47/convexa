@@ -623,6 +623,25 @@
         "required": ["set", "storage_available"],
         "type": "object"
       },
+      "CalendarWire": {
+        "description": "Releases from `from` to `to` (YYYY-MM-DD, inclusive), soonest first.",
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "releases": {
+            "items": {
+              "$ref": "#/components/schemas/ReleaseWire"
+            },
+            "type": "array"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": ["from", "to", "releases"],
+        "type": "object"
+      },
       "CandidateCapsWire": {
         "properties": {
           "max_bytes": {
@@ -1916,6 +1935,17 @@
           },
           "source": {
             "type": "string"
+          },
+          "source_state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicSourceState",
+                "description": "This section's state: `delayed` (the CFTC publishes late by design), or `last_good` when\nthe latest fetch failed and this is the copy kept from before. Absent from servers before\n2026-10-15."
+              }
+            ]
           }
         },
         "required": ["source", "report_date", "fetched_at", "markets"],
@@ -2497,6 +2527,17 @@
           },
           "source": {
             "type": "string"
+          },
+          "source_state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicSourceState",
+                "description": "This section's state (the three inputs are fetched and kept together): `updated`, or\n`last_good` when the latest fetch failed and this is the copy kept from before. Absent from\nservers before 2026-10-15."
+              }
+            ]
           },
           "weeks": {
             "items": {
@@ -4048,6 +4089,31 @@
             },
             "type": "array"
           },
+          "results": {
+            "description": "Expected results windows for the named tickers with enough filing history. Absent from\nservers before 2026-10-15.",
+            "items": {
+              "$ref": "#/components/schemas/ResultsWindowWire"
+            },
+            "type": "array"
+          },
+          "source_state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicSourceState",
+                "description": "SEC EDGAR's state in the P-2 words (`updated` when current; `last_good` when a fetch failed\nand earlier copies are shown); null when no ticker was named. Absent from servers before\n2026-10-15."
+              }
+            ]
+          },
+          "sources": {
+            "description": "SEC EDGAR's row (empty when no ticker was named). Absent from servers before 2026-10-15.",
+            "items": {
+              "$ref": "#/components/schemas/PublicSourceWire"
+            },
+            "type": "array"
+          },
           "state": {
             "$ref": "#/components/schemas/PublicDataState"
           }
@@ -4058,6 +4124,17 @@
       "PublicMarketsWire": {
         "description": "`GET /api/public-data/markets`. Each part is null when its source failed with nothing cached.",
         "properties": {
+          "calendar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CalendarWire",
+                "description": "The macro release calendar; null when every schedule failed with nothing kept, or public\ndata is off. Absent from servers before 2026-10-15."
+              }
+            ]
+          },
           "detail": {
             "type": ["string", "null"]
           },
@@ -4091,11 +4168,54 @@
               }
             ]
           },
+          "sources": {
+            "description": "Treasury, CFTC, the three liquidity inputs and the four release schedules. Absent from\nservers before 2026-10-15.",
+            "items": {
+              "$ref": "#/components/schemas/PublicSourceWire"
+            },
+            "type": "array"
+          },
           "state": {
             "$ref": "#/components/schemas/PublicDataState"
           }
         },
         "required": ["state", "detail", "rates", "futures", "liquidity"],
+        "type": "object"
+      },
+      "PublicSourceState": {
+        "description": "One source's standing, in the closed P-2 vocabulary: `updated` (fetched on its schedule),\n`delayed` (fetched; the source publishes late by design), `last_good` (this cycle's fetch failed\nand the copy served is the last good one), `source_down` (failed, nothing kept), `not_set_up`\n(a required setting is missing) and `off` (`PUBLIC_DATA=off`).",
+        "enum": ["updated", "delayed", "last_good", "source_down", "not_set_up", "off"],
+        "type": "string"
+      },
+      "PublicSourceWire": {
+        "description": "One upstream source and its state. `id` is the source's anchor on /credits (`finra-si`).",
+        "properties": {
+          "as_of": {
+            "description": "YYYY-MM-DD the data is for (a settlement, a report date), where the source has one.",
+            "type": ["string", "null"]
+          },
+          "checked_at": {
+            "description": "RFC 3339 UTC: when this server fetched the copy it serves.",
+            "type": ["string", "null"]
+          },
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "failed_at": {
+            "description": "RFC 3339 UTC: when a fetch last failed, while that failure still stands.",
+            "type": ["string", "null"]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PublicSourceState"
+          }
+        },
+        "required": ["id", "name", "state", "as_of", "checked_at", "failed_at", "detail"],
         "type": "object"
       },
       "PublicTickerWire": {
@@ -4112,6 +4232,17 @@
           },
           "filings_detail": {
             "type": ["string", "null"]
+          },
+          "filings_source_state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicSourceState",
+                "description": "SEC EDGAR's state, for `filings`, `insiders` and `periodic` (`updated` when current)."
+              }
+            ]
           },
           "filings_state": {
             "$ref": "#/components/schemas/PublicDataState"
@@ -4155,6 +4286,17 @@
           "short_interest_detail": {
             "type": ["string", "null"]
           },
+          "short_interest_source_state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicSourceState",
+                "description": "FINRA short interest's state in the P-2 words (`delayed` when current; `last_good` for a\ncopy kept after a failed fetch). Absent from servers before 2026-10-15."
+              }
+            ]
+          },
           "short_interest_state": {
             "$ref": "#/components/schemas/PublicDataState",
             "description": "`live` when FINRA answered, even with no report for this symbol (`short_interest` null);\n`unavailable` when it didn't and nothing is cached: an outage, not an empty fact."
@@ -4172,9 +4314,27 @@
           "short_volume_detail": {
             "type": ["string", "null"]
           },
+          "short_volume_source_state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicSourceState",
+                "description": "As `short_interest_source_state`, for the daily short-sale volume files (`updated` when\ncurrent)."
+              }
+            ]
+          },
           "short_volume_state": {
             "$ref": "#/components/schemas/PublicDataState",
             "description": "As `short_interest_state`, for FINRA's daily short-sale volume files."
+          },
+          "sources": {
+            "description": "FINRA short interest, FINRA short-sale volume and SEC EDGAR, as answered for this ticker.\nAbsent from servers before 2026-10-15.",
+            "items": {
+              "$ref": "#/components/schemas/PublicSourceWire"
+            },
+            "type": "array"
           },
           "state": {
             "$ref": "#/components/schemas/PublicDataState"
@@ -4224,6 +4384,17 @@
           },
           "source": {
             "type": "string"
+          },
+          "source_state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicSourceState",
+                "description": "This section's state: `updated`, or `last_good` when the latest fetch failed and this is\nthe copy kept from before. Absent from servers before 2026-10-15."
+              }
+            ]
           },
           "year_ago": {
             "oneOf": [
@@ -5039,6 +5210,37 @@
         "required": ["decision", "bias", "strikes", "exit_plan", "confidence"],
         "type": "object"
       },
+      "ReleaseWire": {
+        "description": "One scheduled release from an agency's published calendar.",
+        "properties": {
+          "agency": {
+            "description": "\"Fed\", \"BLS\", \"BEA\" or \"Treasury\".",
+            "type": "string"
+          },
+          "date": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          },
+          "moved_from": {
+            "description": "YYYY-MM-DD the agency had published before it moved the release.",
+            "type": ["string", "null"]
+          },
+          "name": {
+            "description": "\"CPI\", \"Jobs report\", \"PPI\", \"GDP\", \"PCE prices\", \"FOMC statement\", \"Quarterly refunding\".",
+            "type": "string"
+          },
+          "source": {
+            "description": "The schedule's source id: `fed-fomc`, `bls`, `bea` or `treasury-qr`.",
+            "type": "string"
+          },
+          "time": {
+            "description": "HH:MM, Eastern time, when the agency states one.",
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["date", "time", "name", "agency", "source", "moved_from"],
+        "type": "object"
+      },
       "ResearchErrorBody": {
         "properties": {
           "detail": {
@@ -5052,6 +5254,39 @@
           }
         },
         "required": ["error", "detail", "vendor_called"],
+        "type": "object"
+      },
+      "ResultsBasisWire": {
+        "description": "What a results window is projected from.",
+        "enum": ["results_filings", "periodic_reports"],
+        "type": "string"
+      },
+      "ResultsWindowWire": {
+        "description": "The window a company's next results are expected in: each of its last four results dates\ncarried forward by whole quarters (91 days) to the quarter after the latest. An estimate,\nnever an announced date.",
+        "properties": {
+          "basis": {
+            "description": "The dates it is projected from, YYYY-MM-DD, newest first (at most four).",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "basis_kind": {
+            "$ref": "#/components/schemas/ResultsBasisWire"
+          },
+          "end": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          },
+          "start": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          },
+          "ticker": {
+            "type": "string"
+          }
+        },
+        "required": ["ticker", "start", "end", "basis", "basis_kind"],
         "type": "object"
       },
       "RiskInputsBody": {

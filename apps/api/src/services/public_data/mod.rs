@@ -1,16 +1,21 @@
 //! Public market and filing data from keyless public sources — U.S. Treasury (yield curves), CFTC
-//! (Traders in Financial Futures), FINRA (daily short volume, short interest) and SEC EDGAR
-//! (filings, Form 4, XBRL facts). Read-only, cached server-side, and never fatal: every answer
+//! (Traders in Financial Futures), FINRA (daily short volume, short interest), SEC EDGAR
+//! (filings, Form 4, XBRL facts), the Fed/Treasury/NY Fed liquidity inputs and the Fed, BLS, BEA
+//! and Treasury release schedules. Read-only, cached server-side, and never fatal: every answer
 //! carries a state, and a failing source degrades to its last good copy or to `unavailable`.
+//! Each answer also lists its sources with their P-2 state, which tells a fresh fetch from a last
+//! good copy.
 //!
 //! `PUBLIC_DATA=off` makes every answer `off` without contacting anything (tests run this way).
 
 pub(crate) mod cache;
+pub(crate) mod calendar;
 pub(crate) mod cftc;
 pub(crate) mod edgar;
 pub(crate) mod fetch;
 pub(crate) mod finra;
 pub(crate) mod liquidity;
+pub(crate) mod sources;
 pub(crate) mod treasury;
 pub mod types;
 
@@ -103,14 +108,20 @@ impl SecAccess {
     }
 }
 
+/// One schedule's releases as last served, with the fetch they came from (for move marks).
+type ScheduleCopy = (DateTime<Utc>, Arc<Vec<Release>>);
+
 struct Inner {
     mode: PublicDataMode,
     http: Http,
+    schedule_http: Http,
     sec: SecAccess,
     sec_gate: SecGate,
     rates: TtlCache<(), RatesSeries>,
     futures: TtlCache<(), FuturesSummary>,
     liquidity: TtlCache<(), LiquiditySeries>,
+    schedules: TtlCache<&'static str, Vec<Release>>,
+    marked: std::sync::Mutex<HashMap<&'static str, ScheduleCopy>>,
     short_interest: TtlCache<String, Option<ShortInterest>>,
     daily_files: TtlCache<NaiveDate, Option<DailyFile>>,
     sec_tickers: TtlCache<(), HashMap<String, u64>>,
@@ -131,12 +142,17 @@ impl PublicDataService {
             inner: Arc::new(Inner {
                 mode: config.public_data,
                 http: Http::new(PUBLIC_USER_AGENT)?,
+                schedule_http: Http::new(calendar::SCHEDULE_USER_AGENT)?,
                 sec: SecAccess::new(config.sec_user_agent.as_ref()),
                 sec_gate: SecGate::new(SEC_SPACING),
                 rates: TtlCache::new(|_| 6 * HOUR, RETRY_AFTER_FAILURE, 1),
                 futures: TtlCache::new(|_| 12 * HOUR, RETRY_AFTER_FAILURE, 1),
                 // Weekly data, released Thursdays: six hours keeps a Thursday release same-evening.
                 liquidity: TtlCache::new(|_| 6 * HOUR, RETRY_AFTER_FAILURE, 1),
+                // Agencies set their schedules months ahead and move a date rarely: twice a day
+                // keeps a move within one refresh window (the design's "daily").
+                schedules: TtlCache::new(|_| 12 * HOUR, RETRY_AFTER_FAILURE, 4),
+                marked: std::sync::Mutex::new(HashMap::new()),
                 short_interest: TtlCache::new(|_| 12 * HOUR, RETRY_AFTER_FAILURE, 512),
                 // A past day's file never changes; a missing one (holiday, not yet published)
                 // is asked again within the hour.
@@ -168,19 +184,85 @@ impl PublicDataService {
 
     pub async fn markets(&self) -> Markets {
         if !self.is_on() {
+            let sources = [
+                sources::TREASURY,
+                sources::CFTC,
+                sources::FED_H41,
+                sources::TREASURY_DTS,
+                sources::NYFED_RRP,
+            ]
+            .into_iter()
+            .chain(calendar::SCHEDULES)
+            .map(|source| sources::without_fetch(source, SourceState::Off, OFF_DETAIL))
+            .collect();
             return Markets {
                 state: DataState::Off,
                 detail: Some(OFF_DETAIL.into()),
                 rates: None,
                 futures: None,
                 liquidity: None,
+                calendar: None,
+                sources,
             };
         }
-        let (rates, futures, liquidity) = tokio::join!(
+        let (rates, futures, liquidity, schedules) = tokio::join!(
             self.rates_lookup(),
             self.futures_lookup(),
-            self.liquidity_lookup()
+            self.liquidity_lookup(),
+            self.schedules(),
         );
+        let liquidity_as_of = liquidity.cached().map(|c| c.value.as_of);
+        let mut source_rows = vec![
+            sources::from_lookup(
+                sources::TREASURY,
+                &rates,
+                false,
+                rates.cached().map(|c| c.value.latest.date),
+                treasury::SOURCE,
+            ),
+            sources::from_lookup(
+                sources::CFTC,
+                &futures,
+                true,
+                futures.cached().map(|c| c.value.report_date),
+                cftc::SOURCE,
+            ),
+        ];
+        // The three liquidity inputs are fetched and kept together (never a net from two of
+        // three), so they share one state; each row names the H.4.1 Wednesday they were netted for.
+        for source in [sources::FED_H41, sources::TREASURY_DTS, sources::NYFED_RRP] {
+            source_rows.push(sources::from_lookup(
+                source,
+                &liquidity,
+                false,
+                liquidity_as_of,
+                "Liquidity",
+            ));
+        }
+        let (from, to) = calendar::window(today_eastern());
+        let mut releases: Vec<Release> = Vec::new();
+        for ((id, name), lookup, marked) in &schedules {
+            source_rows.push(sources::from_lookup(
+                (*id, *name),
+                lookup,
+                false,
+                None,
+                name,
+            ));
+            if let Some(marked) = marked {
+                releases.extend(
+                    marked
+                        .iter()
+                        .filter(|r| r.date >= from && r.date <= to)
+                        .cloned(),
+                );
+            }
+        }
+        releases.sort_by(|a, b| (a.date, a.time, a.source).cmp(&(b.date, b.time, b.source)));
+        let calendar = schedules
+            .iter()
+            .any(|(_, lookup, _)| lookup.cached().is_some())
+            .then_some(Calendar { from, to, releases });
         let notes: Vec<String> = [
             rates.note(treasury::SOURCE),
             futures.note(cftc::SOURCE),
@@ -212,7 +294,82 @@ impl PublicDataService {
             rates,
             futures,
             liquidity,
+            calendar,
+            sources: source_rows,
         }
+    }
+
+    /// The four release schedules, each with its lookup and its releases with move marks.
+    async fn schedules(
+        &self,
+    ) -> Vec<(
+        (&'static str, &'static str),
+        Lookup<Vec<Release>>,
+        Option<Arc<Vec<Release>>>,
+    )> {
+        let lookups = futures_util::future::join_all(
+            calendar::SCHEDULES
+                .iter()
+                .map(|&(id, name)| async move { ((id, name), self.schedule_lookup(id).await) }),
+        )
+        .await;
+        lookups
+            .into_iter()
+            .map(|(source, lookup)| {
+                let marked = self.marked(source.0, &lookup);
+                (source, lookup, marked)
+            })
+            .collect()
+    }
+
+    /// The releases of one schedule with "moved from" marks. A new fetch is compared with the
+    /// copy served before it; a cached copy is served with the marks it already has.
+    fn marked(&self, id: &'static str, lookup: &Lookup<Vec<Release>>) -> Option<Arc<Vec<Release>>> {
+        let copy = lookup.cached()?;
+        let mut marked = self
+            .inner
+            .marked
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
+        if let Some((at, releases)) = marked.get(id) {
+            if *at == copy.fetched_at {
+                return Some(Arc::clone(releases));
+            }
+        }
+        let mut next = copy.value.as_ref().clone();
+        if let Some((_, prev)) = marked.get(id) {
+            calendar::mark_moves(prev, &mut next, today_eastern());
+        }
+        let next = Arc::new(next);
+        marked.insert(id, (copy.fetched_at, Arc::clone(&next)));
+        Some(next)
+    }
+
+    async fn schedule_lookup(&self, id: &'static str) -> Lookup<Vec<Release>> {
+        let http = &self.inner.schedule_http;
+        self.inner
+            .schedules
+            .get(id, || async move {
+                let (source, url) = match id {
+                    calendar::FED_ID => (calendar::FED_SOURCE, calendar::FED_URL),
+                    calendar::BLS_ID => (calendar::BLS_SOURCE, calendar::BLS_URL),
+                    calendar::BEA_ID => (calendar::BEA_SOURCE, calendar::BEA_URL),
+                    _ => (calendar::TREASURY_SOURCE, calendar::TREASURY_URL),
+                };
+                let body = required(
+                    source,
+                    http.get(source, url, calendar::MAX_BYTES, &[]).await?,
+                )?;
+                let text = String::from_utf8_lossy(&body);
+                match id {
+                    calendar::FED_ID => calendar::parse_fomc(&text),
+                    calendar::BLS_ID => calendar::parse_bls_ics(&text),
+                    calendar::BEA_ID => calendar::parse_bea(&body),
+                    _ => calendar::parse_refunding(&text),
+                }
+                .map_err(|e| FetchError::new(source, format!("parse: {e}")))
+            })
+            .await
     }
 
     /// The three liquidity inputs together: all must answer, or the cache serves its last good
@@ -321,39 +478,44 @@ impl PublicDataService {
     // ---- filings ---------------------------------------------------------------------------
 
     pub async fn filings(&self, tickers: &[String]) -> Filings {
-        let empty = |state, detail: Option<String>| Filings {
+        let empty = |state, detail: Option<String>, sources: Vec<SourceStatus>| Filings {
             state,
             detail,
             checked_at: None,
             filings: Vec::new(),
             missing: Vec::new(),
+            results: Vec::new(),
+            sources,
         };
         if !self.is_on() {
-            return empty(DataState::Off, Some(OFF_DETAIL.into()));
+            let row = sources::without_fetch(sources::SEC, SourceState::Off, OFF_DETAIL);
+            return empty(DataState::Off, Some(OFF_DETAIL.into()), vec![row]);
         }
         let sec = match &self.inner.sec {
             SecAccess::Ready(http) => http,
             other => {
-                return empty(
-                    DataState::NotConfigured,
-                    Some(other.not_configured_detail().into()),
-                )
+                let detail = other.not_configured_detail();
+                let row = sources::without_fetch(sources::SEC, SourceState::NotSetUp, detail);
+                return empty(DataState::NotConfigured, Some(detail.into()), vec![row]);
             }
         };
         if tickers.is_empty() {
-            return empty(DataState::Live, None);
+            return empty(DataState::Live, None, Vec::new());
         }
         let map = self.sec_tickers(sec).await;
         let Some(map_copy) = map.cached() else {
-            return empty(DataState::Unavailable, map.note(edgar::SOURCE));
+            let row = sources::from_lookup(sources::SEC, &map, false, None, edgar::SOURCE);
+            return empty(DataState::Unavailable, map.note(edgar::SOURCE), vec![row]);
         };
         let mut notes: Vec<String> = map.note(edgar::SOURCE).into_iter().collect();
         let today = Utc::now().date_naive();
         let mut filings = Vec::new();
+        let mut results = Vec::new();
         let mut missing = Vec::new();
         let mut stale = Vec::new();
         let mut failed = Vec::new();
         let mut checked_at: Option<DateTime<Utc>> = None;
+        let mut failed_at = map.failed_at();
         for ticker in tickers {
             let Some(&cik) = map_copy.value.get(&edgar::ticker_key(ticker)) else {
                 missing.push(ticker.clone());
@@ -365,8 +527,10 @@ impl PublicDataService {
                 Lookup::Stale { .. } => stale.push(ticker.as_str()),
                 Lookup::Failed { .. } => failed.push(ticker.as_str()),
             }
+            failed_at = failed_at.max(lookup.failed_at());
             if let Some(copy) = lookup.cached() {
                 filings.extend(edgar::recent_filings(ticker, cik, &copy.value, today));
+                results.extend(calendar::results_window(ticker, &copy.value, today));
                 checked_at = Some(checked_at.map_or(copy.fetched_at, |t| t.min(copy.fetched_at)));
             }
         }
@@ -387,16 +551,38 @@ impl PublicDataService {
         }
         edgar::sort_newest_first(&mut filings);
         let resolved = tickers.len() - missing.len();
+        let all_failed = resolved > 0 && failed.len() == resolved;
+        let sec_state = if all_failed {
+            SourceState::SourceDown
+        } else if failed_at.is_some() {
+            // Something failed this cycle (the ticker map or one company's list): what is shown
+            // includes earlier copies, or leaves a company out.
+            SourceState::LastGood
+        } else {
+            SourceState::Updated
+        };
+        let detail = join(notes);
+        let sec_row = SourceStatus {
+            id: sources::SEC.0,
+            name: sources::SEC.1,
+            state: sec_state,
+            as_of: None,
+            checked_at,
+            failed_at,
+            detail: detail.clone(),
+        };
         Filings {
-            state: if resolved > 0 && failed.len() == resolved {
+            state: if all_failed {
                 DataState::Unavailable
             } else {
                 DataState::Live
             },
-            detail: join(notes),
+            detail,
             checked_at,
             filings,
             missing,
+            results,
+            sources: vec![sec_row],
         }
     }
 
@@ -420,6 +606,10 @@ impl PublicDataService {
                 filings: Vec::new(),
                 filings_state: DataState::Off,
                 filings_detail: Some(OFF_DETAIL.into()),
+                sources: [sources::FINRA_SI, sources::FINRA_SHVOL, sources::SEC]
+                    .into_iter()
+                    .map(|source| sources::without_fetch(source, SourceState::Off, OFF_DETAIL))
+                    .collect(),
             };
         }
         let (interest, volume, sec) = tokio::join!(
@@ -438,6 +628,11 @@ impl PublicDataService {
         let (interest_state, interest_detail) =
             (part_state(interest.answered), interest.note.clone());
         let (volume_state, volume_detail) = (part_state(volume.answered), volume.note.clone());
+        let source_rows = vec![
+            interest.source.clone(),
+            volume.source.clone(),
+            sec.source.clone(),
+        ];
         let notes: Vec<String> = interest
             .note
             .into_iter()
@@ -464,6 +659,7 @@ impl PublicDataService {
             filings: sec.filings,
             filings_state: sec.filings_state,
             filings_detail: sec.filings_detail,
+            sources: source_rows,
         }
     }
 
@@ -487,10 +683,18 @@ impl PublicDataService {
                 Ok(finra::summarize_interest(rows))
             })
             .await;
+        let value: Option<ShortInterest> = lookup.cached().and_then(|c| c.value.as_ref().clone());
         Part {
             note: lookup.note(finra::INTEREST_SOURCE),
             answered: lookup.cached().is_some(),
-            value: lookup.cached().and_then(|c| c.value.as_ref().clone()),
+            source: sources::from_lookup(
+                sources::FINRA_SI,
+                &lookup,
+                true,
+                value.as_ref().map(|v| v.settlement_date),
+                finra::INTEREST_SOURCE,
+            ),
+            value,
         }
     }
 
@@ -508,10 +712,18 @@ impl PublicDataService {
         let mut files: Vec<(NaiveDate, Arc<Option<DailyFile>>)> = Vec::new();
         let mut answered = 0usize;
         let mut failed = 0usize;
+        let mut stale = 0usize;
+        let mut checked_at: Option<DateTime<Utc>> = None;
+        let mut failed_at: Option<DateTime<Utc>> = None;
         while let Some((date, lookup)) = stream.next().await {
+            if matches!(lookup, Lookup::Stale { .. }) {
+                stale += 1;
+            }
+            failed_at = failed_at.max(lookup.failed_at());
             match lookup.cached() {
                 Some(copy) => {
                     answered += 1;
+                    checked_at = checked_at.max(Some(copy.fetched_at));
                     if copy.value.is_some() {
                         files.push((date, Arc::clone(&copy.value)));
                         if files.len() >= finra::DAILY_MAX_FILES {
@@ -536,7 +748,23 @@ impl PublicDataService {
                 finra::DAILY_SOURCE
             )),
         };
+        // A day's file that failed (or is a kept copy) means the latest days may be missing:
+        // what is shown is the last good copy, not this cycle's.
+        let state = match (answered, failed + stale) {
+            (0, _) => SourceState::SourceDown,
+            (_, 0) => SourceState::Updated,
+            _ => SourceState::LastGood,
+        };
         Part {
+            source: SourceStatus {
+                id: sources::FINRA_SHVOL.0,
+                name: sources::FINRA_SHVOL.1,
+                state,
+                as_of: value.as_ref().map(|v| v.date),
+                checked_at,
+                failed_at,
+                detail: note.clone(),
+            },
             value,
             note,
             answered: answered > 0,
@@ -646,20 +874,24 @@ impl PublicDataService {
         let sec = match &self.inner.sec {
             SecAccess::Ready(http) => http,
             other => {
-                let detail = other.not_configured_detail().to_string();
-                return SecPart::without_data(DataState::NotConfigured, detail, false);
+                let detail = other.not_configured_detail();
+                let row = sources::without_fetch(sources::SEC, SourceState::NotSetUp, detail);
+                return SecPart::without_data(DataState::NotConfigured, detail.into(), false, row);
             }
         };
         let map = self.sec_tickers(sec).await;
         let Some(map_copy) = map.cached() else {
             let detail = map.note(edgar::SOURCE).unwrap_or_default();
-            return SecPart::without_data(DataState::Unavailable, detail, false);
+            let row = sources::from_lookup(sources::SEC, &map, false, None, edgar::SOURCE);
+            return SecPart::without_data(DataState::Unavailable, detail, false, row);
         };
         let Some(&cik) = map_copy.value.get(&edgar::ticker_key(ticker)) else {
+            let row = sources::from_lookup(sources::SEC, &map, false, None, edgar::SOURCE);
             let mut part = SecPart::without_data(
                 DataState::Live,
                 format!("{} lists no company under {ticker}.", edgar::SOURCE),
                 true,
+                row,
             );
             part.insiders = None;
             return part;
@@ -667,7 +899,29 @@ impl PublicDataService {
         let submissions = self.submissions(sec, cik).await;
         let Some(rows) = submissions.cached() else {
             let detail = submissions.note(edgar::SOURCE).unwrap_or_default();
-            return SecPart::without_data(DataState::Unavailable, detail, false);
+            let row = sources::from_lookup(sources::SEC, &submissions, false, None, edgar::SOURCE);
+            return SecPart::without_data(DataState::Unavailable, detail, false, row);
+        };
+        // Last good copy when the ticker map or this company's list failed this cycle.
+        let sec_failed_at = map.failed_at().max(submissions.failed_at());
+        let filings_detail = join(
+            map.note(edgar::SOURCE)
+                .into_iter()
+                .chain(submissions.note(edgar::SOURCE))
+                .collect(),
+        );
+        let sec_row = SourceStatus {
+            id: sources::SEC.0,
+            name: sources::SEC.1,
+            state: if sec_failed_at.is_some() {
+                SourceState::LastGood
+            } else {
+                SourceState::Updated
+            },
+            as_of: None,
+            checked_at: Some(rows.fetched_at),
+            failed_at: sec_failed_at,
+            detail: filings_detail.clone(),
         };
         let today = Utc::now().date_naive();
         let filings = edgar::recent_filings(ticker, cik, &rows.value, today);
@@ -732,12 +986,7 @@ impl PublicDataService {
             insiders: Some(insiders),
             filings,
             filings_state: DataState::Live,
-            filings_detail: join(
-                map.note(edgar::SOURCE)
-                    .into_iter()
-                    .chain(submissions.note(edgar::SOURCE))
-                    .collect(),
-            ),
+            filings_detail,
             periodic,
             shares_outstanding,
             notes: facts
@@ -745,6 +994,7 @@ impl PublicDataService {
                 .into_iter()
                 .collect(),
             answered: true,
+            source: sec_row,
         }
     }
 }
@@ -755,6 +1005,7 @@ struct Part<T> {
     note: Option<String>,
     /// The source answered (fresh or stale), even if it had nothing for this ticker.
     answered: bool,
+    source: SourceStatus,
 }
 
 struct SecPart {
@@ -766,10 +1017,16 @@ struct SecPart {
     shares_outstanding: Option<DatedValue>,
     notes: Vec<String>,
     answered: bool,
+    source: SourceStatus,
 }
 
 impl SecPart {
-    fn without_data(state: DataState, detail: String, answered: bool) -> Self {
+    fn without_data(
+        state: DataState,
+        detail: String,
+        answered: bool,
+        source: SourceStatus,
+    ) -> Self {
         let detail = (!detail.is_empty()).then_some(detail);
         Self {
             insiders: Some(Insiders::empty(state, detail.clone())),
@@ -780,6 +1037,7 @@ impl SecPart {
             shares_outstanding: None,
             notes: Vec::new(),
             answered,
+            source,
         }
     }
 }
@@ -803,6 +1061,12 @@ async fn curve_file(
         .map_err(|_| FetchError::new(treasury::SOURCE, "CSV is not UTF-8"))?;
     treasury::parse_csv(curve, &text)
         .map_err(|e| FetchError::new(treasury::SOURCE, format!("parse: {e}")))
+}
+
+fn today_eastern() -> NaiveDate {
+    Utc::now()
+        .with_timezone(&chrono_tz::America::New_York)
+        .date_naive()
 }
 
 fn required(source: &'static str, body: Option<Vec<u8>>) -> Result<Vec<u8>, FetchError> {
@@ -845,10 +1109,47 @@ mod tests {
         let markets = service.markets().await;
         assert_eq!(markets.state, DataState::Off);
         assert!(markets.rates.is_none() && markets.futures.is_none());
+        assert!(markets.calendar.is_none());
+        // Every source is still listed, each saying Off: the credits page counts them.
+        let ids: Vec<&str> = markets.sources.iter().map(|s| s.id).collect();
+        assert_eq!(
+            ids,
+            [
+                "treasury",
+                "cftc",
+                "fed-h41",
+                "treasury-dts",
+                "nyfed-rrp",
+                "fed-fomc",
+                "bls",
+                "bea",
+                "treasury-qr"
+            ]
+        );
+        assert!(markets.sources.iter().all(|s| s.state == SourceState::Off));
         let filings = service.filings(&["NVDA".into()]).await;
         assert_eq!(filings.state, DataState::Off);
+        assert!(filings.results.is_empty());
+        assert_eq!(filings.sources[0].state, SourceState::Off);
         let ticker = service.ticker("NVDA").await;
         assert_eq!(ticker.state, DataState::Off);
         assert_eq!(ticker.filings_state, DataState::Off);
+        let ids: Vec<&str> = ticker.sources.iter().map(|s| s.id).collect();
+        assert_eq!(ids, ["finra-si", "finra-shvol", "sec"]);
+        assert!(ticker.sources.iter().all(|s| s.state == SourceState::Off));
+    }
+
+    /// Without SEC_USER_AGENT the SEC row says Not set up, and no filing history means no
+    /// results estimate (the calendar falls back to the notes' own dates).
+    #[tokio::test]
+    async fn sec_without_a_user_agent_is_not_set_up() {
+        let mut config = crate::state::test_stub_config();
+        config.public_data = PublicDataMode::On;
+        config.sec_user_agent = None;
+        let service = PublicDataService::new(&config).unwrap();
+        let filings = service.filings(&["NVDA".into()]).await;
+        assert_eq!(filings.state, DataState::NotConfigured);
+        assert_eq!(filings.sources[0].state, SourceState::NotSetUp);
+        assert!(filings.results.is_empty());
     }
 }

@@ -44,6 +44,16 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // precutover baseline stays pinned and four artifacts move. Again the same day for
 // `PublicMarketsWire.liquidity` (`LiquidityWire`, `LiquidityWeekWire`): additive, zero new
 // operations.
+//
+// Re-pinned for Wave 1 · Lane 5 (2026-10-15): the public-data answers gain optional `sources`
+// rows in the P-2 words (`PublicSourceWire`, `PublicSourceState`, with `last_good` telling a last
+// good copy from a fresh fetch) and the same state as a field on each section (`source_state` on
+// `RatesWire`/`FuturesWire`/`LiquidityWire`/`PublicFilingsWire`, `*_source_state` on
+// `PublicTickerWire`), `PublicMarketsWire.calendar` (`CalendarWire`, `ReleaseWire`) and
+// `PublicFilingsWire.results` (`ResultsWindowWire`, `ResultsBasisWire`): additive schema growth,
+// zero new operations (the sources list and the calendar ride the existing three public-data
+// operations), so `precutover-operation-baseline.json` stays pinned to its prior hash and four
+// artifacts move (ledger `route-growth-repins-api-artifact-oracle`).
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -51,19 +61,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "ea133910a522219e5c96104d0bd34f29a1cfa5acf6fb403ec0e50a8b96d7f53b",
+        "d9bb0db60aa5fa3acc4c6acd393ee7f8db6f100953268c50d1d93c4497797c97",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "9d0ca24449e2bf2149be1c9d5d2491415aa80317c1c216305735dc90fb99a21a",
+        "e335cbfc52e05fe47c5e1e10ef1ecab8b41d96e007eae6b2e79f2053c2064877",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "005ad96c256ac0a3d3134d4545055594c2f2fd6ce039a9a20bb4b63534ba9c08",
+        "f53ee6b337d922c191e2356ac16be46003c0ae293e163a9a136a0f5465515754",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "fcc945fff93979c74c1784314034874291661d8f8dd387d1c55c1f6e6dc55c33",
+        "2a7824cdd433dc6e12e915206a77294e5be67fb2d87a4f3618b4ff7844429851",
     ),
 ];
 

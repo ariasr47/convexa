@@ -10,6 +10,7 @@ import type {
   PublicTicker,
   PublicYieldPoint,
 } from '../convexa';
+import { DEMO_CALENDAR, DEMO_RESULTS_WINDOWS } from './calendar';
 
 /**
  * Demo answers for the public-data endpoints. Every figure here is authored for the demo — none
@@ -283,6 +284,7 @@ export function demoPublicMarkets(): PublicMarkets {
       ],
     },
     liquidity: demoLiquidity(),
+    calendar: DEMO_CALENDAR,
   };
 }
 
@@ -363,6 +365,7 @@ export function demoPublicFilings(tickers: string[]): PublicFilings {
     detail: tickers.length ? SAMPLE : null,
     checked_at: tickers.length ? DEMO_TIME : null,
     filings: filings.sort(newestFirst),
+    results: DEMO_RESULTS_WINDOWS.filter((w) => tickers.includes(w.ticker)),
     missing,
   };
 }

@@ -6,6 +6,7 @@
 //! down is not hammered by every page view.
 
 use super::fetch::FetchError;
+use super::types::SourceState;
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::future::Future;
@@ -49,6 +50,31 @@ impl<V> Lookup<V> {
         match self {
             Self::Fresh(cached) | Self::Stale { cached, .. } => Some(cached),
             Self::Failed { .. } => None,
+        }
+    }
+
+    /// The P-2 state of this read: a fresh copy is Updated (Delayed by source for a source that
+    /// publishes late by design), a copy kept after a failed refresh is Last good copy, and a
+    /// failure with nothing kept is Source down.
+    pub fn source_state(&self, delayed: bool) -> SourceState {
+        match self {
+            Self::Fresh(_) if delayed => SourceState::Delayed,
+            Self::Fresh(_) => SourceState::Updated,
+            Self::Stale { .. } => SourceState::LastGood,
+            Self::Failed { .. } => SourceState::SourceDown,
+        }
+    }
+
+    /// When the served copy was fetched.
+    pub fn fetched_at(&self) -> Option<DateTime<Utc>> {
+        self.cached().map(|c| c.fetched_at)
+    }
+
+    /// When the failed refresh behind a stale or missing copy happened.
+    pub fn failed_at(&self) -> Option<DateTime<Utc>> {
+        match self {
+            Self::Fresh(_) => None,
+            Self::Stale { failed_at, .. } | Self::Failed { failed_at } => Some(*failed_at),
         }
     }
 
@@ -187,5 +213,77 @@ where
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    fn down() -> FetchError {
+        FetchError::new("Test source", "HTTP 503")
+    }
+
+    /// The state a reader is shown must follow the source: a fresh fetch is Updated, a failed
+    /// refresh over a kept copy is Last good copy (never "Updated"), and the next good fetch
+    /// returns to Updated with the new value. A failure with nothing kept is Source down.
+    #[tokio::test]
+    async fn fresh_then_failed_fetch_serves_last_good_then_recovers() {
+        // TTL zero: every read refreshes. No retry pause after a failure.
+        let cache: TtlCache<(), u32> = TtlCache::new(|_| Duration::ZERO, Duration::ZERO, 1);
+
+        let first = cache.get((), || async { Ok(1) }).await;
+        assert_eq!(first.source_state(false), SourceState::Updated);
+        assert_eq!(first.source_state(true), SourceState::Delayed);
+        assert_eq!(first.cached().map(|c| *c.value), Some(1));
+        assert!(first.failed_at().is_none());
+        let fetched = first.fetched_at().unwrap();
+
+        let failed = cache.get((), || async { Err(down()) }).await;
+        assert_eq!(failed.source_state(false), SourceState::LastGood);
+        // Delayed-by-design sources say Last good copy too: the failure outranks the schedule.
+        assert_eq!(failed.source_state(true), SourceState::LastGood);
+        assert_eq!(failed.cached().map(|c| *c.value), Some(1));
+        assert_eq!(
+            failed.fetched_at(),
+            Some(fetched),
+            "the copy keeps its own fetch time"
+        );
+        assert!(failed.failed_at().is_some());
+        assert!(failed
+            .note("Test source")
+            .unwrap()
+            .contains("did not answer"));
+
+        let recovered = cache.get((), || async { Ok(2) }).await;
+        assert_eq!(recovered.source_state(false), SourceState::Updated);
+        assert_eq!(recovered.cached().map(|c| *c.value), Some(2));
+        assert!(recovered.failed_at().is_none() && recovered.note("Test source").is_none());
+
+        let never: TtlCache<(), u32> = TtlCache::new(|_| Duration::ZERO, Duration::ZERO, 1);
+        let nothing = never.get((), || async { Err(down()) }).await;
+        assert_eq!(nothing.source_state(false), SourceState::SourceDown);
+        assert!(nothing.cached().is_none() && nothing.fetched_at().is_none());
+    }
+
+    /// Inside the retry pause a failed source is not asked again, and the reader still sees Last
+    /// good copy rather than a silent return to Updated.
+    #[tokio::test]
+    async fn the_retry_pause_keeps_saying_last_good() {
+        let cache: TtlCache<(), u32> =
+            TtlCache::new(|_| Duration::ZERO, Duration::from_secs(600), 1);
+        cache.get((), || async { Ok(7) }).await;
+        cache.get((), || async { Err(down()) }).await;
+        let asked = AtomicBool::new(false);
+        let paused = cache
+            .get((), || async {
+                asked.store(true, Ordering::SeqCst);
+                Ok(8)
+            })
+            .await;
+        assert!(!asked.load(Ordering::SeqCst));
+        assert_eq!(paused.source_state(false), SourceState::LastGood);
+        assert_eq!(paused.cached().map(|c| *c.value), Some(7));
     }
 }

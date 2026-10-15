@@ -4,10 +4,17 @@
 //! Every answer is 200 with a `state` (`live`, `off`, `not_configured`, `unavailable`); a
 //! failing source never fails the request. Only a malformed ticker is a 422. No cache headers:
 //! caching is the server's job here, not the browser's.
+//!
+//! Each answer also carries `sources`: one row per upstream source it read, in the P-2 words
+//! (`updated`, `delayed`, `last_good`, `source_down`, `not_set_up`, `off`). The legacy `state`
+//! says `live` for a last good copy too; `sources` tells the two apart. Both fields added after
+//! the first release (`sources`, `calendar`, `results`) are optional on the wire, so a client
+//! built before them reads an older server unchanged.
 
 use crate::error::AppError;
 use crate::services::public_data::{
-    self as service, cftc, liquidity, normalize_ticker, parse_ticker_list, treasury, DataState,
+    self as service, calendar, cftc, liquidity, normalize_ticker, parse_ticker_list, treasury,
+    DataState, SourceState,
 };
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
@@ -36,6 +43,71 @@ impl From<DataState> for PublicDataState {
             DataState::Unavailable => Self::Unavailable,
         }
     }
+}
+
+/// One source's standing, in the closed P-2 vocabulary: `updated` (fetched on its schedule),
+/// `delayed` (fetched; the source publishes late by design), `last_good` (this cycle's fetch failed
+/// and the copy served is the last good one), `source_down` (failed, nothing kept), `not_set_up`
+/// (a required setting is missing) and `off` (`PUBLIC_DATA=off`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum PublicSourceState {
+    Updated,
+    Delayed,
+    LastGood,
+    SourceDown,
+    NotSetUp,
+    Off,
+}
+
+impl From<SourceState> for PublicSourceState {
+    fn from(value: SourceState) -> Self {
+        match value {
+            SourceState::Updated => Self::Updated,
+            SourceState::Delayed => Self::Delayed,
+            SourceState::LastGood => Self::LastGood,
+            SourceState::SourceDown => Self::SourceDown,
+            SourceState::NotSetUp => Self::NotSetUp,
+            SourceState::Off => Self::Off,
+        }
+    }
+}
+
+/// One upstream source and its state. `id` is the source's anchor on /credits (`finra-si`).
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct PublicSourceWire {
+    pub id: String,
+    pub name: String,
+    pub state: PublicSourceState,
+    /// YYYY-MM-DD the data is for (a settlement, a report date), where the source has one.
+    #[schema(required = true)]
+    pub as_of: Option<String>,
+    /// RFC 3339 UTC: when this server fetched the copy it serves.
+    #[schema(required = true)]
+    pub checked_at: Option<String>,
+    /// RFC 3339 UTC: when a fetch last failed, while that failure still stands.
+    #[schema(required = true)]
+    pub failed_at: Option<String>,
+    #[schema(required = true)]
+    pub detail: Option<String>,
+}
+
+impl From<service::SourceStatus> for PublicSourceWire {
+    fn from(s: service::SourceStatus) -> Self {
+        Self {
+            id: s.id.into(),
+            name: s.name.into(),
+            state: s.state.into(),
+            as_of: s.as_of.map(day),
+            checked_at: s.checked_at.map(instant),
+            failed_at: s.failed_at.map(instant),
+            detail: s.detail,
+        }
+    }
+}
+
+fn source_rows(rows: Vec<service::SourceStatus>) -> Vec<PublicSourceWire> {
+    rows.into_iter().map(Into::into).collect()
 }
 
 /// What a filing is about, from its form type and 8-K items.
@@ -118,6 +190,10 @@ pub struct RatesWire {
     #[schema(required = true)]
     pub year_ago: Option<YieldPointWire>,
     pub daily: Vec<YieldPointWire>,
+    /// This section's state: `updated`, or `last_good` when the latest fetch failed and this is
+    /// the copy kept from before. Absent from servers before 2026-10-15.
+    #[serde(default)]
+    pub source_state: Option<PublicSourceState>,
 }
 
 /// Net position (long minus short, contracts) of one trader group, ranked against three years of
@@ -192,6 +268,11 @@ pub struct FuturesWire {
     /// RFC 3339 UTC: when this server fetched the data.
     pub fetched_at: String,
     pub markets: Vec<FuturesMarketWire>,
+    /// This section's state: `delayed` (the CFTC publishes late by design), or `last_good` when
+    /// the latest fetch failed and this is the copy kept from before. Absent from servers before
+    /// 2026-10-15.
+    #[serde(default)]
+    pub source_state: Option<PublicSourceState>,
 }
 
 /// `GET /api/public-data/markets`. Each part is null when its source failed with nothing cached.
@@ -206,6 +287,111 @@ pub struct PublicMarketsWire {
     pub futures: Option<FuturesWire>,
     #[schema(required = true)]
     pub liquidity: Option<LiquidityWire>,
+    /// The macro release calendar; null when every schedule failed with nothing kept, or public
+    /// data is off. Absent from servers before 2026-10-15.
+    #[serde(default)]
+    pub calendar: Option<CalendarWire>,
+    /// Treasury, CFTC, the three liquidity inputs and the four release schedules. Absent from
+    /// servers before 2026-10-15.
+    #[serde(default)]
+    pub sources: Vec<PublicSourceWire>,
+}
+
+/// One scheduled release from an agency's published calendar.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ReleaseWire {
+    /// YYYY-MM-DD
+    pub date: String,
+    /// HH:MM, Eastern time, when the agency states one.
+    #[schema(required = true)]
+    pub time: Option<String>,
+    /// "CPI", "Jobs report", "PPI", "GDP", "PCE prices", "FOMC statement", "Quarterly refunding".
+    pub name: String,
+    /// "Fed", "BLS", "BEA" or "Treasury".
+    pub agency: String,
+    /// The schedule's source id: `fed-fomc`, `bls`, `bea` or `treasury-qr`.
+    pub source: String,
+    /// YYYY-MM-DD the agency had published before it moved the release.
+    #[schema(required = true)]
+    pub moved_from: Option<String>,
+}
+
+/// Releases from `from` to `to` (YYYY-MM-DD, inclusive), soonest first.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct CalendarWire {
+    pub from: String,
+    pub to: String,
+    pub releases: Vec<ReleaseWire>,
+}
+
+fn agency(source: &str) -> &'static str {
+    match source {
+        calendar::FED_ID => "Fed",
+        calendar::BLS_ID => "BLS",
+        calendar::BEA_ID => "BEA",
+        _ => "Treasury",
+    }
+}
+
+impl From<service::Calendar> for CalendarWire {
+    fn from(c: service::Calendar) -> Self {
+        Self {
+            from: day(c.from),
+            to: day(c.to),
+            releases: c
+                .releases
+                .into_iter()
+                .map(|r| ReleaseWire {
+                    date: day(r.date),
+                    time: r.time.map(|t| t.format("%H:%M").to_string()),
+                    name: r.name.into(),
+                    agency: agency(r.source).into(),
+                    source: r.source.into(),
+                    moved_from: r.moved_from.map(day),
+                })
+                .collect(),
+        }
+    }
+}
+
+/// What a results window is projected from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ResultsBasisWire {
+    /// Earnings releases: 8-K Item 2.02, or a 6-K results report.
+    ResultsFilings,
+    /// 10-Q and 10-K (20-F, 40-F) dates, when fewer than two earnings releases are on file.
+    PeriodicReports,
+}
+
+/// The window a company's next results are expected in: each of its last four results dates
+/// carried forward by whole quarters (91 days) to the quarter after the latest. An estimate,
+/// never an announced date.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ResultsWindowWire {
+    pub ticker: String,
+    /// YYYY-MM-DD
+    pub start: String,
+    /// YYYY-MM-DD
+    pub end: String,
+    /// The dates it is projected from, YYYY-MM-DD, newest first (at most four).
+    pub basis: Vec<String>,
+    pub basis_kind: ResultsBasisWire,
+}
+
+impl From<service::ResultsWindow> for ResultsWindowWire {
+    fn from(w: service::ResultsWindow) -> Self {
+        Self {
+            ticker: w.ticker,
+            start: day(w.start),
+            end: day(w.end),
+            basis: w.basis.into_iter().map(day).collect(),
+            basis_kind: match w.basis_kind {
+                service::ResultsBasis::ResultsFilings => ResultsBasisWire::ResultsFilings,
+                service::ResultsBasis::PeriodicReports => ResultsBasisWire::PeriodicReports,
+            },
+        }
+    }
 }
 
 /// One H.4.1 Wednesday, $ millions: `net` = `fed_assets` − `tga` − `reverse_repo`. The TGA and
@@ -230,14 +416,28 @@ pub struct LiquidityWire {
     /// RFC 3339 UTC: when this server fetched the data.
     pub fetched_at: String,
     pub weeks: Vec<LiquidityWeekWire>,
+    /// This section's state (the three inputs are fetched and kept together): `updated`, or
+    /// `last_good` when the latest fetch failed and this is the copy kept from before. Absent from
+    /// servers before 2026-10-15.
+    #[serde(default)]
+    pub source_state: Option<PublicSourceState>,
+}
+
+/// The state of source `id` among an answer's rows.
+fn state_of(rows: &[service::SourceStatus], id: &str) -> Option<PublicSourceState> {
+    rows.iter().find(|r| r.id == id).map(|r| r.state.into())
 }
 
 impl From<service::Markets> for PublicMarketsWire {
     fn from(m: service::Markets) -> Self {
+        let rates_state = state_of(&m.sources, "treasury");
+        let futures_state = state_of(&m.sources, "cftc");
+        let liquidity_state = state_of(&m.sources, "fed-h41");
         Self {
             state: m.state.into(),
             detail: m.detail,
             rates: m.rates.map(|r| RatesWire {
+                source_state: rates_state,
                 source: treasury::SOURCE_LABEL.into(),
                 as_of: day(r.as_of),
                 fetched_at: instant(r.fetched_at),
@@ -246,6 +446,7 @@ impl From<service::Markets> for PublicMarketsWire {
                 daily: r.series.daily.iter().map(Into::into).collect(),
             }),
             futures: m.futures.map(|f| FuturesWire {
+                source_state: futures_state,
                 source: cftc::SOURCE_LABEL.into(),
                 report_date: day(f.summary.report_date),
                 fetched_at: instant(f.fetched_at),
@@ -276,6 +477,7 @@ impl From<service::Markets> for PublicMarketsWire {
                     .collect(),
             }),
             liquidity: m.liquidity.map(|l| LiquidityWire {
+                source_state: liquidity_state,
                 source: liquidity::SOURCE_LABEL.into(),
                 as_of: day(l.series.as_of),
                 fetched_at: instant(l.fetched_at),
@@ -292,6 +494,8 @@ impl From<service::Markets> for PublicMarketsWire {
                     })
                     .collect(),
             }),
+            calendar: m.calendar.map(Into::into),
+            sources: source_rows(m.sources),
         }
     }
 }
@@ -347,16 +551,31 @@ pub struct PublicFilingsWire {
     pub checked_at: Option<String>,
     pub filings: Vec<FilingWire>,
     pub missing: Vec<String>,
+    /// Expected results windows for the named tickers with enough filing history. Absent from
+    /// servers before 2026-10-15.
+    #[serde(default)]
+    pub results: Vec<ResultsWindowWire>,
+    /// SEC EDGAR's row (empty when no ticker was named). Absent from servers before 2026-10-15.
+    #[serde(default)]
+    pub sources: Vec<PublicSourceWire>,
+    /// SEC EDGAR's state in the P-2 words (`updated` when current; `last_good` when a fetch failed
+    /// and earlier copies are shown); null when no ticker was named. Absent from servers before
+    /// 2026-10-15.
+    #[serde(default)]
+    pub source_state: Option<PublicSourceState>,
 }
 
 impl From<service::Filings> for PublicFilingsWire {
     fn from(f: service::Filings) -> Self {
         Self {
+            source_state: state_of(&f.sources, "sec"),
             state: f.state.into(),
             detail: f.detail,
             checked_at: f.checked_at.map(instant),
             filings: f.filings.into_iter().map(Into::into).collect(),
             missing: f.missing,
+            results: f.results.into_iter().map(Into::into).collect(),
+            sources: source_rows(f.sources),
         }
     }
 }
@@ -497,11 +716,30 @@ pub struct PublicTickerWire {
     pub filings_state: PublicDataState,
     #[schema(required = true)]
     pub filings_detail: Option<String>,
+    /// FINRA short interest, FINRA short-sale volume and SEC EDGAR, as answered for this ticker.
+    /// Absent from servers before 2026-10-15.
+    #[serde(default)]
+    pub sources: Vec<PublicSourceWire>,
+    /// FINRA short interest's state in the P-2 words (`delayed` when current; `last_good` for a
+    /// copy kept after a failed fetch). Absent from servers before 2026-10-15.
+    #[serde(default)]
+    pub short_interest_source_state: Option<PublicSourceState>,
+    /// As `short_interest_source_state`, for the daily short-sale volume files (`updated` when
+    /// current).
+    #[serde(default)]
+    pub short_volume_source_state: Option<PublicSourceState>,
+    /// SEC EDGAR's state, for `filings`, `insiders` and `periodic` (`updated` when current).
+    #[serde(default)]
+    pub filings_source_state: Option<PublicSourceState>,
 }
 
 impl From<service::TickerReport> for PublicTickerWire {
     fn from(t: service::TickerReport) -> Self {
         Self {
+            short_interest_source_state: state_of(&t.sources, "finra-si"),
+            short_volume_source_state: state_of(&t.sources, "finra-shvol"),
+            filings_source_state: state_of(&t.sources, "sec"),
+            sources: source_rows(t.sources),
             ticker: t.ticker,
             state: t.state.into(),
             detail: t.detail,
@@ -711,8 +949,10 @@ fn representative_markets() -> PublicMarketsWire {
             latest: point.clone(),
             year_ago: None,
             daily: vec![point],
+            source_state: Some(PublicSourceState::Updated),
         }),
         futures: Some(FuturesWire {
+            source_state: Some(PublicSourceState::Delayed),
             source: cftc::SOURCE_LABEL.into(),
             report_date: "2026-10-06".into(),
             fetched_at: "2026-10-13T07:00:00Z".into(),
@@ -734,6 +974,7 @@ fn representative_markets() -> PublicMarketsWire {
             }],
         }),
         liquidity: Some(LiquidityWire {
+            source_state: Some(PublicSourceState::LastGood),
             source: liquidity::SOURCE_LABEL.into(),
             as_of: "2026-10-07".into(),
             fetched_at: "2026-10-13T07:00:00Z".into(),
@@ -745,6 +986,56 @@ fn representative_markets() -> PublicMarketsWire {
                 net: 5_859_439.0,
             }],
         }),
+        calendar: Some(CalendarWire {
+            from: "2026-10-08".into(),
+            to: "2026-12-24".into(),
+            releases: vec![
+                ReleaseWire {
+                    date: "2026-10-15".into(),
+                    time: Some("08:30".into()),
+                    name: "CPI".into(),
+                    agency: "BLS".into(),
+                    source: calendar::BLS_ID.into(),
+                    moved_from: Some("2026-10-14".into()),
+                },
+                ReleaseWire {
+                    date: "2026-10-28".into(),
+                    time: Some("14:00".into()),
+                    name: "FOMC statement".into(),
+                    agency: "Fed".into(),
+                    source: calendar::FED_ID.into(),
+                    moved_from: None,
+                },
+            ],
+        }),
+        sources: vec![
+            representative_source("treasury", PublicSourceState::Updated, Some("2026-10-09")),
+            representative_source("cftc", PublicSourceState::Delayed, Some("2026-10-06")),
+            PublicSourceWire {
+                failed_at: Some("2026-10-13T13:00:00Z".into()),
+                detail: Some(
+                    "BEA release schedule did not answer at 13:00 UTC; showing data fetched at 07:00 UTC."
+                        .into(),
+                ),
+                ..representative_source("bea", PublicSourceState::LastGood, None)
+            },
+        ],
+    }
+}
+
+fn representative_source(
+    id: &str,
+    state: PublicSourceState,
+    as_of: Option<&str>,
+) -> PublicSourceWire {
+    PublicSourceWire {
+        id: id.into(),
+        name: id.into(),
+        state,
+        as_of: as_of.map(Into::into),
+        checked_at: Some("2026-10-13T07:00:00Z".into()),
+        failed_at: None,
+        detail: None,
     }
 }
 
@@ -775,8 +1066,11 @@ fn representative_ticker() -> PublicTickerWire {
         short_interest: None,
         short_interest_state: PublicDataState::Live,
         short_interest_detail: None,
+        short_interest_source_state: Some(PublicSourceState::Delayed),
         short_volume_state: PublicDataState::Live,
         short_volume_detail: None,
+        short_volume_source_state: Some(PublicSourceState::Updated),
+        filings_source_state: Some(PublicSourceState::NotSetUp),
         short_volume: Some(ShortVolumeWire {
             date: "2026-10-09".into(),
             short_volume: 17_868_373.8,
@@ -808,6 +1102,19 @@ fn representative_ticker() -> PublicTickerWire {
         filings: vec![representative_filing()],
         filings_state: PublicDataState::Live,
         filings_detail: None,
+        sources: vec![
+            representative_source("finra-si", PublicSourceState::Delayed, Some("2026-09-30")),
+            representative_source(
+                "finra-shvol",
+                PublicSourceState::Updated,
+                Some("2026-10-09"),
+            ),
+            PublicSourceWire {
+                checked_at: None,
+                detail: Some(crate::services::public_data::edgar::NOT_CONFIGURED.into()),
+                ..representative_source("sec", PublicSourceState::NotSetUp, None)
+            },
+        ],
     }
 }
 
@@ -847,6 +1154,19 @@ pub(crate) fn contract_representative_for(
                 checked_at: Some("2026-10-13T07:00:00Z".into()),
                 filings: vec![representative_filing()],
                 missing: vec!["ZZZZ".into()],
+                results: vec![ResultsWindowWire {
+                    ticker: "NVDA".into(),
+                    start: "2026-11-26".into(),
+                    end: "2026-11-26".into(),
+                    basis: vec!["2026-08-27".into(), "2026-05-28".into()],
+                    basis_kind: ResultsBasisWire::ResultsFilings,
+                }],
+                sources: vec![representative_source(
+                    "sec",
+                    PublicSourceState::Updated,
+                    None,
+                )],
+                source_state: Some(PublicSourceState::Updated),
             })
             .into_response()
         }
@@ -873,7 +1193,7 @@ mod tests {
     use axum::http::StatusCode;
 
     #[tokio::test]
-    async fn wire_states_and_kinds_serialize_snake_case_and_bad_tickers_are_422() {
+    async fn wire_states_and_kinds_serialize_snake_case() {
         let bytes = to_bytes(
             contract_representative_for(
                 StatusCode::OK,
@@ -889,6 +1209,99 @@ mod tests {
         assert_eq!(body["insiders"]["state"], "not_configured");
         assert_eq!(body["filings"][0]["kind"], "results");
         assert!(body["short_interest"].is_null());
+        assert_eq!(body["sources"][0]["state"], "delayed");
+        assert_eq!(body["sources"][2]["state"], "not_set_up");
+
+        // The P-2 words reach the wire as the frontend's union spells them.
+        let words: Vec<String> = [
+            SourceState::Updated,
+            SourceState::Delayed,
+            SourceState::LastGood,
+            SourceState::SourceDown,
+            SourceState::NotSetUp,
+            SourceState::Off,
+        ]
+        .into_iter()
+        .map(|s| serde_json::to_value(PublicSourceState::from(s)).unwrap())
+        .map(|v| v.as_str().unwrap().to_string())
+        .collect();
+        assert_eq!(
+            words,
+            [
+                "updated",
+                "delayed",
+                "last_good",
+                "source_down",
+                "not_set_up",
+                "off"
+            ]
+        );
+        // A client built before `sources`, `calendar` and `results` reads an older answer.
+        let old: PublicMarketsWire = serde_json::from_value(serde_json::json!({
+            "state": "live", "detail": null, "rates": null, "futures": null, "liquidity": null
+        }))
+        .unwrap();
+        assert!(old.sources.is_empty() && old.calendar.is_none());
+        assert!(serde_json::from_value::<RatesWire>(serde_json::json!({
+            "source": "x", "as_of": "2026-10-09", "fetched_at": "x",
+            "latest": {"date": "2026-10-09", "t3m": null, "t2y": null, "t5y": null,
+                       "t10y": 4.0, "t30y": null, "real10y": null},
+            "year_ago": null, "daily": []
+        }))
+        .unwrap()
+        .source_state
+        .is_none());
+    }
+
+    /// A section served from a kept copy says so in its own field, `last_good`, taken from the
+    /// source's row; the human `detail` sentence is passed through unchanged beside it.
+    #[tokio::test]
+    async fn a_last_good_copy_is_a_field_on_its_section_and_bad_tickers_are_422() {
+        use chrono::TimeZone;
+        use std::sync::Arc;
+        let day = |s: &str| NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap();
+        let at = Utc.with_ymd_and_hms(2026, 10, 13, 7, 0, 0).unwrap();
+        let point = service::YieldPoint {
+            date: day("2026-10-09"),
+            t3m: None,
+            t2y: None,
+            t5y: None,
+            t10y: Some(4.1),
+            t30y: None,
+            real10y: None,
+        };
+        let detail =
+            "U.S. Treasury did not answer at 13:00 UTC; showing data fetched at 07:00 UTC.";
+        let markets = service::Markets {
+            state: DataState::Live,
+            detail: Some(detail.into()),
+            rates: Some(service::Rates {
+                as_of: point.date,
+                fetched_at: at,
+                series: Arc::new(service::RatesSeries {
+                    latest: point.clone(),
+                    year_ago: None,
+                    daily: vec![point],
+                }),
+            }),
+            futures: None,
+            liquidity: None,
+            calendar: None,
+            sources: vec![service::SourceStatus {
+                id: "treasury",
+                name: "U.S. Treasury daily yield curves",
+                state: SourceState::LastGood,
+                as_of: Some(day("2026-10-09")),
+                checked_at: Some(at),
+                failed_at: Some(at + chrono::Duration::hours(6)),
+                detail: Some(detail.into()),
+            }],
+        };
+        let wire = serde_json::to_value(PublicMarketsWire::from(markets)).unwrap();
+        assert_eq!(wire["rates"]["source_state"], "last_good");
+        assert_eq!(wire["detail"], detail);
+        assert_eq!(wire["sources"][0]["state"], "last_good");
+        assert_eq!(wire["sources"][0]["failed_at"], "2026-10-13T13:00:00Z");
 
         let state = AppState::for_runtime_guardrail_tests("public-data-test".into())
             .await

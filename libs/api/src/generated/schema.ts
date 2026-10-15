@@ -1109,6 +1109,12 @@ export interface components {
       set: boolean;
       storage_available: boolean;
     };
+    /** @description Releases from `from` to `to` (YYYY-MM-DD, inclusive), soonest first. */
+    CalendarWire: {
+      from: string;
+      releases: components['schemas']['ReleaseWire'][];
+      to: string;
+    };
     CandidateCapsWire: {
       max_bytes: number;
       max_records: number;
@@ -1518,6 +1524,7 @@ export interface components {
       /** @description YYYY-MM-DD of the newest weekly report. */
       report_date: string;
       source: string;
+      source_state?: null | components['schemas']['PublicSourceState'];
     };
     GexProfileShapeWire: {
       /** Format: double */
@@ -1718,6 +1725,7 @@ export interface components {
       /** @description RFC 3339 UTC: when this server fetched the data. */
       fetched_at: string;
       source: string;
+      source_state?: null | components['schemas']['PublicSourceState'];
       weeks: components['schemas']['LiquidityWeekWire'][];
     };
     ListSnapshotRow: {
@@ -2244,15 +2252,50 @@ export interface components {
       detail: string | null;
       filings: components['schemas']['FilingWire'][];
       missing: string[];
+      /**
+       * @description Expected results windows for the named tickers with enough filing history. Absent from
+       *     servers before 2026-10-15.
+       */
+      results?: components['schemas']['ResultsWindowWire'][];
+      source_state?: null | components['schemas']['PublicSourceState'];
+      /** @description SEC EDGAR's row (empty when no ticker was named). Absent from servers before 2026-10-15. */
+      sources?: components['schemas']['PublicSourceWire'][];
       state: components['schemas']['PublicDataState'];
     };
     /** @description `GET /api/public-data/markets`. Each part is null when its source failed with nothing cached. */
     PublicMarketsWire: {
+      calendar?: null | components['schemas']['CalendarWire'];
       detail: string | null;
       futures: null | components['schemas']['FuturesWire'];
       liquidity: null | components['schemas']['LiquidityWire'];
       rates: null | components['schemas']['RatesWire'];
+      /**
+       * @description Treasury, CFTC, the three liquidity inputs and the four release schedules. Absent from
+       *     servers before 2026-10-15.
+       */
+      sources?: components['schemas']['PublicSourceWire'][];
       state: components['schemas']['PublicDataState'];
+    };
+    /**
+     * @description One source's standing, in the closed P-2 vocabulary: `updated` (fetched on its schedule),
+     *     `delayed` (fetched; the source publishes late by design), `last_good` (this cycle's fetch failed
+     *     and the copy served is the last good one), `source_down` (failed, nothing kept), `not_set_up`
+     *     (a required setting is missing) and `off` (`PUBLIC_DATA=off`).
+     * @enum {string}
+     */
+    PublicSourceState: 'updated' | 'delayed' | 'last_good' | 'source_down' | 'not_set_up' | 'off';
+    /** @description One upstream source and its state. `id` is the source's anchor on /credits (`finra-si`). */
+    PublicSourceWire: {
+      /** @description YYYY-MM-DD the data is for (a settlement, a report date), where the source has one. */
+      as_of: string | null;
+      /** @description RFC 3339 UTC: when this server fetched the copy it serves. */
+      checked_at: string | null;
+      detail: string | null;
+      /** @description RFC 3339 UTC: when a fetch last failed, while that failure still stands. */
+      failed_at: string | null;
+      id: string;
+      name: string;
+      state: components['schemas']['PublicSourceState'];
     };
     /**
      * @description `GET /api/public-data/tickers/{ticker}`. FINRA parts are null when FINRA has nothing for the
@@ -2262,12 +2305,14 @@ export interface components {
       detail: string | null;
       filings: components['schemas']['FilingWire'][];
       filings_detail: string | null;
+      filings_source_state?: null | components['schemas']['PublicSourceState'];
       filings_state: components['schemas']['PublicDataState'];
       insiders: null | components['schemas']['InsidersWire'];
       periodic: components['schemas']['PeriodicFilingWire'][];
       shares_outstanding: null | components['schemas']['DatedValueWire'];
       short_interest: null | components['schemas']['ShortInterestWire'];
       short_interest_detail: string | null;
+      short_interest_source_state?: null | components['schemas']['PublicSourceState'];
       /**
        * @description `live` when FINRA answered, even with no report for this symbol (`short_interest` null);
        *     `unavailable` when it didn't and nothing is cached: an outage, not an empty fact.
@@ -2275,8 +2320,14 @@ export interface components {
       short_interest_state: components['schemas']['PublicDataState'];
       short_volume: null | components['schemas']['ShortVolumeWire'];
       short_volume_detail: string | null;
+      short_volume_source_state?: null | components['schemas']['PublicSourceState'];
       /** @description As `short_interest_state`, for FINRA's daily short-sale volume files. */
       short_volume_state: components['schemas']['PublicDataState'];
+      /**
+       * @description FINRA short interest, FINRA short-sale volume and SEC EDGAR, as answered for this ticker.
+       *     Absent from servers before 2026-10-15.
+       */
+      sources?: components['schemas']['PublicSourceWire'][];
       state: components['schemas']['PublicDataState'];
       ticker: string;
     };
@@ -2292,6 +2343,7 @@ export interface components {
       fetched_at: string;
       latest: components['schemas']['YieldPointWire'];
       source: string;
+      source_state?: null | components['schemas']['PublicSourceState'];
       year_ago: null | components['schemas']['YieldPointWire'];
     };
     /** @enum {string} */
@@ -2509,10 +2561,45 @@ export interface components {
       summary?: string | null;
       time_horizon?: string | null;
     };
+    /** @description One scheduled release from an agency's published calendar. */
+    ReleaseWire: {
+      /** @description "Fed", "BLS", "BEA" or "Treasury". */
+      agency: string;
+      /** @description YYYY-MM-DD */
+      date: string;
+      /** @description YYYY-MM-DD the agency had published before it moved the release. */
+      moved_from: string | null;
+      /** @description "CPI", "Jobs report", "PPI", "GDP", "PCE prices", "FOMC statement", "Quarterly refunding". */
+      name: string;
+      /** @description The schedule's source id: `fed-fomc`, `bls`, `bea` or `treasury-qr`. */
+      source: string;
+      /** @description HH:MM, Eastern time, when the agency states one. */
+      time: string | null;
+    };
     ResearchErrorBody: {
       detail: string;
       error: string;
       vendor_called: boolean;
+    };
+    /**
+     * @description What a results window is projected from.
+     * @enum {string}
+     */
+    ResultsBasisWire: 'results_filings' | 'periodic_reports';
+    /**
+     * @description The window a company's next results are expected in: each of its last four results dates
+     *     carried forward by whole quarters (91 days) to the quarter after the latest. An estimate,
+     *     never an announced date.
+     */
+    ResultsWindowWire: {
+      /** @description The dates it is projected from, YYYY-MM-DD, newest first (at most four). */
+      basis: string[];
+      basis_kind: components['schemas']['ResultsBasisWire'];
+      /** @description YYYY-MM-DD */
+      end: string;
+      /** @description YYYY-MM-DD */
+      start: string;
+      ticker: string;
     };
     RiskInputsBody: {
       /** Format: double */
