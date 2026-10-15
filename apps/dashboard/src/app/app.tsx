@@ -107,6 +107,9 @@ const PositionsPage = lazy(() =>
   import('@/pages/positions/PositionsPage').then((m) => ({ default: m.PositionsPage })),
 );
 const Scanner = lazy(() => import('@/pages/scanner/Scanner').then((m) => ({ default: m.Scanner })));
+const ScannerNotLive = lazy(() =>
+  import('@/pages/scanner/ScannerNotLive').then((m) => ({ default: m.ScannerNotLive })),
+);
 const BlogPage = lazy(() => import('@/pages/blog/BlogPage').then((m) => ({ default: m.BlogPage })));
 const MethodologyPage = lazy(() =>
   import('@/pages/methodology/MethodologyPage').then((m) => ({ default: m.MethodologyPage })),
@@ -182,6 +185,16 @@ function TickerDeskRoute() {
   ) : (
     <TickerDashboard />
   );
+}
+
+/** The scanner, signed in. A live build with no options feed (`not_live`) mounts the explain page,
+ *  which never calls /api/scan*: every column reads the options chain. A paused feed keeps the
+ *  scanner and its last board under the paused banner; demo builds always run the sample scan. */
+function ScannerRoute() {
+  const mode = useMarketDataMode();
+  if (dataMode === 'demo') return <Scanner />;
+  if (mode === null) return <RouteFallback />;
+  return mode === 'not_live' ? <ScannerNotLive /> : <Scanner />;
 }
 
 /** Indicators need daily bars: demo builds compute them from sample bars; the live build shows
@@ -283,7 +296,7 @@ export function AppRoutes() {
           path="/scanner"
           element={
             <RequireAuth surface="the scanner" demoPath="/scanner">
-              {lazyRoute(<Scanner />)}
+              {lazyRoute(<ScannerRoute />)}
             </RequireAuth>
           }
         />

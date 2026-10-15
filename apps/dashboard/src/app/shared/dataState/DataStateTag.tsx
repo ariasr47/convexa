@@ -4,6 +4,7 @@
  * warning colour (burnt orange) and nothing uses green or red. `detail` follows the word in the same
  * tag ("Updated Oct 13", "Delayed · 9 days").
  */
+import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import CropFreeOutlined from '@mui/icons-material/CropFreeOutlined';
 import EventOutlined from '@mui/icons-material/EventOutlined';
 import FunctionsOutlined from '@mui/icons-material/FunctionsOutlined';
@@ -35,10 +36,22 @@ const GLYPH: Record<DataStateKey, ComponentType<{ sx?: object; 'aria-hidden'?: b
   demo: CropFreeOutlined,
   signIn: LockOutlined,
   thirdParty: OpenInNewOutlined,
+  local: CheckOutlined,
 };
 
-export function DataStateTag({ state, detail }: { state: DataStateKey; detail?: string | null }) {
-  const { word, kind } = DATA_STATES[state];
+/** `label` replaces the word where the design names the state in context ("Private testing" for
+ *  Sign in, "Read-only sample" for Sample); the glyph and the drawing still come from `state`. */
+export function DataStateTag({
+  state,
+  detail,
+  label,
+}: {
+  state: DataStateKey;
+  detail?: string | null;
+  label?: string;
+}) {
+  const { kind } = DATA_STATES[state];
+  const word = label ?? DATA_STATES[state].word;
   const Glyph = GLYPH[state];
   return (
     <Box

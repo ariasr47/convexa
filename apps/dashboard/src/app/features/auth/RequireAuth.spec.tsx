@@ -77,7 +77,7 @@ describe('RequireAuth — the three branches (quiet fill / children / wall)', ()
     expect(screen.queryByText('Sign in to open the scanner')).toBeNull();
     expect(screen.queryByText(/^Sign in to open /)).toBeNull();
     // The policy caption and the two offers survive the degradation.
-    expect(screen.getByText(/Private testing — invited accounts only/)).toBeInTheDocument();
+    expect(screen.getByTestId('require-auth-policy')).toHaveTextContent(/new sign-ups are closed/);
     expect(screen.getByTestId('require-auth-ticker')).toHaveAttribute('href', '/ticker');
   });
 
