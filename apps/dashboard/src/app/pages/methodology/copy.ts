@@ -48,6 +48,8 @@
  * between the design source (`methodology.mjs:24-25,62-63`) and this module and are unchanged.
  */
 import { NOT_A_NUMBER, type NotANumber } from '@/shared/copy/notANumber';
+import { FINRA_OFF_REASON } from '@/shared/dataState/finraSwitch';
+import type { DataStateKey } from '@/shared/dataState/vocabulary';
 
 export type MethodBlock =
   | { readonly kind: 'prose'; readonly body: readonly string[]; readonly muted?: boolean }
@@ -256,17 +258,19 @@ export const METHOD_COPY = {
     'Convexa is an analysis tool. Simulated positions are paper. A connected brokerage is ' +
     'read-only — Convexa never places, changes, or cancels an order. Not investment advice.',
   sections: SECTIONS,
-  ctaScanner: 'Open Scanner',
   ctaTicker: 'Open free Ticker',
+  ctaScanner: 'Open Scanner',
   ctaBack: 'Back to home',
 } as const;
 
 /**
  * “What’s live on this site” (#data), the section the production bar's “What’s live” opens. Static
  * copy chosen by build mode; it must agree with /api/health and the 2026-10-14 environments without
- * asking either (the page sends no request). Production today: no options vendor, public records
- * live, SEC EDGAR “Not set up” until the operator sets SEC_USER_AGENT — each row's cadence matches
- * pages/trust/sources.ts. Design: design/src/screens/final/shell-site-docs.mjs (liveSection).
+ * asking either (the page sends no request). Production today: no options vendor; public records
+ * live, SEC EDGAR included (SEC_USER_AGENT is set, 2026-10-15); FINRA Off with its reason until the
+ * owner confirms FINRA's terms (owner, 2026-10-15; shared/dataState/finraSwitch.ts).
+ * Each row's source and cadence match /credits (pages/trust/sources.ts).
+ * Design: design/src/screens/final/shell-site-docs.mjs (liveSection).
  */
 export const WHATS_LIVE = {
   id: 'data',
@@ -276,7 +280,7 @@ export const WHATS_LIVE = {
     lead: [
       'This site runs without a paid options feed. ',
       'Public records are live',
-      ', each with its source and its date; SEC filings show Not set up until the operator adds the SEC’s required contact line. ',
+      ', each with its source and its date, except FINRA’s short data, which is off for now. ',
       'Everything built from the options chain is not live',
       ': those panels say what they would show and why they are off, and link to the same screen on the demo, where every screen runs on sample data.',
     ],
@@ -293,12 +297,15 @@ export const WHATS_LIVE = {
         'CFTC Traders in Financial Futures',
         'Weekly: as of Tuesday, out Friday',
       ],
-      ['Short interest', 'FINRA', 'Twice a month, about a week after each settlement date'],
-      ['Short-sale volume', 'FINRA', 'Every trading day, one business day late'],
+      [
+        'Release dates: FOMC, CPI, PPI, jobs, GDP, refunding',
+        'Federal Reserve, BLS, BEA, U.S. Treasury',
+        'Set months ahead; read twice a day',
+      ],
       [
         'Filings, insider trades, reported figures',
         'SEC EDGAR',
-        'As filed. Shows “Not set up” until the operator sets SEC_USER_AGENT',
+        'As filed; filings checked every hour, company facts daily',
       ],
       ['Research notes', 'Convexa', 'As written, each with its review date'],
       [
@@ -306,6 +313,12 @@ export const WHATS_LIVE = {
         'TradingView (third party)',
         'TradingView’s own delay; Convexa reads nothing from it',
       ],
+    ],
+    switchedOffHead: 'Off here',
+    switchedOffBody: FINRA_OFF_REASON,
+    switchedOff: [
+      ['Short interest', 'FINRA'],
+      ['Short-sale volume', 'FINRA'],
     ],
     offHead: 'Not live here',
     offColumn: 'Needs the options feed',
@@ -327,22 +340,27 @@ export const WHATS_LIVE = {
       ' Every screen runs on an authored scenario dated October 7, 2026, and the site makes no calls to Convexa’s API or to any third party. You are signed in to the demo account; your changes stay in this browser until you reset them from the demo bar.',
     ],
     demoHead: 'In this demo',
+    /** Each sample, worded as the demo's chips are: “Demo · shaped like …” (as on /credits). */
     demo: [
       ['Dealer structure, flow, scores, AI reads', 'shaped like the Massive options feed'],
       ['Rates, positioning, short data', 'shaped like Treasury, CFTC and FINRA'],
       ['Filings and reported figures', 'shaped like SEC EDGAR'],
-      ['Research notes', 'six authored notes'],
+      ['Research notes', 'six authored sample notes'],
       ['Daily bars and indicators', 'computed from sample bars'],
     ],
     liveHead: 'The live site',
     liveBody:
-      'The production site runs the public data live — Treasury, CFTC, FINRA, research notes and TradingView’s daily chart, and SEC EDGAR once its contact line is set — and shows Not live wherever the options feed would be needed.',
+      'The production site runs the public data live — Treasury, the Fed, CFTC, SEC EDGAR, the release schedules, research notes and TradingView’s daily chart — keeps FINRA’s short data off until its terms are confirmed, and shows Not live wherever the options feed would be needed.',
     liveLink: 'Open the live site',
   },
 } as const;
 
+/** One state word as this page lists it: the state, what it means, and the word when the page
+ *  names it in context (P-15: the landing's “Illustrative sample”). */
+export type StateWordRow = readonly [state: DataStateKey, means: string, word?: string];
+
 /** The P-2 words a production panel can carry, each with what it means. */
-export const STATE_WORDS = [
+export const STATE_WORDS: readonly StateWordRow[] = [
   ['updated', 'Current to its source, with the source’s date. Never a live dot.'],
   ['delayed', 'The source publishes late on a schedule; the tag says by how much.'],
   ['computed', 'Convexa computed it from public inputs it names.'],
@@ -351,20 +369,21 @@ export const STATE_WORDS = [
   ['lastGood', 'This cycle failed; the earlier copy shows dimmed, with when it was fetched.'],
   ['sourceDown', 'The source didn’t answer and nothing is kept: unknown, not empty.'],
   ['couldntLoad', 'Our request failed. The panel says why and offers Try again.'],
-  ['notSetUp', 'This site lacks a setting, such as the SEC’s required contact line.'],
+  ['notSetUp', 'This site lacks a setting the source needs; the panel says which.'],
   ['off', 'Switched off on purpose.'],
   ['signIn', 'Behind the private-testing wall; sign-ups are closed.'],
   [
-    'sample',
-    'Only on the landing page’s illustrations, as “Illustrative sample”. Never market data.',
+    'local',
+    'Your own settings and records, kept in this browser or your account. Needs no market data.',
   ],
-] as const;
+  ['sample', 'Only on the landing page’s illustrations. Never market data.', 'Illustrative sample'],
+];
 
 /** The words the demo uses. */
-export const STAGING_WORDS = [
+export const STAGING_WORDS: readonly StateWordRow[] = [
   [
     'demo',
     'The bar on every page here. Every source chip is dashed and says what the sample is shaped like.',
   ],
   ['computed', 'Convexa computed it, here from sample inputs.'],
-] as const;
+];

@@ -103,7 +103,11 @@ function useLiveCards(): LiveCard[] {
     {
       to: '/research/filings',
       title: 'Filings',
-      body: 'SEC EDGAR; starts once SEC access is set up on this site.',
+      // W1-07: the set-up sentence only beside a Not set up tag; SEC is set up on production.
+      body:
+        t?.filings_state === 'not_configured'
+          ? 'SEC EDGAR; starts once SEC access is set up on this site.'
+          : 'SEC EDGAR filings, read hourly.',
       tag: ticker.error
         ? failed
         : t

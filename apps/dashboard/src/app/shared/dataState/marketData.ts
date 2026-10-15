@@ -11,10 +11,10 @@ export const marketDataOff = (mode: MarketDataMode | null): boolean =>
 
 export const NOT_LIVE_COPY = {
   title: 'Options data isn’t live on this site.',
-  // SEC EDGAR is left out on purpose: production says “Not set up” for filings until the operator
-  // sets SEC_USER_AGENT, and the bar makes no request that could tell it apart (/methodology#data
-  // says so row by row).
-  body: 'Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, short data, research and TradingView’s daily charts are live.',
+  // What is live on production, as /methodology#data lists it row by row: SEC filings are live
+  // (SEC_USER_AGENT is set, 2026-10-15); FINRA's short data is left out because the owner keeps it
+  // Off until its terms are confirmed (shared/dataState/finraSwitch.ts).
+  body: 'Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, filings, research and TradingView’s daily charts are live.',
   short: 'Options data isn’t live on this site',
 };
 
