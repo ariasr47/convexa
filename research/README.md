@@ -183,8 +183,14 @@ Guarantees | $108.5B @ 2026-07-26 | | flat | [2] | none
 - **A known difference** is explained after `;` in the same cell, like
   `us-gaap:OperatingIncomeLoss / us-gaap:Revenues; as reported in the 8-K`. The page still shows both
   values; the check then passes.
-- 10-Q cash-flow statements tag year-to-date amounts, not the quarter, so a quarterly cash-flow figure
-  reads "Not tagged in the filing"; cite the filing (`none`) or date it as the year to date.
+- **Units.** A `$` figure is US dollars: it is compared only with a value tagged in `USD` (or `USD/shares`
+  per share). A filer that tags only its own currency (TWD, EUR) reads "units differ" against it.
+- **Which filings.** The check reads the two newest periodic filings (10-Q, 10-K, 20-F, 40-F; never an
+  amendment), the same two the note page reads. A figure from an older filing, such as last year's
+  10-K once two 10-Qs have followed it, is listed as not checked, not failed.
+- **Quarterly cash flow.** A 10-Q's cash-flow statement tags year-to-date amounts, and neither check
+  keeps a six- or nine-month span. A Q1 figure checks as it is (the year to date is the quarter); for a
+  Q2 or Q3 cash-flow figure (operating cash flow, capex, free cash flow) cite the filing with `none`.
 
 The check reads only saved SEC company-facts answers, never EDGAR itself: save
 `https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json` as `research/_filings/<TICKER>.json`.
