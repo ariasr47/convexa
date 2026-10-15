@@ -196,7 +196,16 @@ export function Widget({
   });
   const { selectedId, select, clear } = useWidgetSelection();
   const selected = selectedId === id;
-  const { open: expanded, expand, collapse, supportsVT } = useExpand(reduced);
+  const { open: expanded, expand: openOverlay, collapse, supportsVT } = useExpand(reduced);
+  // While the overlay is open the inline card holds a placeholder of its body's height instead of
+  // a second live copy: a body with its own animation loop (the structure field) would otherwise
+  // run two at once. The card keeps its size, so nothing behind the dialog moves.
+  const inlineBodyRef = useRef<HTMLDivElement>(null);
+  const [heldHeight, setHeldHeight] = useState<number | null>(null);
+  const expand = () => {
+    setHeldHeight(inlineBodyRef.current?.getBoundingClientRect().height ?? null);
+    openOverlay();
+  };
   const headerId = useId();
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -519,7 +528,9 @@ export function Widget({
             h2/subtitle (the accessible name moves to `aria-label` above), no actions/info,
             no drag-grip/`⋮`/expand. `ReadStrip.tsx` is the one caller today. */}
         {!hideHeader && <Box id={headerId}>{header(false)}</Box>}
-        <Box sx={bodyWrapperSx}>{body}</Box>
+        <Box ref={inlineBodyRef} sx={bodyWrapperSx}>
+          {expanded ? <Box aria-hidden sx={{ height: heldHeight ?? undefined }} /> : body}
+        </Box>
       </Box>
 
       {/* Expand/peek — the same widget in a larger focus overlay. View Transitions morph it when

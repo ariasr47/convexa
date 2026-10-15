@@ -102,6 +102,8 @@ export function StructureFieldCanvas({
   // ref the effect reads, so stepping never rebuilds the loop.
   const probeRef = useRef<number | null>(null);
   const wakeRef = useRef<() => void>(() => undefined);
+  // Asks the loop for one frame: the field renders on demand unless it is animating (below).
+  const drawRef = useRef<() => void>(() => undefined);
   const [hoverReadout, setHoverReadout] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
   const reducedRef = useRef(reducedMotion);
@@ -166,7 +168,6 @@ export function StructureFieldCanvas({
         ctx.fillStyle = surfaces.ink;
         ctx.fillRect(0, 0, w, h);
         frame.lastT = now;
-        schedule();
         return;
       }
 
@@ -190,15 +191,25 @@ export function StructureFieldCanvas({
 
       paintFrameStep(m, ctx, geom, frame, now, reduce, palette, surfaces, hoverRef.current);
 
-      schedule();
+      // Render on demand (TD-01): every moving part of the field (sweep, drift, particles, the
+      // trail and the bead's pulse) runs only while the stream is live and motion is allowed, so
+      // only then does it ask for the next frame. Otherwise this frame is final until the model,
+      // the pointer, the size or the visibility changes (each of those calls `schedule`).
+      if (m.live && !reduce) schedule();
     };
+    drawRef.current = schedule;
 
     const onResize = () => {
       ({ w, h } = layout());
+      // Resizing clears the bitmap, so repaint in this turn rather than waiting for a frame.
+      cancelAnimationFrame(raf);
+      raf = 0;
+      paint(performance.now());
     };
     const onMove = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
       hoverRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      schedule();
       const m = modelRef.current;
       if (m.samples.length < 2) return;
       const minK = m.samples[0].strike;
@@ -220,6 +231,7 @@ export function StructureFieldCanvas({
       if (probeRef.current != null) return;
       hoverRef.current = null;
       setHoverReadout(null);
+      schedule();
     };
     // The keyboard probe draws where a pointer at that strike would, mid-height.
     wakeRef.current = () => {
@@ -228,6 +240,7 @@ export function StructureFieldCanvas({
       if (i == null || m.samples.length < 2) {
         hoverRef.current = null;
         setHoverReadout(null);
+        schedule();
         return;
       }
       const minK = m.samples[0].strike;
@@ -274,9 +287,14 @@ export function StructureFieldCanvas({
     // tape trail inside the frame state can build (TD-01: it was rebuilt, and emptied, on each tick).
   }, [height, pad, palette, surfaces]);
 
+  // A new model (a structure refresh or a mid tick) and a reduced-motion change each ask for a frame.
   useEffect(() => {
     modelRef.current = model;
+    drawRef.current();
   }, [model]);
+  useEffect(() => {
+    drawRef.current();
+  }, [reducedMotion]);
 
   return (
     <div className={className} style={{ width: '100%' }}>
