@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeBlogHeads } from './write-blog-heads.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const explicit = process.env.VITE_DATA_MODE;
@@ -38,4 +40,19 @@ if (result.error) {
   console.error(`[build-dashboard] failed to start Nx: ${result.error.message}`);
   process.exit(2);
 }
-process.exit(result.status ?? 1);
+if (result.status !== 0) process.exit(result.status ?? 1);
+
+// Each blog post's address gets its own <title>, canonical and share tags (write-blog-heads.mjs).
+// Here rather than inside the Nx target, so it reads the current docs/blog/posts.json even when Nx
+// restores the dashboard build from its cache.
+try {
+  const dist = path.join(root, 'apps', 'dashboard', 'dist');
+  const postsJson = readFileSync(path.join(root, 'docs', 'blog', 'posts.json'), 'utf8');
+  for (const file of writeBlogHeads(dist, postsJson)) {
+    console.log(`[build-dashboard] wrote ${path.relative(root, file)}`);
+  }
+} catch (error) {
+  console.error(`[build-dashboard] blog heads: ${error instanceof Error ? error.message : error}`);
+  process.exit(1);
+}
+process.exit(0);

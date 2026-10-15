@@ -4,14 +4,18 @@
 No dependencies — a small Markdown subset converter (h1/h2/h3, p, ul/ol, blockquote,
 tables, hr, images-as-inline-SVG, `code`/**bold**/*em*/links) tailored to these posts.
 
-Each article's one source is its markdown here. The site renders it inside the shell at
-/blog/<slug>.html (apps/dashboard/src/app/pages/blog/posts.ts reads the same file at build
-time). This script writes the PLAIN copy for readers without JavaScript (index.html's
-<noscript> links to it): here in docs/blog/ and into apps/dashboard/public/blog/plain/.
+Each article's one source is its markdown here; posts.json here lists the published posts
+(slug, title, description), the same list the site reads. The site renders a post inside the
+shell at /blog/<slug> (apps/dashboard/src/app/pages/blog/posts.ts reads the same files at build
+time; tools/write-blog-heads.mjs gives that address its own title and share tags). This script
+writes the PLAIN copy for readers without JavaScript (index.html's <noscript> links to it): here
+in docs/blog/ and into apps/dashboard/public/blog/plain/. It is noindex, and its canonical is the
+in-shell address.
 Never write a page to public/blog/<slug>.html itself: a static file there would win over the
 in-shell route and the post would lose the site's bar, nav and footer.
 """
 import html
+import json
 import pathlib
 import re
 
@@ -21,15 +25,8 @@ PUBLIC = REPO / "apps" / "dashboard" / "public" / "blog" / "plain"
 IMG = HERE / "img"
 
 ARTICLES = [
-    {
-        "md": HERE / "how-we-read-dealer-structure.md",
-        "slug": "how-we-read-dealer-structure",
-        "title": "How We Read Dealer Structure",
-        "description": (
-            "Walls, the gamma flip, GEX, score, and two data speeds — what Convexa actually "
-            "computes, on what basis, and where the read is weak."
-        ),
-    },
+    {**post, "md": HERE / f"{post['slug']}.md"}
+    for post in json.loads((HERE / "posts.json").read_text(encoding="utf-8"))
 ]
 
 
@@ -140,12 +137,12 @@ TEMPLATE = """<!DOCTYPE html>
 <title>{title}</title>
 <meta name="description" content="{description}">
 <meta name="robots" content="noindex">
-<link rel="canonical" href="https://convexa.pages.dev/blog/{slug}.html">
+<link rel="canonical" href="https://convexa.pages.dev/blog/{slug}">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Convexa">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{description}">
-<meta property="og:url" content="https://convexa.pages.dev/blog/{slug}.html">
+<meta property="og:url" content="https://convexa.pages.dev/blog/{slug}">
 <meta property="og:image" content="https://convexa.pages.dev/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.ico">
