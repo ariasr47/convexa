@@ -3,7 +3,7 @@
 // ./shell-site-front.mjs and ./shell-site-docs.mjs (see ./index.mjs for the row shape).
 import { SS_CSS } from './shell-site-kit.mjs';
 import { landingBoard, landingStates, shellBoard, shellPhone, shellStates } from './shell-site-front.mjs';
-import { blogIndexBoard, blogPostBoard, blogStates, methodologyStates, labDetailBoard, labIndexBoard, labStates, methodologyBoard, notFoundBoard, notFoundStates, opsArchiveBoard, opsMetricsBoard, opsStagingBoard, opsStates } from './shell-site-docs.mjs';
+import { blogIndexBoard, blogPostBoard, blogStates, methodologyStates, methodologyBoard, notFoundBoard, notFoundStates, opsArchiveBoard, opsMetricsBoard, opsStagingBoard, opsStates } from './shell-site-docs.mjs';
 
 const APP = 'apps/dashboard/src/app/';
 const light = { scheme: 'light' };
@@ -229,61 +229,6 @@ export const ROWS = [
       { id: 'phone', title: 'Phone · post', w: 390, h: 2952, body: blogPostBoard('production') },
       { id: 'light', title: 'Light · post', w: 1440, h: 2275, body: blogPostBoard('production'), opts: light },
       { id: 'states', title: 'States', w: 1440, h: 1463, body: blogStates },
-    ],
-  },
-  // ---------------------------------------------------------------------------------------------
-  {
-    key: 'lab',
-    label: 'Lab',
-    css: SS_CSS,
-    specH: 2371,
-    spec: {
-      title: 'Lab',
-      route: '/lab and /lab/{structure-field, tape-pulse, wall-magnet, term-heat, flow-ribbons}',
-      job: 'Instrument candidates for the ticker desk, so a drawing can be judged before it lands on a desk.',
-      env: {
-        production: 'No mocks, so no synthetic data: every instrument shows Not live — what it would show, why it is off — and “See it on the demo →” to the same instrument on staging (owner ruling 2026-10-14). An “On this page” line counts them.',
-        staging: 'Every instrument runs on synthetic data in a dashed, hatched frame with the Sample tag, a “Demo · synthetic” chip and the scenario date (P-3); Structure Field can switch to the demo’s SPY chain.',
-      },
-      widgets: [
-        { name: 'Structure Field', source: 'synthetic field (structureFieldDemo.ts) · staging also the demo SPY chain', production: 'notLive', staging: ['demo', 'Synthetic'] },
-        { name: 'Tape Pulse', source: 'synthetic tape', production: 'notLive', staging: ['demo', 'Synthetic'] },
-        { name: 'Wall Magnet', source: 'synthetic walls and mid', production: 'notLive', staging: ['demo', 'Synthetic'] },
-        { name: 'Term Heat', source: 'synthetic IV by tenor', production: 'notLive', staging: ['demo', 'Synthetic'] },
-        { name: 'Flow Ribbons', source: 'synthetic charm and vanna', production: 'notLive', staging: ['demo', 'Synthetic'] },
-      ],
-      states: [
-        { tag: 'notLive', when: 'Production, every instrument, on the index and on a direct link.' },
-        { tag: 'demo', when: 'Staging, every instrument.' },
-        { tag: 'Reduced motion', when: 'A still frame: no drift, trail or flash; the probe still works by keyboard.' },
-        { tag: ['error', 'Couldn’t start'], when: 'Canvas or WebGL failed: the frame keeps its size and offers the static drawing.' },
-        { tag: 'unavailable', when: 'Staging: the demo SPY chain couldn’t be built; the synthetic field stays.' },
-      ],
-      phone: 'Cards in one column; each Not live card keeps its demo link as a 44px target. An instrument page puts the source switch above the field, which re-lays out with every other strike labelled.',
-      acceptance: [
-        'Production /lab: five cards, each with Not live, “Would show”, “Why it’s off” and “See it on the demo →” to https://staging.convexa.pages.dev/lab/<id>; no synthetic drawing anywhere.',
-        'Production /lab/<id>: the frame names the metric, says Not live and links to the same instrument on staging; no canvas or WebGL context is created.',
-        'Staging: every instrument draws from synthetic data with its dashed frame and chip; no request leaves the browser.',
-        'Reduced motion: every instrument draws a still frame.',
-        'Gamma sign and term structure never ride on hue alone (P-11): position and labels carry them; Term Heat is one ordinal ramp.',
-        'The Lab is reached from the footer only, not the primary nav.',
-      ],
-      built: [
-        { status: 'shipped', what: 'The Lab index and five instrument pages on synthetic data (labCatalog.ts, LabShell, demos/), reached from the footer.' },
-        { status: 'shipped', what: 'Production Not live for every instrument with its demo link (pages/lab/LabNotLive.tsx, 2026-10-14): a live build draws no synthetic instrument.' },
-        { status: 'partial', what: 'Structure Field’s “live SPY structure” calls the bundle (needs the options feed); designed: a “Demo SPY chain” source on staging only.' },
-        { status: 'partial', what: 'Term Heat colours contango and backwardation green and red; designed: one ordinal phosphor ramp with labels (P-9, P-11).' },
-      ],
-      rulings: ['P-1', 'P-2', 'P-8', 'P-9', 'P-11', 'P-12', 'P-13', 'Env 2026-10-14'],
-      code: [`${APP}pages/lab/LabIndex.tsx`, `${APP}pages/lab/labCatalog.ts`, `${APP}pages/lab/LabShell.tsx`, `${APP}pages/lab/StructureFieldLab.tsx`, `${APP}pages/lab/demos/`],
-    },
-    boards: [
-      { id: 'staging', title: 'Staging · demo account', w: 1440, h: 1032, body: labIndexBoard('staging') },
-      { id: 'production', title: 'Production', w: 1440, h: 1370, body: labIndexBoard('production') },
-      { id: 'instrument', title: 'Staging · an instrument (Structure Field)', w: 1440, h: 1082, body: labDetailBoard },
-      { id: 'phone', title: 'Phone · production', w: 390, h: 2797, body: labIndexBoard('production') },
-      { id: 'light', title: 'Light · production', w: 1440, h: 1370, body: labIndexBoard('production'), opts: light },
-      { id: 'states', title: 'States', w: 1440, h: 1491, body: labStates },
     ],
   },
   // ---------------------------------------------------------------------------------------------

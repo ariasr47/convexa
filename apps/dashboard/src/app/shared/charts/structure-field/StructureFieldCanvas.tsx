@@ -22,7 +22,7 @@
 import { TableTwin } from '@/shared/charts/frame';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { withAlpha, type LevelPalette } from './levelStrokes';
+import type { LevelPalette } from './levelStrokes';
 import {
   computeGeometry,
   emptyFrameState,
@@ -35,6 +35,11 @@ import {
 } from './paintStep';
 import { structureBufferKey } from './structureBufferKey';
 import type { StructureFieldModel } from './types';
+
+/** One form since the Lab went (owner, 2026-10-14): the field embedded in a host card (the desk, the
+ *  landing sample), calmer than the Lab's full instrument and without its own title strip. */
+const EMBEDDED = true;
+const CALM = true;
 
 /** The strike nearest spot: where the keyboard probe starts. */
 function nearestIndex(m: StructureFieldModel): number {
@@ -51,11 +56,6 @@ export interface StructureFieldCanvasProps {
   model: StructureFieldModel;
   height?: number;
   className?: string;
-  /**
-   * `ticker` — embed in Widget (no title strip / tape pill; frame owns honesty copy).
-   * `lab` — full instrument chrome (default).
-   */
-  variant?: 'lab' | 'ticker';
   /**
    * The RESOLVED level palette (SPEC §2.7). The canvas paints to Canvas2D and cannot consume MUI
    * `sx`, so the host resolves token keys → colours with `resolveLevelPalette(theme)` and passes them
@@ -84,7 +84,6 @@ export function StructureFieldCanvas({
   model,
   height = 480,
   className,
-  variant = 'lab',
   palette,
   surfaces,
   describedById,
@@ -107,16 +106,7 @@ export function StructureFieldCanvas({
   const reducedMotion = useReducedMotion();
   const reducedRef = useRef(reducedMotion);
   reducedRef.current = reducedMotion;
-  const embedded = variant === 'ticker';
-  // Ticker: calmer instrument (fewer particles, softer FX) so paper widgets aren't overpowered.
-  const calm = embedded;
-  // Memoized (not a fresh literal per render): the effect below now hands the whole object to
-  // `computeGeometry`, so its identity needs to be stable across renders where `embedded` — the only
-  // thing it is derived from — has not changed, or the effect's dependency array cannot name it.
-  const pad = useMemo<Pad>(
-    () => (embedded ? { l: 40, r: 12, t: 20, b: 28 } : { l: 56, r: 20, t: 40, b: 48 }),
-    [embedded],
-  );
+  const pad = useMemo<Pad>(() => ({ l: 40, r: 12, t: 20, b: 28 }), []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -180,7 +170,7 @@ export function StructureFieldCanvas({
         return;
       }
 
-      const geom = computeGeometry(m, pad, w, h, calm, embedded);
+      const geom = computeGeometry(m, pad, w, h, CALM, EMBEDDED);
 
       const key = structureBufferKey(m);
       if (key !== structureKey) {
@@ -282,7 +272,7 @@ export function StructureFieldCanvas({
     // The model is read through `modelRef` every frame, and `structureBufferKey` repaints the buffer
     // when its structure changes, so a new model (every mid tick) never tears this loop down: the
     // tape trail inside the frame state can build (TD-01: it was rebuilt, and emptied, on each tick).
-  }, [height, variant, embedded, calm, pad, palette, surfaces]);
+  }, [height, pad, palette, surfaces]);
 
   useEffect(() => {
     modelRef.current = model;
@@ -301,22 +291,8 @@ export function StructureFieldCanvas({
             display: 'block',
             width: '100%',
             height,
-            borderRadius: embedded ? 0 : 12,
-            border: embedded ? 'none' : `1px solid ${withAlpha(surfaces.steel, 0.28)}`,
-            // The ambient outer shadow (`rgba(0,0,0,0.65)`) is a deliberately MODE-INVARIANT literal,
-            // not a `tokens.ts` export — GATE Z (curvature-v2-desk-and-read, 2026-09-05, QA F3)
-            // removed the short-lived `fieldAmbientShadow` token: its only consumer is this
-            // `embedded === false` branch (`/lab/structure-field`; the desk hero passes
-            // `variant="ticker"`, so `embedded` is true there and this line never paints), and a
-            // named export with one lab-only consumer, absent from the mirrored `additions` block in
-            // `design/tokens/tokens.json`, contradicts DESIGN_SYSTEM.md:103's "Seven new names ...
-            // mirrored" claim for that surface. This canvas also has no `useTheme()` to resolve
-            // `elevationFor(theme)` from (SPEC §2.7 — it takes already-RESOLVED colours as props), so
-            // there is no existing token this value can bind to without new prop plumbing. See the
-            // exemption entry in `hex-discipline.spec.ts` for the "why a literal, not a token" note.
-            boxShadow: embedded
-              ? 'none'
-              : `0 0 0 1px ${withAlpha(surfaces.ink, 0.6)}, 0 18px 48px -24px rgba(0,0,0,0.65)`,
+            borderRadius: 0,
+            border: 'none',
             cursor: 'crosshair',
             // A phone can scroll past the field (TD-01: `none` trapped vertical scrolling).
             touchAction: 'pan-y',
@@ -375,47 +351,23 @@ export function StructureFieldCanvas({
             states the same levels and distances as text.
           </p>
         )}
-        {/* On the desk the probe's figures are a line under the field that always holds its place
-            (an overlay covered the strike axis on a phone); the lab keeps its corner overlay. */}
-        {embedded ? (
-          <div
-            role="status"
-            aria-live="polite"
-            style={{
-              minHeight: 20,
-              marginTop: 6,
-              fontFamily: hoverReadout ? '"IBM Plex Mono", ui-monospace, monospace' : undefined,
-              fontSize: 12,
-              lineHeight: '18px',
-              color: hoverReadout ? surfaces.phosphor : surfaces.steel,
-              overflowWrap: 'anywhere',
-            }}
-          >
-            {hoverReadout ?? 'Point at the field, or focus it and use ← →, to read a strike.'}
-          </div>
-        ) : (
-          hoverReadout && (
-            <div
-              role="status"
-              aria-live="polite"
-              style={{
-                position: 'absolute',
-                right: 12,
-                bottom: 12,
-                fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
-                fontSize: 12,
-                color: surfaces.phosphor,
-                background: surfaces.raised,
-                border: `1px solid ${withAlpha(surfaces.steel, 0.3)}`,
-                borderRadius: '8px',
-                padding: '6px 10px',
-                pointerEvents: 'none',
-              }}
-            >
-              {hoverReadout}
-            </div>
-          )
-        )}
+        {/* The probe's figures: a line under the field that always holds its place (an overlay
+            covered the strike axis on a phone). */}
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            minHeight: 20,
+            marginTop: 6,
+            fontFamily: hoverReadout ? '"IBM Plex Mono", ui-monospace, monospace' : undefined,
+            fontSize: 12,
+            lineHeight: '18px',
+            color: hoverReadout ? surfaces.phosphor : surfaces.steel,
+            overflowWrap: 'anywhere',
+          }}
+        >
+          {hoverReadout ?? 'Point at the field, or focus it and use ← →, to read a strike.'}
+        </div>
       </div>
       {table && model.samples.length > 0 && (
         <div style={{ marginTop: 8 }}>

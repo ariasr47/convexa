@@ -57,7 +57,8 @@ describe('AC-F1/F2/F3/F4 — one footer, one main, on every in-shell page', () =
       expect(container.querySelector('main')!.contains(footer)).toBe(false);
       expect(screen.getByTestId('footer-methodology-link')).toHaveAttribute('href', '/methodology');
       expect(screen.getByTestId('footer-blog-link')).toHaveAttribute('href', '/blog');
-      expect(screen.getByTestId('footer-lab-link')).toHaveAttribute('href', '/lab');
+      // The Lab link is gone with the Lab (owner, 2026-10-14).
+      expect(screen.queryByTestId('footer-lab-link')).toBeNull();
       expect(screen.getByTestId('footer-disclaimer')).toHaveTextContent(/read-only/);
       expect(screen.getByTestId('footer-disclaimer')).toHaveTextContent(/Not investment advice/);
     });

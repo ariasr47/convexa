@@ -144,7 +144,7 @@ export const SOURCES = [
     reads: 'On a site that subscribes: option chains with greeks and implied volatility, option trades and quotes, and stock prices — the inputs to dealer structure, flow, the tape, scores and AI reads.',
     cadence: 'Streaming during market hours.',
     terms: 'A paid subscription. This site doesn’t subscribe.',
-    where: 'The ticker desk’s structure, flow and AI read; the scanner; option prices in trade entry; the Lab.',
+    where: 'The ticker desk’s structure, flow and AI read; the scanner; option prices in trade entry.',
     link: ['Massive', 'https://massive.com'],
     prod: ['notLive'], prodNote: 'Nothing built from the options chain is live on this site. Each of those panels says so and links to the same screen on the demo.',
     shaped: 'the Massive options feed',

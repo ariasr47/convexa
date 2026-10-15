@@ -2,10 +2,8 @@
  * `fmtM` (the probe label's `net GEX`/`DEX` figure and the axis `±$` caps) and `gexAt` (the
  * net-GEX lookup every field line, particle and probe reads) — exact outputs at their boundaries.
  *
- * Both functions exist TWICE, byte-identical today: `paintStep.ts` (the Canvas2D field the ticker
- * desk paints) and `structureFieldShared.ts` (re-exported by `index.ts` for the lab WebGL field).
- * Each table runs against both copies so the two renderers cannot drift into printing different
- * numbers for one strike.
+ * They live in `paintStep.ts`, the Canvas2D field the ticker desk paints. (A second copy in
+ * `structureFieldShared.ts` served the Lab's WebGL field; it went with the Lab, owner 2026-10-14.)
  *
  * Expected values are hand-derived from the unit branches (K = 1e3 → 0 dp, M = 1e6 → 1 dp,
  * B = 1e9 → 2 dp; linear interpolation between adjacent samples, clamped at both ends). Inputs
@@ -14,17 +12,13 @@
  */
 import { describe, expect, it } from 'vitest';
 import * as paintStep from './paintStep';
-import * as shared from './structureFieldShared';
 
 interface FieldFormat {
   fmtM: (v: number) => string;
   gexAt: (samples: { strike: number; netGex: number }[], strike: number) => number;
 }
 
-const COPIES: Array<[string, FieldFormat]> = [
-  ['paintStep', paintStep],
-  ['structureFieldShared', shared],
-];
+const COPIES: Array<[string, FieldFormat]> = [['paintStep', paintStep]];
 
 describe.each(COPIES)('%s · fmtM', (_name, mod) => {
   it.each<[number, string]>([

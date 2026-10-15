@@ -82,7 +82,6 @@ describe('StructureFieldCanvas hover probe (AC-7)', () => {
     render(
       <StructureFieldCanvas
         model={model}
-        variant="ticker"
         height={300}
         palette={testPalette}
         surfaces={testSurfaces}
@@ -140,7 +139,6 @@ describe('StructureFieldCanvas — paints only from the resolved `palette`/`surf
     render(
       <StructureFieldCanvas
         model={model}
-        variant="ticker"
         height={300}
         palette={testPalette}
         surfaces={testSurfaces}

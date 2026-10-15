@@ -6,13 +6,12 @@
  * `landing-samples.spec.tsx:74-76`'s existing assertion — banned canvas-painted strings absent
  * from `container.textContent` — is a real check but a DIFFERENT one: `demo as-of`/`synthetic
  * demo`/`TAPE OFF` are painted onto the CANVAS, never written to the DOM as text, so that
- * assertion would stay green whether or not `variant='ticker'` is actually passed (QA's I-4
- * finding: "dropping the prop would make the field drift ... with every suite still green").
+ * assertion stays green whatever the canvas paints. (The `variant='ticker'` prop QA's I-4 finding
+ * was about is gone with the Lab, owner 2026-10-14: the canvas has only the embedded form now.)
  *
  * This file closes that gap by mocking `StructureFieldCanvas` (same idiom as
  * `StructureHeroPanel.spec.tsx:26-35`) and reading the ACTUAL props `StructureFieldSample` hands
- * it: `variant='ticker'` and the frozen honesty flags `{live:false, liveMid:null, source:'demo',
- * asOfSec:null}`.
+ * it: the frozen honesty flags `{live:false, liveMid:null, source:'demo', asOfSec:null}`.
  */
 import type { StructureFieldCanvasProps } from '@/shared/charts/structure-field';
 import { theme } from '@/shared/theme/theme';
@@ -38,8 +37,8 @@ afterEach(() => {
   captured.length = 0;
 });
 
-describe('GATE Z I-4 (§7 item 5) — StructureFieldSample pins variant="ticker" and the frozen model (props, not DOM)', () => {
-  it('StructureFieldCanvas receives variant="ticker" and {live:false, liveMid:null, source:"demo", asOfSec:null}', async () => {
+describe('GATE Z I-4 (§7 item 5) — StructureFieldSample pins the frozen model (props, not DOM)', () => {
+  it('StructureFieldCanvas receives {live:false, liveMid:null, source:"demo", asOfSec:null}', async () => {
     const { StructureFieldSample } = await import('./StructureFieldSample');
     render(
       <ThemeProvider theme={theme}>
@@ -49,7 +48,6 @@ describe('GATE Z I-4 (§7 item 5) — StructureFieldSample pins variant="ticker"
 
     expect(captured).toHaveLength(1);
     const props = captured[0];
-    expect(props.variant).toBe('ticker');
     expect(props.model.live).toBe(false);
     expect(props.model.liveMid).toBeNull();
     expect(props.model.source).toBe('demo');

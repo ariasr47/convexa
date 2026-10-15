@@ -1,4 +1,4 @@
-// Final · Convexa v1 — shell-site group: Methodology, Blog, Lab, 404 and the route fallback, and the
+// Final · Convexa v1 — shell-site group: Methodology, Blog, 404 and the route fallback, and the
 // operator pages, per environment (2026-10-14).
 import { icon, v4Nav, wordmark } from '../../lib.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
@@ -20,7 +20,7 @@ const LIVE_ROWS = [
   ['Research notes', 'Convexa', 'As written, each with its review date'],
   ['Daily price chart', 'TradingView (third party)', 'TradingView’s own delay; Convexa reads nothing from it'],
 ];
-const OFF_ROWS = [['Dealer gamma, the walls and the flip', '/ticker/SPY'], ['Flow, the tape and off-exchange blocks', '/ticker/SPY'], ['The scanner’s scores and tiers', '/scanner'], ['AI reads', '/ticker/SPY'], ['Option prices, greeks and implied volatility', '/ticker/SPY'], ['The Lab’s instruments', '/lab']];
+const OFF_ROWS = [['Dealer gamma, the walls and the flip', '/ticker/SPY'], ['Flow, the tape and off-exchange blocks', '/ticker/SPY'], ['The scanner’s scores and tiers', '/scanner'], ['AI reads', '/ticker/SPY'], ['Option prices, greeks and implied volatility', '/ticker/SPY']];
 
 function liveSection(env) {
   if (env === 'staging') return `<h2 id="data" class="display">What’s live on this site</h2>
@@ -97,45 +97,6 @@ export function blogPostBoard(env) {
 }
 
 // ================================================================================================
-// Lab
-// ================================================================================================
-const LAB = [
-  { id: 'structure-field', t: 'Structure Field', tl: 'Net dealer gamma by strike as a field: walls, the flip, the mid and a probe.', st: 'On the ticker desk', would: 'net dealer gamma by strike, with the walls, the flip and the mid you can probe.' },
-  { id: 'tape-pulse', t: 'Tape Pulse', tl: 'The mid’s recent trail and the last prints, on a strip with two clocks.', st: 'Candidate', would: 'the mid’s trail and the last prints as they arrive.' },
-  { id: 'wall-magnet', t: 'Wall Magnet', tl: 'The mid between the put and call walls, with the flip as the polarity line.', st: 'Candidate', would: 'where the mid sits between the walls, and which way hedging pulls it.' },
-  { id: 'term-heat', t: 'Term Heat', tl: 'Implied volatility across tenors as a single ordinal ribbon.', st: 'Candidate', would: 'implied volatility by tenor, and whether the curve is in contango.' },
-  { id: 'flow-ribbons', t: 'Flow Ribbons', tl: 'Charm and vanna flow projected to the next expiry.', st: 'Candidate', would: 'the dealer flow charm and vanna imply into the next expiry.' },
-];
-function labVis(id) {
-  const svg = (inner) => `<svg viewBox="0 0 300 92" preserveAspectRatio="none" aria-hidden="true" style="width: 100%; height: 92px; display: block;">${inner}</svg>`;
-  if (id === 'structure-field') { const v = [-6, -10, -14, -8, -3, 4, 9, 15, 11, 6, 3, 1]; return svg(`<line x1="0" x2="300" y1="46" y2="46" stroke="var(--line-2)"></line>${v.map((n, i) => { const bh = Math.abs(n) * 2.6; return `<rect x="${8 + i * 24}" y="${n > 0 ? 46 - bh : 46}" width="15" height="${bh}" rx="2" fill="${n > 0 ? 'var(--up)' : 'var(--down)'}" fill-opacity="0.8"></rect>`; }).join('')}<line x1="134" x2="134" y1="4" y2="88" stroke="var(--phosphor)" stroke-width="1.5" stroke-dasharray="4 4"></line>`); }
-  if (id === 'tape-pulse') { const p = [52, 48, 50, 44, 46, 40, 42, 36, 38, 34, 30, 33, 28, 30, 26]; return svg(`<polyline points="${p.map((y, i) => `${10 + i * 20},${y}`).join(' ')}" fill="none" stroke="var(--phosphor)" stroke-width="2"></polyline>${[3, 7, 11].map((i) => `<circle cx="${10 + i * 20}" cy="${p[i]}" r="3.5" fill="var(--steel)"></circle>`).join('')}<circle cx="290" cy="26" r="5" fill="var(--phosphor)"></circle>`); }
-  if (id === 'wall-magnet') return `<div style="width: 100%; display: flex; flex-direction: column; gap: 8px;"><div style="position: relative; height: 26px;"><span style="position: absolute; left: 0; right: 0; top: 12px; height: 2px; background: var(--line-2);"></span><span style="position: absolute; left: 4%; top: 2px; width: 2px; height: 22px; background: var(--steel);"></span><span style="position: absolute; left: 46%; top: 0; width: 2px; height: 26px; background: var(--phosphor);"></span><span style="position: absolute; left: 92%; top: 2px; width: 2px; height: 22px; background: var(--steel);"></span><span style="position: absolute; left: 62%; top: 6px; width: 14px; height: 14px; border-radius: 50%; background: var(--phosphor); transform: translateX(-50%);"></span></div><div style="display: flex; justify-content: space-between; font: 500 11px 'IBM Plex Mono', monospace; color: var(--steel);"><span>put wall</span><span>flip</span><span>call wall</span></div></div>`;
-  if (id === 'term-heat') return `<div style="width: 100%; display: flex; flex-direction: column; gap: 8px;"><div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; height: 40px;">${[0.95, 0.8, 0.66, 0.55, 0.46, 0.4, 0.36, 0.33].map((a) => `<span style="border-radius: 4px; background: var(--phosphor); opacity: ${a};"></span>`).join('')}</div><div style="display: flex; justify-content: space-between; font: 500 11px 'IBM Plex Mono', monospace; color: var(--steel);"><span>7d</span><span>30d</span><span>90d</span></div></div>`;
-  const k = (c, t) => `<span style="display: inline-flex; align-items: center; gap: 6px;"><i style="display: inline-block; width: 16px; height: 2px; background: ${c};"></i>${t}</span>`;
-  return `<div style="width: 100%; display: flex; flex-direction: column; gap: 4px;"><svg viewBox="0 0 300 70" preserveAspectRatio="none" aria-hidden="true" style="width: 100%; height: 70px; display: block;"><line x1="0" x2="300" y1="35" y2="35" stroke="var(--line-2)"></line><path d="M6,35 C60,12 120,10 180,24 C230,35 260,30 294,22" fill="none" stroke="var(--phosphor)" stroke-width="2.5"></path><path d="M6,35 C70,50 130,54 190,46 C240,41 270,44 294,50" fill="none" stroke="var(--steel)" stroke-width="2"></path></svg><div style="display: flex; gap: 14px; font-size: 11px; color: var(--steel);">${k('var(--phosphor)', 'charm flow · +')}${k('var(--steel)', 'vanna flow · −')}</div></div>`;
-}
-export function labIndexBoard(env) {
-  return ({ minHeight = 0, scheme = 'dark' } = {}) => {
-    const prod = env !== 'staging';
-    const intro = prod
-      ? 'Instruments that may move onto the ticker desk. Each one runs on synthetic data, and this site shows no mocks, so here each says what it would show and opens on the demo, where all of them run.'
-      : 'Instruments that may move onto the ticker desk, running on synthetic data so you can judge the drawing before it lands.';
-    const card = (d) => prod
-      ? `<section class="ss-lab" aria-labelledby="lab-${d.id}"><div class="ss-lh"><h3 id="lab-${d.id}">${d.t}</h3>${stateTag('notLive')}</div><p class="tl">${d.tl}</p><div class="vis off"><span class="dash" style="font: 500 22px 'IBM Plex Mono', monospace; color: var(--steel);" aria-label="No value">—</span></div>${notLiveBody({ would: d.would, why: 'its live form reads the options chain, a paid feed this site doesn’t run, and its synthetic version is a mock, which this site doesn’t show.', path: `/lab/${d.id}` })}<span class="stag k-solid" style="align-self: flex-start;">${d.st}</span></section>`
-      : `<a href="/lab/${d.id}" class="ss-lab k-sample" aria-labelledby="lab-${d.id}"><div class="ss-lh"><h3 id="lab-${d.id}">${d.t}</h3>${stateTag('sample')}<span class="stag k-solid">${d.st}</span></div><p class="tl">${d.tl}</p><div class="vis">${labVis(d.id)}</div><div class="cf-foot">${provChip('Demo · synthetic', 'dashed')}<span class="dline">Scenario · Oct 7, 2026</span><span class="t-info" style="margin-left: auto; display: inline-flex; gap: 4px; align-items: center; font-weight: 600; font-size: 13px;">Open ${icon('arrow', 13)}</span></div></a>`;
-    return sitePage({ env, scheme, minHeight, label: 'Lab', main: `<div class="wrap" style="padding-top: 40px; display: flex; flex-direction: column; gap: 24px;"><div style="display: flex; flex-direction: column; gap: 10px;"><span class="caps">Lab</span><h1 class="display" style="margin: 0; font-size: clamp(32px, 3.4vw, 44px);">Instrument lab</h1><p class="steel" style="margin: 0; max-width: 66ch; font-size: 16px; line-height: 1.6;">${intro}</p>${prod ? `<div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;"><span class="caps" style="color: var(--phosphor);">On this page</span>${stateTag('notLive', 'Not live · 5')}</div>` : ''}</div><div class="ss-labg">${LAB.map(card).join('')}</div></div>` });
-  };
-}
-export function labDetailBoard({ minHeight = 0, scheme = 'dark' } = {}) {
-  const F = [[550, -61], [552.5, -123], [555, -233], [557.5, -357], [560, -430], [562.5, -367], [565, -235], [567.5, -103], [570, 68], [572.5, 158], [575, 332], [577.5, 488], [580, 500], [582.5, 394], [585, 233], [587.5, 112], [590, 58], [592.5, 43], [595, 40], [597.5, 40], [600, 40]];
-  const body = plot({ height: 380, pl: 56, pr: 24, prn: 16, pt: 34, pb: 34, ends: false, keyboard: true, x: { min: 548.75, max: 601.25, ticks: [550, 555, 560, 565, 570, 575, 580, 585, 590, 595, 600].map((v, i) => ({ v, label: String(v), minor: i % 2 === 1 })) }, y: { min: -520, max: 580, ticks: [{ v: -400, label: '−400' }, { v: -200, label: '−200' }, { v: 200, label: '+200' }, { v: 400, label: '+400' }] }, hlines: [{ v: 0, kind: 'zero', label: '0' }], bars: F.map(([k, v]) => ({ x: k, v, role: v > 0 ? 'up' : 'down' })), barW: 18, segs: [{ x0: 568.5, y0: -520, x1: 568.5, y1: 580, role: 'emph', width: 1.5, dash: '4 4' }, { x0: 573.12, y0: -520, x1: 573.12, y1: 580, role: 'ctx', width: 1.5 }], pointLabels: [{ x: 580, y: 500, text: 'Call wall 580 · +γ' }, { x: 560, y: 60, text: 'Put wall 560 · −γ' }, { x: 568.5, y: 580, text: 'Flip 568.5' }, { x: 576, y: -440, text: 'Mid 573.12' }], focus: { x: 552.5, title: 'Strike 552.5', rows: [{ role: 'down', value: '−$123M', name: 'per 1% · dealers short gamma' }] }, aria: 'Synthetic net dealer gamma by strike: call wall 580, put wall 560, flip 568.5, mid 573.12. Arrow keys move the probe.' });
-  const fig = chartFrame({ claim: 'Dealers are long gamma above the 568.5 flip, most at the 580 call wall', sub: 'Synthetic SPY-shaped field · net dealer gamma by strike, $M per 1% move · above the zero line long (+γ), below short (−γ) · dashed line the flip, solid the mid', body, source: 'Demo · synthetic field', sourceKind: 'dashed', asof: 'Synthetic · no market data', kind: 'sample' });
-  const main = `<div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 20px;"><a href="/lab" class="t-info" style="display: inline-flex; gap: 6px; align-items: center; min-height: 24px; font-size: 14px; text-decoration: none;">← All demos</a><div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;"><h1 class="display" style="margin: 0; font-size: 38px;">Structure Field</h1><span class="stag k-solid">On the ticker desk</span></div><p class="steel" style="margin: 0; max-width: 70ch; font-size: 15.5px; line-height: 1.6;">Net dealer gamma by strike as a field: walls, the flip, the mid and a probe. The version on the ticker desk reads the demo’s sample chain; this one runs on a synthetic field.</p><div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;"><span class="seg4" role="group" aria-label="Field source"><button type="button" aria-pressed="true">Synthetic field</button><button type="button" aria-pressed="false">Demo SPY chain</button></span><span class="dline">Probe with ← → or hover. Reduced motion: no drift, no trail.</span></div>${fig}</div>`;
-  return sitePage({ env: 'staging', scheme, minHeight, label: 'Structure Field', main });
-}
-
-// ================================================================================================
 // 404 and the route fallback
 // ================================================================================================
 export function notFoundBoard({ minHeight = 0, scheme = 'dark', env = 'production' } = {}) {
@@ -153,22 +114,6 @@ export function notFoundStates({ minHeight = 0, scheme = 'dark' } = {}) {
     { name: 'Phone', tag: null, when: 'The two actions stack full width at 44px; the ⌘K hint hides on touch.', html: `<div class="ss-ctas" style="flex-direction: column; align-items: stretch;"><a href="/ticker" class="btn primary lg" style="width: 100%;">Open the Ticker →</a><a href="/" class="btn secondary lg" style="width: 100%;">Home</a></div>` },
   ];
   return statesBoard({ scheme, minHeight, title: '404 and the route fallback · states', lead: 'Every in-shell route loads lazily under the persistent nav. These are the loading and failure states every route shares, and the 404 in its cases.', trace: 'DOC-04, DOC-05, SPEC §2.5', items });
-}
-
-// ================================================================================================
-// Lab · states
-// ================================================================================================
-export function labStates({ minHeight = 0, scheme = 'dark' } = {}) {
-  const d = LAB[0];
-  const items = [
-    { name: 'Instrument card · production', tag: ['notLive'], when: 'Every instrument on the production Lab: what it would show, why it is off, the same instrument on the demo.', html: `<section class="ss-lab"><div class="ss-lh"><h3>${d.t}</h3>${stateTag('notLive')}</div><p class="tl">${d.tl}</p>${notLiveBody({ would: d.would, why: 'its live form reads the options chain, a paid feed this site doesn’t run, and its synthetic version is a mock, which this site doesn’t show.', path: `/lab/${d.id}` })}</section>` },
-    { name: 'Instrument page · production', tag: ['notLive'], when: 'A direct link to /lab/structure-field on production: the frame names the metric and holds its size; no synthetic field draws.', html: chartFrame({ claim: 'Net dealer gamma by strike', sub: 'Structure Field · $M per 1% move', body: stateBody('notLive', { height: 200, text: 'Not live on this site: the field reads the options chain, a paid feed this site doesn’t run.', cause: 'Its synthetic form runs on the demo, where every screen is sample data.', action: demoLink('/lab/structure-field') }), state: 'notLive' }) },
-    { name: 'Instrument card · staging', tag: ['demo'], when: 'Synthetic data, dashed frame and chip; the card opens the instrument.', html: `<a href="/lab/tape-pulse" class="ss-lab k-sample"><div class="ss-lh"><h3>Tape Pulse</h3><span class="stag k-solid">Candidate</span></div><div class="vis">${labVis('tape-pulse')}</div><div class="cf-foot">${provChip('Demo · synthetic', 'dashed')}</div></a>` },
-    { name: 'Reduced motion · staging', tag: ['demo'], when: 'Instruments draw their last frame: no drift, no trail, no flash. The probe still works by keyboard.', html: `<div class="ss-lab k-sample"><div class="ss-lh"><h3>Term Heat</h3><span class="stag k-solid">Candidate</span></div><div class="vis">${labVis('term-heat')}</div><span class="dline">Static frame · prefers-reduced-motion</span></div>` },
-    { name: 'Instrument couldn’t start · staging', tag: ['error', 'Couldn’t load'], when: 'WebGL or canvas failed: the frame keeps its size and offers the static drawing.', html: chartFrame({ claim: 'Flow Ribbons', sub: 'Charm and vanna flow to the next expiry', body: stateBody('error', { height: 160, text: 'Couldn’t start the instrument: this browser blocked its canvas.', cause: 'The static drawing below shows the same flows.', action: '<button class="btn secondary sm" type="button">Show the static drawing</button>' }), state: 'error', kind: 'sample', source: 'Demo · synthetic', sourceKind: 'dashed' }) },
-    { name: 'Demo chain unavailable · staging', tag: ['unavailable'], when: 'The “Demo SPY chain” source failed to build; the synthetic field stays, and the switch says why.', html: `<span class="seg4" role="group"><button type="button" aria-pressed="true">Synthetic field</button><button type="button" aria-pressed="false" disabled>Demo SPY chain</button></span><span class="dline">The demo’s SPY chain couldn’t be built in this browser — staying on the synthetic field.</span>` },
-  ];
-  return statesBoard({ scheme, minHeight, title: 'Lab · states', lead: 'Production shows each instrument as Not live with the way to the demo; the demo runs them on synthetic data and has the states a canvas instrument can meet.', trace: 'DOC-03, P-1, Env 2026-10-14', items });
 }
 
 // ================================================================================================

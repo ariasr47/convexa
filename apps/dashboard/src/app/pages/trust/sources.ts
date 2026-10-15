@@ -143,7 +143,7 @@ export const SOURCES: readonly Source[] = [
     cadence: 'Streaming during market hours.',
     terms: 'A paid subscription. This site doesn’t subscribe.',
     where:
-      'The ticker desk’s structure, flow and AI read; the scanner; option prices in trade entry; the Lab.',
+      'The ticker desk’s structure, flow and AI read; the scanner; option prices in trade entry.',
     link: ['Massive', 'https://massive.com'],
     shaped: 'the Massive options feed',
   },

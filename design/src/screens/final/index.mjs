@@ -11,7 +11,6 @@ import { ROWS as RESEARCH } from './research.mjs';
 import { ROWS as ACCOUNT } from './account.mjs';
 import { ROWS as TRUST } from './trust.mjs';
 import { ROWS as DEEP } from './deep.mjs';
-import { ROWS as LAB } from './lab.mjs';
 import { ROWS as PLANNED } from './planned.mjs';
 
 export const FINAL_PAGE = { id: 'final', name: 'Final · Convexa v1' };
@@ -28,7 +27,7 @@ function assemble(base, extra) {
   }
   return [...rows, ...extra.filter((x) => x.section === 'planned')];
 }
-export const FINAL_ROWS = assemble([...FOUNDATIONS, ...SHELL_SITE, ...TICKER, ...RESEARCH, ...ACCOUNT], [...TRUST, ...DEEP, ...LAB, ...PLANNED]);
+export const FINAL_ROWS = assemble([...FOUNDATIONS, ...SHELL_SITE, ...TICKER, ...RESEARCH, ...ACCOUNT], [...TRUST, ...DEEP, ...PLANNED]);
 
 const pascal = (s) => s.replace(/(^|[-_ ])(\w)/g, (_, __, c) => c.toUpperCase());
 const SPEC_W = 760;

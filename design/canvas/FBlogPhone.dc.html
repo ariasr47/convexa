@@ -749,14 +749,6 @@
   .ss-tbl td { padding: 9px 10px 9px 0; border-bottom: 1px solid var(--line); color: var(--steel); vertical-align: top; line-height: 1.5; }
   .ss-tbl td:first-child { color: var(--phosphor); }
   .ss-tbl td.m { font-family: 'IBM Plex Mono', monospace; }
-  .ss-labg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-  .ss-lab { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; color: inherit !important; text-decoration: none; }
-  .ss-lab.k-sample { border-style: dashed; border-color: var(--steel-2); }
-  .ss-lab .ss-lh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-  .ss-lab h3 { margin: 0; font-size: 15px; flex: 1 1 auto; }
-  .ss-lab .tl { margin: 0; font-size: 13px; line-height: 1.5; color: var(--steel); }
-  .ss-lab .vis { height: 112px; border-radius: 8px; background: var(--ink-2); padding: 10px; display: flex; align-items: center; }
-  .ss-lab .vis.off { border: 1px dashed var(--line-2); background: transparent; }
   .ss-ops { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 52px; padding: 8px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
   .ss-stages { width: 100%; border-collapse: collapse; font-size: 13px; }
   .ss-stages th { text-align: right; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding: 8px 10px; border-bottom: 1px solid var(--line-2); }
@@ -775,9 +767,9 @@
   .ss-schem { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 16px 18px 12px; display: flex; flex-direction: column; gap: 10px; margin: 0; }
   .ss-schem figcaption { font-size: 12.5px; color: var(--steel); line-height: 1.5; }
   .ss-ph { display: flex; flex-direction: column; gap: 16px; }
-  @media (max-width: 1099px) { .ss-hero, .ss-feat, .ss-trust { grid-template-columns: minmax(0, 1fr); gap: 32px; } .ss-feat.flip > .vis { order: 0; } .ss-labg { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ss-anat { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 1099px) { .ss-hero, .ss-feat, .ss-trust { grid-template-columns: minmax(0, 1fr); gap: 32px; } .ss-feat.flip > .vis { order: 0; } .ss-anat { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 899px) { .ss-cta { grid-template-columns: minmax(0, 1fr); padding: 24px; gap: 20px; } .ss-tagrow { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
-  @media (max-width: 699px) { .ss-trust .cards { grid-template-columns: minmax(0, 1fr); } .ss-ctas { flex-direction: column; align-items: stretch; } .ss-ctas .btn { width: 100%; } .ss-score, .ss-cells { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ss-score > div:nth-child(3) { border-left: 0; } .ss-score > div:nth-child(n+3) { border-top: 1px solid var(--line); } .ss-labg { grid-template-columns: minmax(0, 1fr); } .ss-hero { padding: 40px 0 32px; } .ss-feat, .ss-trust { padding: 44px 0; } }
+  @media (max-width: 699px) { .ss-trust .cards { grid-template-columns: minmax(0, 1fr); } .ss-ctas { flex-direction: column; align-items: stretch; } .ss-ctas .btn { width: 100%; } .ss-score, .ss-cells { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ss-score > div:nth-child(3) { border-left: 0; } .ss-score > div:nth-child(n+3) { border-top: 1px solid var(--line); } .ss-hero { padding: 40px 0 32px; } .ss-feat, .ss-trust { padding: 44px 0; } }
   @media (max-width: 599px) { .ss-ops { padding: 8px 16px; } .ss-stages th:nth-child(4), .ss-stages td:nth-child(4), .ss-stages th:nth-child(5), .ss-stages td:nth-child(5) { display: none; } }
 </style>
 </helmet>
@@ -816,7 +808,7 @@
     <h2 class="display">Want the short in-product version?</h2>
     <p>The product page <a href="/methodology">How Convexa works</a> is the same spine, kept next to the desk. This post is the longer, public version of that honesty.</p>
     </article></div></main>
-    <footer class="v4-foot"><div class="wrap v4-foot-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 14px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 10.4px; height: 10.1px; margin: 0 0.6px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/lab">Lab — instrument demos</a><a href="/settings">Settings</a><a href="/credits">Sources and credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p><p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p></div></footer>
+    <footer class="v4-foot"><div class="wrap v4-foot-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 14px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 10.4px; height: 10.1px; margin: 0 0.6px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/settings">Settings</a><a href="/credits">Sources and credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p><p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p></div></footer>
   </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2952}}'>

@@ -201,15 +201,6 @@ describe('route table', () => {
     { path: '/scanner', ready: () => screen.findByTestId('scanner-page'), authed: true },
     { path: '/blog', ready: () => screen.findByTestId('blog-page') },
     { path: '/methodology', ready: () => screen.findByTestId('methodology-page') },
-    {
-      path: '/lab',
-      ready: () => screen.findByTestId('lab-index'),
-    },
-    {
-      // A live build mocks nothing (owner, 2026-10-14): the synthetic instrument says Not live.
-      path: '/lab/structure-field',
-      ready: () => screen.findByTestId('lab-structure-field-not-live'),
-    },
     { path: '/settings', ready: () => screen.findByTestId('settings-page') },
   ];
 

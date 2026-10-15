@@ -415,7 +415,6 @@ export function StructureHeroPanel({
                 <StructureFieldCanvas
                   model={fieldModel}
                   height={300}
-                  variant="ticker"
                   palette={palette}
                   surfaces={surfaces}
                   table

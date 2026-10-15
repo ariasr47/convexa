@@ -1,9 +1,9 @@
 /**
  * StructureFieldSample — the mount wrapper supplying the canvas's props (SPEC §2.4).
- * `variant='ticker'` is THE lever: it sets `calm` (killing `paintStep.ts:850-858`'s phosphor grain,
- * which has no `m.live` term in its gate) AND `embedded` (suppressing the canvas's own title strip,
- * tape pill, `demo as-of`, `synthetic demo` and the warning-toned `TAPE OFF` pill — three
- * user-facing strings at once, including an offline assertion a frozen sample may never make).
+ * The canvas has one form since the Lab went (owner, 2026-10-14): always calm (no phosphor grain)
+ * and embedded (no title strip, tape pill, `demo as-of`, `synthetic demo` or warning-toned
+ * `TAPE OFF` pill — the strings a frozen sample may never show). The `variant='ticker'` prop that
+ * used to select that form is gone, so nothing here can drift back into the Lab's.
  *
  * The panel header and the sample footnote are DOM copy OWNED BY THE LANDING, not canvas pixels.
  *
@@ -59,7 +59,6 @@ export function StructureFieldSample() {
       <StructureFieldCanvas
         model={LANDING_FIELD_MODEL}
         height={240}
-        variant="ticker"
         palette={palette}
         surfaces={surfaces}
         describedById="landing-field-caption"

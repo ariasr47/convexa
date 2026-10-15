@@ -9,7 +9,7 @@ const API = 'apps/api/src/';
 const light = { scheme: 'light' };
 const CSS = SS_CSS + TR_CSS;
 const DRAFT = 'Copy is a draft for the owner to review; not legal advice.';
-const FOOTER_BUILT = { status: 'shipped', what: 'Footer links “Sources and credits”, “Privacy”, “Terms” after Lab (shell/Footer.tsx, 2026-10-14; lib.mjs v4Footer on the design side).' };
+const FOOTER_BUILT = { status: 'shipped', what: 'Footer links “Sources and credits”, “Privacy”, “Terms” after Blog (shell/Footer.tsx, 2026-10-14; the Lab link removed with the Lab; lib.mjs v4Footer on the design side).' };
 const SHELL_PHONE = 'The on-this-page index becomes a sideways rail of 44px chips under the nav; the reading column is full width with a 16px gutter. Tables scroll inside their own box.';
 
 export const ROWS = [

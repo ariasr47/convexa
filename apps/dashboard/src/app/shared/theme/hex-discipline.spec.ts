@@ -51,16 +51,8 @@ const EXEMPT: Record<string, string> = {
   // liveness half of this proof (a before/after `hex-discipline.spec.ts` run, recorded in the build
   // report) and `StructureFieldCanvas.spec.tsx` for the canvas-paints-from-props proof.
   //
-  // `structureFieldShared.ts`'s `SF` STAYS exempt — it is consumed ONLY by `pages/lab/**`
-  // (`StructureFieldWebGL.tsx`, the WebGL comparison twin), which is out of this phase's product
-  // scope (PLAN.md FE-3: "if a lab file cannot be converted cheaply, keep its hex-discipline
-  // exemption entry"). `StructureFieldCanvas.tsx` itself never imported `structureFieldShared.ts`
-  // (verified: no import statement between the two files) — the two files' hex literals were
-  // always independent duplicates, not a shared source.
-  'shared/charts/structure-field/structureFieldShared.ts':
-    "Shared Structure Field brand token literals for the WebGL lab instrument only (pages/lab/** — out of this phase's scope)",
-  'pages/lab/demos/labTokens.ts':
-    'Lab Canvas demos — brand token literals shared by ticker-candidate instruments',
+  // REMOVED (owner, 2026-10-14): the Lab and its exemptions (`structureFieldShared.ts`'s `SF`,
+  // `labTokens.ts`, `StructureFieldWebGL.tsx` and the four Canvas demos) went with the Lab itself.
   // REMOVED (structure-hero repair task item 10, 2026-09-08): `WallMagnetView.tsx` now takes
   // `palette`/`surfaces` as RESOLVED props (the SAME objects `StructureFieldCanvas`/`LevelLadder`/
   // `TapePulseStrip` already receive from `StructureHeroPanel`, criterion 7) in place of its own
@@ -93,16 +85,6 @@ const EXEMPT: Record<string, string> = {
   // whole-file exemption disarms the guard on any FUTURE hardcoded colour in the same file, not
   // just the value it was granted for (QA F2, 2026-09-05: `outlineColor: '#F2A93B'` injected into
   // `FigureCell.tsx` left this suite at exit 0).
-  'pages/lab/StructureFieldWebGL.tsx':
-    'Structure Field WebGL comparison twin (pages/lab/** — out of product scope) — brand token rgba alpha-blends, same carve-out as structureFieldShared.ts',
-  'pages/lab/demos/FlowRibbonsLab.tsx':
-    'Lab Canvas demo — brand token rgba alpha-blends, same carve-out as labTokens.ts',
-  'pages/lab/demos/TapePulseLab.tsx':
-    'Lab Canvas demo — brand token rgba alpha-blends, same carve-out as labTokens.ts',
-  'pages/lab/demos/TermHeatLab.tsx':
-    'Lab Canvas demo — brand token rgba alpha-blends, same carve-out as labTokens.ts',
-  'pages/lab/demos/WallMagnetLab.tsx':
-    'Lab Canvas demo — brand token rgba alpha-blends, same carve-out as labTokens.ts',
 
   // (2026-07-16) The two operator-metrics TODO exemptions were RESOLVED the same day they were
   // logged: the chart palette + stale-dot grey moved into `shared/theme/tokens.ts` as the
@@ -181,18 +163,8 @@ const EXEMPT_VALUES: Record<string, { values: string[]; why: string }> = {
     values: ['rgba(0,0,0,0.55)', 'rgba(16,24,40,0.25)'],
     why: 'Body-well inset shadow (the recessed-panel affordance) — decorative, mode-branched at its one call site, single-consumer cosmetic value',
   },
-  // GATE Z (curvature-v2-desk-and-read, 2026-09-05, QA F3) — `fieldAmbientShadow` was REMOVED from
-  // `tokens.ts` (it was an unmirrored, single-consumer `tokens.ts` export contradicting
-  // DESIGN_SYSTEM.md:103's "Seven new names ... mirrored in design/tokens/tokens.json" claim for
-  // that surface). The literal it sourced is restored here, narrowly exempted rather than re-bound,
-  // because the canvas has no `useTheme()` to resolve an existing token (`elevationFor(theme)`)
-  // from — it takes already-RESOLVED colours as props (SPEC §2.7) — so binding would need new prop
-  // plumbing this repair has no authority to add. Zero rendered-pixel change from before the token
-  // existed or after removing it (same literal both times).
-  'shared/charts/structure-field/StructureFieldCanvas.tsx': {
-    values: ['rgba(0,0,0,0.65)'],
-    why: 'The field canvas\'s ambient outer shadow, /lab/structure-field only (`embedded === false` ⇔ `variant="lab"`; the desk hero passes `variant="ticker"` so this branch never paints there) — deliberately MODE-INVARIANT, matching the elevation ladder\'s own convention of keying outer shadow layers off pure black at varying alpha, never a background/text colour (criterion 53 does not scope it)',
-  },
+  // REMOVED (owner, 2026-10-14): the field canvas's ambient shadow literal painted only in the Lab's
+  // form, which went with the Lab.
 };
 
 /** `/src/app/pages/foo.tsx` → `pages/foo.tsx` (app-relative, matching the EXEMPT keys). */

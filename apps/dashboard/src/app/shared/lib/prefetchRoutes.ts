@@ -9,7 +9,6 @@
 let tickerP: Promise<unknown> | null = null;
 let scannerP: Promise<unknown> | null = null;
 let positionsP: Promise<unknown> | null = null;
-let labIndexP: Promise<unknown> | null = null;
 
 /** Prefetch the TickerDashboard lazy chunk (and its static graph). */
 export function prefetchTickerRoute(): Promise<unknown> {
@@ -39,17 +38,6 @@ export function prefetchPositionsRoute(): Promise<unknown> {
     });
   }
   return positionsP;
-}
-
-/** Prefetch the Lab hub (and its static graph). */
-export function prefetchStructureFieldLabRoute(): Promise<unknown> {
-  // Name kept for TopNav callers; warms the lab index chunk.
-  if (!labIndexP) {
-    labIndexP = import('@/pages/lab/LabIndex').catch(() => {
-      labIndexP = null;
-    });
-  }
-  return labIndexP;
 }
 
 /** Idle-time prefetch for landing: ticker first (public free path), then scanner. */
