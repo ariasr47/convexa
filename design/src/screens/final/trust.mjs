@@ -67,9 +67,11 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'The /credits route and page (pages/trust/CreditsPage.tsx, 2026-10-14): seven cards with live state tags from /api/public-data/markets and /tickers/SPY, the legend counted from the same states, one Try again when a read fails; the demo makes no request.' },
-        { status: 'todo', what: 'The sources endpoint (one row per source with state, as_of, checked_at), and the card deep links from each provenance chip on the site.' },
+        { status: 'shipped', what: 'One row per source with its state, as_of, checked_at and failed_at (2026-10-15): every public-data answer carries `sources` (/markets: Treasury, CFTC, the three liquidity inputs, the four release schedules; /tickers/{T}: both FINRA sources and SEC), and the cards read them. Four more cards: Fed H.4.1, Treasury DTS, NY Fed reverse repo, release schedules.' },
+        { status: 'shipped', what: 'Card deep links: every provenance chip that names a source links to its card, /credits#<source>, from the two chip components (shared/credits/anchor.ts); TradingView’s attribution link stays TradingView’s.' },
+        { status: 'partial', what: 'No separate GET /api/public-data/sources: a new operation grows the frozen precutover operation baseline, so the rows ride the two answers the page already reads.' },
         { status: 'shipped', what: 'The credits it gathers exist on their cards today: FINRA’s notice and owner line (NotePublicPanels), TradingView’s chip, attribution and privacy line (TechnicalAnalysisLive), Treasury/CFTC/SEC source chips.' },
-        { status: 'partial', what: 'The API’s public-data state is live / off / not_configured / unavailable only: it says “live” for a cached copy served after a failed fetch, so Last good copy can’t be shown yet, and Delayed by source is worked out in the browser from each source’s schedule.' },
+        { status: 'shipped', what: 'The API tells a last good copy from a fresh fetch (2026-10-15): each source row, and each section’s `source_state`, says updated, delayed, last_good, source_down, not_set_up or off; delayed comes from the API for CFTC and FINRA short interest. Tested fresh → failed fetch serving the last good copy → recovery. The legacy `state` still says live for both.' },
         FOOTER_BUILT,
       ],
       rulings: ['P-1', 'P-2', 'P-4', 'P-8', 'P-13', 'P-14', 'Env 2026-10-14', 'FINRA terms §2.3', 'TradingView policies §3–4'],

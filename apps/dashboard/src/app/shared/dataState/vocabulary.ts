@@ -6,7 +6,7 @@
  *
  * Design source: design/src/data/states.mjs (the state matrix and the hybrid desk read the same words).
  */
-import type { PublicDataState } from '@convexa/api';
+import type { PublicDataState, PublicSourceState } from '@convexa/api';
 
 export type DataStateKey =
   | 'updated'
@@ -77,4 +77,29 @@ export function publicDataWord(
       if (stale) return 'lastGood';
       return delayed ? 'delayed' : 'updated';
   }
+}
+
+const SOURCE_WORDS: Record<PublicSourceState, DataStateKey> = {
+  updated: 'updated',
+  delayed: 'delayed',
+  last_good: 'lastGood',
+  source_down: 'sourceDown',
+  not_set_up: 'notSetUp',
+  off: 'off',
+};
+
+/**
+ * The word for one row of an answer's `sources` list. The API decides each state (it alone knows
+ * whether the copy it serves came from this cycle's fetch), so this is a straight lookup. A state
+ * this build doesn't know (a newer server) reads `null`: the caller treats it as unknown rather
+ * than guessing a word. Demo builds say sample data whatever the row says.
+ */
+export function sourceStateWord(
+  state: PublicSourceState | string,
+  { demo = false }: { demo?: boolean } = {},
+): DataStateKey | null {
+  if (demo) return 'demo';
+  return Object.prototype.hasOwnProperty.call(SOURCE_WORDS, state)
+    ? SOURCE_WORDS[state as PublicSourceState]
+    : null;
 }

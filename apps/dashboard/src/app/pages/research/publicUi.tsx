@@ -3,6 +3,7 @@
  * the read strip of figure cells, a chart's claim-and-subtitle title, and the states a source can be
  * in. Colours come from the theme; a warning is burnt orange with its icon, never amber alone.
  */
+import { CreditsLink } from '@/shared/credits/CreditsLink';
 import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
@@ -35,6 +36,15 @@ export function ProvenanceChip({
   text: string;
   kind: 'primary' | 'third-party' | 'sample';
 }) {
+  // A chip that names a source links to its card on /credits (one place for every chip).
+  return (
+    <CreditsLink text={text}>
+      <ChipBody text={text} kind={kind} />
+    </CreditsLink>
+  );
+}
+
+function ChipBody({ text, kind }: { text: string; kind: 'primary' | 'third-party' | 'sample' }) {
   return (
     <Box
       component="span"

@@ -16,6 +16,8 @@
  *
  * Design: design/src/chart-kit.mjs (chartFrame, dataTable, stateBody), screens/v5/system.mjs.
  */
+import { creditsAnchor } from '@/shared/credits/anchor';
+import { CreditsLink } from '@/shared/credits/CreditsLink';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor } from '@/shared/theme/tokens';
@@ -300,6 +302,10 @@ function SourceChip({
       {text}
     </Box>
   );
+  // A chip that names a source links to its card on /credits, which links on to the source. A
+  // TradingView link stays as given: it is TradingView's attribution (its policies §4).
+  const attribution = href !== undefined && /(^|\.)tradingview\.com\//.test(href);
+  if (!attribution && creditsAnchor(text)) return <CreditsLink text={text}>{chip}</CreditsLink>;
   return href ? (
     <Link
       href={href}
