@@ -157,7 +157,7 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
                 position: 'absolute',
                 left: 0,
                 top: -9,
-                fontSize: 10,
+                fontSize: 11,
                 color: 'text.secondary',
                 bgcolor: 'background.paper',
                 pr: 0.75,

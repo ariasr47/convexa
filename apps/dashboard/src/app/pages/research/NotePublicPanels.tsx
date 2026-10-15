@@ -10,6 +10,7 @@
  * The cards are exported for the public desk (pages/ticker/public-desk), which shows the same
  * figures beside TradingView's chart when the options feed is off.
  */
+import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord } from '@/shared/dataState/vocabulary';
 import { dataMode, type PublicTicker } from '@convexa/api';
@@ -340,6 +341,13 @@ function PartNote({ text }: { text: string | null }) {
   );
 }
 
+const FINRA_SI_URL = 'https://www.finra.org/finra-data/browse-catalog/equity-short-interest';
+
+/**
+ * Short interest at each FINRA settlement (RP-01, canon P-8 to P-13): the frame's title states the
+ * year's change; the bars carry their settlement dates and their unit; the latest bar is the claim's
+ * and is labelled; the table twin lists every settlement.
+ */
 export function ShortInterestCard({ d }: { d: PublicTicker }) {
   const si = d.short_interest;
   const demo = dataMode === 'demo';
@@ -357,41 +365,133 @@ export function ShortInterestCard({ d }: { d: PublicTicker }) {
     );
   const stale = !!d.short_interest_detail && !demo;
   const share = d.shares_outstanding ? si.shares_short / d.shares_outstanding.value : null;
-  const max = Math.max(...si.history.map((h) => h.shares_short), si.shares_short, 1);
+  const hist = si.history.some((h) => h.settlement_date === si.settlement_date)
+    ? si.history
+    : [...si.history, { settlement_date: si.settlement_date, shares_short: si.shares_short }];
+  const first = hist[0];
+  const unit = Math.max(...hist.map((h) => h.shares_short)) >= 1e9 ? 1e9 : 1e6;
+  const u = unit === 1e9 ? 'B' : 'M';
+  const top = niceTop(Math.max(...hist.map((h) => h.shares_short)) / unit);
+  const change = first && first.shares_short > 0 ? si.shares_short / first.shares_short - 1 : null;
+  const finding =
+    hist.length > 1 && change !== null
+      ? `Shares sold short ${Math.abs(change) < 0.005 ? 'held level' : `${change > 0 ? 'rose' : 'fell'} about ${Math.round(Math.abs(change) * 100)}%`} since ${formatShortDate(first.settlement_date)}, to ${big(si.shares_short)}${share !== null ? ` (${(share * 100).toFixed(2)}% of shares out)` : ''}`
+      : `${big(si.shares_short)} shares sold short at the ${formatShortDate(si.settlement_date)} settlement`;
+  const every = Math.max(1, Math.ceil(hist.length / 4));
+  const PLOT = 120;
   return (
-    <Card
-      label="Short interest"
-      tag={
-        <DataStateTag
-          state={publicDataWord(d.short_interest_state, { stale, delayed: true, demo })}
-          detail={stale || demo ? null : `settled ${formatShortDate(si.settlement_date)}`}
-        />
+    <ChartFrame
+      finding={finding}
+      metric="Short interest"
+      sub={`${d.ticker} short interest at each FINRA settlement · ${u === 'B' ? 'billions' : 'millions'} of shares${hist.length > 1 ? ` · ${formatShortDate(first.settlement_date)} – ${formatShortDate(si.settlement_date)}` : ''}`}
+      height={PLOT + 28}
+      provenance={demo ? 'sample' : 'primary'}
+      tag={{
+        state: publicDataWord(d.short_interest_state, { stale, delayed: true, demo }),
+        detail: stale || demo ? undefined : `settled ${formatShortDate(si.settlement_date)}`,
+      }}
+      source={
+        demo
+          ? { text: 'Demo · shaped like FINRA short interest' }
+          : { text: 'FINRA · consolidated short interest', href: FINRA_SI_URL }
       }
-      value={share !== null ? `${(share * 100).toFixed(2)}%` : big(si.shares_short)}
-      unit={share !== null ? 'of shares out' : 'shares'}
-      source={`Data owned and provided by FINRA · settlement ${formatShortDate(si.settlement_date)}, published about a week later`}
+      asOf={`Settled ${formatNoteDate(si.settlement_date)} · published about a week later`}
+      table={{
+        caption: `${d.ticker} shares sold short by settlement date`,
+        cols: ['Settlement', 'Shares short'],
+        rows: hist.map((h) => [formatNoteDate(h.settlement_date), big(h.shares_short)]),
+      }}
+      testId="chart-short-interest"
     >
       <PartNote text={d.short_interest_detail} />
-      {si.history.length > 1 && (
+      {hist.length > 1 && (
         <Box
           role="img"
-          aria-label={`Shares short, last ${si.history.length} reports: ${si.history.map((h) => big(h.shares_short)).join(', ')}`}
-          sx={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: 40 }}
+          aria-label={`Shares short by settlement: ${hist.map((h) => `${formatShortDate(h.settlement_date)} ${big(h.shares_short)}`).join(', ')}`}
+          sx={{ position: 'relative', height: PLOT, ml: '40px', mr: '8px', mt: '14px', mb: '22px' }}
         >
-          {si.history.map((h, i) => (
-            <Box
-              key={h.settlement_date}
-              sx={(t) => ({
-                flex: 1,
-                height: Math.max(3, Math.round((h.shares_short / max) * 40)),
-                borderRadius: '2px',
-                bgcolor:
-                  i === si.history.length - 1
-                    ? 'text.primary'
-                    : alpha(t.palette.text.secondary, 0.55),
-              })}
-            />
+          {[0, top / 2, top].map((v) => (
+            <Box key={v}>
+              <Box
+                sx={(t) => ({
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: `${(v / top) * 100}%`,
+                  borderTop: `1px ${v === 0 ? 'solid' : 'dashed'} ${v === 0 ? chartRoles(t).axis : chartRoles(t).grid}`,
+                })}
+              />
+              <Box
+                component="span"
+                sx={{
+                  position: 'absolute',
+                  right: 'calc(100% + 6px)',
+                  bottom: `${(v / top) * 100}%`,
+                  transform: 'translateY(50%)',
+                  ...MONO,
+                  fontSize: 11,
+                  color: 'text.secondary',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {v === 0 ? '0' : `${trimNum(v)}${u}`}
+              </Box>
+            </Box>
           ))}
+          {hist.map((h, k) => {
+            const last = k === hist.length - 1;
+            const left = `${((k + 0.5) / hist.length) * 100}%`;
+            const height = `${(h.shares_short / unit / top) * 100}%`;
+            return (
+              <Box key={h.settlement_date}>
+                <Box
+                  sx={(t) => ({
+                    position: 'absolute',
+                    bottom: 0,
+                    left,
+                    width: `min(14px, ${(100 / hist.length) * 0.6}%)`,
+                    height,
+                    transform: 'translateX(-50%)',
+                    borderRadius: '3px 3px 0 0',
+                    bgcolor: last ? chartRoles(t).emph : chartRoles(t).ctx,
+                  })}
+                />
+                {last && (
+                  <Box
+                    component="span"
+                    sx={{
+                      position: 'absolute',
+                      left,
+                      bottom: `calc(${height} + 4px)`,
+                      transform: 'translateX(-70%)',
+                      ...MONO,
+                      fontSize: 11,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {big(h.shares_short)}
+                  </Box>
+                )}
+                {(k % every === 0 || last) && (
+                  <Box
+                    component="span"
+                    sx={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      left,
+                      transform: last ? 'translateX(-85%)' : 'translateX(-50%)',
+                      ...MONO,
+                      fontSize: 11,
+                      color: 'text.secondary',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {formatShortDate(h.settlement_date)}
+                  </Box>
+                )}
+              </Box>
+            );
+          })}
         </Box>
       )}
       <Facts
@@ -408,9 +508,17 @@ export function ShortInterestCard({ d }: { d: PublicTicker }) {
           ],
         ]}
       />
-    </Card>
+    </ChartFrame>
   );
 }
+
+/** The axis top: the next 1, 2, 2.5 or 5 step above the largest value. */
+function niceTop(max: number): number {
+  const p = 10 ** Math.floor(Math.log10(Math.max(max, 1e-9)));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= max) return m * p;
+  return 10 * p;
+}
+const trimNum = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
 
 export function ShortVolumeCard({ d }: { d: PublicTicker }) {
   const sv = d.short_volume;

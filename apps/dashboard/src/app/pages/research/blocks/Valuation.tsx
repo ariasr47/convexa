@@ -585,7 +585,7 @@ function FootballField({ v, stale }: { v: ValuationBlock; stale: boolean }) {
                   position: 'absolute',
                   top: 32,
                   left: at(row.lo, max),
-                  fontSize: 10,
+                  fontSize: 11,
                   color: 'text.secondary',
                   whiteSpace: 'nowrap',
                   transform: row.lo / max > 0.7 ? 'translateX(-60%)' : 'none',
@@ -602,7 +602,7 @@ function FootballField({ v, stale }: { v: ValuationBlock; stale: boolean }) {
                     position: 'absolute',
                     top: 32,
                     left: at(row.lo, max),
-                    fontSize: 10,
+                    fontSize: 11,
                     color: 'text.secondary',
                     whiteSpace: 'nowrap',
                   }}
@@ -620,7 +620,7 @@ function FootballField({ v, stale }: { v: ValuationBlock; stale: boolean }) {
                   top: 32,
                   left: at(row.hi, max),
                   transform: 'translateX(-100%)',
-                  fontSize: 10,
+                  fontSize: 11,
                   color: 'text.secondary',
                   whiteSpace: 'nowrap',
                 }}
@@ -637,7 +637,7 @@ function FootballField({ v, stale }: { v: ValuationBlock; stale: boolean }) {
                   top: 32,
                   left: at(row.mark, max),
                   ml: 1,
-                  fontSize: 10,
+                  fontSize: 11,
                   color: 'text.secondary',
                   whiteSpace: 'nowrap',
                 }}
@@ -669,7 +669,7 @@ function FootballField({ v, stale }: { v: ValuationBlock; stale: boolean }) {
       >
         <span />
         <Box
-          sx={{ position: 'relative', height: 16, ...MONO, fontSize: 10, color: 'text.secondary' }}
+          sx={{ position: 'relative', height: 16, ...MONO, fontSize: 11, color: 'text.secondary' }}
         >
           <Box component="span" sx={{ position: 'absolute', left: 0 }}>
             $0
@@ -915,7 +915,7 @@ function Sensitivity({ v, stale }: { v: ValuationBlock; stale: boolean }) {
         <Box
           role="columnheader"
           component="span"
-          sx={{ color: 'text.secondary', fontSize: 10, py: 0.75 }}
+          sx={{ color: 'text.secondary', fontSize: 11, py: 0.75 }}
         />
         {s.col.labels.map((l) => (
           <Box
@@ -961,7 +961,7 @@ function Sensitivity({ v, stale }: { v: ValuationBlock; stale: boolean }) {
                 {!stale && (
                   // Primary, not secondary: on the deepest cell tint secondary measures 2.94:1 (dark),
                   // primary 6.55:1. The smaller size carries the hierarchy.
-                  <Box component="span" sx={{ fontSize: 10, color: 'text.primary' }}>
+                  <Box component="span" sx={{ fontSize: 11, color: 'text.primary' }}>
                     {arrow(cell.vsPrice)}
                     {percent(cell.vsPrice)}
                   </Box>

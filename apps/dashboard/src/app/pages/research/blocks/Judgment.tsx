@@ -68,7 +68,7 @@ function Grid({
                 sx={{
                   display: { xs: c === 0 ? 'none' : 'block', md: 'none' },
                   ...MONO,
-                  fontSize: 10,
+                  fontSize: 11,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                   color: 'text.secondary',

@@ -4,11 +4,13 @@
  * scoring.mjs), and says plainly when there is nothing to score yet. A probability lives in the note's
  * Markdown, so the action here is copying the row to fill in, never a field that would pretend to save.
  */
+import { ChartFrame, chartRoles } from '@/shared/charts/frame';
+import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { localToday, researchIndex, scoreForecasts } from 'virtual:convexa-research';
-import { formatShortDate } from './format';
+import { formatNoteDate, formatShortDate } from './format';
 import { ResearchColumn } from './NotesView';
 import { ResearchTabs } from './ResearchTabs';
 import type { LedgerForecast } from './types';
@@ -128,7 +130,7 @@ export function ScorecardPage() {
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'stretch' }}>
           <Box sx={{ flex: '1 1 480px', minWidth: 0 }}>
-            <Calibration score={score} />
+            <Calibration score={score} today={today} />
           </Box>
           <Box sx={{ flex: '1 1 480px', minWidth: 0 }}>
             <SignalsOff />
@@ -401,6 +403,23 @@ function ForecastList({ title, hint, rows }: { title: string; hint: string; rows
   );
 }
 
+/** The Scorecard's charts are Convexa's own figures, worked out from its notes: solid on the live
+ *  site, dashed sample data on the demo (canon P-8). */
+const notesFrame = (today: string) =>
+  dataMode === 'demo'
+    ? {
+        provenance: 'sample' as const,
+        tag: { state: 'demo' as const },
+        source: { text: 'Demo · sample research notes' },
+        asOf: 'Scenario · Oct 7, 2026',
+      }
+    : {
+        provenance: 'primary' as const,
+        tag: { state: 'computed' as const },
+        source: { text: 'Convexa research notes · forecasts' },
+        asOf: `As of ${formatNoteDate(today)}`,
+      };
+
 function ByMonth({ open, today }: { open: Row[]; today: string }) {
   // Eleven columns: this month and the ten after it, then everything later in one.
   const start = new Date(`${today.slice(0, 7)}-01T00:00:00Z`);
@@ -422,29 +441,25 @@ function ByMonth({ open, today }: { open: Row[]; today: string }) {
     .map((k, i) => `${MONTHS[Number(k.slice(5, 7)) - 1]} ${k.slice(0, 4)} ${counts[i]}`)
     .join(', ')}, later ${later}`;
   return (
-    <Box
-      component="figure"
-      sx={{
-        ...PANEL_SX,
-        m: 0,
-        p: { xs: 2, sm: 3 },
-        display: 'grid',
-        gap: 1.75,
-        height: '100%',
-        alignContent: 'start',
+    <ChartFrame
+      finding={`${byNextMonth} of the ${open.length} resolve by the end of ${nextMonthName}.`}
+      metric="Open forecasts by month"
+      sub={`Open forecasts by the month their date falls in · count · from ${MONTHS[Number(keys[0].slice(5, 7)) - 1]} ${keys[0].slice(0, 4)} · this month and next emphasised`}
+      height={190}
+      {...notesFrame(today)}
+      table={{
+        caption: 'Open forecasts by the month they resolve',
+        cols: ['Month', 'Open forecasts'],
+        rows: [
+          ...keys.map((k, i) => [
+            `${MONTHS[Number(k.slice(5, 7)) - 1]} ${k.slice(0, 4)}`,
+            counts[i],
+          ]),
+          ['Later', later],
+        ],
       }}
+      testId="chart-by-month"
     >
-      <Box component="figcaption" sx={{ display: 'grid', gap: 0.5 }}>
-        <Box
-          component="span"
-          sx={{ ...DISPLAY, fontWeight: 600, fontSize: 20, lineHeight: 1.25, textWrap: 'balance' }}
-        >
-          {`${byNextMonth} of the ${open.length} resolve by the end of ${nextMonthName}.`}
-        </Box>
-        <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
-          Open forecasts by the month their date falls in.
-        </Box>
-      </Box>
       <Box
         role="img"
         aria-label={aria}
@@ -454,7 +469,7 @@ function ByMonth({ open, today }: { open: Row[]; today: string }) {
           gap: 0.75,
           alignItems: 'end',
           height: 170,
-          borderBottom: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
+          borderBottom: `1px solid ${chartRoles(t).axis}`,
         })}
       >
         {cols.map((n, i) => (
@@ -476,13 +491,13 @@ function ByMonth({ open, today }: { open: Row[]; today: string }) {
               {n}
             </Box>
             <Box
-              sx={{
+              sx={(t) => ({
                 width: '100%',
                 maxWidth: 32,
                 height: n === 0 ? 2 : Math.round((n / max) * 140),
                 borderRadius: '4px 4px 1px 1px',
-                bgcolor: i < 2 ? 'text.primary' : 'text.secondary',
-              }}
+                bgcolor: i < 2 ? chartRoles(t).emph : chartRoles(t).ctx,
+              })}
             />
           </Box>
         ))}
@@ -503,147 +518,123 @@ function ByMonth({ open, today }: { open: Row[]; today: string }) {
           <span key={i}>{l}</span>
         ))}
       </Box>
-    </Box>
+    </ChartFrame>
   );
 }
 
-function Calibration({ score }: { score: ReturnType<typeof scoreForecasts> }) {
+function Calibration({
+  score,
+  today,
+}: {
+  score: ReturnType<typeof scoreForecasts>;
+  today: string;
+}) {
   const ready = score.scored >= CALIBRATION_MIN;
   const X = (p: number) => 32 + p * 200;
   const Y = (p: number) => 208 - p * 200;
+  // How far, on average, calls came true from the odds they were given (weighted by calls per bin).
+  const gap = ready
+    ? score.bins.reduce((a, b) => a + Math.abs(b.hitRate - b.meanP) * b.n, 0) /
+      Math.max(
+        1,
+        score.bins.reduce((a, b) => a + b.n, 0),
+      )
+    : 0;
   return (
-    <Box
-      component="figure"
-      sx={{
-        ...PANEL_SX,
-        m: 0,
-        p: { xs: 2, sm: 3 },
-        display: 'grid',
-        gap: 1.75,
-        height: '100%',
-        alignContent: 'start',
+    <ChartFrame
+      finding={`Calls came true within ${Math.round(gap * 100)} points of their stated odds, on average${score.brier === null ? '' : `; Brier ${score.brier.toFixed(3)}`}`}
+      metric="Calibration"
+      sub="How often calls made at each confidence came true · your probability across, in tenths · how often it happened up · on the diagonal, calls are well calibrated"
+      height={240}
+      status={
+        ready
+          ? { kind: 'ready' }
+          : {
+              kind: 'message',
+              tone: 'quiet',
+              text: `${score.scored} of ${CALIBRATION_MIN} forecasts with a probability have resolved.`,
+              cause: `The chart appears at ${CALIBRATION_MIN}: fewer calls than that can’t show whether 70% calls come true about 70% of the time, so nothing is drawn until then.`,
+            }
+      }
+      {...notesFrame(today)}
+      // A tag says what the drawn figures are; with nothing drawn there is nothing to tag.
+      tag={ready ? notesFrame(today).tag : undefined}
+      note="Brier score is the average squared miss. Saying 50% to everything scores 0.25; lower is better."
+      table={{
+        caption: 'Calibration by probability bin',
+        cols: ['Probability', 'Calls', 'Mean probability', 'Came true'],
+        rows: score.bins.map((b) => [
+          `${Math.round(b.lo * 100)}–${Math.round(b.hi * 100)}%`,
+          b.n,
+          `${Math.round(b.meanP * 100)}%`,
+          `${Math.round(b.hitRate * 100)}%`,
+        ]),
       }}
+      testId="chart-calibration"
     >
-      <Box component="figcaption" sx={{ display: 'grid', gap: 0.5 }}>
-        <Box component="span" sx={{ ...DISPLAY, fontWeight: 600, fontSize: 20, lineHeight: 1.25 }}>
-          Calibration
-        </Box>
-        <Box component="span" sx={{ fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
-          {ready
-            ? 'How often calls made at each confidence came true. Dots on the diagonal are well calibrated.'
-            : `How often calls made at each confidence came true. It appears once ${CALIBRATION_MIN} forecasts with your probability have resolved; until then nothing is drawn.`}
-        </Box>
-      </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.5, alignItems: 'center' }}>
+      <Box
+        component="svg"
+        role="img"
+        aria-label={`Calibration: ${score.bins.map((b) => `${Math.round(b.meanP * 100)}% calls came true ${Math.round(b.hitRate * 100)}% of ${b.n}`).join('; ')}`}
+        viewBox="0 0 240 240"
+        sx={{ width: 240, height: 240, maxWidth: '100%' }}
+      >
         <Box
-          component="svg"
-          role="img"
-          aria-label={
-            ready
-              ? `Calibration: ${score.bins.map((b) => `${Math.round(b.meanP * 100)}% calls came true ${Math.round(b.hitRate * 100)}% of ${b.n}`).join('; ')}`
-              : `Empty calibration chart: ${score.scored} of ${CALIBRATION_MIN} needed have resolved with a probability`
-          }
-          viewBox="0 0 240 240"
-          sx={{ width: 240, height: 240, flex: '0 0 auto' }}
-        >
-          <Box
-            component="rect"
-            x="32"
-            y="8"
-            width="200"
-            height="200"
-            sx={(t) => ({ fill: 'transparent', stroke: alpha(t.palette.text.secondary, 0.3) })}
-          />
-          <Box
-            component="line"
-            x1="32"
-            y1="208"
-            x2="232"
-            y2="8"
-            sx={(t) => ({ stroke: alpha(t.palette.text.secondary, 0.55), strokeDasharray: '4 4' })}
-          />
-          <Box
-            component="g"
-            sx={{
-              fontFamily: MONO.fontFamily,
-              fontSize: 10,
-              fill: 'currentColor',
-              color: 'text.secondary',
-            }}
-          >
-            <text x="26" y="211" textAnchor="end">
-              0
-            </text>
-            <text x="26" y="111" textAnchor="end">
-              50%
-            </text>
-            <text x="26" y="12" textAnchor="end">
-              100%
-            </text>
-            <text x="32" y="224" textAnchor="middle">
-              0
-            </text>
-            <text x="132" y="224" textAnchor="middle">
-              50%
-            </text>
-            <text x="232" y="224" textAnchor="middle">
-              100%
-            </text>
-          </Box>
-          {ready ? (
-            score.bins.map((b) => (
-              <Box
-                component="circle"
-                key={b.lo}
-                cx={X(b.meanP)}
-                cy={Y(b.hitRate)}
-                r={3 + Math.sqrt(b.n) * 1.5}
-                sx={{ fill: 'currentColor', color: 'text.primary' }}
-              />
-            ))
-          ) : (
-            <Box
-              component="text"
-              x="132"
-              y="112"
-              textAnchor="middle"
-              sx={{ fontSize: 12, fill: 'currentColor', color: 'text.secondary' }}
-            >
-              {`${score.scored} of ${CALIBRATION_MIN} resolved`}
-            </Box>
-          )}
-        </Box>
+          component="rect"
+          x="32"
+          y="8"
+          width="200"
+          height="200"
+          sx={(t) => ({ fill: 'transparent', stroke: chartRoles(t).axis })}
+        />
         <Box
-          component="dl"
-          sx={{ flex: '1 1 200px', m: 0, display: 'grid', gap: 1.25, fontSize: 13 }}
+          component="line"
+          x1="32"
+          y1="208"
+          x2="232"
+          y2="8"
+          sx={(t) => ({ stroke: chartRoles(t).edge, strokeDasharray: '4 4' })}
+        />
+        <Box
+          component="g"
+          sx={{
+            fontFamily: MONO.fontFamily,
+            fontSize: 11,
+            fill: 'currentColor',
+            color: 'text.secondary',
+          }}
         >
-          <div>
-            <Box component="dt" sx={{ fontWeight: 600 }}>
-              Across: your probability
-            </Box>
-            <Box component="dd" sx={{ m: 0, color: 'text.secondary' }}>
-              Grouped in tenths.
-            </Box>
-          </div>
-          <div>
-            <Box component="dt" sx={{ fontWeight: 600 }}>
-              Up: how often it happened
-            </Box>
-            <Box component="dd" sx={{ m: 0, color: 'text.secondary' }}>
-              On the diagonal, your 70% calls come true about 70% of the time.
-            </Box>
-          </div>
-          <div>
-            <Box component="dt" sx={{ fontWeight: 600 }}>
-              Brier score
-            </Box>
-            <Box component="dd" sx={{ m: 0, color: 'text.secondary' }}>
-              The average squared miss. Saying 50% to everything scores 0.25; lower is better.
-            </Box>
-          </div>
+          <text x="26" y="211" textAnchor="end">
+            0
+          </text>
+          <text x="26" y="111" textAnchor="end">
+            50%
+          </text>
+          <text x="26" y="12" textAnchor="end">
+            100%
+          </text>
+          <text x="32" y="224" textAnchor="middle">
+            0
+          </text>
+          <text x="132" y="224" textAnchor="middle">
+            50%
+          </text>
+          <text x="232" y="224" textAnchor="middle">
+            100%
+          </text>
         </Box>
+        {score.bins.map((b) => (
+          <Box
+            component="circle"
+            key={b.lo}
+            cx={X(b.meanP)}
+            cy={Y(b.hitRate)}
+            r={3 + Math.sqrt(b.n) * 1.5}
+            sx={(t) => ({ fill: chartRoles(t).emph })}
+          />
+        ))}
       </Box>
-    </Box>
+    </ChartFrame>
   );
 }
 

@@ -740,135 +740,215 @@ function FeedsNotes({ daily, latest }: { daily: YieldPoint[]; latest: YieldPoint
       priced: (r.latest.valuation as NonNullable<typeof r.latest.valuation>).price.asOf,
     }));
   if (latest.t10y === null || notes.length === 0) return null;
-  const rows = noteRates(daily, latest.t10y, notes);
-  const used = [
-    ...new Set(rows.map((r) => r.used?.value).filter((v): v is number => v !== undefined)),
-  ];
+  const today = latest.t10y;
+  const rows = noteRates(daily, today, notes);
+  const priced = rows.filter((r): r is typeof r & { used: NonNullable<typeof r.used> } => !!r.used);
   const flagged = rows.filter((r) => r.flagged);
-  const maxDrift = rows.reduce(
-    (m, r) => (r.drift !== null && Math.abs(r.drift) > Math.abs(m) ? r.drift : m),
-    0,
-  );
-  const usedText =
-    used.length === 1
-      ? `${used[0].toFixed(2)}%`
-      : `${Math.min(...used).toFixed(2)}–${Math.max(...used).toFixed(2)}%`;
+  const used = [...new Set(priced.map((r) => r.used.value))];
+  const words = ['No note’s', 'One note’s', 'Two notes’', 'Three notes’'];
+  const finding =
+    flagged.length === 0
+      ? used.length === 1
+        ? `No note’s discount rate has moved a quarter point: all ${rows.length} started from ${used[0].toFixed(2)}%, now ${today.toFixed(2)}%`
+        : `No note’s discount rate has moved a quarter point from today’s 10-year (${today.toFixed(2)}%)`
+      : `${words[flagged.length] ?? `${flagged.length} notes’`} discount rate started more than a quarter point from today’s 10-year (${today.toFixed(2)}%)`;
+  // One price scale, in quarter points, wide enough for every rate used, today and the ±0.25 band.
+  const vals = [
+    ...priced.map((r) => r.used.value),
+    today - DRIFT_FLAG_POINTS,
+    today + DRIFT_FLAG_POINTS,
+  ];
+  const lo = Math.floor(Math.min(...vals) * 4) / 4 - 0.125;
+  const hi = Math.ceil(Math.max(...vals) * 4) / 4 + 0.125;
+  const X = (v: number) => `${(((v - lo) / (hi - lo)) * 100).toFixed(2)}%`;
+  const ticks: number[] = [];
+  for (let v = Math.ceil(lo * 4) / 4; v <= hi; v += 0.25) ticks.push(+v.toFixed(2));
+  const ROW = 26;
+  const plotH = rows.length * ROW;
   return (
-    <Box
-      component="section"
-      aria-labelledby="feeds-notes"
-      sx={{
-        ...PANEL_SX,
-        p: { xs: 2, sm: 3 },
-        display: 'grid',
-        gap: 1.75,
-        height: '100%',
-        alignContent: 'start',
+    <ChartFrame
+      finding={finding}
+      metric="Note discount rates against the 10-year"
+      sub={`The 10-year rate each note’s discount rate started from (dot) and the move to today (line) · percent · band = within ±${DRIFT_FLAG_POINTS.toFixed(2)} points of today, where a valuation is flagged for review`}
+      height={plotH + 48}
+      {...treasuryFrame('U.S. Treasury · daily par yield curve', latest.date, {
+        state: 'computed',
+      })}
+      table={{
+        caption: 'Each note’s starting 10-year rate and its drift to today, percent',
+        cols: ['Note', 'Priced', 'Rate used', 'Drift', 'Review'],
+        rows: rows.map((r) => [
+          r.ticker,
+          formatNoteDate(r.priced),
+          r.used ? `${r.used.value.toFixed(2)}%` : '—',
+          r.drift === null ? '—' : pts(r.drift),
+          r.flagged ? 'yes' : 'no',
+        ]),
       }}
+      testId="chart-drift"
     >
       <Box
-        component="h2"
-        id="feeds-notes"
-        sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 20, lineHeight: 1.25 }}
-      >
-        Every note&apos;s discount rate starts here.
-      </Box>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25 }}>
-        <Box component="span" sx={{ ...MONO, fontSize: 32, fontWeight: 500, lineHeight: 1 }}>
-          {rows.length}
-        </Box>
-        <Box component="span" sx={{ fontSize: 14, color: 'text.secondary' }}>
-          notes priced their cost of capital off the 10-year
-        </Box>
-      </Box>
-      <Box
-        component="dl"
+        role="img"
+        aria-label={`${rows.length} notes against today’s 10-year of ${today.toFixed(2)}%. ${flagged.length === 0 ? 'None is flagged.' : `Flagged: ${flagged.map((r) => `${r.ticker} ${pts(r.drift as number)}`).join(', ')}.`}`}
         sx={{
-          m: 0,
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) auto',
-          gap: '8px 16px',
-          fontSize: 13,
+          position: 'relative',
+          pl: '52px',
+          pr: flagged.length ? '96px' : '12px',
+          pt: '28px',
+          pb: '24px',
         }}
       >
-        <Box component="dt" sx={{ color: 'text.secondary' }}>
-          Rate the notes used
-        </Box>
-        <Box component="dd" sx={{ ...MONO, m: 0 }}>
-          {usedText}
-        </Box>
-        <Box component="dt" sx={{ color: 'text.secondary' }}>
-          Rate today
-        </Box>
-        <Box
-          component="dd"
-          sx={{ ...MONO, m: 0 }}
-        >{`${latest.t10y.toFixed(2)}% · ${formatShortDate(latest.date)}`}</Box>
-        <Box component="dt" sx={{ color: 'text.secondary' }}>
-          Largest drift since writing
-        </Box>
-        <Box component="dd" sx={{ ...MONO, m: 0 }}>{`${pts(maxDrift)} pts`}</Box>
-        <Box component="dt" sx={{ color: 'text.secondary' }}>
-          Flags a valuation at
-        </Box>
-        <Box component="dd" sx={{ ...MONO, m: 0 }}>{`±${DRIFT_FLAG_POINTS.toFixed(2)} pts`}</Box>
-      </Box>
-      <Box
-        sx={(t) => ({
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 1,
-          p: '10px 12px',
-          borderRadius: '8px',
-          border: `1px solid ${t.palette.divider}`,
-          fontSize: 13,
-        })}
-      >
-        {flagged.length === 0 ? (
-          <>
+        <Box sx={{ position: 'relative', height: plotH }}>
+          {/* Within ±0.25 of today: no review. A wash with hairline edges, never the wash alone. */}
+          <Box
+            sx={(t) => ({
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: X(today - DRIFT_FLAG_POINTS),
+              width: `calc(${X(today + DRIFT_FLAG_POINTS)} - ${X(today - DRIFT_FLAG_POINTS)})`,
+              bgcolor: chartRoles(t).band,
+              borderLeft: `1px solid ${chartRoles(t).edge}`,
+              borderRight: `1px solid ${chartRoles(t).edge}`,
+            })}
+          />
+          {ticks.map((v) => (
             <Box
+              key={v}
               component="span"
-              aria-hidden
               sx={{
-                width: 9,
-                height: 9,
-                mt: '6px',
-                flex: '0 0 auto',
-                borderRadius: '999px',
-                bgcolor: 'text.primary',
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                left: X(v),
+                transform: 'translateX(-50%)',
+                ...MONO,
+                fontSize: 11,
+                color: 'text.secondary',
+                whiteSpace: 'nowrap',
               }}
-            />
-            No note&apos;s discount rate has moved a quarter point.
-          </>
-        ) : (
-          <>
-            <Box
-              component="span"
-              aria-hidden
-              sx={(t) => ({
-                width: 9,
-                height: 9,
-                mt: '6px',
-                flex: '0 0 auto',
-                boxSizing: 'border-box',
-                borderRadius: '999px',
-                border: `2px solid ${t.palette.text.primary}`,
-              })}
-            />
-            <span>
-              {`${flagged.length} ${flagged.length === 1 ? 'note was' : 'notes were'} valued at a rate the 10-year has since left: `}
-              {flagged.map((r) => `${r.ticker} (${pts(r.drift as number)})`).join(', ')}. Their cost
-              of capital deserves a second look.
-            </span>
-          </>
-        )}
+            >
+              {v.toFixed(2)}
+            </Box>
+          ))}
+          <Box
+            sx={(t) => ({
+              position: 'absolute',
+              top: -6,
+              bottom: 0,
+              left: X(today),
+              borderLeft: `1.5px solid ${chartRoles(t).emph}`,
+            })}
+          />
+          <Box
+            component="span"
+            sx={{
+              position: 'absolute',
+              top: -26,
+              left: X(today),
+              transform: 'translateX(-50%)',
+              px: 0.75,
+              height: 20,
+              display: 'inline-flex',
+              alignItems: 'center',
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: '999px',
+              bgcolor: 'background.paper',
+              fontSize: 11,
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {`Today ${today.toFixed(2)}%`}
+          </Box>
+          {rows.map((r, k) => {
+            const y = k * ROW + ROW / 2;
+            const u = r.used ? r.used.value : null;
+            return (
+              <Box key={r.ticker}>
+                <Box
+                  component="span"
+                  sx={{
+                    position: 'absolute',
+                    right: 'calc(100% + 10px)',
+                    top: y,
+                    transform: 'translateY(-50%)',
+                    ...MONO,
+                    fontSize: 12,
+                    fontWeight: r.flagged ? 600 : 400,
+                    color: r.flagged ? 'text.primary' : 'text.secondary',
+                  }}
+                >
+                  {r.ticker}
+                </Box>
+                {u !== null ? (
+                  <>
+                    <Box
+                      sx={(t) => ({
+                        position: 'absolute',
+                        top: y,
+                        left: u <= today ? X(u) : X(today),
+                        width: `calc(${X(Math.max(u, today))} - ${X(Math.min(u, today))})`,
+                        borderTop: `1.5px solid ${chartRoles(t).ctx}`,
+                      })}
+                    />
+                    <Box
+                      sx={(t) => ({
+                        position: 'absolute',
+                        top: y,
+                        left: X(u),
+                        width: r.flagged ? 10 : 8,
+                        height: r.flagged ? 10 : 8,
+                        borderRadius: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        bgcolor: r.flagged ? chartRoles(t).emph : chartRoles(t).ctx,
+                        boxShadow: `0 0 0 2px ${t.palette.background.paper}`,
+                      })}
+                    />
+                    {r.flagged && (
+                      <Box
+                        component="span"
+                        sx={{
+                          position: 'absolute',
+                          left: 'calc(100% + 10px)',
+                          top: y,
+                          transform: 'translateY(-50%)',
+                          fontSize: 12,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {`${pts(r.drift as number)} · review`}
+                      </Box>
+                    )}
+                  </>
+                ) : (
+                  <Box
+                    component="span"
+                    sx={{
+                      position: 'absolute',
+                      left: 0,
+                      top: y,
+                      transform: 'translateY(-50%)',
+                      fontSize: 11,
+                      color: 'text.secondary',
+                    }}
+                  >
+                    no rate on its price date
+                  </Box>
+                )}
+              </Box>
+            );
+          })}
+        </Box>
       </Box>
-    </Box>
+    </ChartFrame>
   );
 }
 
 const fmtK = (n: number) =>
   `${n >= 0 ? '+' : '−'}${Math.round(Math.abs(n) / 1000).toLocaleString('en-US')}`;
+
+const CFTC_URL = 'https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm';
 
 function FuturesSection({ futures }: { futures: Futures }) {
   const groups = futures.markets.flatMap((m) => [
@@ -886,34 +966,60 @@ function FuturesSection({ futures }: { futures: Futures }) {
       : p <= 0.1
         ? 'near the bottom of'
         : `${Math.round(p * 100)}% of the way through`;
-  const title = extreme
+  const finding = extreme
     ? `${extreme.who}' ${extreme.market.name} ${extreme.g.net >= 0 ? 'long' : 'short'} sits ${where(extreme.g.position_in_range)} its 3-year range.`
     : 'Futures positioning';
+  // Positions are as of a Tuesday and published the Friday after.
+  const published = new Date(`${futures.report_date}T12:00:00Z`);
+  published.setUTCDate(published.getUTCDate() + 3);
+  const demo = dataMode === 'demo';
   return (
-    <Box
-      component="section"
-      aria-labelledby="futures"
-      sx={{ ...PANEL_SX, p: { xs: 2, sm: 3 }, display: 'grid', gap: 2 }}
+    <ChartFrame
+      finding={finding}
+      metric="Futures positioning"
+      sub="Net futures positions · thousands of contracts · this week within its own 3-year range · tick = 3-year median · bar = this week · 0 marks the switch from net short to net long"
+      headingLevel="h2"
+      height={300}
+      provenance={demo ? 'sample' : 'primary'}
+      tag={
+        demo
+          ? { state: 'demo' }
+          : { state: 'delayed', detail: `as of ${formatShortDate(futures.report_date)}` }
+      }
+      source={
+        demo
+          ? { text: 'Demo · shaped like CFTC data' }
+          : { text: 'CFTC · Traders in Financial Futures', href: CFTC_URL }
+      }
+      asOf={
+        demo
+          ? `Scenario · ${formatNoteDate(futures.report_date)}`
+          : `Positions ${formatNoteDate(futures.report_date)} · published ${formatShortDate(published.toISOString().slice(0, 10))}`
+      }
+      note="Reported as of Tuesday and published Friday, so this view is three days old when it updates. It describes who holds what, not what any of them will do."
+      table={{
+        caption: 'Net futures positions, thousands of contracts, and their 3-year range',
+        cols: [
+          'Contract · group',
+          'Net',
+          'On the week',
+          '3-yr low',
+          '3-yr median',
+          '3-yr high',
+          'Of range',
+        ],
+        rows: groups.map(({ market, who, g }) => [
+          `${market.name} · ${who}`,
+          fmtK(g.net),
+          fmtK(g.week_change),
+          fmtK(g.min_3y),
+          fmtK(g.median_3y),
+          fmtK(g.max_3y),
+          `${Math.round(g.position_in_range * 100)}%`,
+        ]),
+      }}
+      testId="chart-positioning"
     >
-      <Box sx={{ display: 'grid', gap: 0.5 }}>
-        <Box
-          component="h2"
-          id="futures"
-          sx={{
-            ...DISPLAY,
-            m: 0,
-            fontWeight: 600,
-            fontSize: 20,
-            lineHeight: 1.25,
-            textWrap: 'balance',
-          }}
-        >
-          {title}
-        </Box>
-        <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
-          {`Net futures positions, thousands of contracts, and where each sits inside its own 3-year range. ${futures.source}, as of ${formatNoteDate(futures.report_date)}.`}
-        </Box>
-      </Box>
       <Box
         sx={{
           display: 'grid',
@@ -954,16 +1060,16 @@ function FuturesSection({ futures }: { futures: Futures }) {
           </Box>
         ))}
       </Box>
-      <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary', textWrap: 'pretty' }}>
-        Positions are reported as of Tuesday and published Friday, so this view is three days old
-        when it updates. It describes who holds what, not what any of them will do.
-      </Box>
-    </Box>
+    </ChartFrame>
   );
 }
 
 function RangeRow({ who, g }: { who: string; g: Futures['markets'][number]['asset_managers'] }) {
-  const median = g.max_3y === g.min_3y ? 0.5 : (g.median_3y - g.min_3y) / (g.max_3y - g.min_3y);
+  const span = g.max_3y - g.min_3y;
+  const at = (v: number) => (span === 0 ? 0.5 : (v - g.min_3y) / span);
+  const median = at(g.median_3y);
+  // Where the range crosses zero, mark it: left of it is net short, right of it net long (P-11).
+  const zero = g.min_3y < 0 && g.max_3y > 0 ? at(0) : null;
   return (
     <Box sx={{ display: 'grid', gap: 0.5 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
@@ -971,7 +1077,7 @@ function RangeRow({ who, g }: { who: string; g: Futures['markets'][number]['asse
           {who}
         </Box>
         <Box component="span" sx={MONO}>
-          {fmtK(g.net)}
+          {`${fmtK(g.net)} ${g.net >= 0 ? 'long' : 'short'}`}
           <Box
             component="span"
             sx={{ color: 'text.secondary' }}
@@ -980,54 +1086,81 @@ function RangeRow({ who, g }: { who: string; g: Futures['markets'][number]['asse
       </Box>
       <Box
         role="img"
-        aria-label={`${who} ${fmtK(g.net)} thousand contracts, ${Math.round(g.position_in_range * 100)}% of the way from the 3-year low of ${fmtK(g.min_3y)} to the high of ${fmtK(g.max_3y)}`}
-        sx={{ position: 'relative', height: 20 }}
+        aria-label={`${who} ${fmtK(g.net)} thousand contracts, net ${g.net >= 0 ? 'long' : 'short'}, ${Math.round(g.position_in_range * 100)}% of the way from the 3-year low of ${fmtK(g.min_3y)} to the high of ${fmtK(g.max_3y)}; 3-year median ${fmtK(g.median_3y)}`}
+        sx={{ position: 'relative', height: 22 }}
       >
         <Box
           sx={(t) => ({
             position: 'absolute',
             left: 0,
             right: 0,
-            top: 7,
-            height: 6,
-            borderRadius: '3px',
-            bgcolor: alpha(t.palette.text.secondary, 0.18),
+            top: 9,
+            height: 4,
+            borderRadius: '2px',
+            bgcolor: chartRoles(t).grid,
           })}
         />
+        {zero !== null && (
+          <Box
+            sx={(t) => ({
+              position: 'absolute',
+              left: `${zero * 100}%`,
+              top: 2,
+              height: 18,
+              borderLeft: `1px dashed ${chartRoles(t).edge}`,
+            })}
+          />
+        )}
         <Box
           sx={(t) => ({
             position: 'absolute',
             left: `${median * 100}%`,
             top: 5,
             width: 2,
-            height: 10,
-            bgcolor: alpha(t.palette.text.secondary, 0.6),
+            height: 12,
+            ml: '-1px',
+            bgcolor: chartRoles(t).ctx,
           })}
         />
         <Box
-          sx={{
+          sx={(t) => ({
             position: 'absolute',
             left: `${g.position_in_range * 100}%`,
             top: 1,
             width: 4,
-            height: 18,
+            height: 20,
             ml: '-2px',
             borderRadius: '2px',
-            bgcolor: 'text.primary',
-          }}
+            bgcolor: chartRoles(t).emph,
+            boxShadow: `0 0 0 2px ${t.palette.background.paper}`,
+          })}
         />
       </Box>
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
+          position: 'relative',
+          height: 14,
           ...MONO,
           fontSize: 11,
           color: 'text.secondary',
         }}
       >
-        <span>{`3-yr low ${fmtK(g.min_3y)}`}</span>
-        <span>{`high ${fmtK(g.max_3y)}`}</span>
+        <Box
+          component="span"
+          sx={{ position: 'absolute', left: 0 }}
+        >{`3-yr low ${fmtK(g.min_3y)}`}</Box>
+        {zero !== null && zero > 0.22 && zero < 0.78 && (
+          <Box
+            component="span"
+            sx={{ position: 'absolute', left: `${zero * 100}%`, transform: 'translateX(-50%)' }}
+          >
+            0
+          </Box>
+        )}
+        <Box
+          component="span"
+          sx={{ position: 'absolute', right: 0 }}
+        >{`high ${fmtK(g.max_3y)}`}</Box>
       </Box>
     </Box>
   );

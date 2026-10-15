@@ -88,7 +88,8 @@ export const MARKETS_SPEC = {
     { status: 'shipped', what: 'Live Treasury + CFTC through /api/public-data/markets; strip, curve, decomposition, 2s10s, note-rate drift (text), CFTC cards for 3 contracts (MarketsPage.tsx).' },
     { status: 'partial', what: 'Charts are pre-v5: the curve title averages the change, 2s10s has no zero line and a band that is its own min–max, decomposition has no shared zero, the CFTC median tick is unexplained.' },
     { status: 'partial', what: 'Rates tag reads “Updated” even when only a stale copy shows (Markets doesn’t use publicDataWord).' },
-    { status: 'todo', what: 'Note-rate drift as a chart (shipped: text only); positioning small multiples by trader group; FOMC event lane; table twins.' },
+    { status: 'shipped', what: 'On the chart frame (2026-10-14): the curve, decomposition (shared centre zero), 2s10s, note-rate drift as a dot chart with the ±0.25 band, and positioning (zero marked where a range crosses it), each with source, as-of, state tag and table twin.' },
+    { status: 'todo', what: 'Positioning as small multiples by trader group, the 10th–90th percentile band, and an FOMC lane on 2s10s: the API returns no weekly history or percentiles and no FOMC dates yet.' },
   ],
   rulings: ['P-1', 'P-2', 'P-8', 'P-9', 'P-10', 'P-11', 'P-12', 'P-13', 'Env 2026-10-14'],
   code: [`${R}/MarketsPage.tsx`, `${R}/marketsMath.ts`, `${R}/publicData.ts`, 'apps/api/src/services/public_data/{treasury,cftc,mod}.rs', 'libs/api/src/lib/demo/public-data.ts:148-192', 'design/src/components/charts.mjs (curve, spreadPlot)'],
@@ -172,7 +173,7 @@ export const SCORECARD_SPEC = {
     'Copy row copies the row exactly as it sits in the note with ___ for the probability.',
   ],
   built: [
-    { status: 'shipped', what: 'Ledger, Past due, Next two weeks with Copy row, By month, Calibration (≥ 20), SignalsOff (ScorecardPage.tsx).' },
+    { status: 'shipped', what: 'Ledger, Past due, Next two weeks with Copy row, By month, Calibration (≥ 20), SignalsOff (ScorecardPage.tsx); By month and Calibration on the chart frame with table twins, and Calibration below 20 names its metric and says why nothing is drawn (2026-10-14).' },
     { status: 'partial', what: 'Calibration has no Wilson intervals; n only in the aria-label; dot size encodes n with no legend.' },
     { status: 'partial', what: 'By month: one-letter months repeat (J, M, A); the pill says lowercase “off”, not the P-2 word Not live, and there is no link to the demo.' },
     { status: 'partial', what: 'The demo build shows the same live forecasts (identical page); final staging shows the sample notes’ scored history.' },
