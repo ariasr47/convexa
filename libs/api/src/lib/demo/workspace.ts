@@ -1,3 +1,4 @@
+import { DEMO_ALERTS_SEED } from './alerts';
 import { loadScenario, sampleContractMark, type ScenarioSymbol } from './catalog';
 import { dataMode, demoStorageKey, type SupportedDemoSymbol } from './mode';
 
@@ -502,22 +503,7 @@ export function initializeDemoWorkspace(): void {
           },
         },
       },
-      'convexa.alerts.v1': {
-        schema_version: 1,
-        rules: [
-          {
-            id: 'demo-alert-spy-flip',
-            kind: 'level_touch',
-            symbol: 'SPY',
-            enabled: true,
-            createdAt: ANCHOR,
-            level: 'gamma_flip',
-            note: 'Watch the authored sample flip',
-          },
-        ],
-        events: [],
-        notifyBrowser: false,
-      },
+      'convexa.alerts.v1': DEMO_ALERTS_SEED,
       'convexa.personas.v1': {
         schema_version: 1,
         customs: [
