@@ -32,10 +32,15 @@ export function Caps({ children, sx }: { children: ReactNode; sx?: SxProps<Theme
 export function ProvenanceChip({
   text,
   kind,
+  link = true,
 }: {
   text: string;
   kind: 'primary' | 'third-party' | 'sample';
+  /** False inside another control (a choice button): a link nested in a button is invalid, and a
+   *  click on it would leave the page and lose what the reader was filling in. */
+  link?: boolean;
 }) {
+  if (!link) return <ChipBody text={text} kind={kind} />;
   // A chip that names a source links to its card on /credits (one place for every chip).
   return (
     <CreditsLink text={text}>

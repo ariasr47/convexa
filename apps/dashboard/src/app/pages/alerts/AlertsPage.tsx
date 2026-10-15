@@ -14,10 +14,17 @@
  * domain into alerts.
  */
 import { BrowserNotifyControl } from '@/features/alerts/BrowserNotifyControl';
-import { PUBLIC_KIND, PUBLIC_KINDS, isPublicKind, isStructureKind } from '@/features/alerts/kinds';
+import {
+  FINRA_ON_PRODUCTION,
+  PUBLIC_KIND,
+  PUBLIC_KINDS,
+  isPublicKind,
+  isStructureKind,
+} from '@/features/alerts/kinds';
 import { KIND_LABEL, LEVEL_LABEL, NOT_SET } from '@/features/alerts/labels';
 import { fmtDay, ruleWhat } from '@/features/alerts/publicRules';
-import { alertsReadFaulted } from '@/features/alerts/store';
+import { firedTag, secSite } from '@/features/alerts/siteState';
+import { alertsReadFaulted, applyEdit } from '@/features/alerts/store';
 import type { AlertEvent, AlertRule } from '@/features/alerts/types';
 import { useAlerts } from '@/features/alerts/useAlerts';
 import { followedTickers, usePublicChecks } from '@/features/alerts/usePublicChecks';
@@ -53,10 +60,13 @@ import {
   KindGlyph,
   Panel,
   SecStrip,
+  StateTag,
   checksLine,
   kindState,
   ruleState,
+  waitSentence,
   type SiteContext,
+  type StateWord,
 } from './alertsUi';
 import { NewAlertDialog, type Draft } from './NewAlertDialog';
 
@@ -239,27 +249,39 @@ function RuleSummary({ rule }: { rule: AlertRule }) {
 const ALERTS_LEAD =
   'Alerts on public data: filings, insider clusters, results dates, futures positioning, short interest and your own notes. Each says where it reads from and how late that source is.';
 
-const SUGGESTIONS: { text: string; draft: Draft }[] = [
-  {
-    text: 'When leveraged funds in 10-year notes reach a 3-year extreme',
-    draft: {
-      kind: 'cftc',
-      symbol: '043602',
-      marketName: '10-year T-note',
-      group: 'leveraged_funds',
-      extreme: 'either',
-      closeness: 'within5',
-    },
-  },
-  {
-    text: 'When NVDA’s shares short move more than 15% between settlements',
-    draft: { kind: 'si', symbol: 'NVDA', siMode: 'change', changePct: 15 },
-  },
-  {
-    text: 'When your NVDA note is due for review',
-    draft: { kind: 'note', symbol: 'NVDA', days: 7 },
-  },
-];
+const POSITIONING_SUGGESTION = {
+  text: 'When leveraged funds in 10-year notes reach a 3-year extreme',
+  draft: {
+    kind: 'cftc',
+    symbol: '043602',
+    marketName: '10-year T-note',
+    group: 'leveraged_funds',
+    extreme: 'either',
+    closeness: 'within5',
+  } as Draft,
+};
+const NOTE_SUGGESTION = {
+  text: 'When your NVDA note is due for review',
+  draft: { kind: 'note', symbol: 'NVDA', days: 7 } as Draft,
+};
+
+/** Three that work today, none needing SEC access (the spec card's empty state). With FINRA off on
+ *  production, the short-interest one would only read Off, so results approaching takes its place. */
+function suggestions(finra: boolean): { text: string; draft: Draft }[] {
+  return [
+    POSITIONING_SUGGESTION,
+    finra
+      ? {
+          text: 'When NVDA’s shares short move more than 15% between settlements',
+          draft: { kind: 'si', symbol: 'NVDA', siMode: 'change', changePct: 15 },
+        }
+      : {
+          text: 'A week before NVDA’s expected results date',
+          draft: { kind: 'results', symbol: 'NVDA', days: 7 },
+        },
+    NOTE_SUGGESTION,
+  ];
+}
 
 const LEGEND_ORDER: DataStateKey[] = [
   'updated',
@@ -286,7 +308,8 @@ export function AlertsPage() {
   const checks = usePublicChecks(a.rules);
   const ctx: SiteContext = {
     demo,
-    sec: demo ? 'live' : checks.sec,
+    sec: secSite(checks),
+    finra: demo || FINRA_ON_PRODUCTION,
     structureLive: demo || marketDataMode === 'live',
   };
   const followed = useMemo(() => followedTickers(), []);
@@ -319,18 +342,11 @@ export function AlertsPage() {
   const close = () => setDialog((d) => ({ ...d, open: false }));
 
   const onSave = (draft: Draft): boolean => {
-    const pub = isPublicKind(draft.kind) ? PUBLIC_KIND[draft.kind] : null;
     if (draft.id) {
       const existing = a.rules.find((r) => r.id === draft.id);
       if (!existing) return false;
-      // New settings: the next check starts fresh, but what already fired stays fired.
-      const ok = a.upsertRule({
-        ...existing,
-        ...draft,
-        id: existing.id,
-        check: undefined,
-        inZone: undefined,
-      });
+      // New settings: the next check starts fresh; a new subject counts as a new rule (applyEdit).
+      const ok = a.upsertRule(applyEdit(existing, draft, Date.now()));
       if (!ok) return false;
       close();
       setToast('Alert saved.');
@@ -342,11 +358,12 @@ export function AlertsPage() {
       return false;
     }
     close();
+    const wait = waitSentence(draft.kind, ctx);
     setToast(
       demo
         ? 'Alert saved in this browser’s demo workspace. The demo doesn’t check it.'
-        : pub?.sec === 'needs' && ctx.sec !== 'live'
-          ? 'Alert saved. It checks EDGAR once SEC access is set up.'
+        : wait
+          ? `Alert saved. ${wait}`
           : isStructureKind(draft.kind)
             ? 'Alert saved. It checks while a ticker desk is open.'
             : 'Alert saved. Convexa checks it now, and each time you open Alerts.',
@@ -472,7 +489,7 @@ export function AlertsPage() {
         ))}
       </Box>
 
-      {!demo && checks.sec === 'not_configured' && <SecStrip />}
+      {!demo && ctx.sec === 'notSetUp' && <SecStrip />}
 
       <Box
         sx={{
@@ -549,10 +566,7 @@ export function AlertsPage() {
               demo ? (
                 <DataStateTag state="sample" />
               ) : checks.phase === 'done' ? (
-                <DataStateTag
-                  state="updated"
-                  detail={`checked ${new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`}
-                />
+                <DataStateTag {...firedTag(checks)} />
               ) : (
                 <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
                   Checking…
@@ -584,6 +598,7 @@ export function AlertsPage() {
               permission={a.notifyPermission}
               onEnable={a.enableBrowserNotify}
               onTurnOff={a.turnOffBrowserNotify}
+              where={demo ? 'demo' : ctx.structureLive ? 'live' : 'publicOnly'}
               refuse={(el) => <AlertsRefused when={faulted}>{el}</AlertsRefused>}
             />
           </Panel>
@@ -624,7 +639,8 @@ export function AlertsPage() {
         followed={followed}
         rules={a.rules}
         notifyPermission={a.notifyPermission}
-        requestPermission={a.requestBrowserPermission}
+        notifyOn={a.notifyBrowser}
+        enableNotify={a.enableBrowserNotify}
         onClose={close}
         onSave={onSave}
         onRemove={(id) => {
@@ -655,7 +671,7 @@ function RuleRow({
   onEdit,
 }: {
   rule: AlertRule;
-  state: DataStateKey;
+  state: StateWord['state'];
   detail?: string;
   last: string;
   faulted: boolean;
@@ -727,7 +743,7 @@ function RuleRow({
           gap: '8px 12px',
         }}
       >
-        <DataStateTag state={state} detail={detail} />
+        <StateTag state={state} detail={detail} />
         <Box
           component="span"
           sx={{
@@ -865,7 +881,7 @@ function Suggestions({
       <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
         {demo ? 'These work on the demo’s sample data:' : 'These work on this site today:'}
       </Box>
-      {SUGGESTIONS.map((s) => {
+      {suggestions(ctx.finra).map((s) => {
         const info = PUBLIC_KIND[s.draft.kind as keyof typeof PUBLIC_KIND];
         const st = kindState(s.draft.kind, ctx);
         return (
@@ -906,11 +922,13 @@ function Suggestions({
                 {s.text}
               </Box>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                {/* Not a link: the suggestion is a button, and a click must pick it, not leave. */}
                 <ProvenanceChip
                   text={demo ? `Sample · shaped like ${info.chip}` : info.chip}
                   kind={demo ? 'sample' : 'primary'}
+                  link={false}
                 />
-                <DataStateTag state={st.state} detail={st.detail} />
+                <StateTag {...st} />
               </Box>
             </Box>
           </AlertsRefused>
@@ -1009,7 +1027,7 @@ function KindReference({ ctx }: { ctx: SiteContext }) {
                 component="td"
                 sx={{ ...cell, '& [data-state]': { whiteSpace: { md: 'nowrap' } } }}
               >
-                <DataStateTag state={st.state} detail={st.detail} />
+                <StateTag {...st} />
               </Box>
             </tr>
           );
@@ -1043,7 +1061,7 @@ function KindReference({ ctx }: { ctx: SiteContext }) {
             )}
           </Box>
           <Box component="td" sx={{ ...cell, '& [data-state]': { whiteSpace: { md: 'nowrap' } } }}>
-            <DataStateTag state={kindState('level_touch', ctx).state} />
+            <StateTag state={kindState('level_touch', ctx).state} />
           </Box>
         </tr>
       </tbody>

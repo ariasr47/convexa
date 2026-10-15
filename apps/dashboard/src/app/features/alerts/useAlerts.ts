@@ -31,19 +31,67 @@ let evaluatedThisSession = false;
  *  a silent "off" indistinguishable from "never asked". */
 export type NotifyPermission = NotificationPermission | 'unavailable';
 
-function currentNotifyPermission(): NotifyPermission {
-  return typeof Notification === 'undefined' ? 'unavailable' : Notification.permission;
+/**
+ * Whether a firing of this rule becomes a browser notification (W1-14). The page-wide flag ("Turn
+ * on" / "Turn off" on the Alerts page) is the master switch: off, nothing notifies, whatever a rule
+ * says. On, a rule notifies unless its own switch is off; a rule saved before rules had a switch
+ * (`notify` absent) follows the page.
+ */
+export function shouldNotify(
+  rule: Pick<AlertRule, 'notify'> | undefined,
+  pageOn: boolean,
+): boolean {
+  return pageOn && (rule?.notify ?? true);
 }
 
-/** A browser notification, when the browser allows them; otherwise nothing (the page still lists it). */
-export function deliverBrowser(title: string, body: string) {
+/**
+ * Some browsers expose `Notification` and grant permission but refuse the page-context constructor
+ * (Chrome on Android: "Illegal constructor. Use ServiceWorkerRegistration.showNotification()"), and
+ * this app registers no service worker. Once a construction throws that TypeError, notifications
+ * are unavailable here for the session, and the controls say so instead of claiming "on" (W1-18).
+ */
+let notifyBroken = false;
+const permissionListeners = new Set<() => void>();
+function markNotifyBroken() {
+  if (notifyBroken) return;
+  notifyBroken = true;
+  permissionListeners.forEach((l) => {
+    try {
+      l();
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
+export function currentNotifyPermission(): NotifyPermission {
+  if (notifyBroken || typeof Notification === 'undefined') return 'unavailable';
+  return Notification.permission;
+}
+
+/** Constructs one notification; false when this browser refuses the constructor. */
+function construct(title: string, options: NotificationOptions): boolean {
   try {
-    if (typeof Notification === 'undefined') return;
-    if (Notification.permission !== 'granted') return;
-    new Notification(title, { body, tag: `convexa-${title}` });
-  } catch {
-    /* ignore */
+    new Notification(title, options);
+    return true;
+  } catch (e) {
+    if (e instanceof TypeError) markNotifyBroken();
+    return false;
   }
+}
+
+/**
+ * A browser notification, when the browser allows them; otherwise nothing (the page still lists it).
+ * `tag` is the firing's own id, so two firings in one check don't replace each other (W1-51).
+ */
+export function deliverBrowser(title: string, body: string, tag: string) {
+  if (currentNotifyPermission() !== 'granted') return;
+  construct(title, { body, tag: `convexa-${tag}` });
+}
+
+/** Test seam: forget a refused constructor. */
+export function __resetNotifyBroken() {
+  notifyBroken = false;
 }
 
 export function useAlerts() {
@@ -62,14 +110,15 @@ export function useAlerts() {
         isStructureKind(r.kind) &&
         r.symbol.toUpperCase() === snap.symbol.toUpperCase(),
     );
-    const notify = readAlerts().notifyBrowser;
+    const pageOn = readAlerts().notifyBrowser;
     for (const rule of rules) {
       const mem = memByRule.get(rule.id) ?? {};
       const { event, memory } = evaluateRule(rule, snap, mem);
       memByRule.set(rule.id, memory);
       if (event) {
         pushEvent(event);
-        if (rule.notify ?? notify) deliverBrowser(`Convexa · ${event.symbol}`, event.message);
+        if (shouldNotify(rule, pageOn))
+          deliverBrowser(`Convexa · ${event.symbol}`, event.message, event.id);
       }
     }
   }, []);
@@ -86,15 +135,23 @@ export function useAlerts() {
     return { rule, saved: upsertRule(rule) };
   }, []);
 
+  /** Opens the browser's own prompt; callers show Convexa's ask first (NotifyAskDialog). Right
+   *  after a grant, one confirming notification proves this browser can show them at all: where the
+   *  constructor is refused, the control reads "not available here" instead of "on". */
   const requestBrowserPermission = useCallback(async () => {
     try {
-      if (typeof Notification === 'undefined') {
+      if (currentNotifyPermission() === 'unavailable') {
         setNotifyPermission('unavailable');
         return false;
       }
       const p = await Notification.requestPermission();
-      setNotifyPermission(p);
-      const ok = p === 'granted';
+      const ok =
+        p === 'granted' &&
+        construct('Convexa', {
+          body: 'Browser notifications are on. Fired alerts show like this.',
+          tag: 'convexa-notify-on',
+        });
+      setNotifyPermission(currentNotifyPermission());
       setNotifyBrowser(ok);
       return ok;
     } catch {
@@ -103,10 +160,16 @@ export function useAlerts() {
     }
   }, []);
 
-  // Read the browser's answer on mount. It never turns notifications on by itself: a trader who
-  // pressed "Turn off" stays off across reloads even though the browser still grants permission.
+  // Read the browser's answer on mount, and again when a notification turns out to be impossible
+  // here. It never turns notifications on by itself: a trader who pressed "Turn off" stays off
+  // across reloads even though the browser still grants permission.
   useEffect(() => {
-    setNotifyPermission(currentNotifyPermission());
+    const sync = () => setNotifyPermission(currentNotifyPermission());
+    sync();
+    permissionListeners.add(sync);
+    return () => {
+      permissionListeners.delete(sync);
+    };
   }, []);
 
   /** Turn notifications on. With permission already granted no browser prompt is needed; otherwise
@@ -120,7 +183,8 @@ export function useAlerts() {
     return requestBrowserPermission();
   }, [requestBrowserPermission]);
 
-  /** "Turn off": stops them from Convexa without touching the browser's own permission. */
+  /** "Turn off": stops every rule's notifications from Convexa (the page flag is the master
+   *  switch), without touching the browser's own permission. */
   const turnOffBrowserNotify = useCallback(() => setNotifyBrowser(false), []);
 
   // Criterion 50: the control never reads as "on" for a permission the browser did not grant —

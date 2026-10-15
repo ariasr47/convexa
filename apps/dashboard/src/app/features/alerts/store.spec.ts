@@ -11,9 +11,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   __resetAlertsMemory,
   alertsReadFaulted,
+  applyEdit,
   listEvents,
   listRules,
+  onStorageEvent,
   readAlerts,
+  recordChecks,
   setNotifyBrowser,
   upsertRule,
 } from './store';
@@ -168,5 +171,96 @@ describe('the durable shape is untouched by this task (SPEC §2.5)', () => {
     // latches; a wrong-shaped-but-parseable value is read-new-else-old's job, unaffected here).
     expect(listRules()).toEqual([]);
     expect(listEvents()).toEqual([]);
+  });
+});
+
+// ---- public-data checks against a store that moved on while they ran -------------------------
+
+const filingRule: AlertRule = {
+  id: 'ar_f',
+  kind: 'filing',
+  symbol: 'NVDA',
+  enabled: true,
+  createdAt: Date.parse('2026-08-01T12:00:00'),
+  forms: ['8-K'],
+  fired: ['filing:old'],
+};
+const fired = (key: string, ruleId = 'ar_f'): AlertEvent => ({
+  id: `ev_${key}`,
+  ruleId,
+  kind: 'filing',
+  symbol: 'NVDA',
+  message: 'NVDA filed a 8-K',
+  at: 2,
+  read: false,
+  key,
+});
+
+describe('recordChecks: two checks on the same snapshot never record a firing twice (W1-50)', () => {
+  it('the second round drops the event the first one recorded, and lists it once', () => {
+    upsertRule(filingRule);
+    const snapshot = readAlerts().rules[0];
+    const done = { ...snapshot, check: { at: 2, outcome: 'fired' as const } };
+    expect(recordChecks([done], [fired('filing:acc-1')])).toHaveLength(1);
+    // A remount (or a second tab) ran on the same pre-check snapshot.
+    expect(recordChecks([done], [fired('filing:acc-1')])).toHaveLength(0);
+    expect(listEvents().filter((e) => e.key === 'filing:acc-1')).toHaveLength(1);
+    expect(listRules()[0].fired).toEqual(['filing:old', 'filing:acc-1']);
+  });
+  it('another tab’s write clears this tab’s copy, so the next merge sees its firings', () => {
+    upsertRule(filingRule);
+    const other = { ...readAlerts(), rules: [{ ...filingRule, fired: ['filing:old', 'x'] }] };
+    localStorage.setItem(ALERTS_KEY, JSON.stringify(other));
+    expect(listRules()[0].fired).toEqual(['filing:old']); // this tab's stale copy
+    onStorageEvent({ key: ALERTS_KEY });
+    expect(listRules()[0].fired).toEqual(['filing:old', 'x']);
+  });
+});
+
+describe('an edit during a check keeps the edited rule’s own memory (W1-48)', () => {
+  it('a check that started before the edit writes neither memory nor firings onto it', () => {
+    const cftc: AlertRule = {
+      id: 'ar_c',
+      kind: 'cftc',
+      symbol: '043602',
+      enabled: true,
+      createdAt: 1,
+      group: 'leveraged_funds',
+    };
+    upsertRule(cftc);
+    const snapshot = readAlerts().rules[0];
+    upsertRule(applyEdit(snapshot, { group: 'asset_managers' }, 5));
+    const stale = { ...snapshot, inZone: true, check: { at: 3, outcome: 'fired' as const } };
+    expect(
+      recordChecks([stale], [fired('cftc:043602:leveraged_funds:2026-10-06', 'ar_c')]),
+    ).toEqual([]);
+    const now = listRules()[0];
+    expect(now.group).toBe('asset_managers');
+    expect(now.inZone).toBeUndefined();
+    expect(now.check).toBeUndefined();
+  });
+  it('a switch flipped during a check is kept, and the check’s memory still lands', () => {
+    upsertRule(filingRule);
+    const snapshot = readAlerts().rules[0];
+    upsertRule({ ...snapshot, enabled: false });
+    recordChecks([{ ...snapshot, check: { at: 4, outcome: 'quiet' } }], []);
+    expect(listRules()[0]).toMatchObject({ enabled: false, check: { outcome: 'quiet' } });
+  });
+});
+
+describe('applyEdit: a new subject is a new rule (W1-47)', () => {
+  it('changing the ticker restarts createdAt and forgets what fired', () => {
+    const e = applyEdit(filingRule, { symbol: 'AMD' }, 99);
+    expect(e).toMatchObject({ symbol: 'AMD', createdAt: 99, fired: [], rev: 1 });
+  });
+  it('adding forms or 8-K items does too, so past filings don’t all fire at once', () => {
+    expect(applyEdit(filingRule, { forms: ['8-K', '10-Q'] }, 99).createdAt).toBe(99);
+    expect(applyEdit(filingRule, { items: ['5.02'] }, 99).createdAt).toBe(99);
+  });
+  it('other edits keep createdAt and fired, and clear the last check', () => {
+    const rule = { ...filingRule, check: { at: 1, outcome: 'quiet' as const }, rev: 2 };
+    const e = applyEdit(rule, { notify: true, forms: ['8-K'] }, 99);
+    expect(e).toMatchObject({ createdAt: filingRule.createdAt, fired: ['filing:old'], rev: 3 });
+    expect(e.check).toBeUndefined();
   });
 });

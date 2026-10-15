@@ -7,6 +7,7 @@
  *
  * The same dialog edits a rule (it opens at step 2) and removes one.
  */
+import { NotifyAskDialog } from '@/features/alerts/BrowserNotifyControl';
 import {
   FILING_ITEMS,
   GROUP_LABEL,
@@ -31,7 +32,7 @@ import type {
   LevelRef,
   TraderGroup,
 } from '@/features/alerts/types';
-import type { NotifyPermission } from '@/features/alerts/useAlerts';
+import { shouldNotify, type NotifyPermission } from '@/features/alerts/useAlerts';
 import { usePublicMarkets } from '@/pages/research/publicData';
 import { ProvenanceChip } from '@/pages/research/publicUi';
 import { chartRoles } from '@/shared/charts/frame';
@@ -49,7 +50,15 @@ import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { KindGlyph, SecStrip, kindState, selectCoarseFloorSx, type SiteContext } from './alertsUi';
+import {
+  KindGlyph,
+  SecStrip,
+  StateTag,
+  kindState,
+  selectCoarseFloorSx,
+  waitSentence,
+  type SiteContext,
+} from './alertsUi';
 
 /** The contracts the API's CFTC read covers (apps/api services/public_data/cftc.rs), for when the
  *  markets read hasn't answered: the reader can still save, and the check says if it's missing. */
@@ -95,7 +104,11 @@ export interface NewAlertDialogProps {
   followed: ReadonlySet<string>;
   rules: AlertRule[];
   notifyPermission: NotifyPermission;
-  requestPermission: () => Promise<boolean>;
+  /** The page-wide notification flag (the master switch), as the page's control reads it. */
+  notifyOn: boolean;
+  /** Turns the page-wide flag on; opens the browser's prompt when permission isn't granted yet
+   *  (after Convexa's own ask). Resolves whether notifications ended up on. */
+  enableNotify: () => Promise<boolean>;
   onClose: () => void;
   /** Save; resolves whether the browser kept it. */
   onSave: (draft: Draft) => boolean;
@@ -111,12 +124,25 @@ export function NewAlertDialog(props: NewAlertDialogProps) {
   const [errors, setErrors] = useState<RuleErrors>({});
   const [failed, setFailed] = useState(false);
 
+  // A new rule (or a suggestion) starts with the page's notification setting, so the switch and the
+  // Review line say what will happen; an edited rule keeps its own (absent: it follows the page).
+  const notifyOn = props.notifyOn;
   useEffect(() => {
     if (!open) return;
-    setDraft(start ? { ...DEFAULTS[start.kind], ...start } : { ...DEFAULTS.filing, notify: false });
+    setDraft(
+      start
+        ? {
+            ...DEFAULTS[start.kind],
+            ...start,
+            ...(start.id || start.notify !== undefined ? {} : { notify: notifyOn }),
+          }
+        : { ...DEFAULTS.filing, notify: notifyOn },
+    );
     setStep(start ? 2 : 1);
     setErrors({});
     setFailed(false);
+    // Only on opening: a later change of the page flag mustn't reset what the reader has filled in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, start]);
 
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
@@ -245,13 +271,15 @@ export function NewAlertDialog(props: NewAlertDialogProps) {
             ctx={ctx}
             followed={props.followed}
             notifyPermission={props.notifyPermission}
-            requestPermission={props.requestPermission}
+            notifyOn={props.notifyOn}
+            enableNotify={props.enableNotify}
           />
         )}
         {step === 3 && (
           <ReviewStep
             draft={draft}
             ctx={ctx}
+            notifyOn={props.notifyOn}
             failed={failed}
             duplicate={editing ? null : duplicate}
             onOpenExisting={props.onOpenExisting}
@@ -415,11 +443,13 @@ function ChooseStep({
                 {k.fires}.
               </Box>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                {/* Not a link: the tile is a button, and a click must choose, not leave. */}
                 <ProvenanceChip
                   text={ctx.demo ? `Sample · shaped like ${k.chip}` : k.chip}
                   kind={ctx.demo ? 'sample' : 'primary'}
+                  link={false}
                 />
-                <DataStateTag state={st.state} detail={st.detail} />
+                <StateTag {...st} />
               </Box>
             </Tile>
           );
@@ -701,7 +731,8 @@ function SetupStep({
   ctx,
   followed,
   notifyPermission,
-  requestPermission,
+  notifyOn,
+  enableNotify,
 }: {
   draft: Draft;
   set: (p: Partial<Draft>) => void;
@@ -709,7 +740,8 @@ function SetupStep({
   ctx: SiteContext;
   followed: ReadonlySet<string>;
   notifyPermission: NotifyPermission;
-  requestPermission: () => Promise<boolean>;
+  notifyOn: boolean;
+  enableNotify: () => Promise<boolean>;
 }) {
   const k = draft.kind;
   return (
@@ -803,8 +835,8 @@ function SetupStep({
             help={followedHelp(draft, followed)}
           />
           <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}>
-            Fires when three or more insiders file Form 4s in the same direction within 10 days.
-            Trades under a pre-set plan (Rule 10b5-1) are shown, not counted.
+            Fires when three or more insiders buy on the open market within 10 days, as their Form
+            4s show. Sales, and trades under a pre-set plan (Rule 10b5-1), don’t count.
           </Box>
         </>
       )}
@@ -911,28 +943,41 @@ function SetupStep({
         set={set}
         demo={ctx.demo}
         notifyPermission={notifyPermission}
-        requestPermission={requestPermission}
+        notifyOn={notifyOn}
+        enableNotify={enableNotify}
       />
-      {!ctx.demo && (k === 'filing' || k === 'cluster') && ctx.sec !== 'live' && <SecStrip />}
+      {!ctx.demo && (k === 'filing' || k === 'cluster') && ctx.sec === 'notSetUp' && <SecStrip />}
     </>
   );
 }
 
+/**
+ * The rule's browser-notification switch. The page-wide flag is the master switch (W1-14): the
+ * switch reads on only while it is on, and turning the switch on turns the page flag on too, by the
+ * same path as the page's own control: Convexa's ask first, then the browser's prompt.
+ */
 function TellMe({
   draft,
   set,
   demo,
   notifyPermission,
-  requestPermission,
+  notifyOn,
+  enableNotify,
 }: {
   draft: Draft;
   set: (p: Partial<Draft>) => void;
   demo: boolean;
   notifyPermission: NotifyPermission;
-  requestPermission: () => Promise<boolean>;
+  notifyOn: boolean;
+  enableNotify: () => Promise<boolean>;
 }) {
+  const [asking, setAsking] = useState(false);
   const blocked = !demo && (notifyPermission === 'denied' || notifyPermission === 'unavailable');
-  const on = !!draft.notify && notifyPermission === 'granted';
+  const on = shouldNotify(draft, notifyOn);
+  const turnOn = async () => {
+    const ok = await enableNotify();
+    set({ notify: ok });
+  };
   return (
     <Field label="Tell me">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -948,10 +993,10 @@ function TellMe({
             color="default"
             checked={on}
             disabled={blocked || demo}
-            onChange={async (_, want) => {
+            onChange={(_, want) => {
               if (!want) return set({ notify: false });
-              const ok = notifyPermission === 'granted' || (await requestPermission());
-              set({ notify: ok });
+              if (notifyPermission === 'granted') void turnOn();
+              else setAsking(true);
             }}
             slotProps={{ input: { 'aria-label': 'Browser notification' } }}
           />
@@ -977,6 +1022,14 @@ function TellMe({
           </Box>
         )}
       </Box>
+      <NotifyAskDialog
+        open={asking}
+        onClose={() => setAsking(false)}
+        onContinue={() => {
+          setAsking(false);
+          void turnOn();
+        }}
+      />
     </Field>
   );
 }
@@ -1173,12 +1226,14 @@ function RangeNow({
 function ReviewStep({
   draft,
   ctx,
+  notifyOn,
   failed,
   duplicate,
   onOpenExisting,
 }: {
   draft: Draft;
   ctx: SiteContext;
+  notifyOn: boolean;
   failed: boolean;
   duplicate: AlertRule | null;
   onOpenExisting: (id: string) => void;
@@ -1186,7 +1241,7 @@ function ReviewStep({
   const rule = asRule(draft);
   const pub = PUBLIC_KIND[draft.kind as keyof typeof PUBLIC_KIND];
   const st = kindState(draft.kind, ctx);
-  const secWait = !ctx.demo && pub?.sec === 'needs' && ctx.sec !== 'live';
+  const wait = waitSentence(draft.kind, ctx);
   const sentence = pub
     ? ruleSentence(rule)
     : `Tell me when ${draft.symbol} ${draft.kind === 'tier_change' ? 'changes tier' : draft.kind === 'score_gate' ? `scores ${draft.scoreMin ?? 70} or more` : 'touches the level'}.`;
@@ -1207,8 +1262,9 @@ function ReviewStep({
               : (pub?.chip ?? 'Options chain')
           }
           kind={ctx.demo ? 'sample' : 'primary'}
+          link={false}
         />
-        <DataStateTag state={st.state} detail={st.detail} />
+        <StateTag {...st} />
       </Box>
       <Box
         component="dl"
@@ -1234,15 +1290,14 @@ function ReviewStep({
             ? 'Never on its own: the demo’s firings are part of the Oct 7 scenario.'
             : isStructureKind(draft.kind)
               ? 'While a ticker desk is open, on each structure snapshot.'
-              : secWait
-                ? 'Once SEC access is set up on this site; until then it is saved and waits.'
-                : draft.kind === 'cluster'
-                  ? 'Not yet: the cluster check needs each insider’s Form 4, which the API doesn’t serve yet.'
-                  : 'When you open Alerts, in this browser. Nothing checks while no Alerts page is open.'}
+              : (wait ??
+                'When you open Alerts, in this browser. Nothing checks while no Alerts page is open.')}
         </dd>
         <dt>Tells you</dt>
         <dd>
-          {draft.notify ? 'On the Alerts page and by browser notification.' : 'On the Alerts page.'}
+          {shouldNotify(draft, notifyOn)
+            ? 'On the Alerts page and by browser notification.'
+            : 'On the Alerts page.'}
         </dd>
         {pub && (
           <>
