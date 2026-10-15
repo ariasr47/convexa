@@ -6,6 +6,7 @@
  * its own background and bottom border — a flat row with a top hairline, matching the tape row above
  * it. Every testid, and the empty/error/loading arms, are unchanged.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
 import type { StructureSample } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Skeleton from '@mui/material/Skeleton';
@@ -45,7 +46,11 @@ function Spark({
       <Typography
         component="span"
         data-testid={`${testid}-empty`}
-        sx={{ fontSize: '0.6875rem', color: 'text.disabled', fontFamily: 'var(--font-mono)' }}
+        sx={{
+          fontSize: '0.6875rem',
+          color: 'text.secondary',
+          fontFamily: typographyTokens.monoFontFamily,
+        }}
       >
         —
       </Typography>
@@ -180,7 +185,7 @@ export function StructurePathStrip({
                   component="span"
                   data-testid="structure-history-score-delta"
                   sx={{
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: typographyTokens.monoFontFamily,
                     fontSize: '0.75rem',
                     color: 'text.secondary',
                     fontVariantNumeric: 'tabular-nums',
@@ -217,7 +222,7 @@ export function StructurePathStrip({
                   component="span"
                   data-testid="structure-history-flipdist-delta"
                   sx={{
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: typographyTokens.monoFontFamily,
                     fontSize: '0.75rem',
                     color: 'text.secondary',
                     fontVariantNumeric: 'tabular-nums',
@@ -236,8 +241,8 @@ export function StructurePathStrip({
               m: 0,
               ml: { md: 'auto' },
               fontSize: '0.6875rem',
-              color: 'text.disabled',
-              fontFamily: 'var(--font-mono)',
+              color: 'text.secondary',
+              fontFamily: typographyTokens.monoFontFamily,
               fontVariantNumeric: 'tabular-nums',
             }}
           >
@@ -251,7 +256,7 @@ export function StructurePathStrip({
         <Typography
           component="p"
           data-testid="structure-history-basis"
-          sx={{ m: 0, mt: 0.75, fontSize: '0.6875rem', color: 'text.disabled' }}
+          sx={{ m: 0, mt: 0.75, fontSize: '0.6875rem', color: 'text.secondary' }}
         >
           {basis}
         </Typography>

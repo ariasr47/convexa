@@ -78,9 +78,15 @@ export function sparkPoints(
   const n = samples.length;
   const innerW = width - pad * 2;
   const innerH = height - pad * 2;
+  // x is time (TD-06): a gap in the samples shows as a gap, not as two points side by side. Samples
+  // that all share one time fall back to their order.
+  const t0 = samples[0].as_of;
+  const t1 = samples[n - 1].as_of;
+  const at = (i: number) =>
+    t1 > t0 ? (samples[i].as_of - t0) / (t1 - t0) : i / Math.max(n - 1, 1);
   return vals
     .map(({ i, v }) => {
-      const x = pad + (i / Math.max(n - 1, 1)) * innerW;
+      const x = pad + at(i) * innerW;
       const y = pad + (1 - (v - min) / span) * innerH;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })

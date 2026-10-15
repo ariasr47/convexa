@@ -30,6 +30,7 @@ import { NOT_LIVE, type LiveClaim } from '@/shared/liveness/liveClaim';
 import { elevationFor, extrasFor } from '@/shared/theme/tokens';
 import { AccessibleHelp } from '@/shared/ui/AccessibleHelp';
 import { useWidgetChrome } from '@/shared/ui/Widget/WidgetChromeContext';
+import { useWidgetProvenance } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -168,6 +169,8 @@ export function Widget({
   const live = Boolean(liveClaim) || watch;
   const chrome = useWidgetChrome();
   const quiet = chrome === 'quiet';
+  // P-8: a sample board's cards are dashed with the hatch stripe; a third party's dotted.
+  const provenance = useWidgetProvenance();
   // Body-wrapper chrome. 'inset' recesses the well (darker + inner shadow) so raised paper tiles pop.
   const bodyWrapperSx: SxProps<Theme> = (theme) => ({
     borderTop: '1px solid',
@@ -396,8 +399,21 @@ export function Widget({
           display: 'flex',
           flexDirection: 'column',
           bgcolor: 'background.paper',
-          border: '1px solid',
-          borderColor: 'divider',
+          border: `1px ${provenance === 'sample' ? 'dashed' : provenance === 'third' ? 'dotted' : 'solid'}`,
+          borderColor: provenance === 'primary' ? 'divider' : extrasFor(theme).textTertiary,
+          ...(provenance === 'sample' && {
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              height: 6,
+              pointerEvents: 'none',
+              zIndex: 1,
+              background: `repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, ${theme.palette.text.secondary} 28%, transparent) 6px 12px)`,
+            },
+          }),
           // PANEL role (SPEC §2.2, ruling 4) — `1` is a THEME-DERIVED multiplier (1 × shape.borderRadius
           // = 12px today), not a literal: inside `sx`, MUI resolves a numeric `borderRadius` through
           // `createUnaryUnit(theme, 'shape.borderRadius', …)`, so `theme.shape.borderRadius` itself

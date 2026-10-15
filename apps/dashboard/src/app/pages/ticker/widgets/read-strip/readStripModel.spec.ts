@@ -118,6 +118,12 @@ describe('buildReadStrip — the seven decomposed cells, byte-for-byte with the 
     expect(c.opportunity.value).toBe('73 · Actionable');
   });
 
+  it('opportunity — an unscored ticker reads —, never 0 (TD-07)', () => {
+    const c = bySlot({ ...FULL_INPUT, opportunityScore: null });
+    expect(c.opportunity.value).toBe('—');
+    expect(c.opportunity.sub).toBe('not scored this cycle');
+  });
+
   it('netDex — unavailable when null, formatted otherwise', () => {
     expect(bySlot(FULL_INPUT).netDex.value).toBe('$500.0M');
     const nulled = bySlot({ ...FULL_INPUT, m: marketState({ net_dex: null }) });

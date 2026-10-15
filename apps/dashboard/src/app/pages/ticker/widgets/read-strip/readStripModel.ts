@@ -99,7 +99,8 @@ export interface ReadStripInput {
   /** Opportunity tier word, computed in TickerDashboard via tierMeta (same source the old dealer
    *  positioning widget used). No accent-color prop — a FigureCell has none to take one. */
   tierWord: string;
-  opportunityScore: number;
+  /** `null` when the scanner hasn't scored the ticker this cycle: shown as `—`, never as 0 (TD-07). */
+  opportunityScore: number | null;
   ivRank: IvRankRead | null;
   /** Ticker fidelity repair, change 4 (F4) — `sig?.setups.length`, for the opportunity cell's own
    *  sub-caption; `null` when signals haven't loaded (never a fabricated 0 setups). */
@@ -173,17 +174,19 @@ export function buildReadStrip(input: ReadStripInput): ReadStripCells {
       slot: 'opportunity',
       label: 'Opportunity',
       register: 'traced',
-      value: `${opportunityScore} · ${tierWord}`,
+      value: opportunityScore == null ? NO_SUB : `${opportunityScore} · ${tierWord}`,
       info:
         '0–100 triage score (proximity + IV/HV stretch + setups + flip transition + optional dark ' +
         'pool). Does not use vol-norm GEX or IV-rank — those stay advisory. Not a trade signal.' +
         OPPORTUNITY_TIER_INFO,
       sub:
-        setupsCount == null
-          ? NO_SUB
-          : setupsCount === 0
-            ? 'no setups'
-            : `${setupsCount} setup${setupsCount === 1 ? '' : 's'}`,
+        opportunityScore == null
+          ? 'not scored this cycle'
+          : setupsCount == null
+            ? NO_SUB
+            : setupsCount === 0
+              ? 'no setups'
+              : `${setupsCount} setup${setupsCount === 1 ? '' : 's'}`,
       live: NOT_LIVE,
     },
     {

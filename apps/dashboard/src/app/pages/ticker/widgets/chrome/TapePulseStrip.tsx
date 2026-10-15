@@ -49,6 +49,10 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef } from 'react';
 
+/** The trail's window and sampling: what its "5m" label promises. */
+const WINDOW_MS = 5 * 60_000;
+const SAMPLE_MS = 1000;
+
 export interface TapePulseStripProps {
   /** Structure-clock mid (REST gex_spot / price) — unchanged readout, never gated. */
   structureMid: number;
@@ -96,6 +100,10 @@ export function TapePulseStrip({
   // caption/readouts sit beside it in the same flex row, not stacked above it).
   const chartHeight = height;
 
+  // Read through a ref: a REST refresh moves the structure mid, and rebuilding the loop on it would
+  // empty the five-minute trail every refresh.
+  const structureRef = useRef(structureMid);
+  structureRef.current = structureMid;
   midRef.current = mid;
   activeRef.current = Boolean(activeClaim);
   lastTradeRef.current = lastTrade;
@@ -111,7 +119,7 @@ export function TapePulseStrip({
     let running = true;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const trail: { t: number; mid: number }[] = [];
-    const prints: { t: number; mid: number; dir: 1 | -1 }[] = [];
+    const prints: { t: number; mid: number }[] = [];
     let lastLt: number | null = null;
 
     const layout = () => {
@@ -131,6 +139,7 @@ export function TapePulseStrip({
     // gate's frozen frame, where `ticker-desktop` captured an empty sparkline in 6 of 7 runs.
     const draw = (now: number) => {
       const active = activeRef.current;
+      const structureMid = structureRef.current;
       const pad = { l: 10, r: 10, t: 6, b: 8 };
       const plotW = w - pad.l - pad.r;
       const plotH = chartHeight - pad.t - pad.b;
@@ -138,7 +147,9 @@ export function TapePulseStrip({
       const lo = Math.min(...mids, structureMid - 0.5);
       const hi = Math.max(...mids, structureMid + 0.5);
       const yOf = (m: number) => pad.t + plotH * (1 - (m - lo) / (hi - lo || 1));
-      const xOf = (i: number, n: number) => pad.l + (i / Math.max(1, n - 1)) * plotW;
+      // x is time (TD-05): the right edge is now, the left edge five minutes ago, so a trail that
+      // has only just started fills from the right instead of stretching to look like five minutes.
+      const xOf = (t: number) => pad.l + Math.max(0, 1 - (now - t) / WINDOW_MS) * plotW;
 
       ctx.fillStyle = surfaces.ink;
       ctx.fillRect(0, 0, w, chartHeight);
@@ -160,7 +171,7 @@ export function TapePulseStrip({
       if (trail.length > 1) {
         ctx.beginPath();
         trail.forEach((p, i) => {
-          const x = xOf(i, trail.length);
+          const x = xOf(p.t);
           const y = yOf(p.mid);
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
@@ -172,7 +183,7 @@ export function TapePulseStrip({
 
       const last = trail[trail.length - 1];
       if (last) {
-        const x = xOf(trail.length - 1, trail.length);
+        const x = xOf(last.t);
         const y = yOf(last.mid);
         const pulse = active && !reduced ? 0.5 + 0.5 * Math.sin(now / 300) : 0.35;
         ctx.fillStyle = palette.mid;
@@ -184,8 +195,8 @@ export function TapePulseStrip({
       for (const p of prints) {
         const age = (now - p.t) / 800;
         const a = Math.max(0, 1 - age);
-        ctx.fillStyle =
-          p.dir > 0 ? withAlpha(palette.callWall, 0.2 * a) : withAlpha(palette.putWall, 0.2 * a);
+        // Neutral: a print is a price tick, not money moving, so it never flashes green or red (P-5).
+        ctx.fillStyle = withAlpha(surfaces.steel, 0.2 * a);
         ctx.fillRect(pad.l, yOf(p.mid) - 1, plotW, 2);
       }
     };
@@ -200,15 +211,18 @@ export function TapePulseStrip({
       // Push a trail point ONLY while the claim holds and the latched mid is present (SPEC §2.1) —
       // never a structure-mid fallback. On a drop the trail FREEZES at its last live point instead
       // of blanking, zeroing, or drifting onto a REST number.
+      // One point a second for five minutes (TD-05: the "5m" trail used to hold at most 100 frames or
+      // 5 seconds, about 1.7 s at 60 fps). Within a second the latest mid replaces that second's point.
       if (active && currentMid != null) {
-        trail.push({ t: now, mid: currentMid });
+        const tail = trail[trail.length - 1];
+        if (tail && now - tail.t < SAMPLE_MS) tail.mid = currentMid;
+        else trail.push({ t: now, mid: currentMid });
       }
-      while (trail.length > 100) trail.shift();
-      while (trail.length && now - trail[0].t > 5000) trail.shift();
+      while (trail.length && now - trail[0].t > WINDOW_MS) trail.shift();
 
       if (active && lt != null && lt !== lastLt) {
         if (lastLt != null && !reduced) {
-          prints.push({ t: now, mid: lt, dir: lt >= lastLt ? 1 : -1 });
+          prints.push({ t: now, mid: lt });
         }
         lastLt = lt;
       }
@@ -234,7 +248,7 @@ export function TapePulseStrip({
       window.removeEventListener('resize', onResize);
       resizeObserver?.disconnect();
     };
-  }, [structureMid, chartHeight, reduced, surfaces, palette]);
+  }, [chartHeight, reduced, surfaces, palette]);
 
   return (
     <Box

@@ -408,7 +408,6 @@ export function StructureHeroPanel({
                 spot={structureMid}
                 height={300}
                 palette={palette}
-                surfaces={surfaces}
               />
             ) : (
               fieldModel && (

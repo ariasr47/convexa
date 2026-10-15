@@ -74,7 +74,11 @@ import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
-import { WidgetChromeProvider, WidgetSelectionProvider } from '@/shared/ui/Widget';
+import {
+  WidgetChromeProvider,
+  WidgetProvenanceProvider,
+  WidgetSelectionProvider,
+} from '@/shared/ui/Widget';
 import { useLiveTape } from './liveTapeStore';
 import { selectTickerSymbol } from './recentTickers/selectTickerSymbol';
 import { recordVisit } from './recentTickers/store';
@@ -1031,68 +1035,71 @@ export function TickerDashboard() {
                 Zone labels are non-headings (`<p>`) so widget titles stay the only h2s
                 (heading-semantics guard). One selection provider; two-column grid; container
                 queries still size each cell. Widgets mount AT REST (stage-3 §3.1-1). */}
-            <WidgetSelectionProvider>
-              <Box
-                data-testid="widget-bento"
-                sx={{
-                  // Deck owns hand-off margin (e1 + mb); keep bento tight so Structure sits close.
-                  mt: 0.5,
-                  display: 'grid',
-                  // `minmax(0, 1fr)` at EVERY breakpoint: a bare `1fr` track is minmax(auto, 1fr),
-                  // so one widget's min-content could force the track (and the page) wider than a
-                  // 393px viewport — the measured Stage 0 offender. With a 0 floor the widgets'
-                  // own responsive internals (auto-fill tile grids, wrapping headers) re-stack.
-                  gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' },
-                  gridAutoRows: 'minmax(0, auto)',
-                  gap: 2,
-                  alignItems: 'stretch',
-                }}
-              >
-                {/* ── 1. STRUCTURE (primary) ───────────────────────────────────────── */}
-                <BoardZoneLabel zone="structure" first>
-                  Structure
-                </BoardZoneLabel>
+            {/* P-8: in the demo build every figure on the desk is the demo's sample, so every card is
+                dashed with the hatch stripe; the live build keeps them solid. */}
+            <WidgetProvenanceProvider value={dataMode === 'demo' ? 'sample' : 'primary'}>
+              <WidgetSelectionProvider>
+                <Box
+                  data-testid="widget-bento"
+                  sx={{
+                    // Deck owns hand-off margin (e1 + mb); keep bento tight so Structure sits close.
+                    mt: 0.5,
+                    display: 'grid',
+                    // `minmax(0, 1fr)` at EVERY breakpoint: a bare `1fr` track is minmax(auto, 1fr),
+                    // so one widget's min-content could force the track (and the page) wider than a
+                    // 393px viewport — the measured Stage 0 offender. With a 0 floor the widgets'
+                    // own responsive internals (auto-fill tile grids, wrapping headers) re-stack.
+                    gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' },
+                    gridAutoRows: 'minmax(0, auto)',
+                    gap: 2,
+                    alignItems: 'stretch',
+                  }}
+                >
+                  {/* ── 1. STRUCTURE (primary) ───────────────────────────────────────── */}
+                  <BoardZoneLabel zone="structure" first>
+                    Structure
+                  </BoardZoneLabel>
 
-                {/* FE-11's OWN reading-order rewrite: `StructureHeroPanel` is the desk's ONE structure
+                  {/* FE-11's OWN reading-order rewrite: `StructureHeroPanel` is the desk's ONE structure
                     instrument (field + ladder + tape trail + structure path). The standalone
                     `GexStrikeProfile` widget that used to render directly below it — a second,
                     overlapping GEX-wall renderer, disclosed as a KNOWN, NAMED, TEMPORARY condition at
                     FE-6/FE-8 — is DELETED, not merely unmounted (see `gex-profile-chart/chart.tsx`'s
                     own module doc: every capability it had — the field canvas, the walls/flip/mid, the
                     embedded session path strip — is already present here, so nothing it drew is lost). */}
-                <ErrorBoundary variant="widget" label="Structure hero">
-                  <StructureHeroPanel
-                    symbol={ticker}
-                    m={m}
-                    strikes={data?.strike_profile.strikes ?? []}
-                    structureAgeSeconds={structureAgeSeconds}
-                    pathSamples={structHist.samples}
-                    pathLoading={structHist.loading}
-                    pathError={structHist.error}
-                    pathBasis={structHist.basis}
-                    expirationsLabel={expirationsLabel}
-                  />
-                </ErrorBoundary>
-                <ErrorBoundary variant="widget" label="Read strip">
-                  <ReadStrip
-                    cells={buildReadStrip({
-                      m,
-                      offExchange: data?.off_exchange,
-                      volOiThreshold,
-                      unusualCount: unusualStrikes.length,
-                      tierWord: tm.word,
-                      opportunityScore: sig?.opportunity_score ?? 0,
-                      ivRank: m.iv_rank ?? null,
-                      setupsCount: sig?.setups?.length ?? null,
-                    })}
-                    ringScore={sig?.opportunity_score ?? 0}
-                  />
-                </ErrorBoundary>
+                  <ErrorBoundary variant="widget" label="Structure hero">
+                    <StructureHeroPanel
+                      symbol={ticker}
+                      m={m}
+                      strikes={data?.strike_profile.strikes ?? []}
+                      structureAgeSeconds={structureAgeSeconds}
+                      pathSamples={structHist.samples}
+                      pathLoading={structHist.loading}
+                      pathError={structHist.error}
+                      pathBasis={structHist.basis}
+                      expirationsLabel={expirationsLabel}
+                    />
+                  </ErrorBoundary>
+                  <ErrorBoundary variant="widget" label="Read strip">
+                    <ReadStrip
+                      cells={buildReadStrip({
+                        m,
+                        offExchange: data?.off_exchange,
+                        volOiThreshold,
+                        unusualCount: unusualStrikes.length,
+                        tierWord: tm.word,
+                        opportunityScore: sig?.opportunity_score ?? null,
+                        ivRank: m.iv_rank ?? null,
+                        setupsCount: sig?.setups?.length ?? null,
+                      })}
+                      ringScore={sig?.opportunity_score ?? null}
+                    />
+                  </ErrorBoundary>
 
-                {/* ── 2. TAPE & PLAN ───────────────────────────────────────────────── */}
-                <BoardZoneLabel zone="plan">Tape & plan</BoardZoneLabel>
+                  {/* ── 2. TAPE & PLAN ───────────────────────────────────────────────── */}
+                  <BoardZoneLabel zone="plan">Tape & plan</BoardZoneLabel>
 
-                {/* Ticker fidelity repair, change 1 (F1) — the design's `.work` grid
+                  {/* Ticker fidelity repair, change 1 (F1) — the design's `.work` grid
                     (`design/src/screens/desk.mjs:32`, `DESK_CSS`): `minmax(0,8fr) minmax(0,4fr)` at
                     a ≥1000px CONTAINER (never viewport — canon 21, "panels are containers", the same
                     authority the hero repair used). Two grid children only, exactly like the design's
@@ -1102,195 +1109,195 @@ export function TickerDashboard() {
                     (tape before brief, as before). The
                     outer `containerType` lives on a plain wrapper (never the styled grid element
                     itself — an element cannot query the container IT establishes). */}
-                <Box
-                  data-testid="ticker-work-container"
-                  sx={{
-                    gridColumn: { xs: '1 / -1', md: 'span 2' },
-                    containerType: 'inline-size',
-                    containerName: 'ticker-work',
-                    minWidth: 0,
-                  }}
-                >
                   <Box
-                    data-testid="ticker-work"
+                    data-testid="ticker-work-container"
                     sx={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr',
-                      gap: '14px',
-                      alignItems: 'stretch',
-                      [theme.containerQueries('ticker-work').up(1000)]: {
-                        gridTemplateColumns: 'minmax(0, 8fr) minmax(0, 4fr)',
-                      },
+                      gridColumn: { xs: '1 / -1', md: 'span 2' },
+                      containerType: 'inline-size',
+                      containerName: 'ticker-work',
+                      minWidth: 0,
                     }}
                   >
-                    {/* Act → watch as one motion (UX §4.4): AI-rec paired with sim orders — both
-                        live in this work group, the AI read wide on the left. */}
-                    <AiRecPanel
-                      ticker={ticker}
-                      bundle={data}
-                      ai={aiRec}
-                      personas={readPersonas}
-                      activePersonaId={persona.activeId}
-                      dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
-                      onAccept={onAcceptRec}
-                      onAct={onActRec}
-                      onViewExport={openExport}
-                      readPersonaId={readPersonaId}
-                      onChangeReadPersona={setReadPersonaId}
-                      fillHeight
-                    />
                     <Box
-                      data-testid="ticker-work-side"
+                      data-testid="ticker-work"
                       sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr',
                         gap: '14px',
-                        minWidth: 0,
+                        alignItems: 'stretch',
+                        [theme.containerQueries('ticker-work').up(1000)]: {
+                          gridTemplateColumns: 'minmax(0, 8fr) minmax(0, 4fr)',
+                        },
                       }}
                     >
-                      {/* LIVE-DERIVED tiles — dim on an SSE drop. */}
-                      <ErrorBoundary variant="widget" label="Live tape">
-                        <LiveTape m={m} />
-                      </ErrorBoundary>
+                      {/* Act → watch as one motion (UX §4.4): AI-rec paired with sim orders — both
+                        live in this work group, the AI read wide on the left. */}
+                      <AiRecPanel
+                        ticker={ticker}
+                        bundle={data}
+                        ai={aiRec}
+                        personas={readPersonas}
+                        activePersonaId={persona.activeId}
+                        dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
+                        onAccept={onAcceptRec}
+                        onAct={onActRec}
+                        onViewExport={openExport}
+                        readPersonaId={readPersonaId}
+                        onChangeReadPersona={setReadPersonaId}
+                        fillHeight
+                      />
+                      <Box
+                        data-testid="ticker-work-side"
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '14px',
+                          minWidth: 0,
+                        }}
+                      >
+                        {/* LIVE-DERIVED tiles — dim on an SSE drop. */}
+                        <ErrorBoundary variant="widget" label="Live tape">
+                          <LiveTape m={m} />
+                        </ErrorBoundary>
 
-                      {/* Product spine #5 — position brief bridges structure → plan (your book on
+                        {/* Product spine #5 — position brief bridges structure → plan (your book on
                           this name). FE-11 moved it INTO the plan zone, beside
                           LiveTape/AiRecPanel/OrdersWidget (SPEC §1's flow: "AI read brief wide beside
                           tape / position / orders"); the ticker fidelity repair (F1) absorbs it as
                           the side column's position card instead of a full-width bar ahead of the
                           group — `stripSx` no longer spans `1 / -1` (`position-brief` module). */}
-                      <PositionBrief
-                        ticker={ticker}
-                        openViews={openBookViews}
-                        storeFaulted={storeFaulted}
-                        entryBlocked={storeFaulted || tradeOpen}
-                        onOpenTrade={() => openEntry()}
-                        tradeAllowed={orderGate.allowed}
-                        onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
-                      />
+                        <PositionBrief
+                          ticker={ticker}
+                          openViews={openBookViews}
+                          storeFaulted={storeFaulted}
+                          entryBlocked={storeFaulted || tradeOpen}
+                          onOpenTrade={() => openEntry()}
+                          tradeAllowed={orderGate.allowed}
+                          onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
+                        />
 
-                      <OrdersWidget ticker={ticker} />
+                        <OrdersWidget ticker={ticker} />
+                      </Box>
                     </Box>
                   </Box>
-                </Box>
 
-                {/* ── 3. SUPPORTING CONTEXT (tertiary — quieter Widget chrome) ──────── */}
-                <BoardZoneLabel zone="context">Supporting context</BoardZoneLabel>
+                  {/* ── 3. SUPPORTING CONTEXT (tertiary — quieter Widget chrome) ──────── */}
+                  <BoardZoneLabel zone="context">Supporting context</BoardZoneLabel>
 
-                {/* Ticker fidelity repair, change 2 (F2) — the design's `ctx-head` + `ctx-grid`
+                  {/* Ticker fidelity repair, change 2 (F2) — the design's `ctx-head` + `ctx-grid`
                     (`design/src/screens/desk.mjs:43`): a `Context` header carrying a presentational
                     `All · Flow · Vol · Positioning` filter (only `All` is wired — the band carries no
                     categories yet, so Flow/Vol/Positioning are disabled + "coming soon", never a
                     fake-functional filter — `Widget.tsx`'s own affordance-only convention), then a
                     `repeat(3, minmax(0,1fr))` quiet grid at the design's density. This wrapper spans
                     the full bento row, same pattern as the `ticker-work` grid change 1 added above. */}
-                <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
-                  <Box
-                    data-testid="context-band-head"
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      flexWrap: 'wrap',
-                      mb: 1.5,
-                    }}
-                  >
-                    <Typography
-                      component="p"
+                  <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
+                    <Box
+                      data-testid="context-band-head"
                       sx={{
-                        m: 0,
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        color: 'text.primary',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        flexWrap: 'wrap',
+                        mb: 1.5,
                       }}
                     >
-                      Context
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
-                    >
-                      Advisory reads that never feed the score · snapshot, never live · refreshes
-                      with the data load
-                    </Typography>
-                    <Box
-                      aria-hidden
-                      sx={{ flex: '1 1 40px', minWidth: 40, height: '1px', bgcolor: 'divider' }}
-                    />
-                    <ToggleButtonGroup
-                      value="all"
-                      exclusive
-                      size="small"
-                      aria-label="Filter the context band"
-                      data-testid="context-band-filter"
-                    >
-                      <ToggleButton value="all" sx={{ textTransform: 'none' }}>
-                        All
-                      </ToggleButton>
-                      {(['Flow', 'Vol', 'Positioning'] as const).map((label) => (
-                        <Tooltip key={label} arrow title="Filter by category — coming soon">
-                          <span>
-                            <ToggleButton
-                              value={label.toLowerCase()}
-                              disabled
-                              sx={{ textTransform: 'none' }}
-                            >
-                              {label}
-                            </ToggleButton>
-                          </span>
-                        </Tooltip>
-                      ))}
-                    </ToggleButtonGroup>
-                  </Box>
-
-                  <WidgetChromeProvider value="quiet">
-                    <Box
-                      data-testid="ticker-context-grid"
-                      sx={{
-                        display: 'grid',
-                        // Ticker fidelity repair residual close-out: the design's own `.ctx-grid`
-                        // responsive table (`design/src/screens/responsive-spec.mjs`'s "Context
-                        // band" row) — 1 col below `tablet`(768), 2 from `tablet` (768–1099,
-                        // covering the design's separate tablet/small-laptop rows, both 2-col), 3
-                        // from `laptop` (1100–1599, covering laptop/desktop, both 3-col), 4 from
-                        // `wide`(1600+). The bare `repeat(3, minmax(0,1fr))` this replaces never
-                        // reflowed below laptop width — at 390 it squeezed all nine ctx-grid cards
-                        // into three ~110px columns, the dominant driver of the phone page-height
-                        // overflow. `Widget`'s own `span={2}` (`gridColumn: { xs: '1 / -1', md:
-                        // 'span 2' }`, `Widget.tsx:353`) already degrades correctly against every
-                        // column count here — `1 / -1` is column-count-agnostic — so Setups needs
-                        // no matching change.
-                        gridTemplateColumns: {
-                          xs: '1fr',
-                          tablet: 'repeat(2, minmax(0, 1fr))',
-                          laptop: 'repeat(3, minmax(0, 1fr))',
-                          wide: 'repeat(4, minmax(0, 1fr))',
-                        },
-                        gap: 2,
-                        // Quiet cards vary a lot in natural height (a compact tenor ribbon beside a
-                        // 2×2 stat card); CSS grid's default `stretch` was inflating the shorter
-                        // siblings to match the tallest one in the row instead of sitting at their
-                        // own content height, matching neither this band's own density goal nor the
-                        // design's rendered result (`desk.mjs`'s `.ctx-grid` has no `align-items`
-                        // override either — its cards simply don't vary enough for stretch to show).
-                        alignItems: 'start',
-                      }}
-                    >
-                      {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only
-                        (`[live-vs-static-isolation]`). */}
-                      <DealerFlowProjection dfp={m.dealer_flow_projection} />
-
-                      {/* STATIC market context pack — `m.market_context ?? null` only. */}
-                      <MarketContext pack={m.market_context ?? null} />
-
-                      <TermStructureCard
-                        termStructure={m.term_structure}
-                        structureAgeSeconds={structureAgeSeconds}
+                      <Typography
+                        component="p"
+                        sx={{
+                          m: 0,
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          color: 'text.primary',
+                        }}
+                      >
+                        Context
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
+                      >
+                        Advisory reads that never feed the score · snapshot, never live · refreshes
+                        with the data load
+                      </Typography>
+                      <Box
+                        aria-hidden
+                        sx={{ flex: '1 1 40px', minWidth: 40, height: '1px', bgcolor: 'divider' }}
                       />
+                      <ToggleButtonGroup
+                        value="all"
+                        exclusive
+                        size="small"
+                        aria-label="Filter the context band"
+                        data-testid="context-band-filter"
+                      >
+                        <ToggleButton value="all" sx={{ textTransform: 'none' }}>
+                          All
+                        </ToggleButton>
+                        {(['Flow', 'Vol', 'Positioning'] as const).map((label) => (
+                          <Tooltip key={label} arrow title="Filter by category — coming soon">
+                            <span>
+                              <ToggleButton
+                                value={label.toLowerCase()}
+                                disabled
+                                sx={{ textTransform: 'none' }}
+                              >
+                                {label}
+                              </ToggleButton>
+                            </span>
+                          </Tooltip>
+                        ))}
+                      </ToggleButtonGroup>
+                    </Box>
 
-                      {/* PASS 2 change 8 (owner ruling, `context/DECISION_LEDGER.md` key
+                    <WidgetChromeProvider value="quiet">
+                      <Box
+                        data-testid="ticker-context-grid"
+                        sx={{
+                          display: 'grid',
+                          // Ticker fidelity repair residual close-out: the design's own `.ctx-grid`
+                          // responsive table (`design/src/screens/responsive-spec.mjs`'s "Context
+                          // band" row) — 1 col below `tablet`(768), 2 from `tablet` (768–1099,
+                          // covering the design's separate tablet/small-laptop rows, both 2-col), 3
+                          // from `laptop` (1100–1599, covering laptop/desktop, both 3-col), 4 from
+                          // `wide`(1600+). The bare `repeat(3, minmax(0,1fr))` this replaces never
+                          // reflowed below laptop width — at 390 it squeezed all nine ctx-grid cards
+                          // into three ~110px columns, the dominant driver of the phone page-height
+                          // overflow. `Widget`'s own `span={2}` (`gridColumn: { xs: '1 / -1', md:
+                          // 'span 2' }`, `Widget.tsx:353`) already degrades correctly against every
+                          // column count here — `1 / -1` is column-count-agnostic — so Setups needs
+                          // no matching change.
+                          gridTemplateColumns: {
+                            xs: '1fr',
+                            tablet: 'repeat(2, minmax(0, 1fr))',
+                            laptop: 'repeat(3, minmax(0, 1fr))',
+                            wide: 'repeat(4, minmax(0, 1fr))',
+                          },
+                          gap: 2,
+                          // Quiet cards vary a lot in natural height (a compact tenor ribbon beside a
+                          // 2×2 stat card); CSS grid's default `stretch` was inflating the shorter
+                          // siblings to match the tallest one in the row instead of sitting at their
+                          // own content height, matching neither this band's own density goal nor the
+                          // design's rendered result (`desk.mjs`'s `.ctx-grid` has no `align-items`
+                          // override either — its cards simply don't vary enough for stretch to show).
+                          alignItems: 'start',
+                        }}
+                      >
+                        {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only
+                        (`[live-vs-static-isolation]`). */}
+                        <DealerFlowProjection dfp={m.dealer_flow_projection} />
+
+                        {/* STATIC market context pack — `m.market_context ?? null` only. */}
+                        <MarketContext pack={m.market_context ?? null} />
+
+                        <TermStructureCard
+                          termStructure={m.term_structure}
+                          structureAgeSeconds={structureAgeSeconds}
+                        />
+
+                        {/* PASS 2 change 8 (owner ruling, `context/DECISION_LEDGER.md` key
                           `context-band-is-the-designs-card-list`, 2026-09-08 "Do all four"):
                           `IvRank` is unmounted from the band — it is not in the design's
                           enumerated ctx-grid card list (`desk.mjs:395-421`) and it repeats the
@@ -1299,57 +1306,58 @@ export function TickerDashboard() {
                           deletion; `quiet-band.register.spec.tsx` scans the source file by path and
                           is correctly unaffected. See `TICKER_FIDELITY_REPAIR_REPORT.md` (Pass 2,
                           change 8) for the e2e/unit assertion edits this required. */}
-                      <StraddleMove move={m.straddle_move} />
+                        <StraddleMove move={m.straddle_move} />
 
-                      {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with
+                        {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with
                         Dark pool off, Fresh takes its own single column. */}
-                      <FreshPositioning
-                        chainVolOiRatio={m.chain_vol_oi_ratio}
-                        volOiThreshold={volOiThreshold}
-                        unusualStrikes={unusualStrikes}
-                        structureAgeSeconds={structureAgeSeconds}
-                      />
-                      {darkPool && (
-                        <OffExchangeBlocks
-                          offExchange={data?.off_exchange}
+                        <FreshPositioning
+                          chainVolOiRatio={m.chain_vol_oi_ratio}
+                          volOiThreshold={volOiThreshold}
+                          unusualStrikes={unusualStrikes}
                           structureAgeSeconds={structureAgeSeconds}
                         />
-                      )}
+                        {darkPool && (
+                          <OffExchangeBlocks
+                            offExchange={data?.off_exchange}
+                            structureAgeSeconds={structureAgeSeconds}
+                          />
+                        )}
 
-                      <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
+                        <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
 
-                      {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Single
+                        {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Single
                           column (design: `desk.mjs:419` carries no `ctx-span2`) — it sits beside
                           Setups' 2-col span in the same row, exactly filling the 3-col grid. */}
-                      <Tooltip arrow title="Add widget — coming soon">
-                        <Box>
-                          <ComingSoonBox
-                            data-testid="add-widget-slot"
-                            aria-disabled
-                            sx={{
-                              cursor: 'not-allowed',
-                              minHeight: 64,
-                              borderRadius: '12px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              opacity: 0.85,
-                            }}
-                          >
-                            <Typography
-                              variant="body2"
-                              sx={{ color: 'text.disabled', fontWeight: 500 }}
+                        <Tooltip arrow title="Add widget — coming soon">
+                          <Box>
+                            <ComingSoonBox
+                              data-testid="add-widget-slot"
+                              aria-disabled
+                              sx={{
+                                cursor: 'not-allowed',
+                                minHeight: 64,
+                                borderRadius: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                opacity: 0.85,
+                              }}
                             >
-                              + Add widget
-                            </Typography>
-                          </ComingSoonBox>
-                        </Box>
-                      </Tooltip>
-                    </Box>
-                  </WidgetChromeProvider>
+                              <Typography
+                                variant="body2"
+                                sx={{ color: 'text.disabled', fontWeight: 500 }}
+                              >
+                                + Add widget
+                              </Typography>
+                            </ComingSoonBox>
+                          </Box>
+                        </Tooltip>
+                      </Box>
+                    </WidgetChromeProvider>
+                  </Box>
                 </Box>
-              </Box>
-            </WidgetSelectionProvider>
+              </WidgetSelectionProvider>
+            </WidgetProvenanceProvider>
           </Box>
         </Fade>
       )}

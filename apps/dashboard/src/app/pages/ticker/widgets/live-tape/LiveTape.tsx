@@ -18,9 +18,11 @@
  */
 import { useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { andPresent, NOT_LIVE } from '@/shared/liveness/liveClaim';
+import { extrasFor } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
 import type { LiveUpdate, MarketState } from '@convexa/api';
 import Box from '@mui/material/Box';
+import type { Theme } from '@mui/material/styles';
 import { useLiveTape } from '../../liveTapeStore';
 import { consumeStanding, isDeliveringLive, sessionTapeOf } from '../../sessionTapeStanding';
 import {
@@ -123,8 +125,10 @@ export function LiveTape({
     tone: 'neutral',
   });
   const flipStream = numbersActive ? (live?.gamma_flip ?? null) : null;
+  // Neutral: the flip moving is a level moving, not money, so it never flashes green or red (TD-12).
   const flipFlash = useFlashOnChange(flipStream, {
     active: flashActive,
+    tone: 'neutral',
   });
   // The latch owns BOTH halves (SPEC §2.2). `live?.gamma_flip` is the RAW STREAM value — the same one
   // fed to the flash hook above — never a `?? m.gamma_flip` composition (that produced criterion 14's
@@ -136,7 +140,10 @@ export function LiveTape({
 
   // S1 drop may dim numbers — never StatTile `⏸ offline` caption.
   const tileOffline = st ? false : streamOffline;
-  const dimSx = st && streamOffline ? { opacity: 0.5 } : undefined;
+  // Dimmed with the dim text colour, never opacity (canon 2026-09-09: opacity carries no contrast
+  // guarantee; TD-12).
+  const dimSx =
+    st && streamOffline ? { '&, & *': { color: (t: Theme) => extrasFor(t).textDim } } : undefined;
 
   let title = 'Live tape';
   let subtitle = numbersActive

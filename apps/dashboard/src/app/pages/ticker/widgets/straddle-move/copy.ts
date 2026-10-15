@@ -11,9 +11,11 @@ export function basisLine(
   expiration: string,
   dte: number,
   anchorLabel: string,
-  anchor: number,
+  anchor: number | null,
 ): string {
-  return `From the ${expiration} ATM straddle · ${dte} DTE · mid quotes · % of the ${anchorLabel} spot $${anchor}`;
+  // A missing anchor reads "—", never "$0" (TD-10: `anchor_spot ?? 0` printed "spot $0").
+  const spot = anchor == null ? '—' : `$${anchor.toFixed(2)}`;
+  return `From the ${expiration} ATM straddle · ${dte} DTE · mid quotes · % of the ${anchorLabel} spot ${spot}`;
 }
 
 export const ADVISORY_LINE =
@@ -23,7 +25,7 @@ export const TOOLTIP =
   'The at-the-money call plus put, priced together. Traders call this the "expected move" — it is ' +
   'what the options market charges for the move, not a prediction and not a confidence interval. ' +
   'Convexa shows it because it makes a target or a stop defensible, not because it is likely to be ' +
-  'right. The tooltip also names the other expirations carried in this read.';
+  'right.';
 
 /** The three distinct unavailable causes, closed-lookup on `StraddleMoveState`. */
 export const NO_QUOTE = 'No ATM straddle quote this cycle.';

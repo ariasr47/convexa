@@ -86,7 +86,7 @@ export function StraddleMove({ move }: Props) {
                   primary.expiration,
                   primary.dte,
                   move.anchor_label,
-                  move.anchor_spot ?? 0,
+                  move.anchor_spot ?? null,
                 )}
               </Typography>
               {/* Ruling 6 (curvature-v2-foundations): converted to the shipped `AccessibleHelp`

@@ -1,21 +1,29 @@
 /**
- * Wall Magnet — optional Dealer positioning view (Field | Magnet toggle).
- * Soft force metaphor only; structure-clock levels from REST.
+ * Wall Magnet — the Dealer positioning view's second form (Field | Magnet toggle): the structure
+ * levels on one price scale with the structure spot among them (TD-03, design/src/screens/v5/
+ * families-desk.mjs `magnetAfter`).
  *
- * REPAIR TASK item 10 (`STRUCTURE_HERO_REPAIR_TASK.md`; `design/src/lib.mjs:320-340`): takes
- * `palette` + `surfaces` — the SAME resolved objects `StructureFieldCanvas`/`LevelLadder`/
- * `TapePulseStrip` already receive from `StructureHeroPanel` (criterion 7) — in place of the module-
- * level hex literals this file used to carry. `hex-discipline.spec.ts`'s exemption entry for this
- * file is removed in the same commit. Height now matches the field (300, was 200) so the Field/
- * Magnet toggle no longer changes the panel's height; the band is 68px tall (was an ad-hoc 44), and
- * the reading line states the exact distance-from-flip percentage + the honesty footnote the design
- * source carries.
+ * What it says depends on the side of the flip. Above it dealers are long gamma and their hedging
+ * tends to damp moves; below it they are short gamma and hedging tends to amplify them. The canvas
+ * this replaces said "dealers dampen moves here" on both sides — a wrong fact below the flip, and the
+ * opposite of what the live tape says (LiveTape.tsx). It was also a canvas with no role or label,
+ * 10px text and a requestAnimationFrame loop that never stopped.
+ *
+ * Now HTML: levels as lines with their names and prices as 11px text (labels that would touch move
+ * to a second row), the long-gamma zone above the flip as a band, the spot as a phosphor dot (it is
+ * the REST levels spot, not the live mid, so it is not tape blue). The dot eases to a new spot in
+ * 400ms (a data tween, P-12), instantly under reduced motion. Gamma sign keeps green/red on the walls
+ * and always says it in words too (P-11).
  */
+import { chartRoles } from '@/shared/charts/frame';
 import type { LevelPalette } from '@/shared/charts/structure-field/levelStrokes';
-import { withAlpha } from '@/shared/charts/structure-field/levelStrokes';
-import type { StructureFieldSurfaces } from '@/shared/charts/structure-field/StructureFieldCanvas';
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { useEffect, useRef } from 'react';
+import { typographyTokens } from '@/shared/theme/tokens';
+import Box from '@mui/material/Box';
+import { useTheme } from '@mui/material/styles';
+import { useLayoutEffect, useRef, useState } from 'react';
+
+const MONO = typographyTokens.monoFontFamily;
+const CH = 6.8;
 
 export interface WallMagnetViewProps {
   putWall: number;
@@ -23,10 +31,34 @@ export interface WallMagnetViewProps {
   gammaFlip: number;
   spot: number;
   height?: number;
-  /** The SAME resolved objects the field canvas and the ladder receive (criterion 7) — never a
-   *  second colour table, never a module-level hex literal. */
+  /** The hero's level colours, so the walls and the flip match its legend and the ladder beside it. */
   palette: LevelPalette;
-  surfaces: StructureFieldSurfaces;
+}
+
+const pct = (v: number) => `${Math.abs(v).toFixed(1)}%`;
+
+/** The read, by side of the flip: where the spot sits and how far the nearer wall is. */
+export function magnetRead({
+  putWall,
+  callWall,
+  gammaFlip,
+  spot,
+}: Pick<WallMagnetViewProps, 'putWall' | 'callWall' | 'gammaFlip' | 'spot'>) {
+  const above = spot >= gammaFlip;
+  const fromFlip = gammaFlip ? ((spot - gammaFlip) / gammaFlip) * 100 : 0;
+  const toCall = ((callWall - spot) / spot) * 100;
+  const toPut = ((spot - putWall) / spot) * 100;
+  const wall =
+    Math.abs(toCall) <= Math.abs(toPut)
+      ? `${pct(toCall)} ${toCall >= 0 ? 'below' : 'above'} the call wall`
+      : `${pct(toPut)} ${toPut >= 0 ? 'above' : 'below'} the put wall`;
+  return {
+    above,
+    finding: `Spot ${spot.toFixed(2)} sits ${pct(fromFlip)} ${above ? 'above' : 'below'} the flip: inside the ${above ? 'long' : 'short'}-gamma zone, ${wall}`,
+    meaning: above
+      ? `Above the flip (${gammaFlip.toFixed(2)}) dealers are long gamma: their hedging tends to damp moves.`
+      : `Below the flip (${gammaFlip.toFixed(2)}) dealers are short gamma: their hedging tends to amplify moves.`,
+  };
 }
 
 export function WallMagnetView({
@@ -36,152 +68,191 @@ export function WallMagnetView({
   spot,
   height = 300,
   palette,
-  surfaces,
 }: WallMagnetViewProps) {
-  const reduced = useReducedMotion();
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const spotRef = useRef(spot);
-  spotRef.current = spot;
-  const paletteRef = useRef(palette);
-  paletteRef.current = palette;
-  const surfacesRef = useRef(surfaces);
-  surfacesRef.current = surfaces;
+  const t = useTheme();
+  const roles = chartRoles(t);
+  const ref = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setW(el.getBoundingClientRect().width);
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([e]) => setW(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-  useEffect(() => {
-    const wrap = wrapRef.current;
-    const canvas = canvasRef.current;
-    if (!wrap || !canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const read = magnetRead({ putWall, callWall, gammaFlip, spot });
+  const lo = Math.min(putWall, callWall, gammaFlip, spot);
+  const hi = Math.max(putWall, callWall, gammaFlip, spot);
+  const pad = (hi - lo) * 0.12 || 1;
+  const min = lo - pad;
+  const max = hi + pad;
+  const X = (v: number) => ((v - min) / (max - min)) * W;
 
-    let raf = 0;
-    let running = true;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    let anim = spot;
-    let vel = 0;
-    const BAND = 68;
-
-    const layout = () => {
-      const w = Math.max(280, wrap.clientWidth);
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(height * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      return w;
-    };
-    let w = layout();
-
-    const paint = () => {
-      if (!running) return;
-      const pal = paletteRef.current;
-      const sur = surfacesRef.current;
-      const target = spotRef.current;
-      // Soft settle toward structure spot; walls as visual magnets
-      if (!reduced) {
-        const pull = (target - anim) * 0.08;
-        const toPut = putWall - anim;
-        const toCall = callWall - anim;
-        const fPut = 0.02 * toPut * Math.exp(-Math.abs(toPut) / 20);
-        const fCall = 0.02 * toCall * Math.exp(-Math.abs(toCall) / 20);
-        vel = vel * 0.88 + pull + (fPut + fCall) * 0.01;
-        anim += vel;
-      } else {
-        anim = target;
+  // Level labels in up to two rows above the scale; a label that still touches drops to the legend
+  // line under the chart, which always lists every level.
+  const levels = [
+    { key: 'put', v: putWall, name: 'Put wall', color: palette.putWall },
+    { key: 'flip', v: gammaFlip, name: 'Flip', color: palette.gammaFlip },
+    { key: 'call', v: callWall, name: 'Call wall', color: palette.callWall },
+  ];
+  const rows: { left: number; w: number }[][] = [[], []];
+  const placed = new Map<string, { row: number; left: number }>();
+  if (W > 0)
+    for (const l of levels) {
+      const w = `${l.name} ${l.v.toFixed(2)}`.length * CH;
+      const left = Math.min(Math.max(0, X(l.v) - w / 2), W - w);
+      const row = rows.findIndex((r) =>
+        r.every((o) => left >= o.left + o.w + 8 || left + w + 8 <= o.left),
+      );
+      if (row >= 0) {
+        rows[row].push({ left, w });
+        placed.set(l.key, { row, left });
       }
-
-      const pad = { l: 40, r: 16, t: 28, b: 44 };
-      const plotW = w - pad.l - pad.r;
-      const plotH = height - pad.t - pad.b;
-      const minK = Math.min(putWall, callWall, gammaFlip, anim) - 8;
-      const maxK = Math.max(putWall, callWall, gammaFlip, anim) + 8;
-      const xOf = (k: number) => pad.l + ((k - minK) / (maxK - minK || 1)) * plotW;
-      const midY = pad.t + plotH / 2;
-
-      ctx.fillStyle = sur.ink;
-      ctx.fillRect(0, 0, w, height);
-      ctx.fillStyle = sur.panel;
-      ctx.fillRect(pad.l, midY - BAND / 2, plotW, BAND);
-
-      const g = ctx.createLinearGradient(xOf(putWall), 0, xOf(callWall), 0);
-      g.addColorStop(0, withAlpha(pal.putWall, 0.18));
-      g.addColorStop(0.5, withAlpha(pal.gammaFlip, 0.06));
-      g.addColorStop(1, withAlpha(pal.callWall, 0.18));
-      ctx.fillStyle = g;
-      ctx.fillRect(xOf(putWall), midY - BAND / 2, Math.max(4, xOf(callWall) - xOf(putWall)), BAND);
-
-      const level = (k: number, color: string, label: string, thick = 1.5) => {
-        const x = xOf(k);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = thick;
-        ctx.beginPath();
-        ctx.moveTo(x, pad.t);
-        ctx.lineTo(x, pad.t + plotH);
-        ctx.stroke();
-        ctx.fillStyle = color;
-        ctx.font = '600 10px "IBM Plex Sans", system-ui, sans-serif';
-        ctx.fillText(label, Math.min(x + 4, pad.l + plotW - 56), pad.t + 12);
-      };
-      level(putWall, pal.putWall, `put $${putWall.toFixed(0)}`);
-      level(callWall, pal.callWall, `call $${callWall.toFixed(0)}`);
-      ctx.save();
-      ctx.shadowColor = withAlpha(pal.gammaFlip, 0.6);
-      ctx.shadowBlur = reduced ? 0 : 10;
-      level(gammaFlip, pal.gammaFlip, 'flip', 2);
-      ctx.restore();
-
-      const sx = xOf(anim);
-      ctx.fillStyle = pal.mid;
-      ctx.beginPath();
-      ctx.arc(sx, midY, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = sur.phosphor;
-      ctx.font = '600 11px "IBM Plex Mono", ui-monospace, monospace';
-      ctx.fillText(`$${anim.toFixed(2)}`, Math.min(sx + 10, pad.l + plotW - 64), midY - 10);
-
-      // The reading line (repair task item 10): exact distance from the flip + the dealer-dampening
-      // metaphor, in Sans 11 steel — `design/src/lib.mjs:338`.
-      const distPct = gammaFlip !== 0 ? ((anim - gammaFlip) / Math.abs(gammaFlip)) * 100 : 0;
-      const side = distPct >= 0 ? 'above' : 'below';
-      ctx.fillStyle = sur.steel;
-      ctx.font = '500 11px "IBM Plex Sans", system-ui, sans-serif';
-      ctx.fillText(
-        `${Math.abs(distPct).toFixed(2)}% ${side} the flip · dealers dampen moves here`,
-        pad.l,
-        midY + BAND / 2 + 18,
-      );
-
-      // Footnote — the display-metaphor honesty clause, verbatim (`design/src/lib.mjs:339`).
-      ctx.fillStyle = sur.steel;
-      ctx.font = '500 10px "IBM Plex Sans", system-ui, sans-serif';
-      ctx.fillText(
-        'Magnet view · structure levels · a display metaphor, not a forecast',
-        pad.l,
-        height - 12,
-      );
-
-      raf = requestAnimationFrame(paint);
-    };
-
-    const onResize = () => {
-      w = layout();
-    };
-    window.addEventListener('resize', onResize);
-    raf = requestAnimationFrame(paint);
-    return () => {
-      running = false;
-      cancelAnimationFrame(raf);
-      window.removeEventListener('resize', onResize);
-    };
-    // `spot`/`palette`/`surfaces` are read from refs so this rAF loop is not torn down every live
-    // tick or every theme-identical re-render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [putWall, callWall, gammaFlip, height, reduced]);
+    }
+  const TOP = 40;
+  const MID = TOP + 52;
 
   return (
-    <div ref={wrapRef} data-testid="wall-magnet-view" style={{ width: '100%' }}>
-      <canvas ref={canvasRef} style={{ display: 'block', width: '100%' }} />
-    </div>
+    <Box
+      data-testid="wall-magnet-view"
+      sx={{
+        height,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.25,
+        px: 1,
+        pt: 0.5,
+        minWidth: 0,
+      }}
+    >
+      <Box
+        component="p"
+        sx={{ m: 0, fontSize: 14, fontWeight: 600, lineHeight: 1.4, textWrap: 'balance' }}
+      >
+        {read.finding}
+      </Box>
+      <Box
+        ref={ref}
+        role="img"
+        aria-label={`Levels on one price scale: put wall ${putWall.toFixed(2)}, flip ${gammaFlip.toFixed(2)}, call wall ${callWall.toFixed(2)}; spot ${spot.toFixed(2)}, ${read.above ? 'above' : 'below'} the flip.`}
+        sx={{
+          position: 'relative',
+          height: MID + 40,
+          fontFamily: MONO,
+          fontSize: 11,
+          lineHeight: '14px',
+        }}
+      >
+        {W > 0 && (
+          <>
+            {/* The long-gamma zone: above the flip, to the right edge of the scale. */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: MID - 14,
+                height: 28,
+                left: X(gammaFlip),
+                right: 0,
+                bgcolor: roles.band,
+                borderTop: `1px solid ${roles.edge}`,
+                borderBottom: `1px solid ${roles.edge}`,
+              }}
+            />
+            <Box
+              component="span"
+              sx={{
+                position: 'absolute',
+                top: MID + 18,
+                left: X(gammaFlip) + 6,
+                color: 'text.secondary',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              long gamma →
+            </Box>
+            <Box
+              component="span"
+              sx={{
+                position: 'absolute',
+                top: MID + 18,
+                right: W - X(gammaFlip) + 6,
+                color: 'text.secondary',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              ← short gamma
+            </Box>
+            <Box
+              sx={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                top: MID - 1,
+                height: 2,
+                bgcolor: roles.grid,
+              }}
+            />
+            {levels.map((l) => {
+              const p = placed.get(l.key);
+              return (
+                <Box key={l.key}>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: TOP - 4,
+                      height: MID - TOP + 22,
+                      left: X(l.v) - 1,
+                      borderLeft: `2px solid ${l.color}`,
+                    }}
+                  />
+                  {p && (
+                    <Box
+                      component="span"
+                      sx={{
+                        position: 'absolute',
+                        top: p.row * 16,
+                        left: p.left,
+                        color: 'text.primary',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {l.name} {l.v.toFixed(2)}
+                    </Box>
+                  )}
+                </Box>
+              );
+            })}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: MID - 8,
+                left: X(spot) - 8,
+                width: 16,
+                height: 16,
+                borderRadius: '50%',
+                bgcolor: roles.emph,
+                boxShadow: `0 0 0 2px ${t.palette.background.paper}`,
+                transition: 'left 400ms ease-out',
+                '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+              }}
+            />
+          </>
+        )}
+      </Box>
+      <Box component="p" sx={{ m: 0, fontSize: 13, lineHeight: 1.5, color: 'text.primary' }}>
+        {read.meaning}
+      </Box>
+      <Box
+        component="p"
+        sx={{ m: 0, mt: 'auto', fontSize: 12, lineHeight: 1.45, color: 'text.secondary' }}
+      >
+        Put wall {putWall.toFixed(2)} · flip {gammaFlip.toFixed(2)} · call wall{' '}
+        {callWall.toFixed(2)} · structure levels on one price scale: a display of where dealers are
+        positioned, not a forecast.
+      </Box>
+    </Box>
   );
 }

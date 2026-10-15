@@ -55,24 +55,24 @@ export interface ReadStripProps {
   /** The closed eight-tuple, already built (`buildReadStrip`) by the caller. */
   cells: ReadStripCells;
   /** The raw 0–100 opportunity score for the ring gauge (the SAME number `cells[0].value` already
-   *  states in text — `TickerDashboard.tsx` passes `sig?.opportunity_score ?? 0`, the same input
-   *  `buildReadStrip` takes). Kept off `ReadStripCell` itself: only one of eight slots needs it. */
-  ringScore: number;
+   *  states in text — `TickerDashboard.tsx` passes `sig?.opportunity_score ?? null`, the same input
+   *  `buildReadStrip` takes). `null` (not scored this cycle) draws the empty track only, never a
+   *  zero-length arc that reads as a score of 0 (TD-07). Kept off `ReadStripCell` itself: only one
+   *  of eight slots needs it. */
+  ringScore: number | null;
 }
 
 /** The opportunity cell's score ring (`design/src/screens/desk.mjs:336`'s `ring(score, {size:48})`)
  *  — a track + an arc scaled to `score/100`. Decorative (`aria-hidden`): the score is already
  *  stated as text by the adjacent `FigureRow`. Token-only via the theme's own CSS custom
  *  properties (the SAME `var(--mui-palette-*)` convention `Widget.tsx`'s selection ring already
- *  uses) — zero hardcoded hex. The arc is brand amber (`primary.main`) — FILLED/STRUCTURAL usage
- *  (a gauge fill, not text), the same authority `opportunity-tier/tierMeta.ts` already spends amber
- *  on for the actionable/prime tiers; canon rule 16's closed amber-TEXT list is scoped to the AI
- *  read panel, not this surface. */
-function RingGauge({ score, size = 48 }: { score: number; size?: number }) {
+ *  uses) — zero hardcoded hex. The arc is steel (`text.secondary`), not amber: amber is spent on
+ *  the focus ring, and a score is a neutral reading (canon P-9; design v5 desk family, TD-07). */
+function RingGauge({ score, size = 48 }: { score: number | null; size?: number }) {
   const stroke = 4;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(100, score));
+  const clamped = Math.max(0, Math.min(100, score ?? 0));
   const offset = c * (1 - clamped / 100);
   return (
     <Box
@@ -92,18 +92,20 @@ function RingGauge({ score, size = 48 }: { score: number; size?: number }) {
         stroke="var(--mui-palette-divider)"
         strokeWidth={stroke}
       />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke="var(--mui-palette-primary-main)"
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={offset}
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
+      {score != null && (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="var(--mui-palette-text-secondary)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      )}
     </Box>
   );
 }

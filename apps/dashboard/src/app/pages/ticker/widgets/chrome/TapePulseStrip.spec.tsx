@@ -272,13 +272,14 @@ describe('TapePulseStrip — every draw sets the context state it depends on (F-
         />
       </ThemeProvider>,
     );
-    // Run three frames by hand: the trail reaches two points on the first, so the second and third
-    // frames stroke the trail (1.75) and then the baseline again.
+    // Run three frames by hand, a second apart (the trail keeps one point a second, TD-05): the trail
+    // reaches two points on the first, so the second and third frames stroke the trail (1.75) and
+    // then the baseline again.
     const base = performance.now();
     for (let i = 1; i <= 3; i += 1) {
       const frame = frames.shift();
       expect(frame).toBeDefined();
-      act(() => frame?.(base + 16 * i));
+      act(() => frame?.(base + 1100 * i));
     }
     const trailStrokes = calls.filter((c) => c.name === 'stroke' && c.dash.length === 0);
     expect(trailStrokes.length).toBeGreaterThan(0);
