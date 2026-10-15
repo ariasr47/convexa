@@ -4,6 +4,41 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use std::sync::Arc;
 
+/// One source's standing in the closed P-2 vocabulary (DESIGN_SYSTEM.md, 2026-10-13): Updated,
+/// Delayed by source, Last good copy, Source down, Not set up, Off. Unlike [`DataState`], it tells
+/// a fresh fetch from a last good copy served after a failed one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SourceState {
+    /// Fetched on this cycle (or still inside its refresh window).
+    Updated,
+    /// As `Updated`, for a source that publishes late by design (CFTC, FINRA short interest).
+    Delayed,
+    /// This cycle's fetch failed; the copy served is the last one that succeeded.
+    LastGood,
+    /// The fetch failed and nothing was ever cached.
+    SourceDown,
+    /// A required setting (SEC_USER_AGENT) is missing.
+    NotSetUp,
+    /// `PUBLIC_DATA=off`: no upstream was contacted.
+    Off,
+}
+
+/// One row of the sources list: which source, its state, the date its data is for, and when this
+/// server last fetched it (and last failed to).
+#[derive(Debug, Clone, PartialEq)]
+pub struct SourceStatus {
+    /// The /credits anchor, e.g. `finra-si`.
+    pub id: &'static str,
+    pub name: &'static str,
+    pub state: SourceState,
+    pub as_of: Option<NaiveDate>,
+    /// When the copy served was fetched.
+    pub checked_at: Option<DateTime<Utc>>,
+    /// When the last failed fetch happened, while its copy is still served (or nothing is).
+    pub failed_at: Option<DateTime<Utc>>,
+    pub detail: Option<String>,
+}
+
 /// How a public-data answer (or one part of it) came to be.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DataState {
@@ -118,6 +153,47 @@ pub struct Liquidity {
     pub series: Arc<LiquiditySeries>,
 }
 
+/// One scheduled release on an agency's published calendar.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Release {
+    pub date: NaiveDate,
+    /// Eastern time, when the agency states one.
+    pub time: Option<chrono::NaiveTime>,
+    /// Short name: "CPI", "Jobs report", "FOMC statement", ...
+    pub name: &'static str,
+    /// The schedule's source id (`bls`, `bea`, `fed-fomc`, `treasury-qr`).
+    pub source: &'static str,
+    /// The date the agency had published before it moved the release, seen across a refresh.
+    pub moved_from: Option<NaiveDate>,
+}
+
+/// The macro release calendar from the agencies' published schedules, `from`..=`to`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Calendar {
+    pub from: NaiveDate,
+    pub to: NaiveDate,
+    pub releases: Vec<Release>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ResultsBasis {
+    /// Earnings releases: 8-K Item 2.02 (6-K results for foreign filers).
+    ResultsFilings,
+    /// 10-Q and 10-K (20-F, 40-F) filing dates, when too few earnings releases are on file.
+    PeriodicReports,
+}
+
+/// A window the next results are expected in, projected from the company's own filing history.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ResultsWindow {
+    pub ticker: String,
+    pub start: NaiveDate,
+    pub end: NaiveDate,
+    /// The past dates it is projected from, newest first (at most four).
+    pub basis: Vec<NaiveDate>,
+    pub basis_kind: ResultsBasis,
+}
+
 #[derive(Debug, Clone)]
 pub struct Markets {
     pub state: DataState,
@@ -125,6 +201,9 @@ pub struct Markets {
     pub rates: Option<Rates>,
     pub futures: Option<Futures>,
     pub liquidity: Option<Liquidity>,
+    /// `None` when every schedule failed with nothing cached, or public data is off.
+    pub calendar: Option<Calendar>,
+    pub sources: Vec<SourceStatus>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -158,6 +237,9 @@ pub struct Filings {
     pub checked_at: Option<DateTime<Utc>>,
     pub filings: Vec<Filing>,
     pub missing: Vec<String>,
+    /// Expected results windows for the named tickers with enough filing history.
+    pub results: Vec<ResultsWindow>,
+    pub sources: Vec<SourceStatus>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -275,4 +357,6 @@ pub struct TickerReport {
     pub filings: Vec<Filing>,
     pub filings_state: DataState,
     pub filings_detail: Option<String>,
+    /// FINRA short interest, FINRA short-sale volume and SEC EDGAR, as answered for this ticker.
+    pub sources: Vec<SourceStatus>,
 }

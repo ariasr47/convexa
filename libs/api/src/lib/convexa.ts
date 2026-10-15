@@ -2249,6 +2249,12 @@ export type PublicInsiders = components['schemas']['InsidersWire'];
 export type PublicDatedValue = components['schemas']['DatedValueWire'];
 export type PublicPeriodicFiling = components['schemas']['PeriodicFilingWire'];
 export type PublicFact = components['schemas']['FactWire'];
+/** One upstream source and its P-2 state (`last_good` = a kept copy after a failed fetch). */
+export type PublicSource = components['schemas']['PublicSourceWire'];
+export type PublicSourceState = components['schemas']['PublicSourceState'];
+export type PublicCalendar = components['schemas']['CalendarWire'];
+export type PublicRelease = components['schemas']['ReleaseWire'];
+export type PublicResultsWindow = components['schemas']['ResultsWindowWire'];
 
 /** GET /api/public-data/markets — U.S. Treasury par/real yields and CFTC futures positioning. */
 export async function getPublicMarkets(): Promise<PublicMarkets> {
