@@ -385,10 +385,11 @@ export function SettingsPage() {
               </Button>
             </Stack>
           ) : (
+            // Final Settings, production signed out: the prompt, the page's one primary action, and
+            // the sentence the sign-in dialog says too: sign-ups are closed (site check D-10).
             <Stack
-              direction="row"
-              spacing={2}
-              sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              spacing={1.5}
+              sx={{ alignItems: 'flex-start' }}
               data-testid="settings-account-signed-out"
             >
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -403,6 +404,13 @@ export function SettingsPage() {
               >
                 {C.signIn}
               </Button>
+              <Typography
+                variant="body2"
+                sx={{ color: 'text.secondary' }}
+                data-testid="settings-signups-closed"
+              >
+                {AUTH_COPY.signup.signupsClosed}
+              </Typography>
             </Stack>
           )}
         </PanelCard>

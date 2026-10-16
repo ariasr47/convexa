@@ -52,26 +52,38 @@ export function GoogleButton({ available }: { available: boolean }) {
     window.location.href = '/api/auth/google/start';
   };
 
-  // White button with the multicolor G, per the Figma AuthModal. When unconfigured it stays present
-  // but disabled (dimmed + not clickable + the helper note) — the honest config-gated affordance.
-  const button = (
+  // Enabled: the white branded button with the multicolor G, per the Figma AuthModal. Unconfigured
+  // it stays present but disabled (not clickable + the helper note), drawn as the Final sign-in
+  // board draws it: the NEUTRAL secondary button, disabled (`btn secondary lg` + disabled), with no
+  // brand mark — not a white surface at half opacity, which read as enabled (site check D-10).
+  const button = enabled ? (
     <Button
       fullWidth
       variant="contained"
       disableElevation
       startIcon={<GoogleG />}
-      disabled={!enabled}
-      onClick={enabled ? start : undefined}
+      onClick={start}
       data-testid="google-button"
-      aria-disabled={!enabled}
+      aria-disabled={false}
       sx={{
         bgcolor: '#fff',
         color: '#1f1f1f',
         fontWeight: 600,
         textTransform: 'none',
         '&:hover': { bgcolor: '#f1f3f4' },
-        '&.Mui-disabled': { bgcolor: '#fff', color: '#1f1f1f', opacity: 0.5 },
       }}
+    >
+      {AUTH_COPY.google.label}
+    </Button>
+  ) : (
+    <Button
+      fullWidth
+      variant="outlined"
+      size="large"
+      disabled
+      data-testid="google-button"
+      aria-disabled
+      sx={{ fontWeight: 600, textTransform: 'none' }}
     >
       {AUTH_COPY.google.label}
     </Button>
