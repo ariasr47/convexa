@@ -71,6 +71,11 @@ export function HeroCurve() {
         inset: 0,
         overflow: 'hidden',
         pointerEvents: 'none',
+        // The geometry needs the two-column hero: its steep sweep exits through the right column,
+        // behind the surface panel. In one column (under `laptop`, the hero grid's own breakpoint)
+        // there is no empty right region, and the stretched sweep cut through the headline, both
+        // actions and the caption at 390 px (site check D-06). The phone board draws no curve.
+        display: { xs: 'none', laptop: 'block' },
       }}
     >
       <Box
