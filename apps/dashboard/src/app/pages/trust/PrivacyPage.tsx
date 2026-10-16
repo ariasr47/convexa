@@ -62,6 +62,11 @@ const KEYS: [string, string, string][] = [
     'When the simulated book last changed.',
     'With every change to the book',
   ],
+  [
+    'convexa.positions.owner',
+    'Which account the simulated book in this browser belongs to (its account number, not your email), so another account signing in here never sees it.',
+    'When you sign in',
+  ],
   ['convexa.orders.v1', 'Your simulated orders.', 'When you place, change or cancel one'],
   ['convexa.alerts.v1', 'Your alerts.', 'When you add or remove one'],
   [

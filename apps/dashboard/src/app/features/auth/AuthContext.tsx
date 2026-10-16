@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (demo || !state.authenticated) return;
     void import('@/features/trading/positions/bookSync')
-      .then((m) => m.pullServerBook())
+      .then((m) => m.pullServerBook(state.user?.id))
       .catch(() => undefined);
   }, [demo, state.authenticated, state.user?.id]);
 
@@ -188,7 +188,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (demo) return; // the demo has no sign-out; "Reset demo data" restores the seed account
+    // The account boundary (audit W-E01): this browser's copy of the synced book must not outlive
+    // the session. Push first; drop the local copy only once the server holds it. If the push
+    // fails, the copy stays tagged with this account, and the next other account to sign in here
+    // drops it (claimBookFor) rather than adopting it.
+    const book = await import('@/features/trading/positions/bookSync');
+    const pushed = await book.pushLocalBook().catch(() => false);
     await apiLogout(); // idempotent, best-effort
+    if (pushed) (await import('@/features/trading/positions/store')).clearSyncedBook();
     await refresh(); // re-read who-am-I ⇒ anonymous
   }, [demo, refresh]);
 

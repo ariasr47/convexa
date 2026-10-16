@@ -381,6 +381,56 @@ function scheduleBookPush() {
   }, 800);
 }
 
+/** Whose synced book this browser holds: the signed-in account's user id (audit 2026-10-15, W-E01). */
+const BOOK_OWNER_KEY = 'convexa.positions.owner';
+
+export function bookOwner(): string | null {
+  try {
+    return localStorage.getItem(demoStorageKey(BOOK_OWNER_KEY));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The account boundary, run before a signed-in account's server book is pulled: a local book that
+ * belongs to another account is dropped, never kept or pushed into this one (a shared browser, or a
+ * session that ended without a sign-out). An untagged local book predates the tag and is taken as
+ * this account's, since positions sit behind sign-in.
+ */
+export function claimBookFor(userId: string): void {
+  // A faulted store writes nothing (AC-61); its unreadable blob can't be read or pushed either.
+  if (positionsFaulted()) return;
+  const owner = bookOwner();
+  if (owner != null && owner !== userId) clearSyncedBook();
+  try {
+    localStorage.setItem(demoStorageKey(BOOK_OWNER_KEY), userId);
+  } catch {
+    /* storage unavailable: nothing persisted to cross accounts */
+  }
+}
+
+/**
+ * Drop this browser's copy of the synced book (the account's copy stays on the server). An empty v3
+ * is written rather than the key removed, so v3 stays authoritative and the legacy-source migration
+ * is never re-armed; no push is scheduled, so nothing empty ever reaches an account.
+ */
+export function clearSyncedBook(): void {
+  if (pushTimer) {
+    clearTimeout(pushTimer);
+    pushTimer = null;
+  }
+  if (positionsFaulted()) return; // NEVER overwrite a readable-but-unparseable prior blob
+  memory = empty();
+  try {
+    localStorage.setItem(demoStorageKey(V3_KEY), JSON.stringify(memory));
+    localStorage.removeItem(demoStorageKey(BOOK_TOUCH_KEY));
+  } catch {
+    /* storage unavailable: the in-memory copy is already empty */
+  }
+  notify();
+}
+
 /** Is the durable store faulted? Reading forces hydration so the answer is always current. */
 export function positionsFaulted(): boolean {
   read();
