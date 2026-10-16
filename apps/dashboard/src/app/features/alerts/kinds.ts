@@ -24,6 +24,15 @@ export interface PublicKindInfo {
 
 export const CHECKS_HERE = 'When you open Alerts, in this browser';
 
+/**
+ * FINRA's production switch (owner ruling, 2026-10-15, answer 4): until the owner confirms FINRA's
+ * display terms (Q-2), production shows FINRA short interest as Off, with the reason, and asks
+ * nothing of FINRA. Staging keeps its sample. A code constant the owner flips, not a setting.
+ */
+export const FINRA_ON_PRODUCTION = false;
+export const FINRA_OFF_REASON =
+  'FINRA data is off on this site until its display terms are confirmed';
+
 export const PUBLIC_KINDS: PublicKindInfo[] = [
   {
     key: 'results',
@@ -45,8 +54,10 @@ export const PUBLIC_KINDS: PublicKindInfo[] = [
   {
     key: 'cluster',
     name: 'Insider cluster',
+    // A cluster is buying (CLUSTERS_SPEC): 3+ insiders on the open market within 10 days, outside
+    // 10b5-1 plans. Sales are context, never a cluster, so the alert never fires on them.
     fires:
-      'Three or more insiders of a followed ticker file Form 4s in the same direction within 10 days',
+      'Three or more insiders of a followed ticker buy on the open market within 10 days, outside pre-set plans',
     chip: 'SEC EDGAR · Form 4',
     delay: 'Insiders file within two business days of a trade',
     sec: 'needs',

@@ -6,6 +6,7 @@ import { demoStorageKey } from '@convexa/api';
 import {
   ALERTS_KEY,
   ALERTS_MAX_EVENTS,
+  FIRED_KEYS_MAX,
   type AlertEvent,
   type AlertRule,
   type AlertsState,
@@ -81,6 +82,23 @@ function persist(state: AlertsState): boolean {
   return written;
 }
 
+/** Another tab wrote the alerts: drop this tab's copy so the next read (and the next check's merge)
+ *  starts from what is stored, not from a snapshot that predates the other tab's firings. A faulted
+ *  read keeps its latch: nothing here re-enables writes over a blob this tab couldn't parse. */
+export function onStorageEvent(e: Pick<StorageEvent, 'key'>): void {
+  if (readFaulted) return;
+  if (e.key !== null && e.key !== demoStorageKey(ALERTS_KEY)) return;
+  memory = null;
+  notify();
+}
+if (typeof window !== 'undefined') {
+  try {
+    window.addEventListener('storage', onStorageEvent);
+  } catch {
+    /* no window events: one tab only */
+  }
+}
+
 export function readAlerts(): AlertsState {
   if (memory) return memory;
   try {
@@ -132,19 +150,70 @@ export function pushEvent(ev: AlertEvent): void {
   persist({ ...s, events });
 }
 
-/** Record one round of public-data checks in a single write: each checked rule's new memory, and
- *  the firings it produced (newest first). A rule removed while the checks ran stays removed. */
-export function recordChecks(updated: AlertRule[], events: AlertEvent[]): void {
+/**
+ * Record one round of public-data checks in a single write: each checked rule's new memory, and the
+ * firings it produced (newest first). Returns the events actually recorded, the only ones to notify.
+ *
+ * The round ran on a snapshot taken before its reads, so it merges against the store as it is now:
+ * - a rule removed meanwhile stays removed, and its firings are dropped;
+ * - a rule edited meanwhile (its `rev` moved on) keeps its new settings AND its own memory: the
+ *   round's `fired`, `inZone` and `check` describe the old settings;
+ * - a firing whose key is already in the rule's `fired` (another round, a remount or a second tab,
+ *   recorded it first) is dropped, so the same publication never lists or notifies twice.
+ */
+export function recordChecks(updated: AlertRule[], events: AlertEvent[]): AlertEvent[] {
   const s = readAlerts();
   const byId = new Map(updated.map((r) => [r.id, r]));
+  const now = new Map(s.rules.map((r) => [r.id, r]));
+  const kept = events.filter((e) => {
+    const r = now.get(e.ruleId);
+    const u = byId.get(e.ruleId);
+    if (!r || !u || (r.rev ?? 0) !== (u.rev ?? 0)) return false;
+    return !e.key || !(r.fired ?? []).includes(e.key);
+  });
+  const newKeys = new Map<string, string[]>();
+  for (const e of kept) if (e.key) newKeys.set(e.ruleId, [...(newKeys.get(e.ruleId) ?? []), e.key]);
   const rules = s.rules.map((r) => {
     const u = byId.get(r.id);
-    // The reader may have switched it off or edited it meanwhile: keep their fields, take the memory.
-    return u ? { ...r, fired: u.fired, inZone: u.inZone, check: u.check } : r;
+    if (!u || (r.rev ?? 0) !== (u.rev ?? 0)) return r;
+    // The reader may have switched it off meanwhile: keep their fields, take the memory.
+    const fired = [...(r.fired ?? []), ...(newKeys.get(r.id) ?? [])].slice(-FIRED_KEYS_MAX);
+    return { ...r, fired, inZone: u.inZone, check: u.check };
   });
-  const live = new Set(rules.map((r) => r.id));
-  const kept = events.filter((e) => live.has(e.ruleId));
   persist({ ...s, rules, events: [...kept, ...s.events].slice(0, ALERTS_MAX_EVENTS) });
+  return kept;
+}
+
+/**
+ * A rule after the reader edits it (W1-47, W1-48). The edit bumps `rev`, so a check already running
+ * on the old settings can't write its memory over the new ones; the next check starts fresh (`check`
+ * and `inZone` cleared). When what the rule watches changes (kind, ticker, forms or 8-K items), it
+ * counts as a new rule: `createdAt` moves to now and `fired` empties, so the new ticker's past
+ * filings don't all fire at once. Otherwise what already fired stays fired.
+ */
+export function applyEdit(existing: AlertRule, patch: Partial<AlertRule>, now: number): AlertRule {
+  const next: AlertRule = {
+    ...existing,
+    ...patch,
+    id: existing.id,
+    rev: (existing.rev ?? 0) + 1,
+    check: undefined,
+    inZone: undefined,
+  };
+  const set = (xs?: string[]) => [...(xs ?? [])].sort().join(',');
+  const watches =
+    next.kind !== existing.kind ||
+    next.symbol !== existing.symbol ||
+    set(next.forms) !== set(existing.forms) ||
+    set(next.items) !== set(existing.items);
+  if (watches) {
+    next.createdAt = now;
+    next.fired = [];
+  } else {
+    next.createdAt = existing.createdAt;
+    next.fired = existing.fired;
+  }
+  return next;
 }
 
 export function markAllEventsRead(): void {

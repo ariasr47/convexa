@@ -29,8 +29,9 @@ export interface RuleCheck {
   /** When this browser ran the check (epoch ms). */
   at: number;
   /** What the check concluded. `unchecked`: the kind can't be checked here (SEC not set up, or
-   *  the data it needs isn't served). `unavailable`: the source didn't answer. */
-  outcome: 'quiet' | 'fired' | 'unchecked' | 'unavailable';
+   *  the data it needs isn't served). `unavailable`: the source didn't answer. `off`: the source is
+   *  switched off on this site (PUBLIC_DATA=off, or FINRA's production switch). */
+  outcome: 'quiet' | 'fired' | 'unchecked' | 'unavailable' | 'off';
   /** The date the source's figures are as of (YYYY-MM-DD), when there is one. */
   asOf?: string;
   /** One short line on the row: why it couldn't check, or what it read. */
@@ -74,8 +75,12 @@ export interface AlertRule {
   changePct?: number;
   /** si dtc: the days-to-cover level. */
   dtcLevel?: number;
-  /** Browser notification for this rule (absent on rules saved before: the page-wide flag rules). */
+  /** Browser notification for this rule. The page-wide flag is the master switch: with it off nothing
+   *  notifies; with it on, a rule notifies unless this is false (absent: rules saved before it). */
   notify?: boolean;
+  /** Bumped on each edit. A check that started before the edit finds a different `rev` and leaves
+   *  the edited rule's memory alone (store.ts recordChecks). Absent: never edited. */
+  rev?: number;
 
   // ---- check memory (written by the checks, never by the reader) ----
   /** Keys of what this rule already fired on (an accession, a settlement, a report date), newest
@@ -106,6 +111,9 @@ export interface AlertEvent {
   sample?: boolean;
   /** The firing's own date (YYYY-MM-DD) when it is a publication's, not the check's. */
   date?: string;
+  /** The rule's fired key this event recorded (an accession, a settlement): a second check that
+   *  finds the same key already recorded drops the event instead of listing it twice. */
+  key?: string;
 }
 
 export interface AlertsState {

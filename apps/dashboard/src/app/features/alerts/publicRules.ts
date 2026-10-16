@@ -13,7 +13,7 @@
  * - Zone kinds (positioning extreme, days to cover) fire on entering the zone and re-arm only after
  *   a check finds them outside it.
  */
-import type { PublicFilings, PublicFutures, PublicTicker } from '@convexa/api';
+import type { PublicFilings, PublicFutures, PublicResultsWindow, PublicTicker } from '@convexa/api';
 import { GROUP_LABEL, PUBLIC_KIND } from './kinds';
 import {
   FIRED_KEYS_MAX,
@@ -90,7 +90,10 @@ export interface CheckResult {
 
 const unchecked = (note: string): CheckResult => ({ outcome: 'unchecked', note, firings: [] });
 const unavailable = (note: string): CheckResult => ({ outcome: 'unavailable', note, firings: [] });
+const off = (note: string): CheckResult => ({ outcome: 'off', note, firings: [] });
 const SEC_PENDING = 'Starts when SEC access is set up';
+const SEC_OFF = 'SEC EDGAR is off on this site';
+const SEC_DOWN = 'SEC EDGAR didn’t answer';
 
 /** Drop what the rule already fired on, and settle the outcome. */
 function settle(rule: AlertRule, base: Omit<CheckResult, 'outcome'>): CheckResult {
@@ -168,6 +171,7 @@ export function checkShortInterest(rule: AlertRule, ticker: PublicTicker | null)
   if (!ticker) return unavailable('FINRA didn’t answer; nothing fires from an old report');
   if (ticker.short_interest_state === 'unavailable')
     return unavailable('FINRA didn’t answer; nothing fires from an old report');
+  if (ticker.short_interest_state === 'off') return off('FINRA is off on this site');
   if (ticker.short_interest_state !== 'live') return unchecked('FINRA isn’t read on this site');
   const si = ticker.short_interest;
   if (!si) return { outcome: 'quiet', note: `FINRA has no report for ${rule.symbol}`, firings: [] };
@@ -232,13 +236,39 @@ export function formMatches(form: string, forms: FilingForm[]): boolean {
   return forms.some((f) => form === f || form === `${f}/A`);
 }
 
-/** `filings` null: the read failed. Only filings made on or after the day the rule was created
- *  fire: a new rule doesn't replay the last 90 days. */
-export function checkFiling(rule: AlertRule, filings: PublicFilings | null): CheckResult {
-  if (!filings) return unavailable('SEC EDGAR didn’t answer');
+/**
+ * Whether EDGAR's answer covers this ticker (null) or why not. A live answer can still leave one
+ * company out: a ticker this check didn't ask about, one SEC doesn't know (`missing`), or one whose
+ * own list failed (the SEC row isn't `updated` and nothing came back for it). Reading that as "no
+ * filings" would call an outage quiet, so each is unavailable instead.
+ */
+export function filingsGap(
+  filings: PublicFilings,
+  symbol: string,
+  asked: ReadonlySet<string>,
+): string | null {
+  if (!asked.has(symbol)) return 'Not checked this time; it checks the next time you open Alerts';
+  if (filings.missing?.includes(symbol)) return `SEC EDGAR lists no company under ${symbol}`;
+  const row = filings.sources?.find((r) => r.id === 'sec');
+  const has = filings.filings.some((f) => f.ticker === symbol);
+  if (row && row.state !== 'updated' && !has) return `SEC EDGAR didn’t answer for ${symbol}`;
+  return null;
+}
+
+/** `filings` null: the read failed. `asked`: the tickers this check's reads answered for (default:
+ *  the rule's own). Only filings made on or after the day the rule was created fire: a new rule
+ *  doesn't replay the last 90 days. */
+export function checkFiling(
+  rule: AlertRule,
+  filings: PublicFilings | null,
+  asked: ReadonlySet<string> = new Set([rule.symbol]),
+): CheckResult {
+  if (!filings) return unavailable(SEC_DOWN);
   if (filings.state === 'not_configured') return unchecked(SEC_PENDING);
-  if (filings.state === 'off') return unchecked('SEC EDGAR is off on this site');
-  if (filings.state === 'unavailable') return unavailable('SEC EDGAR didn’t answer');
+  if (filings.state === 'off') return off(SEC_OFF);
+  if (filings.state === 'unavailable') return unavailable(SEC_DOWN);
+  const gap = filingsGap(filings, rule.symbol, asked);
+  if (gap) return unavailable(gap);
   const forms = rule.forms?.length ? rule.forms : (['8-K', '10-Q', '10-K'] as FilingForm[]);
   const items = rule.items ?? [];
   const since = localDay(rule.createdAt);
@@ -258,13 +288,57 @@ export function checkFiling(rule: AlertRule, filings: PublicFilings | null): Che
   return settle(rule, { asOf: filings.checked_at?.slice(0, 10), firings });
 }
 
-/** Insider clusters need each insider's Form 4 rows; the API serves only window totals today. */
-export function checkCluster(secState: PublicFilings['state'] | null): CheckResult {
-  if (secState === null) return unavailable('SEC EDGAR didn’t answer');
-  if (secState === 'not_configured') return unchecked(SEC_PENDING);
-  return unchecked(
-    'The cluster check needs each insider’s Form 4, which the API doesn’t serve yet',
-  );
+/**
+ * Insider cluster (CLUSTERS_SPEC): the API's buying clusters, 3+ insiders buying on the open market
+ * within 10 days outside 10b5-1 plans, overlapping windows merged (InsidersWire.clusters). Sale
+ * windows are context and never fire. A cluster fires once, keyed by its first trade day so a
+ * window that grows doesn't fire again, and only when one of its Form 4s was filed on or after the
+ * day the rule was created: a new rule doesn't replay the past year.
+ *
+ * `ticker` null: the read failed.
+ */
+export function checkCluster(rule: AlertRule, ticker: PublicTicker | null): CheckResult {
+  if (!ticker) return unavailable(SEC_DOWN);
+  if (ticker.state === 'off') return off(SEC_OFF);
+  const ins = ticker.insiders;
+  if (!ins) {
+    if (ticker.filings_state === 'not_configured') return unchecked(SEC_PENDING);
+    if (ticker.filings_state === 'off') return off(SEC_OFF);
+    if (ticker.filings_state === 'unavailable') return unavailable(SEC_DOWN);
+    return unavailable(`SEC EDGAR lists no company under ${rule.symbol}`);
+  }
+  if (ins.state === 'not_configured') return unchecked(SEC_PENDING);
+  if (ins.state === 'off') return off(SEC_OFF);
+  if (ins.state === 'unavailable') return unavailable(SEC_DOWN);
+  // Servers before 2026-10-15 send only window totals.
+  const clusters = Array.isArray(ins.clusters) ? ins.clusters : null;
+  if (!clusters) return unchecked('This server doesn’t serve each insider’s Form 4 yet');
+  const since = localDay(rule.createdAt);
+  const buys = (ins.transactions ?? []).filter((t) => t.kind === 'purchase' && !t.planned);
+  const link = { label: `Open ${rule.symbol} research`, href: `/ticker/${rule.symbol}/research` };
+  const firings: Firing[] = [];
+  for (const c of clusters) {
+    // The newest Form 4 behind the window (a trade is filed up to two business days later).
+    const filed = buys
+      .filter((t) => t.trade_date >= c.from && t.trade_date <= c.to)
+      .reduce((m, t) => (t.filed > m ? t.filed : m), c.to);
+    if (filed < since) continue;
+    firings.push({
+      key: `cluster:${rule.symbol}:${c.from}`,
+      message: `${rule.symbol}: ${c.insiders} insiders bought on the open market, ${fmtDay(c.from, false)}–${fmtDay(c.to, false)}`,
+      detail: `${c.trades} purchase${c.trades === 1 ? '' : 's'} outside 10b5-1 plans; Form 4s filed through ${fmtDay(filed)}`,
+      source: `SEC EDGAR · Form 4 · ${fmtDay(filed, false)}`,
+      date: filed,
+      link,
+    });
+  }
+  const last = clusters[clusters.length - 1];
+  return {
+    ...settle(rule, { asOf: ins.latest ?? undefined, firings }),
+    note: last
+      ? `Last buying cluster ${fmtDay(last.from, false)}–${fmtDay(last.to, false)}`
+      : 'No buying cluster in the last 12 months',
+  };
 }
 
 // ---- results approaching, note coming due (research notes) -------------------------------------
@@ -273,26 +347,59 @@ export function checkCluster(secState: PublicFilings['state'] | null): CheckResu
 export interface CatalystLike {
   kind: 'catalyst' | 'kill' | 'forecast';
   label: string;
-  when: { start: string | null; end: string | null };
+  /** `kind` is the written date's precision, `label` its reading ("Nov 2026"); dates.mjs When. */
+  when: { start: string | null; end: string | null; kind?: string; label?: string };
   resolved: boolean;
   status?: string;
 }
 
 /**
  * A note catalyst that is the company's own results: "Q3 FY2027 results", "FQ4 results", "FY2026
- * results". A label that starts with another name ("Broadcom FQ4-26 results") is someone else's.
+ * results", "3Q26 results and 4Q26 guide". A label that starts with another name ("Broadcom FQ4-26
+ * results") is someone else's.
  */
 export function isOwnResults(label: string): boolean {
-  return /\bresults\b/i.test(label) && /^(F?Q[1-4]|H[12]|FY\d{0,4})\b/i.test(label.trim());
+  return (
+    /\bresults\b/i.test(label) && /^([1-4]Q\d{2}|F?Q[1-4]|H[12]|FY\d{0,4})\b/i.test(label.trim())
+  );
 }
 
-/** `events` null: no note on this ticker. */
+/** What the EDGAR cadence half of a results rule read (PublicFilingsWire.results). */
+export interface ResultsCadence {
+  /** `read`: EDGAR answered for this ticker (`window` null: too little filing history). */
+  state: 'read' | 'notSetUp' | 'off' | 'down';
+  window: PublicResultsWindow | null;
+}
+
+const isDayDate = (when: CatalystLike['when']) =>
+  when.kind ? when.kind === 'day' : !!when.start && when.start === when.end;
+
+/** "Oct 14–Oct 28" for an estimated window, "Oct 14" for one day. */
+function fmtRange(start: string, end: string): string {
+  return start === end ? fmtDay(start, false) : `${fmtDay(start, false)}–${fmtDay(end, false)}`;
+}
+
+/**
+ * Results approaching, from two sources: the note's own results catalyst and, when the note gives
+ * none, the window EDGAR's filing history projects (PublicFilingsWire.results). A note's date always
+ * beats an estimate for the same company (the Calendar's rule, comingUp.ts).
+ *
+ * - A day-precision date counts down to that day ("in 3 days", "due now" on and after it).
+ * - A month, quarter, year or window never names a day (dates.mjs: an approximate date counts from
+ *   the END of its window). It fires once, when today reaches the window's start less the rule's
+ *   days, names the window ("expected in Nov 2026") and never says "due now".
+ *
+ * `events` null: no note on this ticker. `cadence` absent: the EDGAR half wasn't asked for.
+ */
 export function checkResults(
   rule: AlertRule,
   events: CatalystLike[] | null,
   today: string,
+  cadence?: ResultsCadence,
 ): CheckResult {
   if (!events) return unchecked(`No research note on ${rule.symbol} gives a results date`);
+  const days = rule.days ?? 7;
+  const link = { label: `Open the ${rule.symbol} note`, href: `/ticker/${rule.symbol}/research` };
   const dated = events
     .filter((e) => e.kind === 'catalyst' && !e.resolved && isOwnResults(e.label))
     .flatMap((e) =>
@@ -300,24 +407,71 @@ export function checkResults(
     )
     .filter((x) => x.end >= today)
     .sort((a, b) => a.start.localeCompare(b.start));
-  if (!dated.length)
-    return { outcome: 'quiet', note: 'No upcoming results date in the note', firings: [] };
-  const { e: next, start } = dated[0];
-  const days = rule.days ?? 7;
-  const confirmed = next.status === 'confirmed';
-  const note = `Expected ${fmtDay(start, false)} (the note’s catalyst${confirmed ? ', confirmed' : ', an estimate'})`;
   const firings: Firing[] = [];
-  const inDays = daysBetween(today, start);
-  if (inDays <= days) {
-    firings.push({
-      key: `results:${rule.symbol}:${start}`,
-      message: `${rule.symbol}: ${next.label} ${inDays <= 0 ? 'due now' : `in ${inDays} day${inDays === 1 ? '' : 's'}`}`,
-      detail: `Expected ${fmtDay(start)}${confirmed ? ', a date the company gave' : ', an estimate until the company confirms it'}`,
-      source: 'Convexa notes',
-      link: { label: `Open the ${rule.symbol} note`, href: `/ticker/${rule.symbol}/research` },
-    });
+
+  if (dated.length) {
+    const { e: next, start, end } = dated[0];
+    const confirmed = next.status === 'confirmed';
+    if (isDayDate(next.when)) {
+      const inDays = daysBetween(today, start);
+      if (inDays <= days)
+        firings.push({
+          key: `results:${rule.symbol}:${start}`,
+          message: `${rule.symbol}: ${next.label} ${inDays <= 0 ? 'due now' : `in ${inDays} day${inDays === 1 ? '' : 's'}`}`,
+          detail: `Expected ${fmtDay(start)}${confirmed ? ', a date the company gave' : ', an estimate until the company confirms it'}`,
+          source: 'Convexa notes',
+          link,
+        });
+      return {
+        ...settle(rule, { firings }),
+        note: `Expected ${fmtDay(start, false)} (the note’s catalyst${confirmed ? ', confirmed' : ', an estimate'})`,
+      };
+    }
+    // A month, quarter, year or window: no day to count down to.
+    const label = next.when.label ?? fmtRange(start, end);
+    const expected = `expected ${next.when.kind === 'window' ? '' : 'in '}${label}`;
+    if (daysBetween(today, start) <= days)
+      firings.push({
+        key: `results:${rule.symbol}:${label}`,
+        message: `${rule.symbol}: ${next.label} ${expected}${confirmed ? '' : ' (date not announced)'}`,
+        detail: `The note gives ${label}, not a day: an estimate until the company confirms it`,
+        source: 'Convexa notes',
+        link,
+      });
+    return {
+      ...settle(rule, { firings }),
+      note: `Expected ${label} (the note’s catalyst, no day given)`,
+    };
   }
-  return { ...settle(rule, { firings }), note };
+
+  // No results date in the note: the EDGAR cadence half.
+  if (!cadence)
+    return { outcome: 'quiet', note: 'No upcoming results date in the note', firings: [] };
+  if (cadence.state === 'notSetUp')
+    return unchecked('No results date in the note; the filing-history estimate needs SEC access');
+  if (cadence.state === 'off') return off(`No results date in the note, and ${SEC_OFF}`);
+  if (cadence.state === 'down') return unavailable(`No results date in the note, and ${SEC_DOWN}`);
+  const w = cadence.window;
+  if (!w || w.end < today)
+    return {
+      outcome: 'quiet',
+      note: 'No upcoming results date in the note or its filing history',
+      firings: [],
+    };
+  const range = fmtRange(w.start, w.end);
+  const basis = (w.basis ?? []).map((b) => fmtDay(b, false)).join(', ');
+  if (daysBetween(today, w.start) <= days)
+    firings.push({
+      key: `results:${rule.symbol}:edgar:${w.start}`,
+      message: `${rule.symbol}: results expected ${range} (an estimate from filing history)`,
+      detail: `Projected from ${w.basis_kind === 'periodic_reports' ? 'its 10-Q and 10-K dates' : 'its last results filings'}${basis ? ` (${basis})` : ''}; not a date the company gave`,
+      source: 'SEC EDGAR · filing cadence',
+      link,
+    });
+  return {
+    ...settle(rule, { firings }),
+    note: `Expected ${range} (estimated from EDGAR filing history)`,
+  };
 }
 
 /** What `freshness()` (tools/research-notes/freshness.mjs) says about a ticker's latest note. */
@@ -328,36 +482,74 @@ export interface FreshnessLike {
   next: { kind: string; label: string; date: string } | null;
 }
 
-/** `fresh` null: no note on this ticker. `filingsChecked`: whether filings since the note were part
- *  of `fresh` (SEC answered); when not, the row says that half waits on SEC access. */
+/** A results or periodic filing made after the note's date that the note doesn't cite. */
+export interface NoteFiling {
+  accession: string;
+  date: string;
+  label: string;
+}
+
+/**
+ * Note coming due. Each firing happens once:
+ *
+ * - the note turning due for its own reasons (a catalyst, a kill criterion or its price passing):
+ *   once per note, keyed by the note's date, so a filing that drops out of the answer (an SEC outage,
+ *   or the 90-day window) can't re-date it and fire again;
+ * - each filing that lands after the note's date: once per accession, and only when filings were
+ *   read (`filings` null: SEC didn't answer for this ticker, or isn't set up).
+ *
+ * `fresh` null: no note on this ticker. `noteDate`: the note's own date (YYYY-MM-DD). `unread`: why
+ * filings weren't read, for the row's line (SEC not set up, down, or off).
+ */
 export function checkNoteDue(
   rule: AlertRule,
   fresh: FreshnessLike | null,
   today: string,
-  filingsChecked: boolean,
+  filings: NoteFiling[] | null,
+  noteDate: string,
+  unread: 'notSetUp' | 'down' | 'off' = 'notSetUp',
 ): CheckResult {
   if (!fresh) return unchecked(`No research note on ${rule.symbol}`);
-  const half = filingsChecked ? '' : ' · filings after it start when SEC access is set up';
+  const half = filings
+    ? ''
+    : unread === 'down'
+      ? ` · filings after it not checked: ${SEC_DOWN}`
+      : unread === 'off'
+        ? ` · filings after it not read: ${SEC_OFF}`
+        : ' · filings after it start when SEC access is set up';
   if (fresh.state === 'superseded' || fresh.state === 'archived')
     return { outcome: 'quiet', note: `The note is ${fresh.state}${half}`, firings: [] };
   const link = { label: 'Open the note', href: `/ticker/${rule.symbol}/research` };
   const firings: Firing[] = [];
-  if (fresh.state === 'due') {
-    const why = fresh.passed[fresh.passed.length - 1];
+  const own = fresh.passed.filter((p) => p.kind !== 'filing');
+  if (fresh.state === 'due' && own.length) {
+    const why = own[own.length - 1];
+    // Keys before 2026-10-15 were `due:<first passed day>`, never earlier than the note's date.
+    const legacy = (rule.fired ?? []).some(
+      (k) => k.startsWith(`note:${rule.symbol}:due:`) && k.slice(-10) >= noteDate,
+    );
+    if (!legacy)
+      firings.push({
+        key: `note:${rule.symbol}:due:${noteDate}`,
+        message: `${rule.symbol}: the note is due for review`,
+        detail: `${why.label}, ${fmtDay(why.date, false)}. The note’s figures predate it.`,
+        source: 'Convexa notes',
+        date: why.date,
+        link,
+      });
+  }
+  for (const f of filings ?? []) {
+    if (f.date > today) continue;
     firings.push({
-      key: `note:${rule.symbol}:due:${fresh.since ?? why?.date ?? today}`,
-      message:
-        why?.kind === 'filing'
-          ? `${rule.symbol}: a filing landed after the note’s date`
-          : `${rule.symbol}: the note is due for review`,
-      detail: why
-        ? `${why.label}, ${fmtDay(why.date, false)}. The note’s figures predate it.`
-        : undefined,
-      source: 'Convexa notes',
-      date: fresh.since ?? undefined,
+      key: `note:${rule.symbol}:filing:${f.accession}`,
+      message: `${rule.symbol}: a filing landed after the note’s date`,
+      detail: `${f.label}, ${fmtDay(f.date, false)}. The note’s figures predate it.`,
+      source: `SEC EDGAR · ${fmtDay(f.date, false)}`,
+      date: f.date,
       link,
     });
-  } else if (fresh.next) {
+  }
+  if (fresh.state !== 'due' && fresh.next) {
     const inDays = daysBetween(today, fresh.next.date);
     if (inDays <= (rule.days ?? 7))
       firings.push({
@@ -397,6 +589,7 @@ export function applyCheck(
     source: f.source,
     link: f.link,
     date: f.date,
+    key: f.key,
   }));
   const fired = [...(rule.fired ?? []), ...result.firings.map((f) => f.key)].slice(-FIRED_KEYS_MAX);
   const next: AlertRule = {
@@ -428,7 +621,7 @@ export function ruleWhat(rule: AlertRule): string {
         .join(' · ');
     }
     case 'cluster':
-      return '3+ insiders, same direction, 10 days';
+      return '3+ insiders buying, 10 days · plan trades not counted';
     case 'cftc': {
       const g = GROUP_LABEL[rule.group ?? 'leveraged_funds'];
       const end =
@@ -464,7 +657,7 @@ export function ruleSentence(rule: AlertRule): string {
       return `Tell me when ${s} files ${joinOr(parts)}.`;
     }
     case 'cluster':
-      return `Tell me when three or more ${s} insiders file Form 4s in the same direction within 10 days.`;
+      return `Tell me when three or more ${s} insiders buy on the open market within 10 days, outside pre-set plans.`;
     case 'cftc': {
       const g = GROUP_LABEL[rule.group ?? 'leveraged_funds'].toLowerCase();
       const end =

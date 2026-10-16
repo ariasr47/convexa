@@ -255,11 +255,152 @@ describe('checkFiling', () => {
   });
 });
 
-describe('checkCluster', () => {
-  it('waits on SEC access, then says the check isn’t built: never quiet, never fired', () => {
-    expect(checkCluster('not_configured').outcome).toBe('unchecked');
-    expect(checkCluster('live').outcome).toBe('unchecked');
-    expect(checkCluster(null).outcome).toBe('unavailable');
+describe('checkFiling: a live answer that leaves the ticker out is unknown, not quiet (W1-46)', () => {
+  const r = rule({ kind: 'filing', symbol: 'NVDA', forms: ['8-K'] });
+  const partial = (rowState: 'updated' | 'last_good', list: Parameters<typeof filings>[1]) => ({
+    ...filings('live', list),
+    sources: [
+      {
+        id: 'sec',
+        name: 'SEC EDGAR',
+        state: rowState,
+        as_of: null,
+        checked_at: null,
+        detail: null,
+        failed_at: null,
+      },
+    ],
+  });
+  it('NVDA’s list failed while AMD’s answered: NVDA is unavailable', () => {
+    const res = checkFiling(r, partial('last_good', [{ ticker: 'AMD' }]));
+    expect(res.outcome).toBe('unavailable');
+    expect(res.note).toMatch(/NVDA/);
+  });
+  it('with every list fresh, no NVDA filing is a quiet check', () => {
+    expect(checkFiling(r, partial('updated', [{ ticker: 'AMD' }])).outcome).toBe('quiet');
+  });
+  it('a ticker SEC doesn’t know, or one this check didn’t ask about, is unavailable', () => {
+    expect(checkFiling(r, { ...filings('live'), missing: ['NVDA'] }).outcome).toBe('unavailable');
+    expect(checkFiling(r, filings('live'), new Set(['AMD'])).outcome).toBe('unavailable');
+  });
+  it('SEC switched off reads Off, not Not set up', () => {
+    expect(checkFiling(r, filings('off')).outcome).toBe('off');
+  });
+});
+
+function insiders(
+  over: Partial<NonNullable<PublicTicker['insiders']>> = {},
+  t: Partial<PublicTicker> = {},
+): PublicTicker {
+  return {
+    ...ticker(null),
+    ticker: 'TSLA',
+    filings_state: 'live',
+    insiders: {
+      state: 'live',
+      detail: null,
+      window_days: 90,
+      filings: 4,
+      sales: 0,
+      buys: 4,
+      shares_sold: 0,
+      shares_bought: 4_000,
+      planned: 0,
+      latest: '2026-10-12',
+      history_days: 365,
+      history_filings: 4,
+      history_filings_read: 4,
+      history_reaches_back_to: null,
+      roles: ['CEO', 'CFO', 'Director', 'Director 2'],
+      sale_windows: [],
+      clusters: [
+        { from: '2026-10-05', to: '2026-10-09', insiders: 3, trades: 3, planned_trades: 0 },
+      ],
+      transactions: [
+        {
+          insider: 0,
+          kind: 'purchase',
+          trade_date: '2026-10-05',
+          filed: '2026-10-06',
+          shares: 1_000,
+          price: 200,
+          planned: false,
+          accession: 'a0',
+          url: 'u',
+        },
+        {
+          insider: 1,
+          kind: 'purchase',
+          trade_date: '2026-10-07',
+          filed: '2026-10-08',
+          shares: 1_000,
+          price: 201,
+          planned: false,
+          accession: 'a1',
+          url: 'u',
+        },
+        {
+          insider: 2,
+          kind: 'purchase',
+          trade_date: '2026-10-09',
+          filed: '2026-10-12',
+          shares: 1_000,
+          price: 202,
+          planned: false,
+          accession: 'a2',
+          url: 'u',
+        },
+      ],
+      ...over,
+    },
+    ...t,
+  };
+}
+
+describe('checkCluster: buying clusters from each insider’s Form 4', () => {
+  const r = rule({ kind: 'cluster', symbol: 'TSLA', createdAt: Date.parse('2026-10-10T12:00:00') });
+  it('fires on a buying cluster whose last Form 4 was filed after the rule was made, once', () => {
+    const res = checkCluster(r, insiders());
+    expect(res.outcome).toBe('fired');
+    expect(res.firings[0].key).toBe('cluster:TSLA:2026-10-05');
+    expect(res.firings[0].message).toBe('TSLA: 3 insiders bought on the open market, Oct 5–Oct 9');
+    expect(res.firings[0].message).not.toMatch(/\b(buy|sell)\b/i);
+    const after = applyCheck(r, res, 1).rule;
+    // The window grows (a fourth buyer): same first day, so it doesn't fire again.
+    const grown = insiders({
+      clusters: [
+        { from: '2026-10-05', to: '2026-10-13', insiders: 4, trades: 4, planned_trades: 0 },
+      ],
+    });
+    expect(checkCluster(after, grown).outcome).toBe('quiet');
+  });
+  it('a new rule doesn’t replay a cluster filed before it existed', () => {
+    const later = rule({
+      kind: 'cluster',
+      symbol: 'TSLA',
+      createdAt: Date.parse('2026-10-13T12:00:00'),
+    });
+    expect(checkCluster(later, insiders()).outcome).toBe('quiet');
+  });
+  it('sale windows never fire; no cluster is quiet', () => {
+    const sales = insiders({
+      clusters: [],
+      sale_windows: [
+        { from: '2026-10-05', to: '2026-10-09', insiders: 5, trades: 9, planned_trades: 9 },
+      ],
+    });
+    const res = checkCluster(r, sales);
+    expect(res.outcome).toBe('quiet');
+    expect(res.firings).toHaveLength(0);
+  });
+  it('SEC not set up, down, off, or an older server: never quiet, never fired', () => {
+    expect(checkCluster(r, insiders({ state: 'not_configured' })).outcome).toBe('unchecked');
+    expect(checkCluster(r, insiders({ state: 'unavailable' })).outcome).toBe('unavailable');
+    expect(checkCluster(r, null).outcome).toBe('unavailable');
+    expect(checkCluster(r, insiders({}, { state: 'off' })).outcome).toBe('off');
+    const old = insiders();
+    delete (old.insiders as { clusters?: unknown }).clusters;
+    expect(checkCluster(r, old).outcome).toBe('unchecked');
   });
 });
 
@@ -298,32 +439,153 @@ describe('results approaching', () => {
   it('no note is unchecked, not quiet', () => {
     expect(checkResults(r, null, '2026-11-10').outcome).toBe('unchecked');
   });
+
+  it('TSM’s “3Q26 results” form is the company’s own (W1-15)', () => {
+    expect(isOwnResults('3Q26 results and 4Q26 guide')).toBe(true);
+    expect(isOwnResults('4Q26 results; 2027 growth guide')).toBe(true);
+    const tsm = rule({ kind: 'results', symbol: 'TSM', days: 7 });
+    const res = checkResults(tsm, [ev('3Q26 results and 4Q26 guide', '2026-10-15')], '2026-10-12');
+    expect(res.outcome).toBe('fired');
+    expect(res.firings[0].message).toBe('TSM: 3Q26 results and 4Q26 guide in 3 days');
+  });
+
+  // A month or window names no day (W1-16): dates.mjs counts approximate dates from their end.
+  const month = (
+    label: string,
+    start: string,
+    end: string,
+    kind = 'month',
+    whenLabel = 'Nov 2026',
+  ) =>
+    ({
+      kind: 'catalyst',
+      label,
+      when: { start, end, kind, label: whenLabel },
+      resolved: false,
+      status: 'estimate',
+    }) as CatalystLike;
+  const cbrs = rule({ kind: 'results', symbol: 'CBRS', days: 7 });
+  const nov = [month('Q3 2026 results', '2026-11-01', '2026-11-30')];
+  it('a month catalyst fires once, from its start less the days, naming the month, not a day', () => {
+    expect(checkResults(cbrs, nov, '2026-10-24').outcome).toBe('quiet');
+    const res = checkResults(cbrs, nov, '2026-10-25');
+    expect(res.outcome).toBe('fired');
+    expect(res.firings[0].message).toBe(
+      'CBRS: Q3 2026 results expected in Nov 2026 (date not announced)',
+    );
+    expect(res.firings[0].message).not.toMatch(/Sun|Nov 1\b|due now/);
+    expect(res.note).toBe('Expected Nov 2026 (the note’s catalyst, no day given)');
+    const after = applyCheck(cbrs, res, 1).rule;
+    for (const day of ['2026-11-01', '2026-11-15', '2026-11-30'])
+      expect(checkResults(after, nov, day).outcome).toBe('quiet');
+  });
+  it('a window says its range, and never “due now” inside it', () => {
+    const win = [month('Q3 2026 results', '2026-11-05', '2026-11-16', 'window', 'Nov 5–16, 2026')];
+    const res = checkResults(cbrs, win, '2026-11-10');
+    expect(res.firings[0].message).toBe(
+      'CBRS: Q3 2026 results expected Nov 5–16, 2026 (date not announced)',
+    );
+  });
+
+  // The EDGAR cadence half: only when the note gives no results date.
+  const windowFor = (start: string, end: string) => ({
+    ticker: 'NVDA',
+    start,
+    end,
+    basis: ['2026-08-27', '2026-05-28'],
+    basis_kind: 'results_filings' as const,
+  });
+  const noDate = [ev('Broadcom FQ4-26 results', '2026-11-12')];
+  it('with no date in the note, the filing-history window fires once, as an estimate', () => {
+    const cadence = { state: 'read' as const, window: windowFor('2026-11-19', '2026-12-03') };
+    expect(checkResults(r, noDate, '2026-11-11', cadence).outcome).toBe('quiet');
+    const res = checkResults(r, noDate, '2026-11-12', cadence);
+    expect(res.outcome).toBe('fired');
+    expect(res.firings[0].message).toBe(
+      'NVDA: results expected Nov 19–Dec 3 (an estimate from filing history)',
+    );
+    expect(res.firings[0].key).toBe('results:NVDA:edgar:2026-11-19');
+    expect(checkResults(applyCheck(r, res, 1).rule, noDate, '2026-11-20', cadence).outcome).toBe(
+      'quiet',
+    );
+  });
+  it('the note’s own date beats the estimate', () => {
+    const cadence = { state: 'read' as const, window: windowFor('2026-11-01', '2026-11-14') };
+    const res = checkResults(r, events, '2026-11-02', cadence);
+    expect(res.outcome).toBe('quiet');
+    expect(res.note).toMatch(/Nov 17/);
+  });
+  it('EDGAR down with no note date is unknown; not set up is unchecked; an old server is quiet', () => {
+    expect(checkResults(r, noDate, '2026-11-12', { state: 'down', window: null }).outcome).toBe(
+      'unavailable',
+    );
+    expect(checkResults(r, noDate, '2026-11-12', { state: 'notSetUp', window: null }).outcome).toBe(
+      'unchecked',
+    );
+    expect(checkResults(r, noDate, '2026-11-12').outcome).toBe('quiet');
+  });
 });
 
 describe('note coming due', () => {
   const r = rule({ kind: 'note', symbol: 'NVDA', days: 7 });
   const next = { kind: 'catalyst', label: 'Q3 FY2027 results', date: '2026-11-17' };
+  const NOTE = '2026-09-01';
   it('fires when the review date comes within the window', () => {
     const fresh = { state: 'current' as const, since: null, passed: [], next };
-    expect(checkNoteDue(r, fresh, '2026-11-09', false).outcome).toBe('quiet');
-    expect(checkNoteDue(r, fresh, '2026-11-10', false).outcome).toBe('fired');
+    expect(checkNoteDue(r, fresh, '2026-11-09', null, NOTE).outcome).toBe('quiet');
+    expect(checkNoteDue(r, fresh, '2026-11-10', null, NOTE).outcome).toBe('fired');
   });
-  it('a note already due fires once, naming a filing when that is the reason', () => {
+  const filing = { accession: 'acc-8k', date: '2026-10-09', label: '8-K results filed' };
+  it('each filing after the note fires once, by accession', () => {
     const fresh = {
       state: 'due' as const,
       since: '2026-10-09',
-      passed: [{ kind: 'filing', label: '8-K results filed', date: '2026-10-09' }],
+      passed: [{ kind: 'filing', label: filing.label, date: filing.date }],
       next: null,
     };
-    const res = checkNoteDue(r, fresh, '2026-10-10', true);
-    expect(res.firings[0].message).toBe('NVDA: a filing landed after the note’s date');
+    const res = checkNoteDue(r, fresh, '2026-10-10', [filing], NOTE);
+    expect(res.firings.map((f) => [f.key, f.message])).toEqual([
+      ['note:NVDA:filing:acc-8k', 'NVDA: a filing landed after the note’s date'],
+    ]);
     const after = applyCheck(r, res, 1).rule;
-    expect(checkNoteDue(after, fresh, '2026-10-11', true).outcome).toBe('quiet');
+    expect(checkNoteDue(after, fresh, '2026-10-11', [filing], NOTE).outcome).toBe('quiet');
+  });
+  it('an SEC outage that hides a filing doesn’t re-date the due alert and fire again (W1-45)', () => {
+    const catalyst = { kind: 'catalyst', label: 'Q2 results', date: '2026-10-01' };
+    // Oct 5: due from the filing (Sep 15) and the catalyst.
+    const withFiling = {
+      state: 'due' as const,
+      since: '2026-09-15',
+      passed: [{ kind: 'filing', label: '10-Q filed', date: '2026-09-15' }, catalyst],
+      next: null,
+    };
+    const tenQ = { accession: 'acc-10q', date: '2026-09-15', label: '10-Q filed' };
+    const first = checkNoteDue(r, withFiling, '2026-10-05', [tenQ], NOTE);
+    expect(first.firings.map((f) => f.key)).toEqual([
+      'note:NVDA:due:2026-09-01',
+      'note:NVDA:filing:acc-10q',
+    ]);
+    const after = applyCheck(r, first, 1).rule;
+    // Oct 6, SEC down: the filing drops out and `since` moves to Oct 1. Nothing new fires.
+    const outage = { state: 'due' as const, since: '2026-10-01', passed: [catalyst], next: null };
+    expect(checkNoteDue(after, outage, '2026-10-06', null, NOTE).outcome).toBe('quiet');
+    // Oct 20: a results 8-K lands after the note was already due: it fires.
+    const later = { accession: 'acc-late', date: '2026-10-20', label: '8-K results filed' };
+    const res = checkNoteDue(after, withFiling, '2026-10-20', [tenQ, later], NOTE);
+    expect(res.firings.map((f) => f.key)).toEqual(['note:NVDA:filing:acc-late']);
+  });
+  it('a due alert fired under the old key doesn’t fire again', () => {
+    const catalyst = { kind: 'catalyst', label: 'Q2 results', date: '2026-10-01' };
+    const fresh = { state: 'due' as const, since: '2026-10-01', passed: [catalyst], next: null };
+    const old = { ...r, fired: ['note:NVDA:due:2026-10-01'] };
+    expect(checkNoteDue(old, fresh, '2026-10-06', null, NOTE).outcome).toBe('quiet');
   });
   it('says the filing half waits on SEC when filings weren’t read', () => {
     const fresh = { state: 'current' as const, since: null, passed: [], next };
-    expect(checkNoteDue(r, fresh, '2026-10-10', false).note).toMatch(/SEC access/);
-    expect(checkNoteDue(r, fresh, '2026-10-10', true).note).not.toMatch(/SEC access/);
+    expect(checkNoteDue(r, fresh, '2026-10-10', null, NOTE).note).toMatch(/SEC access/);
+    expect(checkNoteDue(r, fresh, '2026-10-10', [], NOTE).note).not.toMatch(/SEC access/);
+    // EDGAR down is not "not set up" (W1-17).
+    expect(checkNoteDue(r, fresh, '2026-10-10', null, NOTE, 'down').note).toMatch(/didn’t answer/);
   });
 });
 

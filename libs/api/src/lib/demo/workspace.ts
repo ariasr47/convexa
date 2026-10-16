@@ -1,4 +1,9 @@
-import { DEMO_ALERTS_SEED } from './alerts';
+import {
+  DEMO_ALERTS_SEED,
+  DEMO_ALERTS_SEED_VERSION,
+  DEMO_ALERTS_SEED_VERSION_KEY,
+  mergeDemoAlertsSeed,
+} from './alerts';
 import { loadScenario, sampleContractMark, type ScenarioSymbol } from './catalog';
 import { dataMode, demoStorageKey, type SupportedDemoSymbol } from './mode';
 
@@ -199,7 +204,24 @@ export function initializeDemoWorkspace(): void {
     const storage = window.localStorage;
     const sentinel = demoStorageKey('convexa.demo.workspace.initialized.v1');
     storageUnavailable = false;
-    if (storage.getItem(sentinel) !== null) return;
+    const seedVersion = demoStorageKey(DEMO_ALERTS_SEED_VERSION_KEY);
+    if (storage.getItem(sentinel) !== null) {
+      // A returning browser: merge in sample alerts added since it was seeded (W1-53). A write that
+      // fails here (quota) leaves the alerts as they were and retries on the next load; it is no
+      // reason to pause the whole demo.
+      try {
+        const from = Number(storage.getItem(seedVersion) ?? '1') || 1;
+        if (from < DEMO_ALERTS_SEED_VERSION) {
+          const alertsKey = demoStorageKey('convexa.alerts.v1');
+          const merged = mergeDemoAlertsSeed(storage.getItem(alertsKey), from);
+          if (merged !== null) storage.setItem(alertsKey, merged);
+          storage.setItem(seedVersion, String(DEMO_ALERTS_SEED_VERSION));
+        }
+      } catch {
+        /* keep the visitor's alerts as they are */
+      }
+      return;
+    }
     const seed: Record<string, unknown> = {
       'convexa.positions.v3': {
         schema_version: 3,
@@ -536,6 +558,7 @@ export function initializeDemoWorkspace(): void {
             : JSON.stringify(value),
         );
     }
+    storage.setItem(seedVersion, String(DEMO_ALERTS_SEED_VERSION));
     storage.setItem(sentinel, '1');
     storageUnavailable = false;
   } catch {

@@ -8,6 +8,7 @@
  */
 import { __resetAlertsMemory } from '@/features/alerts/store';
 import { ALERTS_KEY, type AlertRule, type AlertsState } from '@/features/alerts/types';
+import { shouldNotify } from '@/features/alerts/useAlerts';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -223,6 +224,34 @@ describe('50 — a denied or unavailable notification permission renders a state
     await user.click(screen.getByTestId('alerts-notify-continue'));
     expect(FakeNotification.requestPermission).toHaveBeenCalledTimes(1);
     expect(await screen.findByTestId('alerts-notify-on')).toBeInTheDocument();
+  });
+});
+
+describe('W1-14 — the page flag is the master switch; a new rule follows it', () => {
+  it('a rule saved while the page was off notifies once the page is turned on', async () => {
+    class FakeNotification {
+      static permission: NotificationPermission = 'default';
+      static requestPermission = vi.fn(async () => {
+        FakeNotification.permission = 'granted';
+        return FakeNotification.permission;
+      });
+    }
+    vi.stubGlobal('Notification', FakeNotification);
+    mount();
+    const user = userEvent.setup();
+    // First visit: the page flag is off. Save a suggestion without touching its switch.
+    await user.click(screen.getByRole('button', { name: /your NVDA note is due for review/i }));
+    await user.click(screen.getByTestId('new-alert-next'));
+    await user.click(await screen.findByTestId('new-alert-save'));
+    const stored = () => JSON.parse(localStorage.getItem(ALERTS_KEY) ?? '{}') as AlertsState;
+    expect(stored().rules).toHaveLength(1);
+    expect(shouldNotify(stored().rules[0], stored().notifyBrowser)).toBe(false);
+    // Then the reader turns the page on and allows the browser's prompt.
+    await user.click(screen.getByTestId('alerts-notify'));
+    await user.click(screen.getByTestId('alerts-notify-continue'));
+    expect(await screen.findByTestId('alerts-notify-on')).toBeInTheDocument();
+    expect(stored().notifyBrowser).toBe(true);
+    expect(shouldNotify(stored().rules[0], stored().notifyBrowser)).toBe(true);
   });
 });
 

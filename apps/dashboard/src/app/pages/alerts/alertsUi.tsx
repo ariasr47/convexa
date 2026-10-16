@@ -3,9 +3,17 @@
  * a kind wears (canon P-2), the SEC strip, and the panel shell. Design source:
  * design/src/screens/final/account-pages.mjs (Alerts) and design/src/screens/v5/alerts-public.mjs.
  */
-import { CHECKS_HERE, PUBLIC_KIND, isPublicKind, isStructureKind } from '@/features/alerts/kinds';
+import {
+  CHECKS_HERE,
+  FINRA_OFF_REASON,
+  PUBLIC_KIND,
+  isPublicKind,
+  isStructureKind,
+} from '@/features/alerts/kinds';
 import { fmtDay } from '@/features/alerts/publicRules';
+import { SEC_DOWN_NOTE, type SecSite } from '@/features/alerts/siteState';
 import type { AlertKind, AlertRule } from '@/features/alerts/types';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor } from '@/shared/theme/tokens';
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
@@ -45,25 +53,44 @@ export function KindGlyph({ kind }: { kind: AlertKind }) {
 /** What the page knows about this site's sources. */
 export interface SiteContext {
   demo: boolean;
-  /** SEC EDGAR's state on this site (null: not known yet, or its read failed). */
-  sec: string | null;
+  /** SEC EDGAR on this site, in one word (features/alerts/siteState.ts). */
+  sec: SecSite;
+  /** FINRA is read here: the demo's sample, or production once FINRA's switch is on. */
+  finra: boolean;
   /** Structure kinds can be checked (the demo, or a live options feed). */
   structureLive: boolean;
 }
 
+/** A state word, or null while the opening check hasn't answered yet ("Checking…"). */
+export type StateWord = { state: DataStateKey | null; detail?: string };
+
 /** The word a kind wears on this site, before any rule of it has been checked. */
-export function kindState(
-  kind: AlertKind,
-  ctx: SiteContext,
-): { state: DataStateKey; detail?: string } {
+export function kindState(kind: AlertKind, ctx: SiteContext): StateWord {
   if (ctx.demo) return { state: 'sample' };
   if (isStructureKind(kind)) return ctx.structureLive ? { state: 'updated' } : { state: 'notLive' };
   const info = PUBLIC_KIND[kind];
-  if (info.sec === 'needs' && ctx.sec !== 'live') return { state: 'notSetUp' };
-  if (kind === 'cluster') return { state: 'notSetUp', detail: 'check not built' };
+  if (info.sec === 'needs') {
+    if (ctx.sec === 'notSetUp') return { state: 'notSetUp' };
+    if (ctx.sec === 'checking') return { state: null };
+    if (ctx.sec === 'down') return { state: 'sourceDown' };
+    if (ctx.sec === 'off') return { state: 'off' };
+  }
+  if (kind === 'si' && !ctx.finra) return { state: 'off', detail: 'pending FINRA’s terms' };
+  if (kind === 'cluster') return { state: 'computed' };
   if (kind === 'cftc' || kind === 'si') return { state: 'delayed' };
   if (kind === 'note') return { state: 'computed' };
   return { state: 'updated' };
+}
+
+/** A state tag, or the plain "Checking…" while the opening check runs (no state word yet). */
+export function StateTag({ state, detail }: StateWord) {
+  if (state === null)
+    return (
+      <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+        Checking…
+      </Box>
+    );
+  return <DataStateTag state={state} detail={detail} />;
 }
 
 const SAMPLE_LAST: Record<AlertKind, (r: AlertRule) => string> = {
@@ -93,7 +120,7 @@ export function ruleState(
   rule: AlertRule,
   ctx: SiteContext,
   checking: boolean,
-): { state: DataStateKey; detail?: string; last: string } {
+): StateWord & { last: string } {
   if (!rule.enabled) return { state: 'off', last: 'Switched off: not checked' };
   if (ctx.demo) return { state: 'sample', last: SAMPLE_LAST[rule.kind](rule) };
   if (isStructureKind(rule.kind)) {
@@ -101,11 +128,24 @@ export function ruleState(
       ? { state: 'updated', last: 'Checks while a ticker desk is open' }
       : { state: 'notLive', last: 'Needs the options feed' };
   }
+  if (rule.kind === 'si' && !ctx.finra) return { state: 'off', last: FINRA_OFF_REASON };
   const c = rule.check;
   if (!c) {
     const base = kindState(rule.kind, ctx);
-    return { ...base, last: checking ? 'Checking…' : 'Not checked yet' };
+    return {
+      ...base,
+      last:
+        base.state === null
+          ? ''
+          : checking
+            ? 'Checking…'
+            : base.state === 'sourceDown'
+              ? SEC_DOWN_NOTE
+              : 'Not checked yet',
+    };
   }
+  if (c.outcome === 'off')
+    return { state: 'off', last: c.note ?? 'The source is off on this site' };
   if (c.outcome === 'unchecked') return { state: 'notSetUp', last: c.note ?? 'Not checked' };
   if (c.outcome === 'unavailable')
     return { state: 'sourceDown', last: c.note ?? 'The source didn’t answer' };
@@ -116,8 +156,24 @@ export function ruleState(
       detail: c.asOf ? `As of ${fmtDay(c.asOf, rule.kind === 'cftc')}` : undefined,
       last: checked,
     };
-  if (rule.kind === 'note') return { state: 'computed', last: checked };
+  if (rule.kind === 'note' || rule.kind === 'cluster') return { state: 'computed', last: checked };
   return { state: 'updated', last: checked };
+}
+
+/**
+ * Why a public rule of this kind can't check yet on this site, as one sentence, or null when it
+ * checks the next time Alerts opens. The Review step's "Checks" line and the save toast both say it,
+ * from the same SEC word as the tags (W1-17).
+ */
+export function waitSentence(kind: AlertKind, ctx: SiteContext): string | null {
+  if (ctx.demo || !isPublicKind(kind)) return null;
+  if (kind === 'si' && !ctx.finra) return `${FINRA_OFF_REASON}, so it is saved and waits.`;
+  if (PUBLIC_KIND[kind].sec !== 'needs') return null;
+  if (ctx.sec === 'notSetUp') return 'It checks EDGAR once SEC access is set up.';
+  if (ctx.sec === 'off') return 'SEC EDGAR is off on this site, so it is saved and waits.';
+  if (ctx.sec === 'down')
+    return 'SEC EDGAR didn’t answer just now; Convexa tries again each time you open Alerts.';
+  return null;
 }
 
 /** The kind reference's "Checks" line, honest about who checks. */

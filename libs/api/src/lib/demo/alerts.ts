@@ -103,3 +103,68 @@ export const DEMO_ALERTS_SEED = {
   ],
   notifyBrowser: false,
 };
+
+/**
+ * Seed versions (W1-53, conductor's provisional decision 2026-10-15): a staging browser that set up
+ * the demo workspace before a version keeps its own alerts, and gets that version's NEW sample rules
+ * (and their scenario firings) merged in by id, once. Version 1 was the SPY flip alone; version 2
+ * added one sample rule per public kind and the T-note firing.
+ */
+export const DEMO_ALERTS_SEED_VERSION = 2;
+export const DEMO_ALERTS_SEED_VERSION_KEY = 'convexa.demo.alerts.seed.v';
+const ADDED_IN: Record<number, { rules: string[]; events: string[] }> = {
+  2: {
+    rules: [
+      'demo-alert-nvda-results',
+      'demo-alert-nvda-filing',
+      'demo-alert-tsla-cluster',
+      'demo-alert-tnote-positioning',
+      'demo-alert-aapl-short',
+      'demo-alert-msft-note',
+    ],
+    events: ['demo-alert-event-tnote'],
+  },
+};
+
+type Row = { id?: unknown; ruleId?: unknown };
+
+/**
+ * The stored alerts blob with every seed version after `from` merged in, or null when there is
+ * nothing to write (already current, or a blob this can't read: the alerts store's own read-fault
+ * latch owns that case, and nothing here may overwrite it).
+ *
+ * A version's rules are added only when none of them is already there: a browser seeded with that
+ * version (before versions were recorded) has them, and one it deleted stays deleted. The visitor's
+ * own rules, edits, firings and notification setting are never touched.
+ */
+export function mergeDemoAlertsSeed(raw: string | null, from: number): string | null {
+  if (from >= DEMO_ALERTS_SEED_VERSION) return null;
+  if (raw === null) return JSON.stringify(DEMO_ALERTS_SEED);
+  let blob: { rules?: unknown; events?: unknown } & Record<string, unknown>;
+  try {
+    blob = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!blob || typeof blob !== 'object' || !Array.isArray(blob.rules)) return null;
+  const rules = [...(blob.rules as Row[])];
+  const events = Array.isArray(blob.events) ? [...(blob.events as Row[])] : [];
+  let changed = false;
+  for (let v = from + 1; v <= DEMO_ALERTS_SEED_VERSION; v++) {
+    const added = ADDED_IN[v];
+    if (!added) continue;
+    const have = new Set(rules.map((r) => r?.id));
+    if (added.rules.some((id) => have.has(id))) continue;
+    for (const id of added.rules) {
+      const rule = DEMO_ALERTS_SEED.rules.find((r) => r.id === id);
+      if (rule) rules.push(JSON.parse(JSON.stringify(rule)));
+    }
+    const seen = new Set(events.map((e) => e?.id));
+    for (const id of added.events) {
+      const ev = DEMO_ALERTS_SEED.events.find((e) => e.id === id);
+      if (ev && !seen.has(id)) events.push(JSON.parse(JSON.stringify(ev)));
+    }
+    changed = true;
+  }
+  return changed ? JSON.stringify({ ...blob, rules, events }) : null;
+}

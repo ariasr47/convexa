@@ -41,23 +41,35 @@ export const NOTIFY_COPY = {
   unavailable: 'Browser notifications aren’t available in this browser. Alerts still show here.',
 };
 
+/**
+ * When a notification can pop on this site (W1-49): the structure kinds check while a ticker desk is
+ * open, but only where they are live; the public kinds check only while the Alerts page is open.
+ */
+export function notifyWhen(where: 'demo' | 'live' | 'publicOnly'): string {
+  if (where === 'demo') return 'while a ticker desk is open';
+  if (where === 'live') return 'while a ticker desk or the Alerts page is open';
+  return 'while the Alerts page is open';
+}
+
 export function BrowserNotifyControl({
   on,
   permission,
   onEnable,
   onTurnOff,
+  where,
   refuse = (el) => el,
 }: {
   on: boolean;
   permission: NotifyPermission;
   onEnable: () => Promise<boolean>;
   onTurnOff: () => void;
+  /** Which checks run on this site: the demo's desk, a live desk and this page, or this page only. */
+  where: 'demo' | 'live' | 'publicOnly';
   /** Wraps a write control when the alerts store is faulted (AlertsRefused). */
   refuse?: (el: ReactElement) => ReactElement;
 }) {
   const [asking, setAsking] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
-  const phone = useMediaQuery(useTheme().breakpoints.down('sm'));
 
   const turnOn = () => {
     // Already granted (turned off from Convexa earlier): no prompt, nothing to explain again.
@@ -113,8 +125,7 @@ export function BrowserNotifyControl({
       <Box sx={rowSx}>
         <NotificationsNoneOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
         <Typography variant="caption" color="text.secondary" sx={{ flex: '1 1 160px' }}>
-          Fired alerts are listed here. Browser notifications, once allowed, also pop while a desk
-          is open.
+          {`Fired alerts are listed here. Browser notifications, once allowed, also pop ${notifyWhen(where)}.`}
         </Typography>
         {on ? (
           <Box
@@ -149,83 +160,102 @@ export function BrowserNotifyControl({
           )
         )}
       </Box>
-      <Dialog
+      <NotifyAskDialog
         open={asking}
         onClose={() => setAsking(false)}
-        maxWidth="xs"
-        fullWidth
-        fullScreen={false}
-        aria-labelledby="notify-ask-title"
-        slotProps={{
-          paper: {
-            sx: phone
-              ? {
-                  m: 0,
-                  width: '100%',
-                  maxWidth: '100%',
-                  alignSelf: 'flex-end',
-                  borderRadius: '16px 16px 0 0',
-                }
-              : { borderRadius: '16px' },
-          },
+        onContinue={() => {
+          setAsking(false);
+          void onEnable();
         }}
-      >
-        <DialogTitle id="notify-ask-title" sx={{ fontSize: '1.05rem', fontWeight: 700 }}>
-          {NOTIFY_COPY.askTitle}
-        </DialogTitle>
-        <DialogContent sx={{ display: 'grid', gap: 1.5 }}>
-          <Typography sx={{ fontSize: 14, lineHeight: 1.55 }}>{NOTIFY_COPY.askBody}</Typography>
-          <Box
-            aria-label="Example notification"
-            role="img"
-            sx={(t) => ({
-              display: 'flex',
-              gap: 1.25,
-              alignItems: 'flex-start',
-              p: '12px 14px',
-              borderRadius: '10px',
-              bgcolor: extrasFor(t).panelRaised,
-              border: '1px solid',
-              borderColor: 'divider',
-              maxWidth: 380,
-            })}
-          >
-            <NotificationsNoneOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-            <Box sx={{ display: 'grid', gap: 0.25 }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Convexa · SPY</Typography>
-              <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
-                Touched the gamma flip
-              </Typography>
-            </Box>
-          </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 13 }}>
-            {NOTIFY_COPY.askNext}
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, flexWrap: 'wrap', gap: 1 }}>
-          <Button
-            onClick={() => setAsking(false)}
-            sx={{ minHeight: 44, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}
-          >
-            Not now
-          </Button>
-          <Button
-            variant="contained"
-            data-testid="alerts-notify-continue"
-            onClick={() => {
-              setAsking(false);
-              void onEnable();
-            }}
-            sx={{
-              minHeight: 44,
-              flex: { xs: '1 1 100%', sm: '0 0 auto' },
-              ml: { xs: '0 !important', sm: 1 },
-            }}
-          >
-            Continue
-          </Button>
-        </DialogActions>
-      </Dialog>
+      />
     </>
+  );
+}
+
+/** Convexa's own ask, before the browser's prompt: what a notification looks like, that nothing is
+ *  sent anywhere, and that the browser asks next. Only Continue opens the browser's prompt. Used by
+ *  the page's control and by the new-alert dialog's notification switch (W1-14). */
+export function NotifyAskDialog({
+  open,
+  onClose,
+  onContinue,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onContinue: () => void;
+}) {
+  const phone = useMediaQuery(useTheme().breakpoints.down('sm'));
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      fullScreen={false}
+      aria-labelledby="notify-ask-title"
+      slotProps={{
+        paper: {
+          sx: phone
+            ? {
+                m: 0,
+                width: '100%',
+                maxWidth: '100%',
+                alignSelf: 'flex-end',
+                borderRadius: '16px 16px 0 0',
+              }
+            : { borderRadius: '16px' },
+        },
+      }}
+    >
+      <DialogTitle id="notify-ask-title" sx={{ fontSize: '1.05rem', fontWeight: 700 }}>
+        {NOTIFY_COPY.askTitle}
+      </DialogTitle>
+      <DialogContent sx={{ display: 'grid', gap: 1.5 }}>
+        <Typography sx={{ fontSize: 14, lineHeight: 1.55 }}>{NOTIFY_COPY.askBody}</Typography>
+        <Box
+          aria-label="Example notification"
+          role="img"
+          sx={(t) => ({
+            display: 'flex',
+            gap: 1.25,
+            alignItems: 'flex-start',
+            p: '12px 14px',
+            borderRadius: '10px',
+            bgcolor: extrasFor(t).panelRaised,
+            border: '1px solid',
+            borderColor: 'divider',
+            maxWidth: 380,
+          })}
+        >
+          <NotificationsNoneOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+          <Box sx={{ display: 'grid', gap: 0.25 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Convexa · SPY</Typography>
+            <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
+              Touched the gamma flip
+            </Typography>
+          </Box>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 13 }}>
+          {NOTIFY_COPY.askNext}
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2, flexWrap: 'wrap', gap: 1 }}>
+        <Button onClick={onClose} sx={{ minHeight: 44, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
+          Not now
+        </Button>
+        <Button
+          variant="contained"
+          data-testid="alerts-notify-continue"
+          onClick={onContinue}
+          sx={{
+            minHeight: 44,
+            flex: { xs: '1 1 100%', sm: '0 0 auto' },
+            ml: { xs: '0 !important', sm: 1 },
+          }}
+        >
+          Continue
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
