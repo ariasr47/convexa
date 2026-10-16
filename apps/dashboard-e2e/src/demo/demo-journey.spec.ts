@@ -318,12 +318,14 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   await page.goto('/ticker/QQQ/research');
   await expect(page.getByRole('heading', { name: 'QQQ growth-duration case' })).toBeVisible();
   await expect(page.getByText(/portfolio-2026-10-07-v1:QQQ:/)).toHaveCount(2);
-  await expect(page.getByText('Evidence', { exact: true })).toBeVisible();
-  const evidenceCard = page.getByText('Evidence', { exact: true }).locator('xpath=..');
+  // The sample note has a section rail since 2026-10-16, so each section name is also a rail link:
+  // address the section itself (a region named by its heading).
+  const evidenceCard = page.getByRole('region', { name: 'Evidence', exact: true });
+  await expect(evidenceCard).toBeVisible();
   await expect(evidenceCard.getByRole('listitem')).toHaveCount(2);
   await expect(evidenceCard).toContainText('Source:');
-  await expect(page.getByText('Risks', { exact: true })).toBeVisible();
-  await expect(page.getByText('Invalidation', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Risks', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Invalidation', exact: true })).toBeVisible();
   const researchRouteAssets = await page.evaluate(() =>
     performance
       .getEntriesByType('resource')
@@ -409,9 +411,13 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
 
   await page.getByRole('link', { name: 'Alerts' }).click();
   await expect(page.getByRole('heading', { name: 'Alerts', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Rules (1)' })).toBeVisible();
-  await expect(page.getByRole('switch', { name: 'SPY · Level touch' })).toBeChecked();
-  await expect(page.getByText(/No snapshot has been evaluated yet this session/)).toBeVisible();
+  // The Alerts page since Wave 1 (2026-10-15): seven seeded sample rules, one per kind, under
+  // "Your alerts". The seeded structure rule is on, names its level and reads the sample tape.
+  await expect(page.getByRole('heading', { name: 'Your alerts', exact: true })).toBeVisible();
+  await expect(page.getByRole('switch')).toHaveCount(7);
+  await expect(page.getByRole('switch', { name: /^Level touch for SPY/ })).toBeChecked();
+  await expect(page.getByText('Gamma flip · 683.92', { exact: false }).first()).toBeVisible();
+  await expect(page.getByText('Checks the sample tape')).toBeVisible();
   await screenshot(page, 'alerts-desktop-light');
   // The demo is signed in to its seed account: Settings opens from the account avatar.
   await page.getByRole('link', { name: 'Account settings', exact: true }).click();
@@ -423,7 +429,10 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   });
 
   await page.goto('/ticker/IBM/technical-analysis');
-  await expect(page.getByText(/No sample data for this symbol/)).toBeVisible();
+  await expect(page.getByText('No sample data for IBM.')).toBeVisible();
+  await expect(
+    page.getByText(/The demo runs on SPY, QQQ, AAPL, MSFT, NVDA and TSLA/),
+  ).toBeVisible();
   await screenshot(page, 'technical-unsupported-light');
   await page.goto('/_ops/research');
   await expect(page.getByRole('status')).toContainText('Unavailable in the public demo');
@@ -440,7 +449,7 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   const coldPage = await coldContext.newPage();
   await coldPage.route(/\.seed(?:-[^/]+)?\.json(?:\?.*)?$/, (route) => route.abort('failed'));
   await coldPage.goto('/ticker/SPY/technical-analysis');
-  await expect(coldPage.getByText(/Sample data could not load/)).toBeVisible();
+  await expect(coldPage.getByText(/The sample bars didn.t load/)).toBeVisible();
   await screenshot(coldPage, 'technical-cold-error-dark');
   await coldPage.unroute(/\.seed(?:-[^/]+)?\.json(?:\?.*)?$/);
   await coldPage.getByRole('button', { name: 'Retry demo' }).click();
