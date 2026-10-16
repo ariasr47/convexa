@@ -286,7 +286,9 @@ function ScanTableRow({
         component="tr"
         ref={rowRef}
         tabIndex={0}
-        aria-expanded={previewOpen}
+        // No aria-expanded here: on a plain table row ARIA allows it only inside a treegrid (axe
+        // aria-conditional-attr, serious). The chevron button carries the expanded state and
+        // aria-controls; Enter on the row is a keyboard shortcut to the same toggle.
         data-testid="scan-row"
         data-symbol={row.symbol}
         data-status={row.status}
