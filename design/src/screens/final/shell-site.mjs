@@ -166,7 +166,7 @@ export const ROWS = [
       phone: 'The on-this-page index becomes a sideways rail of 44px chips under the title. The two “What’s live” tables stack; the state words go one per line, tag above its sentence; tables scroll inside their own box.',
       acceptance: [
         '/methodology#data lands on “What’s live on this site” with its index entry current; the production bar’s “What’s live” goes there.',
-        'Production: the live list names Treasury, CFTC, FINRA short interest and short-sale volume, SEC EDGAR, research notes and TradingView, each with how late it is; every not-live row links to the same screen on staging.',
+        'Production: the live list names Treasury, CFTC, SEC EDGAR, research notes and TradingView, each with how late it is; FINRA short interest and short-sale volume sit under Off here with the reason, never in the live list; every not-live row links to the same screen on staging.',
         'Production: no element on the page says Sample or Demo, and no chart is drawn.',
         'Staging: the section opens “Nothing: this is the demo.” and links to the live site.',
         'The state words listed are P-2’s production set, each with its glyph; none is green or red.',

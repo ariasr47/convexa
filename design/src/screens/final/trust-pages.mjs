@@ -74,6 +74,8 @@ const tbl = (head, rows, cls = '') => `<div style="overflow-x: auto;"><table cla
 // ================================================================================================
 // Data sources and credits (/credits)
 // ================================================================================================
+// FINRA is Off on production until its display terms are confirmed (owner, 2026-10-15, answer 4).
+const FINRA_OFF_REASON = 'Off on this site until FINRA’s terms for showing its data here are confirmed. The demo shows sample data shaped like it.';
 const FINRA_TERMS = 'FINRA’s terms for its free equity data (§2.3) ask for this notice wherever the data, or anything worked out from it, appears:';
 export const FINRA_NOTICE = `<p class="tr-notice"><b>Data owned and provided by FINRA.</b> FINRA owns and is the source of the short-interest and short-sale-volume data on this site, including the percentages and averages Convexa calculates from it. Shown free for non-commercial personal use; please don’t redistribute it.</p>`;
 
@@ -105,7 +107,7 @@ export const SOURCES = [
     terms: FINRA_TERMS, finra: true,
     where: 'The positioning card under each ticker’s research note.',
     link: ['FINRA short interest', 'https://www.finra.org/finra-data/browse-catalog/equity-short-interest'],
-    prod: ['delayed', 'Delayed by source · settled Sep 30'], prodNote: 'Settlement of Sep 30, published Oct 9. The next settlement is Oct 15.',
+    prod: ['off'], prodNote: FINRA_OFF_REASON,
     shaped: 'FINRA’s short-interest file',
   },
   {
@@ -115,7 +117,7 @@ export const SOURCES = [
     terms: FINRA_TERMS, finra: true,
     where: 'The positioning card under each ticker’s research note.',
     link: ['FINRA short-sale volume', 'https://www.finra.org/finra-data/browse-catalog/short-sale-volume-data'],
-    prod: ['current', 'Updated · Oct 13 file'], prodNote: 'The file for Monday, Oct 13.',
+    prod: ['off'], prodNote: FINRA_OFF_REASON,
     shaped: 'FINRA’s daily Reg SHO files',
   },
   {
@@ -125,7 +127,8 @@ export const SOURCES = [
     terms: 'Public record, free to show. The SEC asks every program that reads EDGAR to identify itself with a name and a contact address.',
     where: 'Research → Filings, the insider card and “Filed since this note” under each ticker’s note.',
     link: ['SEC EDGAR', 'https://www.sec.gov/edgar'],
-    prod: ['notConfigured'], prodNote: 'This site hasn’t been given the contact line EDGAR asks for, so filings and insider trades don’t load yet.',
+    prod: ['current', 'Updated · read Oct 13'], prodNote: 'Convexa checks filings every hour and company facts every 24 hours.',
+    notSetUpNote: 'This site hasn’t been given the contact line EDGAR asks for, so filings and insider trades don’t load yet.',
     operator: 'Set SEC_USER_AGENT on the API to a name and contact address, such as “Convexa research &lt;address&gt;”.',
     shaped: 'SEC EDGAR filings',
   },
@@ -169,7 +172,7 @@ export function sourceCard(s, { env = 'production', state = null, note = null, c
     tag = st[0] === 'loading' ? '<span class="skel tr-skel" aria-label="Checking this source"></span>' : stateTag(st[0], st[1] || '');
     now = note ?? s.prodNote;
   }
-  const op = !stg && !state && s.operator ? `<details><summary>For the site’s operator</summary><span class="dline">${s.operator}</span></details>` : '';
+  const op = !stg && (state || s.prod)[0] === 'notConfigured' && s.operator ? `<details><summary>For the site’s operator</summary><span class="dline">${s.operator}</span></details>` : '';
   const rows = [['What Convexa reads', s.reads], ['How often, how late', s.cadence], ['Terms', s.terms + (s.finra && !compact ? FINRA_NOTICE.replace('<p class="tr-notice">', '<p class="tr-notice" style="margin-top: 8px;">') : '')], ...(s.privacy ? [['Your privacy', s.privacy]] : []), ['Where it shows', s.where]];
   const body = compact ? '' : `<dl>${rows.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join('')}</dl>`;
   const links = compact ? '' : `<div class="links">${ext(s.link[0], s.link[1])}${!stg && (s.id === 'massive') ? demoLink('/ticker/SPY', 'See them on the demo') : ''}${stg && s.id === 'tradingview' ? `<a href="https://convexa.pages.dev/ticker/SPY/technical-analysis">TradingView’s chart on the live site ${icon('external', 13)}</a>` : ''}</div>`;
@@ -180,7 +183,7 @@ const CREDITS_TOC = [['sources', 'On this page'], ...SOURCES.map((s) => [s.id, s
 function legend(env) {
   const items = env === 'staging'
     ? [['demo', 'Demo · sample data', 6], ['off', 'Off on the demo', 1]]
-    : [['current', 'Updated', 2], ['delayed', 'Delayed by source', 2], ['notConfigured', 'Not set up', 1], ['thirdParty', 'Live · TradingView', 1], ['notLive', 'Not live', 1]];
+    : [['current', 'Updated', 2], ['delayed', 'Delayed by source', 1], ['off', 'Off', 2], ['thirdParty', 'Live · TradingView', 1], ['notLive', 'Not live', 1]];
   return `<div class="tr-legend" id="sources" role="group" aria-label="Sources by state"><span class="caps">On this page</span>${items.map(([k, w, n]) => stateTag(k, `${w} · ${n}`)).join('')}</div>`;
 }
 const TYPE_ROWS = [
@@ -215,11 +218,11 @@ export function creditsStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const c = (id, o = {}) => sourceCard(S[id], { compact: true, ...o });
   const items = [
     { name: 'Updated', tag: ['current'], when: 'The source answered on its schedule; the tag carries the source’s own date, never a clock time or a live dot.', html: c('treasury') },
-    { name: 'Delayed by source', tag: ['delayed'], when: 'The source publishes late by design (CFTC weekly, FINRA short interest twice a month): the tag says as of when.', html: c('cftc') },
+    { name: 'Delayed by source', tag: ['delayed'], when: 'The source publishes late by design (CFTC weekly; FINRA short interest twice a month, wherever FINRA is on): the tag says as of when.', html: c('cftc') },
     { name: 'Last good copy', tag: ['stale'], when: 'This cycle’s fetch failed and the API is serving its earlier copy. Needs the API to report that (today it says “live” for both).', html: c('finra-si', { state: ['stale', 'Last good copy · Oct 13'], note: 'FINRA didn’t answer at 14:00 UTC. Showing the copy fetched Oct 13 at 02:00 UTC. Convexa asks again at 20:00 UTC.' }) },
     { name: 'Source down', tag: ['unavailable'], when: 'The source failed and nothing is kept. Its figures elsewhere are unknown, not empty.', html: c('treasury', { state: ['unavailable'], note: 'The Treasury didn’t answer and no earlier copy is kept. Convexa asks again at 20:00 UTC.' }) },
-    { name: 'Not set up', tag: ['notConfigured'], when: 'Production today: SEC_USER_AGENT is unset (API state not_configured). Reader copy first; the operator hint folds away.', html: c('sec') },
-    { name: 'Off', tag: ['off'], when: 'The operator set PUBLIC_DATA=off: every public source shows Off and Convexa calls none of them. No Try again.', html: c('cftc', { state: ['off'], note: 'Public data is switched off on this site. Convexa isn’t contacting the CFTC.' }) },
+    { name: 'Not set up', tag: ['notConfigured'], when: 'If SEC_USER_AGENT is unset (API state not_configured; production has it set). Reader copy first; the operator hint folds away.', html: c('sec', { state: ['notConfigured'], note: S.sec.notSetUpNote }) },
+    { name: 'Off', tag: ['off'], when: 'Production: both FINRA cards, with the reason, until FINRA’s terms are confirmed. The operator set PUBLIC_DATA=off: every public source shows Off and Convexa calls none of them. No Try again.', html: c('cftc', { state: ['off'], note: 'Public data is switched off on this site. Convexa isn’t contacting the CFTC.' }) },
     { name: 'Not live', tag: ['notLive'], when: 'The Massive options feed, on production: what it would feed, why it is off, and the way to the demo.', html: c('massive').replace('</div></section>', `${demoLink('/ticker/SPY', 'See them on the demo')}</div></section>`) },
     { name: 'Live · TradingView', tag: ['thirdParty'], when: 'Always, on production: a third party draws it from its own prices; Convexa can’t see whether it is up, so it never claims Updated.', html: c('tradingview') },
     { name: 'Checking', tag: ['loading', 'Loading'], when: 'The state request is on its way: each tag is a skeleton at its final width. The card’s text is static and renders at once.', html: c('treasury', { state: ['loading'], note: 'Checking this source…' }) },

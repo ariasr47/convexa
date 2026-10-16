@@ -171,7 +171,7 @@ function positionPanel() {
 }
 function ordersPanel() {
   return P(`${head('Sim orders · SPY', stateTag('sample'))}
-    <div class="tk-pos" style="border-top: 0; padding-top: 0;"><span class="mono" style="font-weight: 600;">Nov 20 690C · limit 6.50</span><span class="stag k-solid">Triggered</span><span class="dline">Waiting on the scenario’s next fill check</span><button class="btn ghost sm" type="button">Cancel</button></div>
+    <div class="tk-pos" style="border-top: 0; padding-top: 0;"><span class="mono" style="font-weight: 600;">Nov 20 690C · limit 4.25</span><span class="stag k-solid">Triggered</span><span class="dline">Waiting on the scenario’s next fill check</span><button class="btn ghost sm" type="button">Cancel</button></div>
     <div class="tk-pos"><span class="mono steel" style="font-weight: 600;">Oct 16 690C · 1 at 3.00</span><span class="stag k-solid">Filled</span><span class="dline">Opened the position above</span><span></span></div>
     <span class="dline" style="font-size: 11px;">Paper orders on the demo account. Convexa never sends a real order.</span>`, { sample: true, label: 'Sim orders, sample' });
 }
@@ -267,7 +267,7 @@ export function deskStatesBoardBody({ minHeight = 0, scheme = 'dark' } = {}) {
     { name: 'Source down', tag: ['unavailable'], when: 'FINRA didn’t answer and nothing is cached: unknown, not zero. The SEC and TradingView panels are unaffected.', html: dataCell({ fam: 'pos', state: 'unavailable', w: '100%', h: 'auto' }) },
     { name: 'Last good copy', tag: ['stale'], when: 'This cycle failed but an earlier copy exists: dimmed, with when it was fetched and when Convexa asks again.', html: dataCell({ fam: 'pos', state: 'stale', w: '100%', h: 'auto' }) },
     { name: 'Not live', tag: ['notLive'], when: 'Production, every options-feed panel: what it would show, why it is off, and a link to the same desk on the demo. No value slot pretends; a dash is not a price.', html: nlFrame('NVDA net dealer gamma by strike', 'Dealer gamma at each strike · $M per 1% move', 'net dealer gamma at each strike, the walls, the flip and max pain.', 'NVDA', 190) },
-    { name: 'Not set up', tag: ['notConfigured'], when: 'Until the operator sets SEC_USER_AGENT: filings and insider trades say so; FINRA panels stay live.', html: dataCell({ fam: 'feed', state: 'notConfigured', w: '100%', h: 'auto' }) },
+    { name: 'Not set up', tag: ['notConfigured'], when: 'If SEC_USER_AGENT is unset: filings and insider trades say so; the FINRA panels are unaffected.', html: dataCell({ fam: 'feed', state: 'notConfigured', w: '100%', h: 'auto' }) },
     { name: 'Off', tag: ['off'], when: 'PUBLIC_DATA=off on the API: the public zone collapses to one line; nothing retries.', html: `<div class="hd-p"><div class="ph"><h3>Live from public data</h3>${stateTag('off')}</div><span class="dline">Public data is switched off on this server. The TradingView chart and the note link stay; positioning and filings are hidden until it is on.</span></div>` },
     { name: 'TradingView blocked or timed out', tag: null, when: 'A content blocker or the network stopped TradingView’s script, or 12 s passed without the frame. Information, not a failure of ours; resets when the symbol changes.', html: thirdPartyFrame({ ticker: 'NVDA', state: 'blocked' }) },
     { name: 'AI read · Sign in', tag: ['locked'], when: 'Only on a build with the options feed (neither site today): signed out, the read says what is behind the wall and offers the one way in.', html: dataCell({ fam: 'ai', state: 'locked', w: '100%', h: 'auto' }) },

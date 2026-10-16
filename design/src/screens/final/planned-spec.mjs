@@ -133,7 +133,7 @@ export const CLUSTERS_SPEC = {
   route: '/ticker/:symbol/research · Insider trades, expanded (proposed)',
   job: 'Tell a cluster of insiders buying on the open market apart from routine sales under pre-set plans.',
   env: {
-    production: 'Live after the switch: SEC Form 4 through EDGAR, minutes after filing. Until SEC_USER_AGENT is set, the card shows Not set up (as the Insider trades card does today).',
+    production: 'Live: SEC Form 4 through EDGAR, minutes after filing (SEC_USER_AGENT is set on production, 2026-10-15). If it is ever unset, the card shows Not set up.',
     staging: STAGING('A sample with one buying cluster, so the cluster form is visible.'),
   },
   widgets: [
@@ -143,7 +143,7 @@ export const CLUSTERS_SPEC = {
   states: [
     { tag: ['computed', 'Computed from Form 4'], when: 'EDGAR answered; clusters derived.' },
     { tag: ['empty', 'No cluster'], when: 'No buying cluster in the window: says so and what one would be.' },
-    { tag: 'notConfigured', when: 'Production today: SEC_USER_AGENT unset.' },
+    { tag: 'notConfigured', when: 'SEC_USER_AGENT unset (production has it set).' },
     { tag: 'loading', when: 'First paint.' },
     { tag: 'stale', when: 'EDGAR failed this cycle; last good copy with its time.' },
     { tag: 'unavailable', when: 'EDGAR down, nothing cached.' },
@@ -208,7 +208,7 @@ export const XBRL_SPEC = {
   route: '/ticker/:symbol/research · “Checked against the filing” (proposed) · research check in npm run verify',
   job: 'Check every figure a note states against the value the filing tags for the same period, for readers on the note and for the author before it publishes.',
   env: {
-    production: 'Live after the switch: SEC XBRL company facts for each cited 10-Q/10-K. Until SEC_USER_AGENT is set, the section shows Not set up. The note’s own figure is never rewritten.',
+    production: 'Live: SEC XBRL company facts for each cited 10-Q/10-K (SEC_USER_AGENT is set on production, 2026-10-15). If it is ever unset, the section shows Not set up. The note’s own figure is never rewritten.',
     staging: STAGING('Four sample figures against a sample 10-Q, one differing by a cent.'),
   },
   widgets: [
@@ -220,7 +220,7 @@ export const XBRL_SPEC = {
     { tag: 'Check · Differs', when: 'The figure differs from the filing: both shown, the gap stated, burnt orange with the warning glyph.' },
     { tag: 'Check · Not tagged', when: 'No standard concept (guarantees, backlog): the note cites the filing instead.' },
     { tag: ['delayed', 'Facts not in yet'], when: 'The 10-Q is filed but its XBRL facts haven’t reached the API (usually within a day).' },
-    { tag: 'notConfigured', when: 'SEC_USER_AGENT unset (production today).' },
+    { tag: 'notConfigured', when: 'SEC_USER_AGENT unset (production has it set).' },
     { tag: 'loading', when: 'First paint.' },
     { tag: 'error', when: 'The company-facts request failed.' },
     { tag: 'demo', when: 'Staging.' },

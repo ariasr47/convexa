@@ -59,7 +59,7 @@ const REQ = `{
   "structure_line": "AAPL · 25 shares",
   "qty": "25 sh",
   "position": null,
-  "modeled_pl_dollar": 625,
+  "modeled_pl_dollar": 607.25,
   "modeled_pl_basis": "Convexa-modeled"
 }`;
 export function reassessDlg() {
