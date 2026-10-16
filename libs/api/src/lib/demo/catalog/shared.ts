@@ -16,6 +16,10 @@ export interface ScenarioSymbol {
   step: number;
   phase: number;
   bars: SampleBar[];
+  /** The prior session's close (Oct 6), the reference for the day's change the desk's masthead
+   *  states (site check D-22). It is the authored series' own second-to-last close, so the masthead,
+   *  the scanner's Chg % (`closeToClosePct`) and the Technical tab's bars can never disagree. */
+  priorClose: number;
   research: SampleResearchCase;
   variants: Record<
     string,
@@ -269,6 +273,7 @@ export function makeScenario(
     step,
     phase,
     bars,
+    priorClose: priorBar.close,
     variants,
     research: {
       symbol,

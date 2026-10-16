@@ -63,6 +63,78 @@ export async function loadSampleBars(symbol: string): Promise<LocalOutcome<Sampl
   }
 }
 
+/** The scenario's quote for the masthead: the authored last close and the prior session's close. */
+export interface SampleQuote {
+  symbol: SupportedDemoSymbol;
+  /** The scenario snapshot's close (the desk's `market_state.price`). */
+  last: number;
+  /** The prior session's close, the reference for the day's change. */
+  priorClose: number;
+  /** The prior session's date, YYYY-MM-DD. */
+  priorDate: string;
+}
+
+/** The demo's quote for one symbol (site check D-22). A live build has no prior close to offer:
+ *  `market_state` carries none, so the masthead shows no change there rather than a made-up one. */
+export async function loadSampleQuote(symbol: string): Promise<LocalOutcome<SampleQuote>> {
+  if (dataMode === 'live')
+    return {
+      state: 'unavailable',
+      reason: 'live_provider_missing',
+      detail: 'A prior close is not part of the live ticker bundle.',
+    };
+  try {
+    const scenario = await loadScenario(symbol);
+    if (!scenario)
+      return {
+        state: 'unsupported',
+        reason: 'unsupported_symbol',
+        detail: `No sample quote is authored for ${symbol.toUpperCase()}.`,
+      };
+    const prior = scenario.bars.at(-2);
+    const last = scenario.bars.at(-1);
+    if (!prior || !last || prior.close !== scenario.priorClose)
+      return {
+        state: 'error',
+        reason: 'invalid_sample',
+        detail: 'The authored prior close does not match its bar.',
+      };
+    return {
+      state: 'ready',
+      value: {
+        symbol: scenario.symbol,
+        last: last.close,
+        priorClose: scenario.priorClose,
+        priorDate: prior.date,
+      },
+      provenance: scenarioProvenance()!,
+    };
+  } catch {
+    return {
+      state: 'error',
+      reason: 'load_failed',
+      detail: 'The sample quote could not be loaded.',
+    };
+  }
+}
+
+/**
+ * The day's change from a prior close, for the masthead. `null` when either side is missing or the
+ * prior close is not a positive number: the masthead then shows no change at all, never a zero.
+ * `direction` is the sign as a word so the caller carries it in text (▲/▼ and +/−), not hue alone
+ * (canon P-11).
+ */
+export function dayChange(
+  price: number | null | undefined,
+  priorClose: number | null | undefined,
+): { change: number; pct: number; direction: 'up' | 'down' | 'flat' } | null {
+  if (price == null || priorClose == null) return null;
+  if (!Number.isFinite(price) || !Number.isFinite(priorClose) || priorClose <= 0) return null;
+  const change = Number((price - priorClose).toFixed(2));
+  const pct = Number(((100 * (price - priorClose)) / priorClose).toFixed(2));
+  return { change, pct, direction: change > 0 ? 'up' : change < 0 ? 'down' : 'flat' };
+}
+
 export type { SampleForecast, SampleLedger, SampleSignalGrade } from './research-ledger';
 
 /** The demo's forecast ledger and sample signal grades (research-ledger.ts), loaded on demand so the
