@@ -324,7 +324,8 @@ pub(crate) fn unescape(raw: &str) -> String {
                     } else {
                         name.strip_prefix('#').and_then(|d| d.parse::<u32>().ok())
                     };
-                    code.and_then(char::from_u32)
+                    // A NUL is never decoded (the repo's NUL trap): `&#0;` stays as written.
+                    code.filter(|c| *c != 0).and_then(char::from_u32)
                 }
             };
             ch.map(|c| (c, end))

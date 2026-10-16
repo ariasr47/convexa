@@ -615,7 +615,9 @@ impl AppState {
                 "off"
             },
             sec_user_agent_set = config.sec_user_agent.is_some(),
-            "public data: Treasury/CFTC/FINRA, SEC EDGAR when SEC_USER_AGENT is set"
+            finra_display_approved = crate::services::public_data::finra::FINRA_DISPLAY_APPROVED,
+            "public data: Treasury/CFTC, SEC EDGAR when SEC_USER_AGENT is set, FINRA only when \
+             finra_display_approved"
         );
 
         let chain_snapshots = open_chain_snapshot_store(&config, {
