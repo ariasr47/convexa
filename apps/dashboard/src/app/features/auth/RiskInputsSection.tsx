@@ -24,7 +24,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { RISK_INPUTS_COPY as C, SETTINGS_DEFAULTS } from './copy';
-import { formatAmount, validateAccountSize, validateCap } from './riskInputs';
+import { formatAccountSize, formatAmount, validateAccountSize, validateCap } from './riskInputs';
 import { useSettings } from './useSettings';
 
 /** Field label — matches the auth-modal / Settings uppercase idiom. */
@@ -62,9 +62,10 @@ export function RiskInputsSection() {
   const [saved, setSaved] = useState(false);
 
   // Server-wins: seed the drafts from the stored value whenever it changes (never pre-populate `0`
-  // for an unset field — `formatAmount(null)` is `''`).
+  // for an unset field — `formatAmount(null)` is `''`). The account size reads "$25,000" as the
+  // board draws it (site check D-23); saving reads that text back to the same stored number.
   useEffect(() => {
-    setAccountDraft(formatAmount(stored?.account_size ?? null));
+    setAccountDraft(formatAccountSize(stored?.account_size ?? null));
     setCapDraft(formatAmount(stored?.per_trade_cap?.value ?? null));
     setCapUnit(stored?.per_trade_cap?.unit ?? 'percent');
   }, [stored?.account_size, stored?.per_trade_cap?.value, stored?.per_trade_cap?.unit]);
@@ -174,7 +175,6 @@ export function RiskInputsSection() {
                   bgcolor: 'background.default',
                   color: 'text.primary',
                   width: 160,
-                  '&::before': { content: '"$"' },
                 }}
               />
             </Stack>

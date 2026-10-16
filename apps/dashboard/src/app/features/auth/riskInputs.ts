@@ -12,11 +12,35 @@ import { RISK_INPUTS_COPY } from './copy';
 
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string };
 
+/** Thousands grouping on a plain decimal ("25000" → "25,000", "1234.5" → "1,234.5"). Anything
+ *  that isn't a plain decimal (an exponent form) is returned as `String` gives it, unchanged. */
+function grouped(value: number): string {
+  const s = String(value);
+  const m = /^(\d+)(\.\d+)?$/.exec(s);
+  if (!m) return s;
+  return m[1].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (m[2] ?? '');
+}
+
+/**
+ * The typed text as the plain number text `Number()` reads, or `null` when it is malformed. A
+ * leading `$` (when `dollar`) and thousands commas are accepted, so the field's own display
+ * ("$25,000") saves back as the same number. Commas must be real thousands groups: "1,50" is
+ * refused rather than read as 150 (a decimal comma would otherwise be off by a hundred).
+ */
+function amountText(raw: string, dollar: boolean): string | null {
+  let s = raw.trim();
+  if (dollar && s.startsWith('$')) s = s.slice(1).trim();
+  if (!s.includes(',')) return s;
+  return /^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s) ? s.replace(/,/g, '') : null;
+}
+
 /** Empty input clears the field (a legal, independently-clearable action) — never a refusal. */
 export function validateAccountSize(raw: string): ValidationResult<number | null> {
-  const trimmed = raw.trim();
-  if (trimmed === '') return { ok: true, value: null };
-  const n = Number(trimmed);
+  if (raw.trim() === '') return { ok: true, value: null };
+  const text = amountText(raw, true);
+  if (text === null || text === '')
+    return { ok: false, error: RISK_INPUTS_COPY.errorGreaterThanZero };
+  const n = Number(text);
   if (!Number.isFinite(n) || n <= 0)
     return { ok: false, error: RISK_INPUTS_COPY.errorGreaterThanZero };
   return { ok: true, value: n };
@@ -30,9 +54,11 @@ export function validateCap(
   unit: CapUnit,
   accountSize: number | null,
 ): ValidationResult<PerTradeCap | null> {
-  const trimmed = raw.trim();
-  if (trimmed === '') return { ok: true, value: null };
-  const n = Number(trimmed);
+  if (raw.trim() === '') return { ok: true, value: null };
+  const text = amountText(raw, unit === 'usd');
+  if (text === null || text === '')
+    return { ok: false, error: RISK_INPUTS_COPY.errorGreaterThanZero };
+  const n = Number(text);
   if (!Number.isFinite(n) || n <= 0)
     return { ok: false, error: RISK_INPUTS_COPY.errorGreaterThanZero };
   if (unit === 'percent') {
@@ -45,7 +71,14 @@ export function validateCap(
   return { ok: true, value: { value: n, unit } };
 }
 
-/** Formats a stored value back into its draft text — verbatim, never re-derived. */
+/** Formats a stored value back into its draft text — verbatim, never re-derived or rounded; only
+ *  grouped for reading ("25000" reads "25,000"). */
 export function formatAmount(value: number | null | undefined): string {
-  return value == null ? '' : String(value);
+  return value == null ? '' : grouped(value);
+}
+
+/** The account size as the board draws it ("$25,000"). The stored figure stays the plain number:
+ *  `validateAccountSize` reads this text back to exactly the value it came from. */
+export function formatAccountSize(value: number | null | undefined): string {
+  return value == null ? '' : `$${grouped(value)}`;
 }
