@@ -573,6 +573,101 @@ function demoInsiders(ticker: string): PublicInsiders {
   };
 }
 
+/** Six sample holders at the quarter to Jun 30, shaped like the 13F answer (the design's staging
+ *  board: Planned · Fund holdings): % of the sample's shares outstanding and the change in points
+ *  since Mar 31. The Sep 30 quarter is arriving, as it is on the scenario day. */
+function demoHolders(profile: Profile): NonNullable<PublicTicker['holders']> {
+  const shares = profile.shares ?? 1e9;
+  const prior = shares * 0.99;
+  const rows: [string, number, number][] = [
+    ['Sample holder A', 8.4, 0.2],
+    ['Sample holder B', 6.9, -0.3],
+    ['Sample holder C', 3.8, 0.4],
+    ['Sample holder D', 2.1, -0.6],
+    ['Sample holder E', 1.5, 0.1],
+    ['Sample holder F', 0.9, 0.3],
+  ];
+  const holders = rows.map(([manager, pct, change], i) => {
+    const held = Math.round((pct / 100) * shares);
+    return {
+      manager,
+      cik: String(i + 1).padStart(10, '0'),
+      accession: `0000000000-26-8${String(i + 1).padStart(5, '0')}`,
+      url: 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=13F-HR',
+      filed: '2026-08-13',
+      shares: held,
+      value: held * 125,
+      pct,
+      change_pts: change,
+      prior_shares: Math.round(((pct - change) / 100) * prior),
+    };
+  });
+  return {
+    state: 'live',
+    detail: SAMPLE,
+    source_state: 'delayed',
+    quarter_end: '2026-06-30',
+    prior_quarter_end: '2026-03-31',
+    cusip: null,
+    issuer: null,
+    title: 'COM',
+    units: 'shares',
+    shares_outstanding: { value: shares, as_of: '2026-08-20' },
+    prior_shares_outstanding: { value: prior, as_of: '2026-05-15' },
+    holders,
+    managers_listed: 12,
+    managers_read: 12,
+    managers_holding: holders.length,
+    total_pct: round(
+      rows.reduce((s, r) => s + r[1], 0),
+      1,
+    ),
+    total_change_pts: round(
+      rows.reduce((s, r) => s + r[2], 0),
+      1,
+    ),
+    window: { quarter_end: '2026-09-30', deadline: '2026-11-16', filed: 2, of: 12 },
+  };
+}
+
+/** The note's company and five sample peers on one sample quarter, shaped like the XBRL frames
+ *  answer (Planned · Peers staging board): gross margin and growth on a year, one peer shrinking. */
+function demoPeers(ticker: string, profile: Profile): NonNullable<PublicTicker['peers']> {
+  const rows: [string, number, number, number][] = [
+    [ticker, 71.0, 44.0, profile.revenue ?? 4e10],
+    ['Peer A', 63.0, 18.0, 2.1e10],
+    ['Peer E', 58.0, 4.0, 1.4e10],
+    ['Peer B', 55.0, 12.0, 9.5e9],
+    ['Peer C', 48.0, 26.0, 6.2e9],
+    ['Peer D', 41.0, -6.0, 3.8e9],
+  ];
+  return {
+    state: 'live',
+    detail: SAMPLE,
+    source_state: 'updated',
+    quarter: 'CY2026Q2',
+    quarter_end: '2026-06-30',
+    rows: rows.map(([t, margin, growth, revenue], i) => ({
+      ticker: t,
+      cik: String(i + 1).padStart(10, '0'),
+      entity: i === 0 ? t : `${t} (sample)`,
+      subject: i === 0,
+      concept: 'Revenues',
+      revenue,
+      revenue_year_ago: round(revenue / (1 + growth / 100), 0),
+      gross_profit: round((revenue * margin) / 100, 0),
+      gross_margin_pct: margin,
+      growth_pct: growth,
+      start: '2026-04-01',
+      end: '2026-06-30',
+      accession: `0000000000-26-7${String(i + 1).padStart(5, '0')}`,
+    })),
+    missing: [],
+    unknown: [],
+    min_peers: 4,
+  };
+}
+
 const SETTLEMENTS = [
   '2026-04-15',
   '2026-04-30',
@@ -643,6 +738,9 @@ export function demoPublicTicker(ticker: string): PublicTicker {
       profile.shares === null ? null : { value: profile.shares, as_of: '2026-08-20' },
     periodic: demoPeriodic(ticker, profile),
     annual_revenue: demoAnnualRevenue(ticker, profile),
+    // Funds file no 13F about themselves here and have no peer list.
+    holders: company ? demoHolders(profile) : null,
+    peers: company ? demoPeers(ticker, profile) : null,
     filings: demoFilingsFor(ticker),
     filings_state: 'live',
     filings_detail: SAMPLE_FILERS.has(ticker)
