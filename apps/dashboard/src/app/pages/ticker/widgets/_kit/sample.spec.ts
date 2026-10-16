@@ -28,7 +28,7 @@ describe('scenario stamp', () => {
       'Shaped like a delayed SPY quote · Oct 7, 2:30 PM ET',
     );
     expect(sampleReplayLine(ASOF, 60)).toBe(
-      'Replays the Oct 7 scenario from 2:30 PM ET · 1m window',
+      'Replays the Oct 7, 2026 scenario from 2:30 PM ET · 1m window',
     );
     expect(sampleReplayLine(null, 20)).toBe('Replays the scenario · 1m window');
   });

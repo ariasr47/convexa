@@ -92,11 +92,14 @@ export function sampleQuoteSource(ticker: string, iso: string | null | undefined
   return c ? `${what} · ${c.short}, ${c.time}` : what;
 }
 
-/** The sample tape's line: it replays the scenario, and says so, with no advancing clock (P-3). */
+/**
+ * The sample tape's line: it replays the scenario, and says so, with no advancing clock (P-3).
+ * It carries the year ("Oct 7, 2026", as SCENARIO_STAMP does): it is the sample tape's only date.
+ */
 export function sampleReplayLine(iso: string | null | undefined, windowSeconds: number): string {
   const c = scenarioClock(iso);
   const window = `${Math.max(1, Math.round(windowSeconds / 60))}m window`;
   return c
-    ? `Replays the ${c.short} scenario from ${c.time} · ${window}`
+    ? `Replays the ${c.date} scenario from ${c.time} · ${window}`
     : `Replays the scenario · ${window}`;
 }
