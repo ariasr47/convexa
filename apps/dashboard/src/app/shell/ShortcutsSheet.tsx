@@ -14,11 +14,24 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { useId, type ReactNode } from 'react';
 
-function Kbd({ children, label }: { children: ReactNode; label?: string }) {
+/** Read by screen readers, not drawn. Same clip-rect pattern as shared/figure/FigureMarks.tsx. */
+const visuallyHidden = {
+  position: 'absolute',
+  // '1px' strings: in MUI sx a bare width/height <= 1 is a percentage (1 -> '100%').
+  width: '1px',
+  height: '1px',
+  p: 0,
+  m: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+} as const;
+
+function Kbd({ children }: { children: ReactNode }) {
   return (
     <Box
       component="kbd"
-      aria-label={label}
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -51,7 +64,12 @@ const ROWS: { keys: ReactNode; does: string }[] = [
   {
     keys: (
       <>
-        <Kbd label="Command K">
+        {/* The ⌘ icon is hidden and the word is spoken instead: an aria-label on a <kbd> is
+            prohibited (axe aria-prohibited-attr) and was ignored, so screen readers read “K”. */}
+        <Kbd>
+          <Box component="span" sx={visuallyHidden}>
+            Command{' '}
+          </Box>
           <KeyboardCommandKeyOutlined sx={{ fontSize: 12 }} aria-hidden />K
         </Kbd>
         {sep('or')}

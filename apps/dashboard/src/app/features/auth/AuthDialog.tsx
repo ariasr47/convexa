@@ -227,6 +227,17 @@ export function AuthDialog({
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
                   {subtitle}
+                  {/* The sign-in board (design/src/screens/v4/docs-dialogs.mjs signInDlg) says the
+                      door is closed in the subtitle, before anything is typed. Sign-up mode says it
+                      in its own Alert below. */}
+                  {mode === 'login' && !SIGNUPS_OPEN && (
+                    <>
+                      {' '}
+                      <span data-testid="auth-login-signups-closed">
+                        {AUTH_COPY.signup.signupsClosed}
+                      </span>
+                    </>
+                  )}
                 </Typography>
               </Box>
               <IconButton

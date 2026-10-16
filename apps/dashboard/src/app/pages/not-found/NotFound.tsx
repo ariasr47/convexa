@@ -39,17 +39,32 @@ function Kbd({ children }: { children: ReactNode }) {
   );
 }
 
+/** Read by screen readers, not drawn. Same clip-rect pattern as shared/figure/FigureMarks.tsx. */
+const visuallyHidden = {
+  position: 'absolute',
+  // '1px' strings: in MUI sx a bare width/height <= 1 is a percentage (1 -> '100%').
+  width: '1px',
+  height: '1px',
+  p: 0,
+  m: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+} as const;
+
 /** ⌘K on a Mac, Ctrl K elsewhere (both open the jump-to box; so does /). The ⌘ is an icon: no
- *  bundled face carries U+2318 (TopNav.tsx, PR #46 §B). */
+ *  bundled face carries U+2318 (TopNav.tsx, PR #46 §B). The icon is hidden from screen readers and
+ *  the word “Command” is spoken in its place: an aria-label on a role-less span is prohibited
+ *  (axe aria-prohibited-attr) and was ignored, so VoiceOver read just “K”. */
 function paletteShortcut(): ReactNode {
   const platform =
     typeof navigator === 'undefined' ? '' : navigator.platform || navigator.userAgent;
   return /Mac|iPhone|iPad/i.test(platform) ? (
-    <Box
-      component="span"
-      aria-label="Command K"
-      sx={{ display: 'inline-flex', alignItems: 'center' }}
-    >
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+      <Box component="span" sx={visuallyHidden}>
+        Command{' '}
+      </Box>
       <KeyboardCommandKeyOutlined aria-hidden sx={{ fontSize: 12 }} />K
     </Box>
   ) : (

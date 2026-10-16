@@ -123,8 +123,9 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
   );
   // Never a dead end: a plausible symbol nothing lists can still be opened.
   const showOpenAnyway = isPlausibleTicker(q) && tickers.length === 0;
-  // The “we checked, nothing matches” line only once both lists have answered (absent ≠ none).
-  const settled = data.tickers.phase !== 'loading' && data.notes.phase !== 'loading';
+  // The “we checked, nothing matches” line only once both lists have ANSWERED (absent ≠ none). A
+  // failed list was never searched, so it can't back the claim: the failed read says so on its own.
+  const settled = data.tickers.phase === 'ready' && data.notes.phase === 'ready';
   const showNoMatch =
     settled && q !== '' && commands.length === 0 && tickers.length === 0 && notes.length === 0;
 
@@ -260,7 +261,10 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
   });
 
   const tickerRows = tickers.map((ticker) => {
-    const cell = ticker.row ? paletteScoreCell(ticker.row, data.sweep, nowS) : null;
+    // Staging's rows are the sample scan's: score and tier, no age (format.ts, `sample`).
+    const cell = ticker.row
+      ? paletteScoreCell(ticker.row, data.sweep, nowS, { sample: data.ranked })
+      : null;
     return row(
       { kind: 'ticker', ticker },
       `palette-symbol-${ticker.symbol}`,
@@ -271,19 +275,50 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
         >
           {ticker.symbol}
         </Box>
-        <Box component="span" sx={{ color: 'text.secondary', flexGrow: 1, minWidth: 0 }}>
-          {cell ? cell.text : ticker.name}
+        <Box
+          component="span"
+          sx={{
+            color: 'text.secondary',
+            flexGrow: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {ticker.name}
         </Box>
         {cell ? (
-          cell.freshness && (
+          <Box
+            component="span"
+            data-testid={`palette-score-${ticker.symbol}`}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'baseline',
+              gap: 0.75,
+              color: 'text.secondary',
+              fontSize: 12,
+              whiteSpace: 'nowrap',
+            }}
+          >
             <Box
               component="span"
-              data-testid={`palette-freshness-${ticker.symbol}`}
-              sx={{ color: 'text.secondary', fontSize: 12 }}
+              sx={{
+                fontFamily: typographyTokens.monoFontFamily,
+                fontWeight: 600,
+                fontSize: 13,
+                color: 'text.primary',
+              }}
             >
-              {cell.freshness}
+              {cell.text}
             </Box>
-          )
+            {cell.tier}
+            {cell.freshness && (
+              <Box component="span" data-testid={`palette-freshness-${ticker.symbol}`}>
+                {cell.tier ? `· ${cell.freshness}` : cell.freshness}
+              </Box>
+            )}
+          </Box>
         ) : (
           <Box
             component="span"

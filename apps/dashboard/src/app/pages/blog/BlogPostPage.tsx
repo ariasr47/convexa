@@ -1,5 +1,5 @@
 /**
- * A blog post (`/blog/<slug>.html`), inside the shell: the site's bar, nav and footer, a back link
+ * A blog post (`/blog/<slug>`, or the older `/blog/<slug>.html`), inside the shell: the site's bar, nav and footer, a back link
  * to /blog, the post's tag, title and dek, then its text from `docs/blog/<slug>.md` (posts.ts).
  * Static: no fetch, no SSE (the `pages/blog/**` deny-list bans the API client). An address that is
  * not a published post renders `notFound` — the site's own 404, passed in by the route table since
@@ -18,10 +18,10 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import { useEffect, type ReactNode } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { BLOG_COPY } from './copy';
 import { parseInline, type Block } from './markdown';
-import { BLOG_ARTICLES, postBlocks } from './posts';
+import { BLOG_ARTICLES, postBlocks, postPath, postSlugOf } from './posts';
 import { Schematic } from './Schematics';
 
 const linkSx = { color: (t: Parameters<typeof extrasFor>[0]) => extrasFor(t).textInfo } as const;
@@ -169,9 +169,19 @@ function BlockView({ block }: { block: Block }): ReactNode {
 }
 
 export function BlogPostPage({ file, notFound }: { file: string; notFound: ReactNode }) {
-  const slug = file.endsWith('.html') ? file.slice(0, -'.html'.length) : null;
+  const slug = postSlugOf(file);
   const article = slug ? BLOG_ARTICLES.find((a) => a.slug === slug) : undefined;
   const blocks = slug ? postBlocks(slug) : null;
+  const navigate = useNavigate();
+  const { search, hash } = useLocation();
+
+  // `/blog/<slug>.html` is the post's older address (bookmarks, and browsers holding Cloudflare's
+  // cached .html → bare 308). It renders the post, and the address bar settles on the one canonical
+  // form. Client-side only: a server bare → .html rule would loop against those cached redirects.
+  useEffect(() => {
+    if (slug && file !== slug)
+      navigate({ pathname: postPath(slug), search, hash }, { replace: true });
+  }, [slug, file, search, hash, navigate]);
 
   useEffect(() => {
     if (!article) return;

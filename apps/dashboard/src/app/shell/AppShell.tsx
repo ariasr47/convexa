@@ -32,6 +32,7 @@ import { ResetDemoControl } from './ResetDemoControl';
 import { GO_TO, GO_TO_WINDOW_MS, isPlainKey, isTypingTarget } from './shortcuts';
 import { ShortcutsSheet } from './ShortcutsSheet';
 import { TopNav } from './TopNav';
+import { useScrollToTopOnPageChange } from './useScrollToTopOnPageChange';
 
 export function AppShell() {
   // (v2) The ⌘K palette — mounted ONCE in the shell so "one keystroke anywhere" holds on every
@@ -55,6 +56,9 @@ export function AppShell() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const navigate = useNavigate();
   const goPending = useRef<number | null>(null);
+
+  // A link to another page opens it at the top; a query-string rewrite on the same page does not.
+  useScrollToTopOnPageChange();
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const isOpenShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';

@@ -135,4 +135,47 @@ describe('AppShell · keyboard skip link (spine #6)', () => {
     await user.keyboard('gs');
     expect(await screen.findByTestId('scanner-route')).toBeInTheDocument();
   });
+
+  it('an open Select or Menu list owns its letters: no shortcut fires from a focused option', async () => {
+    // The DOM an open MUI Select / Menu leaves focus in: an option or menu item inside a
+    // role="presentation" popover — no input, no dialog role.
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <MemoryRouter initialEntries={['/x']}>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route
+                path="/x"
+                element={
+                  <div role="presentation">
+                    <ul role="listbox" aria-label="Persona">
+                      <li role="option" aria-selected tabIndex={-1} data-testid="option">
+                        Swing
+                      </li>
+                    </ul>
+                    <ul role="menu" aria-label="Account">
+                      <li role="menuitem" tabIndex={-1} data-testid="menuitem">
+                        Settings
+                      </li>
+                    </ul>
+                  </div>
+                }
+              />
+              <Route path="/scanner" element={<div data-testid="scanner-route" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+
+    for (const testid of ['option', 'menuitem']) {
+      screen.getByTestId(testid).focus();
+      await user.keyboard('gs?/');
+      expect(screen.queryByTestId('scanner-route')).toBeNull();
+      expect(screen.queryByTestId('shortcuts-sheet')).toBeNull();
+      expect(screen.queryByTestId('command-palette')).toBeNull();
+    }
+  });
 });

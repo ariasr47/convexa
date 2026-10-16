@@ -86,6 +86,8 @@ describe('a failed ticker list still leaves the palette usable', () => {
     expect(screen.getByTestId('palette-command-surface-scanner')).toBeInTheDocument();
     await user.type(screen.getByTestId('palette-input'), 'QXTR');
     expect(await screen.findByTestId('palette-open-anyway')).toBeInTheDocument();
+    // The ticker list was never searched, so “No ticker or note matches” would be a false claim.
+    expect(screen.queryByTestId('palette-empty')).toBeNull();
   });
 
   it('no match is one honest line once both lists answered', async () => {

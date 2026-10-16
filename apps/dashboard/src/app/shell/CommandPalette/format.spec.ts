@@ -163,6 +163,40 @@ describe('paletteScoreCell — AC-29/AC-29b: the wire status vocabulary through 
     },
   );
 
+  it('D-13 — a sample scan row never carries a wall-clock age; a live one still does', () => {
+    // The demo's as_of is the scenario's timestamp: against the visitor's clock it read
+    // "as of 184h ago" on data that was never live.
+    const nowS = Math.floor(Date.now() / 1000);
+    const scenario = nowS - 184 * 3600;
+    const sample = paletteScoreCell(row({ status: 'ok', score: 81, as_of: scenario }), null, nowS, {
+      sample: true,
+    });
+    expect(sample).toEqual({ text: '81', tier: 'Actionable', freshness: null });
+    const sweep: SweepHeartbeat = {
+      sweep_last_completed: scenario,
+      universe_size: 6,
+      updated_at: scenario,
+    };
+    const stale = paletteScoreCell(row({ status: 'stale', as_of: scenario }), sweep, nowS, {
+      sample: true,
+    });
+    expect(stale.freshness).toBe('stale');
+    const live = paletteScoreCell(row({ status: 'ok', score: 81, as_of: scenario }), null, nowS);
+    expect(live.freshness).toBe('as of 184h ago');
+  });
+
+  it('the tier rides beside a score through the closed lookup: a miss or no score shows none', () => {
+    expect(paletteScoreCell(row({ tier: 'prime', score: 88 }), null, NOW_S).tier).toBe('Prime');
+    expect(paletteScoreCell(row({ tier: 'mythic', score: 88 }), null, NOW_S).tier).toBeNull();
+    expect(paletteScoreCell(row({ tier: null, score: 88 }), null, NOW_S).tier).toBeNull();
+    expect(
+      paletteScoreCell(row({ status: 'building', tier: 'prime', score: null }), null, NOW_S).tier,
+    ).toBeNull();
+    expect(
+      paletteScoreCell(row({ status: 'error', tier: 'prime', score: null }), null, NOW_S).tier,
+    ).toBeNull();
+  });
+
   it('an unknown status degrades honestly rather than throwing', () => {
     expect(() =>
       paletteScoreCell(row({ status: 'weird' as ScanRow['status'], score: 10 }), null, NOW_S),
