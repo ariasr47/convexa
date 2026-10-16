@@ -7860,6 +7860,16 @@
             "format": "double",
             "type": ["number", "null"]
           },
+          "t1m": {
+            "description": "1-month bill. Absent from servers before 2026-10-16.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "t1y": {
+            "description": "1-year bill. Absent from servers before 2026-10-16.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
           "t2y": {
             "format": "double",
             "type": ["number", "null"]

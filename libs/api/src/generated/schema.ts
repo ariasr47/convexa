@@ -3499,6 +3499,16 @@ export interface components {
       real10y: number | null;
       /** Format: double */
       t10y: number | null;
+      /**
+       * Format: double
+       * @description 1-month bill. Absent from servers before 2026-10-16.
+       */
+      t1m?: number | null;
+      /**
+       * Format: double
+       * @description 1-year bill. Absent from servers before 2026-10-16.
+       */
+      t1y?: number | null;
       /** Format: double */
       t2y: number | null;
       /** Format: double */

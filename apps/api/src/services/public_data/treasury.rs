@@ -29,11 +29,21 @@ impl Curve {
         }
     }
 
-    /// Header names this service reads, in `YieldPoint` order for the curve.
-    fn columns(self) -> &'static [&'static str] {
+    /// Header names this service reads, in `YieldPoint` order for the curve, each with whether the
+    /// file must have it. "1 Mo" and "1 Yr" (added 2026-10-16) are optional: a file without them
+    /// still yields the other maturities, with those two missing, rather than failing the year.
+    fn columns(self) -> &'static [(&'static str, bool)] {
         match self {
-            Self::Nominal => &["3 Mo", "2 Yr", "5 Yr", "10 Yr", "30 Yr"],
-            Self::Real => &["10 YR"],
+            Self::Nominal => &[
+                ("1 Mo", false),
+                ("3 Mo", true),
+                ("1 Yr", false),
+                ("2 Yr", true),
+                ("5 Yr", true),
+                ("10 Yr", true),
+                ("30 Yr", true),
+            ],
+            Self::Real => &[("10 YR", true)],
         }
     }
 }
@@ -70,17 +80,25 @@ pub(crate) fn parse_csv(curve: Curve, text: &str) -> Result<CurveRows, String> {
         .headers()
         .map_err(|_| "Treasury CSV has no header row".to_string())?
         .clone();
-    let find = |name: &str| {
+    let position = |name: &str| {
         headers
             .iter()
             .position(|h| h.trim().eq_ignore_ascii_case(name))
-            .ok_or_else(|| format!("Treasury CSV has no {name:?} column"))
     };
+    let find =
+        |name: &str| position(name).ok_or_else(|| format!("Treasury CSV has no {name:?} column"));
     let date_col = find("Date")?;
+    // `None` for an optional column the file doesn't have: that maturity reads missing every day.
     let cols = curve
         .columns()
         .iter()
-        .map(|name| find(name))
+        .map(|&(name, required)| {
+            if required {
+                find(name).map(Some)
+            } else {
+                Ok(position(name))
+            }
+        })
         .collect::<Result<Vec<_>, _>>()?;
     let mut rows = Vec::new();
     for record in reader.records() {
@@ -94,8 +112,7 @@ pub(crate) fn parse_csv(curve: Curve, text: &str) -> Result<CurveRows, String> {
         let values = cols
             .iter()
             .map(|&i| {
-                record
-                    .get(i)
+                i.and_then(|i| record.get(i))
                     .and_then(|cell| cell.trim().parse::<f64>().ok())
                     .filter(|v| v.is_finite())
             })
@@ -110,7 +127,9 @@ pub(crate) fn merge(nominal: &[CurveRows], real: &[CurveRows]) -> Vec<YieldPoint
     let mut by_date: BTreeMap<NaiveDate, YieldPoint> = BTreeMap::new();
     let blank = |date| YieldPoint {
         date,
+        t1m: None,
         t3m: None,
+        t1y: None,
         t2y: None,
         t5y: None,
         t10y: None,
@@ -120,11 +139,13 @@ pub(crate) fn merge(nominal: &[CurveRows], real: &[CurveRows]) -> Vec<YieldPoint
     for (date, v) in nominal.iter().flatten() {
         let point = by_date.entry(*date).or_insert_with(|| blank(*date));
         let at = |i: usize| v.get(i).copied().flatten();
-        point.t3m = at(0);
-        point.t2y = at(1);
-        point.t5y = at(2);
-        point.t10y = at(3);
-        point.t30y = at(4);
+        point.t1m = at(0);
+        point.t3m = at(1);
+        point.t1y = at(2);
+        point.t2y = at(3);
+        point.t5y = at(4);
+        point.t10y = at(5);
+        point.t30y = at(6);
     }
     for (date, v) in real.iter().flatten() {
         let point = by_date.entry(*date).or_insert_with(|| blank(*date));
@@ -133,7 +154,7 @@ pub(crate) fn merge(nominal: &[CurveRows], real: &[CurveRows]) -> Vec<YieldPoint
     by_date
         .into_values()
         .filter(|p| {
-            [p.t3m, p.t2y, p.t5y, p.t10y, p.t30y, p.real10y]
+            [p.t1m, p.t3m, p.t1y, p.t2y, p.t5y, p.t10y, p.t30y, p.real10y]
                 .iter()
                 .any(Option::is_some)
         })
@@ -210,11 +231,14 @@ mod tests {
             (latest.t3m, latest.t2y, latest.t5y, latest.t10y, latest.t30y),
             (Some(4.26), Some(4.79), Some(5.00), Some(5.21), Some(5.56))
         );
+        // "1 Mo" is the 2nd column and "1 Yr" the 8th, each read by name like the rest.
+        assert_eq!((latest.t1m, latest.t1y), (Some(4.10), Some(4.48)));
         assert_eq!(latest.real10y, Some(2.88), "real curve's \"10 YR\" column");
         // Target 2025-10-13 was a holiday Treasury does not list: walk back to 2025-10-10.
         let year_ago = rates.year_ago.unwrap();
         assert_eq!(year_ago.date, day("2025-10-10"));
         assert_eq!((year_ago.t10y, year_ago.real10y), (Some(4.05), Some(1.75)));
+        assert_eq!((year_ago.t1m, year_ago.t1y), (Some(4.19), Some(3.60)));
         assert_eq!(
             rates.daily.len(),
             28,
@@ -236,7 +260,31 @@ mod tests {
             (points[0].t3m, points[0].t2y, points[0].t10y, points[0].t30y),
             (Some(0.08), Some(0.12), Some(0.93), Some(1.66))
         );
+        assert_eq!((points[0].t1m, points[0].t1y), (Some(0.06), Some(0.12)));
         assert_eq!(points[0].real10y, None);
+
+        // A file without the optional "1 Mo" and "1 Yr" columns still gives the other maturities,
+        // with those two missing (never shifted into a neighbour's column).
+        let short = "Date,\"3 Mo\",\"2 Yr\",\"5 Yr\",\"10 Yr\",\"30 Yr\"\n\
+                     12/30/2020,0.08,0.12,0.37,0.93,1.66\n";
+        let points = merge(&[parse_csv(Curve::Nominal, short).unwrap()], &[]);
+        assert_eq!((points[0].t1m, points[0].t1y), (None, None));
+        assert_eq!(
+            (
+                points[0].t3m,
+                points[0].t2y,
+                points[0].t5y,
+                points[0].t10y,
+                points[0].t30y
+            ),
+            (Some(0.08), Some(0.12), Some(0.37), Some(0.93), Some(1.66))
+        );
+        // A required column still fails the file.
+        assert!(parse_csv(
+            Curve::Nominal,
+            "Date,\"1 Mo\",\"3 Mo\"\n12/30/2020,0.06,0.08\n"
+        )
+        .is_err());
 
         // A year with nothing published yet answers an empty body: no rows, not an error.
         assert!(parse_csv(Curve::Nominal, "").unwrap().is_empty());
