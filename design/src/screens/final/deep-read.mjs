@@ -2,7 +2,7 @@
 // drawer and the export drawer over the demo desk, the phone read sheet (peek and open), the production
 // Not live page and the states board. Values match the desk row's staging boards (ticker-desk.mjs: SPY on
 // the Oct 7 scenario, spot 690.62, flip 683.92, call wall 704.02, put wall 652.22, ±$2.48 to Oct 9 (the demo's own levels), the
-// "No trade · sit this one out" sample read with 3 of 4 figures traced). Copy reuses the shipped strings in
+// "No trade · sit this one out" sample read, graded not applicable as the API grades a no-trade read). Copy reuses the shipped strings in
 // apps/dashboard/src/app/pages/ticker/widgets/ai-rec/copy.ts wherever the final design keeps them.
 import { icon, v4Page, STAGING_DEMO_URL } from '../../lib.mjs';
 import { chartFrame, stateBody } from '../../chart-kit.mjs';
@@ -77,8 +77,10 @@ const behindDesk = (scheme, w = '') => `<div class="dr-behind" aria-hidden="true
 const WHY = ['Spot is <span class="mono">+1.0%</span> above the flip at <span class="mono">683.92</span>: <span class="mono">+γ</span>, dealer hedging tends to damp moves here.', 'The <span class="mono">704.02</span> call wall sits outside the <span class="mono">±$2.48</span> implied move.', 'Flow over the last hour nets to about zero.'];
 const REENGAGE = ['Spot closes below the flip at <span class="mono">683.92</span>, where hedging turns <span class="mono">−γ</span>.', 'Or the call wall moves inside the implied move on the next structure refresh.'];
 const ul = (xs) => `<ul>${xs.map((x) => `<li>${x}</li>`).join('')}</ul>`;
-const FIGS = `<div class="dr-fig"><div>${caps('Watch level')}<span class="v">683.92</span><span class="dline" style="font-size: 11px;">traces to the flip</span></div><div>${caps('Call wall')}<span class="v">704.02</span><span class="dline" style="font-size: 11px;">traces to the ladder</span></div><div>${caps('Implied move')}<span class="v">±$2.48</span><span class="dline" style="font-size: 11px;">ATM straddle · Oct 9</span></div><div>${caps('Flow watch')}<span class="v u">1 hour</span><span class="dline" style="font-size: 11px;">the read’s own · untraced</span></div></div>`;
-const TRACE = `<div class="dr-note">${icon('shield', 14)}<span><strong>3 of 4 figures trace to Convexa.</strong> Mono figures come from the structure; the dotted one is the read’s own.</span></div>`;
+// A no-trade read states no entry, so the API grades its grounding not_applicable (grounding.rs:351):
+// no trace line on the panel, dashes in the drawer (2026-10-16, build round lane 4 review).
+const UNCHECKED = `<p class="dline" style="margin: 0; font-size: 12px;">Numbers written out in this reasoning aren’t checked — only the stop, target and invalidation level above are.</p>`;
+const NA_FIGS = `<div class="dr-fig"><div>${caps('Stop')}<span class="v">—</span></div><div>${caps('Target')}<span class="v">—</span></div><div>${caps('Invalidation')}<span class="v">—</span></div></div>`;
 
 // =================================================================================================
 // Staging · the full analysis drawer (AnalysisSurface) over the demo desk
@@ -106,9 +108,9 @@ function analysisDrawer() {
         <span class="dline">Candidate contracts: shaped like the scenario’s chain; none are sent anywhere.</span>
       </section>
       <section class="dr-sec" aria-label="Cited contract and grounding">${caps('Cited contract and grounding')}
-        <span class="dline">No contract cited: a no-trade read names none. Stop, target and invalidation read “—”.</span>
-        ${FIGS}${TRACE}
-        <span class="mono steel" style="font-size: 11px;">Checked 4 · traced 3 · untraced 1 · not checkable 0</span>
+        <span class="dline">No contract cited: a no-trade read names none. Stop, target and invalidation read “—”, and the grounding check does not apply: the API checks a read’s figures only when it states an entry.</span>
+        ${NA_FIGS}
+        <span class="mono steel" style="font-size: 11px;">Checked 0 · traced 0 · untraced 0 · not checkable 0</span>
       </section>
       <section class="dr-sec" aria-label="Cap check and inputs">${caps('Cap check and as-sent inputs')}
         <p class="dline" style="font-size: 12.5px;">Cap check: not applicable, no entry. Your sample risk inputs ($25,000 · 2% → $500 per trade) and the seeded paper book stay in this browser: the demo calls no model, so nothing was sent.</p>
@@ -168,7 +170,7 @@ export function sheetBody({ minHeight = 0, scheme = 'dark' } = {}) {
         <p class="tk-verdict" style="font-size: 24px;">No trade · sit this one out</p>
         <p style="margin: 0; font-size: 14px; line-height: 1.55;">Spot sits between the flip and the call wall with no directional flow. “No trade” is a complete answer.</p>
         <div class="dr-sec" style="border-top: 0; padding-top: 0;"><span class="caps">Why</span>${ul(WHY)}<span class="caps" style="margin-top: 4px;">Re-engage when</span>${ul(REENGAGE)}</div>
-        ${FIGS}${TRACE}
+        ${UNCHECKED}
         <button class="btn secondary" type="button" style="width: 100%;">${icon('bell', 14)}Alert me at the flip</button>
         <button class="btn ghost" type="button" style="width: 100%;">Full analysis &amp; data ${icon('arrow', 14)}</button>
         <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">${provChip('Sample · shaped like an AI read', 'dashed')}<span class="cf-asof">Scenario · Oct 7, 2026</span></div>

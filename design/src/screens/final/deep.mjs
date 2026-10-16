@@ -22,7 +22,7 @@ const AI_READ = {
     { name: 'Full analysis & data drawer (560)', source: 'The pinned read: summary, rationale, levels from the bundle, numbers said, cited contract, grounding counts, cap check, as-sent inputs', production: 'notLive', staging: ['sample', 'Sample read'] },
     { name: 'Export drawer (420)', source: 'GET /api/recommendation/export/{T} · demo: authored export, every category marked not sent', production: ['notLive', 'Nothing sent'], staging: 'sample' },
     { name: 'Phone read sheet', source: 'Same panel under 768px, portalled into a bottom sheet; peek row carries the verdict', production: 'notLive', staging: ['sample', 'Sample read'] },
-    { name: 'Grounding (traced / untraced)', source: 'Server-side check of each figure against the snapshot (rec.grounding)', production: '—', staging: ['sample', '3 of 4 traced'] },
+    { name: 'Grounding (traced / untraced)', source: 'Server-side check of each figure against the snapshot (rec.grounding)', production: '—', staging: ['sample', 'not applicable: a no-trade read states no entry'] },
   ],
   states: [
     { tag: 'notLive', when: 'Production, always: would show / off because / See it on the demo →. Replaces “Market data is paused.”' },
@@ -42,7 +42,7 @@ const AI_READ = {
   acceptance: [
     'Production /ticker/NVDA: zero requests to /api/recommendation/*; the read shows Not live with “Would show”, “Off because” and a link to https://staging.convexa.pages.dev/ticker/NVDA.',
     'Staging /ticker/SPY: the panel is titled “Sample analysis · SPY”, carries the Sample tag and “No model was called”, and its verdict reads “No trade · sit this one out”, the same words as the desk board.',
-    'Staging: “Full analysis & data” opens a 560px drawer whose grounding line reads “Checked 4 · traced 3 · untraced 1 · not checkable 0”, matching “3 of 4 figures trace to Convexa” on the panel.',
+    'Staging: “Full analysis & data” opens a 560px drawer whose grounding section reads Stop, Target and Invalidation “—” and “Checked 0 · traced 0 · untraced 0 · not checkable 0”: the sample read is a no-trade read, which the API grades not applicable, so the panel shows no trace line (2026-10-16).',
     'Staging: the export drawer is titled “Sample analysis export · SPY”; its banner says nothing was sent; the three not-sent categories say why (the demo calls no model), not “you haven’t set this”.',
     'At 393px with a read on screen, exactly one verdict node exists: minimizing unmounts the sheet body and mounts the peek row; tapping it restores the sheet.',
     'The only amber text in the panel is the Trade verdict word; No trade is never red or amber; stale uses burnt orange with the warning icon.',
