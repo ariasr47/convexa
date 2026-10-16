@@ -202,10 +202,15 @@ Guarantees | $108.5B @ 2026-07-26 | | flat | [2] | none
   keeps a six- or nine-month span. A Q1 figure checks as it is (the year to date is the quarter); for a
   Q2 or Q3 cash-flow figure (operating cash flow, capex, free cash flow) cite the filing with `none`.
 
-The check reads only saved SEC company-facts answers, never EDGAR itself: save
-`https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json` as `research/_filings/<TICKER>.json`.
+The check reads only saved SEC company-facts answers, never EDGAR itself. After writing a note that
+names a new concept or period, save them with
+`SEC_USER_AGENT='<name> <email>' node tools/research-notes/save-filings.mjs [TICKER ...]`: it reads
+`https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json`, keeps only the concepts the latest
+note names, and writes `research/_filings/<TICKER>.json` with a `<TICKER>.source.json` beside it (the
+URL and the day it was read). The contact address stays in your shell; no file records it.
 It exits 1 on a difference with no `;` reason, a concept the filing doesn't tag, units that don't fit,
 or a figure or period it can't read; a ticker with no saved answer is listed as not checked.
+`npm run verify` runs it whenever `research/` or `tools/` changed.
 
 ## What the check refuses
 

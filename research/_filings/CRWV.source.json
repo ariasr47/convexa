@@ -1,0 +1,13 @@
+{
+  "ticker": "CRWV",
+  "cik": "0001769628",
+  "entity": "CoreWeave, Inc.",
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001769628.json",
+  "fetched": "2026-10-16",
+  "concepts": [
+    "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+    "us-gaap:NetIncomeLoss",
+    "us-gaap:OperatingIncomeLoss",
+    "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax"
+  ]
+}

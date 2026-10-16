@@ -1,0 +1,14 @@
+{
+  "ticker": "NVDA",
+  "cik": "0001045810",
+  "entity": "NVIDIA CORP",
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json",
+  "fetched": "2026-10-16",
+  "concepts": [
+    "us-gaap:EarningsPerShareDiluted",
+    "us-gaap:GrossProfit",
+    "us-gaap:OperatingIncomeLoss",
+    "us-gaap:Revenues",
+    "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding"
+  ]
+}

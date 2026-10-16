@@ -1,0 +1,11 @@
+{
+  "ticker": "META",
+  "cik": "0001326801",
+  "entity": "Meta Platforms, Inc.",
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001326801.json",
+  "fetched": "2026-10-16",
+  "concepts": [
+    "us-gaap:OperatingIncomeLoss",
+    "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax"
+  ]
+}

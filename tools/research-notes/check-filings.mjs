@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // The research check's filing pass: every figure in a ticker's latest note that names an XBRL concept,
 // against a SAVED SEC company-facts answer for that ticker. It never fetches: SEC asks every program
-// that reads EDGAR for a contact address, so the facts are saved by hand (or by the API) beside the
-// notes, and this check reads only those files.
+// that reads EDGAR for a contact address, so the facts are saved beside the notes by
+// save-filings.mjs (run by hand with SEC_USER_AGENT set), and this check reads only those files.
+// `npm run verify` runs it (tools/verify.mjs) when research/ or tools/ changed.
 //
 //   node tools/research-notes/check-filings.mjs [--facts research/_filings] [--research research]
 //

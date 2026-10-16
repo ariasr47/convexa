@@ -1,0 +1,12 @@
+{
+  "ticker": "INTC",
+  "cik": "0000050863",
+  "entity": "INTEL CORP",
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000050863.json",
+  "fetched": "2026-10-16",
+  "concepts": [
+    "us-gaap:NetIncomeLoss",
+    "us-gaap:OperatingIncomeLoss",
+    "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "ticker": "AMZN",
+  "cik": "0001018724",
+  "entity": "AMAZON COM INC",
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001018724.json",
+  "fetched": "2026-10-16",
+  "concepts": [
+    "us-gaap:EarningsPerShareDiluted",
+    "us-gaap:OperatingIncomeLoss",
+    "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "ticker": "GOOGL",
+  "cik": "0001652044",
+  "entity": "Alphabet Inc.",
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001652044.json",
+  "fetched": "2026-10-16",
+  "concepts": [
+    "us-gaap:EarningsPerShareDiluted",
+    "us-gaap:OperatingIncomeLoss",
+    "us-gaap:Revenues"
+  ]
+}
