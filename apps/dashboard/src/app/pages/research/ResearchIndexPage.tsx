@@ -131,6 +131,10 @@ const SAMPLE_NAMES: Record<string, string> = {
 
 type SampleCard = { ticker: string; title: string; thesis: string; chart: ChartBlock | null };
 
+/** Every sample note is current on its scenario day (its card says “Current · scenario of Oct 7”);
+ *  the demo's freshness chip counts the same word. */
+const SAMPLE_FRESHNESS: Freshness['state'] = 'current';
+
 /** The six authored sample notes, each with its last ten sample sessions' close-to-close change. */
 function useSampleCards(): SampleCard[] | null | undefined {
   const [cards, setCards] = useState<SampleCard[] | null | undefined>(undefined);
@@ -267,7 +271,7 @@ function SampleNoteCard({ card }: { card: SampleCard }) {
         }}
       >
         <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-          <StateDot state="current" />
+          <StateDot state={SAMPLE_FRESHNESS} />
           <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>
             Current
           </Box>
@@ -654,7 +658,8 @@ function ComingUpList({
 const FILTER_SX =
   (on: boolean, dashed = false) =>
   (t: Theme) => ({
-    height: 36,
+    // 44 px touch targets on a phone (the board's `.fr-bar .pill`).
+    height: { xs: 44, sm: 36 },
     px: 1.75,
     borderRadius: '999px',
     font: 'inherit',
@@ -697,10 +702,11 @@ export function ResearchIndexPage() {
   const samples = useSampleCards();
   const sampleShown = (samples ?? []).filter(
     (c) =>
-      !query ||
-      `${c.ticker} ${SAMPLE_NAMES[c.ticker] ?? ''}`
-        .toLowerCase()
-        .includes(query.trim().toLowerCase()),
+      (!query ||
+        `${c.ticker} ${SAMPLE_NAMES[c.ticker] ?? ''}`
+          .toLowerCase()
+          .includes(query.trim().toLowerCase())) &&
+      (fresh === 'any' || fresh === SAMPLE_FRESHNESS),
   );
   const rows: Row[] = useMemo(
     () =>
@@ -808,51 +814,150 @@ export function ResearchIndexPage() {
               </Box>
             )}
           </Box>
-          {(DEMO || rows.length > 0) && (
-            <Box
-              sx={{
-                flex: '1 1 240px',
-                display: 'flex',
-                justifyContent: { xs: 'flex-start', md: 'flex-end' },
-              }}
-            >
-              <Box
-                component="label"
-                htmlFor="research-find"
-                sx={{
-                  position: 'absolute',
-                  width: '1px',
-                  height: '1px',
-                  overflow: 'hidden',
-                  clip: 'rect(0 0 0 0)',
-                }}
-              >
-                Find a ticker
-              </Box>
-              <Box
-                component="input"
-                id="research-find"
-                type="search"
-                placeholder="Find a ticker"
-                value={query}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-                sx={(t) => ({
-                  width: '100%',
-                  maxWidth: 260,
-                  height: 44,
-                  boxSizing: 'border-box',
-                  px: 1.75,
-                  borderRadius: '8px',
-                  border: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
-                  bgcolor: 'background.paper',
-                  color: 'text.primary',
-                  font: 'inherit',
-                  fontSize: 14,
-                })}
-              />
-            </Box>
-          )}
         </Box>
+
+        {(DEMO || rows.length > 0) && (
+          // The board's filter bar (design research.mjs indexBody): the search, then the chips, on
+          // one wrapping row. Staging filters its sample notes by freshness; production by stance
+          // and freshness, each chip with its count.
+          <Box sx={{ display: 'grid', gap: 1.25 }}>
+            <Box
+              role="group"
+              aria-label="Filter notes"
+              sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 10px' }}
+            >
+              <Box sx={{ flex: '1 1 260px', maxWidth: { sm: 340 }, minWidth: 0 }}>
+                <Box
+                  component="label"
+                  htmlFor="research-find"
+                  sx={{
+                    position: 'absolute',
+                    width: '1px',
+                    height: '1px',
+                    overflow: 'hidden',
+                    clip: 'rect(0 0 0 0)',
+                  }}
+                >
+                  Find a ticker
+                </Box>
+                <Box
+                  component="input"
+                  id="research-find"
+                  type="search"
+                  placeholder="Find a ticker"
+                  value={query}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                  sx={(t) => ({
+                    width: '100%',
+                    height: 44,
+                    boxSizing: 'border-box',
+                    px: 1.75,
+                    borderRadius: '8px',
+                    border: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
+                    bgcolor: 'background.paper',
+                    color: 'text.primary',
+                    font: 'inherit',
+                    fontSize: 14,
+                  })}
+                />
+              </Box>
+              {DEMO ? (
+                <Box
+                  role="group"
+                  aria-label="Filter by freshness"
+                  sx={{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.75 }}
+                >
+                  <Box
+                    component="button"
+                    type="button"
+                    aria-pressed={fresh === 'any'}
+                    onClick={() => setFresh('any')}
+                    sx={FILTER_SX(fresh === 'any')}
+                  >
+                    All · {samples?.length ?? 0}
+                  </Box>
+                  <Box
+                    component="button"
+                    type="button"
+                    aria-pressed={fresh === SAMPLE_FRESHNESS}
+                    onClick={() => setFresh(fresh === SAMPLE_FRESHNESS ? 'any' : SAMPLE_FRESHNESS)}
+                    sx={FILTER_SX(fresh === SAMPLE_FRESHNESS)}
+                  >
+                    Current · {samples?.length ?? 0}
+                  </Box>
+                </Box>
+              ) : (
+                <>
+                  <Box
+                    role="group"
+                    aria-label="Filter by stance"
+                    sx={{
+                      display: 'inline-flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: 0.75,
+                    }}
+                  >
+                    <Box
+                      component="span"
+                      aria-hidden
+                      sx={{ fontSize: 12, color: 'text.secondary' }}
+                    >
+                      Stance
+                    </Box>
+                    {stances.map((s) => (
+                      <Box
+                        component="button"
+                        type="button"
+                        key={s.key}
+                        aria-pressed={stance === s.key}
+                        onClick={() => setStance(s.key)}
+                        sx={FILTER_SX(stance === s.key, s.dashed)}
+                      >
+                        {s.label}
+                      </Box>
+                    ))}
+                  </Box>
+                  <Box
+                    role="group"
+                    aria-label="Filter by freshness"
+                    sx={{
+                      display: 'inline-flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: 0.75,
+                    }}
+                  >
+                    <Box
+                      component="span"
+                      aria-hidden
+                      sx={{ fontSize: 12, color: 'text.secondary' }}
+                    >
+                      Freshness
+                    </Box>
+                    {freshStates
+                      // A state no note is in has no chip (the board's), unless it is the one chosen.
+                      .filter((s) => fresh === s || count((r) => r.f.state === s) > 0)
+                      .map((s) => (
+                        <Box
+                          component="button"
+                          type="button"
+                          key={s}
+                          aria-pressed={fresh === s}
+                          onClick={() => setFresh(fresh === s ? 'any' : s)}
+                          sx={FILTER_SX(fresh === s)}
+                        >
+                          {s === 'current' ? 'Current' : s === 'due' ? 'Review due' : 'Archived'} ·{' '}
+                          {count((r) => r.f.state === s)}
+                        </Box>
+                      ))}
+                  </Box>
+                </>
+              )}
+            </Box>
+            {!DEMO && filingsFallback && <FilingsFallback state={filingsFallback} />}
+          </Box>
+        )}
 
         {DEMO ? (
           <>
@@ -893,48 +998,6 @@ export function ResearchIndexPage() {
           </Panel>
         ) : (
           <>
-            <Box sx={{ display: 'grid', gap: 1.25 }}>
-              <Box
-                role="group"
-                aria-label="Filter by stance"
-                sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}
-              >
-                {stances.map((s) => (
-                  <Box
-                    component="button"
-                    type="button"
-                    key={s.key}
-                    aria-pressed={stance === s.key}
-                    onClick={() => setStance(s.key)}
-                    sx={FILTER_SX(stance === s.key, s.dashed)}
-                  >
-                    {s.label}
-                  </Box>
-                ))}
-              </Box>
-              <Box
-                role="group"
-                aria-label="Filter by freshness"
-                sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}
-              >
-                <Eyebrow sx={{ mr: 0.5 }}>Freshness</Eyebrow>
-                {freshStates.map((s) => (
-                  <Box
-                    component="button"
-                    type="button"
-                    key={s}
-                    aria-pressed={fresh === s}
-                    onClick={() => setFresh(fresh === s ? 'any' : s)}
-                    sx={FILTER_SX(fresh === s)}
-                  >
-                    {s === 'current' ? 'Current' : s === 'due' ? 'Review due' : 'Archived'} ·{' '}
-                    {count((r) => r.f.state === s)}
-                  </Box>
-                ))}
-              </Box>
-              {filingsFallback && <FilingsFallback state={filingsFallback} />}
-            </Box>
-
             <ComingUpList items={soon} />
 
             <Box
