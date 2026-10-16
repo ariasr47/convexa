@@ -354,7 +354,8 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
             onClick={() => void fetchBars(true)}
             disabled={state.refreshing}
             size="small"
-            sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
+            // Neutral text button from the theme (owner ruling A, 2026-10-15).
+            sx={{ minHeight: 44 }}
           >
             {state.refreshing ? 'Refreshing…' : 'Refresh sample'}
           </Button>

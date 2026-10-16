@@ -6,7 +6,7 @@
  * artboard's own <h1>, and shipping that verbatim gives a document whose outline starts at level 2 —
  * an accessibility-gate regression on a feature that requires zero waivers (SPEC §4).
  */
-import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -107,10 +107,9 @@ export function NotFound() {
             variant="outlined"
             size="large"
             data-testid="not-found-secondary"
-            // GATE Z I-2 (AC-G1, color-contrast, serious): outlined-button labels default to
-            // `primary.main` (measured 3.01:1 on `background.default` in light mode) — same
-            // text-grade-amber fix as the landing's `cta-secondary` (F7c, `591e2654`).
-            sx={{ minHeight: 44, color: (theme) => extrasFor(theme).textAmber }}
+            // Neutral outlined secondary from the theme (owner ruling A, 2026-10-15): the amber
+            // fill above is this page's one primary action.
+            sx={{ minHeight: 44 }}
           >
             {NOT_FOUND_COPY.secondary}
           </Button>

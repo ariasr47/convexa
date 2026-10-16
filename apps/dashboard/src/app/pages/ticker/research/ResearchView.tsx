@@ -1,7 +1,6 @@
 import { usePublicTicker } from '@/pages/research/publicData';
 import { SecRecordSections } from '@/pages/research/SecRecordSections';
 import { TickerTabs } from '@/pages/ticker/TickerTabs';
-import { extrasFor } from '@/shared/theme/tokens';
 import {
   loadSampleResearch,
   type LocalOutcome,
@@ -352,7 +351,8 @@ export function ResearchView({ symbol }: { symbol: string }) {
             <Button
               onClick={() => void fetchResearch(true)}
               disabled={state.refreshing}
-              sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
+              // Neutral text button from the theme (owner ruling A, 2026-10-15).
+              sx={{ minHeight: 44 }}
             >
               {state.refreshing ? 'Refreshing…' : 'Refresh sample'}
             </Button>

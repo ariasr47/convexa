@@ -522,10 +522,8 @@ export function Landing() {
                   ? { component: RouterLink, to: '/positions' }
                   : { onClick: () => openAuth({ returnFocus: signInRef.current }) })}
                 data-testid="cta-band-secondary"
-                // A11Y-2 (color-contrast, serious): this band sits on `background.paper` (white
-                // in light mode), so the default `primary.main` label measured 3.27:1 — still
-                // under 4.5:1. Same text-grade-amber fix as the hero's `cta-secondary`.
-                sx={{ color: (theme) => extrasFor(theme).textAmber }}
+                // Neutral outlined secondary from the theme (owner ruling A, 2026-10-15): the
+                // band's amber is spent on the contained primary above.
               >
                 {demo ? LANDING_COPY.ctaDemo.secondary : LANDING_COPY.cta.secondary}
               </Button>

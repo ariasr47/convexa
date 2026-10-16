@@ -82,11 +82,9 @@ export function RequireAuth({ children, surface, demoPath }: Props) {
   if (!ready) return <RouteFallback />;
   if (authenticated) return <>{children}</>;
 
-  const outlinedSx = {
-    minHeight: 44,
-    // GATE Z I-2 (AC-G1, color-contrast): outlined labels take text-grade amber on the panel.
-    color: (theme: Parameters<typeof extrasFor>[0]) => extrasFor(theme).textAmber,
-  };
+  // Neutral outlined secondaries from the theme (owner ruling A, 2026-10-15): "Sign in" is the
+  // wall's one amber action.
+  const outlinedSx = { minHeight: 44 };
   return (
     <Box sx={{ py: { xs: 3, md: 7 }, px: 2 }}>
       <Paper

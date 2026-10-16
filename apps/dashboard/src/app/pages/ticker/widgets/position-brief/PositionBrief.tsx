@@ -333,8 +333,8 @@ function BookLink() {
       sx={{
         fontSize: '0.8rem',
         fontWeight: 600,
-        // Text-grade amber: light `primary.main` measured 3.27:1 as this 12.8px label.
-        color: (t) => extrasFor(t).textAmber,
+        // Neutral (owner ruling A, 2026-10-15): amber is the desk's one contained primary.
+        color: 'text.primary',
         textDecoration: 'none',
         whiteSpace: 'nowrap',
         minHeight: 44,
