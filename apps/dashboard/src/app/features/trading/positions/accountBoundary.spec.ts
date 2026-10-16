@@ -47,6 +47,11 @@ describe('the synced book at the account boundary', () => {
     expect(bookOwner()).toBe('user-b');
   });
 
+  it('signing in with no book here writes nothing to storage', () => {
+    claimBookFor('user-a');
+    expect(localStorage.length).toBe(0);
+  });
+
   it("keeps the same account's book, and an untagged one from before the tag", () => {
     expect(putPosition(mkPosition([mkLeg({ ticker: 'AAPL' })], { id: 'mine' }))).toBe(true);
     claimBookFor('user-a');

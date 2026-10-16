@@ -78,6 +78,8 @@ function empty(): PersistShapeV3 {
 }
 
 let memory: PersistShapeV3 | null = null; // fallback / cache
+/** The signed-in account this tab writes the book for; the tag is written with the book itself. */
+let currentOwner: string | null = null;
 /** Set SYNCHRONOUSLY by read() (SPEC §2.9); no frame ever paints on a stale value. */
 let faulted = false;
 /** The LOGICAL storage keys that failed to read this hydration. */
@@ -321,6 +323,7 @@ function write(s: PersistShapeV3): boolean {
       demoStorageKey(BOOK_TOUCH_KEY),
       String((dataMode === 'demo' ? demoNowMs() : Date.now()) / 1000),
     );
+    tagOwner();
   } catch {
     /* quota/private mode — keep the in-memory copy this session */
   }
@@ -364,6 +367,7 @@ export function importBookBlobIfNewer(blob: unknown, serverUpdatedAt: number): b
     localStorage.setItem(demoStorageKey(V3_KEY), JSON.stringify(next));
     if (serverUpdatedAt > 0 && dataMode !== 'demo')
       localStorage.setItem(demoStorageKey(BOOK_TOUCH_KEY), String(serverUpdatedAt));
+    tagOwner();
   } catch {
     /* keep memory */
   }
@@ -392,22 +396,26 @@ export function bookOwner(): string | null {
   }
 }
 
+function tagOwner(): void {
+  if (currentOwner == null) return;
+  try {
+    localStorage.setItem(demoStorageKey(BOOK_OWNER_KEY), currentOwner);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 /**
  * The account boundary, run before a signed-in account's server book is pulled: a local book that
  * belongs to another account is dropped, never kept or pushed into this one (a shared browser, or a
  * session that ended without a sign-out). An untagged local book predates the tag and is taken as
- * this account's, since positions sit behind sign-in.
+ * this account's, since positions sit behind sign-in. Writes nothing unless it drops a book: the tag
+ * is written with the next book write.
  */
 export function claimBookFor(userId: string): void {
-  // A faulted store writes nothing (AC-61); its unreadable blob can't be read or pushed either.
-  if (positionsFaulted()) return;
   const owner = bookOwner();
   if (owner != null && owner !== userId) clearSyncedBook();
-  try {
-    localStorage.setItem(demoStorageKey(BOOK_OWNER_KEY), userId);
-  } catch {
-    /* storage unavailable: nothing persisted to cross accounts */
-  }
+  currentOwner = userId;
 }
 
 /**
@@ -420,11 +428,13 @@ export function clearSyncedBook(): void {
     clearTimeout(pushTimer);
     pushTimer = null;
   }
+  currentOwner = null;
   if (positionsFaulted()) return; // NEVER overwrite a readable-but-unparseable prior blob
   memory = empty();
   try {
     localStorage.setItem(demoStorageKey(V3_KEY), JSON.stringify(memory));
     localStorage.removeItem(demoStorageKey(BOOK_TOUCH_KEY));
+    localStorage.removeItem(demoStorageKey(BOOK_OWNER_KEY));
   } catch {
     /* storage unavailable: the in-memory copy is already empty */
   }
@@ -538,6 +548,7 @@ export function newId(): string {
 /** Test/internal seam: reset the in-memory cache so the next read re-hydrates from localStorage. */
 export function __resetMemory() {
   memory = null;
+  currentOwner = null;
   faulted = false;
   unreadSources = [];
 }
