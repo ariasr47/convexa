@@ -107,14 +107,24 @@ export function plSparkGeometry(
 const money = (v: number) =>
   `${v < 0 ? '−' : ''}$${Math.round(Math.abs(v)).toLocaleString('en-US')}`;
 
-/** The sparkline's text twin. */
-export function plSparkText(samples: PlSample[]): string {
+/**
+ * The sparkline's text twin. After the stream drops (`offline`, or a trailing null break in the
+ * samples) the last value is no longer "now": it is the last known P/L before the feed dropped,
+ * which is what the dimmed cell beside it shows (review W1-62).
+ */
+export function plSparkText(samples: PlSample[], offline = false): string {
   const vals = samples.map((s) => s.pl).filter((v): v is number => v != null && Number.isFinite(v));
   if (vals.length === 0) return 'No P/L samples this session.';
-  const now = vals[vals.length - 1];
+  const last = vals[vals.length - 1];
+  const tail = samples[samples.length - 1]?.pl;
+  const dropped = offline || tail == null || !Number.isFinite(tail);
   const low = Math.min(...vals);
   const high = Math.max(...vals);
-  const where = now >= 0 ? `Up ${money(now)} now` : `Down ${money(-now)} now`;
+  const where = dropped
+    ? `${last >= 0 ? 'up' : 'down'} ${money(Math.abs(last))} when last known, before the feed dropped`
+    : last >= 0
+      ? `Up ${money(last)} now`
+      : `Down ${money(-last)} now`;
   return `P/L this session: ${where}; low ${money(low)}, high ${money(high)}; ${vals.length} samples.`;
 }
 
@@ -137,7 +147,7 @@ export function PlSparkline({ samples, offline }: { samples: PlSample[]; offline
     <Box
       component="span"
       role="img"
-      aria-label={plSparkText(samples)}
+      aria-label={plSparkText(samples, offline)}
       sx={{ width: W, height: H, opacity: offline ? 0.5 : 1, lineHeight: 0 }}
       data-testid="trend-sparkline"
       data-points={plotted}

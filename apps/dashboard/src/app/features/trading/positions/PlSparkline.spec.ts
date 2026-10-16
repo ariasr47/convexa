@@ -33,4 +33,15 @@ describe('plSparkGeometry', () => {
       'P/L this session: Up $412 now; low −$80, high $412; 3 samples.',
     );
   });
+
+  // After a drop a screen reader must not hear a pre-drop value called "now" (review W1-62).
+  it('calls the last value last known, never now, once the stream drops', () => {
+    const dropped =
+      'P/L this session: up $412 when last known, before the feed dropped; low −$80, high $412; 3 samples.';
+    expect(plSparkText(S([40, -80, 412, null]))).toBe(dropped);
+    expect(plSparkText(S([40, -80, 412]), true)).toBe(dropped);
+    expect(plSparkText(S([40, -80]), true)).toBe(
+      'P/L this session: down $80 when last known, before the feed dropped; low −$80, high $40; 2 samples.',
+    );
+  });
 });
