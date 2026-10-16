@@ -7,7 +7,7 @@ import {
   typographyTokens,
 } from '@/shared/theme/tokens';
 import type { ThemePref } from '@convexa/api';
-import { createTheme, type Theme } from '@mui/material/styles';
+import { alpha, createTheme, type Theme } from '@mui/material/styles';
 // `mui.d.ts` (this directory) ambiently augments `BreakpointOverrides` with the five v2 keys
 // (tablet/smallLaptop/laptop/desktop/wide) — picked up by the TS program via tsconfig's include
 // glob, so `{ xs: 'none', laptop: 'flex' }` type-checks app-wide with no explicit import here.
@@ -163,39 +163,65 @@ const COMMON = {
     // root objects are plain CSS-in-JS (not routed through the `sx` engine's `createUnaryUnit`), so
     // a bare `8` here is genuinely 8px, not a multiplier.
     //
-    // Amber as TEXT takes the text-grade amber (`extrasFor(theme).textAmber`), the same split the
-    // focus ring uses above: an outlined or text primary Button draws its LABEL in the colour MUI
-    // gives it, and light `primary.main` (amberDeep #C57F19) measured 2.89–3.27:1 as 13px label
-    // text on the light surfaces (Alerts "Enable browser notifications", Positions export/import,
-    // 2026-10-13). textAmber: dark ≡ gammaAmber ≡ primary.main (dark renders unchanged), light
-    // #8F5C0F. Borders, hover tints and contained fills keep `primary.main`.
+    // AMBER IS SPENT ON THE ONE PRIMARY ACTION (owner ruling A, 2026-10-15 Amendments row; supersedes
+    // the 2026-10-13 "outlined and text primary take textAmber" rule). An outlined or text primary
+    // Button is NEUTRAL: its label is `text.primary` (phosphor / inkText), its border the strong
+    // hairline (`lineStrong`, v2 `line2`) stepping up to steel on hover, and its hover tint is the
+    // neutral `text.primary` wash MUI gives `color="inherit"` — the Final boards' `.btn.secondary`
+    // and `.btn.ghost` (design/src/lib.mjs). Only the CONTAINED primary keeps the amber fill, so a
+    // screen's single primary action is the one amber spend. Set through MUI's own `--variant-*`
+    // custom properties (Button.js reads color/border/background from them), so no rule fights
+    // the component's own hover arm.
     MuiButton: {
       styleOverrides: {
-        root: ({ theme }: { theme: Theme }) => ({
-          textTransform: 'none' as const,
-          borderRadius: 8,
-          variants: [
-            {
-              props: { variant: 'outlined', color: 'primary' } as const,
-              style: { color: extrasFor(theme).textAmber },
-            },
-            {
-              props: { variant: 'text', color: 'primary' } as const,
-              style: { color: extrasFor(theme).textAmber },
-            },
-          ],
-        }),
+        root: ({ theme }: { theme: Theme }) => {
+          const neutral = theme.palette.text.primary;
+          const tint = alpha(neutral, theme.palette.action.hoverOpacity);
+          return {
+            textTransform: 'none' as const,
+            borderRadius: 8,
+            variants: [
+              {
+                props: { variant: 'outlined', color: 'primary' } as const,
+                style: {
+                  '--variant-outlinedColor': neutral,
+                  '--variant-outlinedBorder': extrasFor(theme).lineStrong,
+                  '&:hover': {
+                    '--variant-outlinedBorder': theme.palette.text.secondary,
+                    '--variant-outlinedBg': tint,
+                  },
+                },
+              },
+              {
+                props: { variant: 'text', color: 'primary' } as const,
+                style: {
+                  '--variant-textColor': neutral,
+                  '&:hover': { '--variant-textBg': tint },
+                },
+              },
+            ],
+          };
+        },
       },
     },
-    // The same rule for an outlined primary Chip's label ("Lab", the trade-entry seed chip): its
-    // border keeps `primary.main`, its text takes textAmber.
+    // The same rule for an outlined primary Chip: neutral label and border (the trade-entry seed
+    // chip, the Positions filter chips), so an outlined chip never reads as a second primary.
     MuiChip: {
       styleOverrides: {
         root: ({ theme }: { theme: Theme }) => ({
           variants: [
             {
               props: { variant: 'outlined', color: 'primary' } as const,
-              style: { color: extrasFor(theme).textAmber },
+              style: {
+                color: theme.palette.text.primary,
+                borderColor: extrasFor(theme).lineStrong,
+                '&.MuiChip-clickable:hover': { backgroundColor: theme.palette.action.hover },
+                '&.Mui-focusVisible': { backgroundColor: theme.palette.action.focus },
+                '& .MuiChip-deleteIcon': { color: theme.palette.text.secondary },
+                '& .MuiChip-deleteIcon:hover, & .MuiChip-deleteIcon:active': {
+                  color: theme.palette.text.primary,
+                },
+              },
             },
           ],
         }),

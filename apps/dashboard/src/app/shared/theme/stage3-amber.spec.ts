@@ -135,8 +135,10 @@ describe('§8B-2 · focus-ring contrast on the FINAL surfaces (ring ≡ the mode
 // (broker-connect) `positions/LiveTabPanel.tsx` (the LOCKED chip) left this list WITH its file:
 // the placeholder was replaced by the real Broker tab, which spends NO amber (steel-outline chip;
 // burnt-orange `warning.*` for its S8/unreadable banners only, icon always — the MUI Alert).
+// (ruling A, 2026-10-15) `features/auth/SettingsPage.tsx` (the selected theme-toggle labels) left
+// this list: amber is spent on the one contained primary, and the Final Settings board draws the
+// theme tiles neutral, so the selected tile now takes `text.primary`.
 const TEXT_AMBER_CONSUMERS = [
-  '/src/app/features/auth/SettingsPage.tsx', //                  selected theme-toggle labels
   '/src/app/pages/ticker/widgets/opportunity-tier/OpportunityTier.tsx', // Prime banner body text
   '/src/app/pages/ticker/widgets/ai-rec/StateExportDrawer.tsx', // COPY buttons (11px)
   '/src/app/features/trading/tradeEntry/TradeEntryDialogView.tsx', // provenance chip label (13px)
