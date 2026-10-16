@@ -18,7 +18,7 @@ use std::collections::HashMap;
 pub(crate) const FINRA_DISPLAY_APPROVED: bool = false;
 /// Why every FINRA part reads Off while [`FINRA_DISPLAY_APPROVED`] is `false`.
 pub(crate) const OFF_DETAIL: &str =
-    "FINRA data is off on this site until FINRA's API terms are accepted.";
+    "Off on this site until FINRA’s terms for showing its data here are confirmed.";
 
 pub(crate) const DAILY_SOURCE: &str = "FINRA daily short volume";
 pub(crate) const INTEREST_SOURCE: &str = "FINRA short interest";

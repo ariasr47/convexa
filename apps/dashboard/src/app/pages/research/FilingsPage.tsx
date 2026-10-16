@@ -377,7 +377,7 @@ export function FilingsPage() {
         <Disclaimer>
           {DEMO
             ? // The demo cites no real source (D-19): its filings are samples (design: Filings staging).
-              'Sample filings shaped like SEC EDGAR; each links to the SEC’s browse page. Not investment advice.'
+              'Sample filings shaped like SEC EDGAR; each links to the SEC’s browse page. Not financial advice.'
             : 'Filings from SEC EDGAR, the public record. Personal research notes. Not financial advice.'}
         </Disclaimer>
       </Box>
