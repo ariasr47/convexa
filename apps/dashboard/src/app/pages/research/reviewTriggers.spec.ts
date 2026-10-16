@@ -131,6 +131,13 @@ describe('calendarTriggers', () => {
     expect(freshness(withCalendar(aging(), [est]), { today: '2026-10-15' }).state).toBe('current');
   });
 
+  it('estimates this quarter when the note only dates a later quarter’s results', () => {
+    const w = [win('NVDA', '2026-11-18', '2026-11-20')];
+    const later = note({ valued: false, aging: aging([results('2027-02-25')]) });
+    const [est] = calendarTriggers({ note: later, today: '2026-10-15', fomc: days, windows: w });
+    expect(est?.label).toBe(ESTIMATE_TRIGGER);
+  });
+
   it('estimates past another company’s results the note tracks', () => {
     // NVDA's note tracks Broadcom's December report; after NVDA's own Nov 17 date it still needs
     // the estimate, and the lock-up pinned to SPCX's report is not a results date either.

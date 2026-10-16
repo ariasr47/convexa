@@ -167,7 +167,11 @@ describe('manual contract · the dialog with no chain', () => {
     renderDialog(onConfirm);
     // The host's ticker never stands in for the underlying.
     expect(screen.queryByText(/TSLA/)).toBeNull();
+    const demo = () => screen.getByTestId('entry-fill-mode-demo');
+    expect(demo().getAttribute('href')).not.toContain('TSLA');
     await user.type(screen.getByLabelText('Underlying'), 'nvda');
+    // The link follows a valid underlying before the rest of the contract is typed.
+    expect(demo().getAttribute('href')).toMatch(/\/ticker\/NVDA$/);
     setDate('Expiration', '2026-11-20');
     await user.type(screen.getByLabelText('Strike'), '200');
     fireEvent.change(screen.getByLabelText('Quantity'), { target: { value: '2' } });

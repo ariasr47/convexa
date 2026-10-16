@@ -695,7 +695,7 @@ function FeedZone({
           >
             See them on the demo →
           </Link>
-          <WhatAReadSendsLink ticker={ticker} />
+          <WhatAReadSendsLink ticker={ticker} feed={feed} />
         </Box>
       ) : (
         <Box

@@ -81,16 +81,22 @@ export function calendarTriggers({
         resolved: false,
       });
   }
-  const datedResults = note.aging.events.some(
-    (e) =>
-      e.kind === 'catalyst' &&
-      !e.resolved &&
-      isOwnResults(e.label) &&
-      e.when.end !== null &&
-      e.when.end >= today,
-  );
+  // A note's own results date beats the estimate only when it falls by the window's end; next
+  // year's "Q4 results" row says nothing about this quarter's window (Wave 2 review).
+  const w = windows.find((x) => x.ticker === note.ticker && x.end >= today);
+  const datedResults =
+    w != null &&
+    note.aging.events.some(
+      (e) =>
+        e.kind === 'catalyst' &&
+        !e.resolved &&
+        isOwnResults(e.label) &&
+        e.when.end !== null &&
+        e.when.end >= today &&
+        e.when.start !== null &&
+        e.when.start <= w.end,
+    );
   if (!datedResults) {
-    const w = windows.find((x) => x.ticker === note.ticker && x.end >= today);
     if (w) {
       const end = formatShortDate(w.end);
       const span =

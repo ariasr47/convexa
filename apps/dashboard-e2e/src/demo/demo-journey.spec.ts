@@ -408,7 +408,7 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   await screenshot(page, 'positions-after-confirm-light');
 
   await page.getByRole('link', { name: 'Alerts' }).click();
-  await expect(page.getByRole('heading', { name: /Alerts/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Alerts', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Rules (1)' })).toBeVisible();
   await expect(page.getByRole('switch', { name: 'SPY · Level touch' })).toBeChecked();
   await expect(page.getByText(/No snapshot has been evaluated yet this session/)).toBeVisible();

@@ -15,6 +15,7 @@ import { usePublicMarkets, usePublicTicker } from '@/pages/research/publicData';
 import { Caps } from '@/pages/research/publicUi';
 import { MONO, PANEL_SX } from '@/pages/research/ui';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { FINRA_OFF_REASON, FINRA_ON_PRODUCTION } from '@/shared/dataState/finraSwitch';
 import { DATA_STATES, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
@@ -88,24 +89,30 @@ function useLiveCards(): LiveCard[] {
     {
       to: `/ticker/${SHORT_TICKER}/research`,
       title: 'Short interest',
-      body: 'FINRA, twice a month, about a week after settlement.',
-      tag: ticker.error
-        ? failed
-        : t
-          ? t.state === 'off'
-            ? { state: 'off' }
-            : liveCardTag(
-                t.short_interest_state,
-                t.short_interest != null,
-                {
-                  state: 'delayed',
-                  detail: t.short_interest
-                    ? `as of ${formatShortDate(t.short_interest.settlement_date)}`
-                    : undefined,
-                },
-                t.short_interest_source_state === 'last_good',
-              )
-          : null,
+      // FINRA is off on the live site until its terms are confirmed (finraSwitch.ts); the card says
+      // so before the API that stops asking FINRA deploys, too.
+      body: FINRA_ON_PRODUCTION
+        ? 'FINRA, twice a month, about a week after settlement.'
+        : FINRA_OFF_REASON,
+      tag: !FINRA_ON_PRODUCTION
+        ? { state: 'off' }
+        : ticker.error
+          ? failed
+          : t
+            ? t.state === 'off'
+              ? { state: 'off' }
+              : liveCardTag(
+                  t.short_interest_state,
+                  t.short_interest != null,
+                  {
+                    state: 'delayed',
+                    detail: t.short_interest
+                      ? `as of ${formatShortDate(t.short_interest.settlement_date)}`
+                      : undefined,
+                  },
+                  t.short_interest_source_state === 'last_good',
+                )
+            : null,
     },
     {
       to: '/research/filings',

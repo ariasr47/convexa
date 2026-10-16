@@ -96,6 +96,12 @@ const ok = (r: FiledCheckRow) => ['matches', 'computed', 'not_tagged'].includes(
 const waiting = (r: FiledCheckRow) => r.status === 'pending' || r.status === 'not_found';
 
 /** The frame's title over checked figures (P-10): what differs, or that everything agrees. */
+
+/** A table header's unit: "$B" for dollars, "TWD bn" for a code (never the ambiguous "TWDB"). */
+function billionsHead(unit: string): string {
+  const prefix = currencyPrefix(unit)?.trim();
+  return prefix === '$' ? '$B' : prefix ? `${prefix} bn` : 'B';
+}
 export function filedFinding(rows: FiledCheckRow[], form: string, demo: boolean): string {
   const lead = demo ? 'In the sample, ' : '';
   const say = (s: string) => (lead ? `${lead}${s.charAt(0).toLowerCase()}${s.slice(1)}` : s);
@@ -541,9 +547,9 @@ function RevenueAsFiled({ d, years }: { d: PublicTicker; years: PublicAnnualReve
         caption: 'Annual revenue and the filing it comes from',
         cols: [
           'Fiscal year',
-          `Revenue, ${currencyPrefix(unit)?.trim() ?? ''}B`,
+          `Revenue, ${billionsHead(unit)}`,
           'Filed',
-          `Restated to, ${currencyPrefix(unit)?.trim() ?? ''}B`,
+          `Restated to, ${billionsHead(unit)}`,
         ],
         rows: years.map((y) => [
           yearLabel(y),

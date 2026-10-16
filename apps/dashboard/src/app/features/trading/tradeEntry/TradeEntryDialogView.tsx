@@ -650,7 +650,11 @@ export function TradeEntryDialog({
               value={effectiveMode}
               singleOptionEntry={singleOptionEntry}
               feedOff={feedOff}
-              ticker={manualCheck?.ok ? manualCheck.ticker : ticker}
+              // A typed entry links to its own underlying once the symbol is valid, before the
+              // rest of the contract is; until then no ticker (the demo opens SPY), never the host's.
+              ticker={
+                manualContract ? (underlyingError(underlying) == null ? entryTicker : '') : ticker
+              }
               onChange={setMode}
             />
           )}

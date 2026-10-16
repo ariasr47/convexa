@@ -95,6 +95,10 @@ export function listRecents(): string[] {
 
 /** Every ticker opened, pins included, most-recent-first — the ⌘K jump box's “Recent” group. */
 export function listRecentVisits(limit: number = MAX_STORED): string[] {
+  // Re-read storage on each ⌘K open, so visits made in another tab show here (Wave 2 review);
+  // recordVisit then writes on top of the fresh list, not this tab's stale copy.
+  memory = null;
+  faulted = false;
   return read().symbols.slice(0, Math.max(0, limit));
 }
 

@@ -47,6 +47,20 @@ describe('recentTickers store', () => {
     expect(listRecents()).toHaveLength(MAX_RECENTS);
     expect(listRecents()).not.toContain('NVDA');
     expect(listRecents()[MAX_RECENTS - 1]).toBe('T0');
+    expect(listRecentVisits(4)).toEqual(['QQQ', 'SPY', 'NVDA', 'T7']);
+  });
+
+  it('⌘K reads visits another tab stored, and a visit here keeps them', () => {
+    recordVisit('AAPL');
+    expect(listRecentVisits()).toEqual(['AAPL']);
+    const other = JSON.parse(localStorage.getItem(RECENT_TICKERS_KEY) as string);
+    localStorage.setItem(
+      RECENT_TICKERS_KEY,
+      JSON.stringify({ ...other, symbols: ['AMD', 'AAPL'] }),
+    );
+    expect(listRecentVisits()).toEqual(['AMD', 'AAPL']);
+    recordVisit('MSFT');
+    expect(listRecentVisits()).toEqual(['MSFT', 'AMD', 'AAPL']);
   });
 
   it('corrupt blob → empty recents, does not throw, leaves original key intact until write', () => {

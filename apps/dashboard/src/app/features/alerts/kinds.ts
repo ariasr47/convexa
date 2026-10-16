@@ -27,9 +27,10 @@ export const CHECKS_HERE = 'When you open Alerts, in this browser';
 /**
  * FINRA's production switch (owner ruling, 2026-10-15, answer 4): until the owner confirms FINRA's
  * display terms (Q-2), production shows FINRA short interest as Off, with the reason, and asks
- * nothing of FINRA. Staging keeps its sample. A code constant the owner flips, not a setting.
+ * nothing of FINRA. Staging keeps its sample. One constant for the whole site, in finraSwitch.ts;
+ * the alerts keep their own short sentence because it reads inside longer lines.
  */
-export const FINRA_ON_PRODUCTION = false;
+export { FINRA_ON_PRODUCTION } from '@/shared/dataState/finraSwitch';
 export const FINRA_OFF_REASON =
   'FINRA data is off on this site until its display terms are confirmed';
 
