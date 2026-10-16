@@ -251,10 +251,15 @@ function HeroSkeleton() {
         sx={{
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr) 300px',
-          minHeight: 483,
+          // Lane 4: re-pinned to the hero's measured body after the hierarchy pass (demo SPY,
+          // 2026-10-16): 528px beside the ladder, 787px stacked at 834, 1106px stacked at 390.
+          minHeight: 528,
           [theme.containerQueries('panel').down(1000)]: {
             gridTemplateColumns: '1fr',
-            minHeight: 968,
+            minHeight: 787,
+          },
+          [theme.containerQueries('panel').down(600)]: {
+            minHeight: 1106,
           },
         }}
       >
@@ -303,7 +308,7 @@ function StripSkeleton() {
   return (
     // Same rule as `HeroSkeleton` above — the grid switch lives on the inner `Box`, never on
     // `SkeletonPanel` (the `panel`-container-establishing element itself).
-    <SkeletonPanel data-testid="cold-load-strip" sx={{ minHeight: 104 }}>
+    <SkeletonPanel data-testid="cold-load-strip">
       {DESK_IS_SAMPLE && (
         <Stack
           direction="row"
@@ -322,11 +327,16 @@ function StripSkeleton() {
           gap: '1px',
           bgcolor: 'divider',
           '& > *': { bgcolor: 'background.paper' },
+          // Pinned to the loaded strip's measured cells (demo SPY, 2026-10-16): 413px of two-up
+          // cells at 390, 213px four-up at 834, 120px in one row from a 1000px panel.
+          minHeight: 413,
           [theme.containerQueries('panel').up(600)]: {
             gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            minHeight: 213,
           },
           [theme.containerQueries('panel').up(1000)]: {
             gridTemplateColumns: '1.35fr repeat(7, minmax(0, 1fr))',
+            minHeight: 120,
           },
         }}
       >
