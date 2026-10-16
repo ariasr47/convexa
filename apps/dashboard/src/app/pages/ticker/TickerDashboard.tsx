@@ -58,11 +58,6 @@ import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme, type Theme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -72,13 +67,13 @@ import { NOT_LIVE_COPY } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
-import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import {
   WidgetChromeProvider,
   WidgetProvenanceProvider,
   WidgetSelectionProvider,
 } from '@/shared/ui/Widget';
+import { TickerTabs } from './TickerTabs';
 import { useLiveTape } from './liveTapeStore';
 import { selectTickerSymbol } from './recentTickers/selectTickerSymbol';
 import { recordVisit } from './recentTickers/store';
@@ -96,6 +91,7 @@ import {
   TermStructureCard,
 } from './widgets';
 import { humanAge, StatSkeleton, universeMemberNote } from './widgets/_kit';
+import { DESK_IS_SAMPLE } from './widgets/_kit/sample';
 import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
 import { buildReadStrip, ReadStrip } from './widgets/read-strip';
 import { StructureHeroPanel } from './widgets/structure-hero';
@@ -180,7 +176,7 @@ function ZoneLabelSkeleton() {
 // here. `LastTradeReadout` is the SAME live-derived component the loaded masthead's chip row uses —
 // its own `live == null` branch already renders a `Skeleton` (no text) — kept here so the last-trade
 // line keeps filling from the first SSE payload during cold load, exactly as before this change.
-function MastheadSkeleton() {
+function MastheadSkeleton({ tabs }: { tabs?: ReactNode }) {
   return (
     // minHeight 215 — the widget's own measured final height (review: `command-deck` 215px at
     // 1280), the same "pin to the final height" pattern the hero (483) and strip (131) skeletons
@@ -188,17 +184,37 @@ function MastheadSkeleton() {
     // outside the task's ±10% band).
     <Box data-testid="cold-load-masthead" sx={{ pt: 2.5, pb: 1.5, mb: 1.5, minHeight: 215 }}>
       <Stack spacing={1.5}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          <ChipSkeleton width={96} />
-          <ChipSkeleton width={72} />
-          <LastTradeReadout />
+        {/* Lane 4: the loaded masthead leads with the symbol, then the price with its change and
+            the verdict, then the provenance chips; the tabs head its right column. Same order. */}
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'flex-start' } }}
+        >
+          <Stack spacing={1}>
+            <Skeleton
+              data-testid="cold-skeleton"
+              variant="text"
+              width={110}
+              sx={{ fontSize: '2.25rem' }}
+            />
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+              <Skeleton
+                data-testid="cold-skeleton"
+                variant="text"
+                width={150}
+                sx={{ fontSize: '2rem' }}
+              />
+              <ChipSkeleton width={150} />
+            </Stack>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+              <ChipSkeleton width={96} />
+              <ChipSkeleton width={72} />
+              <LastTradeReadout />
+            </Stack>
+          </Stack>
+          {tabs}
         </Stack>
-        <Skeleton
-          data-testid="cold-skeleton"
-          variant="text"
-          width={220}
-          sx={{ fontSize: '2rem' }}
-        />
         <Skeleton
           data-testid="cold-skeleton"
           variant="text"
@@ -278,50 +294,61 @@ function HeroSkeleton() {
   );
 }
 
-// Read strip — eight cells, a rail below a 1000px `panel` container, `1.35fr repeat(7,
-// minmax(0,1fr))` at/above it: `ReadStrip`'s own switch, mirrored one-for-one.
+// Read strip — `ReadStrip`'s own shape, mirrored one-for-one (lane 4): on the demo a header row for
+// the Sample tag and source chip, then eight hairline-split cells that re-flow by the `panel`
+// container (two columns, four from 600px, `1.35fr repeat(7, minmax(0,1fr))` from 1000px), each a
+// label, a one-line figure and a one-line caption. It no longer scrolls sideways (D-22).
 function StripSkeleton() {
   const theme = useTheme();
   return (
-    // Same rule as `HeroSkeleton` above — the rail/grid switch lives on the inner `Box`, never on
+    // Same rule as `HeroSkeleton` above — the grid switch lives on the inner `Box`, never on
     // `SkeletonPanel` (the `panel`-container-establishing element itself).
-    <SkeletonPanel data-testid="cold-load-strip" sx={{ minHeight: 131 }}>
+    <SkeletonPanel data-testid="cold-load-strip" sx={{ minHeight: 104 }}>
+      {DESK_IS_SAMPLE && (
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ px: 1.5, pt: 1.25, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}
+        >
+          <ChipSkeleton width={72} />
+          <ChipSkeleton width={220} />
+        </Stack>
+      )}
       <Box
         data-testid="cold-load-strip-rail"
         sx={{
-          display: 'flex',
-          overflow: 'hidden',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gap: '1px',
+          bgcolor: 'divider',
+          '& > *': { bgcolor: 'background.paper' },
+          [theme.containerQueries('panel').up(600)]: {
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          },
           [theme.containerQueries('panel').up(1000)]: {
-            display: 'grid',
             gridTemplateColumns: '1.35fr repeat(7, minmax(0, 1fr))',
           },
         }}
       >
         {Array.from({ length: 8 }).map((_, i) => (
-          <Box
-            key={i}
-            data-testid="cold-load-strip-cell"
-            sx={{
-              flex: i === 0 ? '0 0 220px' : '0 0 170px',
-              minWidth: 0,
-              py: 1.5,
-              px: 1.5,
-              borderRight: '1px solid',
-              borderColor: 'divider',
-              [theme.containerQueries('panel').up(1000)]: { flex: 'unset' },
-            }}
-          >
+          <Box key={i} data-testid="cold-load-strip-cell" sx={{ minWidth: 0, py: 1.25, px: 1.5 }}>
             <Skeleton
               data-testid="cold-skeleton"
               variant="text"
-              width="60%"
+              width="55%"
               sx={{ fontSize: 11 }}
             />
             <Skeleton
               data-testid="cold-skeleton"
               variant="text"
-              width="70%"
+              width="45%"
               sx={{ fontSize: 18 }}
+            />
+            <Skeleton
+              data-testid="cold-skeleton"
+              variant="text"
+              width="70%"
+              sx={{ fontSize: 11 }}
             />
           </Box>
         ))}
@@ -346,7 +373,7 @@ function WorkGridSkeleton() {
           gridTemplateColumns: '1fr',
           gap: '14px',
           [theme.containerQueries('ticker-work').up(1000)]: {
-            gridTemplateColumns: 'minmax(0, 8fr) minmax(0, 4fr)',
+            gridTemplateColumns: 'minmax(0, 7fr) minmax(0, 5fr)',
           },
         }}
       >
@@ -379,10 +406,10 @@ function WorkGridSkeleton() {
 
 /** The whole `cold-load` subtree — masthead, hero, strip, work grid, band header — every band the
  *  loaded desk itself renders, as shimmer, at (near enough) its final height. */
-function ColdLoadSkeleton() {
+function ColdLoadSkeleton({ tabs }: { tabs?: ReactNode }) {
   return (
     <Box>
-      <MastheadSkeleton />
+      <MastheadSkeleton tabs={tabs} />
       <Stack spacing={2}>
         <ZoneLabelSkeleton />
         <HeroSkeleton />
@@ -754,79 +781,13 @@ export function TickerDashboard() {
         </Box>
       )}
 
-      <Tabs
-        value="overview"
-        aria-label={`${ticker.toUpperCase()} ticker views`}
-        variant="scrollable"
-        scrollButtons="auto"
-        sx={{
-          mb: 2,
-          minHeight: 44,
-          '& .MuiTab-root': { minHeight: 44, minWidth: 112 },
-          // Neutral current tab (owner ruling A, 2026-10-15), as TickerTabs.
-          '& .MuiTab-root.Mui-selected': { color: 'text.primary', fontWeight: 600 },
-          '& .MuiTabs-indicator': { bgcolor: 'text.primary' },
-        }}
-      >
-        <Tab
-          component={RouterLink}
-          to={`/ticker/${encodeURIComponent(ticker)}`}
-          value="overview"
-          label="Overview"
-        />
-        <Tab
-          component={RouterLink}
-          to={`/ticker/${encodeURIComponent(ticker)}/technical-analysis`}
-          value="technical"
-          label="Technical"
-        />
-        <Tab
-          component={RouterLink}
-          to={`/ticker/${encodeURIComponent(ticker)}/research`}
-          value="research"
-          label="Research"
-        />
-      </Tabs>
-
-      {page.sourceBasis && (
-        <Stack
-          spacing={0.5}
-          sx={{ mb: 2, p: 1.5, border: 1, borderColor: 'divider', borderRadius: 1 }}
-          data-testid="ticker-sample-basis"
-          data-selected-expiry-key={page.selectedExpiryKey ?? ''}
-          data-state-fingerprint={data?.ai_eval.state_fingerprint ?? ''}
-        >
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {page.sourceBasis.label} · Authored scenario · October 7, 2026 · no market feed
-            connected
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Structure and related signals use the selected expiry set:{' '}
-            {page.selectedExpiryKey ?? 'awaiting sample snapshot'}. Full-chain context keeps its
-            labeled full-chain basis. Sample analysis is authored for this scenario.
-          </Typography>
-          {page.positionEval == null && (
-            <Typography variant="caption" color="text.secondary">
-              Position evaluation unavailable for this sample.
-            </Typography>
-          )}
-          {Object.entries({
-            'Dealer-flow projection': page.optionalAbsences.dealerFlowProjection,
-            'IV rank': page.optionalAbsences.ivRank,
-            'IV skew': page.optionalAbsences.ivSkew,
-            'Market context': page.optionalAbsences.marketContext,
-            'Off-exchange context': page.optionalAbsences.offExchange,
-            'Straddle move': page.optionalAbsences.straddleMove,
-            'Term structure': page.optionalAbsences.termStructure,
-            'Vol-normalized GEX': page.optionalAbsences.volNormalizedGex,
-          })
-            .filter(([, absent]) => absent)
-            .map(([label]) => (
-              <Typography key={label} variant="caption" color="text.secondary">
-                {label} unavailable for this sample.
-              </Typography>
-            ))}
-        </Stack>
+      {/* The ticker's tabs head the masthead's right column (lane 4: the board draws them there,
+          not above the price). Standalone only when no masthead or skeleton is on screen (a failed
+          cold start, or no expirations selected), so the trader can still switch views. */}
+      {!(m && !noneSelected) && !(!data && !error && !noneSelected) && (
+        <Box sx={{ mb: 2 }}>
+          <TickerTabs ticker={ticker.toUpperCase()} current="overview" />
+        </Box>
       )}
 
       {/* In-context sign-in prompt for a gated Act (D8-6/D10 — the standard gated-write pattern):
@@ -952,7 +913,9 @@ export function TickerDashboard() {
           bundle. The skeleton class (`cold-skeleton`) never appears post-load. */}
       {!data && !error && !noneSelected && (
         <Box data-testid="cold-load">
-          <ColdLoadSkeleton />
+          <ColdLoadSkeleton
+            tabs={<TickerTabs ticker={ticker.toUpperCase()} current="overview" />}
+          />
         </Box>
       )}
 
@@ -1019,6 +982,7 @@ export function TickerDashboard() {
               loading={loading}
               routeSymbol={ticker}
               onSelectQuickSymbol={onSelectQuickSymbol}
+              tabs={<TickerTabs ticker={ticker.toUpperCase()} current="overview" />}
             />
 
             {/* The widget BENTO board — product spine #3: NOT equal weight.
@@ -1078,6 +1042,7 @@ export function TickerDashboard() {
                       pathError={structHist.error}
                       pathBasis={structHist.basis}
                       expirationsLabel={expirationsLabel}
+                      regime={sig?.regime ?? null}
                     />
                   </ErrorBoundary>
                   <ErrorBoundary variant="widget" label="Read strip">
@@ -1097,7 +1062,7 @@ export function TickerDashboard() {
                   </ErrorBoundary>
 
                   {/* ── 2. TAPE & PLAN ───────────────────────────────────────────────── */}
-                  <BoardZoneLabel zone="plan">Tape & plan</BoardZoneLabel>
+                  <BoardZoneLabel zone="plan">Read & plan</BoardZoneLabel>
 
                   {/* Ticker fidelity repair, change 1 (F1) — the design's `.work` grid
                     (`design/src/screens/desk.mjs:32`, `DESK_CSS`): `minmax(0,8fr) minmax(0,4fr)` at
@@ -1125,8 +1090,11 @@ export function TickerDashboard() {
                         gridTemplateColumns: '1fr',
                         gap: '14px',
                         alignItems: 'stretch',
+                        // Lane 4: 7fr/5fr, not the board's 8/4. At 8/4 the side column (≈377px at
+                        // 1280) broke "Sim orders · SPY" onto four lines and ran ~480px past the
+                        // read's content; 5fr gives the tape, book and orders their one-line heads.
                         [theme.containerQueries('ticker-work').up(1000)]: {
-                          gridTemplateColumns: 'minmax(0, 8fr) minmax(0, 4fr)',
+                          gridTemplateColumns: 'minmax(0, 7fr) minmax(0, 5fr)',
                         },
                       }}
                     >
@@ -1182,34 +1150,35 @@ export function TickerDashboard() {
                   </Box>
 
                   {/* ── 3. SUPPORTING CONTEXT (tertiary — quieter Widget chrome) ──────── */}
-                  <BoardZoneLabel zone="context">Supporting context</BoardZoneLabel>
-
-                  {/* Ticker fidelity repair, change 2 (F2) — the design's `ctx-head` + `ctx-grid`
-                    (`design/src/screens/desk.mjs:43`): a `Context` header carrying a presentational
-                    `All · Flow · Vol · Positioning` filter (only `All` is wired — the band carries no
-                    categories yet, so Flow/Vol/Positioning are disabled + "coming soon", never a
-                    fake-functional filter — `Widget.tsx`'s own affordance-only convention), then a
-                    `repeat(3, minmax(0,1fr))` quiet grid at the design's density. This wrapper spans
-                    the full bento row, same pattern as the `ticker-work` grid change 1 added above. */}
+                  {/* Lane 4: ONE band head. The "Supporting context" zone label above a "Context"
+                      head said the same thing twice, and the head's All · Flow · Vol · Positioning
+                      filter had three disabled options (affordance-only, "coming soon"): both went,
+                      as did the inert "+ Add widget" ghost below — none is drawn on the Final board
+                      (design/src/screens/final/ticker-desk.mjs: a `tk-zone` head and the cards). */}
                   <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
                     <Box
                       data-testid="context-band-head"
                       sx={{
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
+                        alignItems: 'baseline',
+                        gap: '4px 14px',
                         flexWrap: 'wrap',
+                        mt: 1,
                         mb: 1.5,
+                        pt: 1.25,
+                        borderTop: '1px solid',
+                        borderColor: 'divider',
                       }}
                     >
                       <Typography
                         component="p"
+                        data-testid="board-zone-context"
                         sx={{
                           m: 0,
-                          fontSize: '0.7rem',
-                          fontWeight: 700,
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
+                          fontFamily: typographyTokens.displayFontFamily,
+                          fontStretch: typographyTokens.displayFontStretch,
+                          fontSize: { xs: 18, sm: 20 },
+                          fontWeight: 600,
                           color: 'text.primary',
                         }}
                       >
@@ -1217,39 +1186,11 @@ export function TickerDashboard() {
                       </Typography>
                       <Typography
                         variant="body2"
-                        sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
+                        sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}
                       >
-                        Advisory reads that never feed the score · snapshot, never live · refreshes
-                        with the data load
+                        Slower reads around the structure. Snapshots, never live; they never feed
+                        the score.
                       </Typography>
-                      <Box
-                        aria-hidden
-                        sx={{ flex: '1 1 40px', minWidth: 40, height: '1px', bgcolor: 'divider' }}
-                      />
-                      <ToggleButtonGroup
-                        value="all"
-                        exclusive
-                        size="small"
-                        aria-label="Filter the context band"
-                        data-testid="context-band-filter"
-                      >
-                        <ToggleButton value="all" sx={{ textTransform: 'none' }}>
-                          All
-                        </ToggleButton>
-                        {(['Flow', 'Vol', 'Positioning'] as const).map((label) => (
-                          <Tooltip key={label} arrow title="Filter by category — coming soon">
-                            <span>
-                              <ToggleButton
-                                value={label.toLowerCase()}
-                                disabled
-                                sx={{ textTransform: 'none' }}
-                              >
-                                {label}
-                              </ToggleButton>
-                            </span>
-                          </Tooltip>
-                        ))}
-                      </ToggleButtonGroup>
                     </Box>
 
                     <WidgetChromeProvider value="quiet">
@@ -1285,6 +1226,21 @@ export function TickerDashboard() {
                           alignItems: 'start',
                         }}
                       >
+                        {/* Lane 4 order — what points back at the levels first: the straddle's
+                            move against the walls (two columns) beside term structure; then the
+                            positioning reads; then the blocks and the setups. Full rows at three
+                            columns (laptop and desktop). */}
+                        <StraddleMove
+                          move={m.straddle_move}
+                          callWall={m.call_wall}
+                          putWall={m.put_wall}
+                        />
+
+                        <TermStructureCard
+                          termStructure={m.term_structure}
+                          structureAgeSeconds={structureAgeSeconds}
+                        />
+
                         {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only
                         (`[live-vs-static-isolation]`). */}
                         <DealerFlowProjection dfp={m.dealer_flow_projection} />
@@ -1292,24 +1248,9 @@ export function TickerDashboard() {
                         {/* STATIC market context pack — `m.market_context ?? null` only. */}
                         <MarketContext pack={m.market_context ?? null} />
 
-                        <TermStructureCard
-                          termStructure={m.term_structure}
-                          structureAgeSeconds={structureAgeSeconds}
-                        />
-
-                        {/* PASS 2 change 8 (owner ruling, `context/DECISION_LEDGER.md` key
-                          `context-band-is-the-designs-card-list`, 2026-09-08 "Do all four"):
-                          `IvRank` is unmounted from the band — it is not in the design's
-                          enumerated ctx-grid card list (`desk.mjs:395-421`) and it repeats the
-                          read strip's `IV rank` cell (one fact, one place). The component and its
-                          spec stay (it covers only `ivRankStripFigure`) — this is an unmount, not a
-                          deletion; `quiet-band.register.spec.tsx` scans the source file by path and
-                          is correctly unaffected. See `TICKER_FIDELITY_REPAIR_REPORT.md` (Pass 2,
-                          change 8) for the e2e/unit assertion edits this required. */}
-                        <StraddleMove move={m.straddle_move} />
-
-                        {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with
-                        Dark pool off, Fresh takes its own single column. */}
+                        {/* PASS 2 change 8 (owner ruling `context-band-is-the-designs-card-list`):
+                          `IvRank` stays unmounted from the band — it repeats the read strip's
+                          `IV rank` cell (one fact, one place). */}
                         <FreshPositioning
                           chainVolOiRatio={m.chain_vol_oi_ratio}
                           volOiThreshold={volOiThreshold}
@@ -1324,34 +1265,6 @@ export function TickerDashboard() {
                         )}
 
                         <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
-
-                        {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Single
-                          column (design: `desk.mjs:419` carries no `ctx-span2`) — it sits beside
-                          Setups' 2-col span in the same row, exactly filling the 3-col grid. */}
-                        <Tooltip arrow title="Add widget — coming soon">
-                          <Box>
-                            <ComingSoonBox
-                              data-testid="add-widget-slot"
-                              aria-disabled
-                              sx={{
-                                cursor: 'not-allowed',
-                                minHeight: 64,
-                                borderRadius: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                opacity: 0.85,
-                              }}
-                            >
-                              <Typography
-                                variant="body2"
-                                sx={{ color: 'text.disabled', fontWeight: 500 }}
-                              >
-                                + Add widget
-                              </Typography>
-                            </ComingSoonBox>
-                          </Box>
-                        </Tooltip>
                       </Box>
                     </WidgetChromeProvider>
                   </Box>
@@ -1360,6 +1273,72 @@ export function TickerDashboard() {
             </WidgetProvenanceProvider>
           </Box>
         </Fade>
+      )}
+
+      {page.sourceBasis && (
+        <Box
+          component="section"
+          aria-label="About this sample"
+          data-testid="ticker-sample-basis"
+          data-selected-expiry-key={page.selectedExpiryKey ?? ''}
+          data-state-fingerprint={data?.ai_eval.state_fingerprint ?? ''}
+          sx={{
+            mt: 3,
+            pt: 1.5,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            display: 'grid',
+            gap: 0.5,
+          }}
+        >
+          {/* Lane 4: this used to sit ABOVE the masthead and repeated the demo bar there, pushing the
+              price down a screen on a phone. The demo bar, the masthead's "Demo · sample data" tag
+              and every dashed frame keep the sample marking at the top; the basis details live
+              here, with the same words and test hooks. */}
+          <Typography
+            component="p"
+            sx={{
+              m: 0,
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+            }}
+          >
+            About this sample
+          </Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {page.sourceBasis.label} · Authored scenario · October 7, 2026 · no market feed
+            connected
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Structure and related signals use the selected expiry set:{' '}
+            {page.selectedExpiryKey ?? 'awaiting sample snapshot'}. Full-chain context keeps its
+            labeled full-chain basis. Sample analysis is authored for this scenario.
+          </Typography>
+          {page.positionEval == null && (
+            <Typography variant="caption" color="text.secondary">
+              Position evaluation unavailable for this sample.
+            </Typography>
+          )}
+          {Object.entries({
+            'Dealer-flow projection': page.optionalAbsences.dealerFlowProjection,
+            'IV rank': page.optionalAbsences.ivRank,
+            'IV skew': page.optionalAbsences.ivSkew,
+            'Market context': page.optionalAbsences.marketContext,
+            'Off-exchange context': page.optionalAbsences.offExchange,
+            'Straddle move': page.optionalAbsences.straddleMove,
+            'Term structure': page.optionalAbsences.termStructure,
+            'Vol-normalized GEX': page.optionalAbsences.volNormalizedGex,
+          })
+            .filter(([, absent]) => absent)
+            .map(([label]) => (
+              <Typography key={label} variant="caption" color="text.secondary">
+                {label} unavailable for this sample.
+              </Typography>
+            ))}
+        </Box>
       )}
 
       {/* Entry — the SHARED sim-entry dialog (`trading/TradeEntryDialog`), now writing into the ONE

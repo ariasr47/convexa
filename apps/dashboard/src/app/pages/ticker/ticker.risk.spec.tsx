@@ -320,7 +320,10 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
     // coincidence and this test cannot catch it (the exact vacuity trap SPEC §7/criterion 57 exist
     // to forbid).
     pushLive({ live: true, mid: 251, gamma_flip: 253, last_trade: 251.13 });
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('TSLA · $251.00');
+    // Lane 4: the h1 is the symbol; the anchor price is its own Mono figure (a stat value is never
+    // a heading element). The invariant is unchanged: the anchor follows the NBBO mid.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('TSLA');
+    expect(screen.getByTestId('deck-price')).toHaveTextContent('$251.00');
     expect(screen.getByTestId('last-trade')).toHaveTextContent('Last trade $251.13');
 
     // Capture the static reads BEFORE the drop (byte-identity is the invariant).
@@ -522,7 +525,8 @@ describe('Ticker · independent nullability (null matrix)', () => {
       // (deleted at FE-8).
       expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument();
       expect(
-        within(screen.getByTestId('read-strip-cell-opportunity')).getByText(/42 ·/),
+        // Lane 4: the score is the cell's figure; its tier word moved to the caption.
+        within(screen.getByTestId('read-strip-cell-opportunity')).getByText('42'),
       ).toBeInTheDocument();
       expect(screen.queryByText('Retry')).toBeNull();
     },
@@ -601,7 +605,8 @@ describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => 
     expect(screen.getByText(/ATM IV by tenor · contango/)).toBeInTheDocument();
 
     // Gamma regime chip: the wire regime renders despite a positive net_gex.
-    expect(screen.getByText('negative gamma')).toBeInTheDocument();
+    // Lane 4: the masthead verdict states the regime in words with its sign (P-11).
+    expect(screen.getByTestId('deck-verdict')).toHaveTextContent('−γ short gamma');
   });
 });
 
@@ -634,14 +639,14 @@ describe('Ticker · last_trade is display-only', () => {
     await screen.findByText('Call wall');
 
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 251.13 });
-    const anchor = () => screen.getByRole('heading', { level: 1 });
-    expect(anchor()).toHaveTextContent('TSLA · $251.00');
+    const anchor = () => screen.getByTestId('deck-price');
+    expect(anchor()).toHaveTextContent('$251.00');
     const flipTile = () => within(screen.getByTestId('live-tape')).getByText('$248');
     expect(flipTile()).toBeInTheDocument();
 
     // A wildly diverging print moves NOTHING but its own readout.
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 999.99 });
-    expect(anchor()).toHaveTextContent('TSLA · $251.00');
+    expect(anchor()).toHaveTextContent('$251.00');
     expect(flipTile()).toBeInTheDocument();
     expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument();
 
@@ -651,6 +656,6 @@ describe('Ticker · last_trade is display-only', () => {
     expect(lt).toHaveTextContent('no recent print');
     expect(lt).not.toHaveTextContent('999.99');
     expect(lt).not.toHaveTextContent('251.13');
-    expect(anchor()).toHaveTextContent('TSLA · $251.00');
+    expect(anchor()).toHaveTextContent('$251.00');
   });
 });

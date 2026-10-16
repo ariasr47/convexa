@@ -23,6 +23,7 @@ import type { IvRankRead, MarketState, OffExchange } from '@convexa/api';
 import {
   fmtUsdCompact,
   IVR_INFO,
+  ivrBandDisplay,
   netDexTip,
   SKEW_PHRASE,
   skewState,
@@ -30,7 +31,6 @@ import {
   termTip,
   volOiTip,
 } from '../_kit/copy';
-import { ivRankStripFigure } from '../iv-rank/IvRank';
 import { OPPORTUNITY_TIER_INFO } from '../opportunity-tier';
 
 /** The closed-nine `—` (`shared/copy/notANumber.ts`'s own literal) for a cell whose model has no
@@ -109,6 +109,19 @@ export interface ReadStripInput {
 
 const skewSign = (slope: number) => (slope >= 0 ? '+' : '−');
 
+/** A signed dollar figure (P-11: the sign rides in the text, never only in a hue the strip doesn't
+ *  have): `+$11.0M`, `−$412.0M`. */
+const signedUsd = (v: number) => `${v > 0 ? '+' : ''}${fmtUsdCompact(v)}`;
+
+/**
+ * Lane 4 hierarchy pass: a cell's VALUE is its figure alone, one line at 18px; the qualifier word
+ * ("Actionable", "premium rich", "fear") joins the caption. With the word in the value, cells ran to
+ * two and three lines at 1280 and the strip stood 150px tall (board ticker-desk.mjs readStrip: one
+ * value line, one caption line).
+ */
+const joinSub = (...parts: (string | null | undefined)[]) =>
+  parts.filter((x): x is string => !!x && x !== NO_SUB).join(' · ') || NO_SUB;
+
 /**
  * The off-exchange cell's info text (criterion 27: "context only, no side" — never omitted). The
  * "Top levels" clause — byte-for-byte from the old dealer positioning widget (deleted at FE-8) —
@@ -174,7 +187,7 @@ export function buildReadStrip(input: ReadStripInput): ReadStripCells {
       slot: 'opportunity',
       label: 'Opportunity',
       register: 'traced',
-      value: opportunityScore == null ? NO_SUB : `${opportunityScore} · ${tierWord}`,
+      value: opportunityScore == null ? NO_SUB : `${opportunityScore}`,
       info:
         '0–100 triage score (proximity + IV/HV stretch + setups + flip transition + optional dark ' +
         'pool). Does not use vol-norm GEX or IV-rank — those stay advisory. Not a trade signal.' +
@@ -182,18 +195,21 @@ export function buildReadStrip(input: ReadStripInput): ReadStripCells {
       sub:
         opportunityScore == null
           ? 'not scored this cycle'
-          : setupsCount == null
-            ? NO_SUB
-            : setupsCount === 0
-              ? 'no setups'
-              : `${setupsCount} setup${setupsCount === 1 ? '' : 's'}`,
+          : joinSub(
+              tierWord,
+              setupsCount == null
+                ? null
+                : setupsCount === 0
+                  ? 'no setups'
+                  : `${setupsCount} setup${setupsCount === 1 ? '' : 's'}`,
+            ),
       live: NOT_LIVE,
     },
     {
       slot: 'netDex',
       label: 'Net DEX',
       register: 'traced',
-      value: m.net_dex == null ? 'unavailable' : fmtUsdCompact(m.net_dex),
+      value: m.net_dex == null ? 'unavailable' : signedUsd(m.net_dex),
       info: netDexTip(m.call_dex, m.put_dex),
       // A generic tagline naming WHAT the metric is (not a data-dependent claim) — safe even when
       // `value` itself is unavailable.
@@ -221,15 +237,24 @@ export function buildReadStrip(input: ReadStripInput): ReadStripCells {
       slot: 'ivRank',
       label: 'IV rank',
       register: 'traced',
-      value: ivRankStripFigure(ivRank),
+      // The rank alone; its band word leads the caption (`ivRankStripFigure` keeps the joined form
+      // for the full IV-rank widget's own digest).
+      value:
+        ivRank?.state === 'computed' && ivRank.rank != null
+          ? `${Math.round(ivRank.rank)}`
+          : 'unavailable',
       info: IVR_INFO,
       // The SAME `percentile` the full IV-rank widget's own descriptor uses (`ivrPctDescriptor`),
       // compressed to the design's "Nth quartile · Mth pct" shape rather than that widget's full
       // sentence (too long for a strip cell).
-      sub:
+      sub: joinSub(
+        ivRank?.state === 'computed' && ivRank.rank != null && ivRank.band != null
+          ? ivrBandDisplay(ivRank.band)
+          : null,
         ivRank?.percentile == null
-          ? NO_SUB
+          ? null
           : `${quartileOrdinal(ivRank.percentile)} quartile · ${Math.round(ivRank.percentile)}${ordinalSuffix(Math.round(ivRank.percentile))} pct`,
+      ),
       live: NOT_LIVE,
     },
     {
@@ -252,7 +277,7 @@ export function buildReadStrip(input: ReadStripInput): ReadStripCells {
       value:
         m.iv_skew == null
           ? 'unavailable'
-          : `${skewSign(m.iv_skew.slope)}${Math.abs(m.iv_skew.slope).toFixed(1)} pts · ${skewState(m.iv_skew.slope)}`,
+          : `${skewSign(m.iv_skew.slope)}${Math.abs(m.iv_skew.slope).toFixed(1)} pts`,
       info: m.iv_skew == null ? 'IV skew unavailable this cycle.' : skewTip(m.iv_skew),
       // The SAME closed phrase table `skewTip` spends inline, factored out so both share one copy.
       sub: m.iv_skew == null ? NO_SUB : SKEW_PHRASE[skewState(m.iv_skew.slope)],
@@ -263,7 +288,8 @@ export function buildReadStrip(input: ReadStripInput): ReadStripCells {
       // Criterion 60: keeps the shipped THREE-way render — absent object / thin-points object /
       // the wire's own state label. Not a second not-a-number vocabulary (SPEC §2.4): the two
       // absences here ARE distinguishable, unlike off-exchange's single-object omission.
-      label: 'Term structure',
+      // "Term", as the board labels it: "Term structure" wrapped beside its ⓘ in a 1280 cell.
+      label: 'Term',
       register: 'traced',
       value:
         m.term_structure == null
@@ -289,7 +315,8 @@ export function buildReadStrip(input: ReadStripInput): ReadStripCells {
       // Criterion 26: the empty slot renders `not provided` (never `unavailable`) — it collapses
       // BOTH the disabled-source case (`INCLUDE_DARK_POOL=false`) and the failed-computation case,
       // which the frontend cannot distinguish (`PROJECT_CONTEXT.md` §5, an empty `apps/api` diff).
-      label: 'Off-exchange %',
+      // "Off-exch. %", as the board labels it (the full name is the ⓘ's first words).
+      label: 'Off-exch. %',
       // A generic tagline (the SAME "context only, no side" the widget's own subtitle/info already
       // says in full elsewhere) — not a data-dependent claim, so it holds even when `value` is
       // `not provided`.

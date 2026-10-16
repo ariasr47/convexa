@@ -167,8 +167,9 @@ const INHERITED_TWELVE_LABELS = [
   'IV / HV',
   'Vol/OI',
   'IV skew',
-  'Term structure',
-  'Off-exchange %',
+  // Lane 4: the strip shortened these two labels so they stop wrapping beside their ⓘ (board labels).
+  'Term',
+  'Off-exch. %',
   'Opportunity',
 ] as const;
 
