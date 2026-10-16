@@ -654,11 +654,40 @@ function Calibration({
   const H = 300;
   const L = 44;
   const R = 16;
-  const T = 24;
+  const T = 30;
   const B = 34;
   const X = (p: number) => L + p * (W - L - R);
   const Y = (v: number) => T + (1 - v) * (H - T - B);
   const narrow = W < 420;
+  // Each bin's "n" sits above its interval, or below it when that spot is taken, and never on a dot,
+  // the axis label or another n (D-24: at 390 px "n 12" ran into "n 5", and a bin true 100% of the
+  // time had its n printed over its dot). Thin bins are placed first: their n is the warning. A label
+  // with no free spot is left to the table, as the busy middle bins already are on a narrow plot.
+  const CH = 6.7; // one mono character at 11px
+  type Rect = { x0: number; x1: number; y0: number; y1: number };
+  const hits = (a: Rect, b: Rect) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+  const taken: Rect[] = [
+    { x0: L - 6, x1: L - 6 + 11 * CH, y0: T - 20, y1: T - 8 }, // "came true ↑"
+    ...bins.map((b) => {
+      const x = X(b.meanP);
+      const y = Y(b.hitRate);
+      return { x0: x - 5, x1: x + 5, y0: y - 5, y1: y + 5 };
+    }),
+  ];
+  const nLabels = new Map<number, number>();
+  for (const b of [...bins].sort((a, c) => a.n - c.n)) {
+    // On a narrow plot, the busy middle bins keep their n in the table only.
+    if (narrow && b.n > 20 && b.meanP >= 0.2 && b.meanP <= 0.8) continue;
+    const x = X(b.meanP);
+    const half = (`n ${b.n}`.length * CH) / 2 + 2;
+    for (const y of [Y(b.ciHi) - 7, Y(b.ciLo) + 15]) {
+      const box = { x0: x - half, x1: x + half, y0: y - 10, y1: y + 1 };
+      if (box.y0 < 0 || box.y1 > H - B - 2 || taken.some((r) => hits(r, box))) continue;
+      taken.push(box);
+      nLabels.set(b.lo, y);
+      break;
+    }
+  }
   return (
     <ChartFrame
       finding={`Calls came true within ${Math.round(gap * 100)} points of their stated odds, on average${
@@ -736,8 +765,7 @@ function Calibration({
             />
             {bins.map((b) => {
               const x = X(b.meanP);
-              // On a narrow plot, the busy middle bins keep their n in the table only.
-              const showN = !narrow || b.n <= 20 || b.meanP < 0.2 || b.meanP > 0.8;
+              const nY = nLabels.get(b.lo);
               return (
                 <g key={b.lo}>
                   <line
@@ -751,10 +779,10 @@ function Calibration({
                   <line x1={x - 4} x2={x + 4} y1={Y(b.ciLo)} y2={Y(b.ciLo)} stroke={roles.ctx} />
                   <line x1={x - 4} x2={x + 4} y1={Y(b.ciHi)} y2={Y(b.ciHi)} stroke={roles.ctx} />
                   <circle cx={x} cy={Y(b.hitRate)} r={4.5} fill={roles.emph} />
-                  {showN && (
+                  {nY !== undefined && (
                     <text
                       x={x}
-                      y={Math.max(T - 2, Y(b.ciHi) - 6)}
+                      y={nY}
                       textAnchor="middle"
                       fontFamily={MONO.fontFamily}
                       fontSize={11}

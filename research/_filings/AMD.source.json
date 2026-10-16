@@ -1,0 +1,13 @@
+{
+  "ticker": "AMD",
+  "cik": "0000002488",
+  "entity": "ADVANCED MICRO DEVICES INC",
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000002488.json",
+  "fetched": "2026-10-16",
+  "concepts": [
+    "us-gaap:EarningsPerShareDiluted",
+    "us-gaap:InventoryNet",
+    "us-gaap:OperatingIncomeLoss",
+    "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax"
+  ]
+}

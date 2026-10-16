@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // The research check's filing pass: every figure in a ticker's latest note that names an XBRL concept,
 // against a SAVED SEC company-facts answer for that ticker. It never fetches: SEC asks every program
-// that reads EDGAR for a contact address, so the facts are saved by hand (or by the API) beside the
-// notes, and this check reads only those files.
+// that reads EDGAR for a contact address, so the facts are saved beside the notes by
+// save-filings.mjs (run by hand with SEC_USER_AGENT set), and this check reads only those files.
+// `npm run verify` runs it (tools/verify.mjs) when research/ or tools/ changed.
 //
 //   node tools/research-notes/check-filings.mjs [--facts research/_filings] [--research research]
 //
@@ -11,11 +12,17 @@
 // note page shows and exits 1 on any it can't explain: a figure that differs from the filing, a concept
 // the filing doesn't tag, units that don't fit, or a figure or period it can't read. Writing the reason
 // after `;` in the figure's concept cell explains a difference ("as reported in the 8-K"). A ticker
-// with no saved answer, and a period no saved filing covers, are listed as not checked, not failed.
+// with no saved answer, a period no saved filing covers, and a concept the saved slice predates (not in
+// its <TICKER>.source.json `concepts`) are listed as not checked, not failed.
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { UNEXPLAINED, checkFigures, filingsFromCompanyFacts } from './filing-check.mjs';
+import {
+  UNEXPLAINED,
+  checkFigures,
+  filingsFromCompanyFacts,
+  parseConceptCell,
+} from './filing-check.mjs';
 import { formatErrors, loadNotes, summarize } from './notes.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -57,7 +64,38 @@ for (const { ticker, latest } of summarize(notes)) {
     console.error(`${rel(file)}: not a company-facts answer (${error.message})`);
     continue;
   }
-  const rows = checkFigures(figures, filingsFromCompanyFacts(json));
+  // A slice saved by save-filings.mjs holds only the concepts its note named then, listed in
+  // <TICKER>.source.json (with any the filing lacked). A concept named since isn't in the slice, so
+  // "the filing doesn't tag it" would be false: it reads not checked until the facts are saved again.
+  // A whole answer saved by hand has no such record and covers every concept.
+  let saved = null;
+  const source = path.join(factsDir, `${ticker}.source.json`);
+  if (existsSync(source)) {
+    try {
+      const concepts = JSON.parse(readFileSync(source, 'utf8')).concepts;
+      if (!Array.isArray(concepts)) throw new Error('no "concepts" list');
+      saved = new Set(concepts);
+    } catch (error) {
+      failed += 1;
+      console.error(`${rel(source)}: not a saved-facts record (${error.message})`);
+      continue;
+    }
+  }
+  const predates = (f) => {
+    if (!saved) return false;
+    const parsed = parseConceptCell(f.concept);
+    return !('error' in parsed) && parsed.terms.some((t) => !saved.has(t));
+  };
+  for (const f of figures.filter(predates)) {
+    unchecked += 1;
+    console.log(
+      `${where}  ${f.label} · ${f.asOf}: not checked: the saved facts predate this concept; run tools/research-notes/save-filings.mjs`,
+    );
+  }
+  const rows = checkFigures(
+    figures.filter((f) => !predates(f)),
+    filingsFromCompanyFacts(json),
+  );
   for (const r of rows) {
     const head = `${where}  ${r.label} · ${r.asOf}`;
     if (r.status === 'matches' || r.status === 'computed') {

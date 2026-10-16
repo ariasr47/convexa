@@ -52,11 +52,15 @@ export function SampleTaChart({
   view,
   selected,
   onSelect,
+  rsi: showRsi = true,
 }: {
   symbol: string;
   view: SampleBarsView;
   selected: number;
   onSelect: (i: number) => void;
+  /** The RSI 14 panel under the price. The sample research note draws the price alone
+   *  (design ticker-note.mjs: `sampleTaChart({ rsi: false })`); the table keeps every column. */
+  rsi?: boolean;
 }) {
   const t = useTheme();
   const roles = chartRoles(t);
@@ -79,7 +83,7 @@ export function SampleTaChart({
   const RT = 10;
   const RH = 86;
   const RB = 10;
-  const RSI_H = RT + RH + RB;
+  const RSI_H = showRsi ? RT + RH + RB : 0;
   const plotW = Math.max(0, W - PL - PR);
   const slot = n ? plotW / n : 0;
   const x = (i: number) => PL + slot * (i + 0.5);
@@ -193,7 +197,7 @@ export function SampleTaChart({
     <ChartFrame
       finding={sampleTaFinding(symbol, closes, e20, e50, shortDate(last.date))}
       metric={`${symbol} daily close with EMA 20 and EMA 50`}
-      sub={`${symbol} daily close · USD · ${n} synthetic daily bars to ${shortDate(last.date)}, ${last.date.slice(0, 4)} · EMA 20 and EMA 50 (EMA with SMA seed) · below: RSI 14 (Wilder), 0–100`}
+      sub={`${symbol} daily close · USD · ${n} synthetic daily bars to ${shortDate(last.date)}, ${last.date.slice(0, 4)} · EMA 20 and EMA 50 (EMA with SMA seed)${showRsi ? ' · below: RSI 14 (Wilder), 0–100' : ''}`}
       provenance="sample"
       tag={{ state: 'sample', detail: 'not recorded market history' }}
       height={H + RSI_H + 24}
@@ -336,73 +340,77 @@ export function SampleTaChart({
                 </text>
               ))}
             </svg>
-            <Box
-              component="span"
-              sx={{
-                ...MONO,
-                display: 'block',
-                mt: 0.5,
-                fontSize: 11,
-                color: 'text.secondary',
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-              }}
-            >
-              RSI 14 · dashed at 30 and 70
-            </Box>
-            <svg
-              width={W}
-              height={RSI_H}
-              role="img"
-              aria-label={`RSI 14 ending at ${f1(lastRsi)}`}
-              style={{ display: 'block' }}
-              onPointerMove={pick}
-              onPointerDown={pick}
-            >
-              <line x1={PL} x2={PL + plotW} y1={ry(100)} y2={ry(100)} stroke={roles.grid} />
-              <line x1={PL} x2={PL + plotW} y1={ry(0)} y2={ry(0)} stroke={roles.axis} />
-              {[30, 70].map((v) => (
-                <g key={v}>
-                  <line
-                    x1={PL}
-                    x2={PL + plotW}
-                    y1={ry(v)}
-                    y2={ry(v)}
-                    stroke={roles.edge}
-                    strokeDasharray="4 3"
-                  />
-                  <text x={PL - 6} y={ry(v) + 4} textAnchor="end" {...text}>
-                    {v}
-                  </text>
-                </g>
-              ))}
-              <line
-                x1={x(sel)}
-                x2={x(sel)}
-                y1={RT}
-                y2={RT + RH}
-                stroke={roles.edge}
-                strokeDasharray="3 3"
-              />
-              <path
-                d={path(rsi.map(valueOf), ry)}
-                fill="none"
-                stroke={roles.emph}
-                strokeWidth={1.5}
-                strokeLinejoin="round"
-              />
-              {lastRsi !== null && (
-                <text
-                  x={PL + plotW + 8}
-                  y={Math.min(Math.max(ry(lastRsi) + 4, RT + 8), RT + RH + 4)}
-                  fontSize={11}
-                  fill={t.palette.text.primary}
-                  style={MONO}
+            {showRsi && (
+              <>
+                <Box
+                  component="span"
+                  sx={{
+                    ...MONO,
+                    display: 'block',
+                    mt: 0.5,
+                    fontSize: 11,
+                    color: 'text.secondary',
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                  }}
                 >
-                  {`${narrow ? 'RSI' : 'RSI 14'} ${lastRsi.toFixed(1)}`}
-                </text>
-              )}
-            </svg>
+                  RSI 14 · dashed at 30 and 70
+                </Box>
+                <svg
+                  width={W}
+                  height={RSI_H}
+                  role="img"
+                  aria-label={`RSI 14 ending at ${f1(lastRsi)}`}
+                  style={{ display: 'block' }}
+                  onPointerMove={pick}
+                  onPointerDown={pick}
+                >
+                  <line x1={PL} x2={PL + plotW} y1={ry(100)} y2={ry(100)} stroke={roles.grid} />
+                  <line x1={PL} x2={PL + plotW} y1={ry(0)} y2={ry(0)} stroke={roles.axis} />
+                  {[30, 70].map((v) => (
+                    <g key={v}>
+                      <line
+                        x1={PL}
+                        x2={PL + plotW}
+                        y1={ry(v)}
+                        y2={ry(v)}
+                        stroke={roles.edge}
+                        strokeDasharray="4 3"
+                      />
+                      <text x={PL - 6} y={ry(v) + 4} textAnchor="end" {...text}>
+                        {v}
+                      </text>
+                    </g>
+                  ))}
+                  <line
+                    x1={x(sel)}
+                    x2={x(sel)}
+                    y1={RT}
+                    y2={RT + RH}
+                    stroke={roles.edge}
+                    strokeDasharray="3 3"
+                  />
+                  <path
+                    d={path(rsi.map(valueOf), ry)}
+                    fill="none"
+                    stroke={roles.emph}
+                    strokeWidth={1.5}
+                    strokeLinejoin="round"
+                  />
+                  {lastRsi !== null && (
+                    <text
+                      x={PL + plotW + 8}
+                      y={Math.min(Math.max(ry(lastRsi) + 4, RT + 8), RT + RH + 4)}
+                      fontSize={11}
+                      fill={t.palette.text.primary}
+                      style={MONO}
+                    >
+                      {`${narrow ? 'RSI' : 'RSI 14'} ${lastRsi.toFixed(1)}`}
+                    </text>
+                  )}
+                </svg>
+              </>
+            )}
           </>
         )}
       </Box>
@@ -411,7 +419,7 @@ export function SampleTaChart({
         aria-live="polite"
         sx={{ m: 0, fontSize: 12, color: 'text.secondary', ...MONO }}
       >
-        {`${shortDate(bar.date)} · bar ${sel + 1} of ${n} · close $${bar.close.toFixed(2)} · EMA 20 ${f2(valueOf(e20[sel]))} · EMA 50 ${f2(valueOf(e50[sel]))} · RSI 14 ${f1(valueOf(rsi[sel]))}`}
+        {`${shortDate(bar.date)} · bar ${sel + 1} of ${n} · close $${bar.close.toFixed(2)} · EMA 20 ${f2(valueOf(e20[sel]))} · EMA 50 ${f2(valueOf(e50[sel]))}${showRsi ? ` · RSI 14 ${f1(valueOf(rsi[sel]))}` : ''}`}
       </Box>
     </ChartFrame>
   );

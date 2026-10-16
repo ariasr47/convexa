@@ -1,12 +1,12 @@
 // Final · Convexa v1 — the ticker research tab and note view (/ticker/:symbol/research[/:slug]).
 // Production: the owner's real note (research/NVDA/2026-10-13-initiation.md: title, strip, TL;DR, scorecard,
 // revenue chart, margin comparison, GAAP bridge, catalysts, forecasts — figures as the note states them) in
-// the v5 figure forms, with freshness by word and shape and the live public panels beside it (FINRA live,
-// SEC Not set up). Staging: the shipped authored sample case (demo/catalog/shared.ts NVDA narrative) laid
-// out in the same template, every figure dashed and hatched.
+// the v5 figure forms, with freshness by word and shape and the live public panels beside it (SEC set up
+// and Updated; FINRA Off until its terms are confirmed — redrawn 2026-10-16). Staging: the shipped authored
+// sample case (demo/catalog/shared.ts NVDA narrative) laid out in the same template, every figure dashed
+// and hatched, with FINRA-shaped samples.
 import { icon, v4Page } from '../../lib.mjs';
 import { barList, chartFrame, fmt, plot, rangeBar, stateBody, ticks } from '../../chart-kit.mjs';
-import { SI } from '../../data/charts.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
 import { bridgeRows } from '../v5/system.mjs';
 import { statesBoard } from '../v4/kit.mjs';
@@ -71,13 +71,21 @@ function catalystsChart() {
 }
 
 // ---- the live public panels (NotePublicPanels) ----------------------------------------------------
-function siPanel() {
-  const k = 311 / SI[SI.length - 1].shares; const S = SI.slice(-12).map((s) => +(s.shares * k).toFixed(1));
-  return chartFrame({ claim: `Shares sold short rose ${Math.round((S[11] / S[0] - 1) * 100)}% in six months, to 311M`, sub: 'Short interest · millions of shares · last 12 FINRA settlements · 1.3% of the float · 2.75 days to cover', state: 'delayed', stateText: 'Delayed · 9 days', body: plot({ height: 120, pr: 12, prn: 8, pl: 40, pt: 22, pb: 24, keyboard: false, x: { min: -0.6, max: 11.4, ticks: [{ v: 0, label: 'Apr', align: 0 }, { v: 11, label: 'Sep 30', align: 1 }] }, y: { min: 0, max: 320, ticks: [{ v: 0, label: '0' }, { v: 300, label: '300M' }] }, hlines: [{ v: 0, kind: 'zero' }], bars: S.map((v, i) => ({ x: i, v, role: i === 11 ? 'emph' : 'ctx', label: i === 11 ? '311M' : '' })), barW: 10, aria: 'Short interest by settlement' }), source: 'FINRA · short interest', asof: 'Settled Sep 30 · published Oct 9' });
-}
-const shortVolPanel = () => P('Short-sale volume', stateTag('current', 'Updated Oct 13'), `<span class="dval" style="font-size: 22px;">41%<span class="steel" style="font-size: 13px; font-family: 'IBM Plex Sans';"> of Oct 13 volume</span></span><span class="dline">20-day average 43%. Includes market makers hedging; it is not short interest.</span><div>${provChip('FINRA Reg SHO daily · Oct 13', 'solid')}</div>`);
-const secPanel = (title, line) => P(title, stateTag('notConfigured'), `<strong style="font-size: 13px;">SEC filings aren’t set up on this site yet.</strong><span class="dline">${line}</span><details class="dop"><summary>For the operator</summary><span class="mono" style="font-size: 11px; color: var(--steel);">Set SEC_USER_AGENT on the API</span></details>`);
-const publicPanels = () => `<span class="caps" style="margin-top: 8px;">Positioning and filings · live</span>${siPanel()}${shortVolPanel()}${secPanel('Insider trades · 90 days', 'Insider trades come from SEC Form 4, through EDGAR.')}${secPanel('Filed since this note', 'EDGAR needs an identifying contact address. The note still lists the filings it cites.')}`;
+// Production (owner, 2026-10-15): SEC is set up (SEC_USER_AGENT on the API), so insider trades and
+// Filed since this note read Updated; FINRA is Off until its display terms are confirmed
+// (apps/dashboard/src/app/shared/dataState/finraSwitch.ts). Staging keeps the FINRA-shaped samples.
+const FINRA_OFF_REASON = 'Off on this site until FINRA’s terms for showing its data here are confirmed. The demo shows sample data shaped like it.';
+const finraOffPanel = (title) => P(title, stateTag('off'), `<span class="dline">${FINRA_OFF_REASON}</span>`);
+// NVDA's Form 4s as the API counts them (apps/api edgar.rs form4_rows, parse_form4): the 16 filed in the
+// 90 days to Oct 14, 2026 (Aug 7 – Oct 9), 25 open-market sales (code S) and no purchases (P),
+// 4,332,118 shares sold, 9 of the sales in filings marked 10b5-1 (aff10b5One). Read from SEC EDGAR on
+// 2026-10-16: data.sec.gov/submissions/CIK0001045810.json and each filing's form4.xml.
+const insiderPanel = () => P('Insider trades · 90 days', stateTag('current', 'Updated · latest Oct 9'), `<span class="dval" style="font-size: 22px;">25 sales<span class="steel" style="font-size: 13px; font-family: 'IBM Plex Sans';"> · 0 buys</span></span><span class="dline">9 of the trades were under pre-set 10b5-1 plans, which schedule sales months ahead.</span><div class="drows">${[['Shares sold', '4.3M'], ['Shares bought', '0']].map(([k, v]) => `<div style="grid-template-columns: minmax(0, 1fr) auto; padding: 6px 0; font-size: 12px;"><span class="steel">${k}</span><span class="mono">${v}</span></div>`).join('')}</div><div>${provChip('SEC Form 4 · 16 filings, latest Oct 9', 'solid')}</div>`);
+// The same submissions list: nothing but Forms 3, 4, 5 and 144 was filed after the note's Oct 13 (to the
+// board's Oct 14, or to Oct 16 when it was read), so the panel is in its "Nothing yet" form, pointing at
+// the note's results date (NotePublicPanels.tsx).
+const filedSincePanel = () => P('Filed since this note', stateTag('current'), `<strong style="font-size: 13px;">Nothing yet. The note was written Oct 13, 2026.</strong><span class="dline">Next expected: Q3 FY2027 results, Nov 17. When a results or quarterly filing lands, the note comes due and the filing is listed here.</span><div>${provChip('SEC EDGAR · checked every hour', 'solid')}</div>`);
+const publicPanels = () => `<span class="caps" style="margin-top: 8px;">Positioning and filings · live</span>${finraOffPanel('Short interest')}${finraOffPanel('Short-sale volume')}${insiderPanel()}${filedSincePanel()}`;
 
 // =================================================================================================
 // Production · the owner's NVDA note

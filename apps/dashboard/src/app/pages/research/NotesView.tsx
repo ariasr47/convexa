@@ -55,12 +55,12 @@ function TickerTabs({ ticker }: { ticker: string }) {
       to={to}
       aria-current={current ? 'page' : undefined}
       sx={{
-        px: 1.5,
+        px: { xs: 1, sm: 1.5 },
         py: 1.75,
         textDecoration: 'none',
         fontSize: 13,
         fontWeight: current ? 600 : 500,
-        letterSpacing: '0.04em',
+        letterSpacing: { xs: '0.02em', sm: '0.04em' },
         textTransform: 'uppercase',
         whiteSpace: 'nowrap',
         color: current ? 'text.primary' : 'text.secondary',
@@ -71,30 +71,39 @@ function TickerTabs({ ticker }: { ticker: string }) {
       {label}
     </Box>
   );
+  // At 390 px the tabs and "All research →" share one row (tighter tab padding under `sm`); on a
+  // narrower screen the link wraps to its own row instead of being cut off (D-21).
   return (
     <Box
       component="nav"
       aria-label={`${ticker} pages`}
       sx={{
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
-        gap: 0.5,
+        gap: { xs: 0, sm: 0.5 },
         borderBottom: 1,
         borderColor: 'divider',
         mb: { xs: 2.5, md: 4 },
-        overflowX: 'auto',
       }}
     >
       {tab(base, 'Overview')}
       {tab(`${base}/technical-analysis`, 'Technical')}
       {tab(`${base}/research`, 'Research', true)}
-      <Box sx={{ flex: 1 }} />
       <Link
         component={RouterLink}
         to="/research"
-        sx={{ fontSize: 13, whiteSpace: 'nowrap', pl: 1.5 }}
+        sx={{
+          ml: 'auto',
+          pl: { xs: 1, sm: 1.5 },
+          minHeight: 44,
+          display: 'inline-flex',
+          alignItems: 'center',
+          fontSize: 13,
+          whiteSpace: 'nowrap',
+        }}
       >
-        All research
+        All research →
       </Link>
     </Box>
   );

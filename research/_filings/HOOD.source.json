@@ -1,0 +1,11 @@
+{
+  "ticker": "HOOD",
+  "cik": "0001783879",
+  "entity": "Robinhood Markets, Inc.",
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001783879.json",
+  "fetched": "2026-10-16",
+  "concepts": [
+    "us-gaap:EarningsPerShareDiluted",
+    "us-gaap:Revenues"
+  ]
+}

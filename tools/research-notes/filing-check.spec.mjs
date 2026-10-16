@@ -285,6 +285,69 @@ test('the research check lists every difference and fails only on one nobody exp
   }
 });
 
+test('a concept the saved facts predate is not checked; one saved but untagged is still missing', () => {
+  // save-filings.mjs keeps only the concepts the note named when it ran, and lists them in
+  // <TICKER>.source.json. A concept named later isn't in the slice: "the filing doesn't tag it" would
+  // be false (NVDA's 10-Q tags basic EPS), so it reads not checked until the facts are saved again.
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'filing-check-'));
+  try {
+    const research = path.join(dir, 'research');
+    const facts = path.join(research, '_filings');
+    mkdirSync(path.join(research, 'NVDA'), { recursive: true });
+    mkdirSync(facts);
+    writeFileSync(
+      path.join(research, 'NVDA', '2026-10-13-initiation.md'),
+      [
+        '---',
+        'ticker: NVDA',
+        'date: 2026-10-13',
+        'title: Checked',
+        '---',
+        '',
+        'Lead.',
+        '',
+        '```metrics',
+        'Revenue | $46.7B @ Q2 FY2027 | | up | | us-gaap:Revenues',
+        'EPS, GAAP basic | $1.08 @ Q2 FY2027 | | up | | us-gaap:EarningsPerShareBasic',
+        '```',
+        '',
+      ].join('\n'),
+    );
+    // The fixture tags Revenues and not EarningsPerShareBasic, like a slice saved before EPS was named.
+    copyFileSync(FIXTURE, path.join(facts, 'NVDA.json'));
+    const saved = (concepts) =>
+      writeFileSync(
+        path.join(facts, 'NVDA.source.json'),
+        JSON.stringify({ ticker: 'NVDA', fetched: '2026-10-16', concepts }),
+      );
+    const run = () =>
+      spawnSync(process.execPath, [path.join(here, 'check-filings.mjs'), '--research', research], {
+        encoding: 'utf8',
+      });
+
+    saved(['us-gaap:Revenues']);
+    let r = run();
+    assert.equal(r.status, 0, `${r.stdout}${r.stderr}`);
+    assert.match(r.stdout, /Revenue · Q2 FY2027: matches/);
+    assert.match(
+      r.stdout,
+      /EPS, GAAP basic · Q2 FY2027: not checked: the saved facts predate this concept; run tools\/research-notes\/save-filings\.mjs/,
+    );
+    assert.match(r.stdout, /1 figure\(s\) checked, 1 not checked, 0 unexplained/);
+
+    // Asked for at save time and still not in the facts: the filing really doesn't tag it.
+    saved(['us-gaap:EarningsPerShareBasic', 'us-gaap:Revenues']);
+    r = run();
+    assert.equal(r.status, 1, `${r.stdout}${r.stderr}`);
+    assert.match(
+      r.stderr,
+      /EPS, GAAP basic · Q2 FY2027: missing\. The 10-Q doesn't tag us-gaap:EarningsPerShareBasic/,
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // ---- W1-32, W1-33, W1-35 --------------------------------------------------------------------------
 
 /** A minimal company-facts answer: one concept, a point per [form, accn, filed, fy, fp, start, end, val]. */

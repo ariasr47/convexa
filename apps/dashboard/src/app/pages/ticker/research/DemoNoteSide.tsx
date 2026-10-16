@@ -81,7 +81,8 @@ function Panel({
   );
 }
 
-function Chip({ text }: { text: string }) {
+/** A dashed provenance chip: what a sample figure is shaped like (canon P-3, P-8). */
+export function SampleChip({ text }: { text: string }) {
   return (
     <Box
       component="span"
@@ -183,7 +184,7 @@ export function DemoNoteSide({ symbol, read }: { symbol: string; read: Read<Publ
                 A sample filing list for the scenario. Not SEC records.
               </Box>
             )}
-            <Chip text="Sample · shaped like SEC EDGAR" />
+            <SampleChip text="Sample · shaped like SEC EDGAR" />
           </Panel>
         </>
       )}
