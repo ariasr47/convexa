@@ -9,7 +9,7 @@
 import { chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
-import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
+import { STAGING_DEMO_NAMES, STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
 import {
   dataMode,
   DEMO_CALENDAR,
@@ -119,15 +119,8 @@ const SAMPLE_AGING = DEMO
     })
   : [];
 
-/** The demo's sample symbols, by name (the scenario carries tickers only). */
-const SAMPLE_NAMES: Record<string, string> = {
-  AAPL: 'Apple',
-  MSFT: 'Microsoft',
-  NVDA: 'NVIDIA',
-  QQQ: 'Invesco QQQ Trust',
-  SPY: 'SPDR S&P 500 ETF',
-  TSLA: 'Tesla',
-};
+/** The demo's sample symbols, by name: the one shared list, also read by ⌘K (shared/lib/demoSite). */
+const SAMPLE_NAMES = STAGING_DEMO_NAMES;
 
 type SampleCard = { ticker: string; title: string; thesis: string; chart: ChartBlock | null };
 

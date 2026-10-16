@@ -4,24 +4,28 @@
  * scrolls inside its OWN `overflow-x` container so a wide desktop column set can never make the page
  * body scroll sideways.
  *
- * A row is a NAVIGATION target and nothing else (`[no-real-order-path]`, AC-11): the Symbol cell
- * carries a real `<a href="/ticker/{SYMBOL}">` (keyboard-reachable, gets the global `:focus-visible`
- * ring) and the row body forwards a click to the same route. There is no order, trade, or broker
- * affordance anywhere on this surface.
+ * A row READS and NAVIGATES, nothing else (`[no-real-order-path]`, AC-11): the Symbol cell carries a
+ * real `<a href="/ticker/{SYMBOL}">` (keyboard-reachable, gets the global `:focus-visible` ring), and
+ * the row opens its preview (Final Scanner board, site check D-03): the chevron button at its right
+ * edge, Enter on the focused row, or a click on the row body. The preview reads back the row's own
+ * fields and links the same desk; Escape closes it and returns focus to the control that opened it.
+ * One preview is open at a time. There is no order, trade, or broker affordance anywhere on this
+ * surface.
  */
 import { MONO_FACE } from '@/shared/figure';
 import { extrasFor } from '@/shared/theme/tokens';
 import type { ScanDensity, ScanRow, ScanViewSort } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
-import { Fragment, type ReactNode } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Fragment, useCallback, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { type PollDelta } from './format';
 import {
   COLUMN_LABELS,
   regimeLookup,
   SCAN_COLUMNS,
   SCAN_COPY,
+  SCAN_PREVIEW_COPY,
   SORTABLE_COLUMNS,
   volLookup,
   type ScanColumn,
@@ -37,6 +41,7 @@ import {
   UpdatedCell,
   WallsCell,
 } from './ScanCells';
+import { PreviewToggle, ScanRowPreview } from './ScanRowPreview';
 
 /** index-first-defaults AC-3 — one table section. `label: null` renders no header row (the
  *  remaining-universe tail); a labelled group gets the table's own header treatment. */
@@ -218,22 +223,46 @@ function cellContent(
   }
 }
 
+/** How the open preview was opened: Escape returns focus to that control. */
+type PreviewOpener = 'row' | 'button';
+
+/** The table's columns plus the preview chevron's own trailing column. */
+const COLUMN_COUNT = SCAN_COLUMNS.length + 1;
+
+/** Screen-reader-only text ('1px' strings: a bare `1` in sx is 100%, OrdersWidget.tsx srOnly). */
+const srOnly = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+} as const;
+
 function ScanTableRow({
   row,
   density,
   nowS,
   flashActive,
-  onOpen,
   delta,
   priceOffline,
+  previewOpen,
+  onPreview,
+  onPreviewEscape,
+  rowRef,
+  buttonRef,
 }: {
   row: ScanRow;
   density: ScanDensity;
   nowS: number;
   flashActive: boolean;
-  onOpen: (symbol: string) => void;
   delta?: PollDelta | null;
   priceOffline: (symbol: string) => { retained: boolean } | null;
+  previewOpen: boolean;
+  onPreview: (symbol: string, via: PreviewOpener) => void;
+  onPreviewEscape: (symbol: string) => void;
+  rowRef: (el: HTMLElement | null) => void;
+  buttonRef: (el: HTMLButtonElement | null) => void;
 }) {
   const tdSx = {
     padding: density === 'compact' ? '7px 10px' : '12px 10px',
@@ -244,29 +273,84 @@ function ScanTableRow({
     // Coarse-pointer tap-target floor (≥44px row) without inflating the dense desktop read.
     '@media (pointer: coarse)': { paddingTop: '12px', paddingBottom: '12px' },
   };
+  // Escape anywhere in the row or its preview closes the preview and hands focus back.
+  const escape = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key !== 'Escape' || !previewOpen) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onPreviewEscape(row.symbol);
+  };
   return (
-    <Box
-      component="tr"
-      data-testid="scan-row"
-      data-symbol={row.symbol}
-      data-status={row.status}
-      onClick={() => onOpen(row.symbol)}
-      sx={{
-        cursor: 'pointer',
-        // Hover chrome is NEUTRAL — the row's one amber is the tier chip.
-        '&:hover': { bgcolor: (theme) => extrasFor(theme).panelRaised },
-      }}
-    >
-      {SCAN_COLUMNS.map((column) => (
-        <Box
-          component="td"
-          key={column}
-          sx={column === 'symbol' ? { ...tdSx, ...stickyColSx } : tdSx}
-        >
-          {cellContent(column, row, nowS, flashActive, priceOffline, delta)}
+    <>
+      <Box
+        component="tr"
+        ref={rowRef}
+        tabIndex={0}
+        // No aria-expanded here: on a plain table row ARIA allows it only inside a treegrid (axe
+        // aria-conditional-attr, serious). The chevron button carries the expanded state and
+        // aria-controls; Enter on the row is a keyboard shortcut to the same toggle.
+        data-testid="scan-row"
+        data-symbol={row.symbol}
+        data-status={row.status}
+        onClick={(e) => {
+          // The symbol link navigates, and the chevron and the score's help handle themselves.
+          if ((e.target as HTMLElement).closest('a, button')) return;
+          onPreview(row.symbol, 'row');
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') return escape(e);
+          // Only the row itself: Enter on the symbol link still opens the desk.
+          if (e.key !== 'Enter' || e.target !== e.currentTarget) return;
+          e.preventDefault();
+          onPreview(row.symbol, 'row');
+        }}
+        sx={{
+          cursor: 'pointer',
+          // Hover chrome is NEUTRAL — the row's one amber is the tier chip.
+          '&:hover': { bgcolor: (theme) => extrasFor(theme).panelRaised },
+          // The theme's one focus ring (its colour and width), drawn on the cells' inner edges: an
+          // outline on a <tr> is clipped by the table's own scroller and painted over by the sticky
+          // Symbol cell.
+          '&:focus-visible': { outline: 'none' },
+          '&:focus-visible > td': (theme) => {
+            const ring = extrasFor(theme).textAmber;
+            return { boxShadow: `inset 0 2px 0 ${ring}, inset 0 -2px 0 ${ring}` };
+          },
+          '&:focus-visible > td:first-of-type': (theme) => {
+            const ring = extrasFor(theme).textAmber;
+            return {
+              boxShadow: `inset 2px 0 0 ${ring}, inset 0 2px 0 ${ring}, inset 0 -2px 0 ${ring}`,
+            };
+          },
+          '&:focus-visible > td:last-of-type': (theme) => {
+            const ring = extrasFor(theme).textAmber;
+            return {
+              boxShadow: `inset -2px 0 0 ${ring}, inset 0 2px 0 ${ring}, inset 0 -2px 0 ${ring}`,
+            };
+          },
+          ...(previewOpen && { '& > td': { borderBottomColor: 'transparent' } }),
+        }}
+      >
+        {SCAN_COLUMNS.map((column) => (
+          <Box
+            component="td"
+            key={column}
+            sx={column === 'symbol' ? { ...tdSx, ...stickyColSx } : tdSx}
+          >
+            {cellContent(column, row, nowS, flashActive, priceOffline, delta)}
+          </Box>
+        ))}
+        <Box component="td" sx={{ ...tdSx, py: 0, px: '6px', textAlign: 'right' }}>
+          <PreviewToggle
+            symbol={row.symbol}
+            open={previewOpen}
+            onToggle={() => onPreview(row.symbol, 'button')}
+            buttonRef={buttonRef}
+          />
         </Box>
-      ))}
-    </Box>
+      </Box>
+      <ScanRowPreview row={row} open={previewOpen} colSpan={COLUMN_COUNT} onKeyDown={escape} />
+    </>
   );
 }
 
@@ -282,9 +366,32 @@ export function ScanTable({
   priceOffline,
   sampleHead,
 }: ScanTableProps) {
-  const navigate = useNavigate();
   // Ungrouped ⇒ ONE unlabeled section: the body renders identically to the pre-grouping table.
   const sections: ScanGroup[] = groups ?? [{ key: 'all', label: null, rows }];
+
+  // One preview open at a time; ephemeral (never persisted, gone on reload), like the leg
+  // disclosure on Positions. Keyed by symbol, so a poll that re-sorts the rows keeps it open.
+  const [preview, setPreview] = useState<{ symbol: string; via: PreviewOpener } | null>(null);
+  const rowEls = useRef(new Map<string, HTMLElement>());
+  const buttonEls = useRef(new Map<string, HTMLButtonElement>());
+  const onPreview = useCallback((symbol: string, via: PreviewOpener) => {
+    setPreview((cur) => (cur?.symbol === symbol ? null : { symbol, via }));
+  }, []);
+  const onPreviewEscape = useCallback(
+    (symbol: string) => {
+      const via = preview?.symbol === symbol ? preview.via : 'row';
+      setPreview(null);
+      (via === 'button' ? buttonEls.current.get(symbol) : rowEls.current.get(symbol))?.focus();
+    },
+    [preview],
+  );
+  const track =
+    <T extends HTMLElement>(map: Map<string, T>, symbol: string) =>
+    (el: T | null) => {
+      if (el) map.set(symbol, el);
+      else map.delete(symbol);
+    };
+
   return (
     <SampleAwareFrame sampleHead={sampleHead}>
       <Box
@@ -298,6 +405,16 @@ export function ScanTable({
             {SCAN_COLUMNS.map((column) => (
               <HeaderCell key={column} column={column} sort={sort} onSort={onSort} />
             ))}
+            <Box
+              component="th"
+              scope="col"
+              data-testid="scan-th-preview"
+              sx={{ ...thSx, width: 44 }}
+            >
+              <Box component="span" sx={srOnly}>
+                {SCAN_PREVIEW_COPY.columnLabel}
+              </Box>
+            </Box>
           </Box>
         </Box>
         <Box component="tbody">
@@ -311,7 +428,7 @@ export function ScanTable({
                   <Box
                     component="th"
                     scope="colgroup"
-                    colSpan={SCAN_COLUMNS.length}
+                    colSpan={COLUMN_COUNT}
                     sx={{ ...thSx, position: 'static', zIndex: 'auto' }}
                   >
                     {group.label}
@@ -326,8 +443,12 @@ export function ScanTable({
                   nowS={nowS}
                   flashActive={flashActive}
                   delta={deltas?.get(row.symbol)}
-                  onOpen={(symbol) => navigate(`/ticker/${symbol}`)}
                   priceOffline={priceOffline}
+                  previewOpen={preview?.symbol === row.symbol}
+                  onPreview={onPreview}
+                  onPreviewEscape={onPreviewEscape}
+                  rowRef={track(rowEls.current, row.symbol)}
+                  buttonRef={track(buttonEls.current, row.symbol)}
                 />
               ))}
             </Fragment>

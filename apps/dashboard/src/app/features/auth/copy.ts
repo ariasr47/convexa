@@ -82,7 +82,10 @@ export const AUTH_COPY = {
     preferencesHeading: 'Preferences',
     signOut: 'Sign out',
     signIn: 'Sign in',
-    accountSignedOutPrompt: 'Sign in to sync your settings across devices.',
+    // Final Settings board, production signed out: what still works without an account (the
+    // Preferences panel is "Stored here").
+    accountSignedOutPrompt:
+      'Sign in to sync your settings across devices. Theme and default ticker work without an account, in this browser.',
     activePersona: 'Active persona',
     defaultTicker: 'Default ticker',
     defaultTickerHelper: 'The symbol the Ticker viewer opens to by default.',

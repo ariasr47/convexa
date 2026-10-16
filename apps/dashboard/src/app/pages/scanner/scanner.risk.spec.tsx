@@ -91,7 +91,8 @@ describe('the dense table renders the locked columns and never fabricates a valu
   it('every locked column has a header, in order, and an ok row fills them', () => {
     renderTable([makeRow()]);
     const headers = screen.getAllByRole('columnheader').map((th) => th.getAttribute('data-testid'));
-    expect(headers).toEqual(SCAN_COLUMNS.map((c) => `scan-th-${c}`));
+    // The locked set in its order, then the row preview's own disclosure column (site check D-03).
+    expect(headers).toEqual([...SCAN_COLUMNS.map((c) => `scan-th-${c}`), 'scan-th-preview']);
     const row = rowFor('SPY');
     expect(within(row).getByTestId('cell-price')).toHaveTextContent('500.00');
     expect(within(row).getByTestId('cell-chg')).toHaveTextContent('+1.24%');
@@ -189,10 +190,16 @@ describe('navigation only', () => {
       '/ticker/SPY',
       '/ticker/QQQ',
     ]);
-    // The only buttons on the table are the column-sort controls — no order/trade affordance.
+    // The only buttons on the table are the column-sort controls and each row's preview disclosure
+    // (site check D-03) — no order/trade affordance. The preview's one control is a desk link.
     for (const button of Array.from(container.querySelectorAll('button'))) {
-      expect(button.getAttribute('data-testid') ?? '').toMatch(/^scan-sort-/);
+      expect(button.getAttribute('data-testid') ?? '').toMatch(/^scan-(sort-|preview-toggle$)/);
     }
+    expect(
+      Array.from(container.querySelectorAll('[data-testid="scan-preview"] a')).map((a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['/ticker/SPY', '/ticker/QQQ']);
     unmount();
 
     render(

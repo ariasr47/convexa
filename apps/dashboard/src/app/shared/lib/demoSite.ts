@@ -22,6 +22,19 @@ export function isDemoBuild(): boolean {
  *  Kept here rather than imported so the live build never bundles the demo's seed data. */
 export const STAGING_DEMO_SYMBOLS = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA'] as const;
 
+/** The demo's six symbols by name (the scenario carries tickers only), for the ⌘K rows and the
+ *  sample research cards. One list, so the two can't drift; a symbol missing here renders without
+ *  a name, never a guessed one. Carried over unchanged from the two copies it replaces
+ *  (CommandPalette/usePaletteData.ts DEMO_NAMES, research/ResearchIndexPage.tsx SAMPLE_NAMES). */
+export const STAGING_DEMO_NAMES: Readonly<Record<string, string>> = {
+  AAPL: 'Apple',
+  MSFT: 'Microsoft',
+  NVDA: 'NVIDIA',
+  QQQ: 'Invesco QQQ Trust',
+  SPY: 'SPDR S&P 500 ETF',
+  TSLA: 'Tesla',
+};
+
 /** The same ticker desk on the demo, or SPY's when the demo doesn't cover this symbol. */
 export function demoDeskUrl(ticker: string): string {
   const t = ticker.trim().toUpperCase();
