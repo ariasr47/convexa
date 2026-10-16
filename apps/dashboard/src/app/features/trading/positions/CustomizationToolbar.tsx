@@ -344,8 +344,10 @@ export function CustomizationToolbar({
     fontWeight: 600,
     borderRadius: 999,
     padding: '3px 11px',
+    // The on pill is the boards' neutral `.pill-on` (phosphor fill, ink label): amber is spent on
+    // "+ Open simulated position", this screen's one primary (owner ruling A, 2026-10-15).
     ...(active
-      ? { bgcolor: 'primary.main', color: 'primary.contrastText', borderColor: 'primary.main' }
+      ? { bgcolor: 'text.primary', color: 'background.default', borderColor: 'text.primary' }
       : { background: 'transparent', color: 'text.secondary', borderColor: 'divider' }),
   });
 

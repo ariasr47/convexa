@@ -10,7 +10,6 @@
  * Design: design/src/screens/final/shell-site-front.mjs (shellStates, “Reset demo data · confirm”)
  * and shell-site-kit.mjs drawerF.
  */
-import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Popover from '@mui/material/Popover';
@@ -39,16 +38,9 @@ export function ResetDemoControl({
         aria-expanded={open}
         onClick={() => setOpen(true)}
         data-testid={drawer ? 'nav-drawer-reset' : 'demo-reset'}
-        sx={(theme) =>
-          drawer
-            ? {
-                minHeight: 44,
-                justifyContent: 'flex-start',
-                color: 'text.primary',
-                borderColor: 'divider',
-              }
-            : { minHeight: 44, color: extrasFor(theme).textAmber }
-        }
+        // Neutral in both placements (owner ruling A, 2026-10-15): the theme gives outlined and
+        // text primary buttons a `text.primary` label; amber is the screen's one contained action.
+        sx={drawer ? { minHeight: 44, justifyContent: 'flex-start' } : { minHeight: 44 }}
       >
         Reset demo data
       </Button>

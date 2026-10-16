@@ -23,7 +23,6 @@ import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
-import { extrasFor } from '@/shared/theme/tokens';
 import { dataMode, resetDemoWorkspace, type ThemePref } from '@convexa/api';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
@@ -518,8 +517,10 @@ export function SettingsPage() {
                 aria-label={C.theme}
                 data-testid="settings-theme"
                 sx={{
-                  // Three equal, spaced, OUTLINED buttons — active = primary outline + faint tint
-                  // (Figma `4:2572`), not MUI's connected/filled toggle group.
+                  // Three equal, spaced, OUTLINED tiles, not MUI's connected/filled toggle group.
+                  // Active = phosphor label, steel outline and a neutral tint: amber is spent on
+                  // the screen's one contained primary (owner ruling A, 2026-10-15; the Final
+                  // Settings board draws these tiles neutral).
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, 1fr)',
                   gap: 1,
@@ -538,17 +539,14 @@ export function SettingsPage() {
                       borderColor: 'divider',
                     },
                     '&.Mui-selected': {
-                      // KEEP amber (active state, §4.3); the body-size LABEL binds the
-                      // text-grade `textAmber` (stage-3 §5.2 light-mode gate) while the
-                      // border/tint stay `primary` (UI class).
-                      color: (theme) => extrasFor(theme).textAmber,
-                      borderColor: 'primary.main',
-                      bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                      color: 'text.primary',
+                      borderColor: 'text.secondary',
+                      bgcolor: (theme) => alpha(theme.palette.text.primary, 0.08),
                     },
                     '&.Mui-selected:hover': {
-                      bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
+                      bgcolor: (theme) => alpha(theme.palette.text.primary, 0.12),
                     },
-                    '&:not(:first-of-type).Mui-selected': { borderColor: 'primary.main' },
+                    '&:not(:first-of-type).Mui-selected': { borderColor: 'text.secondary' },
                   },
                 }}
               >

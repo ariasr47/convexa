@@ -3,7 +3,6 @@
  * masthead carries (PublicDesk, TickerDashboard): links styled as tabs, 44 px tall, scrollable on a
  * phone. The current page is marked by the tab indicator and `aria-current`, never by amber alone.
  */
-import { extrasFor } from '@/shared/theme/tokens';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import { useTheme } from '@mui/material/styles';
@@ -30,7 +29,10 @@ export function TickerTabs({ ticker, current }: { ticker: string; current: Ticke
       sx={{
         minHeight: 44,
         '& .MuiTab-root': { minHeight: 44, minWidth: 96 },
-        '& .MuiTab-root.Mui-selected': { color: (t) => extrasFor(t).textAmber },
+        // Neutral (owner ruling A, 2026-10-15): the current page is carried by weight, a
+        // `text.primary` label and a `text.primary` indicator, never amber.
+        '& .MuiTab-root.Mui-selected': { color: 'text.primary', fontWeight: 600 },
+        '& .MuiTabs-indicator': { bgcolor: 'text.primary' },
       }}
     >
       {tabs.map(([value, label, to]) => (

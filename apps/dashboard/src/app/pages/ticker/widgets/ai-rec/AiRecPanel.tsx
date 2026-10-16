@@ -384,8 +384,10 @@ export function AiRecPanel({
               </Typography>
             )}
             {/* Reads the sample for the expiry set now selected (each set has its own authored read). */}
+            {/* A quiet text button in every state (the Final desk board's `btn ghost`): the
+                desk's one amber fill is "+ Open simulated trade" (owner ruling A, 2026-10-15). */}
             <Button
-              variant={sampleRec ? 'outlined' : 'contained'}
+              variant="text"
               size="small"
               disabled={!bundle || ai.loading}
               onClick={() => void ai.request({ personaId: null, personaName: 'Authored sample' })}

@@ -21,11 +21,13 @@
  * Light `steel2` follows owner ruling 7 (2026-09-03, `council/decisions.md`): clear 4.5:1 on every
  * light surface where it can actually appear.
  *
- * `panelRaised2` (`raised2`, `#E3E3DD`) is DELIBERATELY excluded from the light floor: it has ZERO
- * real consumers today. Darkening far enough to also clear it (`#58657D`, 4.56:1 there) would be
- * un-evidenced AND would invert the tertiary-quieter-than-secondary hierarchy on white (5.88:1 vs
- * `text.secondary`'s composited 5.74:1) for a surface nothing paints. The liveness guard below
- * red-builds the day a component consumes `panelRaised2`, which is the trigger to redo the floor.
+ * `panelRaised2` (`raised2`, `#E3E3DD`) is DELIBERATELY excluded from the steel2 light floor: no
+ * component paints steel2 on it. Darkening far enough to also clear it (`#58657D`, 4.56:1 there)
+ * would be un-evidenced AND would invert the tertiary-quieter-than-secondary hierarchy on white
+ * (5.88:1 vs `text.secondary`'s composited 5.74:1). Its only consumers are the two avatar discs
+ * (ruling A, 2026-10-15: the Final shell board's neutral `.ss-av`), which paint `text.primary` on it,
+ * gated by its own floor row below. The liveness guard red-builds the day any OTHER file consumes
+ * `panelRaised2`, which is the trigger to check what it paints there and redo the floor.
  */
 import { describe, expect, it } from 'vitest';
 import { extras, extrasLight, palette } from './tokens';
@@ -118,6 +120,18 @@ const FLOORS: Array<{ label: string; fg: string; on: Record<string, string>; flo
     floor: 4.5,
   },
   {
+    label: 'text.primary dark on raised2 (the avatar discs, ruling A)',
+    fg: palette.dark.text.primary,
+    on: { raised2: extras.panelRaised2 },
+    floor: 4.5,
+  },
+  {
+    label: 'text.primary light on raised2 (the avatar discs, ruling A)',
+    fg: palette.light.text.primary,
+    on: { raised2: extrasLight.panelRaised2 },
+    floor: 4.5,
+  },
+  {
     label: 'textDim dark on every real dark surface (panel, the cell-price offender, hardest)',
     fg: extras.textDim,
     on: DARK,
@@ -167,7 +181,11 @@ describe('text-token contrast floors, both schemes (steel2, textDim, textInfo)',
     }
   });
 
-  it('LIVENESS GUARD: `panelRaised2` (raised2) still has zero real consumers — the premise the steel2 light floor rests on', () => {
+  // The reviewed consumers: each paints `text.primary` (never steel2) on raised2 — the avatar disc
+  // shared by the nav and Settings, and the phone drawer's account row disc.
+  const RAISED2_CONSUMERS = ['features/auth/avatar.ts', 'shell/TopNav.tsx'];
+
+  it('LIVENESS GUARD: `panelRaised2` (raised2) has no consumer beyond the reviewed avatar discs — the premise the steel2 light floor rests on', () => {
     const sources = import.meta.glob(
       [
         '/src/app/pages/**/*.{ts,tsx}',
@@ -183,12 +201,14 @@ describe('text-token contrast floors, both schemes (steel2, textDim, textInfo)',
     expect(Object.keys(sources).length).toBeGreaterThan(40);
     const hits = Object.entries(sources)
       .filter(([, src]) => src.includes('panelRaised2'))
-      .map(([file]) => file.replace(/^\/src\/app\//, ''));
+      .map(([file]) => file.replace(/^\/src\/app\//, ''))
+      .sort();
     expect(
       hits,
-      'a component now consumes panelRaised2 (raised2) — re-run the steel2 light floor against it ' +
+      'a new file consumes panelRaised2 (raised2) — check what it paints there; re-run the steel2 ' +
+        'light floor if it is tertiary text ' +
         '(owner ruling 7 conditioned #5D6B84 on it staying unconsumed; #58657D clears raised2 too, ' +
         'at the cost of inverting the tertiary/secondary hierarchy on white — see the top-of-file note)',
-    ).toEqual([]);
+    ).toEqual(RAISED2_CONSUMERS);
   });
 });

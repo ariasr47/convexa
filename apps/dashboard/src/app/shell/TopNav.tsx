@@ -200,27 +200,20 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
                   sx={{
                     textDecoration: 'none',
                     fontSize: '0.95rem',
-                    fontWeight: 600,
+                    // The active item is carried by WEIGHT and the amber UNDERLINE (P-6; owner
+                    // ruling A, 2026-10-15): its label is `text.primary`, never amber text — the
+                    // Final shell board's `.nav-links a.on`. Inactive labels are steel at 500.
+                    fontWeight: isActive ? 600 : 500,
                     py: 2,
-                    // AC-10 (no-vendor-production-posture) caught this: `primary.main` is the
-                    // deliberately-quiet FILL-grade amber (`[theme-token-discipline]`'s top-of-file
-                    // note) — 3.23:1 as small nav-link TEXT in light mode, below the 4.5:1 floor
-                    // ('color-contrast', serious, first exposed by the first light+1280 `/ticker`
-                    // scan). `extrasFor(theme).textAmber` is the measured TEXT-GRADE companion this
-                    // codebase already ships for exactly this fill-vs-text split (same fix F7c
-                    // applied to the landing, `52d79ea0` to /blog, /methodology and the auth walls).
-                    color: (t) => (isActive ? extrasFor(t).textAmber : t.palette.text.secondary),
+                    color: isActive ? 'text.primary' : 'text.secondary',
                     borderBottom: 2,
                     borderColor: isActive ? 'primary.main' : 'transparent',
                     transition: 'color 160ms ease, border-color 160ms ease',
                     // Subtle primary glow under the active item — cohesive with the card polish.
-                    // A border/glow is a UI component (≥3:1 floor), never TEXT — `primary.main`
-                    // stays correct here; only the label glyph itself needed the text-grade swap.
+                    // A border/glow is a UI component (≥3:1 floor), never TEXT.
                     boxShadow: (t) =>
                       isActive ? `0 2px 12px -6px ${alpha(t.palette.primary.main, 0.8)}` : 'none',
-                    '&:hover': {
-                      color: (t) => (isActive ? extrasFor(t).textAmber : t.palette.text.primary),
-                    },
+                    '&:hover': { color: 'text.primary' },
                   }}
                 >
                   {e.label}
@@ -383,19 +376,19 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
                 selected={isActive}
                 sx={{
                   minHeight: 48, // comfortable touch target
-                  '&.Mui-selected': { bgcolor: (t) => alpha(t.palette.primary.main, 0.12) },
+                  // The Final drawer board (`.ss-drawer a[aria-current]`): a raised row with a 3px
+                  // amber edge carries the active item; the label stays `text.primary` (ruling A).
+                  '&.Mui-selected, &.Mui-selected:hover': {
+                    bgcolor: (t) => extrasFor(t).panelRaised,
+                    boxShadow: (t) => `inset 3px 0 0 ${t.palette.primary.main}`,
+                  },
                 }}
               >
                 <ListItemText
                   primary={e.label}
                   slotProps={{
                     primary: {
-                      // Same text-grade swap as the desktop nav above (AC-10) — this drawer label
-                      // is the identical small-text-on-`primary.main` shape.
-                      sx: {
-                        fontWeight: 600,
-                        color: (t) => (isActive ? extrasFor(t).textAmber : t.palette.text.primary),
-                      },
+                      sx: { fontWeight: 600, color: 'text.primary' },
                     },
                   }}
                 />

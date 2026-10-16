@@ -93,14 +93,15 @@ export function AiReadSample({ demo = false }: { demo?: boolean }) {
             575 / 580
           </Box>
           <Box component="span">Sep 18</Box>
+          {/* Neutral (owner ruling A, 2026-10-15): the board draws conviction in steel. */}
           <Chip
             label="high"
             size="small"
             sx={(theme) => ({
               height: 20,
               fontSize: 11,
-              bgcolor: alpha(theme.palette.primary.main, 0.16),
-              color: extrasFor(theme).textAmber,
+              bgcolor: alpha(theme.palette.text.primary, 0.08),
+              color: 'text.secondary',
             })}
           />
         </Stack>
@@ -158,6 +159,8 @@ export function AiReadSample({ demo = false }: { demo?: boolean }) {
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mt: 1.5 }}>
           <Box
             component="span"
+            // A picture of a control, so it is drawn as a neutral secondary (owner ruling A,
+            // 2026-10-15): the landing's amber is spent on its real primary CTA.
             sx={(theme) => ({
               flex: '1 1 180px',
               textAlign: 'center',
@@ -166,8 +169,9 @@ export function AiReadSample({ demo = false }: { demo?: boolean }) {
               py: 1,
               fontSize: 13,
               fontWeight: 600,
-              bgcolor: theme.palette.primary.main,
-              color: theme.palette.primary.contrastText,
+              border: '1px solid',
+              borderColor: extrasFor(theme).lineStrong,
+              color: 'text.primary',
             })}
           >
             Review simulated trade

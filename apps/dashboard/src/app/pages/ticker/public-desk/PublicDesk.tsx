@@ -125,7 +125,9 @@ export function PublicDesk({ feed }: { feed: FeedOff }) {
               sx={{
                 minHeight: 44,
                 '& .MuiTab-root': { minHeight: 44, minWidth: 96 },
-                '& .MuiTab-root.Mui-selected': { color: (t) => extrasFor(t).textAmber },
+                // Neutral current tab (owner ruling A, 2026-10-15), as TickerTabs.
+                '& .MuiTab-root.Mui-selected': { color: 'text.primary', fontWeight: 600 },
+                '& .MuiTabs-indicator': { bgcolor: 'text.primary' },
               }}
             >
               <Tab component={RouterLink} to={path} value="overview" label="Overview" />
