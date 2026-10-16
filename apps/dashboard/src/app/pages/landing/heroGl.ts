@@ -638,7 +638,17 @@ export function createHeroGl(o: Options): HeroGl | null {
   };
 
   // ---- input: drag to turn (sideways only on touch, so a vertical swipe still scrolls) ----------
+  // A drag is the only thing that keeps frames running (the loop at the end of draw), so every way
+  // a drag can end must clear it: pointerup, pointercancel, a lost capture, a context menu, a
+  // released mouse button seen on the next move, and a lost context. A drag that never saw its
+  // release would otherwise render back to back until the next click (P-15: 0 idle frames).
+  const endDrag = () => {
+    drag = null;
+  };
   const onDown = (e: PointerEvent) => {
+    // Only the primary button turns the surface. A secondary click (or Ctrl-click on macOS) opens
+    // the context menu, which swallows the release, so it must never start a drag.
+    if (e.button !== 0 || (e.pointerType === 'mouse' && e.ctrlKey)) return;
     drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch, type: e.pointerType };
     // A new drag starts a fresh pacing window: nothing from an earlier drag carries over.
     ladder.reset();
@@ -650,6 +660,8 @@ export function createHeroGl(o: Options): HeroGl | null {
     }
   };
   const onMove = (e: PointerEvent) => {
+    // A mouse that reports no button held has been released somewhere this page never heard about.
+    if (drag && e.pointerType === 'mouse' && e.buttons === 0) endDrag();
     if (drag) {
       cam.yaw = clamp(drag.yaw + (e.clientX - drag.x) * 0.006, CAMERA.yaw0, CAMERA.yaw1);
       if (drag.type !== 'touch')
@@ -678,9 +690,6 @@ export function createHeroGl(o: Options): HeroGl | null {
       }
     if (best < 900 && (bi !== probe.i || bj !== probe.j)) o.onProbe({ i: bi, j: bj });
   };
-  const onUp = () => {
-    drag = null;
-  };
   const onKey = (e: KeyboardEvent) => {
     if (!e.shiftKey && e.key !== 'Home') return;
     let used = true;
@@ -705,6 +714,8 @@ export function createHeroGl(o: Options): HeroGl | null {
     e.preventDefault();
     lost = true;
     shown = false;
+    // The canvas hides and its capture goes with it; a drag must not survive into the restore.
+    endDrag();
     perf.lost++;
     if (pending) cancelAnimationFrame(pending);
     pending = 0;
@@ -724,8 +735,10 @@ export function createHeroGl(o: Options): HeroGl | null {
 
   o.canvas.addEventListener('pointerdown', onDown);
   o.canvas.addEventListener('pointermove', onMove);
-  o.canvas.addEventListener('pointerup', onUp);
-  o.canvas.addEventListener('pointercancel', onUp);
+  o.canvas.addEventListener('pointerup', endDrag);
+  o.canvas.addEventListener('pointercancel', endDrag);
+  o.canvas.addEventListener('lostpointercapture', endDrag);
+  o.canvas.addEventListener('contextmenu', endDrag);
   o.stage.addEventListener('keydown', onKey);
   o.canvas.addEventListener('webglcontextlost', onLost);
   o.canvas.addEventListener('webglcontextrestored', onRestored);
@@ -751,8 +764,10 @@ export function createHeroGl(o: Options): HeroGl | null {
       if (pending) cancelAnimationFrame(pending);
       o.canvas.removeEventListener('pointerdown', onDown);
       o.canvas.removeEventListener('pointermove', onMove);
-      o.canvas.removeEventListener('pointerup', onUp);
-      o.canvas.removeEventListener('pointercancel', onUp);
+      o.canvas.removeEventListener('pointerup', endDrag);
+      o.canvas.removeEventListener('pointercancel', endDrag);
+      o.canvas.removeEventListener('lostpointercapture', endDrag);
+      o.canvas.removeEventListener('contextmenu', endDrag);
       o.stage.removeEventListener('keydown', onKey);
       o.canvas.removeEventListener('webglcontextlost', onLost);
       o.canvas.removeEventListener('webglcontextrestored', onRestored);
