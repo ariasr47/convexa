@@ -102,19 +102,24 @@ where
 
 impl<S: Clone + Send + Sync + 'static> ContractRouter<S> {
     pub fn new() -> Self {
+        // Convexa's own `info`. Until 2026-10-16 this kept utoipa-axum's crate metadata (its
+        // title, author and license) so the router replacement stayed byte-identical; that
+        // cutover is done, and its baseline keeps the old object as the record.
         let contact = ContactBuilder::new()
-            .name(Some("Juha Kukkonen"))
-            .email(Some("juha7kukkonen@gmail.com"))
+            .name(Some("Rodrigo Arias"))
+            .url(Some("https://github.com/ariasr47"))
             .build();
         let license = LicenseBuilder::new()
-            .name("MIT OR Apache-2.0")
-            .identifier(Some("MIT OR Apache-2.0"))
+            .name("MIT")
+            .identifier(Some("MIT"))
             .build();
         let info = InfoBuilder::new()
-            .title("utoipa-axum")
-            .version("0.2.0")
+            .title("Convexa API")
+            .version("0.1.0")
             .description(Some(
-                "Utoipa's axum bindings for seamless integration for the two",
+                "Dealer-structure analytics, public market data, accounts and the synced paper \
+                 book. Generated from the Rust types; the TypeScript client in libs/api is \
+                 generated from this document.",
             ))
             .contact(Some(contact))
             .license(Some(license))

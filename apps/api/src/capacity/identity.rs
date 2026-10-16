@@ -75,6 +75,9 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // `t1y` (the Treasury par curve's "1 Mo" and "1 Yr" columns): additive schema growth, zero new
 // operations, so `precutover-operation-baseline.json` stays pinned to its prior hash and four
 // artifacts move (ledger `route-growth-repins-api-artifact-oracle`).
+// Re-pinned 2026-10-16 before the repository goes public: the document's `info` is Convexa's own
+// (title, contact, MIT) instead of utoipa-axum's crate metadata. No schema or operation changes,
+// so `schema.ts` and `precutover-operation-baseline.json` keep their hashes and three move.
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -82,15 +85,15 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "dc7c7e0bbb7f8733d1c6819571d60e888725cf9f828f3411fb93ef3ed644950a",
+        "7f98198acb57c2dcbd4769edad4dddfb187161eefde29292100454db0756f476",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "0d322e5bafd8210bbe500a5c3ed1ff4e348ce6c208fb2d0514e2ea399cd42159",
+        "b5d92838102326ca995279c388ff5ecbcfc0da478adb1008d6697c9ccdd5f984",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "81b05339a7ebfbfd41537a3317cc31c9f8eacd070c0dd78d3c5909f53aa6a3f4",
+        "838cb9c24395ac8f3134f59d18e30dae50e1eb312ebc0e9f59048b694ec9568c",
     ),
     (
         "libs/api/src/generated/schema.ts",
