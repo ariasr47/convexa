@@ -82,8 +82,6 @@ export const TK_CSS = `
   .tk-ladder .tk-risk .v { font-size: 14px; }
   .tk-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
   .tk-foot > div { background: transparent; border: 0; padding: 0; }
-  .tk-watch { display: flex; flex-direction: column; gap: 2px; }
-  .tk-trace { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; line-height: 1.45; color: var(--steel); }
   .tk-about { display: flex; flex-direction: column; gap: 4px; padding-top: 12px; border-top: 1px solid var(--line); }
   @media (max-width: 999px) { .tk-field { grid-template-columns: 1fr; grid-template-areas: "field" "ladder" "lane"; } .tk-ladder { padding-left: 0; border-left: 0; padding-top: 12px; border-top: 1px solid var(--line); } }
   @media (max-width: 899px) { .tk-ctx > * { grid-column: auto !important; } .tk-mast .act { align-items: stretch; max-width: none; } .tk-ctl { justify-content: flex-start; } }
@@ -175,20 +173,19 @@ function readStrip() {
   return P(`<div class="ph">${stateTag('sample')}${provChip('Sample · shaped like the options chain', 'dashed')}</div><div class="tk-strip">${cells.map(([l, v, s]) => `<div><span class="caps">${l}</span><span class="v">${v}</span><span class="s">${s}</span></div>`).join('')}</div>`, { sample: true, label: 'Read strip, sample' });
 }
 
-/** The read: verdict first, the watch level with its clause, Why and Re-engage, the unchecked-prose
- *  caption and the trace line (D-07), then the actions. */
+/** The read: verdict first, then its lead, Why and Re-engage and the unchecked-prose caption, then the
+ *  actions. A no-trade read carries no trace line: the API grades it not applicable by contract
+ *  (D-07, corrected in review), and the demo follows the API. */
 function aiBrief() {
-  const why = [`Spot ${fmt.num(SPOT, 2)} is 1.0% above the flip at ${fmt.num(FLIP, 2)}: +γ, dealer hedging tends to damp moves here.`, `The ${fmt.num(CALLW, 2)} call wall sits outside the ±$${fmt.num(MOVE, 2)} move the ${MOVE_EXPIRY} straddle prices.`, 'No live market, broker, or AI provider was used.'];
+  const why = [`Spot ${fmt.num(SPOT, 2)} is 1.0% above the flip at ${fmt.num(FLIP, 2)}: +γ, dealer hedging tends to damp moves here.`, `The ${fmt.num(CALLW, 2)} call wall sits outside the ±$${fmt.num(MOVE, 2)} move the ${MOVE_EXPIRY} straddle prices.`];
   const re = [`Spot closes below the flip at ${fmt.num(FLIP, 2)}, where hedging turns −γ.`, 'Or the call wall moves inside the implied move on the next structure refresh.', 'Review when the selected authored expiry set changes.'];
   return P(`<div class="ph"><span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: var(--raised-2); color: var(--phosphor);">${icon('sparkle', 15)}</span><h3>Sample analysis · SPY</h3>${stateTag('sample', 'Sample read')}<a href="#whats-sent" class="t-info" style="font-size: 12px; font-weight: 500; min-height: 24px; display: inline-flex; align-items: center;">View sample export →</a></div>
     <span class="dline">Sample analysis · authored for this scenario. This is an authored example. No model was called.</span>
     <p class="tk-verdict">No trade · sit this one out</p>
-    <div class="tk-watch"><span class="caps">Watch level</span><span class="mono" style="font-size: 16px;">${fmt.num(FLIP, 2)}</span><span class="dline" style="font-size: 11px;">traces to Convexa’s gamma flip (${fmt.num(FLIP, 2)})</span></div>
     <p class="dline" style="margin: 0;">Authored sample: SPY shows balanced structure with authored score 74. Not a model recommendation.</p>
     <div><span class="caps">Why</span><ul style="margin: 6px 0 0;">${why.map((w) => `<li>${w}</li>`).join('')}</ul></div>
     <div><span class="caps">Re-engage when</span><ul style="margin: 6px 0 0; list-style: '→  ';">${re.map((w) => `<li>${w}</li>`).join('')}</ul></div>
     <span class="dline" style="font-size: 11px;">Numbers written out in this reasoning aren’t checked; only the stop, target and invalidation level above are.</span>
-    <div class="tk-trace">${icon('shield', 14)}<span>Every checked figure traces to a Convexa number.</span></div>
     <div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line);"><button class="btn ghost" type="button">Full analysis &amp; data</button><button class="btn ghost" type="button">Dismiss</button></div>`, { sample: true, label: 'Sample analysis' });
 }
 
