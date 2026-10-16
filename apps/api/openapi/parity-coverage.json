@@ -17183,6 +17183,6 @@
   "schema_version": 2,
   "source": {
     "openapi": "apps/api/openapi/convexa.openapi.json",
-    "sha256": "bbc14f4939235395003a67b8a89b5ac5f05a9526052f81ede7be6760d7fac0da"
+    "sha256": "dc7c7e0bbb7f8733d1c6819571d60e888725cf9f828f3411fb93ef3ed644950a"
   }
 }

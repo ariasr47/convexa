@@ -55,7 +55,9 @@ pub enum DataState {
 #[derive(Debug, Clone, PartialEq)]
 pub struct YieldPoint {
     pub date: NaiveDate,
+    pub t1m: Option<f64>,
     pub t3m: Option<f64>,
+    pub t1y: Option<f64>,
     pub t2y: Option<f64>,
     pub t5y: Option<f64>,
     pub t10y: Option<f64>,

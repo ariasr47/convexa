@@ -71,6 +71,10 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // growth, zero new operations, so `precutover-operation-baseline.json` stays pinned to its prior
 // hash and four artifacts move (ledger `route-growth-repins-api-artifact-oracle`); the hashes
 // below are the merged contract's.
+// Re-pinned for the build round's lane 1 (2026-10-16): `YieldPointWire` gains optional `t1m` and
+// `t1y` (the Treasury par curve's "1 Mo" and "1 Yr" columns): additive schema growth, zero new
+// operations, so `precutover-operation-baseline.json` stays pinned to its prior hash and four
+// artifacts move (ledger `route-growth-repins-api-artifact-oracle`).
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -78,19 +82,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "bbc14f4939235395003a67b8a89b5ac5f05a9526052f81ede7be6760d7fac0da",
+        "dc7c7e0bbb7f8733d1c6819571d60e888725cf9f828f3411fb93ef3ed644950a",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "5c182a2d8c834dbbd9e0e8f7ea19ea4551da9470191170b1535c0216d2697f09",
+        "0d322e5bafd8210bbe500a5c3ed1ff4e348ce6c208fb2d0514e2ea399cd42159",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "3f5b160d3c49f5701356b34318caa3930df0d1589dcd51d2dd3cd1ae594a8299",
+        "81b05339a7ebfbfd41537a3317cc31c9f8eacd070c0dd78d3c5909f53aa6a3f4",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "16b9cf808a6ae09965922f3ccc95d40b1f2e99ef3e32dd46862bd62802cd7655",
+        "169e7d85271619ae50e10c22c019dd98f8714e64a5b37fdbe9adc903f707b5ce",
     ),
 ];
 

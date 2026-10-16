@@ -7,6 +7,7 @@ import {
   curveOn,
   monthsBefore,
   noteRates,
+  onWeekdays,
   servingLastGood,
   sourceNote,
   spread2s10s,
@@ -61,6 +62,36 @@ describe('2s10s', () => {
       { date: '2026-10-09', value: 0.44 },
       { date: '2026-10-13', value: 0.61 },
     ]);
+  });
+
+  // The chart hatches a weekday with no spread as "Not published"; closing it up, or hatching a
+  // weekend, would misdate every point after it.
+  it('lays the spread on weekdays: a missing weekday is a gap, a weekend never is', () => {
+    const axis = onWeekdays(spread2s10s(daily).map((p) => p.date));
+    expect(axis.days).toEqual([
+      '2026-10-07',
+      '2026-10-08',
+      '2026-10-09',
+      '2026-10-12',
+      '2026-10-13',
+    ]);
+    expect(axis.index.get('2026-10-13')).toBe(4);
+    expect(axis.gaps).toEqual([{ from: 3, to: 3 }]);
+  });
+
+  it('runs consecutive missing weekdays into one gap, across a weekend', () => {
+    // Thu Dec 24 published; Fri Dec 25 and Mon Dec 28 missing; Tue Dec 29 published.
+    const axis = onWeekdays(['2026-12-24', '2026-12-29', '2026-12-30']);
+    expect(axis.days).toEqual([
+      '2026-12-24',
+      '2026-12-25',
+      '2026-12-28',
+      '2026-12-29',
+      '2026-12-30',
+    ]);
+    expect(axis.gaps).toEqual([{ from: 1, to: 2 }]);
+    expect(onWeekdays([]).days).toEqual([]);
+    expect(onWeekdays(['2026-10-13']).gaps).toEqual([]);
   });
 });
 

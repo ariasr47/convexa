@@ -245,6 +245,7 @@ export const ROWS = [
         { status: 'shipped', what: 'Signed-out and signed-in account panels, preferences, risk inputs with validation, AI providers, brokerage connect.' },
         { status: 'todo', waits: 'parked', what: 'The section rail (deferred by owner ruling D-B; the page is one 760px column).' },
         { status: 'shipped', what: 'Status tags on each panel (Stored here, Sign in, Read-only sample, the demo account), SettingsPage.tsx panelTags, 2026-10-15.' },
+        { status: 'shipped', what: 'Staging’s AI providers and Brokerage panels, tagged Read-only sample, are dashed with the hatch stripe as this board draws them (D-19; SettingsPage.tsx PanelCard, 2026-10-16).' },
       ],
       rulings: ['P-2', 'P-3', 'P-13', ...ENV],
       code: ['apps/dashboard/src/app/features/auth/SettingsPage.tsx', 'apps/dashboard/src/app/features/auth/{RiskInputsSection,AiKeySection,BrokerageSection}.tsx', 'apps/dashboard/src/app/features/auth/copy.ts', 'libs/api/src/lib/demo/{mode,transport}.ts'],

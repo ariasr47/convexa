@@ -148,8 +148,14 @@ fn instant(at: DateTime<Utc>) -> String {
 pub struct YieldPointWire {
     /// YYYY-MM-DD
     pub date: String,
+    /// 1-month bill. Absent from servers before 2026-10-16.
+    #[serde(default)]
+    pub t1m: Option<f64>,
     #[schema(required = true)]
     pub t3m: Option<f64>,
+    /// 1-year bill. Absent from servers before 2026-10-16.
+    #[serde(default)]
+    pub t1y: Option<f64>,
     #[schema(required = true)]
     pub t2y: Option<f64>,
     #[schema(required = true)]
@@ -167,7 +173,9 @@ impl From<&service::YieldPoint> for YieldPointWire {
     fn from(p: &service::YieldPoint) -> Self {
         Self {
             date: day(p.date),
+            t1m: p.t1m,
             t3m: p.t3m,
+            t1y: p.t1y,
             t2y: p.t2y,
             t5y: p.t5y,
             t10y: p.t10y,
@@ -1340,7 +1348,9 @@ pub async fn get_public_ticker(
 fn representative_markets() -> PublicMarketsWire {
     let point = YieldPointWire {
         date: "2026-10-09".into(),
+        t1m: Some(4.13),
         t3m: Some(4.25),
+        t1y: Some(4.47),
         t2y: Some(4.8),
         t5y: Some(5.02),
         t10y: Some(5.24),
@@ -1701,15 +1711,33 @@ mod tests {
         }))
         .unwrap();
         assert!(old.sources.is_empty() && old.calendar.is_none());
-        assert!(serde_json::from_value::<RatesWire>(serde_json::json!({
+        let old_rates = serde_json::from_value::<RatesWire>(serde_json::json!({
             "source": "x", "as_of": "2026-10-09", "fetched_at": "x",
             "latest": {"date": "2026-10-09", "t3m": null, "t2y": null, "t5y": null,
                        "t10y": 4.0, "t30y": null, "real10y": null},
             "year_ago": null, "daily": []
         }))
-        .unwrap()
-        .source_state
-        .is_none());
+        .unwrap();
+        assert!(old_rates.source_state.is_none());
+        // A point from before the 1-month and 1-year maturities reads them as missing.
+        assert_eq!((old_rates.latest.t1m, old_rates.latest.t1y), (None, None));
+        // They go out on every point now, null when the Treasury left them blank.
+        let wire = serde_json::to_value(YieldPointWire::from(&service::YieldPoint {
+            date: NaiveDate::from_ymd_opt(2026, 10, 9).unwrap(),
+            t1m: Some(4.13),
+            t3m: Some(4.25),
+            t1y: None,
+            t2y: None,
+            t5y: None,
+            t10y: Some(5.24),
+            t30y: None,
+            real10y: None,
+        }))
+        .unwrap();
+        assert_eq!(
+            (wire["t1m"].as_f64(), wire["t1y"].is_null()),
+            (Some(4.13), true)
+        );
     }
 
     /// A section served from a kept copy says so in its own field, `last_good`, taken from the
@@ -1722,7 +1750,9 @@ mod tests {
         let at = Utc.with_ymd_and_hms(2026, 10, 13, 7, 0, 0).unwrap();
         let point = service::YieldPoint {
             date: day("2026-10-09"),
+            t1m: None,
             t3m: None,
+            t1y: None,
             t2y: None,
             t5y: None,
             t10y: Some(4.1),
