@@ -3,12 +3,15 @@
  * from the design prototype `design/src/frontier/f1-gamma.js`.
  *
  * The binding conditions (DESIGN_SYSTEM.md Amendments, P-15 and 2026-10-14):
- * - Render on demand. There is no loop: a frame is drawn only after input, a resize or a colour
- *   change, so an idle or hidden tab draws nothing (0 idle frames).
+ * - Render on demand. A frame is drawn only after input, a resize or a colour change, so an idle or
+ *   hidden tab draws nothing (0 idle frames). The one loop is the drag itself: while a pointer holds
+ *   the surface, frames run back to back, and it ends with the drag.
  * - No autoplay. Nothing moves unless the reader moves it, so reduced motion changes nothing.
  * - A runtime pixel-ratio ladder: the ratio starts at 2 (1.5 on coarse pointers) and steps down to
- *   1.5, then 1, when the p95 of the last 24 frame intervals while turning exceeds both 18 ms and 1.5× their
- *   median (frames dropped, not a 60 Hz display's vsync jitter). It never steps back up.
+ *   1.5, then 1, when the p95 of the last 24 back-to-back frame intervals while turning exceeds both
+ *   18 ms and 1.5× their median (frames dropped, not a 60 Hz display's vsync jitter, and never a reader
+ *   pausing mid-drag: `createDprLadder`). It never steps back up. A devicePixelRatio change (another
+ *   display) resizes the canvas.
  * - The static projection is the designed fallback: `createHeroGl` returns null when there is no
  *   WebGL2 or a shader fails, and a lost context hands the stage back to it until a restore.
  * - The flip contour is phosphor (the theme's text colour), never amber.
@@ -367,6 +370,71 @@ function fitScale(W: number, Hh: number): number {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
+/** One frame's result from the pixel-ratio ladder. */
+export interface LadderFrame {
+  /** The interval sampled from the previous frame, when this frame was its direct successor. */
+  interval?: number;
+  /** Set when this frame stepped the ratio cap down. */
+  step?: { dpr: number; p95: number };
+}
+
+export interface DprLadder {
+  /** The current cap: 2 (1.5 on coarse pointers), then 1.5, then 1. It never steps back up. */
+  readonly cap: number;
+  /**
+   * Feed one drawn frame. `chained` is true only when the previous drawn frame requested this one
+   * directly (the drag loop), so the interval is a real frame-to-frame time. An unchained frame (the
+   * first frame of a drag, or one after any pause) starts a fresh pair and adds no interval: a reader
+   * holding still mid-drag is not a dropped frame.
+   */
+  frame(ts: number, chained: boolean): LadderFrame;
+  /** Forget the window and the last frame (a new drag starts). */
+  reset(): void;
+}
+
+/**
+ * The runtime pixel-ratio ladder (P-15): the p95 of the last 24 chained frame intervals while turning
+ * must exceed both 18 ms and 1.5× their median before the cap steps down — frames dropped, not a
+ * 60 Hz display's vsync jitter (every interval ~16.7 ms, jitter alone reaches 18 ms). Intervals of
+ * 100 ms or more are a stall (a hidden tab, a GC), not pacing, and are skipped.
+ */
+export function createDprLadder(start: number): DprLadder {
+  let cap = start;
+  let win: number[] = [];
+  let last = 0;
+  return {
+    get cap() {
+      return cap;
+    },
+    frame(ts, chained) {
+      const out: LadderFrame = {};
+      if (chained && last) {
+        const iv = ts - last;
+        out.interval = iv;
+        if (iv < 100) {
+          win.push(iv);
+          if (win.length > 24) win.shift();
+          if (win.length === 24 && cap > 1) {
+            const sorted = win.slice().sort((a, b) => a - b);
+            const p95 = sorted[22];
+            if (p95 > Math.max(18, 1.5 * sorted[12])) {
+              cap = cap > 1.5 ? 1.5 : 1;
+              win = [];
+              out.step = { dpr: cap, p95: Number(p95.toFixed(1)) };
+            }
+          }
+        }
+      }
+      last = ts;
+      return out;
+    },
+    reset() {
+      win = [];
+      last = 0;
+    },
+  };
+}
+
 /** Start the WebGL2 view, or return null (no WebGL2, or it failed): the static projection stays. */
 export function createHeroGl(o: Options): HeroGl | null {
   const record = typeof window !== 'undefined' && window.__HERO_PERF__ === true;
@@ -405,15 +473,15 @@ export function createHeroGl(o: Options): HeroGl | null {
   }
 
   const coarse = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
-  let dprCap = coarse ? 1.5 : 2;
-  let win: number[] = [];
+  const ladder = createDprLadder(coarse ? 1.5 : 2);
   let colors = o.colors;
   let probe = o.probe;
   const cam = { yaw: CAMERA.yaw, pitch: CAMERA.pitch };
   let W = 0;
   let Hh = 0;
   let k = 1;
-  let last = 0;
+  // True while the pending frame was requested by the previous frame's drag loop (see draw).
+  let chained = false;
   let pending = 0;
   let lost = false;
   let disposed = false;
@@ -463,29 +531,20 @@ export function createHeroGl(o: Options): HeroGl | null {
 
   function draw(ts: number) {
     pending = 0;
+    const wasChained = chained;
+    chained = false;
     if (lost || ctx.isContextLost() || W === 0 || Hh === 0) return;
     const t0 = performance.now();
-    if (last && drag) {
-      const iv = ts - last;
-      if (record) perf.intervals.push(iv);
-      if (iv < 100) {
-        win.push(iv);
-        if (win.length > 24) win.shift();
-        if (win.length === 24 && dprCap > 1) {
-          const sorted = win.slice().sort((a, b) => a - b);
-          const p95 = sorted[22];
-          // Dropped frames, not the display clock's jitter: on a 60 Hz display every interval is ~16.7 ms
-          // and vsync jitter alone reaches 18 ms, so the bar is also 1.5× the median interval.
-          if (p95 > Math.max(18, 1.5 * sorted[12])) {
-            dprCap = dprCap > 1.5 ? 1.5 : 1;
-            win = [];
-            perf.ladder.push({ at: Math.round(ts), dpr: dprCap, p95: Number(p95.toFixed(1)) });
-            setSize(Math.min(window.devicePixelRatio || 1, dprCap));
-          }
-        }
+    // Frame pacing is measured only between back-to-back frames of the drag loop below, never between
+    // pointer moves: a reader pausing mid-drag is not a dropped frame (W1-67).
+    if (drag) {
+      const f = ladder.frame(ts, wasChained);
+      if (record && f.interval != null) perf.intervals.push(f.interval);
+      if (f.step) {
+        perf.ladder.push({ at: Math.round(ts), ...f.step });
+        setSize(Math.min(window.devicePixelRatio || 1, ladder.cap));
       }
     }
-    last = drag ? ts : 0;
 
     const M = matrices();
     const g = ctx;
@@ -507,7 +566,10 @@ export function createHeroGl(o: Options): HeroGl | null {
     g.useProgram(gpu.lineProg);
     g.uniformMatrix4fv(gpu.u.lmvp, false, M.mvp);
     g.enable(g.BLEND);
-    g.blendFunc(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA);
+    // The canvas is premultiplied (the default), so alpha must accumulate as `over`, not as
+    // SRC_ALPHA²: blending alpha with SRC_ALPHA left wire pixels at a≈0.75 and let the light well
+    // show through, so light-theme wires drew pale instead of dark (W1-70).
+    g.blendFuncSeparate(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA, g.ONE, g.ONE_MINUS_SRC_ALPHA);
     g.uniform4fv(gpu.u.lcol, [colors.line[0], colors.line[1], colors.line[2], 0.55]);
     g.bindVertexArray(gpu.wires.vao);
     g.drawArrays(g.LINES, 0, gpu.wires.n);
@@ -543,6 +605,12 @@ export function createHeroGl(o: Options): HeroGl | null {
       shown = true;
       o.onContext(true);
     }
+    // While a drag is held, frames run back to back so the ladder samples real frame pacing. The
+    // loop ends with the drag; an idle stage still draws nothing.
+    if (drag) {
+      request();
+      if (pending) chained = true;
+    }
   }
 
   const resize = () => {
@@ -550,15 +618,31 @@ export function createHeroGl(o: Options): HeroGl | null {
     W = r.width;
     Hh = r.height;
     if (W === 0 || Hh === 0) return;
-    setSize(Math.min(window.devicePixelRatio || 1, dprCap));
+    setSize(Math.min(window.devicePixelRatio || 1, ladder.cap));
     k = fitScale(W, Hh);
     request();
+  };
+
+  // A devicePixelRatio change (the window moved to another display, or browser zoom) changes no CSS
+  // size, so the ResizeObserver never fires: watch the current resolution and re-arm on each change
+  // (W1-68).
+  let dprQuery: MediaQueryList | null = null;
+  const onDprChange = () => {
+    watchDpr();
+    resize();
+  };
+  const watchDpr = () => {
+    dprQuery?.removeEventListener?.('change', onDprChange);
+    dprQuery = window.matchMedia?.(`(resolution: ${window.devicePixelRatio || 1}dppx)`) ?? null;
+    dprQuery?.addEventListener?.('change', onDprChange);
   };
 
   // ---- input: drag to turn (sideways only on touch, so a vertical swipe still scrolls) ----------
   const onDown = (e: PointerEvent) => {
     drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch, type: e.pointerType };
-    last = 0;
+    // A new drag starts a fresh pacing window: nothing from an earlier drag carries over.
+    ladder.reset();
+    request();
     try {
       o.canvas.setPointerCapture(e.pointerId);
     } catch {
@@ -596,7 +680,6 @@ export function createHeroGl(o: Options): HeroGl | null {
   };
   const onUp = () => {
     drag = null;
-    last = 0;
   };
   const onKey = (e: KeyboardEvent) => {
     if (!e.shiftKey && e.key !== 'Home') return;
@@ -651,6 +734,7 @@ export function createHeroGl(o: Options): HeroGl | null {
   else window.addEventListener('resize', resize);
 
   perf.mode = 'webgl2';
+  watchDpr();
   resize();
 
   return {
@@ -674,6 +758,8 @@ export function createHeroGl(o: Options): HeroGl | null {
       o.canvas.removeEventListener('webglcontextrestored', onRestored);
       if (ro) ro.disconnect();
       else window.removeEventListener('resize', resize);
+      dprQuery?.removeEventListener?.('change', onDprChange);
+      dprQuery = null;
     },
   };
 }
