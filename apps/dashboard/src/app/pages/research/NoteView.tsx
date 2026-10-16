@@ -10,7 +10,7 @@ import ScheduleOutlined from '@mui/icons-material/ScheduleOutlined';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import { alpha } from '@mui/material/styles';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { freshness as freshnessOf, localToday, upcoming } from 'virtual:convexa-research';
 import { StripBlock, TldrBlock } from './blocks/Figures';
@@ -28,6 +28,7 @@ import {
 } from './reviewTriggers';
 import type { Aging, Freshness, NoteBlock, ResearchNote, ValuationBlock } from './types';
 import { DISPLAY, Eyebrow, FreshnessLine, MONO, Panel, Pill, YourCall } from './ui';
+import { useActiveSection } from './useActiveSection';
 
 export const RESEARCH_DISCLAIMER = 'Personal research notes. Not financial advice.';
 
@@ -50,29 +51,6 @@ function dayDiff(from: string, to: string) {
   const [y1, m1, d1] = from.split('-').map(Number);
   const [y2, m2, d2] = to.split('-').map(Number);
   return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86_400_000);
-}
-
-/** The section most in view, for the rail. */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0] ?? '');
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined' || !ids.length) return;
-    const seen = new Map<string, boolean>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) seen.set(e.target.id, e.isIntersecting);
-        const first = ids.find((id) => seen.get(id));
-        if (first) setActive(first);
-      },
-      { rootMargin: '-20% 0px -65% 0px' },
-    );
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
-  }, [ids]);
-  return active;
 }
 
 function FreshnessBanner({
