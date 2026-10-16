@@ -15,6 +15,7 @@
  * `[live-vs-static-isolation]`: sticky price + connection chip share hero inputs via `connectionChip`.
  */
 import type { usePersona } from '@/features/personas/usePersona';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { elevationFor } from '@/shared/theme/tokens';
 import type { Expiration, LiveUpdate, MarketState, Signals } from '@convexa/api';
@@ -28,6 +29,7 @@ import { ConnectionChip } from '../../connection/ConnectionChip';
 import { connectionStateFor } from '../../connection/connectionState';
 import { LivenessAnnouncer } from '../../connection/LivenessAnnouncer';
 import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
+import { DESK_IS_SAMPLE } from '../_kit/sample';
 import { QuickSymbols } from './QuickSymbols';
 import { TickerHeader } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
@@ -146,7 +148,11 @@ function StickyCondensed({
       >
         {m.ticker} · ${price}
       </Typography>
-      <ConnectionChip state={connState} live={live} routeSymbol={m.ticker} reduced={reduced} />
+      {DESK_IS_SAMPLE ? (
+        <DataStateTag state="demo" />
+      ) : (
+        <ConnectionChip state={connState} live={live} routeSymbol={m.ticker} reduced={reduced} />
+      )}
       <Typography
         variant="caption"
         sx={{
@@ -254,7 +260,8 @@ export function CommandDeck(props: CommandDeckProps) {
           chip renderers below, so it never announces twice while `condensed` keeps both mounted,
           and its EMPTY initial mount (text arrives via a later state update) is what makes the
           announcement fire reliably. Neither chip renderer owns its own region. */}
-      <LivenessAnnouncer state={connState} live={live} />
+      {/* The demo replays a scenario: no connection state to announce (P-3). */}
+      <LivenessAnnouncer state={DESK_IS_SAMPLE ? null : connState} live={live} />
 
       {/* The condensed bar lives above the deck so it pins to the top of the scroll container. It is
           revealed (opacity/height) only after the deck scrolls past; reduced-motion → instant.

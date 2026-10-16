@@ -17,6 +17,7 @@ import {
   Refused as FaultedRefused,
   TickerFaultedNotice,
 } from '@/features/trading/positions/FaultedBanner';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { extrasFor } from '@/shared/theme/tokens';
@@ -35,12 +36,14 @@ import { connectionStateFor } from '../../connection/connectionState';
 import { useLiveTape } from '../../liveTapeStore';
 import { sessionTapeOf, type SessionTapeOccupancy } from '../../sessionTapeStanding';
 import { TICKER_BUNDLE_POLL_MS } from '../../useTickerBundle';
+import { SampleSourceChip } from '../_kit/SampleSourceChip';
 import {
   LAST_TRADE_NO_TAPE_PRINT,
   LAST_TRADE_REPLAY_TOOLTIP,
   LAST_TRADE_TOOLTIP,
   SINGLE_NAME_CAVEAT,
 } from '../_kit/copy';
+import { DESK_IS_SAMPLE, sampleQuoteSource, scenarioAsOf } from '../_kit/sample';
 import { FreshnessLine } from './FreshnessLine';
 
 const REGIME_TIP =
@@ -127,7 +130,8 @@ export function LastTradeReadout({
       ? displayActiveProp
       : tape.displayActive || ((live?.live ?? false) && !streamOffline && !st);
   // Flash on genuine print while numbers are active (S0 live or S1 display-active).
-  const ltActive = numbersActive && !streamOffline;
+  // P-3: sample data never flashes.
+  const ltActive = numbersActive && !streamOffline && !DESK_IS_SAMPLE;
   const ltFlash = useFlashOnChange(ltActive ? (live?.last_trade ?? null) : null, {
     active: ltActive,
   });
@@ -142,6 +146,20 @@ export function LastTradeReadout({
     );
   }
   const lt = live.last_trade;
+
+  // The demo's last trade is the scenario replay's: no live dot, no pause mark, no flash (P-3).
+  if (DESK_IS_SAMPLE) {
+    return (
+      <Typography
+        component="span"
+        variant="body2"
+        sx={{ color: 'text.secondary' }}
+        data-testid="last-trade"
+      >
+        {lt != null ? `Sample last trade $${lt.toFixed(2)}` : 'Sample last trade —'}
+      </Typography>
+    );
+  }
 
   if (st) {
     const tip = LAST_TRADE_REPLAY_TOOLTIP;
@@ -293,8 +311,9 @@ export function TickerHeader({
   });
   // Numbers follow tape mid when display-active OR genuine live (S0).
   const numbersActive = displayActive || isLive;
+  // P-3: no flash on sample data.
   const priceFlash = useFlashOnChange(numbersActive && live ? live.mid : null, {
-    active: numbersActive && !streamOffline,
+    active: numbersActive && !streamOffline && !DESK_IS_SAMPLE,
   });
 
   return (
@@ -327,12 +346,18 @@ export function TickerHeader({
                 tip={REGIME_TIP}
               />
             )}
-            <ConnectionChip
-              state={connState}
-              live={live}
-              routeSymbol={m.ticker}
-              reduced={reduced}
-            />
+            {/* P-1/P-3: the demo gives the connection-chip slot to "Demo · sample data"; its tape
+                is a scenario replay, so no stream-state words (no "no live ticks") either. */}
+            {DESK_IS_SAMPLE ? (
+              <DataStateTag state="demo" />
+            ) : (
+              <ConnectionChip
+                state={connState}
+                live={live}
+                routeSymbol={m.ticker}
+                reduced={reduced}
+              />
+            )}
             <LastTradeReadout
               live={live}
               streamOffline={streamOffline}
@@ -355,6 +380,12 @@ export function TickerHeader({
               {m.ticker} · ${(numbersActive && live ? live.mid : m.price)?.toFixed(2)}
             </Box>
           </Typography>
+          {/* P-8: the demo's quote is sample data, so the masthead names what it is shaped like. */}
+          {DESK_IS_SAMPLE && (
+            <Box>
+              <SampleSourceChip text={sampleQuoteSource(m.ticker, scenarioAsOf())} />
+            </Box>
+          )}
 
           {/* Second line (design: `Levels @ · Structure as-of · refreshes · All expirations`,
               `desk.mjs:269-271`) — levels anchor, the relocated REST-bundle freshness (STRUCTURE,
@@ -380,9 +411,12 @@ export function TickerHeader({
                   refreshing={freshness.refreshing}
                   inline
                 />
-                <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
-                  · refreshes ~{Math.round(TICKER_BUNDLE_POLL_MS / 1000)}s
-                </Typography>
+                {/* The demo's structure is a fixed scenario: nothing refreshes it. */}
+                {!DESK_IS_SAMPLE && (
+                  <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
+                    · refreshes ~{Math.round(TICKER_BUNDLE_POLL_MS / 1000)}s
+                  </Typography>
+                )}
               </>
             )}
             <MetaDot />

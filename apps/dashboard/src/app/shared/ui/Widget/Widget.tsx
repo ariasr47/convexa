@@ -25,6 +25,7 @@
  * shell owns is the `live` accent pulse — a DATA SIGNAL (`[live-vs-static-isolation]` made
  * visible), reduced-motion-gated, firing only while genuinely live.
  */
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { NOT_LIVE, type LiveClaim } from '@/shared/liveness/liveClaim';
 import { elevationFor, extrasFor } from '@/shared/theme/tokens';
@@ -114,6 +115,12 @@ export interface WidgetProps {
    * title grows taller beside it — no other layout change needed.
    */
   titleWrap?: boolean;
+  /**
+   * On a sample board (`WidgetProvenanceProvider value="sample"`) the header carries the P-2
+   * "Sample" tag beside the title. `false` for a widget whose own header already names its sample
+   * state in other words (so the card never says it twice). No effect on a primary board.
+   */
+  sampleTag?: boolean;
 }
 
 /**
@@ -160,17 +167,21 @@ export function Widget({
   bodyPad = 'default',
   hideHeader = false,
   titleWrap = false,
+  sampleTag = true,
 }: WidgetProps) {
   const reduced = useReducedMotion();
+  // P-8: a sample board's cards are dashed with the hatch stripe; a third party's dotted.
+  const provenance = useWidgetProvenance();
+  // P-3: sample data never wears a live cue, so a sample board's cards never pulse, whatever a
+  // widget claims (the demo replays a scenario; a replayed print is not a live one).
+  const sample = provenance === 'sample';
   // `live` (the branded delivering-stream claim) OR `watch` (OrdersWidget's open-orders fact) both
   // drive the SAME `widgetLivePulse` declaration below — kept as the plain local `live` so the
   // pulse's shipped gate expression, spelled out where it is actually used a few lines down,
   // stays byte-identical for `single-motion-moment.spec.ts`'s structural mutation proof.
-  const live = Boolean(liveClaim) || watch;
+  const live = (Boolean(liveClaim) || watch) && !sample;
   const chrome = useWidgetChrome();
   const quiet = chrome === 'quiet';
-  // P-8: a sample board's cards are dashed with the hatch stripe; a third party's dotted.
-  const provenance = useWidgetProvenance();
   // Body-wrapper chrome. 'inset' recesses the well (darker + inner shadow) so raised paper tiles pop.
   const bodyWrapperSx: SxProps<Theme> = (theme) => ({
     borderTop: '1px solid',
@@ -307,6 +318,15 @@ export function Widget({
               separately below `sm`). Opt-in; unset by default (byte-identical for every other
               widget). `StructureHeroPanel`'s `● mid · tape` chip is the first (only) consumer. */}
           {titleBadge}
+          {/* P-3/P-8: on a sample board every card carries the Sample tag beside its title. */}
+          {sample && sampleTag && (
+            <Box
+              component="span"
+              sx={{ flex: 'none', display: 'inline-flex', whiteSpace: 'nowrap' }}
+            >
+              <DataStateTag state="sample" />
+            </Box>
+          )}
           {info && <AccessibleHelp label={`About ${title}`} text={info} />}
         </Stack>
         {subtitle && (

@@ -40,6 +40,7 @@ import {
 } from '../_kit/copy';
 import { distanceToLevel, levelSpot } from '../_kit/distanceToLevel';
 import { FigureCell } from '../_kit/FigureCell';
+import { sampleReplayLine, scenarioAsOf } from '../_kit/sample';
 import { useStreamLatch } from '../_kit/useStreamLatch';
 
 // Ticker fidelity repair, change 1 (F1) close-out: the design's `.tape-grid` is a FIXED 2-column
@@ -165,13 +166,6 @@ export function LiveTape({
   // drop; the only switch is live-stream vs session-tape derivation.
   let gammaLabel = 'Gamma flip · live';
 
-  const sampleTime = sampleStanding
-    ? new Intl.DateTimeFormat('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'medium',
-        timeZone: 'UTC',
-      }).format(new Date(sampleStanding.scenarioTimeMs))
-    : null;
   const sampleStatusCaption =
     sampleStanding?.playback === 'paused'
       ? 'Simulated playback paused. Showing the last sample.'
@@ -180,7 +174,8 @@ export function LiveTape({
         : null;
   if (sampleStanding) {
     title = 'Sample tape';
-    subtitle = `Authored scenario · ${sampleTime} UTC · ${Math.round((live?.flow_window_s ?? 60) / 60)}m window · ${sampleStanding.playback}`;
+    // P-3: the replay says it is one and names the scenario, never an advancing clock or "running".
+    subtitle = sampleReplayLine(scenarioAsOf(), live?.flow_window_s ?? 60);
     info = 'Authored sample stream for this scenario. It is not a connected market feed.';
     netFlowLabel = `Net flow (${Math.max(1, Math.round((live?.flow_window_s ?? 60) / 60))}m)`;
     gammaLabel = 'Gamma flip · sample';
