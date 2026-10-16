@@ -71,7 +71,7 @@ import type { LegInput } from '@/features/trading/positions/usePortfolio';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { downText, extrasFor, upText } from '@/shared/theme/tokens';
-import { dataMode, fetchTrackedContract } from '@convexa/api';
+import { dataMode, demoNowMs, fetchTrackedContract } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -96,6 +96,7 @@ import { LegFields, multiplierFor } from './LegFields';
 import {
   checkManualEntry,
   MANUAL_ENTRY_COPY,
+  newYorkDateIso,
   normalizeUnderlying,
   underlyingError,
 } from './manualContract';
@@ -322,13 +323,16 @@ export function TradeEntryDialog({
   const draftPrices = legs.map(priceOfDraft);
   const everyLegPriced = draftPrices.every((p) => p != null);
 
+  // Options expire on New York's calendar, so the typed expiration is checked against New York's
+  // date (the scenario clock on the demo), never the browser's (Wave 2 review risk).
+  const expiryToday = newYorkDateIso(dataMode === 'demo' ? demoNowMs() : Date.now());
   // The typed contract's check (null when the chain supplies the contract). Its ticker is the one
   // the position is stored under; until the symbol is valid the host's ticker never stands in.
   const manualCheck = manualContract
     ? checkManualEntry({
         underlying,
         legs: legs.map((d, i) => ({ ...d, price: draftPrices[i] })),
-        today: todayIso(),
+        today: expiryToday,
       })
     : null;
   const manualLegErrors = manualCheck && !manualCheck.ok ? manualCheck.legs : null;
@@ -683,7 +687,7 @@ export function TradeEntryDialog({
               // shape prices per leg, because that is the only honest way to net a structure.
               showPrice={!isOrder && !singleOptionEntry}
               manualContract={manualContract}
-              today={todayIso()}
+              today={expiryToday}
               errors={manualLegErrors?.[i]}
               onPatch={(patch) => patchLeg(i, patch)}
               onRemove={() => setLegs((prev) => prev.filter((_, j) => j !== i))}

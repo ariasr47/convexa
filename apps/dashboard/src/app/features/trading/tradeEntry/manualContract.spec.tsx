@@ -15,6 +15,7 @@ import {
   MANUAL_ENTRY_COPY as C,
   checkManualEntry,
   expirationError,
+  newYorkDateIso,
   priceError,
   qtyError,
   strikeError,
@@ -35,6 +36,25 @@ const call: ManualLegFields = {
   qty: 1,
   price: 6.8,
 };
+
+// Options expire on New York's calendar. The browser's date would accept a contract that expired at
+// today's close (Honolulu at 8 PM is already tomorrow in New York) or refuse one still listed.
+describe('manual contract · today is New York’s date', () => {
+  it('takes the New York calendar day, whatever the instant’s UTC day', () => {
+    expect(newYorkDateIso(Date.parse('2026-10-16T02:30:00Z'))).toBe('2026-10-15'); // 10:30 PM EDT
+    expect(newYorkDateIso(Date.parse('2026-10-15T04:00:00Z'))).toBe('2026-10-15'); // midnight EDT
+    expect(newYorkDateIso(Date.parse('2026-10-15T03:59:00Z'))).toBe('2026-10-14'); // 11:59 PM EDT
+    expect(newYorkDateIso(Date.parse('2026-11-02T04:30:00Z'))).toBe('2026-11-01'); // 11:30 PM EST
+    expect(newYorkDateIso(Date.parse('2026-11-02T05:00:00Z'))).toBe('2026-11-02'); // midnight EST
+  });
+
+  it('refuses a contract that expired on New York’s yesterday, late in the Pacific evening', () => {
+    // Oct 15, 9:30 PM in Honolulu = Oct 16, 3:30 AM in New York: Oct 15 contracts have expired.
+    const today = newYorkDateIso(Date.parse('2026-10-16T07:30:00Z'));
+    expect(expirationError('2026-10-15', today)).toBe(C.expirationPast);
+    expect(expirationError('2026-10-16', today)).toBeNull();
+  });
+});
 
 describe('manual contract · field checks', () => {
   it('takes a listed symbol in any case and refuses anything else', () => {
