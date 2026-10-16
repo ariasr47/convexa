@@ -1186,6 +1186,7 @@ async fn oauth_callback_uses_injected_exchange_and_sets_secure_session_cookie() 
                 .uri(format!(
                     "/api/auth/google/callback?code=deterministic-code&state={state_token}"
                 ))
+                .header("cookie", format!("oauth_state={state_token}"))
                 .body(Body::empty())
                 .unwrap(),
         )

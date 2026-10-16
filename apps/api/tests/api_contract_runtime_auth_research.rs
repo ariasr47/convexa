@@ -424,7 +424,9 @@ async fn google_oauth_runtime_evidence_preserves_state_and_session_effects() {
         .unwrap();
     let start = redirect_response(start).await;
     assert_eq!(start.status, StatusCode::TEMPORARY_REDIRECT);
-    assert!(!start.headers.contains_key("set-cookie"));
+    let state_cookie = start.headers["set-cookie"].to_str().unwrap();
+    assert!(state_cookie.starts_with("oauth_state="));
+    assert!(state_cookie.contains("HttpOnly"));
     let location = start.headers["location"].to_str().unwrap();
     let state_token = url::Url::parse(location)
         .expect("Google authorization URL")
@@ -444,7 +446,7 @@ async fn google_oauth_runtime_evidence_preserves_state_and_session_effects() {
         "http-fragment:GET /api/auth/google/start 307 no-body oauth-state",
         &start,
         "oauth-state",
-        serde_json::json!({"durable":"none","memory":"oauth-state-created","cookie":"none"}),
+        serde_json::json!({"durable":"none","memory":"oauth-state-created","cookie":"set"}),
     );
 
     let mut callback_state = AppState::for_runtime_guardrail_tests(OPERATOR_TOKEN.into())
@@ -493,6 +495,7 @@ async fn google_oauth_runtime_evidence_preserves_state_and_session_effects() {
                 .uri(format!(
                     "/api/auth/google/callback?code=callback-code&state={callback_token}"
                 ))
+                .header("cookie", format!("oauth_state={callback_token}"))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -521,6 +524,34 @@ async fn google_oauth_runtime_evidence_preserves_state_and_session_effects() {
         durable_after, durable_before,
         "known Google callback must not create or change durable identity/settings"
     );
+
+    // Login CSRF: a state the server issued to SOMEONE (here: remembered, never sent to this
+    // browser as a cookie) must not sign this browser in.
+    let forwarded_token = "contract-google-forwarded-state";
+    remember_state(forwarded_token);
+    let forwarded = routes::router(callback_state.clone())
+        .expect("valid production contract graph")
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(format!(
+                    "/api/auth/google/callback?code=callback-code&state={forwarded_token}"
+                ))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let forwarded = redirect_response(forwarded).await;
+    assert!(forwarded.headers["location"]
+        .to_str()
+        .unwrap()
+        .ends_with("google=error"));
+    assert!(!forwarded
+        .headers
+        .get_all("set-cookie")
+        .iter()
+        .any(|v| v.to_str().unwrap_or("").starts_with("gf_session=")));
     emit_observed_redirect_outcome(
         "http-fragment:GET /api/auth/google/callback 307 no-body oauth-state",
         &callback,

@@ -917,6 +917,12 @@ impl AuthService {
     // ------------------------------------------------------------------ Google OAuth
 
     pub fn google_start_url(&self) -> Result<String, AuthError> {
+        self.google_start().map(|(url, _state)| url)
+    }
+
+    /// Consent URL plus the state value. The route stores the state in an HttpOnly cookie so the
+    /// callback can prove it is finishing the flow THIS browser started (login-CSRF defence).
+    pub fn google_start(&self) -> Result<(String, String), AuthError> {
         if !self.google_available_flag() {
             return Err(google_unavailable());
         }
@@ -925,7 +931,8 @@ impl AuthService {
         rand::thread_rng().fill_bytes(&mut b);
         let state = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(b);
         super::google_oauth::remember_state(&state);
-        super::google_oauth::authorization_url(&state).ok_or_else(google_unavailable)
+        let url = super::google_oauth::authorization_url(&state).ok_or_else(google_unavailable)?;
+        Ok((url, state))
     }
 
     /// Resolve Google callback → new session id. Async for token HTTP.

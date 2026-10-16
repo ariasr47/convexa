@@ -824,16 +824,31 @@ fn closed_byo_provider(raw: Option<&str>) -> Result<&'static str, AuthErr> {
 }
 
 fn cookie_from_headers(headers: &HeaderMap) -> Option<String> {
+    named_cookie(headers, COOKIE_NAME)
+}
+
+fn named_cookie(headers: &HeaderMap, name: &str) -> Option<String> {
     let raw = headers.get(header::COOKIE)?.to_str().ok()?;
     for part in raw.split(';') {
         let part = part.trim();
-        if let Some(rest) = part.strip_prefix(COOKIE_NAME) {
+        if let Some(rest) = part.strip_prefix(name) {
             if let Some(val) = rest.strip_prefix('=') {
                 return Some(val.to_string());
             }
         }
     }
     None
+}
+
+/// Browser binding for the Google OAuth `state` (the `oauth-state` scheme in the contract).
+const OAUTH_STATE_COOKIE: &str = "oauth_state";
+
+fn oauth_state_cookie(secure: bool, value: &str, max_age_secs: u32) -> HeaderValue {
+    let secure = if secure { "; Secure" } else { "" };
+    let v = format!(
+        "{OAUTH_STATE_COOKIE}={value}; Path=/api/auth/google; HttpOnly; Max-Age={max_age_secs}; SameSite=Lax{secure}"
+    );
+    HeaderValue::from_str(&v).unwrap_or_else(|_| HeaderValue::from_static(""))
 }
 
 fn auth(state: &AppState) -> &AuthService {
@@ -1259,8 +1274,15 @@ pub async fn google_start(State(state): State<AppState>) -> RouteResponse<Google
 }
 
 async fn google_start_http(State(state): State<AppState>) -> Response {
-    match auth(&state).google_start_url() {
-        Ok(url) => Redirect::temporary(&url).into_response(),
+    match auth(&state).google_start() {
+        Ok((url, oauth_state)) => {
+            let mut res = Redirect::temporary(&url).into_response();
+            res.headers_mut().insert(
+                header::SET_COOKIE,
+                oauth_state_cookie(state.auth.cookie_secure(), &oauth_state, 600),
+            );
+            res
+        }
         Err(e) => auth_err(e),
     }
 }
@@ -1275,27 +1297,54 @@ async fn google_start_http(State(state): State<AppState>) -> Response {
 )]
 pub async fn google_callback(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Query(q): Query<GoogleCallbackQuery>,
 ) -> RouteResponse<OAuthRedirectResponse> {
-    google_callback_http(State(state), Query(q)).await.into()
+    google_callback_http(State(state), headers, Query(q))
+        .await
+        .into()
 }
 
 async fn google_callback_http(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Query(q): Query<GoogleCallbackQuery>,
 ) -> Response {
+    use subtle::ConstantTimeEq;
     let post = std::env::var("AUTH_APP_POST_LOGIN_URL").unwrap_or_else(|_| "/".into());
-    match auth(&state)
-        .google_callback(q.code.as_deref(), q.state.as_deref())
-        .await
-    {
-        Ok(sid) => {
+    // The state must match the cookie this browser received at /google/start. A state that is
+    // merely known to the server (e.g. one an attacker started and forwarded) is not enough.
+    let bound = named_cookie(&headers, OAUTH_STATE_COOKIE);
+    let same_browser = match (bound.as_deref(), q.state.as_deref()) {
+        (Some(cookie), Some(query)) if !cookie.is_empty() => {
+            bool::from(cookie.as_bytes().ct_eq(query.as_bytes()))
+        }
+        _ => false,
+    };
+    let outcome = if same_browser {
+        auth(&state)
+            .google_callback(q.code.as_deref(), q.state.as_deref())
+            .await
+            .ok()
+    } else {
+        None
+    };
+    let mut res = match outcome {
+        Some(sid) => {
             let signed = auth(&state).signed_cookie_value(&sid);
             let mut res = Redirect::temporary(&format!("{post}?google=ok")).into_response();
             res.headers_mut()
                 .insert(header::SET_COOKIE, set_session_cookie(&state, &signed));
             res
         }
-        Err(_) => Redirect::temporary(&format!("{post}?google=error")).into_response(),
+        None => Redirect::temporary(&format!("{post}?google=error")).into_response(),
+    };
+    // One-shot: clear the state cookie whatever the outcome (only if the browser sent one).
+    if bound.is_some() {
+        res.headers_mut().append(
+            header::SET_COOKIE,
+            oauth_state_cookie(state.auth.cookie_secure(), "", 0),
+        );
     }
+    res
 }
