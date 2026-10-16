@@ -8,7 +8,13 @@ import { ChartFrame, type ChartStatus } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord } from '@/shared/dataState/vocabulary';
 import { STAGING_DEMO_SYMBOLS, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
-import { dataMode, demoNoteFilings, type PublicFiling, type PublicTicker } from '@convexa/api';
+import {
+  dataMode,
+  demoNoteFilings,
+  type PublicFiling,
+  type PublicFilings,
+  type PublicTicker,
+} from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha, type Theme } from '@mui/material/styles';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -16,10 +22,12 @@ import { useSearchParams } from 'react-router-dom';
 import { localToday, researchIndex, upcoming } from 'virtual:convexa-research';
 import { figureChange, standing } from './filings';
 import { formatNoteDate, formatShortDate } from './format';
+import { formatFiled } from './money';
 import { ResearchColumn } from './NotesView';
 import { usePublicFilings, usePublicTicker } from './publicData';
 import { Caps, Disclaimer, ProvenanceChip, SourceProblem, StaleNote } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
+import { quietTickers, secStale } from './secState';
 import { DISPLAY, MONO, PANEL_SX } from './ui';
 
 type Kind = PublicFiling['kind'];
@@ -211,7 +219,13 @@ export function FilingsPage() {
             {read.data && dataMode !== 'demo' && (
               <DataStateTag
                 state={publicDataWord(read.data.state, {
-                  stale: read.data.state === 'live' && !!read.data.detail,
+                  stale:
+                    read.data.state === 'live' &&
+                    secStale(
+                      read.data.sources?.find((s) => s.id === 'sec')?.state ??
+                        read.data.source_state,
+                      read.data.detail,
+                    ),
                 })}
               />
             )}
@@ -294,10 +308,18 @@ export function FilingsPage() {
               })}
             </Box>
             {shown.length === 0 ? (
-              <SourceProblem
-                title="Nothing filed in the last 90 days."
-                body="When a followed company files with the SEC it appears here within the hour."
-              />
+              read.data.state === 'unavailable' ? (
+                <SourceProblem
+                  title="Source down: unknown, not empty."
+                  body={`${read.data.detail ?? 'SEC EDGAR didn’t answer.'} Filings for the followed companies are unknown this cycle, not missing; the notes keep their own dates.`}
+                  onRetry={read.retry}
+                />
+              ) : (
+                <SourceProblem
+                  title="Nothing filed in the last 90 days."
+                  body="When a followed company files with the SEC it appears here within the hour."
+                />
+              )
             ) : (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start' }}>
                 <Box sx={{ flex: '999 1 560px', minWidth: 0 }}>
@@ -315,7 +337,7 @@ export function FilingsPage() {
                 </Box>
               </Box>
             )}
-            <Unlisted missing={read.data.missing} filings={filings} />
+            <Unlisted data={read.data} />
           </>
         )}
 
@@ -782,10 +804,14 @@ function NotSetUp() {
 }
 
 /** Tickers the feed has nothing for, named rather than silently dropped: the ones EDGAR's ticker map
- *  doesn't know (the API's `missing` list) and the ones that filed nothing in the window. */
-function Unlisted({ missing, filings }: { missing: string[]; filings: PublicFiling[] }) {
-  const filed = new Set(filings.map((f) => f.ticker));
-  const quiet = TICKERS.filter((t) => !missing.includes(t) && !filed.has(t));
+ *  doesn't know (the API's `missing` list) and the ones that filed nothing in the window. "Filed
+ *  nothing" is said only when EDGAR answered for every company this cycle (secState.quietTickers);
+ *  after a failure, a ticker missing from the feed may just not have answered. */
+function Unlisted({ data }: { data: PublicFilings }) {
+  const { missing } = data;
+  const { tickers, known } = quietTickers(data, TICKERS);
+  // When the whole answer is down, the Source down panel above already says so for every company.
+  const quiet = DEMO || data.state === 'live' ? tickers : [];
   if (missing.length === 0 && quiet.length === 0) return null;
   const list = (ts: string[]) =>
     ts.length === 1 ? ts[0] : `${ts.slice(0, -1).join(', ')} and ${ts[ts.length - 1]}`;
@@ -819,24 +845,18 @@ function Unlisted({ missing, filings }: { missing: string[]; filings: PublicFili
         <Box component="span" sx={{ textWrap: 'pretty' }}>
           {DEMO
             ? `${list(quiet)} ${quiet.length === 1 ? 'has' : 'have'} no sample filings in this scenario.`
-            : `${list(quiet)} filed nothing in the last 90 days (ownership forms 3, 4, 5 and 144 are left out).`}
+            : known
+              ? `${list(quiet)} filed nothing in the last 90 days (ownership forms 3, 4, 5 and 144 are left out).`
+              : 'EDGAR didn’t answer for every company this cycle; filings for some are unknown.'}
         </Box>
       )}
     </Box>
   );
 }
 
-/** "$96.2B", "$885.0M", "$2.31" for a per-share figure. */
-function figure(v: number, unit: string) {
-  if (unit.includes('/shares')) return `${v < 0 ? '−' : ''}$${Math.abs(v).toFixed(2)}`;
-  const sign = v < 0 ? '−' : '';
-  const a = Math.abs(v);
-  if (a >= 1e9)
-    return `${sign}$${(a / 1e9).toLocaleString('en-US', { maximumFractionDigits: 2 })}B`;
-  if (a >= 1e6)
-    return `${sign}$${(a / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1 })}M`;
-  return `${sign}${a.toLocaleString('en-US')}`;
-}
+/** "$96.2B", "$885M", "$2.31" per share; a foreign filer's figure in its own currency
+ *  ("TWD 839.25B"), from the wire unit. */
+const figure = formatFiled;
 
 type Periodic = PublicTicker['periodic'][number];
 
@@ -852,8 +872,13 @@ function ReportedFigures({
   read: ReturnType<typeof usePublicTicker>;
   report: Periodic | undefined;
 }) {
-  const failed = !!read.error || (!!read.data && read.data.filings_state !== 'live');
   const facts = report?.facts ?? [];
+  // Company facts failed with nothing kept: the API still lists the filing (filings_state live) with
+  // no facts and says so in its top-level detail. That is Convexa's fetch failing, not the SEC being
+  // late, so it reads Couldn't load with Try again.
+  const factsDown =
+    !DEMO && !!read.data && facts.length === 0 && /company facts/i.test(read.data.detail ?? '');
+  const failed = !!read.error || (!!read.data && read.data.filings_state !== 'live') || factsDown;
   const lead = facts.find((f) => f.concept === 'Revenue') ?? facts[0];
   const leadChange = lead ? figureChange(lead.prior_value, lead.value) : null;
   const finding = lead
@@ -871,7 +896,7 @@ function ReportedFigures({
             kind: 'message',
             tone: 'warn',
             text: 'Couldn’t load the reported figures.',
-            cause: `${read.data?.filings_detail ?? `The SEC company-facts request failed${read.error ? ` (${read.error})` : ''}.`} The filing itself is linked below.`,
+            cause: `${(factsDown ? read.data?.detail : read.data?.filings_detail) ?? `The SEC company-facts request failed${read.error ? ` (${read.error})` : ''}.`} The filing itself is linked below.`,
           }
         : facts.length === 0
           ? {

@@ -1,6 +1,7 @@
 /** Figure blocks: the header strip, the 30-second summary, and dated figure tiles. */
 import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
+import { Fragment } from 'react';
 import { formatAsOf, labelWithAsOf } from '../format';
 import { NoteInlines } from '../Inlines';
 import { useNoteContext } from '../noteContext';
@@ -65,30 +66,41 @@ export function TldrBlock({ block }: { block: Of<'tldr'> }) {
       aria-label="Summary"
     >
       <Eyebrow>TL;DR · 30 seconds</Eyebrow>
-      {block.items.map((item, i) => (
-        <Box
-          key={i}
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: '72px minmax(0, 1fr)',
-            gap: 1.75,
-            alignItems: 'baseline',
-            pt: 1.25,
-            borderTop: 1,
-            borderColor: 'divider',
-          }}
-        >
-          <Box
-            component="span"
-            sx={{ ...MONO, fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em' }}
-          >
-            {item.figure}
-          </Box>
-          <Box component="span" sx={{ fontSize: 14, lineHeight: 1.5 }}>
-            <NoteInlines nodes={item.text} />
-          </Box>
-        </Box>
-      ))}
+      {/* One grid for every row, so the figure column is as wide as the widest figure ("$108.5B")
+          and the sentences line up beside it, instead of a fixed 72px a long figure ran past. */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(72px, max-content) minmax(0, 1fr)',
+          rowGap: 1.5,
+          // Top-aligned so each row's rule is one line across both cells; the figure's line box
+          // matches the sentence's first line (14px × 1.5), which keeps their baselines together.
+          alignItems: 'start',
+          '& > span': { pt: 1.25, borderTop: 1, borderColor: 'divider' },
+        }}
+      >
+        {block.items.map((item, i) => (
+          <Fragment key={i}>
+            <Box
+              component="span"
+              sx={{
+                ...MONO,
+                fontSize: 22,
+                fontWeight: 500,
+                letterSpacing: '-0.02em',
+                lineHeight: '21px',
+                whiteSpace: 'nowrap',
+                pr: 1.75,
+              }}
+            >
+              {item.figure}
+            </Box>
+            <Box component="span" sx={{ fontSize: 14, lineHeight: 1.5 }}>
+              <NoteInlines nodes={item.text} />
+            </Box>
+          </Fragment>
+        ))}
+      </Box>
     </Panel>
   );
 }

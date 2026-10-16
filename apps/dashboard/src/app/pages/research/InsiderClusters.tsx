@@ -19,6 +19,7 @@ import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import { localToday } from 'virtual:convexa-research';
 import { formatNoteDate, formatShortDate } from './format';
+import { insiderFrame, notSecFiler, tickerSecStale } from './secState';
 import { MONO } from './ui';
 import { useWidth } from './useWidth';
 
@@ -28,7 +29,27 @@ const DEMO_DAY = '2026-10-07';
 const ms = (d: string) => Date.parse(`${d}T00:00:00Z`);
 const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
 const span = (w: PublicInsiderWindow) => Math.round((ms(w.to) - ms(w.from)) / DAY) + 1;
-const period = (days: number) => (days >= 360 ? '12 months' : `${Math.round(days / 30.4)} months`);
+const period = (days: number) => {
+  if (days >= 360) return '12 months';
+  const m = Math.max(1, Math.round(days / 30.4));
+  return m === 1 ? '1 month' : `${m} months`;
+};
+/** The months the timeline covers: the full period, or, when only the newest Form 4s were read, from
+ *  the oldest filing read to `end` (never a 12-month claim over months nobody read). */
+function coveredDays(
+  ins: Partial<Pick<PublicInsiders, 'history_days'>>,
+  backTo: string | null,
+  end: string,
+) {
+  const full = ins.history_days ?? 365;
+  if (!backTo) return full;
+  return Math.min(full, Math.max(1, Math.round((ms(end) - ms(backTo)) / DAY)));
+}
+const monthName = (d: string, today: string) => {
+  const m = MONTHS[Number(d.slice(5, 7)) - 1];
+  // "Oct" alone, eleven months on, reads as this month: name the year unless it is this month.
+  return d.slice(0, 7) === today.slice(0, 7) ? m : `${m} ${d.slice(0, 4)}`;
+};
 const sharesText = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const numberWord = (n: number) =>
@@ -36,19 +57,20 @@ const numberWord = (n: number) =>
 
 /** The frame's title over data: the latest buying cluster, or why there is none (P-10). */
 export function clustersFinding(
-  ins: Pick<PublicInsiders, 'clusters' | 'transactions' | 'history_days'>,
+  ins: Partial<Pick<PublicInsiders, 'clusters' | 'transactions'>>,
   demo: boolean,
+  /** The days the timeline covers (coveredDays), and the day it ends. */
+  days: number,
+  today: string,
 ): string {
   const lead = demo ? 'In the sample, ' : '';
   const clusters = ins.clusters ?? [];
   const tx = ins.transactions ?? [];
   if (clusters.length) {
     const last = clusters[clusters.length - 1];
-    const month = MONTHS[Number(last.to.slice(5, 7)) - 1];
+    const month = monthName(last.to, today);
     const more =
-      clusters.length > 1
-        ? ` (${count(clusters.length, 'cluster')} in ${period(ins.history_days)})`
-        : '';
+      clusters.length > 1 ? ` (${count(clusters.length, 'cluster')} in ${period(days)})` : '';
     const said = `${numberWord(last.insiders)} insiders bought on the open market within ${count(span(last), 'day')} in ${month}: a buying cluster${more}`;
     return lead ? `${lead}${said}` : `${said.charAt(0).toUpperCase()}${said.slice(1)}`;
   }
@@ -68,13 +90,24 @@ export function clustersFinding(
     buys.length === 0
       ? 'and no one bought'
       : `and ${count(buys.length, 'open-market purchase')} too few or too spread out to cluster`;
-  return `${lead}No buying cluster in ${period(ins.history_days)}: ${count(sellers, 'insider')} sold ${count(sales.length, 'time')}${plan}, ${buying}`;
+  return `${lead}No buying cluster in ${period(days)}: ${count(sellers, 'insider')} sold ${count(sales.length, 'time')}${plan}, ${buying}`;
 }
 
 const NOT_SET_UP_CAUSE =
   'Insider trades come from SEC Form 4, through EDGAR. EDGAR asks every program that reads it to identify itself with a contact address; this site hasn’t been given one.';
 
+/** The frame's reading of the answer and the period it may claim, shared by the heading and the frame. */
+function coverageOf(d: PublicTicker) {
+  const demo = dataMode === 'demo';
+  const end = demo ? DEMO_DAY : localToday();
+  const ins = d.insiders;
+  const frame = ins ? insiderFrame(ins) : null;
+  const backTo = frame?.kind === 'ready' && frame.partial ? frame.partial.backTo : null;
+  return { demo, end, ins, frame, days: coveredDays(ins ?? {}, backTo, end) };
+}
+
 export function InsiderClustersSection({ d }: { d: PublicTicker }) {
+  const { days } = coverageOf(d);
   return (
     <Box component="section" aria-labelledby="insider-trades" sx={{ display: 'grid', gap: 1.75 }}>
       <Box sx={{ display: 'grid', gap: 0.5 }}>
@@ -89,7 +122,7 @@ export function InsiderClustersSection({ d }: { d: PublicTicker }) {
             fontSize: 22,
           }}
         >
-          {`Insider trades · ${period(d.insiders?.history_days ?? 365)}`}
+          {`Insider trades · ${period(days)}`}
         </Box>
         <Box
           component="span"
@@ -105,18 +138,18 @@ export function InsiderClustersSection({ d }: { d: PublicTicker }) {
 }
 
 function InsiderClustersFrame({ d }: { d: PublicTicker }) {
-  const demo = dataMode === 'demo';
-  const ins = d.insiders;
-  const metric = `${d.ticker} insider trades, ${period(ins?.history_days ?? 365)}`;
+  const { demo, end, ins, frame, days } = coverageOf(d);
+  const metric = `${d.ticker} insider trades, ${period(days)}`;
   const source = demo
     ? { text: 'Demo · shaped like SEC Form 4' }
     : {
         text: 'SEC EDGAR · Form 4',
         href: `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${encodeURIComponent(d.ticker)}&type=4&owner=include`,
       };
-  const sub = `${d.ticker} Form 4 transactions by insider and date · ${period(ins?.history_days ?? 365)} · ring = sale, filled = open-market purchase · shaded = 10 days with 3 or more insiders trading the same way`;
+  const sub = `${d.ticker} Form 4 transactions by insider and date · ${period(days)} · ring = sale, filled = open-market purchase · shaded = 10 days with 3 or more insiders trading the same way`;
+  const stale = !demo && tickerSecStale(d);
   const message = (
-    tag: DataStateKey,
+    tag: DataStateKey | null,
     tone: 'warn' | 'quiet',
     text: string,
     cause?: string,
@@ -128,14 +161,23 @@ function InsiderClustersFrame({ d }: { d: PublicTicker }) {
       sub={sub}
       provenance={demo ? 'sample' : 'primary'}
       status={{ kind: 'message', tone, text, cause }}
-      tag={{ state: tag }}
+      tag={tag ? { state: tag } : undefined}
       height={150}
       source={source}
       action={action}
       testId="chart-insider-clusters"
     />
   );
-  if (!ins || ins.state === 'not_configured')
+  // SEC answered and EDGAR lists no company under the symbol (an index, a fund, a fresh IPO): a fact
+  // about the ticker, not a setup fault, so no tag and no operator step.
+  if (notSecFiler(d))
+    return message(
+      null,
+      'quiet',
+      'Not an SEC filer.',
+      `${d.filings_detail ?? `SEC EDGAR lists no company under ${d.ticker}.`} Funds, indexes and some foreign issuers read this way; there are no Form 4s to show.`,
+    );
+  if (ins?.state === 'not_configured' || d.filings_state === 'not_configured')
     return message(
       'notSetUp',
       'quiet',
@@ -143,35 +185,51 @@ function InsiderClustersFrame({ d }: { d: PublicTicker }) {
       NOT_SET_UP_CAUSE,
       <OperatorNote />,
     );
-  if (ins.state === 'unavailable')
+  if (ins?.state === 'off') return null;
+  if (!ins || !frame || ins.state === 'unavailable')
     return message(
       'sourceDown',
       'warn',
       'Insider trades are unavailable right now.',
-      `${ins.detail ?? 'SEC EDGAR didn’t answer'} There is no earlier copy. Unknown, not empty.`,
+      `${ins?.detail ?? d.filings_detail ?? 'SEC EDGAR didn’t answer.'} There is no earlier copy. Unknown, not empty.`,
     );
-  if (ins.state === 'off') return null;
-  const tx = ins.transactions ?? [];
-  const roles = ins.roles ?? [];
-  if (tx.length === 0)
+  // An API from before the timeline (during a deploy, or after a rollback): no claim about trades.
+  if (frame.kind === 'olderServer')
+    return message(null, 'quiet', 'The 12-month timeline arrives with the next server update.');
+  if (frame.kind === 'unread')
     return message(
-      'computed',
+      'sourceDown',
+      'warn',
+      'EDGAR didn’t answer for this year’s Form 4s.',
+      `${count(frame.filings, 'Form 4')} ${frame.filings === 1 ? 'was' : 'were'} filed in the period and none could be read. Unknown, not empty.`,
+    );
+  if (frame.kind === 'emptyPartial')
+    return message(
+      stale ? 'lastGood' : 'computed',
       'quiet',
-      `No open-market Form 4 trades by ${d.ticker} insiders in ${period(ins.history_days)}.`,
+      `No open-market Form 4 trades among the ${frame.read} newest of ${count(frame.filings, 'filing')}${frame.backTo ? `, back to ${formatNoteDate(frame.backTo)}` : ''}.`,
+      'The older filings in the period weren’t read, so this covers only those months. Option exercises, gifts and awards are left out.',
+    );
+  if (frame.kind === 'empty')
+    return message(
+      stale ? 'lastGood' : 'computed',
+      'quiet',
+      `No open-market Form 4 trades by ${d.ticker} insiders in ${period(days)}.`,
       'A cluster is three or more insiders buying on the open market within ten days. Option exercises, gifts and awards are left out.',
     );
-  const stale = !demo && !!ins.detail && /did not answer/i.test(ins.detail);
+  const tx = ins.transactions ?? [];
+  const roles = ins.roles ?? [];
   const latestFiled = tx.reduce((m, t) => (t.filed > m ? t.filed : m), tx[0].filed);
-  const coverage =
-    ins.history_reaches_back_to && ins.history_filings_read < ins.history_filings
-      ? ` ${count(ins.history_filings, 'Form 4')} were filed in the period; the newest ${ins.history_filings_read} were read, back to ${formatNoteDate(ins.history_reaches_back_to)}.`
-      : '';
+  const partial = frame.partial;
+  const coverage = partial
+    ? ` ${count(partial.filings, 'Form 4')} were filed in the period; the newest ${partial.read} were read${partial.backTo ? `, back to ${formatNoteDate(partial.backTo)}` : ''}.`
+    : '';
   const windows = [...(ins.clusters ?? []), ...(ins.sale_windows ?? [])].sort((a, b) =>
     a.from.localeCompare(b.from),
   );
   return (
     <ChartFrame
-      finding={clustersFinding(ins, demo)}
+      finding={clustersFinding(ins, demo, days, end)}
       metric={metric}
       sub={sub}
       provenance={demo ? 'sample' : 'primary'}
@@ -226,9 +284,9 @@ function InsiderClustersFrame({ d }: { d: PublicTicker }) {
       }
       testId="chart-insider-clusters"
     >
-      {stale && (
+      {stale && d.filings_detail && (
         <Box component="p" sx={{ m: 0, fontSize: 12, color: 'warning.main', textWrap: 'pretty' }}>
-          {ins.detail}
+          {d.filings_detail}
         </Box>
       )}
       <Timeline
@@ -236,8 +294,8 @@ function InsiderClustersFrame({ d }: { d: PublicTicker }) {
         roles={roles}
         clusters={ins.clusters ?? []}
         saleWindows={ins.sale_windows ?? []}
-        end={demo ? DEMO_DAY : localToday()}
-        days={ins.history_days}
+        end={end}
+        days={days}
       />
     </ChartFrame>
   );
@@ -325,16 +383,23 @@ function Timeline({
     LABEL +
     ((Math.min(Math.max(ms(d), t0), t1) - t0) / (t1 - t0 || 1)) * Math.max(0, W - LABEL - PR);
   const y = (i: number) => PT + (i + 0.5) * ROW;
-  // Month starts inside the period; on a phone every other label shows.
+  // Month starts inside the period; on a phone every other label shows. The first label shown in
+  // each year carries the year ("Nov ’25 … Jan ’26"), so a month eleven months back never reads as
+  // this one.
   const months: { at: string; label: string; show: boolean }[] = [];
   const first = new Date(t0);
+  let labelledYear = -1;
   for (let m = 1; m <= 13; m++) {
     const at = Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + m, 1);
     if (at >= t1) break;
+    const show = !compact || m % 2 === 1;
+    const year = new Date(at).getUTCFullYear();
+    const withYear = show && year !== labelledYear;
+    if (withYear) labelledYear = year;
     months.push({
       at: iso(at),
-      label: MONTHS[new Date(at).getUTCMonth()],
-      show: !compact || m % 2 === 1,
+      label: `${MONTHS[new Date(at).getUTCMonth()]}${withYear ? ` ’${String(year).slice(2)}` : ''}`,
+      show,
     });
   }
   const shaded = [...saleWindows, ...clusters];

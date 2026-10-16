@@ -22,6 +22,7 @@ import { filedSince } from '@/pages/research/filings';
 import { formatNoteDate, formatShortDate } from '@/pages/research/format';
 import { usePublicTicker } from '@/pages/research/publicData';
 import { Caps, SourceProblem } from '@/pages/research/publicUi';
+import { notSecFiler, tickerSecStale } from '@/pages/research/secState';
 import { DISPLAY, FreshnessLine, MONO, PANEL_SX } from '@/pages/research/ui';
 import { recordVisit } from '@/pages/ticker/recentTickers/store';
 import { TradingViewDaily } from '@/pages/ticker/technical-analysis/TradingViewDaily';
@@ -477,13 +478,21 @@ function FilingsCard({ d }: { d: PublicTicker }) {
         text={`${d.filings_detail ?? 'EDGAR did not answer.'} This list is unknown, not empty.`}
       />
     );
+  // EDGAR lists no company under the symbol (VIX, SPX, a fresh IPO): a fact, not a stale copy.
+  if (notSecFiler(d))
+    return (
+      <Missing
+        label="Recent filings"
+        text={`Not an SEC filer: ${d.filings_detail ?? `SEC EDGAR lists no company under ${d.ticker}.`}`}
+      />
+    );
   const latest = d.filings[0];
+  // Last good copy only on EDGAR's own word for this answer, never on the mere presence of a detail.
+  const stale = d.filings_state === 'live' && tickerSecStale(d);
   const tag = (
     <DataStateTag
-      state={publicDataWord(d.filings_state, {
-        stale: d.filings_state === 'live' && !!d.filings_detail,
-      })}
-      detail={latest && !d.filings_detail ? `latest ${formatShortDate(latest.filed)}` : null}
+      state={publicDataWord(d.filings_state, { stale })}
+      detail={latest && !stale ? `latest ${formatShortDate(latest.filed)}` : null}
     />
   );
   if (d.filings.length === 0)
@@ -692,8 +701,9 @@ function FeedZone({
             display: 'grid',
             gap: 2,
             gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))',
-            // The AI read spans its row; the panels after it fill the cells before it.
-            gridAutoFlow: 'row dense',
+            // The AI read spans its row. No dense packing: back-filling the cells before it would
+            // put the tape and flow above the AI read on screen while focus order keeps them after
+            // it (WCAG 2.4.3, 1.3.2). A short row before it is the cost of a matching order.
           }}
         >
           {FEED_PANELS.map((p) =>
