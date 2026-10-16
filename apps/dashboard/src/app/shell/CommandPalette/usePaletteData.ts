@@ -14,7 +14,7 @@
  * commands and notes). The notes come from a lazy chunk so the research index stays out of the
  * shell's own bundle.
  */
-import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
+import { STAGING_DEMO_NAMES, STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
 import {
   dataMode,
   getScan,
@@ -50,18 +50,6 @@ export interface PaletteData {
   /** Whether tickers are ranked by a (sample) scan or listed by name. */
   ranked: boolean;
 }
-
-/** The demo's six sample symbols by name: the scenario carries tickers only. Same names as the
- *  sample research cards (pages/research/ResearchIndexPage.tsx SAMPLE_NAMES); a symbol missing here
- *  renders without a name, never a guessed one. */
-const DEMO_NAMES: Readonly<Record<string, string>> = {
-  AAPL: 'Apple',
-  MSFT: 'Microsoft',
-  NVDA: 'NVIDIA',
-  QQQ: 'Invesco QQQ Trust',
-  SPY: 'SPDR S&P 500 ETF',
-  TSLA: 'Tesla',
-};
 
 const DEMO_NOTES: PaletteNote[] = STAGING_DEMO_SYMBOLS.map((ticker) => ({
   ticker,
@@ -127,7 +115,7 @@ export function usePaletteData(active: boolean): PaletteData {
               phase: 'ready',
               items: byScore(res.rows).map((row) => ({
                 symbol: row.symbol,
-                name: DEMO_NAMES[row.symbol.toUpperCase()] ?? null,
+                name: STAGING_DEMO_NAMES[row.symbol.toUpperCase()] ?? null,
                 hasNote: true,
                 row,
               })),
