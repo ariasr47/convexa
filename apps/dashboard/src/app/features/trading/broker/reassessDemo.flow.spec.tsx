@@ -21,8 +21,8 @@ import { getTicker, initializeDemoWorkspace } from '@convexa/api';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
 import { readFileSync } from 'node:fs';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BrokerTabPanel } from './BrokerTabPanel';
 

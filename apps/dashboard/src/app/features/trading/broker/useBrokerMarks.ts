@@ -17,8 +17,8 @@ import { resolveLegMark } from '@/features/trading/model/legMark';
 import { type MarkResult } from '@/features/trading/model/mark';
 import { useTickerSpots } from '@/features/trading/model/useTickerSpots';
 import { legContractKey } from '@/features/trading/positions/composeMark';
-import { useMarkFeed } from '@/features/trading/positions/markFeed';
 import type { Leg } from '@/features/trading/positions/leg';
+import { useMarkFeed } from '@/features/trading/positions/markFeed';
 import {
   fetchTrackedContract,
   type BrokerPosition,

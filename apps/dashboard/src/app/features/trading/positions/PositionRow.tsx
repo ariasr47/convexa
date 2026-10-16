@@ -552,9 +552,11 @@ export function cellContent(
         // needs and the denominator is about zero, which is exactly why the dollar P/L beside it
         // still renders a real figure while this one does not (SPEC §4, AC-31).
         const bare =
-          st.kind === 'no_basis'
-            ? literal(NO_BASIS_LABEL, NO_BASIS_TIP, 'cell-no-basis', p.id)
-            : <NoPlCell view={view} />;
+          st.kind === 'no_basis' ? (
+            literal(NO_BASIS_LABEL, NO_BASIS_TIP, 'cell-no-basis', p.id)
+          ) : (
+            <NoPlCell view={view} />
+          );
         if (!pctState.showPause) return bare;
         return (
           <Stack
