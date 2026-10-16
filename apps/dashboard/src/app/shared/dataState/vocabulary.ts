@@ -83,6 +83,32 @@ export function publicDataWord(
   }
 }
 
+/**
+ * What a public-data card shows in place of its figure, or `null` to draw the figure.
+ *
+ * - `'empty'`: the source answered and has nothing for this symbol ("FINRA has no report"). Only a
+ *   `live` part may say so.
+ * - `'off'`, `'notSetUp'`, `'sourceDown'`: the part's state word. Nothing was learned about the
+ *   symbol, so the card must not claim there is no data. Production switches FINRA off (owner
+ *   ruling 4, 2026-10-15): both FINRA parts arrive `off` with no figure while the answer as a
+ *   whole is `live` because SEC answered, and that must read Off, not "no report".
+ * - A state this build doesn't know (a newer server) with no figure reads Source down: unknown,
+ *   never empty.
+ *
+ * Demo builds draw their sample figure whatever the state, and say empty when there is none.
+ */
+export function publicPartGap(
+  state: PublicDataState | string,
+  hasFigure: boolean,
+  { demo = false }: { demo?: boolean } = {},
+): 'empty' | 'off' | 'notSetUp' | 'sourceDown' | null {
+  if (demo || state === 'live') return hasFigure ? null : 'empty';
+  if (state === 'off') return 'off';
+  if (state === 'not_configured') return 'notSetUp';
+  if (state === 'unavailable') return 'sourceDown';
+  return hasFigure ? null : 'sourceDown';
+}
+
 const SOURCE_WORDS: Record<PublicSourceState, DataStateKey> = {
   updated: 'updated',
   delayed: 'delayed',

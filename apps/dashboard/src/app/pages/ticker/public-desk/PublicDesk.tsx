@@ -12,6 +12,7 @@
  */
 import {
   CardHead,
+  finraShown,
   InsidersCard,
   Missing,
   ShortInterestCard,
@@ -344,20 +345,22 @@ function PublicZone({
                 <InsidersCard d={d} />
               </Box>
             </Box>
-            <Box
-              component="p"
-              sx={{
-                m: 0,
-                fontSize: 12,
-                color: 'text.secondary',
-                maxWidth: 720,
-                textWrap: 'pretty',
-              }}
-            >
-              FINRA owns and is the source of the short-interest and short-sale-volume data here,
-              including the percentages and averages Convexa calculates from it. Shown free for
-              non-commercial personal use; please don&apos;t redistribute it.
-            </Box>
+            {finraShown(d) && (
+              <Box
+                component="p"
+                sx={{
+                  m: 0,
+                  fontSize: 12,
+                  color: 'text.secondary',
+                  maxWidth: 720,
+                  textWrap: 'pretty',
+                }}
+              >
+                FINRA owns and is the source of the short-interest and short-sale-volume data here,
+                including the percentages and averages Convexa calculates from it. Shown free for
+                non-commercial personal use; please don&apos;t redistribute it.
+              </Box>
+            )}
           </>
         ))}
     </Box>

@@ -12,7 +12,7 @@
  */
 import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import { publicDataWord } from '@/shared/dataState/vocabulary';
+import { publicDataWord, publicPartGap } from '@/shared/dataState/vocabulary';
 import { dataMode, type PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha, useTheme } from '@mui/material/styles';
@@ -129,14 +129,16 @@ export function NotePublicPanels({
           <ShortVolumeCard d={d} />
           <InsidersCard d={d} />
         </Box>
-        <Box
-          component="p"
-          sx={{ m: 0, fontSize: 12, color: 'text.secondary', maxWidth: 720, textWrap: 'pretty' }}
-        >
-          FINRA owns and is the source of the short-interest and short-sale-volume data here,
-          including the percentages and averages Convexa calculates from it. Shown free for
-          non-commercial personal use; please don&apos;t redistribute it.
-        </Box>
+        {finraShown(d) && (
+          <Box
+            component="p"
+            sx={{ m: 0, fontSize: 12, color: 'text.secondary', maxWidth: 720, textWrap: 'pretty' }}
+          >
+            FINRA owns and is the source of the short-interest and short-sale-volume data here,
+            including the percentages and averages Convexa calculates from it. Shown free for
+            non-commercial personal use; please don&apos;t redistribute it.
+          </Box>
+        )}
       </Box>
       <SecRecordSections d={d} />
       <Box
@@ -365,6 +367,23 @@ function PartNote({ text }: { text: string | null }) {
 const FINRA_SI_URL = 'https://www.finra.org/finra-data/browse-catalog/equity-short-interest';
 const FINRA_SV_URL = 'https://www.finra.org/finra-data/browse-catalog/short-sale-volume-data';
 
+/** Whether either FINRA card draws a figure: FINRA's ownership credit sits under the cards only
+ *  then. With FINRA switched off it would credit FINRA for data the page doesn't show. */
+export const finraShown = (d: PublicTicker) => {
+  const demo = dataMode === 'demo';
+  return (
+    publicPartGap(d.short_interest_state, !!d.short_interest, { demo }) === null ||
+    publicPartGap(d.short_volume_state, !!d.short_volume, { demo }) === null
+  );
+};
+
+/** When the API sends no reason with an Off or Not set up FINRA part. Neither claims the symbol has
+ *  no data: FINRA was not asked. */
+const FINRA_NOT_SHOWN = {
+  off: 'FINRA data is off on this site.',
+  notSetUp: 'FINRA data is not set up on this server.',
+} as const;
+
 /**
  * Short interest at each FINRA settlement (RP-01, canon P-8 to P-13): the frame's title states the
  * year's change; the bars carry their settlement dates and their unit; the latest bar is the claim's
@@ -377,12 +396,21 @@ const FINRA_SV_URL = 'https://www.finra.org/finra-data/browse-catalog/short-sale
 export function ShortInterestCard({ d, compact = false }: { d: PublicTicker; compact?: boolean }) {
   const si = d.short_interest;
   const demo = dataMode === 'demo';
-  if (d.short_interest_state === 'unavailable' && !demo)
+  const gap = publicPartGap(d.short_interest_state, !!si, { demo });
+  if (gap === 'sourceDown')
     return (
       <Missing
         label="Short interest"
         tag={<DataStateTag state="sourceDown" />}
         text={`${d.short_interest_detail ?? 'FINRA did not answer.'} Unknown, not empty.`}
+      />
+    );
+  if (gap === 'off' || gap === 'notSetUp')
+    return (
+      <Missing
+        label="Short interest"
+        tag={<DataStateTag state={gap} />}
+        text={d.short_interest_detail ?? FINRA_NOT_SHOWN[gap]}
       />
     );
   if (!si)
@@ -594,12 +622,21 @@ const trimNum = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits
 export function ShortVolumeCard({ d }: { d: PublicTicker }) {
   const sv = d.short_volume;
   const demo = dataMode === 'demo';
-  if (d.short_volume_state === 'unavailable' && !demo)
+  const gap = publicPartGap(d.short_volume_state, !!sv, { demo });
+  if (gap === 'sourceDown')
     return (
       <Missing
         label="Short-sale volume"
         tag={<DataStateTag state="sourceDown" />}
         text={`${d.short_volume_detail ?? "FINRA's daily files did not answer."} Unknown, not empty.`}
+      />
+    );
+  if (gap === 'off' || gap === 'notSetUp')
+    return (
+      <Missing
+        label="Short-sale volume"
+        tag={<DataStateTag state={gap} />}
+        text={d.short_volume_detail ?? FINRA_NOT_SHOWN[gap]}
       />
     );
   if (!sv)
