@@ -3,6 +3,7 @@
 // light (production) and states. Renderers live in ./ticker-desk.mjs, ./ticker-tech.mjs, ./ticker-note.mjs.
 // Facts in the specs were read from the shipped app on main (2026-10-14); file:line cites are on main.
 import { TK_CSS, deskProductionBody, deskStagingBody, deskStatesBoardBody } from './ticker-desk.mjs';
+import { DR_CSS, deskReviewBody } from './desk-review.mjs';
 import { TT_CSS, techProductionBody, techStagingBody, techStatesBody } from './ticker-tech.mjs';
 import { TN_CSS, noteProductionBody, noteStagingBody, noteStatesBoardBody } from './ticker-note.mjs';
 
@@ -84,7 +85,7 @@ const DESK = {
     { status: 'shipped', what: 'Context: one band head; the filter with three disabled options and the “+ Add widget” ghost are gone (affordance-only); the straddle card leads as a range chart of the move against the walls with its finding as the title (StraddleMove.tsx).' },
     { status: 'shipped', what: 'Demo seeds (D-22): Net DEX, Vol/OI, IV skew and the off-exchange share are derived per symbol from each symbol’s own bars and IV (demo/flowSeed.ts, tested); the scenario carries its prior close (catalog/shared.ts priorClose, views.ts loadSampleQuote/dayChange, tested against the scanner’s Chg %).' },
     { status: 'shipped', what: 'Production desk (lane 4): FINRA Off folds into one card with the owner’s reason (FINRA_OFF_REASON) after the SEC panels, which move up beside the chart; the feed zone states its cause once and groups its panels by the desk’s read in full rows, gamma by strike with the board’s dashed outline (PublicDesk.tsx).' },
-    { status: 'shipped', what: 'FINRA is Off in production (owner answer 4, 2026-10-15): one code constant, finra::FINRA_DISPLAY_APPROVED = false. While it is false the API asks neither api.finra.org nor cdn.finra.org, and short_interest_state, short_volume_state and both FINRA source rows say off with “FINRA data is off on this site until FINRA’s API terms are accepted.” (services/public_data/mod.rs, tested). The owner flips it after accepting FINRA’s API terms (docs/public-data/FINRA-TERMS-2026-10-15.md). The note’s and the public desk’s Short interest and Short-sale volume cards read each part’s own state: Off with that reason, never “FINRA has no report for this symbol”, which only a live part may say (publicPartGap in shared/dataState/vocabulary.ts, tested); FINRA’s ownership credit under the cards shows only when a FINRA figure does.' },
+    { status: 'shipped', what: 'FINRA is Off in production (owner answer 4, 2026-10-15): one code constant, finra::FINRA_DISPLAY_APPROVED = false. While it is false the API asks neither api.finra.org nor cdn.finra.org, and short_interest_state, short_volume_state and both FINRA source rows say off with “Off on this site until FINRA’s terms for showing its data here are confirmed.” (one sentence with the site’s, 2026-10-16) (services/public_data/mod.rs, tested). The owner flips it after accepting FINRA’s API terms (docs/public-data/FINRA-TERMS-2026-10-15.md). The note’s and the public desk’s Short interest and Short-sale volume cards read each part’s own state: Off with that reason, never “FINRA has no report for this symbol”, which only a live part may say (publicPartGap in shared/dataState/vocabulary.ts, tested); FINRA’s ownership credit under the cards shows only when a FINRA figure does.' },
   ],
   rulings: ['P-1', 'P-2', 'P-3', 'P-5', 'P-6', 'P-8', 'P-9', 'P-10', 'P-11', 'P-12', 'P-13', 'P-14', 'Env 2026-10-14'],
   code: [`${D}pages/ticker/TickerDashboard.tsx`, `${D}pages/ticker/widgets/{structure-hero,level-ladder,read-strip,ai-rec,chrome}/`, `${D}features/trading/orders/`, `${D}pages/ticker/{useTickerBundle,useTickerStream,useStructureHistory}.ts`, `${D}shared/dataState/ · shared/lib/demoSite.ts`, 'libs/api/src/lib/demo/{transport,workspace}.ts · catalog/', 'apps/api/src/routes/public_data.rs · error.rs:171', 'design/src/screens/final/ticker-desk.mjs'],
@@ -206,8 +207,9 @@ const NOTE = {
 
 export const ROWS = [
   {
-    key: 'desk', label: 'Ticker desk', css: TK_CSS, specH: 3528, spec: DESK,
+    key: 'desk', label: 'Ticker desk', css: TK_CSS + DR_CSS, specH: 3528, spec: DESK,
     boards: [
+      { id: 'review', title: 'Before → after · for your approval', w: 1440, h: 7200, body: (o) => deskReviewBody(o) },
       { id: 'staging', title: 'Staging · demo account', w: 1440, h: 2811, body: (o) => deskStagingBody(o) },
       { id: 'production', title: 'Production', w: 1440, h: 2939, body: (o) => deskProductionBody(o) },
       { id: 'phone', title: 'Phone · production', w: 390, h: 3532, body: (o) => deskProductionBody(o) },
