@@ -15,8 +15,10 @@
  * A row is a link to the Ticker page and nothing else (`[no-real-order-path]`, AC-11); customization
  * is the one gated write and the SERVER refuses it, not this file (`[server-side-gate-enforcement]`).
  */
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { extrasFor } from '@/shared/theme/tokens';
 import { Jargon } from '@/shared/ui/Jargon';
+import { dataMode } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
@@ -29,7 +31,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { EMPTY_FILTERS, filtersActive, partitionLeadGroup } from './format';
 import { SCAN_COPY } from './labels';
 import { ScanCardList } from './ScanCard';
-import { ScanTable, type ScanGroup } from './ScanTable';
+import { SampleAwareFrame, ScanTable, type ScanGroup } from './ScanTable';
 import { ScanToolbar } from './ScanToolbar';
 import { useLivePrices } from './useLivePrices';
 import { useScan } from './useScan';
@@ -68,27 +70,93 @@ function ScanSkeleton() {
   );
 }
 
+/** The demo build: every figure on this page is the authored Oct 7 scenario (canon P-3, P-8). */
+const DEMO = dataMode === 'demo';
+
 /**
- * The three note cards (design/src/screens/scanner.mjs:106-108, `.scan-notes`) — honest, general
- * explanations of shipped behaviour, never a fabricated per-row example. NOT part of `SCAN_COPY`
- * (CF-1 governs that object's own keys only, `scanner.register.spec.tsx`'s `cf1Offenders`) —
- * these are new sentences on a page CF-1 otherwise freezes, so they stay a separate constant the
- * scan never walks.
+ * The demo's own words (Final Scanner, staging board). Not part of `SCAN_COPY` (CF-1 freezes that
+ * object's keys); a sample scan names its source and its clock, never a feed (site check D-03).
  */
-const SCAN_NOTES: { title: string; body: string }[] = [
-  {
-    title: 'How a score is built',
-    body: 'Proximity to the nearest wall or flip, IV vs HV stretch, active setups and a flip-transition bonus all weigh in — never one input alone. Focus or hover any score for that row’s own breakdown.',
-  },
-  {
-    title: 'Zero-state lead group',
-    body: 'An empty or anonymous view opens on Indexes & megacaps so the first read is always a real one. Saved views need a sign-in and are never claimed for an anonymous visitor.',
-  },
-  {
-    title: 'Price stream drops',
-    body: 'Prices dim and the cadence header says so when the stream drops. Structure keeps rendering — a dropped stream never blanks a row.',
-  },
-];
+const DEMO_COPY = {
+  sessionSuffix: ' · scenario',
+  cadence: 'Sample tape · structure ~3 min',
+  legendLine:
+    'Every figure on this page comes from the authored Oct 7 scenario. Nothing is fetched; prices don’t flash.',
+  sampleTag: 'Sample scan',
+  sampleLine:
+    'Shaped like an options-chain scan · authored scenario, Oct 7, 2026, 2:30 PM ET. Not market data.',
+  yourView:
+    'The demo’s tracked universe has six names. Edits and filters stay in this browser until you reset the demo.',
+} as const;
+
+/** The sample frame's head over the demo table and cards (SampleAwareFrame). */
+const DEMO_SAMPLE_HEAD = (
+  <>
+    <DataStateTag state="sample" label={DEMO_COPY.sampleTag} />
+    <Typography component="span" sx={{ fontSize: '0.78rem', color: 'text.secondary' }}>
+      {DEMO_COPY.sampleLine}
+    </Typography>
+  </>
+);
+
+/**
+ * The note cards under the scan (Final Scanner board): how a score is built, and on the demo, where
+ * the view lives. They replace three internal explainer cards that described engineering choices
+ * ("zero-state lead group") rather than the page (site check D-03).
+ */
+function ScanNotes() {
+  const card = {
+    p: '12px 14px',
+    border: '1px solid',
+    borderColor: 'divider',
+    borderRadius: 1.5,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  } as const;
+  const title = {
+    fontSize: '0.6875rem',
+    fontWeight: 700,
+    letterSpacing: '.04em',
+    textTransform: 'uppercase',
+    color: 'text.secondary',
+  } as const;
+  const body = { fontSize: '0.8rem', color: 'text.secondary', lineHeight: 1.55 } as const;
+  return (
+    <Box
+      data-testid="scan-notes"
+      sx={{
+        mt: '16px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))',
+        gap: '14px',
+      }}
+    >
+      <Box sx={card}>
+        <Typography component="h2" sx={title}>
+          How a score is built
+        </Typography>
+        <Typography sx={body}>
+          Four parts: distance to a wall, IV stretch, setups and the flip.{' '}
+          <Link component={RouterLink} to="/methodology#score" underline="always">
+            Methodology
+          </Link>
+        </Typography>
+      </Box>
+      {DEMO && (
+        <Box sx={card}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
+            <Typography component="h2" sx={title}>
+              Your view
+            </Typography>
+            <DataStateTag state="local" />
+          </Box>
+          <Typography sx={body}>{DEMO_COPY.yourView}</Typography>
+        </Box>
+      )}
+    </Box>
+  );
+}
 
 const ctaSx = {
   mt: '12px',
@@ -234,6 +302,7 @@ export function Scanner() {
             })}
           >
             {scan.session.label}
+            {DEMO && DEMO_COPY.sessionSuffix}
           </Box>
           {/* The two-speed basis, always present, with its plain-language glossary on hover/focus. */}
           <Typography
@@ -242,7 +311,13 @@ export function Scanner() {
             sx={{ fontSize: '0.78rem', color: 'text.secondary', m: 0, textAlign: 'right' }}
           >
             <Jargon
-              term={live.offline ? SCAN_COPY.cadenceHeaderOffline : SCAN_COPY.cadenceHeader}
+              term={
+                live.offline
+                  ? SCAN_COPY.cadenceHeaderOffline
+                  : DEMO
+                    ? DEMO_COPY.cadence
+                    : SCAN_COPY.cadenceHeader
+              }
               gloss={SCAN_COPY.cadenceGloss}
             />
             {' · '}
@@ -272,6 +347,43 @@ export function Scanner() {
         </Box>
       </Box>
 
+      {DEMO && (
+        <Box sx={{ mb: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <Box
+            component="section"
+            aria-label="On this page"
+            data-testid="scan-demo-legend"
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '8px 16px',
+              px: 2,
+              py: 1.25,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1,
+            }}
+          >
+            <Typography
+              component="span"
+              sx={{
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                letterSpacing: '.04em',
+                textTransform: 'uppercase',
+              }}
+            >
+              On this page
+            </Typography>
+            <DataStateTag state="demo" />
+          </Box>
+          <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+            {DEMO_COPY.legendLine}
+          </Typography>
+        </Box>
+      )}
+
       <ScanToolbar
         view={scan.view}
         density={scan.density}
@@ -286,7 +398,8 @@ export function Scanner() {
 
       {/* Worker-down: a TRUE warning ⇒ burnt orange + MUI's built-in warning icon, sitting OVER the
           intact rows. The rows below keep rendering — a worker death never takes the page down. */}
-      {scan.phase === 'ready' && scan.workerDown && (
+      {/* The demo's sample scenario is not a fault: the legend and the sample frame say what it is. */}
+      {scan.phase === 'ready' && scan.workerDown && !DEMO && (
         <Alert severity="warning" data-testid="scan-worker-down" sx={{ mb: '12px' }}>
           {scan.workerDownText}
         </Alert>
@@ -333,13 +446,27 @@ export function Scanner() {
           </Box>
         </Box>
       ) : isNarrow ? (
-        <ScanCardList
-          rows={displayRows}
-          nowS={scan.nowS}
-          flashActive={flashActive}
-          deltas={scan.deltas}
-          priceOffline={priceOffline}
-        />
+        DEMO ? (
+          <SampleAwareFrame sampleHead={DEMO_SAMPLE_HEAD}>
+            <Box sx={{ p: '10px' }}>
+              <ScanCardList
+                rows={displayRows}
+                nowS={scan.nowS}
+                flashActive={flashActive}
+                deltas={scan.deltas}
+                priceOffline={priceOffline}
+              />
+            </Box>
+          </SampleAwareFrame>
+        ) : (
+          <ScanCardList
+            rows={displayRows}
+            nowS={scan.nowS}
+            flashActive={flashActive}
+            deltas={scan.deltas}
+            priceOffline={priceOffline}
+          />
+        )
       ) : (
         <ScanTable
           rows={displayRows}
@@ -351,54 +478,15 @@ export function Scanner() {
           groups={displayGroups}
           deltas={scan.deltas}
           priceOffline={priceOffline}
+          sampleHead={DEMO ? DEMO_SAMPLE_HEAD : undefined}
         />
       )}
 
-      {/* The three note cards (design :106-110) — present whenever the table/card body itself is
-          (never on the cold skeleton, the empty-view or the empty-filter states, which already
-          carry their own explanation). Mirrors the exact condition that renders the table/cards
-          above, so the two can never disagree. */}
+      {/* The note cards — present whenever the table/card body itself is (never on the cold skeleton,
+          the empty-view or the empty-filter states, which carry their own explanation). */}
       {scan.phase === 'ready' &&
         !scan.isEmptyView &&
-        !(displayRows.length === 0 && filtersActive(scan.filters)) && (
-          <Box
-            data-testid="scan-notes"
-            sx={{
-              mt: '16px',
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
-              gap: '14px',
-            }}
-          >
-            {SCAN_NOTES.map((n) => (
-              <Box
-                key={n.title}
-                sx={{
-                  p: '12px 14px',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1.5,
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: '0.6875rem',
-                    fontWeight: 700,
-                    letterSpacing: '.04em',
-                    textTransform: 'uppercase',
-                    color: 'text.secondary',
-                    mb: '4px',
-                  }}
-                >
-                  {n.title}
-                </Typography>
-                <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', lineHeight: 1.55 }}>
-                  {n.body}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        )}
+        !(displayRows.length === 0 && filtersActive(scan.filters)) && <ScanNotes />}
 
       <ViewEditorDialog
         open={editorOpen}

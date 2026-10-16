@@ -446,6 +446,21 @@ export function closeToClosePct(bars: ReadonlyArray<{ close: number }>): number 
   return Number((((last - prior) / prior) * 100).toFixed(2));
 }
 
+/**
+ * The tier for a sample score, on the API's own bands (apps/api scanner projection.rs TierBands and
+ * quant-engine compute_opportunity_tier: prime 80 with a ready AI read, actionable 60).
+ * The demo's authored reads are always available, so a sample score of 80 or more is Prime. A flat
+ * "60 or more is Actionable" meant the demo never showed Prime, though NVDA scores 81 (site check
+ * D-23).
+ */
+export function demoTier(score: number): 'prime' | 'actionable' | 'watch' {
+  if (score >= 80) return 'prime';
+  if (score >= 60) return 'actionable';
+  // The authored scores run 47-81; the floor stays Watch, as before, rather than a dormant word
+  // the bundle's tier type doesn't carry.
+  return 'watch';
+}
+
 function scoreDrivers(total: number) {
   return { total, proximity: 18, setups: 12, vol: total - 35, transition: 5, dark_pool: 0 };
 }
@@ -956,7 +971,7 @@ function tickerPayload(
       },
     ],
     opportunity_score: variant.score,
-    opportunity_tier: variant.score >= 60 ? 'actionable' : 'watch',
+    opportunity_tier: demoTier(variant.score),
     prime_prompt_eligible: false,
     score_drivers: scoreDrivers(variant.score),
     dark_pool_confluence: null,
@@ -1275,7 +1290,7 @@ export async function demoFetch(request: Request): Promise<Response> {
           dist_to_wall_pct: Number((((price - nearerWall) / price) * 100).toFixed(2)),
           regime: 'positive_gamma',
           score: variant.score,
-          tier: variant.score >= 60 ? 'actionable' : 'watch',
+          tier: demoTier(variant.score),
           vol_regime: 'neutral',
           score_drivers: scoreDrivers(variant.score),
         };
@@ -1311,7 +1326,7 @@ export async function demoFetch(request: Request): Promise<Response> {
       as_of: Date.parse(`${bar.date}T16:00:00Z`) / 1000,
       price: bar.close,
       score: variant.score,
-      tier: variant.score >= 60 ? 'actionable' : 'watch',
+      tier: demoTier(variant.score),
       regime: 'positive_gamma',
       vol_regime: 'neutral',
       flip: variant.flip,

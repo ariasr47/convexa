@@ -130,6 +130,13 @@ describe('demo HTTP projections', () => {
       Number((((spyRow.price! - spyRow.flip!) / spyRow.price!) * 100).toFixed(2)),
     );
     expect(spyRow.dist_to_flip_pct).toBeGreaterThan(0);
+    // The API's tier bands: NVDA's 81 is Prime, SPY's 74 Actionable, TSLA's 47 Watch (D-23).
+    const tierOf = (symbol: string) => scan.rows.find((row) => row.symbol === symbol)?.tier;
+    expect([tierOf('NVDA'), tierOf('SPY'), tierOf('TSLA')]).toEqual([
+      'prime',
+      'actionable',
+      'watch',
+    ]);
 
     const scenario = await loadScenario('SPY');
     const novemberVariant = scenario!.variants[EXPIRIES[2]];
@@ -487,5 +494,18 @@ describe('demo HTTP projections', () => {
       }
     }
     expect(researchTitles.size).toBe(6);
+  });
+});
+
+describe('demoTier', () => {
+  it('uses the API bands: prime 80, actionable 60, else watch', async () => {
+    const { demoTier } = await import('./transport');
+    expect([80, 79, 60, 59, 47].map(demoTier)).toEqual([
+      'prime',
+      'actionable',
+      'actionable',
+      'watch',
+      'watch',
+    ]);
   });
 });

@@ -42,6 +42,7 @@ import {
   fmtPrice,
   fmtScore,
   fmtSignedPct,
+  nearerWall,
   relAge,
   updatedText,
   type PollDelta,
@@ -327,6 +328,54 @@ export function LevelDistCell({
           {d}
         </Box>
       ) : null}
+    </Box>
+  );
+}
+
+/**
+ * Both walls, call / put (the board's "Call / put wall"), with the distance to the nearer one, which
+ * is the wall `dist_to_wall_pct` measures. Showing only the nearer wall left most rows naming the
+ * call wall alone, and a reader couldn't tell which wall the level was (site check D-23).
+ */
+export function WallsCell({ row }: { row: ScanRow }) {
+  const none = row.call_wall == null && row.put_wall == null;
+  const levelValue = none
+    ? EM_DASH
+    : `${dash(row.call_wall, fmtPrice)} / ${dash(row.put_wall, fmtPrice)}`;
+  const levelState = figureStateOf({ value: levelValue, register: 'traced' });
+  const distValue = dash(row.dist_to_wall_pct, fmtSignedPct);
+  const distState = figureStateOf({ value: distValue, register: 'traced' });
+  const nearer = nearerWall(row);
+  const which = nearer == null ? null : nearer === row.call_wall ? 'call' : 'put';
+  return (
+    <Box
+      component="span"
+      sx={{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: '6px' }}
+    >
+      <Box
+        component="span"
+        data-testid="cell-dist-wall-level"
+        data-figure-state={levelState.figureState}
+        data-figure-register={levelState.mono ? 'mono' : 'sans'}
+        sx={{
+          ...faceFor(levelState.mono),
+          fontSize: 'inherit',
+          color: 'text.primary',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {levelValue}
+      </Box>
+      <Box
+        component="span"
+        data-testid="cell-dist-wall"
+        data-figure-state={distState.figureState}
+        data-figure-register={distState.mono ? 'mono' : 'sans'}
+        title={which ? `Distance to the nearer wall, the ${which} wall` : undefined}
+        sx={{ ...faceFor(distState.mono), fontSize: '0.6875rem', color: 'text.secondary' }}
+      >
+        {distValue}
+      </Box>
     </Box>
   );
 }

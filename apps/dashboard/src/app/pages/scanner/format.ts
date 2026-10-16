@@ -184,6 +184,7 @@ export function structureAsOfRel(
   sweep: SweepHeartbeat | null,
   rows: readonly Pick<ScanRow, 'status' | 'as_of'>[],
   nowS: number,
+  demo: boolean = dataMode === 'demo',
 ): string | null {
   let epoch: number | null =
     sweep?.sweep_last_completed != null && Number.isFinite(sweep.sweep_last_completed)
@@ -198,7 +199,27 @@ export function structureAsOfRel(
     }
   }
   if (epoch == null) return null;
-  return relAge(nowS - epoch);
+  return demo ? scenarioStamp(epoch) : relAge(nowS - epoch);
+}
+
+/**
+ * "2:30 PM ET, Oct 7": a sample scan's stamp is the scenario's own clock time, America/New_York.
+ * The demo stamps its rows at the scenario's now, so an age against that clock always read "0s",
+ * a freshness claim the sample can't make (site check D-03).
+ */
+export function scenarioStamp(epochSeconds: number): string {
+  const d = new Date(epochSeconds * 1000);
+  const time = d.toLocaleTimeString('en-US', {
+    timeZone: 'America/New_York',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  const day = d.toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+  });
+  return `${time} ET, ${day}`;
 }
 
 /** Honestly-missing. Every nullable numeric renders THIS, never `0`, never a fabricated value. */
@@ -272,10 +293,14 @@ export const fmtSignedPct = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n)
  * `building` is checked FIRST (the pinned `as_of` trap); a non-positive/non-finite `as_of` is also
  * no claim. Everything else reports its real age.
  */
-export function updatedText(row: Pick<ScanRow, 'status' | 'as_of'>, nowS: number): string | null {
+export function updatedText(
+  row: Pick<ScanRow, 'status' | 'as_of'>,
+  nowS: number,
+  demo: boolean = dataMode === 'demo',
+): string | null {
   if (row.status === 'building') return null; // NOT a freshness claim — INTERFACE §3.1 (PINNED)
   if (!Number.isFinite(row.as_of) || row.as_of <= 0) return null;
-  return SCAN_COPY.updated(relAge(nowS - row.as_of));
+  return SCAN_COPY.updated(demo ? scenarioStamp(row.as_of) : relAge(nowS - row.as_of));
 }
 
 /**

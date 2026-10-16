@@ -13,9 +13,10 @@ import { MONO_FACE } from '@/shared/figure';
 import { extrasFor } from '@/shared/theme/tokens';
 import type { ScanDensity, ScanRow, ScanViewSort } from '@convexa/api';
 import Box from '@mui/material/Box';
-import { Fragment } from 'react';
+import { alpha } from '@mui/material/styles';
+import { Fragment, type ReactNode } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { nearerWall, type PollDelta } from './format';
+import { type PollDelta } from './format';
 import {
   COLUMN_LABELS,
   regimeLookup,
@@ -34,6 +35,7 @@ import {
   StatusCell,
   TierCell,
   UpdatedCell,
+  WallsCell,
 } from './ScanCells';
 
 /** index-first-defaults AC-3 — one table section. `label: null` renders no header row (the
@@ -61,6 +63,8 @@ export interface ScanTableProps {
    *  outer null/non-null is the stream's own state; the inner boolean is the datum's provenance.
    *  Price ONLY — no structure figure ever takes this prop (criterion 10). */
   priceOffline: (symbol: string) => { retained: boolean } | null;
+  /** Present only for sample data (the demo): the sample frame's head (SampleAwareFrame). */
+  sampleHead?: ReactNode;
 }
 
 const thSx = {
@@ -204,13 +208,7 @@ function cellContent(
         />
       );
     case 'walls':
-      return (
-        <LevelDistCell
-          level={nearerWall(row)}
-          distPct={row.dist_to_wall_pct}
-          testid="cell-dist-wall"
-        />
-      );
+      return <WallsCell row={row} />;
     case 'updated':
       return <UpdatedCell row={row} nowS={nowS} />;
     case 'status':
@@ -282,25 +280,13 @@ export function ScanTable({
   groups,
   deltas,
   priceOffline,
+  sampleHead,
 }: ScanTableProps) {
   const navigate = useNavigate();
   // Ungrouped ⇒ ONE unlabeled section: the body renders identically to the pre-grouping table.
   const sections: ScanGroup[] = groups ?? [{ key: 'all', label: null, rows }];
   return (
-    <Box
-      sx={{
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'divider',
-        // U-35 (scanner half): the panel role is 12 (`shape.borderRadius`), not a raw '10px' string.
-        borderRadius: 1,
-        // The WIDE content scrolls inside its own container — the page body never scrolls sideways
-        // (criterion 21, the only scroll behaviour that criterion pins). No vertical cap: the
-        // design/src/screens/scanner.mjs table scrolls with the PAGE, not in a second internal
-        // scroller (F8) — `maxHeight: '70vh'` / `overflowY: 'auto'` are gone.
-        overflowX: 'auto',
-      }}
-    >
+    <SampleAwareFrame sampleHead={sampleHead}>
       <Box
         component="table"
         data-testid="scan-table"
@@ -348,6 +334,74 @@ export function ScanTable({
           ))}
         </Box>
       </Box>
+    </SampleAwareFrame>
+  );
+}
+
+/**
+ * The table's panel. Sample data takes the sample frame (canon P-8, as ChartFrame draws it): a dashed
+ * border with the hatch stripe and the sample head above the rows, so a demo scan never reads as
+ * market data (site check D-03). Otherwise the solid panel, as before.
+ */
+export function SampleAwareFrame({
+  sampleHead,
+  children,
+}: {
+  sampleHead?: ReactNode;
+  children: ReactNode;
+}) {
+  const sample = sampleHead != null;
+  return (
+    <Box
+      data-provenance={sample ? 'sample' : undefined}
+      sx={(t) => ({
+        position: 'relative',
+        bgcolor: 'background.paper',
+        border: sample ? `1px dashed ${extrasFor(t).textTertiary}` : '1px solid',
+        borderColor: sample ? undefined : 'divider',
+        // U-35 (scanner half): the panel role is 12 (`shape.borderRadius`), not a raw '10px' string.
+        borderRadius: 1,
+        overflow: 'hidden',
+        ...(sample && {
+          pt: '8px',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            height: 8,
+            pointerEvents: 'none',
+            background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(
+              t.palette.text.secondary,
+              0.28,
+            )} 6px 12px)`,
+          },
+        }),
+      })}
+    >
+      {sample && (
+        <Box
+          data-testid="scan-sample-head"
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: '6px 10px',
+            px: '12px',
+            py: '10px',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          {sampleHead}
+        </Box>
+      )}
+      {/* The WIDE content scrolls inside its own container — the page body never scrolls sideways
+          (criterion 21, the only scroll behaviour that criterion pins). No vertical cap: the
+          design/src/screens/scanner.mjs table scrolls with the PAGE, not in a second internal
+          scroller (F8) — `maxHeight: '70vh'` / `overflowY: 'auto'` are gone. */}
+      <Box sx={{ overflowX: 'auto' }}>{children}</Box>
     </Box>
   );
 }
