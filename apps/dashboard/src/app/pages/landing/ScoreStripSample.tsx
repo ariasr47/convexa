@@ -3,12 +3,14 @@
  * CTA-shaped elements are non-focusable presentational nodes: a picture of a control never enters the
  * tab order.
  *
- * FLIP_DISTANCE_LABEL is DERIVED AT MODULE LOAD from `samples.ts`, never hand-typed: the design's own
- * artboard prints this sample distance as `−0.81%` (`landing.mjs:88`) and `−0.8%` (`landing.mjs:65`),
- * and the first is not what the shipped formatter produces from those constants. The projection is a
- * MIRROR of `pages/ticker/widgets/_kit/distanceToLevel.ts`'s `distancePercentOnly` — no ticker file may
- * be edited by this feature, and a page may not import a sibling page — keep the two equal by hand
- * (SPEC §7 item 14).
+ * The Flip dist cell is DERIVED AT MODULE LOAD from `samples.ts`, never hand-typed, and its caption
+ * is derived from the same sign, so the two can't disagree. It reads from the mid's side, as its
+ * caption does: `+0.8% · mid above the flip` (the Final landing board, shell-site-kit.mjs `scoreIll`).
+ * It used to mirror the desk ladder's level-minus-spot distance and printed `−0.8%` beside "mid above
+ * the flip" (site check D-25). The ladder's own column keeps its level-side sign, where the row is the
+ * level; here the cell is the mid's distance from the flip. The percentage is of the mid, as the
+ * engine's `gamma_flip_pct` (`signals.rs` `signed_pct`) measures it, with the sign flipped to the mid's
+ * side.
  *
  * No ring gauge and no `<svg>` in this file.
  *
@@ -24,16 +26,21 @@ import Box from '@mui/material/Box';
 import { LANDING_COPY } from './copy';
 import { LANDING_SAMPLE, SAMPLE_MARK } from './samples';
 
-/** The mirrored projection (see the docblock). Signed percentage only, one decimal, figure minus. */
-function percentOnly(level: number, spot: number): string {
-  const delta = level - spot;
-  if (Math.abs(delta) < 1e-9) return 'at spot';
-  const abs = Math.abs(delta);
-  const pct = (abs / Math.abs(spot)) * 100;
-  return `${delta > 0 ? '+' : '−'}${pct.toFixed(1)}%`;
+/**
+ * The mid's signed distance from the flip, as a share of the mid (one decimal, figure minus), and the
+ * caption that states the same side in words. Positive = the mid above the flip.
+ */
+export function flipDistanceCell(spot: number, flip: number): { value: string; caption: string } {
+  const delta = spot - flip;
+  const pct = (Math.abs(delta) / Math.abs(spot)) * 100;
+  // Below the display's one decimal there is no side to state.
+  if (!Number.isFinite(pct) || pct < 0.05) return { value: '0.0%', caption: 'mid at the flip' };
+  return delta > 0
+    ? { value: `+${pct.toFixed(1)}%`, caption: 'mid above the flip' }
+    : { value: `−${pct.toFixed(1)}%`, caption: 'mid below the flip' };
 }
 
-export const FLIP_DISTANCE_LABEL = percentOnly(LANDING_SAMPLE.gammaFlip, LANDING_SAMPLE.spot);
+const FLIP_DISTANCE = flipDistanceCell(LANDING_SAMPLE.spot, LANDING_SAMPLE.gammaFlip);
 
 const TIERS = ['Dormant', 'Watch', 'Actionable', 'Prime'] as const;
 const TITLE = 'Triage score · SPY';
@@ -57,8 +64,8 @@ const CELLS: ScoreCell[] = [
   { label: 'IV / HV', value: LANDING_SAMPLE.ivHv, caption: 'options look cheap' },
   {
     label: 'Flip dist',
-    value: FLIP_DISTANCE_LABEL,
-    caption: 'mid above the flip',
+    value: FLIP_DISTANCE.value,
+    caption: FLIP_DISTANCE.caption,
     valueTestId: 'sample-flip-distance',
   },
   { label: 'Vol / OI', value: LANDING_SAMPLE.volOi, caption: '3 unusual strikes' },
