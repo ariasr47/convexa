@@ -166,6 +166,13 @@ export function PriceValueFrame({
       testId="note-price-value"
       finding={finding}
       metric="Price against the value range"
+      // The board's tag (ticker-note.mjs valueRange): the range is computed when the site is built
+      // from the note's inputs; a price over 30 days old says its age instead.
+      tag={
+        priceStale && priceAgeDays !== null
+          ? { state: 'lastGood', word: `Price ${priceAgeDays} days old` }
+          : { state: 'computed', word: 'Computed at build' }
+      }
       sub={`Value per share · the note’s bear, base and bull${data.weighted !== null ? ' and odds-weighted value' : ''} · price from the note (${formatShortDate(price.asOf)})`}
       height={96}
       legend={uncertainty ? <UncertaintyMark level={uncertainty} /> : undefined}
