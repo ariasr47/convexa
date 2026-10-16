@@ -2,8 +2,8 @@
 //! - Fed: the FOMC meeting calendar page (federalreserve.gov), each meeting's statement at 2:00 PM
 //!   ET on its last day. Notation votes and unscheduled meetings are left out.
 //! - BLS: the economic news release schedule as iCalendar (bls.gov). BLS answers 403 to a
-//!   User-Agent without a URL in it (checked 2026-10-15), so these requests name the site's credits
-//!   page; never a person or an address.
+//!   User-Agent without a URL in it (checked 2026-10-15), so BLS requests (only those: Treasury
+//!   answers that agent in 8-10 s) name the site's credits page; never a person or an address.
 //! - BEA: the release dates file behind its schedule page (apps.bea.gov, JSON, UTC instants).
 //! - Treasury: the quarterly refunding documents page, which states when the next refunding
 //!   statement is released.
@@ -55,7 +55,8 @@ pub(crate) const SCHEDULES: [(&str, &str); 4] = [
     (TREASURY_ID, TREASURY_SOURCE),
 ];
 
-/// Names the site, never a person: BLS refuses a User-Agent without a URL.
+/// Names the site, never a person: BLS refuses a User-Agent without a URL. For BLS only; the other
+/// schedules are read with the plain public-data agent (mod.rs `schedule_user_agent`).
 pub(crate) const SCHEDULE_USER_AGENT: &str =
     "convexa-api-rust/0.1 (+https://convexa.pages.dev/credits)";
 pub(crate) const MAX_BYTES: usize = 4 * 1024 * 1024;
@@ -352,7 +353,9 @@ pub(crate) fn mark_moves(prev: &[Release], next: &mut [Release], today: NaiveDat
         .iter()
         .filter(|p| p.date >= today && !next.iter().any(|n| key(n) == key(p) && n.date == p.date))
         .collect();
-    let mut used: Vec<NaiveDate> = Vec::new();
+    // A dropped date is claimed once per release: GDP and PCE prices share BEA's joint release
+    // dates, so one moved joint release marks both.
+    let mut used: Vec<(&str, &str, NaiveDate)> = Vec::new();
     for release in next.iter_mut() {
         if let Some(kept) = prev
             .iter()
@@ -366,12 +369,12 @@ pub(crate) fn mark_moves(prev: &[Release], next: &mut [Release], today: NaiveDat
         }
         let from = dropped
             .iter()
-            .filter(|p| key(p) == key(release) && !used.contains(&p.date))
+            .filter(|p| key(p) == key(release) && !used.contains(&(p.source, p.name, p.date)))
             .filter(|p| (p.date - release.date).num_days().abs() <= MOVE_MAX_DAYS)
             .min_by_key(|p| (p.date - release.date).num_days().abs())
             .map(|p| p.date);
         if let Some(from) = from {
-            used.push(from);
+            used.push((release.source, release.name, from));
             release.moved_from = Some(from);
         }
     }
@@ -391,6 +394,12 @@ const QUARTER_DAYS: i64 = 91;
 /// Two filings of the same kind closer than this are one quarter's (a pre-announcement, a
 /// correction); the newer one is kept.
 const SAME_QUARTER_DAYS: i64 = 45;
+/// The gaps read as one quarter apart. Wider than 91 ± 21 because a 10-K lands up to about 60
+/// days after year end and a 10-Q about 40 after its quarter, so 10-Q → 10-K runs ~110-115 days
+/// and 10-K → 10-Q ~65-70; a skipped quarter (~182) and a year (~365, 20-F/40-F) fall outside.
+const QUARTERLY_GAP_DAYS: std::ops::RangeInclusive<i64> = 55..=130;
+/// A projected date this far before today is dropped: that quarter's results came and went.
+const PAST_SLACK_DAYS: i64 = 7;
 
 fn spaced_newest_first(mut dates: Vec<NaiveDate>) -> Vec<NaiveDate> {
     dates.sort_unstable_by(|a, b| b.cmp(a));
@@ -409,11 +418,28 @@ fn spaced_newest_first(mut dates: Vec<NaiveDate>) -> Vec<NaiveDate> {
     out
 }
 
+/// The newest dates (newest first) while each is a quarter after the next older one.
+fn quarterly_run(basis: Vec<NaiveDate>) -> Vec<NaiveDate> {
+    let mut run: Vec<NaiveDate> = Vec::new();
+    for date in basis {
+        if let Some(newer) = run.last() {
+            if !QUARTERLY_GAP_DAYS.contains(&(*newer - date).num_days()) {
+                break;
+            }
+        }
+        run.push(date);
+    }
+    run
+}
+
 /// The window the next results are expected in. Each of the last four results dates (earnings
 /// releases: 8-K Item 2.02, or a 6-K results report; 10-Q/10-K dates when fewer than two are on
 /// file) is carried forward by whole quarters to the quarter after the latest: the newest by one,
-/// the one a year back by four. The window spans those projections. `None` with fewer than two
-/// dates, or when the whole window is already past (the date went by with nothing filed).
+/// the one a year back by four. Only the newest run of dates a quarter apart is used: a skipped
+/// quarter ends the run, and an annual history (20-F, 40-F) has no run at all, so it gets no
+/// window rather than one spanning years. A projection more than a week before today is dropped.
+/// The window spans the projections left. `None` with fewer than two quarterly dates, or when
+/// every projection is past (the date went by with nothing filed).
 pub(crate) fn results_window(
     ticker: &str,
     rows: &[SubmissionRow],
@@ -435,14 +461,16 @@ pub(crate) fn results_window(
             ResultsBasis::PeriodicReports,
         )
     };
+    let basis = quarterly_run(basis);
     if basis.len() < 2 {
         return None;
     }
-    let projected: Vec<NaiveDate> = basis
+    let (basis, projected): (Vec<NaiveDate>, Vec<NaiveDate>) = basis
         .iter()
         .enumerate()
-        .map(|(i, d)| *d + Duration::days(QUARTER_DAYS * (i as i64 + 1)))
-        .collect();
+        .map(|(i, d)| (*d, *d + Duration::days(QUARTER_DAYS * (i as i64 + 1))))
+        .filter(|(_, p)| *p >= today - Duration::days(PAST_SLACK_DAYS))
+        .unzip();
     let start = *projected.iter().min()?;
     let end = *projected.iter().max()?;
     if end < today {
@@ -596,6 +624,91 @@ mod tests {
         let mut past = vec![release("CPI", "2026-10-15")];
         mark_moves(&[release("CPI", "2026-09-11")], &mut past, today);
         assert_eq!(past[0].moved_from, None);
+    }
+
+    /// GDP and PCE prices share BEA's joint release dates: when BEA moves a joint release, both
+    /// carry the date it moved from, not only whichever was matched first.
+    #[test]
+    fn a_moved_joint_release_marks_every_release_on_it() {
+        let bea = |name: &'static str, date: &str| Release {
+            source: BEA_ID,
+            ..release(name, date)
+        };
+        let today = day("2026-10-15");
+        let prev = vec![bea("GDP", "2026-10-29"), bea("PCE prices", "2026-10-29")];
+        let mut next = vec![bea("GDP", "2026-11-05"), bea("PCE prices", "2026-11-05")];
+        mark_moves(&prev, &mut next, today);
+        assert_eq!(next[0].moved_from, Some(day("2026-10-29")));
+        assert_eq!(next[1].moved_from, Some(day("2026-10-29")));
+        // One release's dropped date is still claimed once: two new CPI dates against one
+        // dropped CPI date mark only the nearer.
+        let prev = vec![release("CPI", "2026-11-10")];
+        let mut next = vec![release("CPI", "2026-11-12"), release("CPI", "2026-12-10")];
+        mark_moves(&prev, &mut next, today);
+        assert_eq!(next[0].moved_from, Some(day("2026-11-10")));
+        assert_eq!(next[1].moved_from, None);
+    }
+
+    fn filed(form: &str, items: &[&str], date: &str) -> SubmissionRow {
+        SubmissionRow {
+            accession: format!("a-{form}-{date}"),
+            filed: day(date),
+            report_date: None,
+            form: form.into(),
+            items: items.iter().map(|s| s.to_string()).collect(),
+            primary_document: "x.htm".into(),
+            description: None,
+        }
+    }
+
+    /// An annual-report history (TSM: four yearly 20-Fs, its 6-Ks all described "6-K") is not
+    /// four quarters: projecting it by quarter drew a window from 2025 to 2027 for 91 days after
+    /// each 20-F. It gets no window.
+    #[test]
+    fn an_annual_filing_history_is_not_projected_by_quarter() {
+        let tsm = vec![
+            filed("20-F", &[], "2027-04-15"),
+            filed("20-F", &[], "2026-04-16"),
+            filed("20-F", &[], "2025-04-17"),
+            filed("20-F", &[], "2024-04-18"),
+            filed("6-K", &[], "2027-04-20"),
+        ];
+        // The old projection gave 2025-04-17 → 2027-07-15 on both days.
+        for today in ["2027-05-01", "2027-07-01"] {
+            let w = results_window("TSM", &tsm, day(today));
+            assert!(w.is_none(), "{today}: {w:?}");
+        }
+    }
+
+    /// A skipped quarter (no Q4 8-K 2.02) ends the quarterly run: the dates before it are not
+    /// carried forward, so the window never starts in the past.
+    #[test]
+    fn a_skipped_quarter_never_gives_a_window_that_started_already() {
+        let today = day("2026-10-01");
+        let rows = vec![
+            filed("8-K", &["2.02"], "2026-07-30"),
+            filed("8-K", &["2.02"], "2026-04-30"),
+            filed("8-K", &["2.02"], "2025-10-30"),
+        ];
+        let w = results_window("X", &rows, today).unwrap();
+        assert!(w.start >= today - Duration::days(7), "{w:?}");
+        assert_eq!((w.start, w.end), (day("2026-10-29"), day("2026-10-29")));
+        assert_eq!(w.basis, ["2026-07-30", "2026-04-30"].map(day));
+        // The newest quarter skipped: every projection is months past, so there is no window.
+        let late = vec![
+            filed("8-K", &["2.02"], "2026-04-30"),
+            filed("8-K", &["2.02"], "2026-01-29"),
+            filed("8-K", &["2.02"], "2025-10-30"),
+        ];
+        assert!(results_window("X", &late, today).is_none());
+        // A 10-Q → 10-K → 10-Q history (gaps of ~112 and ~68 days) is still quarterly.
+        let periodic = vec![
+            filed("10-Q", &[], "2026-05-05"),
+            filed("10-K", &[], "2026-02-25"),
+            filed("10-Q", &[], "2025-11-05"),
+        ];
+        let w = results_window("Y", &periodic, day("2026-06-15")).unwrap();
+        assert_eq!(w.basis.len(), 3);
     }
 
     #[test]

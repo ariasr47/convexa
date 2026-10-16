@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DATA_STATES, publicDataWord, sourceStateWord } from './vocabulary';
+import { DATA_STATES, publicDataWord, publicPartGap, sourceStateWord } from './vocabulary';
 
 // A wrong word here misleads silently: an outage that reads "Updated", sample data that reads as
 // live. One table for the mapping the public-data panels rely on.
@@ -38,5 +38,26 @@ describe('sourceStateWord', () => {
     expect(sourceStateWord('last_good', { demo: true })).toBe('demo');
     expect(sourceStateWord('rebuilding')).toBeNull();
     expect(sourceStateWord('toString')).toBeNull();
+  });
+});
+
+// A card that says "FINRA has no report for this symbol" when FINRA was never asked states a false
+// fact, silently: production switches FINRA off (owner ruling 4, 2026-10-15) while SEC keeps the
+// answer as a whole live. Only a live part may say empty.
+describe('publicPartGap', () => {
+  it.each([
+    ['live', true, false, null],
+    ['live', false, false, 'empty'],
+    ['off', false, false, 'off'],
+    ['off', true, false, 'off'],
+    ['not_configured', false, false, 'notSetUp'],
+    ['unavailable', false, false, 'sourceDown'],
+    ['unavailable', true, false, 'sourceDown'],
+    ['rebuilding', false, false, 'sourceDown'],
+    ['rebuilding', true, false, null],
+    ['unavailable', true, true, null],
+    ['off', false, true, 'empty'],
+  ] as const)('%s with a figure=%s, demo=%s gives %s', (state, hasFigure, demo, gap) => {
+    expect(publicPartGap(state, hasFigure, { demo })).toBe(gap);
   });
 });

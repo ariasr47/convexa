@@ -1,4 +1,4 @@
-//! FINRA short data, both keyless:
+//! FINRA short data, both keyless, and both read only while [`FINRA_DISPLAY_APPROVED`] is set:
 //! - Reg SHO daily short-sale volume files (consolidated NMS), one pipe-delimited file per
 //!   trading day; a day without a file (weekend, holiday, not yet published) answers 403/404.
 //! - Consolidated short interest (twice-monthly settlements) through the FINRA data API, which
@@ -8,6 +8,17 @@ use super::types::{SettlementPoint, ShortInterest, ShortVolume, ShortVolumeDay};
 use chrono::NaiveDate;
 use serde_json::Value;
 use std::collections::HashMap;
+
+/// The owner's switch for FINRA data (owner ruling 2026-10-15, open question Q-2). While `false`
+/// this server makes no request to api.finra.org or cdn.finra.org, and every FINRA part of an
+/// answer (short interest, short-sale volume and their source rows) says Off with
+/// [`OFF_DETAIL`]. FINRA's terms permit public display only to a developer who has accepted its
+/// API Terms of Service and holds a FINRA credential (docs/public-data/FINRA-TERMS-2026-10-15.md);
+/// the owner flips this once that is done. A code constant on purpose: not a platform setting.
+pub(crate) const FINRA_DISPLAY_APPROVED: bool = false;
+/// Why every FINRA part reads Off while [`FINRA_DISPLAY_APPROVED`] is `false`.
+pub(crate) const OFF_DETAIL: &str =
+    "FINRA data is off on this site until FINRA's API terms are accepted.";
 
 pub(crate) const DAILY_SOURCE: &str = "FINRA daily short volume";
 pub(crate) const INTEREST_SOURCE: &str = "FINRA short interest";

@@ -173,6 +173,17 @@ pub struct Calendar {
     pub from: NaiveDate,
     pub to: NaiveDate,
     pub releases: Vec<Release>,
+    /// How far each schedule read reaches, in the order of the sources list. A day after its
+    /// horizon is not "nothing scheduled" for that agency: it has not published that far yet.
+    pub horizons: Vec<ScheduleHorizon>,
+}
+
+/// The last date one agency's schedule lists (its whole copy, not just the window shown).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScheduleHorizon {
+    /// The schedule's source id (`bls`, `bea`, `fed-fomc`, `treasury-qr`).
+    pub source: &'static str,
+    pub through: NaiveDate,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
