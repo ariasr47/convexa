@@ -255,7 +255,7 @@ function HeroSkeleton() {
           // 2026-10-16): 528px beside the ladder, 787px stacked at 834, 1106px stacked at 390.
           minHeight: 528,
           [theme.containerQueries('panel').down(1000)]: {
-            gridTemplateColumns: '1fr',
+            gridTemplateColumns: 'minmax(0, 1fr)',
             minHeight: 787,
           },
           [theme.containerQueries('panel').down(600)]: {
@@ -380,7 +380,7 @@ function WorkGridSkeleton() {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: '1fr',
+          gridTemplateColumns: 'minmax(0, 1fr)',
           gap: '14px',
           [theme.containerQueries('ticker-work').up(1000)]: {
             gridTemplateColumns: 'minmax(0, 7fr) minmax(0, 5fr)',
@@ -1097,7 +1097,8 @@ export function TickerDashboard() {
                       data-testid="ticker-work"
                       sx={{
                         display: 'grid',
-                        gridTemplateColumns: '1fr',
+                        // `minmax(0, 1fr)`: the same 480px-reserve hazard as the context band.
+                        gridTemplateColumns: 'minmax(0, 1fr)',
                         gap: '14px',
                         alignItems: 'stretch',
                         // Lane 4: 7fr/5fr, not the board's 8/4. At 8/4 the side column (≈377px at
@@ -1220,8 +1221,12 @@ export function TickerDashboard() {
                           // 'span 2' }`, `Widget.tsx:353`) already degrades correctly against every
                           // column count here — `1 / -1` is column-count-agnostic — so Setups needs
                           // no matching change.
+                          // `minmax(0, 1fr)`, never a bare `1fr` (lane 4 fix-up): a Widget off
+                          // screen reserves 480px (`contain-intrinsic-size`, Widget.tsx), and a
+                          // bare `1fr` track takes that as its minimum, so at 390 the straddle card
+                          // ran 482px wide in a 358px column and lost its call wall to the clip.
                           gridTemplateColumns: {
-                            xs: '1fr',
+                            xs: 'minmax(0, 1fr)',
                             tablet: 'repeat(2, minmax(0, 1fr))',
                             laptop: 'repeat(3, minmax(0, 1fr))',
                             wide: 'repeat(4, minmax(0, 1fr))',

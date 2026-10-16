@@ -387,7 +387,8 @@ export function TickerHeader({
               </Box>
             )}
             {verdict && (
-              <Tooltip arrow title={REGIME_TIP}>
+              // `describeChild`: the tip describes the chip; the visible verdict stays its name.
+              <Tooltip arrow describeChild title={REGIME_TIP}>
                 <Box
                   component="span"
                   data-testid="deck-verdict"
