@@ -123,6 +123,17 @@ function GroundingDetail({
 }) {
   const strategy = rec.strategy;
   if (!strategy) return null;
+  // The same rule the panel's DecisionCard uses (site check D-07): a no-trade read that sets a watch
+  // level and was checked (the demo's authored read; a live no-trade read is never checked) shows
+  // that level with its clause and the card's trace line, so the counts below have a figure to match.
+  const watchLevel =
+    strategy.decision !== 'trade' &&
+    grounding != null &&
+    grounding.card !== 'not_applicable' &&
+    typeof strategy.invalidation_level === 'number' &&
+    Number.isFinite(strategy.invalidation_level)
+      ? strategy.invalidation_level
+      : null;
   const rows = [
     [
       'Stop',
@@ -139,7 +150,7 @@ function GroundingDetail({
       'clause-target',
     ],
     [
-      'Invalidation',
+      watchLevel != null ? 'Watch level' : 'Invalidation',
       strategy.invalidation_level,
       rec.field_reasons?.invalidation_level,
       grounding?.fields.invalidation_level,
@@ -151,10 +162,15 @@ function GroundingDetail({
       <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
         Cited contract and grounding
       </Typography>
-      {strategy.decision === 'trade' && <GroundingNote grounding={grounding} />}
+      {(strategy.decision === 'trade' || watchLevel != null) && (
+        <GroundingNote grounding={grounding} />
+      )}
       <Stack spacing={1} data-testid="analysis-grounding-fields" sx={{ mt: 1 }}>
         {rows.map(([label, value, reason, field, testId]) => {
-          const literal = fieldLiteral({ decision: strategy.decision, value, reason });
+          const literal =
+            testId === 'clause-invalidation' && watchLevel != null
+              ? { kind: 'value' as const, text: watchLevel.toFixed(2) }
+              : fieldLiteral({ decision: strategy.decision, value, reason });
           return (
             <Box key={label}>
               <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
