@@ -63,12 +63,14 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // (ledger `route-growth-repins-api-artifact-oracle`).
 // Both re-pins landed together in one merge (2026-10-15); the four hashes below are the merged
 // contract's.
-// Re-pinned for the Wave 1 fix round, api-public-data batch (2026-10-15): `CalendarWire` gains
-// optional `horizons` (new schema `ScheduleHorizonWire`, W1-27), and the doc comments of
-// `PublicTickerWire` (FINRA parts may say `off`; `filings_source_state` covers the company facts
-// and Form 4s) and `ResultsWindowWire` (quarterly runs only) change: additive schema growth, zero
-// new operations, so `precutover-operation-baseline.json` stays pinned to its prior hash and four
-// artifacts move (ledger `route-growth-repins-api-artifact-oracle`).
+// Re-pinned for the Wave 1 fix round (2026-10-15), merged from two batches. api-public-data:
+// `CalendarWire` gains optional `horizons` (new schema `ScheduleHorizonWire`, W1-27), and the doc
+// comments of `PublicTickerWire` (FINRA parts may say `off`; `filings_source_state` covers the
+// company facts and Form 4s) and `ResultsWindowWire` (quarterly runs only) change. api-sec:
+// `PublicTickerWire` gains optional `holders` (13F) and `peers` (XBRL frames). Additive schema
+// growth, zero new operations, so `precutover-operation-baseline.json` stays pinned to its prior
+// hash and four artifacts move (ledger `route-growth-repins-api-artifact-oracle`); the hashes
+// below are the merged contract's.
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -76,19 +78,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "f74f40f3b955ff84024e9efddff02fc598737d3b1fbf230fc30d5b34fcaff025",
+        "bbc14f4939235395003a67b8a89b5ac5f05a9526052f81ede7be6760d7fac0da",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "db0888d1acc366c74d505fd6232a29618a37abf41d9bcdfff099457f2e228c76",
+        "5c182a2d8c834dbbd9e0e8f7ea19ea4551da9470191170b1535c0216d2697f09",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "78c11af56bb4463f1b690aea866a3a74bbd00398223c8cf7224e701e786fc866",
+        "3f5b160d3c49f5701356b34318caa3930df0d1589dcd51d2dd3cd1ae594a8299",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "35a5b9ada4219ecf7c8a67a85567c989444ae85af3e8d3ee40b329712a9fffb6",
+        "16b9cf808a6ae09965922f3ccc95d40b1f2e99ef3e32dd46862bd62802cd7655",
     ),
 ];
 

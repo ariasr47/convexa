@@ -2374,6 +2374,208 @@
         ],
         "type": "object"
       },
+      "HolderWire": {
+        "description": "One manager's 13F-HR position in the security at the quarter's end.",
+        "properties": {
+          "accession": {
+            "type": "string"
+          },
+          "change_pts": {
+            "description": "Change in points of shares outstanding since the prior quarter; null when the manager\ndidn't report the prior quarter.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "cik": {
+            "description": "Ten-digit, zero-padded SEC CIK.",
+            "type": "string"
+          },
+          "filed": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          },
+          "manager": {
+            "description": "The filer's name as EDGAR lists it.",
+            "type": "string"
+          },
+          "pct": {
+            "description": "% of shares outstanding; null for receipts or without a shares-outstanding figure.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "prior_shares": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "shares": {
+            "description": "Shares (or depositary receipts, when `units` says so) held.",
+            "format": "double",
+            "type": "number"
+          },
+          "url": {
+            "description": "The filing on EDGAR.",
+            "type": "string"
+          },
+          "value": {
+            "description": "US dollars at the quarter's end, as filed.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "manager",
+          "cik",
+          "accession",
+          "url",
+          "filed",
+          "shares",
+          "value",
+          "pct",
+          "change_pts",
+          "prior_shares"
+        ],
+        "type": "object"
+      },
+      "HoldersWindowWire": {
+        "description": "The next quarter's 13F-HRs arriving: how many of the listed managers have filed by now.",
+        "properties": {
+          "deadline": {
+            "type": "string"
+          },
+          "filed": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "of": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "quarter_end": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          }
+        },
+        "required": ["quarter_end", "deadline", "filed", "of"],
+        "type": "object"
+      },
+      "HoldersWire": {
+        "description": "The largest 13F holders at the last complete quarter, among the managers Convexa reads (the\nlargest 13F filers). Delayed by law: a 13F-HR is due 45 days after the quarter.",
+        "properties": {
+          "cusip": {
+            "type": ["string", "null"]
+          },
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "holders": {
+            "description": "Largest first, at most eight.",
+            "items": {
+              "$ref": "#/components/schemas/HolderWire"
+            },
+            "type": "array"
+          },
+          "issuer": {
+            "description": "The issuer and class as the 13Fs name them.",
+            "type": ["string", "null"]
+          },
+          "managers_holding": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "managers_listed": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "managers_read": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "prior_quarter_end": {
+            "type": ["string", "null"]
+          },
+          "prior_shares_outstanding": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DatedValueWire"
+              }
+            ]
+          },
+          "quarter_end": {
+            "description": "YYYY-MM-DD of the quarter shown and the one compared with.",
+            "type": ["string", "null"]
+          },
+          "shares_outstanding": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DatedValueWire"
+              }
+            ]
+          },
+          "source_state": {
+            "$ref": "#/components/schemas/PublicSourceState"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PublicDataState"
+          },
+          "title": {
+            "type": ["string", "null"]
+          },
+          "total_change_pts": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "total_pct": {
+            "description": "Every holding manager read, together.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "units": {
+            "description": "`shares` (% of shares outstanding) or `receipts` (depositary receipts held; no %).",
+            "type": "string"
+          },
+          "window": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HoldersWindowWire"
+              }
+            ]
+          }
+        },
+        "required": [
+          "state",
+          "detail",
+          "source_state",
+          "quarter_end",
+          "prior_quarter_end",
+          "cusip",
+          "issuer",
+          "title",
+          "units",
+          "shares_outstanding",
+          "prior_shares_outstanding",
+          "holders",
+          "managers_listed",
+          "managers_read",
+          "managers_holding",
+          "total_pct",
+          "total_change_pts",
+          "window"
+        ],
+        "type": "object"
+      },
       "InsiderTradeKind": {
         "enum": ["purchase", "sale"],
         "type": "string"
@@ -4043,6 +4245,139 @@
         "required": ["mark", "as_of"],
         "type": "object"
       },
+      "PeerRowWire": {
+        "description": "One company's reported quarter in the peer comparison (SEC XBRL frames).",
+        "properties": {
+          "accession": {
+            "type": "string"
+          },
+          "cik": {
+            "description": "Ten-digit, zero-padded SEC CIK.",
+            "type": "string"
+          },
+          "concept": {
+            "description": "The revenue concept read: `Revenues` or `RevenueFromContractWithCustomerExcludingAssessedTax`.",
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          },
+          "entity": {
+            "description": "The filer as the frames name it.",
+            "type": "string"
+          },
+          "gross_margin_pct": {
+            "description": "Gross profit over revenue, %; null when gross profit isn't tagged.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "gross_profit": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "growth_pct": {
+            "description": "Revenue against the same calendar quarter a year earlier, %.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "revenue": {
+            "description": "US dollars, the calendar quarter.",
+            "format": "double",
+            "type": "number"
+          },
+          "revenue_year_ago": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "start": {
+            "description": "YYYY-MM-DD: the filer's own fiscal quarter placed in the calendar quarter.",
+            "type": ["string", "null"]
+          },
+          "subject": {
+            "description": "The note's own company.",
+            "type": "boolean"
+          },
+          "ticker": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticker",
+          "cik",
+          "entity",
+          "subject",
+          "concept",
+          "revenue",
+          "revenue_year_ago",
+          "gross_profit",
+          "gross_margin_pct",
+          "growth_pct",
+          "start",
+          "end",
+          "accession"
+        ],
+        "type": "object"
+      },
+      "PeersWire": {
+        "description": "The note's company against its peer list on one calendar quarter (SEC XBRL frames).",
+        "properties": {
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "min_peers": {
+            "description": "A comparison needs at least this many peers with the figure.",
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "missing": {
+            "description": "Peers with no revenue in the quarter's frames: not filed yet, or not tagged.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "quarter": {
+            "description": "`CY2026Q2`.",
+            "type": ["string", "null"]
+          },
+          "quarter_end": {
+            "type": ["string", "null"]
+          },
+          "rows": {
+            "description": "The subject first (when it filed), then peers by gross margin.",
+            "items": {
+              "$ref": "#/components/schemas/PeerRowWire"
+            },
+            "type": "array"
+          },
+          "source_state": {
+            "$ref": "#/components/schemas/PublicSourceState"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PublicDataState"
+          },
+          "unknown": {
+            "description": "Peers EDGAR lists no company for.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "state",
+          "detail",
+          "source_state",
+          "quarter",
+          "quarter_end",
+          "rows",
+          "missing",
+          "unknown",
+          "min_peers"
+        ],
+        "type": "object"
+      },
       "PerTradeCapBody": {
         "properties": {
           "unit": {
@@ -4470,6 +4805,17 @@
           "filings_state": {
             "$ref": "#/components/schemas/PublicDataState"
           },
+          "holders": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HoldersWire",
+                "description": "The largest 13F holders at the last complete quarter; null when public data is off or\nEDGAR lists no company. Absent from servers before 2026-10-15 (fix round)."
+              }
+            ]
+          },
           "insiders": {
             "oneOf": [
               {
@@ -4477,6 +4823,17 @@
               },
               {
                 "$ref": "#/components/schemas/InsidersWire"
+              }
+            ]
+          },
+          "peers": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PeersWire",
+                "description": "The company against its note's peer list on one calendar quarter; null when the ticker has\nno peer list. Absent from servers before 2026-10-15 (fix round)."
               }
             ]
           },

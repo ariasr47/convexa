@@ -14,6 +14,7 @@ pub(crate) mod cache;
 pub(crate) mod calendar;
 pub(crate) mod cftc;
 pub(crate) mod edgar;
+pub(crate) mod edgar_13f;
 pub(crate) mod fetch;
 pub(crate) mod filed_figures;
 pub(crate) mod finra;
@@ -22,6 +23,7 @@ pub(crate) mod liquidity;
 pub(crate) mod sources;
 pub(crate) mod treasury;
 pub mod types;
+pub(crate) mod xbrl_frames;
 
 pub use types::*;
 
@@ -49,6 +51,13 @@ const HOUR: Duration = Duration::from_secs(3600);
 /// live for hours, so serving them a little longer costs nothing.
 const RETRY_AFTER_FAILURE: Duration = Duration::from_secs(600);
 const SEC_SPACING: Duration = Duration::from_millis(200);
+/// The longest a ticker answer waits on SEC EDGAR. The core reads (the cold 90-day card and the
+/// company facts) fit inside it at one request per 200 ms; the secondary sections get what is left.
+const SEC_PART_BUDGET: Duration = Duration::from_secs(10);
+/// Kept back at the end of the SEC part for building the answer after its last wait (no I/O).
+/// The secondary sections (the year's insider history, 13F holders, peers) stop waiting this long
+/// before the part's deadline, so they can never cost the part its core answer.
+const SEC_PART_MARGIN: Duration = Duration::from_millis(300);
 const FINRA_DAILY_CONCURRENCY: usize = 4;
 
 /// Uppercase and validate one ticker: 1–10 of `A–Z . -`, starting with a letter.
@@ -135,6 +144,13 @@ struct Inner {
     submissions: TtlCache<u64, Vec<SubmissionRow>>,
     company_facts: TtlCache<u64, Option<CompanyFacts>>,
     form4: TtlCache<String, Form4Doc>,
+    /// 13F: each listed manager's submissions index, each filing's information table, and the
+    /// quarter's read built from them (edgar_13f.rs).
+    managers: TtlCache<u64, edgar_13f::ManagerIndex>,
+    holdings: TtlCache<String, edgar_13f::Holdings>,
+    thirteen_f: TtlCache<NaiveDate, edgar_13f::Dataset>,
+    /// XBRL frames by (concept, quarter end) (xbrl_frames.rs).
+    frames: TtlCache<(&'static str, NaiveDate), xbrl_frames::Frame>,
 }
 
 /// Process-wide public-data reader (cheap to clone).
@@ -180,6 +196,12 @@ impl PublicDataService {
                 company_facts: TtlCache::new(|_| 24 * HOUR, RETRY_AFTER_FAILURE, 256),
                 // A filed Form 4 is immutable.
                 form4: TtlCache::new(|_| 30 * 24 * HOUR, RETRY_AFTER_FAILURE, 4096),
+                managers: TtlCache::new(|_| 12 * HOUR, RETRY_AFTER_FAILURE, 32),
+                // A filed report never changes; two quarters of the listed managers.
+                holdings: TtlCache::new(|_| 30 * 24 * HOUR, RETRY_AFTER_FAILURE, 64),
+                // Rebuilt twice a day from the cached tables, so the window count moves.
+                thirteen_f: TtlCache::new(|_| 12 * HOUR, RETRY_AFTER_FAILURE, 2),
+                frames: TtlCache::new(|_| 6 * HOUR, RETRY_AFTER_FAILURE, 32),
             }),
         })
     }
@@ -641,6 +663,8 @@ impl PublicDataService {
                 shares_outstanding: None,
                 periodic: Vec::new(),
                 annual_revenue: Vec::new(),
+                holders: None,
+                peers: None,
                 filings: Vec::new(),
                 filings_state: DataState::Off,
                 filings_detail: Some(OFF_DETAIL.into()),
@@ -655,7 +679,7 @@ impl PublicDataService {
             tokio::join!(
                 self.short_interest_part(ticker),
                 self.short_volume_part(ticker),
-                self.sec_part(ticker),
+                self.sec_part_within(ticker, SEC_PART_BUDGET),
             )
         } else {
             // FINRA is never asked: both parts say Off with the reason, and the SEC part runs
@@ -663,7 +687,7 @@ impl PublicDataService {
             (
                 Part::finra_off(sources::FINRA_SI),
                 Part::finra_off(sources::FINRA_SHVOL),
-                self.sec_part(ticker).await,
+                self.sec_part_within(ticker, SEC_PART_BUDGET).await,
             )
         };
         let answered = interest.answered || volume.answered || sec.answered;
@@ -702,6 +726,8 @@ impl PublicDataService {
             shares_outstanding: sec.shares_outstanding,
             periodic: sec.periodic,
             annual_revenue: sec.annual_revenue,
+            holders: sec.holders,
+            peers: sec.peers,
             filings: sec.filings,
             filings_state: sec.filings_state,
             filings_detail: sec.filings_detail,
@@ -918,7 +944,46 @@ impl PublicDataService {
             .await
     }
 
-    async fn sec_part(&self, ticker: &str) -> SecPart {
+    /// The SEC part, but never held past `budget`: the FINRA parts it is joined with answer on
+    /// time. The read runs as its own task, so on a cold cache it keeps going after the answer and
+    /// the next request finds the filings, Form 4s and facts cached (W1-02).
+    async fn sec_part_within(&self, ticker: &str, budget: Duration) -> SecPart {
+        let deadline = tokio::time::Instant::now() + budget;
+        let this = self.clone();
+        let owned = ticker.to_string();
+        let task = tokio::spawn(async move { this.sec_part(&owned, deadline).await });
+        let mut part = match tokio::time::timeout_at(deadline, task).await {
+            Ok(Ok(part)) => part,
+            // Timed out (the task keeps reading in the background), or the task failed.
+            _ => {
+                let detail = format!(
+                    "{} is still answering for {ticker}; its filings fill in on the next read.",
+                    edgar::SOURCE
+                );
+                let mut row =
+                    sources::without_fetch(sources::SEC, SourceState::SourceDown, &detail);
+                row.failed_at = Some(Utc::now());
+                SecPart::without_data(DataState::Unavailable, detail, false, row)
+            }
+        };
+        // A note with a peer list says why its peers aren't shown (not set up, unavailable).
+        if part.peers.is_none()
+            && part.filings_state != DataState::Live
+            && xbrl_frames::peer_list(ticker).is_some()
+        {
+            part.peers = Some(xbrl_frames::Peers::without_data(
+                part.filings_state,
+                source_state_for(part.filings_state),
+                part.filings_detail.clone().unwrap_or_default(),
+            ));
+        }
+        part
+    }
+
+    /// The SEC part. Core reads first (filings, the 90-day Form 4s, company facts); then the
+    /// secondary sections, each waiting at most until `deadline` less `SEC_PART_MARGIN`.
+    async fn sec_part(&self, ticker: &str, deadline: tokio::time::Instant) -> SecPart {
+        let secondary_by = deadline.checked_sub(SEC_PART_MARGIN).unwrap_or(deadline);
         let sec = match &self.inner.sec {
             SecAccess::Ready(http) => http,
             other => {
@@ -942,6 +1007,7 @@ impl PublicDataService {
                 row,
             );
             part.insiders = None;
+            part.holders = None;
             return part;
         };
         let submissions = self.submissions(sec, cik).await;
@@ -965,13 +1031,18 @@ impl PublicDataService {
         let mut read = 0u32;
         let mut unread = 0u32;
         let mut form4_failed_at: Option<DateTime<Utc>> = None;
+        let mut other_issuer = 0u32;
+        let mut latest = None;
         for row in form4.iter().take(edgar::FORM4_READ_LIMIT) {
             let document = edgar::raw_form4_document(&row.primary_document);
             let url = edgar::document_url(cik, &row.accession, document);
             let lookup = self.form4(sec, &row.accession, url).await;
             form4_failed_at = form4_failed_at.max(lookup.failed_at());
             match lookup.cached() {
+                // A Form 4 this company filed as an insider of another issuer (W1-12).
+                Some(copy) if !insider_trades::own_issuer(&copy.value, cik) => other_issuer += 1,
                 Some(copy) => {
+                    latest = latest.or(Some(row.filed));
                     read += 1;
                     let one = copy.value.summary;
                     summary.sales += one.sales;
@@ -980,10 +1051,14 @@ impl PublicDataService {
                     summary.shares_bought += one.shares_bought;
                     summary.planned += one.planned;
                 }
-                None => unread += 1,
+                None => {
+                    latest = latest.or(Some(row.filed));
+                    unread += 1;
+                }
             }
         }
-        let total = form4.len() as u32;
+        // Form 4s about another issuer are not this company's insider trades and are not counted.
+        let total = form4.len() as u32 - other_issuer;
         let mut insider_notes = Vec::new();
         if total as usize > edgar::FORM4_READ_LIMIT {
             insider_notes.push(format!(
@@ -994,6 +1069,40 @@ impl PublicDataService {
         let unread_note = (unread > 0)
             .then(|| format!("{unread} Form 4 document(s) could not be read and are not counted."));
         insider_notes.extend(unread_note.clone());
+        // Company facts are core (figures, revenue, shares): read before the secondary sections.
+        let facts = self.company_facts(sec, cik).await;
+        let facts_value = facts.cached().and_then(|c| c.value.as_ref().clone());
+        let mut periodic = edgar::periodic_filings(&rows.value, facts_value.as_ref());
+        filed_figures::attach(&mut periodic, facts_value.as_ref());
+        let annual_revenue = facts_value
+            .as_ref()
+            .map(filed_figures::annual_revenue)
+            .unwrap_or_default();
+        let shares_outstanding = facts_value.as_ref().and_then(edgar::shares_outstanding);
+
+        // Secondary sections, bounded by the part's deadline. The history reads first (its
+        // reads are this request's own); holders and peers wait on shared background reads,
+        // together, with whatever time is left.
+        let history = self
+            .insider_history(sec, cik, &rows.value, today, secondary_by)
+            .await;
+        let (holders, peers) = tokio::join!(
+            self.holders_part(
+                sec,
+                ticker,
+                facts_value.as_ref(),
+                today,
+                wait_until(edgar_13f::WAIT, secondary_by),
+            ),
+            self.peers_part(
+                sec,
+                ticker,
+                &map_copy.value,
+                today,
+                wait_until(xbrl_frames::WAIT, secondary_by),
+            ),
+        );
+
         let insiders = Insiders {
             state: if read == 0 && unread > 0 {
                 DataState::Unavailable
@@ -1008,19 +1117,10 @@ impl PublicDataService {
             shares_sold: summary.shares_sold,
             shares_bought: summary.shares_bought,
             planned: summary.planned,
-            latest: form4.first().map(|row| row.filed),
-            history: self.insider_history(sec, cik, &rows.value, today).await,
+            latest: latest.or_else(|| form4.get(edgar::FORM4_READ_LIMIT).map(|row| row.filed)),
+            history,
         };
 
-        let facts = self.company_facts(sec, cik).await;
-        let facts_value = facts.cached().and_then(|c| c.value.as_ref().clone());
-        let mut periodic = edgar::periodic_filings(&rows.value, facts_value.as_ref());
-        filed_figures::attach(&mut periodic, facts_value.as_ref());
-        let annual_revenue = facts_value
-            .as_ref()
-            .map(filed_figures::annual_revenue)
-            .unwrap_or_default();
-        let shares_outstanding = facts_value.as_ref().and_then(edgar::shares_outstanding);
         let facts_note = facts.note(&format!("{} company facts", edgar::SOURCE));
 
         // The row covers everything read from EDGAR for this answer: the ticker map, the filing
@@ -1064,6 +1164,8 @@ impl PublicDataService {
             periodic,
             annual_revenue,
             shares_outstanding,
+            holders: Some(holders),
+            peers,
             notes: facts_note.into_iter().collect(),
             answered: true,
             source: sec_row,
@@ -1112,6 +1214,8 @@ struct SecPart {
     periodic: Vec<PeriodicFiling>,
     annual_revenue: Vec<filed_figures::AnnualRevenue>,
     shares_outstanding: Option<DatedValue>,
+    holders: Option<edgar_13f::Holders>,
+    peers: Option<xbrl_frames::Peers>,
     notes: Vec<String>,
     answered: bool,
     source: SourceStatus,
@@ -1125,7 +1229,14 @@ impl SecPart {
         source: SourceStatus,
     ) -> Self {
         let detail = (!detail.is_empty()).then_some(detail);
+        // Without data the sections say why (not set up, unavailable) in their own frame.
+        let holders = edgar_13f::Holders::without_data(
+            state,
+            source_state_for(state),
+            detail.clone().unwrap_or_default(),
+        );
         Self {
+            holders: Some(holders),
             insiders: Some(Insiders::empty(state, detail.clone())),
             filings: Vec::new(),
             filings_state: state,
@@ -1133,6 +1244,7 @@ impl SecPart {
             periodic: Vec::new(),
             annual_revenue: Vec::new(),
             shares_outstanding: None,
+            peers: None,
             notes: Vec::new(),
             answered,
             source,
@@ -1183,6 +1295,33 @@ fn required(source: &'static str, body: Option<Vec<u8>>) -> Result<Vec<u8>, Fetc
     body.ok_or_else(|| FetchError::new(source, "empty answer"))
 }
 
+/// The P-2 word for a part answered without data.
+fn source_state_for(state: DataState) -> SourceState {
+    match state {
+        DataState::NotConfigured => SourceState::NotSetUp,
+        DataState::Off => SourceState::Off,
+        DataState::Live => SourceState::Updated,
+        DataState::Unavailable => SourceState::SourceDown,
+    }
+}
+
+/// How long a secondary section may wait: its own cap, or less when the part's deadline is nearer.
+fn wait_until(cap: Duration, by: tokio::time::Instant) -> Duration {
+    cap.min(by.saturating_duration_since(tokio::time::Instant::now()))
+}
+
+/// Run `work` as its own task and wait for it at most `budget`. Past that the caller answers
+/// without it while the task keeps going (and fills its cache for the next request).
+pub(crate) async fn within<T: Send + 'static>(
+    budget: Duration,
+    work: impl std::future::Future<Output = T> + Send + 'static,
+) -> Option<T> {
+    tokio::time::timeout(budget, tokio::spawn(work))
+        .await
+        .ok()?
+        .ok()
+}
+
 fn join(notes: Vec<String>) -> Option<String> {
     (!notes.is_empty()).then(|| notes.join(" "))
 }
@@ -1209,6 +1348,32 @@ mod tests {
             .collect::<Vec<_>>()
             .join(",");
         assert!(parse_ticker_list(Some(&thirty_one)).is_err());
+    }
+
+    #[tokio::test]
+    async fn secondary_sections_never_wait_past_the_sec_part_deadline() {
+        use tokio::time::Instant;
+        let second = Duration::from_secs(1);
+        // Far deadline: each section's own cap.
+        let far = Instant::now() + Duration::from_secs(60);
+        assert_eq!(wait_until(edgar_13f::WAIT, far), edgar_13f::WAIT);
+        assert_eq!(wait_until(xbrl_frames::WAIT, far), xbrl_frames::WAIT);
+        // Near deadline (a cold core read used most of the budget): only what is left.
+        let near = Instant::now() + second;
+        let wait = wait_until(xbrl_frames::WAIT, near);
+        assert!(wait <= second && wait > second / 2, "{wait:?}");
+        // Passed deadline: no wait at all, so the core answer still makes the budget.
+        let passed = Instant::now();
+        assert_eq!(wait_until(edgar_13f::WAIT, passed), Duration::ZERO);
+        // And a bounded wait on a slow section returns by the deadline, not by its cap.
+        let started = Instant::now();
+        let by = started + Duration::from_millis(100);
+        let read = within(wait_until(xbrl_frames::WAIT, by), async {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        })
+        .await;
+        assert!(read.is_none());
+        assert!(started.elapsed() < Duration::from_millis(1000));
     }
 
     #[tokio::test]

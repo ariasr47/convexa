@@ -292,6 +292,58 @@ pub(crate) fn first_text<'a>(xml: &'a str, tag: &str) -> Option<&'a str> {
     elements(xml, tag).into_iter().next().map(str::trim)
 }
 
+/// Element text as the document means it: a CDATA section unwrapped, and the five XML entities
+/// and numeric character references decoded (`EVP &amp; CFO` → `EVP & CFO`). An unknown or
+/// malformed reference is kept as written.
+pub(crate) fn unescape(raw: &str) -> String {
+    let raw = raw.trim();
+    if let Some(inner) = raw
+        .strip_prefix("<![CDATA[")
+        .and_then(|r| r.strip_suffix("]]>"))
+    {
+        return inner.to_string();
+    }
+    let mut out = String::with_capacity(raw.len());
+    let mut rest = raw;
+    while let Some(amp) = rest.find('&') {
+        out.push_str(&rest[..amp]);
+        let after = &rest[amp + 1..];
+        let decoded = after.find(';').filter(|end| *end <= 10).and_then(|end| {
+            let name = &after[..end];
+            let ch = match name {
+                "amp" => Some('&'),
+                "lt" => Some('<'),
+                "gt" => Some('>'),
+                "quot" => Some('"'),
+                "apos" => Some('\''),
+                _ => {
+                    let code = if let Some(hex) =
+                        name.strip_prefix("#x").or_else(|| name.strip_prefix("#X"))
+                    {
+                        u32::from_str_radix(hex, 16).ok()
+                    } else {
+                        name.strip_prefix('#').and_then(|d| d.parse::<u32>().ok())
+                    };
+                    code.and_then(char::from_u32)
+                }
+            };
+            ch.map(|c| (c, end))
+        });
+        match decoded {
+            Some((c, end)) => {
+                out.push(c);
+                rest = &after[end + 1..];
+            }
+            None => {
+                out.push('&');
+                rest = after;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
 /// `<transactionShares><value>100</value></transactionShares>` → 100.
 pub(crate) fn value_of(xml: &str, tag: &str) -> Option<f64> {
     let element = elements(xml, tag).into_iter().next()?;
@@ -344,6 +396,8 @@ pub(crate) struct FactPoint {
 #[derive(Debug, Default, Clone)]
 pub(crate) struct CompanyFacts {
     pub concepts: HashMap<&'static str, Vec<(String, Vec<FactPoint>)>>,
+    /// The registrant's name as company facts gives it (`NVIDIA CORP`).
+    pub entity_name: Option<String>,
     /// The checked concepts a note figure may cite (filed_figures.rs).
     pub filed: super::filed_figures::FiledFacts,
 }
@@ -417,6 +471,8 @@ struct RawTaxonomies {
 
 #[derive(Deserialize)]
 struct RawCompanyFacts {
+    #[serde(rename = "entityName", default)]
+    entity_name: Option<String>,
     #[serde(default)]
     facts: RawTaxonomies,
 }
@@ -477,11 +533,19 @@ pub(crate) fn parse_company_facts(json: &[u8]) -> Result<CompanyFacts, String> {
                 (unit, points)
             })
             .collect();
-        units.sort_by(|a, b| a.0.cmp(&b.0));
+        // US dollars first: a 20-F that tags a year in its own currency and as a dollar
+        // convenience translation is read in dollars (fact_for takes the first unit it finds).
+        units.sort_by(|a, b| {
+            super::filed_figures::unit_order(&a.0).cmp(&super::filed_figures::unit_order(&b.0))
+        });
         concepts.insert(key, units);
     }
     Ok(CompanyFacts {
         concepts,
+        entity_name: raw
+            .entity_name
+            .map(|n| n.trim().to_string())
+            .filter(|n| !n.is_empty()),
         filed: super::filed_figures::parse_filed_facts(json),
     })
 }

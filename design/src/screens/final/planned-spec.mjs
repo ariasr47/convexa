@@ -157,7 +157,7 @@ export const CLUSTERS_SPEC = {
     'With SEC_USER_AGENT unset the card says Not set up, not empty.',
   ],
   built: [
-    { status: 'partial', what: 'Built behind SEC_USER_AGENT (“switch”), 2026-10-15: per-transaction Form 4 rows and the windows on the ticker wire (InsidersWire.transactions, .clusters, .sale_windows, .roles; insider_trades.rs, the cluster rules tested), and the Insider trades · 12 months section in the public-record band, dots by trade date, rings and filled dots, each linked to its filing (InsiderClusters.tsx). Production shows it since SEC_USER_AGENT was set (2026-10-15). Left: the timeline reads at most 80 Form 4s a year, and says how far back it reaches when a filer files more.' },
+    { status: 'partial', what: 'Built behind SEC_USER_AGENT (“switch”), 2026-10-15: per-transaction Form 4 rows and the windows on the ticker wire (InsidersWire.transactions, .clusters, .sale_windows, .roles; insider_trades.rs, the cluster rules tested), and the Insider trades · 12 months section in the public-record band, dots by trade date, rings and filled dots, each linked to its filing (InsiderClusters.tsx). Production shows it since SEC_USER_AGENT was set (2026-10-15). Left: the timeline reads at most 80 Form 4s a year, and says how far back it reaches when a filer files more. Fix round 2026-10-15: one request reads at most 10 new Form 4s in 4 s and the rest is read in the background (W1-02); Form 4s about another issuer’s shares are dropped (W1-12); titles are XML-unescaped and placeholders read Officer (W1-29, W1-30); one purchase reported by related owners counts once toward a cluster (W1-31, conductor ruling, provisional).' },
     { status: 'shipped', what: 'Staging (2026-10-15): the demo research route carries the same section in a “Public record” band under the sample note, on the demo transport’s sample (one buying cluster, three directors in September), dashed and hatched, “Demo · shaped like SEC Form 4”; answered in the browser, no request leaves it. SPY and QQQ say they are funds that file no Form 4s (ResearchView.tsx DemoPublicRecord).' },
     { status: 'shipped', what: 'Insider trades card (90-day sales, buys, plan count) behind SEC_USER_AGENT: “switch”.', host: true },
   ],
@@ -194,7 +194,10 @@ export const HOLDERS_SPEC = {
     'The subtitle says 13F covers long US-listed positions only.',
     'Holder names appear as filed (the board shows placeholders).',
   ],
-  built: [{ status: 'todo', what: 'Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved 13F-HR response to build against (it needs a filer’s 13F-HR filing index and its information-table XML, saved under apps/api/tests/fixtures/public_data/).' }],
+  built: [
+    { status: 'partial', what: 'Built behind SEC_USER_AGENT (“switch”), fix round 2026-10-15: the 13F-HRs of twelve of the largest managers, read per filing (submissions index, filing index, information table) for the last complete quarter and the one before, on the ticker wire (PublicTickerWire.holders; edgar_13f.rs, tested against State Street’s real 13F-HR); the security found by matching the XBRL company name to issuer names as filed; % of shares outstanding and the change in points; the filing window counted among the twelve. The “Who holds it” section in the public-record band (FundHoldings.tsx). Left: “All 13F filers” and “Filers reporting” need every manager (the bulk datasets this tool doesn’t use), so the strip counts the twelve read; a company with several common classes and no class in its ticker (Alphabet) isn’t matched; ADRs are shown in receipts, not % of shares; 13F-HR/A amendments aren’t read.' },
+    { status: 'shipped', what: 'Staging (fix round 2026-10-15): the same section on six sample holders and a sample window, dashed and hatched, “Demo · shaped like SEC 13F-HR information tables” (libs/api demo public-data).' },
+  ],
   rulings: [...CORE],
   code: ['apps/api/src/services/public_data/edgar_13f.rs (new)', 'apps/api/src/routes/public_data.rs · PublicTickerWire.holders (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx'],
 };
@@ -263,7 +266,10 @@ export const PEERS_SPEC = {
     'The subtitle names the calendar quarter and the note explains fiscal-quarter mapping.',
     'Missing filers are named in the as-of line.',
   ],
-  built: [{ status: 'todo', what: 'Status: build. No frames fetcher; peer lists not in note front matter yet. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved XBRL frames response to build against (it needs the SEC frames answers us-gaap/GrossProfit/USD/CY2026Q2, us-gaap/Revenues/USD/CY2026Q2 and us-gaap/Revenues/USD/CY2025Q2).' }],
+  built: [
+    { status: 'partial', what: 'Built behind SEC_USER_AGENT (“switch”), fix round 2026-10-15: five XBRL frames per calendar quarter (revenue under either tag, the same quarter a year earlier, gross profit) on the ticker wire (PublicTickerWire.peers; xbrl_frames.rs, tested against real CY2026 Q2 frames); the latest quarter four peers have filed for, else the one before; peers not in the frames named. The “Against its peers” section with the two dot strips (Peers.tsx). Left: peer lists live in xbrl_frames.rs (PEER_LISTS) until note front matter carries a peers: field (tools/research-notes/notes.mjs); foreign filers (TSM) tag no US-GAAP quarters and read as not filed.' },
+    { status: 'shipped', what: 'Staging (fix round 2026-10-15): the same section on five sample peers, one shrinking, dashed and hatched, “Demo · shaped like SEC XBRL frames”.' },
+  ],
   rulings: [...CORE],
   code: ['apps/api/src/services/public_data/xbrl_frames.rs (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx'],
 };

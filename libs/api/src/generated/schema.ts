@@ -1665,6 +1665,87 @@ export interface components {
       status: string;
       warm: components['schemas']['HealthWarm'];
     };
+    /** @description One manager's 13F-HR position in the security at the quarter's end. */
+    HolderWire: {
+      accession: string;
+      /**
+       * Format: double
+       * @description Change in points of shares outstanding since the prior quarter; null when the manager
+       *     didn't report the prior quarter.
+       */
+      change_pts: number | null;
+      /** @description Ten-digit, zero-padded SEC CIK. */
+      cik: string;
+      /** @description YYYY-MM-DD */
+      filed: string;
+      /** @description The filer's name as EDGAR lists it. */
+      manager: string;
+      /**
+       * Format: double
+       * @description % of shares outstanding; null for receipts or without a shares-outstanding figure.
+       */
+      pct: number | null;
+      /** Format: double */
+      prior_shares: number | null;
+      /**
+       * Format: double
+       * @description Shares (or depositary receipts, when `units` says so) held.
+       */
+      shares: number;
+      /** @description The filing on EDGAR. */
+      url: string;
+      /**
+       * Format: double
+       * @description US dollars at the quarter's end, as filed.
+       */
+      value: number;
+    };
+    /** @description The next quarter's 13F-HRs arriving: how many of the listed managers have filed by now. */
+    HoldersWindowWire: {
+      deadline: string;
+      /** Format: int32 */
+      filed: number;
+      /** Format: int32 */
+      of: number;
+      /** @description YYYY-MM-DD */
+      quarter_end: string;
+    };
+    /**
+     * @description The largest 13F holders at the last complete quarter, among the managers Convexa reads (the
+     *     largest 13F filers). Delayed by law: a 13F-HR is due 45 days after the quarter.
+     */
+    HoldersWire: {
+      cusip: string | null;
+      detail: string | null;
+      /** @description Largest first, at most eight. */
+      holders: components['schemas']['HolderWire'][];
+      /** @description The issuer and class as the 13Fs name them. */
+      issuer: string | null;
+      /** Format: int32 */
+      managers_holding: number;
+      /** Format: int32 */
+      managers_listed: number;
+      /** Format: int32 */
+      managers_read: number;
+      prior_quarter_end: string | null;
+      prior_shares_outstanding: null | components['schemas']['DatedValueWire'];
+      /** @description YYYY-MM-DD of the quarter shown and the one compared with. */
+      quarter_end: string | null;
+      shares_outstanding: null | components['schemas']['DatedValueWire'];
+      source_state: components['schemas']['PublicSourceState'];
+      state: components['schemas']['PublicDataState'];
+      title: string | null;
+      /** Format: double */
+      total_change_pts: number | null;
+      /**
+       * Format: double
+       * @description Every holding manager read, together.
+       */
+      total_pct: number | null;
+      /** @description `shares` (% of shares outstanding) or `receipts` (depositary receipts held; no %). */
+      units: string;
+      window: null | components['schemas']['HoldersWindowWire'];
+    };
     /** @enum {string} */
     InsiderTradeKind: 'purchase' | 'sale';
     /** @description One Form 4 trade (code P or S, non-derivative). */
@@ -2231,6 +2312,61 @@ export interface components {
       as_of: string;
       mark: string;
     };
+    /** @description One company's reported quarter in the peer comparison (SEC XBRL frames). */
+    PeerRowWire: {
+      accession: string;
+      /** @description Ten-digit, zero-padded SEC CIK. */
+      cik: string;
+      /** @description The revenue concept read: `Revenues` or `RevenueFromContractWithCustomerExcludingAssessedTax`. */
+      concept: string;
+      end: string;
+      /** @description The filer as the frames name it. */
+      entity: string;
+      /**
+       * Format: double
+       * @description Gross profit over revenue, %; null when gross profit isn't tagged.
+       */
+      gross_margin_pct: number | null;
+      /** Format: double */
+      gross_profit: number | null;
+      /**
+       * Format: double
+       * @description Revenue against the same calendar quarter a year earlier, %.
+       */
+      growth_pct: number | null;
+      /**
+       * Format: double
+       * @description US dollars, the calendar quarter.
+       */
+      revenue: number;
+      /** Format: double */
+      revenue_year_ago: number | null;
+      /** @description YYYY-MM-DD: the filer's own fiscal quarter placed in the calendar quarter. */
+      start: string | null;
+      /** @description The note's own company. */
+      subject: boolean;
+      ticker: string;
+    };
+    /** @description The note's company against its peer list on one calendar quarter (SEC XBRL frames). */
+    PeersWire: {
+      detail: string | null;
+      /**
+       * Format: int32
+       * @description A comparison needs at least this many peers with the figure.
+       */
+      min_peers: number;
+      /** @description Peers with no revenue in the quarter's frames: not filed yet, or not tagged. */
+      missing: string[];
+      /** @description `CY2026Q2`. */
+      quarter: string | null;
+      quarter_end: string | null;
+      /** @description The subject first (when it filed), then peers by gross margin. */
+      rows: components['schemas']['PeerRowWire'][];
+      source_state: components['schemas']['PublicSourceState'];
+      state: components['schemas']['PublicDataState'];
+      /** @description Peers EDGAR lists no company for. */
+      unknown: string[];
+    };
     PerTradeCapBody: {
       unit: string;
       /** Format: double */
@@ -2402,7 +2538,9 @@ export interface components {
       filings_detail: string | null;
       filings_source_state?: null | components['schemas']['PublicSourceState'];
       filings_state: components['schemas']['PublicDataState'];
+      holders?: null | components['schemas']['HoldersWire'];
       insiders: null | components['schemas']['InsidersWire'];
+      peers?: null | components['schemas']['PeersWire'];
       periodic: components['schemas']['PeriodicFilingWire'][];
       shares_outstanding: null | components['schemas']['DatedValueWire'];
       short_interest: null | components['schemas']['ShortInterestWire'];

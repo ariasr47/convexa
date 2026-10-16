@@ -390,15 +390,55 @@ pub(crate) fn attach(periodic: &mut [PeriodicFiling], facts: Option<&CompanyFact
                 end: p.end,
             });
         }
-        tagged.sort_by(|a, b| a.concept.cmp(&b.concept).then_with(|| a.unit.cmp(&b.unit)));
+        // A concept tagged in two units lists its US-dollar value first.
+        tagged.sort_by(|a, b| {
+            a.concept
+                .cmp(&b.concept)
+                .then_with(|| unit_order(&a.unit).cmp(&unit_order(&b.unit)))
+        });
         filing.tagged = tagged;
     }
 }
 
+/// US dollars first (`USD`, `USD/shares`), then any other unit by name. A foreign filer's annual
+/// report can tag the same year twice, in its own currency and as a dollar convenience translation;
+/// which one is read must never depend on the order the answer listed them in.
+pub(crate) fn unit_order(unit: &str) -> (bool, &str) {
+    (!(unit == "USD" || unit.starts_with("USD/")), unit)
+}
+
+/// The one unit the revenue series is drawn in: the unit that covers the most fiscal years, US
+/// dollars on a tie, then by name. Years tagged only in another unit are left out rather than mixed.
+fn series_unit(points: &[TaggedPoint]) -> Option<String> {
+    let mut years: BTreeMap<&str, std::collections::BTreeSet<NaiveDate>> = BTreeMap::new();
+    for p in points {
+        years.entry(p.unit.as_str()).or_default().insert(p.end);
+    }
+    years
+        .into_iter()
+        .min_by(|a, b| {
+            b.1.len()
+                .cmp(&a.1.len())
+                .then_with(|| unit_order(a.0).cmp(&unit_order(b.0)))
+        })
+        .map(|(unit, _)| unit.to_string())
+}
+
 /// Annual revenue for the latest `REVENUE_YEARS` fiscal years, oldest first: each year's value as
 /// first filed, and the latest different value a later filing gave the same concept and period.
+/// Every year is in one unit (`series_unit`).
 pub(crate) fn annual_revenue(facts: &CompanyFacts) -> Vec<AnnualRevenue> {
-    let points = &facts.filed.annual_revenue;
+    let Some(unit) = series_unit(&facts.filed.annual_revenue) else {
+        return Vec::new();
+    };
+    let points: Vec<TaggedPoint> = facts
+        .filed
+        .annual_revenue
+        .iter()
+        .filter(|p| p.unit == unit)
+        .cloned()
+        .collect();
+    let points = &points;
     // Each annual filing's own year: its latest annual end and the fiscal year it tagged.
     let mut own: HashMap<&str, (NaiveDate, Option<i32>)> = HashMap::new();
     for p in points {
@@ -418,12 +458,17 @@ pub(crate) fn annual_revenue(facts: &CompanyFacts) -> Vec<AnnualRevenue> {
     let mut out: Vec<AnnualRevenue> = Vec::new();
     for end in ends.into_iter().rev().take(REVENUE_YEARS) {
         let at: Vec<&TaggedPoint> = points.iter().filter(|p| p.end == end).collect();
-        // First filed; at the same filing date, the concept a filer most often uses.
+        // First filed; at the same filing date, the concept a filer most often uses, then the
+        // longer span and the accession, so equal candidates never fall to the answer's order.
         let Some(first) = at.iter().copied().min_by(|a, b| {
-            a.filed.cmp(&b.filed).then_with(|| {
-                let rank = |c: &str| REVENUE.iter().position(|r| *r == c);
-                rank(a.concept).cmp(&rank(b.concept))
-            })
+            a.filed
+                .cmp(&b.filed)
+                .then_with(|| {
+                    let rank = |c: &str| REVENUE.iter().position(|r| *r == c);
+                    rank(a.concept).cmp(&rank(b.concept))
+                })
+                .then_with(|| a.start.cmp(&b.start))
+                .then_with(|| a.accession.cmp(&b.accession))
         }) else {
             continue;
         };
@@ -457,7 +502,7 @@ pub(crate) fn annual_revenue(facts: &CompanyFacts) -> Vec<AnnualRevenue> {
 mod tests {
     use super::*;
     use crate::services::public_data::edgar::{
-        parse_company_facts, parse_submissions, periodic_filings,
+        parse_company_facts, parse_submissions, periodic_filings, SubmissionRow,
     };
 
     fn day(s: &str) -> NaiveDate {
@@ -594,6 +639,168 @@ mod tests {
             ],
             "oldest first; the quarter inside the 10-K and the 10-Q are not years"
         );
+    }
+
+    /// A 20-F tags the same year in its own currency and as a US-dollar convenience translation.
+    /// Company facts is a JSON object, read into a map whose order changes from one parse to the
+    /// next, so each case is parsed many times in both orders: the answer must never change.
+    #[test]
+    fn a_year_tagged_in_two_currencies_is_read_in_dollars_whatever_the_order() {
+        let twd_first = br#"{"facts":{"ifrs-full":{"Revenue":{"units":{
+          "TWD":[{"start":"2024-01-01","end":"2024-12-31","val":2894307700000,"accn":"F-25","fy":2024,"fp":"FY","form":"20-F","filed":"2025-04-17"}],
+          "USD":[{"start":"2024-01-01","end":"2024-12-31","val":88268000000,"accn":"F-25","fy":2024,"fp":"FY","form":"20-F","filed":"2025-04-17"}]}}}}}"#;
+        let usd_first = br#"{"facts":{"ifrs-full":{"Revenue":{"units":{
+          "USD":[{"start":"2024-01-01","end":"2024-12-31","val":88268000000,"accn":"F-25","fy":2024,"fp":"FY","form":"20-F","filed":"2025-04-17"}],
+          "TWD":[{"start":"2024-01-01","end":"2024-12-31","val":2894307700000,"accn":"F-25","fy":2024,"fp":"FY","form":"20-F","filed":"2025-04-17"}]}}}}}"#;
+        let row = SubmissionRow {
+            accession: "F-25".into(),
+            filed: day("2025-04-17"),
+            report_date: Some(day("2024-12-31")),
+            form: "20-F".into(),
+            items: vec![],
+            primary_document: "f.htm".into(),
+            description: None,
+        };
+        for json in [&twd_first[..], &usd_first[..]] {
+            for _ in 0..16 {
+                let facts = parse_company_facts(json).unwrap();
+                let years = annual_revenue(&facts);
+                assert_eq!(years.len(), 1);
+                assert_eq!(
+                    (years[0].unit.as_str(), years[0].value),
+                    ("USD", 88_268_000_000.0)
+                );
+                let figure =
+                    &periodic_filings(std::slice::from_ref(&row), Some(&facts))[0].facts[0];
+                assert_eq!(
+                    (figure.unit.as_str(), figure.value),
+                    ("USD", 88_268_000_000.0)
+                );
+            }
+        }
+    }
+
+    /// TSMC's real company facts (sliced to the checked concepts): its 20-Fs tag every year in NT$
+    /// and only the latest years in US$ too. The revenue series stays in one currency, the one that
+    /// covers the most years; the filing's own figures read in US$, which it tags.
+    #[test]
+    fn real_tsmc_facts_draw_revenue_in_one_currency_and_report_the_filing_in_dollars() {
+        let facts = parse_company_facts(include_bytes!(
+            "../../../tests/fixtures/public_data/sec_real_companyfacts_tsm.json"
+        ))
+        .unwrap();
+        for _ in 0..8 {
+            let years = annual_revenue(
+                &parse_company_facts(include_bytes!(
+                    "../../../tests/fixtures/public_data/sec_real_companyfacts_tsm.json"
+                ))
+                .unwrap(),
+            );
+            assert_eq!(years.len(), REVENUE_YEARS);
+            assert!(
+                years.iter().all(|y| y.unit == "TWD"),
+                "never a mix: {years:?}"
+            );
+            let last = years.last().unwrap();
+            assert_eq!(
+                (last.fiscal_year, last.period_end, last.value),
+                (Some(2024), day("2024-12-31"), 2_894_307_700_000.0)
+            );
+        }
+        let row = SubmissionRow {
+            accession: "0001193125-25-083423".into(),
+            filed: day("2025-04-17"),
+            report_date: Some(day("2024-12-31")),
+            form: "20-F".into(),
+            items: vec![],
+            primary_document: "tsm-20241231.htm".into(),
+            description: None,
+        };
+        let filing = &periodic_filings(&[row], Some(&facts))[0];
+        let revenue = filing
+            .facts
+            .iter()
+            .find(|f| f.concept == "Revenue")
+            .unwrap();
+        assert_eq!(
+            (revenue.unit.as_str(), revenue.value),
+            ("USD", 88_268_000_000.0)
+        );
+        assert_eq!(revenue.prior_value, Some(70_598_800_000.0));
+        let eps = filing
+            .facts
+            .iter()
+            .find(|f| f.concept == "EarningsPerShareDiluted")
+            .unwrap();
+        assert_eq!(eps.unit, "USD/shares");
+    }
+
+    /// NVIDIA's real company facts and submissions index (fetched 2026-10-15): the latest 10-Q's
+    /// own quarter, and five fiscal years of revenue as first filed.
+    #[test]
+    fn real_nvidia_facts_give_the_latest_quarter_and_five_years_as_filed() {
+        let facts = parse_company_facts(include_bytes!(
+            "../../../tests/fixtures/public_data/sec_real_companyfacts_nvda.json"
+        ))
+        .unwrap();
+        let rows = parse_submissions(include_bytes!(
+            "../../../tests/fixtures/public_data/sec_real_submissions_nvda.json"
+        ))
+        .unwrap();
+        let mut periodic = periodic_filings(&rows, Some(&facts));
+        attach(&mut periodic, Some(&facts));
+        let q2 = &periodic[0];
+        assert_eq!(
+            (q2.accession.as_str(), q2.form.as_str(), q2.period_end),
+            ("0001045810-26-000075", "10-Q", Some(day("2026-07-26")))
+        );
+        assert_eq!(
+            (q2.fiscal_year, q2.fiscal_period.as_deref()),
+            (Some(2027), Some("Q2"))
+        );
+        let get = |c: &str| q2.tagged.iter().find(|t| t.concept == c).cloned().unwrap();
+        assert_eq!(
+            get("us-gaap:Revenues").value,
+            96_221_000_000.0,
+            "the quarter, not six months"
+        );
+        assert_eq!(get("us-gaap:GrossProfit").value, 72_142_000_000.0);
+        assert_eq!(get("us-gaap:OperatingIncomeLoss").value, 63_734_000_000.0);
+        assert_eq!(get("us-gaap:EarningsPerShareDiluted").value, 2.46);
+        assert_eq!(get("us-gaap:StockholdersEquity").value, 228_984_000_000.0);
+        assert_eq!(
+            get("dei:EntityCommonStockSharesOutstanding").value,
+            24_100_000_000.0
+        );
+        assert!(
+            q2.tagged
+                .iter()
+                .all(|t| t.concept != "us-gaap:NetCashProvidedByUsedInOperatingActivities"),
+            "a 10-Q's cash flow is year to date, never the quarter"
+        );
+        let wire = q2.facts.iter().find(|f| f.concept == "Revenue").unwrap();
+        assert_eq!(
+            (wire.value, wire.prior_value),
+            (96_221_000_000.0, Some(81_615_000_000.0))
+        );
+
+        let years = annual_revenue(&facts);
+        let got: Vec<(Option<i32>, f64, &str)> = years
+            .iter()
+            .map(|y| (y.fiscal_year, y.value, y.unit.as_str()))
+            .collect();
+        assert_eq!(
+            got,
+            [
+                (Some(2022), 26_914_000_000.0, "USD"),
+                (Some(2023), 26_974_000_000.0, "USD"),
+                (Some(2024), 60_922_000_000.0, "USD"),
+                (Some(2025), 130_497_000_000.0, "USD"),
+                (Some(2026), 215_938_000_000.0, "USD"),
+            ]
+        );
+        assert_eq!(years[4].accession, "0001045810-26-000021");
+        assert!(years.iter().all(|y| y.restated_value.is_none()));
     }
 
     #[test]
