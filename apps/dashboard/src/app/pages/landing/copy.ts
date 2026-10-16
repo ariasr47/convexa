@@ -21,7 +21,6 @@
  * `7d → 90d tenors`, the CTA band's radial gradient wash, the whole "desk
  * right now" strip, and the brokerage-connect footnote. None of those strings live in this file.
  */
-import { AUTH_COPY } from '@/features/auth/copy'; // ALLOWED by the deny-list: strings, no transport.
 
 export const LANDING_COPY = {
   /**
@@ -31,6 +30,9 @@ export const LANDING_COPY = {
    * not the glyph. Same destination (`/ticker`) is what makes sharing the name correct.
    */
   openTickerName: 'Open the Ticker',
+  /** Production's front door (owner, 2026-10-16): the demo is the first click. The hero primary and
+   *  the CTA-band primary share this name, as the two Ticker actions do on the demo build. */
+  openDemoName: 'See the full demo',
 
   hero: {
     chip: 'Dealer-gamma analytics · free ticker, no account',
@@ -41,6 +43,10 @@ export const LANDING_COPY = {
     secondary: 'How it’s built',
     footnote:
       'Built for 7–45 DTE swing trades with optional intraday timing. An analysis tool; every trade is simulated.',
+    /** Production only: the demo is the primary action; the footnote says what each site shows. */
+    primaryLive: 'See the full demo →',
+    footnoteLive:
+      'The demo runs the whole desk on one sample day, in your browser: the Scanner, dealer structure, AI reads and a simulated book. This site shows what’s free and live: TradingView’s daily chart, SEC filings, rates, futures positioning and the research notes.',
     /** The hero panel's own eyebrow — text-grade amber (canon Amber budget, SPEC §4 Design
      *  direction: "the eyebrow caps use text-grade amber, never fill amber as small text"). */
     panelEyebrow: 'Dealer gamma surface · strike × tenor',
@@ -122,18 +128,14 @@ export const LANDING_COPY = {
     ] as const,
   },
 
+  /** Production's CTA band (owner, 2026-10-16): the demo first, then the free live Ticker. Sign-ups
+   *  are closed, so the band offers no sign-in; “Log in” stays in the nav. */
   cta: {
-    heading: 'Open any ticker. No account, no card.',
-    // `landing.mjs:117` MINUS "across 69 tracked names" (SPEC §4): the count is true today, but
-    // the landing never reads `universe.json`, so one owner edit plus a restart would make the
-    // page lie with no test to notice. The deviation IS the pin (AC-C1 governs over the source).
-    body: 'Every ticker page is open: TradingView’s daily chart, short data, filings and the research notes. The Scanner, a simulated book and AI reads need an account.',
-    primary: 'Open the Ticker →',
-    // Imported, never retyped (SPEC §8: "reopening sign-ups is therefore a server change plus
-    // exactly one frontend edit at that one string's site" — the landing must never hold its own
-    // copy of either sentence, or the two surfaces can drift out of sync).
-    secondary: AUTH_COPY.account.signIn,
-    signupsClosed: AUTH_COPY.signup.signupsClosed,
+    heading: 'See the whole desk on a sample day.',
+    body: 'The demo opens every screen on one authored market day: the Scanner, the dealer structure, AI reads and a simulated book. No account, nothing to install; your changes stay in your browser.',
+    primary: 'See the full demo →',
+    secondary: 'Open the Ticker →',
+    note: 'Every ticker page here is live and free: TradingView’s daily chart, filings and the research notes.',
   },
 
   /** The demo build is always signed in to its seed account (owner, 2026-10-14): no sign-in here. */

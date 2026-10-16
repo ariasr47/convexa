@@ -181,7 +181,8 @@ describe('live-lifecycle (centerpiece flow)', () => {
     expect(esLog.length).toBe(0);
 
     // --- Free-path CTA into /ticker (the primary CTA; secondary → /methodology) ---
-    await user.click(screen.getByTestId('cta-primary'));
+    // Production's hero primary is the full demo (owner, 2026-10-16); the band links the Ticker.
+    await user.click(screen.getByTestId('cta-band-secondary'));
     await screen.findByText('Call wall');
     expect(openFor('SPY').length).toBe(1); // exactly one, open
 

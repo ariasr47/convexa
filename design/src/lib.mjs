@@ -611,6 +611,7 @@ export function v4Nav({ active = '', signedIn = false, demo = false } = {}) {
     <div class="v4n-right">
       <button type="button" class="v4n-search" aria-keyshortcuts="Meta+K">${icon('search', 15)}<span style="flex: 1; text-align: left;">Jump to a ticker or note</span><span class="kbd">⌘K</span></button>
       <button type="button" class="v4n-icon search" aria-label="Jump to a ticker or note">${icon('search', 20)}</button>
+      ${demo ? '' : `<a href="${STAGING_DEMO_URL}" class="btn secondary sm only-wide" style="white-space: nowrap;">Full demo ↗</a>`}
       ${session}
       <button type="button" class="v4n-icon menu" aria-label="Open navigation menu" aria-expanded="false">${icon('menu', 20)}</button>
     </div>

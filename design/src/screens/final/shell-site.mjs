@@ -65,6 +65,7 @@ export const ROWS = [
         { status: 'shipped', what: 'Fix round 2026-10-15: “No ticker or note matches” shows only once both lists answered, never beside the failed-read line (W1-63); the single-key shortcuts stay quiet while an open Select or Menu list has focus (W1-64); a link to another in-shell page opens it at the top, while back/forward and a sort, filter or kind change on the same page keep their place (W1-65); staging ⌘K rows read symbol, name, score and tier with no wall-clock age (D-13; production rows for tickers without a note still show the bare symbol, since nothing on the wire names them).' },
         { status: 'shipped', what: 'The demo’s six names are one shared list, read by ⌘K and the sample research cards (shared/lib/demoSite.ts STAGING_DEMO_NAMES, 2026-10-16).' },
         { status: 'todo', waits: 'owner', what: 'Company names on production ⌘K rows for tickers without a note (D-13, checked 2026-10-16): apps/api/config/universe.json lists symbols only, and no other file the API reads carries names. The one name-bearing source the API touches is SEC’s company_tickers.json, fetched at runtime behind SEC_USER_AGENT for filings; it gives conformed legal names in capitals (“NVIDIA CORP”, per the API’s own fixture), its coverage of the universe’s ETFs is unchecked, and its titles are dropped on parse today. Needs the owner: adopt SEC names for the scan universe, curate a name per symbol in universe.json, or keep the bare symbol.' },
+        { status: 'shipped', what: 'Production’s nav carries a neutral “Full demo ↗” beside the account control from md, and the phone drawer a “See the full demo ↗” row (owner, 2026-10-16): the full demo is one click away on every page (TopNav.tsx).' },
       ],
       rulings: ['P-1', 'P-2', 'P-6', 'P-13', 'Env 2026-10-14', 'Amber spent'],
       code: [`${APP}shell/AppShell.tsx`, `${APP}shell/MarketDataNotice.tsx`, `${APP}shell/TopNav.tsx`, `${APP}shell/Footer.tsx`, `${APP}shell/CommandPalette/`, `${APP}features/auth/AccountControl.tsx`, `${APP}shared/dataState/marketData.ts`, `${APP}shared/lib/demoSite.ts`, 'libs/api/src/lib/demo/workspace.ts (resetDemoWorkspace)'],
@@ -89,7 +90,7 @@ export const ROWS = [
       route: '/',
       job: 'Says what Convexa reads and how honest it is about it, shows the instrument in depth, and sends a visitor to a ticker in one click.',
       env: {
-        production: 'Static: no data requests. The hero is the F1 dealer-gamma surface (WebGL, its static projection as the fallback) labelled “Illustrative sample”; the three feature illustrations are frozen samples, each labelled the same in a dashed, hatched frame. CTA band: “Open any ticker. No account, no card.”, Open the Ticker →, Sign in, and the closed sign-ups line.',
+        production: 'Static: no data requests. The hero is the F1 dealer-gamma surface (WebGL, its static projection as the fallback) labelled “Illustrative sample”; the three feature illustrations are frozen samples, each labelled the same in a dashed, hatched frame. Front door (owner, 2026-10-16): the hero’s primary is “See the full demo →” (the staging demo) beside “How it’s built”, and the footnote says what the demo runs and what this site shows live; CTA band: “See the whole desk on a sample day.”, See the full demo →, Open the Ticker →, and the free-Ticker line.',
         staging: 'The same page under the demo bar and the demo account. Hero and illustrations carry the dashed “Demo · illustrative sample” chip. CTA band: “You’re signed in to the demo account.”, Open the Ticker → and Open the demo book (→ /positions), and “Your changes stay in this browser. Reset them any time from the demo bar.”',
       },
       widgets: [
@@ -97,7 +98,7 @@ export const ROWS = [
         { name: 'Structure field illustration', source: 'pages/landing/samples.ts LANDING_FIELD_SAMPLES (frozen)', production: ['sample', 'Illustrative sample'], staging: ['demo', 'Demo · illustrative'] },
         { name: 'Triage score illustration', source: 'samples.ts LANDING_SAMPLE (frozen)', production: ['sample', 'Illustrative sample'], staging: ['demo', 'Demo · illustrative'] },
         { name: 'AI read illustration', source: 'AiReadSample.tsx cells (frozen); no model call', production: ['sample', 'Illustrative sample'], staging: ['demo', 'Demo · illustrative'] },
-        { name: 'CTA band', source: 'build mode (isDemoBuild); no request', production: ['locked', 'Sign in'], staging: 'Demo account' },
+        { name: 'CTA band', source: 'build mode (isDemoBuild); no request', production: 'See the full demo', staging: 'Demo account' },
       ],
       states: [
         { tag: 'WebGL2', when: 'The surface turns by hand (drag, arrows); renders on demand, no autoplay, no idle frames.' },
@@ -105,17 +106,17 @@ export const ROWS = [
         { tag: 'Reduced motion', when: 'Nothing differs: nothing moves unless the reader moves it. The hero curve’s draw-in, the one motion moment, is skipped.' },
         { tag: ['sample', 'Illustrative sample'], when: 'Production: the hero and every illustration.' },
         { tag: 'demo', when: 'Staging: the dashed demo chip, and the signed-in CTA band.' },
-        { tag: ['locked', 'Sign in'], when: 'Production CTA band; opens the sign-in dialog, which offers no “Create account”.' },
+        
       ],
       phone: 'One column. Hero: chip, headline, sub, spine, the two actions full width and stacked under 700px, then the surface at full width (a sideways drag turns it, a vertical swipe scrolls; pixel ratio capped at 1.5). Features stack copy above illustration; the score strip and the read’s cells go 2 × 2; trust cards stack; the CTA band stacks with full-width buttons.',
       acceptance: [
         'Loading / sends zero requests to /api or any third party (network panel), in both environments.',
         'Production: the hero and the three illustrations each carry “Illustrative sample” and the shipped caption; nothing else on the page says Sample or Demo.',
         'Staging: the CTA band reads “You’re signed in to the demo account.”; its second button opens /positions; no “Sign in”, “Log in” or “Sign up” on the page.',
-        'Production: the CTA band’s “Sign in” opens the sign-in dialog; “New sign-ups are closed while Convexa is in private testing.” sits directly under it.',
+        'Production: the hero’s and the CTA band’s primary open the full demo (https://staging.convexa.pages.dev) and share the accessible name “See the full demo”; the band’s secondary opens /ticker; no sign-in in the band (“Log in” is in the nav).',
         'With WebGL disabled, the hero shows the static projection with the same labels and readout; no frames are drawn while idle (Performance panel).',
         'Before the WebGL hero ships: p95 frame time ≤ 16.7 ms while turning, measured on a real GPU (P-15 condition).',
-        'Both “Open the Ticker →” actions share the accessible name “Open the Ticker” and go to /ticker.',
+        'Staging: both “Open the Ticker →” actions share the accessible name “Open the Ticker” and go to /ticker.',
         'Gamma sign on the hero and the field reads by position (above or below the zero plane or line) and +γ / −γ labels, not by hue alone.',
       ],
       built: [
@@ -126,6 +127,7 @@ export const ROWS = [
         { status: 'shipped', what: 'The staging demo chip (“Demo · illustrative sample”, dashed) on the hero and the three illustrations, in place of the tag and caption; the hero adds “The model’s shape, not the demo scenario’s chain.”' },
         { status: 'shipped', what: 'The hero’s GPU frame-time measurement (P-15 condition): the prototype at p95 9.9–10.3 ms on a 120 Hz clock (2026-10-14), the built hero at 18.4 ms against an empty page’s 18.2–18.6 ms on a 60 Hz display (2026-10-15).' },
         { status: 'shipped', what: 'Fix round (2026-10-15): the hero curve shows only in the two-column hero, so it no longer crosses the copy on a phone (D-06); Flip dist reads “+0.8% · mid above the flip”, figure and words from one sign (D-25); the field’s wall labels say +γ / −γ on a knock-out plate and the flip is neutral (D-08). WebGL hero: the pixel-ratio ladder samples only back-to-back frames of a held drag, so pauses never step it down, and every lost release (a context-menu click, a lost capture, a lost context) ends the drag and its frames (W1-67); a pixel-ratio change resizes the canvas (W1-68); the stage’s name offers Shift-turning only in WebGL (W1-69); wires blend premultiplied, dark in light mode (W1-70); pinch-zoom stays the reader’s (W1-71).' },
+        { status: 'shipped', what: 'Production’s front door (owner, 2026-10-16, portfolio): the hero’s primary is “See the full demo →” (the staging demo) and its footnote says what the demo runs and what this site shows live; the CTA band leads with the demo and offers the free live Ticker second, with no sign-in (sign-ups are closed; “Log in” stays in the nav). The demo build keeps “Open the Ticker →” (Landing.tsx, copy.ts).' },
       ],
       rulings: ['P-3', 'P-6', 'P-8', 'P-11', 'P-13', 'P-15', 'Env 2026-10-14', 'Amber spent'],
       code: [`${APP}pages/landing/Landing.tsx`, `${APP}pages/landing/copy.ts`, `${APP}pages/landing/samples.ts`, `${APP}pages/landing/GammaSurfaceHero.tsx`, `${APP}pages/landing/heroSurface.ts`, `${APP}pages/landing/heroGl.ts`, `${APP}pages/landing/{StructureFieldSample,ScoreStripSample,AiReadSample}.tsx`, 'design/src/frontier/f1-gamma.js (the WebGL prototype)', 'design/site/v5-frontier-gamma.html'],

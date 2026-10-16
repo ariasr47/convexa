@@ -140,21 +140,18 @@ test.describe('A11Y behavioral sequences', () => {
     await page.goto('/');
     for (const id of ['cta-primary', 'cta-band-primary']) {
       const a = page.getByTestId(id);
-      await expect(a).toHaveAttribute('href', '/ticker');
-      await expect(a).toHaveAccessibleName('Open the Ticker');
+      // Production's front door (owner, 2026-10-16): both primaries open the full demo.
+      await expect(a).toHaveAttribute('href', 'https://staging.convexa.pages.dev');
+      await expect(a).toHaveAccessibleName('See the full demo');
       expect(await a.evaluate((n) => n.tagName)).toBe('A');
       await a.focus();
       await expect.poll(() => a.evaluate((n) => n.matches(':focus-visible'))).toBe(true);
     }
+    // The band's secondary is the free live Ticker (sign-ups are closed; “Log in” is in the nav).
     const secondary = page.getByTestId('cta-band-secondary');
-    expect(await secondary.evaluate((n) => n.tagName)).toBe('BUTTON');
-    await expect(secondary).toHaveAccessibleName('Sign in');
-    await expect(
-      page.getByText('New sign-ups are closed while Convexa is in private testing.'),
-    ).toBeVisible();
-    await secondary.press('Enter');
-    await expect(page.getByTestId('auth-dialog')).toBeVisible();
-    // NO [aria-live] region is asserted, because none is mounted (the waitlist toast is gone).
+    expect(await secondary.evaluate((n) => n.tagName)).toBe('A');
+    await expect(secondary).toHaveAttribute('href', '/ticker');
+    await expect(secondary).toHaveAccessibleName('Open the Ticker →');
   });
   test('A11Y-B3 auth dialog containment, rejected submit and return focus', async ({ page }) => {
     const scenario = journeys.find((item) => item.id === 'signed-out-auth-dialog');

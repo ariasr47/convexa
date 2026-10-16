@@ -133,7 +133,8 @@ describe('AC-L6/AC-L15/AC-L16 — the one big action works without an account', 
     });
 
     renderApp('/');
-    await userEvent.setup().click(screen.getByTestId('cta-primary'));
+    // Production's hero primary is the demo (owner, 2026-10-16); the free Ticker is the band's link.
+    await userEvent.setup().click(screen.getByTestId('cta-band-secondary'));
     // Free path: Ticker VIEWER loads its bundle-driven "Call wall" tile without sign-in.
     expect(await screen.findByText('Call wall')).toBeInTheDocument();
     expect(screen.queryByTestId('require-auth-wall')).toBeNull();

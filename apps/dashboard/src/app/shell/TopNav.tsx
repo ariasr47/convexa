@@ -23,6 +23,7 @@ import { AccountControl } from '@/features/auth/AccountControl';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useAuthDialog } from '@/features/auth/AuthDialogProvider';
 import { avatarInitial } from '@/features/auth/avatar';
+import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import {
   prefetchPositionsRoute,
   prefetchScannerRoute,
@@ -36,6 +37,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
@@ -310,6 +312,21 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
             <SearchIcon fontSize="small" />
           </IconButton>
 
+          {/* Production's front door (owner, 2026-10-16): the full demo, one neutral click away on
+              every page. Most of the desk needs a paid options feed this site doesn't have; the
+              demo runs all of it on a sample day. Not on the demo build itself. */}
+          {dataMode !== 'demo' && (
+            <Button
+              href={STAGING_DEMO_URL}
+              variant="outlined"
+              size="small"
+              data-testid="nav-full-demo"
+              sx={{ display: { xs: 'none', md: 'inline-flex' }, whiteSpace: 'nowrap' }}
+            >
+              Full demo ↗
+            </Button>
+          )}
+
           {/* Account control (UX_BLUEPRINT §2.1) — top-right. Loading / login·signup / account menu.
               Non-blocking: the rest of the app renders regardless of who-am-I. */}
           {/* The demo is always signed in to its seed account (owner, 2026-10-14), so it shows
@@ -474,6 +491,17 @@ function DrawerAccountRows({ onNavigate }: { onNavigate: () => void }) {
           sx={quietRowSx}
         >
           Log in
+        </ListItemButton>
+      )}
+      {!demo && (
+        <ListItemButton
+          component="a"
+          href={STAGING_DEMO_URL}
+          onClick={onNavigate}
+          data-testid="nav-drawer-full-demo"
+          sx={quietRowSx}
+        >
+          See the full demo ↗
         </ListItemButton>
       )}
       {!demo && (

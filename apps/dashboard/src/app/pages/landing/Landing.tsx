@@ -30,8 +30,7 @@
  * `sx`; zero hardcoded hex. `[no-real-order-path]`: no affordance in this file opens an entry flow —
  * the two "Sign in" style actions either route to `/ticker` or open the shared `AuthDialog`.
  */
-import { useAuthDialog } from '@/features/auth/AuthDialogProvider';
-import { isDemoBuild } from '@/shared/lib/demoSite';
+import { isDemoBuild, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { prefetchTickerRoute, scheduleLandingPrefetch } from '@/shared/lib/prefetchRoutes';
 import { displayScale, extrasFor } from '@/shared/theme/tokens';
 import CheckIcon from '@mui/icons-material/Check';
@@ -42,7 +41,7 @@ import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { AiReadSample } from './AiReadSample';
 import { LANDING_COPY } from './copy';
@@ -173,9 +172,7 @@ function FeatureSection({
 }
 
 export function Landing() {
-  const { openAuth } = useAuthDialog();
   const demo = isDemoBuild();
-  const signInRef = useRef<HTMLButtonElement>(null);
 
   // The one intentional non-data edge (SPEC §2.1): warms route chunks after first paint, touches
   // no API. `/` otherwise reads no session fact and issues zero requests (AC-L17).
@@ -302,20 +299,34 @@ export function Landing() {
                   },
                 })}
               >
-                <Button
-                  component={RouterLink}
-                  to="/ticker"
-                  variant="contained"
-                  size="large"
-                  data-testid="cta-primary"
-                  // AC-L15: this and `cta-band-primary` share ONE accessible name. The visible
-                  // label keeps its pinned arrow (AC-C1); the name drops it.
-                  aria-label={LANDING_COPY.openTickerName}
-                  onMouseEnter={() => void prefetchTickerRoute()}
-                  onFocus={() => void prefetchTickerRoute()}
-                >
-                  {LANDING_COPY.hero.primary}
-                </Button>
+                {demo ? (
+                  <Button
+                    component={RouterLink}
+                    to="/ticker"
+                    variant="contained"
+                    size="large"
+                    data-testid="cta-primary"
+                    // AC-L15: this and `cta-band-primary` share ONE accessible name. The visible
+                    // label keeps its pinned arrow (AC-C1); the name drops it.
+                    aria-label={LANDING_COPY.openTickerName}
+                    onMouseEnter={() => void prefetchTickerRoute()}
+                    onFocus={() => void prefetchTickerRoute()}
+                  >
+                    {LANDING_COPY.hero.primary}
+                  </Button>
+                ) : (
+                  // Production's front door (owner, 2026-10-16): most of the desk needs a paid
+                  // options feed this site doesn't have, so the first click is the full demo.
+                  <Button
+                    href={STAGING_DEMO_URL}
+                    variant="contained"
+                    size="large"
+                    data-testid="cta-primary"
+                    aria-label={LANDING_COPY.openDemoName}
+                  >
+                    {LANDING_COPY.hero.primaryLive}
+                  </Button>
+                )}
                 <Button
                   component={RouterLink}
                   to="/methodology"
@@ -348,7 +359,7 @@ export function Landing() {
                 </Button>
               </Stack>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                {LANDING_COPY.hero.footnote}
+                {demo ? LANDING_COPY.hero.footnote : LANDING_COPY.hero.footnoteLive}
               </Typography>
             </Stack>
 
@@ -503,24 +514,35 @@ export function Landing() {
               </Typography>
             </Box>
             <Stack spacing={1.25} sx={{ alignItems: 'stretch' }}>
+              {demo ? (
+                <Button
+                  component={RouterLink}
+                  to="/ticker"
+                  variant="contained"
+                  size="large"
+                  data-testid="cta-band-primary"
+                  aria-label={LANDING_COPY.openTickerName}
+                >
+                  {LANDING_COPY.hero.primary}
+                </Button>
+              ) : (
+                <Button
+                  href={STAGING_DEMO_URL}
+                  variant="contained"
+                  size="large"
+                  data-testid="cta-band-primary"
+                  aria-label={LANDING_COPY.openDemoName}
+                >
+                  {LANDING_COPY.cta.primary}
+                </Button>
+              )}
               <Button
                 component={RouterLink}
-                to="/ticker"
-                variant="contained"
-                size="large"
-                data-testid="cta-band-primary"
-                aria-label={LANDING_COPY.openTickerName}
-              >
-                {LANDING_COPY.cta.primary}
-              </Button>
-              <Button
+                // Demo: the demo account's book. Production: the free live Ticker (sign-ups are
+                // closed, so the band offers no sign-in; “Log in” stays in the nav).
+                to={demo ? '/positions' : '/ticker'}
                 variant="outlined"
                 size="large"
-                ref={signInRef}
-                // Demo: no sign-in exists, so the button opens the demo account's book instead.
-                {...(demo
-                  ? { component: RouterLink, to: '/positions' }
-                  : { onClick: () => openAuth({ returnFocus: signInRef.current }) })}
                 data-testid="cta-band-secondary"
                 // Neutral outlined secondary from the theme (owner ruling A, 2026-10-15): the
                 // band's amber is spent on the contained primary above.
@@ -528,7 +550,7 @@ export function Landing() {
                 {demo ? LANDING_COPY.ctaDemo.secondary : LANDING_COPY.cta.secondary}
               </Button>
               <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center' }}>
-                {demo ? LANDING_COPY.ctaDemo.note : LANDING_COPY.cta.signupsClosed}
+                {demo ? LANDING_COPY.ctaDemo.note : LANDING_COPY.cta.note}
               </Typography>
             </Stack>
           </Box>
