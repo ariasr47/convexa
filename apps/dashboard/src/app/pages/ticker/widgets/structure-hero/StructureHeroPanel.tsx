@@ -427,7 +427,7 @@ export function StructureHeroPanel({
           // Lane 4: under a 1000px panel the levels follow the field directly (the second read),
           // ahead of the sample tape line and the session path (the slow lane).
           [theme.containerQueries('panel').down(1000)]: {
-            gridTemplateColumns: '1fr',
+            gridTemplateColumns: 'minmax(0, 1fr)',
             gridTemplateAreas: '"field" "ladder" "lane"',
             gridTemplateRows: 'auto',
           },
@@ -558,7 +558,7 @@ export function StructureHeroPanel({
               flex: '1 1 auto',
               [theme.containerQueries('panel').between(600, 1000)]: {
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                 alignItems: 'end',
                 gap: 2,
               },
@@ -569,7 +569,7 @@ export function StructureHeroPanel({
                 data-testid="structure-hero-frame"
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                   gap: '10px',
                   [theme.containerQueries('panel').between(600, 1000)]: {
                     pt: '12px',
