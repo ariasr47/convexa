@@ -25,7 +25,7 @@ import { KIND_LABEL, LEVEL_LABEL, NOT_SET } from '@/features/alerts/labels';
 import { fmtDay, ruleWhat } from '@/features/alerts/publicRules';
 import { firedTag, secSite } from '@/features/alerts/siteState';
 import { alertsReadFaulted, applyEdit } from '@/features/alerts/store';
-import type { AlertEvent, AlertRule } from '@/features/alerts/types';
+import type { AlertEvent, AlertRule, LevelRef } from '@/features/alerts/types';
 import { useAlerts } from '@/features/alerts/useAlerts';
 import { followedTickers, usePublicChecks } from '@/features/alerts/usePublicChecks';
 import { ProvenanceChip } from '@/pages/research/publicUi';
@@ -36,7 +36,7 @@ import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { faceFor } from '@/shared/figure';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
-import { dataMode } from '@convexa/api';
+import { dataMode, getScan } from '@convexa/api';
 import AddIcon from '@mui/icons-material/Add';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Box from '@mui/material/Box';
@@ -49,6 +49,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import {
   cloneElement,
+  useEffect,
   useMemo,
   useState,
   type KeyboardEvent,
@@ -210,7 +211,23 @@ function TracedValue({ children, testId }: { children: string; testId?: string }
   );
 }
 
-function RuleSummary({ rule }: { rule: AlertRule }) {
+/** A structure rule's own note, quoted after its summary (Final Alerts board: “Gamma flip · 683.92 ·
+ *  “Watch the authored sample flip””). Nothing when the rule holds no note. */
+function RuleNote({ note }: { note?: string }) {
+  const text = note?.trim();
+  return text ? <>{` · “${text}”`}</> : null;
+}
+
+function RuleSummary({ rule, levelValue }: { rule: AlertRule; levelValue?: number | null }) {
+  return (
+    <>
+      <RuleSummaryBody rule={rule} levelValue={levelValue} />
+      <RuleNote note={rule.note} />
+    </>
+  );
+}
+
+function RuleSummaryBody({ rule, levelValue }: { rule: AlertRule; levelValue?: number | null }) {
   if (rule.kind === 'score_gate') {
     return (
       <>
@@ -237,8 +254,21 @@ function RuleSummary({ rule }: { rule: AlertRule }) {
       );
     }
     // Structure level: the label FROM the closed lookup, no threshold number of the rule's own —
-    // the level's value is a market fact the record does not hold (47d).
-    return <>{rule.level ? LEVEL_LABEL[rule.level] : NOT_RECORDED}</>;
+    // the level's value is a market fact the record does not hold (47d). On the demo the page reads
+    // that fact from the sample scan (useSampleLevels) and shows it beside the label, as the board
+    // does; elsewhere the label stands alone.
+    if (!rule.level) return <>{NOT_RECORDED}</>;
+    return (
+      <>
+        {LEVEL_LABEL[rule.level]}
+        {levelValue != null && Number.isFinite(levelValue) && (
+          <>
+            {' · '}
+            <TracedValue testId="alert-rule-level-value">{levelValue.toFixed(2)}</TracedValue>
+          </>
+        )}
+      </>
+    );
   }
   // tier_change — byte-identical.
   return <>any tier transition</>;
@@ -300,6 +330,50 @@ function eventDay(e: AlertEvent): string {
   return new Date(e.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+type SampleLevels = ReadonlyMap<string, Partial<Record<LevelRef, number>>>;
+
+/**
+ * The demo's structure levels per symbol, from the sample scan (the demo transport answers
+ * getScan(); nothing leaves the browser), so a level-touch rule reads as the Final Alerts board
+ * draws it: “Gamma flip · 683.92”. Read only on the demo and only when a structure-level rule is
+ * listed; production never reads it, since its structure needs the options feed. A failed or odd
+ * answer just leaves the label on its own.
+ */
+function useSampleLevels(enabled: boolean): SampleLevels | null {
+  const [levels, setLevels] = useState<SampleLevels | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
+    getScan()
+      .then((res) => {
+        if (cancelled) return;
+        const map = new Map<string, Partial<Record<LevelRef, number>>>();
+        for (const row of Array.isArray(res?.rows) ? res.rows : []) {
+          if (typeof row?.symbol !== 'string') continue;
+          map.set(row.symbol.toUpperCase(), {
+            gamma_flip: num(row.flip),
+            call_wall: num(row.call_wall),
+            put_wall: num(row.put_wall),
+          });
+        }
+        setLevels(map);
+      })
+      .catch(() => {
+        /* the rule keeps its label and note */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+  return levels;
+}
+
+function levelValueFor(rule: AlertRule, levels: SampleLevels | null): number | null {
+  if (rule.kind !== 'level_touch' || !rule.level || rule.level === 'price' || !levels) return null;
+  return levels.get(rule.symbol.toUpperCase())?.[rule.level] ?? null;
+}
+
 export function AlertsPage() {
   const a = useAlerts();
   const faulted = alertsReadFaulted();
@@ -321,6 +395,9 @@ export function AlertsPage() {
   const checking = checks.phase === 'checking' || checks.phase === 'idle';
 
   const states = a.rules.map((r) => ({ rule: r, ...ruleState(r, ctx, checking) }));
+  const sampleLevels = useSampleLevels(
+    demo && a.rules.some((r) => r.kind === 'level_touch' && r.level != null && r.level !== 'price'),
+  );
   const structureCount = a.rules.filter((r) => isStructureKind(r.kind)).length;
 
   const legend = demo
@@ -532,6 +609,7 @@ export function AlertsPage() {
                     state={state}
                     detail={detail}
                     last={last}
+                    levelValue={levelValueFor(rule, sampleLevels)}
                     faulted={faulted}
                     onToggle={(on) => a.upsertRule({ ...rule, enabled: on })}
                     onEdit={() => openNew({ ...rule })}
@@ -666,6 +744,7 @@ function RuleRow({
   state,
   detail,
   last,
+  levelValue,
   faulted,
   onToggle,
   onEdit,
@@ -674,13 +753,19 @@ function RuleRow({
   state: StateWord['state'];
   detail?: string;
   last: string;
+  /** A level-touch rule's level, when the page can read it (the demo's sample scan). */
+  levelValue?: number | null;
   faulted: boolean;
   onToggle: (on: boolean) => void;
   onEdit: () => void;
 }) {
   const name = KIND_LABEL[rule.kind];
   const subject = rule.kind === 'cftc' ? (rule.marketName ?? rule.symbol) : rule.symbol;
-  const what = isPublicKind(rule.kind) ? ruleWhat(rule) : <RuleSummary rule={rule} />;
+  const what = isPublicKind(rule.kind) ? (
+    ruleWhat(rule)
+  ) : (
+    <RuleSummary rule={rule} levelValue={levelValue} />
+  );
   return (
     <Box
       id={`alert-rule-${rule.id}`}
