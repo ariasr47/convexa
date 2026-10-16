@@ -4,7 +4,8 @@
 //      (committed, uncommitted and untracked changes). The local Nx cache restores unchanged work.
 //      The Rust project `api` runs only when a Rust path changed: its test also scans dashboard
 //      sources, which would cost ~7 minutes on every dashboard edit. CI runs it on every dispatch.
-//   2. The hermetic tool specs (`npm run test:tools`), only when the change touches what they guard.
+//   2. The hermetic tool specs (`npm run test:tools`) and the research notes' filing check
+//      (tools/research-notes/check-filings.mjs), only when the change touches what they guard.
 // `--base=<ref>` overrides the merge base, e.g. `npm run verify -- --base=HEAD` checks only the
 // uncommitted work. CI (`.github/workflows/ci.yml`, manual dispatch) still runs the full set.
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -68,12 +69,15 @@ if (gitleaks.status === 0) {
 status = run('npx', nxArgs, { NX_NO_CLOUD: 'true', NX_LOAD_DOT_ENV_FILES: 'false' }) || status;
 
 const toolScope =
-  /^(tools\/|functions\/|apps\/dashboard-e2e\/tools\/|\.github\/|\.supply-chain\/|package(-lock)?\.json$)/;
+  /^(tools\/|functions\/|research\/|apps\/dashboard-e2e\/tools\/|\.github\/|\.supply-chain\/|package(-lock)?\.json$)/;
 if (changed.some((file) => toolScope.test(file))) {
   status = run('npm', ['run', 'test:tools']) || status;
+  // Figures against the filing: each note figure that names an XBRL concept, against the company facts
+  // saved under research/_filings (never fetched here). Exits 1 on an unexplained difference.
+  status = run('node', ['tools/research-notes/check-filings.mjs']) || status;
 } else {
   console.log(
-    '[verify] tool specs skipped: nothing changed under tools/, functions/, .github/ or packages',
+    '[verify] tool specs and filing check skipped: nothing under tools/, functions/, research/, .github/ or packages',
   );
 }
 
