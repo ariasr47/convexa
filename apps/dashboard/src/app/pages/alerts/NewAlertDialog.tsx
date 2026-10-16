@@ -124,25 +124,16 @@ export function NewAlertDialog(props: NewAlertDialogProps) {
   const [errors, setErrors] = useState<RuleErrors>({});
   const [failed, setFailed] = useState(false);
 
-  // A new rule (or a suggestion) starts with the page's notification setting, so the switch and the
-  // Review line say what will happen; an edited rule keeps its own (absent: it follows the page).
-  const notifyOn = props.notifyOn;
+  // A new rule (or a suggestion) carries no `notify` of its own, so it follows the page flag: saved
+  // while the page is off, it notifies once the reader turns the page on (W1-14). The switch and the
+  // Review line read the effective value, shouldNotify(draft, notifyOn). Only the reader turning the
+  // switch off writes `notify: false`; an edited rule keeps whatever it has.
   useEffect(() => {
     if (!open) return;
-    setDraft(
-      start
-        ? {
-            ...DEFAULTS[start.kind],
-            ...start,
-            ...(start.id || start.notify !== undefined ? {} : { notify: notifyOn }),
-          }
-        : { ...DEFAULTS.filing, notify: notifyOn },
-    );
+    setDraft(start ? { ...DEFAULTS[start.kind], ...start } : DEFAULTS.filing);
     setStep(start ? 2 : 1);
     setErrors({});
     setFailed(false);
-    // Only on opening: a later change of the page flag mustn't reset what the reader has filled in.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, start]);
 
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
@@ -974,9 +965,10 @@ function TellMe({
   const [asking, setAsking] = useState(false);
   const blocked = !demo && (notifyPermission === 'denied' || notifyPermission === 'unavailable');
   const on = shouldNotify(draft, notifyOn);
+  // A refused or dismissed browser prompt leaves the rule as it was: writing `notify: false` here
+  // would keep the rule silent after a later "Turn on" on the page (W1-14).
   const turnOn = async () => {
-    const ok = await enableNotify();
-    set({ notify: ok });
+    if (await enableNotify()) set({ notify: true });
   };
   return (
     <Field label="Tell me">
