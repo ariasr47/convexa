@@ -4,6 +4,7 @@ import {
   buildComingUp,
   clock12,
   comingUpState,
+  isOwnResults,
   mondayOf,
   noteResultsOf,
   secEstimates,
@@ -280,6 +281,59 @@ describe('noteResultsOf', () => {
       { ticker: 'AMZN', date: '2026-10-27', end: '2026-10-30', label: 'Q3 2026 results' },
       { ticker: 'AMZN', date: '2027-02-01', end: '2027-02-28', label: 'Q4 2026 results' },
       { ticker: 'AMZN', date: '2027-04-30', end: null, label: 'Q1 results' },
+    ]);
+  });
+  it('keeps only the company’s own reporting periods, not labels that merely mention results', () => {
+    // Real notes, 2026-10-13: NVDA tracks Broadcom's report, SPCX a lock-up pinned to its own.
+    expect(
+      noteResultsOf('NVDA', [
+        at('Q3 FY2027 results', 'day', '2026-11-17', '2026-11-17'),
+        at('Broadcom FQ4-26 results', 'month', '2026-12-01', '2026-12-31'),
+      ]).map((r) => r.label),
+    ).toEqual(['Q3 FY2027 results']);
+    expect(
+      noteResultsOf('SPCX', [
+        at('Q3 2026 results', 'window', '2026-11-03', '2026-11-17'),
+        at('Lock-up tranche after Q3 results', 'window', '2026-11-05', '2026-11-19'),
+      ]).map((r) => r.label),
+    ).toEqual(['Q3 2026 results']);
+    // Every own-results shape the notes use.
+    for (const label of [
+      'FQ1-27 results',
+      '3Q26 results and 4Q26 guide',
+      '4Q26 results; 2027 growth and capex guide',
+      'FY2027 results and FY2028 outlook',
+      'Q4 2026 deliveries, then results and the 2027 capex guide',
+      'H1 2026 results',
+      '1H26 earnings',
+    ])
+      expect(isOwnResults(label)).toBe(true);
+    for (const label of ['Q3 2026 10-Q', 'October 2026 operating data', 'Earnings call'])
+      expect(isOwnResults(label)).toBe(false);
+  });
+  it('doesn’t count a company as reporting once its own date has passed', () => {
+    // Nov 18: NVDA's Nov 17 and SPCX's Nov 3–17 are behind; Broadcom's month and the lock-up are not.
+    const noteResults = [
+      ...noteResultsOf('NVDA', [
+        at('Q3 FY2027 results', 'day', '2026-11-17', '2026-11-17'),
+        at('Broadcom FQ4-26 results', 'month', '2026-12-01', '2026-12-31'),
+      ]),
+      ...noteResultsOf('SPCX', [
+        at('Q3 2026 results', 'window', '2026-11-03', '2026-11-17'),
+        at('Lock-up tranche after Q3 results', 'window', '2026-11-05', '2026-11-19'),
+      ]),
+    ];
+    const c = buildComingUp({
+      today: '2026-11-18',
+      releases: [],
+      noteResults,
+      windows: [],
+      followed: ['NVDA', 'SPCX'],
+    });
+    expect(c.reporting).toEqual([]);
+    expect(c.weeks.flatMap((w) => w.events).map((e) => e.label)).toEqual([
+      'SPCX Q3 2026 results',
+      'NVDA Q3 FY2027 results',
     ]);
   });
 });

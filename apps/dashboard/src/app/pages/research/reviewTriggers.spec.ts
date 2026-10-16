@@ -131,6 +131,30 @@ describe('calendarTriggers', () => {
     expect(freshness(withCalendar(aging(), [est]), { today: '2026-10-15' }).state).toBe('current');
   });
 
+  it('estimates past another company’s results the note tracks', () => {
+    // NVDA's note tracks Broadcom's December report; after NVDA's own Nov 17 date it still needs
+    // the estimate, and the lock-up pinned to SPCX's report is not a results date either.
+    const w = [win('NVDA', '2027-02-18', '2027-02-26')];
+    const other = (label: string): Aging['events'][number] => ({
+      kind: 'catalyst',
+      label,
+      when: {
+        text: label,
+        kind: 'month',
+        start: '2026-12-01',
+        end: '2026-12-31',
+        approx: true,
+        label,
+      },
+      resolved: false,
+    });
+    for (const label of ['Broadcom FQ4-26 results', 'Lock-up tranche after Q3 results']) {
+      const n = note({ valued: false, aging: aging([results('2026-11-17'), other(label)]) });
+      const [est] = calendarTriggers({ note: n, today: '2026-11-18', fomc: days, windows: w });
+      expect(est?.label).toBe(ESTIMATE_TRIGGER);
+    }
+  });
+
   it('spans months in the window label and skips a window that is over', () => {
     const n = note({ ticker: 'CRWV', valued: false });
     const [est] = calendarTriggers({

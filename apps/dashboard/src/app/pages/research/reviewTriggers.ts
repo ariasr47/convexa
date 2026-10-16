@@ -14,13 +14,13 @@
  * Pure: the pages feed it the API's answers and the notes' dates.
  */
 import type { PublicCalendar, PublicResultsWindow } from '@convexa/api';
+import { isOwnResults } from './comingUp';
 import { FOMC_DECISIONS } from './fomc';
 import { formatShortDate } from './format';
 import type { Aging, AgingEvent } from './types';
 
 export const FOMC_TRIGGER = 'FOMC decision';
 export const ESTIMATE_TRIGGER = 'Results, estimated from filing history';
-const RESULTS = /results|earnings/i;
 
 /**
  * FOMC decision days, oldest first: the Fed's published schedule (fomc.ts, which reaches back past
@@ -85,7 +85,7 @@ export function calendarTriggers({
     (e) =>
       e.kind === 'catalyst' &&
       !e.resolved &&
-      RESULTS.test(e.label) &&
+      isOwnResults(e.label) &&
       e.when.end !== null &&
       e.when.end >= today,
   );

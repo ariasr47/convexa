@@ -54,6 +54,19 @@ export interface NoteResult {
 }
 
 const RESULTS = /\bresults\b|\bearnings\b/i;
+/** A reporting period at the start of the label: Q3, FQ1-27, 3Q26, FY2027, H1, 1H26. */
+const OWN_PERIOD = /^(F?Q[1-4]|[1-4]Q\d{2}|FY\d{2,4}|H[12]|[12]H\d{2})\b/;
+
+/**
+ * Whether a note's catalyst is the note company's own results: the label names results and opens on
+ * the company's reporting period ("Q3 2026 results", "FQ1-27 results", "3Q26 results and 4Q26 guide",
+ * "FY2027 results and FY2028 outlook"). A label that only mentions results is something else: another
+ * company's report ("Broadcom FQ4-26 results") or an event pinned to one ("Lock-up tranche after Q3
+ * results"). Read as the company's own date, those draw a row it doesn't have and count it as
+ * reporting when it isn't.
+ */
+export const isOwnResults = (label: string): boolean =>
+  RESULTS.test(label) && OWN_PERIOD.test(label.trim());
 
 /**
  * The results dates in a note's own catalysts: unresolved, with a start and an end, whatever their
@@ -69,7 +82,7 @@ export function noteResultsOf(ticker: string, events: readonly AgingEvent[]): No
         !!e.when.start &&
         !!e.when.end &&
         e.when.start <= e.when.end &&
-        RESULTS.test(e.label),
+        isOwnResults(e.label),
     )
     .map((e) => ({
       ticker,
