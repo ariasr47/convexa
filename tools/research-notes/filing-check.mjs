@@ -11,8 +11,9 @@
 //   filer tagged, never a calendar guess.
 // - **Precision.** A figure matches when the filed value is within half a unit of the note's last
 //   digit: $96.2B matches $96,221M, 66.2% doesn't match 66.37%.
-// - **Units and scale.** `$` needs a currency (or per-share) unit, `%` a ratio of two concepts in the
-//   same unit (or a pure value), a bare number with K/M/B/T a share count. Scale words multiply.
+// - **Units and scale.** `$` needs US dollars (`USD`, or `USD/shares` per share): a 20-F tagging its
+//   revenue in TWD or EUR is never compared with a dollar figure. `%` needs a ratio of two concepts in
+//   the same unit (or a pure value), a bare number with K/M/B/T a share count. Scale words multiply.
 // - **Derived.** `A / B` is a ratio (a margin); `A - B` and `A + B` are computed figures (free cash flow)
 //   and read "Computed" when they agree. `none` means no standard concept: "Not tagged · cites the
 //   filing". Text after `;` explains a known difference, and the research check then accepts it.
@@ -158,16 +159,18 @@ const UNIT_KIND = (unit) =>
           ? 'money'
           : 'other';
 
-/** Which of a concept's units can stand for a note figure of this kind. */
-function fits(kind, unit) {
+/** Which of a concept's units can stand for a note figure of this kind. A note's `$` is US dollars:
+ *  only `USD` and `USD/shares` fit it, never another currency's code (TWD, EUR). */
+export function fits(kind, unit) {
   const u = UNIT_KIND(unit);
-  if (kind === 'money') return u === 'money' || u === 'per-share';
+  if (kind === 'money') return unit === 'USD' || unit === 'USD/shares';
   if (kind === 'count') return u === 'count';
   if (kind === 'percent') return u === 'pure';
   return false;
 }
 
-/** Filing value → text in the note's style, a digit finer than the note so a difference shows. */
+/** Filing value → text in the note's style, a digit finer than the note so a difference shows:
+ *  $512.3M against 512,460,000 reads $512.46M, never a whole $512M that looks lower than the note. */
 export function formatFiled(value, note) {
   const sign = value < 0 ? '−' : '';
   const v = Math.abs(value);
@@ -175,7 +178,11 @@ export function formatFiled(value, note) {
     n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
   if (note.kind === 'percent') return `${sign}${grouped(v * 100, note.decimals + 1)}%`;
   const prefix = note.kind === 'money' ? '$' : '';
-  if (v >= 1e6) return `${sign}${prefix}${grouped(v / 1e6, 0)}M`;
+  // A K- or M-scale note prints in its own scale; whole millions would be coarser than the note.
+  if (note.scaleWord === 'K' || note.scaleWord === 'M')
+    return `${sign}${prefix}${grouped(v / SCALE[note.scaleWord], note.decimals + 1)}${note.scaleWord}`;
+  // B and T notes: whole millions are finer than any B figure written to two decimals.
+  if (v >= 1e6) return `${sign}${prefix}${grouped(v / 1e6, Math.max(0, note.decimals - 2))}M`;
   return `${sign}${prefix}${grouped(v, Math.max(2, note.decimals))}`;
 }
 
@@ -363,7 +370,11 @@ export const UNEXPLAINED = ['differs', 'missing', 'unit', 'invalid'];
 
 // ---- saved company facts → filings ------------------------------------------------------------
 
+/** apps/api edgar.rs PERIODIC_FORMS, matched exactly: an amendment (10-Q/A) is not a periodic filing
+ *  there, so it isn't one here either. */
 const PERIODIC = ['10-Q', '10-K', '20-F', '40-F'];
+/** apps/api edgar.rs periodic_filings `.take(2)`: the page reads the two newest periodic filings. */
+export const FILINGS_READ = 2;
 const days = (a, b) => (Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000;
 const spanOf = (p) => {
   if (!p.start) return 'instant';
@@ -374,12 +385,13 @@ const spanOf = (p) => {
 /**
  * A saved SEC company-facts answer as the filings the API would send (`periodic[]`, newest first):
  * each periodic filing's fiscal year and period and its checked concepts for its own period. The same
- * rules as apps/api filed_figures.rs `attach`, for the research check, which reads saved files only.
+ * rules as apps/api filed_figures.rs `attach` and edgar.rs `periodic_filings` (exact periodic forms,
+ * the two newest), so the author's check and the note page agree on what a filing covers.
  * @param {any} json
  * @param {{ keep?: number }} [options]
  * @returns {FiledFiling[]}
  */
-export function filingsFromCompanyFacts(json, { keep = 4 } = {}) {
+export function filingsFromCompanyFacts(json, { keep = FILINGS_READ } = {}) {
   /** @type {any[]} */
   const points = [];
   for (const [taxonomy, concepts] of Object.entries(json?.facts ?? {}))
@@ -398,14 +410,13 @@ export function filingsFromCompanyFacts(json, { keep = 4 } = {}) {
               ...p,
             });
     }
-  const base = (form) => String(form ?? '').replace(/\/A$/, '');
   /** @type {Map<string, { accession: string, form: string, filed: string }>} */
   const byAccession = new Map();
   for (const p of points) {
-    if (!PERIODIC.includes(base(p.form))) continue;
+    if (!PERIODIC.includes(String(p.form ?? ''))) continue;
     const seen = byAccession.get(p.accn);
     if (!seen || (p.filed ?? '') > seen.filed)
-      byAccession.set(p.accn, { accession: p.accn, form: base(p.form), filed: p.filed ?? '' });
+      byAccession.set(p.accn, { accession: p.accn, form: p.form, filed: p.filed ?? '' });
   }
   const order = [...byAccession.values()]
     .sort((a, b) => b.filed.localeCompare(a.filed) || b.accession.localeCompare(a.accession))

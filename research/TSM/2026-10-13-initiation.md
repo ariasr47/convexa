@@ -78,7 +78,7 @@ Inventory days | 87 @ 2Q26 | ▲ 7 days QoQ | up | Building for the 2nm ramp [1]
 3Q25 | 989.92
 4Q25 | 1046.09
 1Q26 | 1134.10
-2Q26 | 1270.38
+2Q26 | 1270.38 | | | 6-K 0001046179-26-000451
 3Q26 | 1494.25
 4Q26 consensus | 1610 | approx | ~1,610
 ```

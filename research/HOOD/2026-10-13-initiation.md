@@ -46,11 +46,11 @@ Prediction markets | Event contracts keep growing and survive legal challenge. |
 ## Where we are in the cycle | Stock trading and margin loans are at records while crypto is in a slump.
 
 ```chart bar "GAAP operating margin by year, %"
-2021 | -90.4 | | −90.4%
-2022 | -74.4 | | −74.4%
-2023 | -28.7 | | −28.7%
-2024 | 35.7 | | 35.7%
-2025 | 46.8 | | 46.8%
+2021 | -90.4 | | −90.4% | 10-K 0001783879-22-000044 2022-02-24
+2022 | -74.4 | | −74.4% | 10-K 0001783879-23-000045 2023-02-27
+2023 | -28.7 | | −28.7% | 10-K 0001783879-24-000054 2024-02-27
+2024 | 35.7 | | 35.7% | 10-K 0001783879-25-000049 2025-02-18
+2025 | 46.8 | | 46.8% | 10-K 0001783879-26-000023 2026-02-18
 TTM Q2 2026 | 46.0 | | 46.0%
 Trough on today's costs | 28.0 | approx | 28.0% (calc)
 ```
@@ -83,10 +83,10 @@ Costs grow slower than revenue | 2026 adjusted opex and stock pay outlook | $2.6
 ## Key numbers | Record revenue and customer assets, with the margin already a little off its peak.
 
 ```metrics
-Revenue | $1,308M @ Q2 2026 | ▲ 32% YoY | up | A record; H1 2026 $2,375M, +24% [1]
+Revenue | $1,308M @ Q2 2026 | ▲ 32% YoY | up | A record; H1 2026 $2,375M, +24% [1] | us-gaap:Revenues
 Operating margin, GAAP | 43.9% @ Q2 2026 | ▼ 0.5 pts YoY (calc) | down | 46.0% trailing (calc) [1][4]
 Net income | $573M @ Q2 2026 | ▲ 48% YoY | up | Includes $129M of one-off gains [1]
-EPS, GAAP diluted | $0.62 @ Q2 2026 | ▲ 48% YoY | up | Q3 consensus $0.55 [1][17]
+EPS, GAAP diluted | $0.62 @ Q2 2026 | ▲ 48% YoY | up | Q3 consensus $0.55 [1][17] | us-gaap:EarningsPerShareDiluted
 Adjusted EBITDA | $741M @ Q2 2026 | ▲ 35% YoY | up | 57% margin [1]
 Funded customers | 28.6M @ 2026-08-31 | ▲ 7% YoY | up | 1.9M more than a year earlier [9]
 Platform assets | $383.7B @ 2026-08-31 | ▲ 26% YoY | up | Includes Trump Account assets from July [9]
@@ -100,13 +100,13 @@ Corporate cash | $5.36B @ 2026-06-30 | debt $2.2B | flat | Excludes $12.0B segre
 ## Revenue and earnings quality | Revenue swings by a fifth from quarter to quarter, and Q2 profit carried one-off gains.
 
 ```chart bar "Quarterly net revenues, $M"
-Q4-24 | 1014
-Q1-25 | 927
-Q2-25 | 989
-Q3-25 | 1274 | | 1,274 (calc)
-Q4-25 | 1283
-Q1-26 | 1067
-Q2-26 | 1308
+Q4-24 | 1014 | | | 10-K 0001783879-25-000049 2025-02-18
+Q1-25 | 927 | | | 10-Q 0001783879-25-000145 2025-05-01
+Q2-25 | 989 | | | 10-Q 0001783879-25-000251 2025-07-31
+Q3-25 | 1274 | | 1,274 (calc) | 10-Q 0001783879-25-000310 2025-11-06
+Q4-25 | 1283 | | | 10-K 0001783879-26-000023 2026-02-18
+Q1-26 | 1067 | | | 10-Q 0001783879-26-000062 2026-04-29
+Q2-26 | 1308 | | | 10-Q 0001783879-26-000114 2026-07-30
 Q3-26 consensus | 1420 | approx | ~1,420
 ```
 

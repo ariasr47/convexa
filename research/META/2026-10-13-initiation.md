@@ -15,7 +15,7 @@ Price | $742.96 @ 2026-10-12 | Close, +3.4% on the Muse Wonder launch; 52-week r
 Market cap | $1.91T @ 2026-10-12 | 2,566M diluted shares × price (calc) [1]
 Net debt, incl. ventures | $26.2B @ 2026-06-30 | $90.3B cash, $83.7B notes, $32.8B of venture capital owed in effect (calc) [1][10][11]
 P/E, trailing | 28.0× @ 2026-10-12 | 23.1× forward [17]
-Operating margin | 31% @ Q2 2026 | 43% a year earlier; legal and severance cost 6 pts (calc) [1]
+Operating margin | 31% @ Q2 2026 | 43% a year earlier; legal and severance cost 6 pts (calc) [1] | us-gaap:OperatingIncomeLoss / us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 Capex guide | $130–145B @ FY2026 | From $72.2B in 2025, incl. finance leases [1][6]
 ```
 
@@ -58,9 +58,9 @@ Legal costs contained | Charges and verdicts | $2.4B legal charge in Q2; $375M N
 ## Key numbers | Revenue is growing faster than in 2025, but profit and cash flow are falling.
 
 ```metrics
-Revenue | $60.80B @ Q2 2026 | ▲ 28% YoY | up | Q3 guide $61–64B, with FX about a 1% headwind [1]
+Revenue | $60.80B @ Q2 2026 | ▲ 28% YoY | up | Q3 guide $61–64B, with FX about a 1% headwind [1] | us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 Advertising revenue | $59.36B @ Q2 2026 | ▲ 27% YoY | up | Impressions +14%, average price per ad +12% [1]
-Operating margin, GAAP | 31% @ Q2 2026 | ▼ 12 pts YoY | down | $2.4B legal and $1.18B severance charges; 36.8% without them (calc) [1]
+Operating margin, GAAP | 31% @ Q2 2026 | ▼ 12 pts YoY | down | $2.4B legal and $1.18B severance charges; 36.8% without them (calc) [1] | us-gaap:OperatingIncomeLoss / us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 Family of Apps operating income | $23.39B @ Q2 2026 | ▼ 6% YoY (calc) | down | 38.8% margin, from 53.0% (calc) [1]
 Reality Labs operating loss | −$4.62B @ Q2 2026 | 2% wider YoY (calc) | flat | Losses guided similar to 2025's $19.19B [1][6]
 Capex, incl. finance leases | $31.08B @ Q2 2026 | ▲ 83% YoY (calc) | up | H1 2026 $50.92B (calc) [1][3]
@@ -74,13 +74,13 @@ Headcount | 75,472 @ 2026-06-30 | ▼ 1% YoY | down | Includes about 8,000 leavi
 ## Revenue and earnings quality | Growth comes from both more ads and better-paid ads; profit is muddied by one-offs.
 
 ```chart bar "Quarterly revenue, $M (Q3-26 guide range; the bar is its midpoint)"
-Q4-24 | 48385
-Q1-25 | 42314
-Q2-25 | 47516
-Q3-25 | 51242
-Q4-25 | 59893
-Q1-26 | 56311
-Q2-26 | 60801
+Q4-24 | 48385 | | | 10-K 0001326801-25-000017 2025-01-30
+Q1-25 | 42314 | | | 10-Q 0001326801-25-000054 2025-05-01
+Q2-25 | 47516 | | | 10-Q 0001628280-25-036791 2025-07-31
+Q3-25 | 51242 | | | 10-Q 0001628280-25-047240 2025-10-30
+Q4-25 | 59893 | | | 10-K 0001628280-26-003942 2026-01-29
+Q1-26 | 56311 | | | 10-Q 0001628280-26-028526 2026-04-30
+Q2-26 | 60801 | | | 10-Q 0001628280-26-050705 2026-07-30
 Q3-26 guide | 62500 | guide | 61,000–64,000
 ```
 

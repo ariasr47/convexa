@@ -15,7 +15,7 @@ Price | $352.72 @ 2026-10-12 | Class A close; 52-week range $239.71–$408.61 [2
 Market cap | $4.37T @ 2026-10-12 | 12,393M diluted shares, all classes, × price (calc) [1][2]
 Net cash | $219.7B @ 2026-06-30 | With SpaceX and private stakes after tax, less debt and preferred (calc) [2]
 P/E, 2026 | 29.8× @ 2026-10-12 | On consensus EPS of $11.82, which leaves out investment gains (calc) [26]
-Operating margin | 34.0% @ Q2 2026 | Google Cloud's was 35.6% (calc) [1]
+Operating margin | 34.0% @ Q2 2026 | Google Cloud's was 35.6% (calc) [1] | us-gaap:OperatingIncomeLoss / us-gaap:Revenues
 Capex guide | $195–205B @ FY2026 | 2025: $91.4B; 2027 to rise significantly [4][8]
 ```
 
@@ -58,11 +58,11 @@ Remedies stay behavioral | Appeals and the ad tech judgment | Both appeals pendi
 ## Key numbers | Revenue and Cloud are accelerating while free cash flow turned negative.
 
 ```metrics
-Revenue | $119.80B @ Q2 2026 | ▲ 24% YoY | up | 23% in constant currency; TTM $445.9B [1][27]
-Operating margin | 34.0% @ Q2 2026 | ▲ 1.6 pts YoY (calc) | up | H1 2026 35.0% (calc); TTM 33.1% includes a $3.5B EC fine and a $2.1B Waymo pay charge [1][4][5]
+Revenue | $119.80B @ Q2 2026 | ▲ 24% YoY | up | 23% in constant currency; TTM $445.9B [1][27] | us-gaap:Revenues
+Operating margin | 34.0% @ Q2 2026 | ▲ 1.6 pts YoY (calc) | up | H1 2026 35.0% (calc); TTM 33.1% includes a $3.5B EC fine and a $2.1B Waymo pay charge [1][4][5] | us-gaap:OperatingIncomeLoss / us-gaap:Revenues
 Google Cloud revenue | $24.77B @ Q2 2026 | ▲ 82% YoY | up | Operating margin 35.6%, from 20.7% a year earlier (calc) [1]
 Cloud backlog | $514B @ 2026-06-30 | ▲ more than $50B QoQ | up | Just over half due within 24 months [2][8]
-Diluted EPS | $9.11 @ Q2 2026 | $6.26 of it from investment gains | up | About $2.85 without them (calc) [1][17]
+Diluted EPS | $9.11 @ Q2 2026 | $6.26 of it from investment gains | up | About $2.85 without them (calc) [1][17] | us-gaap:EarningsPerShareDiluted
 Capex | $44.92B @ Q2 2026 | ▲ 100% YoY (calc) | up | 2026 guide raised to $195–205B from $180–190B [1][8]
 Free cash flow | −$5.86B @ Q2 2026 | TTM $53.3B | down | Operating cash flow $39.1B; no buybacks in H1 2026 [1][3]
 Depreciation | $7.10B @ Q2 2026 | ▲ 42% YoY (calc) | up | Servers are depreciated over six years [1][9]
@@ -72,14 +72,14 @@ Cash and marketable securities | $242.5B @ 2026-06-30 | long-term debt $98.2B | 
 ## Revenue and earnings quality | Cloud now drives the acceleration, and reported profit is swollen by paper gains.
 
 ```chart bar "Quarterly revenue, $M"
-Q3-24 | 88268
-Q4-24 | 96469
-Q1-25 | 90234
-Q2-25 | 96428
-Q3-25 | 102346
-Q4-25 | 113828
-Q1-26 | 109896
-Q2-26 | 119796 | | 119,796
+Q3-24 | 88268 | | | 10-Q 0001652044-24-000118 2024-10-30
+Q4-24 | 96469 | | | 10-K 0001652044-25-000014 2025-02-05
+Q1-25 | 90234 | | | 10-Q 0001652044-25-000043 2025-04-25
+Q2-25 | 96428 | | | 10-Q 0001652044-25-000062 2025-07-24
+Q3-25 | 102346 | | | 10-Q 0001652044-25-000091 2025-10-30
+Q4-25 | 113828 | | | 10-K 0001652044-26-000018 2026-02-05
+Q1-26 | 109896 | | | 10-Q 0001652044-26-000048 2026-04-30
+Q2-26 | 119796 | | 119,796 | 10-Q 0001652044-26-000071 2026-07-23
 ```
 
 Quarterly figures from the earnings releases [5][4][3][1].

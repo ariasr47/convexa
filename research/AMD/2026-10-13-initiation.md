@@ -59,27 +59,27 @@ Capital stays light | Leases, guarantees and stakes signed | $14.0B of data cent
 ## Key numbers | Revenue up 50%, data center more than doubled, and cash still exceeds debt.
 
 ```metrics
-Revenue | $11.54B @ Q2 2026 | ▲ 50% YoY | up | Q3 guide $13.0B ± $0.3B [1]
+Revenue | $11.54B @ Q2 2026 | ▲ 50% YoY | up | Q3 guide $13.0B ± $0.3B [1] | us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 Data center revenue | $6.72B @ Q2 2026 | ▲ 107% YoY | up | 58% of revenue; 31.3% segment operating margin (calc) [1][3]
 Gross margin, non-GAAP | 56% @ Q2 2026 | ▲ 13 pts YoY | up | GAAP 54%; Q2 2025 carried an $800M MI308 export charge [1]
-Operating margin, GAAP | 17.3% @ Q2 2026 | from −1.7% (calc) | up | Non-GAAP 26.8% [1]
-EPS, GAAP diluted | $1.38 @ Q2 2026 | ▲ 156% YoY | up | Non-GAAP $1.66; GAAP includes $483M of investment gains [1]
+Operating margin, GAAP | 17.3% @ Q2 2026 | from −1.7% (calc) | up | Non-GAAP 26.8% [1] | us-gaap:OperatingIncomeLoss / us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
+EPS, GAAP diluted | $1.38 @ Q2 2026 | ▲ 156% YoY | up | Non-GAAP $1.66; GAAP includes $483M of investment gains [1] | us-gaap:EarningsPerShareDiluted
 Free cash flow | $1.56B @ Q2 2026 | ▲ 32% YoY | up | Capex $808M, from $282M a year earlier [1]
 Cash and short-term investments | $13.11B @ 2026-06-27 | debt $3.23B | flat | $5B revolver undrawn; no commercial paper out [1][2]
 Stock-based pay | $503M @ Q2 2026 | 4.4% of revenue (calc) | up | Counted as a cost in the valuation [1]
-Inventory | $8.47B @ 2026-06-27 | ▲ $0.55B since Dec 2025 (calc) | up | Rising into the Helios ramp [1][3]
+Inventory | $8.47B @ 2026-06-27 | ▲ $0.55B since Dec 2025 (calc) | up | Rising into the Helios ramp [1][3] | us-gaap:InventoryNet
 ```
 
 ## Revenue and earnings quality | Data center turned a flat company into a 50% grower within a year.
 
 ```chart bar "Quarterly revenue, $M"
-Q4-24 | 7658
-Q1-25 | 7438
-Q2-25 | 7685
-Q3-25 | 9246
-Q4-25 | 10270
-Q1-26 | 10253
-Q2-26 | 11536
+Q4-24 | 7658 | | | 10-K 0000002488-25-000012 2025-02-05
+Q1-25 | 7438 | | | 10-Q 0000002488-25-000047 2025-05-07
+Q2-25 | 7685 | | | 10-Q 0000002488-25-000108 2025-08-06
+Q3-25 | 9246 | | | 10-Q 0000002488-25-000166 2025-11-05
+Q4-25 | 10270 | | | 10-K 0000002488-26-000018 2026-02-04
+Q1-26 | 10253 | | | 10-Q 0000002488-26-000076 2026-05-06
+Q2-26 | 11536 | | | 10-Q 0000002488-26-000123 2026-08-05
 Q3-26 guide | 13000 | guide | 13,000 ± 300
 ```
 

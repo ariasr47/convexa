@@ -15,7 +15,7 @@ Price | $541.15 @ 2026-10-12 | Close; 52-week range $349.20–$553.72 [27][31]
 Market cap | $4.03T @ 2026-10-12 | 7,443M diluted shares × price (calc) [1]
 Net debt | $30.0B @ 2026-06-30 | Debt and finance leases less cash, before investments (calc) [4][5]
 Forward P/E | 27.4× @ 2026-10-12 | On FY2027 consensus EPS of $19.76 [29]
-Operating margin | 46.8% @ FY2026 | GAAP; 37.0% in FY2020 (calc) [7][22]
+Operating margin | 46.8% @ FY2026 | GAAP; 37.0% in FY2020 (calc) [7][22] | us-gaap:OperatingIncomeLoss / us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 Capex incl. finance leases | $145.3B @ FY2026 | 44% of revenue; FQ1-27 guide above $50B (calc) [2][11][13][15]
 ```
 
@@ -61,7 +61,7 @@ Balance sheet stays Aaa | Moody's rating | Aaa, stable, affirmed Aug 21, 2026 | 
 ```metrics
 Revenue | $90.0B @ FQ4-26 | ▲ 18% YoY | up | FY2026 $331.8B; FQ1-27 guide $89.85–90.95B [1][2]
 Azure growth | 43% @ FQ4-26 | ▲ 4 pts YoY | up | Azure passed $100B in FY2026; FQ1-27 guide ~45% in constant currency [1][9][16]
-Operating margin, GAAP | 46.8% @ FY2026 | ▲ 1.2 pts YoY | up | FY2027 guide: down less than a point (calc) [2][7]
+Operating margin, GAAP | 46.8% @ FY2026 | ▲ 1.2 pts YoY | up | FY2027 guide: down less than a point (calc) [2][7] | us-gaap:OperatingIncomeLoss / us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
 EPS, adjusted diluted | $17.28 @ FY2026 | ▲ 22% YoY | up | GAAP $17.95 includes $0.67 of OpenAI gains [1]
 Capex incl. finance leases | $41.0B @ FQ4-26 | ▲ 69% YoY | up | FQ1-27 guide above $50B; FY2026 $145.3B (calc) [2][16]
 Free cash flow | $67.0B @ FY2026 | ▼ 6% YoY | down | Operating cash less cash capex; $28.1B of finance leases not deducted (calc) [6]
@@ -73,14 +73,14 @@ Cash and short-term investments | $76.8B @ 2026-06-30 | debt $40.3B, finance lea
 ## Revenue and earnings quality | Revenue grew 18% in FY2026; GAAP profit was flattered by gains on AI stakes.
 
 ```chart bar "Quarterly revenue, $M (fiscal year ends June 30)"
-FQ1-25 | 65585
-FQ2-25 | 69632
-FQ3-25 | 70066
-FQ4-25 | 76441
-FQ1-26 | 77673
-FQ2-26 | 81273
-FQ3-26 | 82886
-FQ4-26 | 90007
+FQ1-25 | 65585 | | | 10-Q 0000950170-24-118967 2024-10-30
+FQ2-25 | 69632 | | | 10-Q 0000950170-25-010491 2025-01-29
+FQ3-25 | 70066 | | | 10-Q 0000950170-25-061046 2025-04-30
+FQ4-25 | 76441 | | | 10-K 0000950170-25-100235 2025-07-30
+FQ1-26 | 77673 | | | 10-Q 0001193125-25-256321 2025-10-29
+FQ2-26 | 81273 | | | 10-Q 0001193125-26-027207 2026-01-28
+FQ3-26 | 82886 | | | 10-Q 0001193125-26-191507 2026-04-29
+FQ4-26 | 90007 | | | 10-K 0001193125-26-323660 2026-07-29
 FQ1-27 guide | 90400 | guide | 89,850–90,950
 ```
 

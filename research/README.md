@@ -79,7 +79,7 @@ cells take **bold**, _italic_, links and `[n]` source references. Write `\|` for
 | `strip`               | `label \| value @ as-of \| sub \| concept (optional)`                                            | The header strip of figures                                           |
 | `tldr`                | `figure \| sentence` (1–4 rows)                                                                  | The 30-second summary                                                 |
 | `metrics`             | `label \| value @ as-of \| delta \| up/down/flat \| note [n] \| concept (optional)`              | Figure tiles                                                          |
-| `chart bar "Caption"` | `label \| number \| approx/guide (optional) \| shown text (optional)`                            | A column chart (negatives hang below zero); the last plain bar is lit |
+| `chart bar "Caption"` | `label \| number \| approx/guide (optional) \| shown text (optional) \| filing (optional)`       | A column chart (negatives hang below zero); the last plain bar is lit |
 | `split "Caption"`     | `label \| number \| detail (optional)`                                                           | One bar cut into shares of its total                                  |
 | `compare "Caption"`   | `label \| number \| shown text \| emph (optional)`                                               | Horizontal bars on one scale                                          |
 | `bridge "Caption"`    | `label \| number`: first and last rows are totals, the rest signed steps                         | A walk from one total to another                                      |
@@ -161,6 +161,16 @@ terminal_roc` of profit (`terminal_roc` defaults to `terminal_wacc`: no excess r
   `margin_y1`, and the fields `margin_year` (default 5), `nol`, `terminal_tax`, `terminal_roc`, `traded`,
   `third_party`, `sensitivity`, `odds`, `why`, `uncertainty` and `uncertainty_why` are optional.
 
+### A bar's filing
+
+A `chart` row's fifth cell names the filing that reported the bar: its form, then its accession number,
+its filed date, or both (`10-Q 0001045810-26-000075`, `10-K 2026-02-25`). The chart then shows a
+"Filed" lane above the bars with the form over each bar, and its table lists every filing. Leave it
+empty for a guide or for a figure no one filing reported; write the cells it skips as empty
+(`Q2 FY27 | 96221 | | | 10-Q 0001045810-26-000075`). Forms: 10-Q, 10-K, 20-F, 40-F, 6-K, 8-K, S-1, F-1
+or 424B4, each optionally `/A`. A quarterly figure's filing is the 10-Q that first reported it; a fourth
+quarter's is the 10-K for its year; a non-GAAP figure's is the results 8-K that stated it.
+
 ## Figures against the filing
 
 A `strip` or `metrics` figure can name its XBRL concept in a last cell. The note page then shows it
@@ -183,8 +193,14 @@ Guarantees | $108.5B @ 2026-07-26 | | flat | [2] | none
 - **A known difference** is explained after `;` in the same cell, like
   `us-gaap:OperatingIncomeLoss / us-gaap:Revenues; as reported in the 8-K`. The page still shows both
   values; the check then passes.
-- 10-Q cash-flow statements tag year-to-date amounts, not the quarter, so a quarterly cash-flow figure
-  reads "Not tagged in the filing"; cite the filing (`none`) or date it as the year to date.
+- **Units.** A `$` figure is US dollars: it is compared only with a value tagged in `USD` (or `USD/shares`
+  per share). A filer that tags only its own currency (TWD, EUR) reads "units differ" against it.
+- **Which filings.** The check reads the two newest periodic filings (10-Q, 10-K, 20-F, 40-F; never an
+  amendment), the same two the note page reads. A figure from an older filing, such as last year's
+  10-K once two 10-Qs have followed it, is listed as not checked, not failed.
+- **Quarterly cash flow.** A 10-Q's cash-flow statement tags year-to-date amounts, and neither check
+  keeps a six- or nine-month span. A Q1 figure checks as it is (the year to date is the quarter); for a
+  Q2 or Q3 cash-flow figure (operating cash flow, capex, free cash flow) cite the filing with `none`.
 
 The check reads only saved SEC company-facts answers, never EDGAR itself: save
 `https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json` as `research/_filings/<TICKER>.json`.
