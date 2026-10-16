@@ -6,7 +6,7 @@ This is a single **Nx 23 polyglot monorepo** (the Convexa backend + web frontend
 
 Tests are risk-based. Write a test only for logic that can fail silently and cost something: money, auth, data writes, parsers and contracts. Write no test per change, and no tests of UI, copy, styling or snapshots. This overrides superpowers:test-driven-development. Retire a test by deleting it and adding a RETIRED: line. Prove your work with the local verify command. CI runs only in this repository's CI mode. Never add a CI job, matrix leg or cron without stating its monthly minutes.
 
-**Verify:** `npm run verify`; pre-push hook `tools/hooks/pre-push` (install: `git config core.hooksPath tools/hooks`).
+**Verify:** `npm run verify`; pre-push hook `tools/hooks/pre-push` (install: `git config core.hooksPath tools/hooks`). Both run gitleaks over the new commits and fail without it (`brew install gitleaks`); reviewed historical matches live in `.gitleaksignore`.
 **CI mode:** off (owner, 2026-10-15, cost). GitHub Actions is disabled in the repository settings, so no workflow can run, not even on dispatch; the workflow files stay as the record of what CI was (manual: `workflow_dispatch`, supply-chain also `workflow_call`). Dependabot is off too: `.github/dependabot.yml` is removed (restore it from git history), and Dependabot alerts and security updates are off in the settings. Restore Actions: `gh api -X PUT repos/ariasr47/convexa/actions/permissions -F enabled=true`. RETIRED: lines go in `.spire/clusters/tech/state/RETIRED.md`.
 
 ## Nx guidance

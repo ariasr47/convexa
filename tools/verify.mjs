@@ -53,6 +53,16 @@ console.log(`[verify] base ${base}; ${changed.length} changed file(s)`);
 // writes nothing itself (apps/api/tests/api_contract_gate_isolation.rs). Build them first, as CI does,
 // so a change to libs/api is never checked against stale declarations.
 let status = run('npx', ['tsc', '-p', 'libs/api/tsconfig.lib.json', '--pretty', 'false']);
+// Secrets (audit 2026-10-15, W-A01): the commits since the base, with the repo's .gitleaks.toml and
+// .gitleaksignore. The pre-push hook runs the same scan; with Actions off these are the only two.
+const gitleaks = spawnSync('gitleaks', ['version'], { stdio: 'ignore' });
+if (gitleaks.status === 0) {
+  status =
+    run('gitleaks', ['git', '--no-banner', '--redact', `--log-opts=${base}..HEAD`, '.']) || status;
+} else {
+  console.log('[verify] gitleaks is not installed (brew install gitleaks): secret scan FAILED');
+  status = 1;
+}
 // No .env: run tests the way CI does. A developer .env (real AI keys, live settings) changes what
 // hermetic tests see; five recommendation key-resolution tests failed locally for that reason alone.
 status = run('npx', nxArgs, { NX_NO_CLOUD: 'true', NX_LOAD_DOT_ENV_FILES: 'false' }) || status;

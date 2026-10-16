@@ -13,3 +13,35 @@
 # Baseline report run_key: the same deterministic public identity, using the artifact subject set.
 # This does not permit arbitrary API keys in this report or elsewhere under docs/.
 2211d829e9315077ca26fedd5a6441580be08c1c:docs/backend-atlas/evidence/ci-policy-baseline-8932fc1.json:generic-api-key:1
+
+# Full-history scan 2026-10-15 (audit W-A01): every remaining match reviewed by hand, values never printed.
+# 2026-10-08 RECONCILIATION.md: a test path and name in a CSV row, no credential.
+8a7c1e2a0038c692a2171ecba794895bba3cfff2:docs/testing/2026-10/areas/RECONCILIATION.md:generic-api-key:19
+# 2026-08-23 SPEC.md: prose (a test name after "credentials,"), no credential.
+25cf5943b11651221d66049571434064e241f0ae:.spire/clusters/tech/contracts/_archive/api-contract-generation/SPEC.md:generic-api-key:77
+# 2026-08-11 MUI_KIT_KEYS.md: a public Figma community-library identifier (Material UI for Figma), not a credential.
+de81a4993fb3e05fc4dfae2ee70b68fe515f6c79:.spire/clusters/tech/contracts/_archive/convexa-redesign/MUI_KIT_KEYS.md:generic-api-key:4
+# 2026-08-11 QA_REPORT.md: prose quoting dummy keyless-boot values (dummy-verify, sk-dummy).
+de81a4993fb3e05fc4dfae2ee70b68fe515f6c79:.spire/clusters/tech/contracts/_archive/rebrand-convexa/QA_REPORT.md:generic-api-key:4
+# 2026-08-05 test_validation_error_no_body_echo.py: a sentinel fake key in a retired Python test.
+333799a559b1ec439eede8a1585d79fb09a7f705:apps/api/tests/test_validation_error_no_body_echo.py:generic-api-key:37
+# 2026-08-05 test_validation_error_no_body_echo.py: a sentinel fake key in a retired Python test.
+333799a559b1ec439eede8a1585d79fb09a7f705:apps/api/tests/test_validation_error_no_body_echo.py:generic-api-key:38
+# 2026-08-05 test_broker_instrument_probe.py: a fake key in a retired Python test.
+43b66c8de01d4898e60df97f69483e0234ac81ea:apps/api/tests/test_broker_instrument_probe.py:generic-api-key:28
+# 2026-08-02 test_broker_credential_endpoints.py: a fake key in a retired Python test.
+dc3110ea25d20bdee737fab736809835a162c11d:apps/api/tests/test_broker_credential_endpoints.py:generic-api-key:101
+# 2026-08-02 test_broker_capture_sanitize.py: a fake key in a retired Python test.
+75d27a45aaf63db097aaeebb34c48d574006d83d:apps/api/tests/test_broker_capture_sanitize.py:generic-api-key:19
+# 2026-07-02 main.py: the dev test account password default in the retired Python API (see audit W-F18).
+c93dddc0283fea53d26be5f5222690bb63669207:apps/api/main.py:generic-api-key:587
+# 2026-07-02 testSeed.ts: the dev test account password default (see audit W-F18).
+c93dddc0283fea53d26be5f5222690bb63669207:apps/dashboard/src/app/positions/testSeed.ts:generic-api-key:28
+# 2026-06-30 MUI_KIT_KEYS.md: a public Figma community-library identifier (Material UI for Figma), not a credential.
+c722dd7328a96a18e13e8066575f417d67a35b83:.claude/contracts/convexa-redesign/MUI_KIT_KEYS.md:generic-api-key:4
+# 2026-06-29 RESUME.md: prose quoting dummy keyless-boot values.
+40300ae020986d6cee32fbd39874041b2c4379ed:.claude/RESUME.md:generic-api-key:28
+# 2026-06-29 QA_REPORT.md: prose quoting dummy keyless-boot values (dummy-verify, sk-dummy).
+27f74e4ca4d11403c9d49e610f77a36f7e9288ab:.claude/contracts/_archive/rebrand-convexa/QA_REPORT.md:generic-api-key:4
+# 2026-06-18 .env: the Massive API key committed in 1aac13ec; rotated 2026-09-10 and no longer accepted (DECISION_LEDGER.md:1246).
+1aac13ec7b1484d366790d621158d078ca747a95:apps/api/.env:generic-api-key:1
