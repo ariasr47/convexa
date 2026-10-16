@@ -55,8 +55,9 @@ pub(crate) const SHOWN: usize = 8;
 pub(crate) const FILING_DAYS: i64 = 45;
 pub(crate) const INDEX_MAX_BYTES: usize = 64 * 1024;
 pub(crate) const INFO_TABLE_MAX_BYTES: usize = 64 * 1024 * 1024;
-/// How long a ticker answer waits on the quarter's 13F read (a cold read is ~50 requests through
-/// the SEC gate and keeps going in the background).
+/// The longest a ticker answer waits on the quarter's 13F read (a cold read is ~50 requests
+/// through the SEC gate and keeps going in the background). Less when the SEC part's deadline is
+/// nearer.
 pub(crate) const WAIT: Duration = Duration::from_secs(2);
 
 // ---- quarters -----------------------------------------------------------------------------
@@ -865,13 +866,14 @@ impl PublicDataService {
     }
 
     /// Fund holdings for one ticker. The quarter's read is shared by every ticker; a cold one runs
-    /// in the background, and this answer waits for it at most `WAIT`.
+    /// in the background, and this answer waits for it at most `wait` (`WAIT` or less).
     pub(crate) async fn holders_part(
         &self,
         sec: &Http,
         ticker: &str,
         facts: Option<&CompanyFacts>,
         today: NaiveDate,
+        wait: Duration,
     ) -> Holders {
         use super::types::SourceState;
         let Some(facts) = facts else {
@@ -893,7 +895,7 @@ impl PublicDataService {
         let (quarter, prior, open) = quarters(today);
         let this = self.clone();
         let sec = sec.clone();
-        let read = super::within(WAIT, async move {
+        let read = super::within(wait, async move {
             this.inner
                 .thirteen_f
                 .get(quarter, || this.read_quarter(&sec, quarter, prior, open))

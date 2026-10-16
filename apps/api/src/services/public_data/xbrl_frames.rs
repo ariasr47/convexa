@@ -31,7 +31,8 @@ pub(crate) const MIN_PEERS: usize = 4;
 /// A quarter is tried once this many days have passed since it ended (large filers file within 40
 /// days; until enough have, the quarter before is shown).
 pub(crate) const QUARTER_LAG_DAYS: i64 = 20;
-/// How long a ticker answer waits on the frames (five requests per quarter, shared by every note).
+/// The longest a ticker answer waits on the frames (five requests per quarter, shared by every
+/// note). Less when the SEC part's deadline is nearer.
 pub(crate) const WAIT: Duration = Duration::from_secs(3);
 
 /// The peer list for each followed note. Stands in for a `peers:` field in the note's front matter
@@ -395,6 +396,7 @@ impl PublicDataService {
         ticker: &str,
         ciks: &HashMap<String, u64>,
         today: NaiveDate,
+        wait: Duration,
     ) -> Option<Peers> {
         let list = peer_list(ticker)?;
         let lookup = |t: &str| ciks.get(&edgar::ticker_key(t)).copied();
@@ -408,7 +410,7 @@ impl PublicDataService {
             .into_iter()
             .map(|(t, c)| (t.to_string(), c))
             .collect::<Vec<_>>();
-        let read = super::within(WAIT, async move {
+        let read = super::within(wait, async move {
             let borrowed: Vec<(&str, Option<u64>)> =
                 peer_ciks.iter().map(|(t, c)| (t.as_str(), *c)).collect();
             let latest = this.quarter_frames(&sec, first).await;

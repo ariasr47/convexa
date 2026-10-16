@@ -503,12 +503,14 @@ impl PublicDataService {
     /// 90-day card) and build the timeline. Rows the budget didn't reach are read in the background
     /// through the same SEC gate, so the next request has more of the year cached. Documents that
     /// fail to read are left out and counted; Form 4s about another issuer's shares are dropped.
+    /// The reads stop at `HISTORY_BUDGET` or at `by` (the SEC part's deadline), whichever is first.
     pub(crate) async fn insider_history(
         &self,
         sec: &super::fetch::Http,
         cik: u64,
         rows: &[SubmissionRow],
         today: NaiveDate,
+        by: tokio::time::Instant,
     ) -> InsiderHistory {
         let year = history_rows(rows, today);
         let within: Vec<&SubmissionRow> = year.iter().take(HISTORY_READ_LIMIT).copied().collect();
@@ -518,7 +520,7 @@ impl PublicDataService {
         };
         let budget = Budget {
             new_reads: HISTORY_NEW_READS,
-            deadline: tokio::time::Instant::now() + HISTORY_BUDGET,
+            deadline: (tokio::time::Instant::now() + HISTORY_BUDGET).min(by),
         };
         let got = read_within_budget(
             &within,

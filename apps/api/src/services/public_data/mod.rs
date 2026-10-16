@@ -49,9 +49,13 @@ const HOUR: Duration = Duration::from_secs(3600);
 /// live for hours, so serving them a little longer costs nothing.
 const RETRY_AFTER_FAILURE: Duration = Duration::from_secs(600);
 const SEC_SPACING: Duration = Duration::from_millis(200);
-/// The longest a ticker answer waits on SEC EDGAR (the cold 90-day card, the year's budgeted
-/// Form 4s and the company facts fit inside it at one request per 200 ms).
+/// The longest a ticker answer waits on SEC EDGAR. The core reads (the cold 90-day card and the
+/// company facts) fit inside it at one request per 200 ms; the secondary sections get what is left.
 const SEC_PART_BUDGET: Duration = Duration::from_secs(10);
+/// Kept back at the end of the SEC part for building the answer after its last wait (no I/O).
+/// The secondary sections (the year's insider history, 13F holders, peers) stop waiting this long
+/// before the part's deadline, so they can never cost the part its core answer.
+const SEC_PART_MARGIN: Duration = Duration::from_millis(300);
 const FINRA_DAILY_CONCURRENCY: usize = 4;
 
 /// Uppercase and validate one ticker: 1–10 of `A–Z . -`, starting with a letter.
@@ -903,10 +907,11 @@ impl PublicDataService {
     /// time. The read runs as its own task, so on a cold cache it keeps going after the answer and
     /// the next request finds the filings, Form 4s and facts cached (W1-02).
     async fn sec_part_within(&self, ticker: &str, budget: Duration) -> SecPart {
+        let deadline = tokio::time::Instant::now() + budget;
         let this = self.clone();
         let owned = ticker.to_string();
-        let task = tokio::spawn(async move { this.sec_part(&owned).await });
-        let mut part = match tokio::time::timeout(budget, task).await {
+        let task = tokio::spawn(async move { this.sec_part(&owned, deadline).await });
+        let mut part = match tokio::time::timeout_at(deadline, task).await {
             Ok(Ok(part)) => part,
             // Timed out (the task keeps reading in the background), or the task failed.
             _ => {
@@ -934,7 +939,10 @@ impl PublicDataService {
         part
     }
 
-    async fn sec_part(&self, ticker: &str) -> SecPart {
+    /// The SEC part. Core reads first (filings, the 90-day Form 4s, company facts); then the
+    /// secondary sections, each waiting at most until `deadline` less `SEC_PART_MARGIN`.
+    async fn sec_part(&self, ticker: &str, deadline: tokio::time::Instant) -> SecPart {
+        let secondary_by = deadline.checked_sub(SEC_PART_MARGIN).unwrap_or(deadline);
         let sec = match &self.inner.sec {
             SecAccess::Ready(http) => http,
             other => {
@@ -1034,6 +1042,40 @@ impl PublicDataService {
                 "{unread} Form 4 document(s) could not be read and are not counted."
             ));
         }
+        // Company facts are core (figures, revenue, shares): read before the secondary sections.
+        let facts = self.company_facts(sec, cik).await;
+        let facts_value = facts.cached().and_then(|c| c.value.as_ref().clone());
+        let mut periodic = edgar::periodic_filings(&rows.value, facts_value.as_ref());
+        filed_figures::attach(&mut periodic, facts_value.as_ref());
+        let annual_revenue = facts_value
+            .as_ref()
+            .map(filed_figures::annual_revenue)
+            .unwrap_or_default();
+        let shares_outstanding = facts_value.as_ref().and_then(edgar::shares_outstanding);
+
+        // Secondary sections, bounded by the part's deadline. The history reads first (its
+        // reads are this request's own); holders and peers wait on shared background reads,
+        // together, with whatever time is left.
+        let history = self
+            .insider_history(sec, cik, &rows.value, today, secondary_by)
+            .await;
+        let (holders, peers) = tokio::join!(
+            self.holders_part(
+                sec,
+                ticker,
+                facts_value.as_ref(),
+                today,
+                wait_until(edgar_13f::WAIT, secondary_by),
+            ),
+            self.peers_part(
+                sec,
+                ticker,
+                &map_copy.value,
+                today,
+                wait_until(xbrl_frames::WAIT, secondary_by),
+            ),
+        );
+
         let insiders = Insiders {
             state: if read == 0 && unread > 0 {
                 DataState::Unavailable
@@ -1049,22 +1091,8 @@ impl PublicDataService {
             shares_bought: summary.shares_bought,
             planned: summary.planned,
             latest: latest.or_else(|| form4.get(edgar::FORM4_READ_LIMIT).map(|row| row.filed)),
-            history: self.insider_history(sec, cik, &rows.value, today).await,
+            history,
         };
-
-        let facts = self.company_facts(sec, cik).await;
-        let facts_value = facts.cached().and_then(|c| c.value.as_ref().clone());
-        let mut periodic = edgar::periodic_filings(&rows.value, facts_value.as_ref());
-        filed_figures::attach(&mut periodic, facts_value.as_ref());
-        let annual_revenue = facts_value
-            .as_ref()
-            .map(filed_figures::annual_revenue)
-            .unwrap_or_default();
-        let shares_outstanding = facts_value.as_ref().and_then(edgar::shares_outstanding);
-        let holders = self
-            .holders_part(sec, ticker, facts_value.as_ref(), today)
-            .await;
-        let peers = self.peers_part(sec, ticker, &map_copy.value, today).await;
 
         SecPart {
             insiders: Some(insiders),
@@ -1182,6 +1210,11 @@ fn source_state_for(state: DataState) -> SourceState {
     }
 }
 
+/// How long a secondary section may wait: its own cap, or less when the part's deadline is nearer.
+fn wait_until(cap: Duration, by: tokio::time::Instant) -> Duration {
+    cap.min(by.saturating_duration_since(tokio::time::Instant::now()))
+}
+
 /// Run `work` as its own task and wait for it at most `budget`. Past that the caller answers
 /// without it while the task keeps going (and fills its cache for the next request).
 pub(crate) async fn within<T: Send + 'static>(
@@ -1220,6 +1253,32 @@ mod tests {
             .collect::<Vec<_>>()
             .join(",");
         assert!(parse_ticker_list(Some(&thirty_one)).is_err());
+    }
+
+    #[tokio::test]
+    async fn secondary_sections_never_wait_past_the_sec_part_deadline() {
+        use tokio::time::Instant;
+        let second = Duration::from_secs(1);
+        // Far deadline: each section's own cap.
+        let far = Instant::now() + Duration::from_secs(60);
+        assert_eq!(wait_until(edgar_13f::WAIT, far), edgar_13f::WAIT);
+        assert_eq!(wait_until(xbrl_frames::WAIT, far), xbrl_frames::WAIT);
+        // Near deadline (a cold core read used most of the budget): only what is left.
+        let near = Instant::now() + second;
+        let wait = wait_until(xbrl_frames::WAIT, near);
+        assert!(wait <= second && wait > second / 2, "{wait:?}");
+        // Passed deadline: no wait at all, so the core answer still makes the budget.
+        let passed = Instant::now();
+        assert_eq!(wait_until(edgar_13f::WAIT, passed), Duration::ZERO);
+        // And a bounded wait on a slow section returns by the deadline, not by its cap.
+        let started = Instant::now();
+        let by = started + Duration::from_millis(100);
+        let read = within(wait_until(xbrl_frames::WAIT, by), async {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        })
+        .await;
+        assert!(read.is_none());
+        assert!(started.elapsed() < Duration::from_millis(1000));
     }
 
     #[tokio::test]
