@@ -109,3 +109,16 @@ export const DEMO_NOTE_RESULTS: { ticker: string; date: string; label: string }[
 
 /** The demo's followed names: the six symbols the scenario authors. */
 export const DEMO_FOLLOWED = ['AAPL', 'MSFT', 'NVDA', 'QQQ', 'SPY', 'TSLA'];
+
+/**
+ * The valuation price date of each sample note that carries a discount rate: the four single names
+ * (QQQ and SPY are funds, valued by no note). The Markets page reads the sample 10-year on each date
+ * for its note-rate drift chart, so staging never lists production's notes. Authored sample dates;
+ * NVDA's sits far enough back that its rate has drifted past the review flag, as the board draws.
+ */
+export const DEMO_NOTE_PRICED: { ticker: string; priced: string }[] = [
+  { ticker: 'AAPL', priced: '2026-08-19' },
+  { ticker: 'MSFT', priced: '2026-07-22' },
+  { ticker: 'NVDA', priced: '2026-06-01' },
+  { ticker: 'TSLA', priced: '2026-09-09' },
+];

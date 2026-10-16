@@ -99,3 +99,61 @@ export function servingLastGood(
   if (sourceState != null) return sourceState === 'last_good';
   return sourceNote(detail, source) != null;
 }
+
+/** The curve on `date`, or on the last business day before it with a 10-year (`daily` oldest first). */
+export function curveOn(daily: YieldPoint[], date: string): YieldPoint | null {
+  let found: YieldPoint | null = null;
+  for (const p of daily) {
+    if (p.date > date) break;
+    if (p.t10y !== null) found = p;
+  }
+  return found;
+}
+
+/** `date` less `months` calendar months (a 31st falls back to the month's last day). */
+export function monthsBefore(date: string, months: number): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const first = new Date(Date.UTC(y, m - 1 - months, 1));
+  const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+  first.setUTCDate(Math.min(d, last));
+  return first.toISOString().slice(0, 10);
+}
+
+/** A move under this, in points, reads as "held". */
+const HELD = 0.05;
+
+/**
+ * The curve chart's title: the year's change at the front end (3-month) and the long end (30-year,
+ * or the 10-year when the 30-year is missing), and what that did to the slope. Averaging the
+ * maturities hid a twist: the demo's 3-month fell 0.21 while its average "rose 0.6" (D-11). Null
+ * when either end lacks a value a year apart.
+ */
+export function curveFinding(latest: YieldPoint, ago: YieldPoint | null): string | null {
+  if (!ago) return null;
+  const longKey = latest.t30y !== null && ago.t30y !== null ? 't30y' : 't10y';
+  const change = (k: 't3m' | 't10y' | 't30y') =>
+    latest[k] !== null && ago[k] !== null ? (latest[k] as number) - (ago[k] as number) : null;
+  const front = change('t3m');
+  const long = change(longKey);
+  if (front === null || long === null) return null;
+  const move = (v: number, unit = '') =>
+    Math.abs(v) < HELD
+      ? `held within ${Math.max(0.01, Math.abs(v)).toFixed(2)}${unit}`
+      : `${v > 0 ? 'rose' : 'fell'} ${Math.abs(v).toFixed(2)}${unit}`;
+  const slope = long - front;
+  const shape =
+    Math.abs(slope) < HELD
+      ? Math.abs(front) < HELD
+        ? 'the curve barely moved'
+        : `the whole curve ${front > 0 ? 'rose' : 'fell'} in parallel`
+      : slope > 0
+        ? 'the curve steepened'
+        : 'the curve flattened';
+  const inverts = (p: YieldPoint) => p.t3m !== null && p.t2y !== null && p.t3m > p.t2y;
+  const tail = inverts(latest)
+    ? '; the front still inverts'
+    : inverts(ago)
+      ? '; the front no longer inverts'
+      : '';
+  return `The front end ${move(front, ' points')} in a year while the ${longKey === 't30y' ? '30' : '10'}-year ${move(long)}: ${shape}${tail}`;
+}

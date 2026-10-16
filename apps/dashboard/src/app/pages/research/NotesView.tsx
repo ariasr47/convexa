@@ -19,12 +19,15 @@ import { formatNoteDate } from './format';
 import { NotePublicPanels } from './NotePublicPanels';
 import { useTickerNotes } from './notesData';
 import { NoteView } from './NoteView';
-import { usePublicFilings, usePublicMarkets, usePublicTicker } from './publicData';
+import { usePublicFilings, usePublicTicker } from './publicData';
 import { fomcDays } from './reviewTriggers';
 import type { ResearchNote } from './types';
 import { Panel, StateDot } from './ui';
 
 export { RESEARCH_DISCLAIMER } from './NoteView';
+
+/** FOMC decision days for the review triggers: the Fed's schedule (fomc.ts). */
+const FOMC_DAYS = fomcDays(null);
 
 /** The research column: wider than the standard page column, for the rail, the note and the sidebar. */
 export function ResearchColumn({ children }: { children: React.ReactNode }) {
@@ -183,13 +186,15 @@ export function NotesView({ symbol, slug }: { symbol: string; slug?: string }) {
   const { state, retry } = useTickerNotes(ticker);
   const pub = usePublicTicker(ticker);
   const summary = researchIndex.find((r) => r.ticker === ticker)?.latest ?? null;
-  // The release calendar's review triggers for the newest note: FOMC days (the Fed's schedule, with
-  // the calendar's reading laid over it) and the company's estimated results window.
-  const markets = usePublicMarkets(summary !== null);
+  // The release calendar's review triggers for the newest note: FOMC days and the company's
+  // estimated results window. FOMC days come from the Fed's dated table (fomc.ts), not
+  // /api/public-data/markets: that answer is ~89 KB with no cache headers, and the note would fetch
+  // it on every open only for these dates. A meeting the Fed moves reaches the table when it is
+  // next checked; /research/markets#coming-up shows the move the day the API reads it.
   const results = usePublicFilings([ticker], summary !== null);
   const calendar = useMemo(
-    () => ({ fomc: fomcDays(markets.data?.calendar), windows: results.data?.results ?? [] }),
-    [markets.data, results.data],
+    () => ({ fomc: FOMC_DAYS, windows: results.data?.results ?? [] }),
+    [results.data],
   );
   return (
     <ResearchColumn>

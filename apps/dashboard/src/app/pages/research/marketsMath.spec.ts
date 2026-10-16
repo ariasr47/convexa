@@ -3,6 +3,9 @@
 // holidays fall back to the day before, missing series are skipped, and the flag fires at ±0.25.
 import { describe, expect, it } from 'vitest';
 import {
+  curveFinding,
+  curveOn,
+  monthsBefore,
   noteRates,
   servingLastGood,
   sourceNote,
@@ -83,6 +86,45 @@ describe('which source a stale note is about', () => {
 
   it('matches a name only at a sentence start', () => {
     expect(sourceNote('X Treasury did not answer at 14:10 UTC.', 'Treasury')).toBeNull();
+  });
+});
+
+describe('the curve’s title (D-11)', () => {
+  const pt = (t3m: number, t2y: number, t10y: number, t30y: number | null): YieldPoint => ({
+    date: '2026-10-07',
+    t3m,
+    t2y,
+    t5y: null,
+    t10y,
+    t30y,
+    real10y: null,
+  });
+  it('names a twist instead of averaging it into "rose"', () => {
+    // The demo's year: 3-month 4.36 → 4.15, 30-year 4.70 → 5.41 (an average of +0.6).
+    expect(curveFinding(pt(4.15, 4.6, 5.15, 5.41), pt(4.36, 3.9, 4.31, 4.7))).toBe(
+      'The front end fell 0.21 points in a year while the 30-year rose 0.71: the curve steepened; the front no longer inverts',
+    );
+  });
+  it('reads a held end, a flattening and a parallel move', () => {
+    expect(curveFinding(pt(4.0, 4.1, 4.5, 4.81), pt(3.5, 3.6, 4.5, 4.8))).toBe(
+      'The front end rose 0.50 points in a year while the 30-year held within 0.01: the curve flattened',
+    );
+    expect(curveFinding(pt(4.3, 4.4, 4.6, 4.9), pt(4.0, 4.1, 4.3, 4.6))).toBe(
+      'The front end rose 0.30 points in a year while the 30-year rose 0.30: the whole curve rose in parallel',
+    );
+  });
+  it('falls back to the 10-year without a 30-year, and is null without a year-ago curve', () => {
+    expect(curveFinding(pt(4.0, 4.1, 4.6, null), pt(4.2, 4.3, 4.3, 4.8))).toBe(
+      'The front end fell 0.20 points in a year while the 10-year rose 0.30: the curve steepened',
+    );
+    expect(curveFinding(pt(4.0, 4.1, 4.6, 4.9), null)).toBeNull();
+  });
+  it('finds the curve a month back, on or before the day', () => {
+    expect(monthsBefore('2026-10-07', 1)).toBe('2026-09-07');
+    expect(monthsBefore('2026-03-31', 1)).toBe('2026-02-28');
+    expect(monthsBefore('2026-01-15', 1)).toBe('2025-12-15');
+    expect(curveOn(daily, '2026-10-12')?.date).toBe('2026-10-09');
+    expect(curveOn(daily, '2026-10-06')).toBeNull();
   });
 });
 

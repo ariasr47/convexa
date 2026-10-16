@@ -1,7 +1,14 @@
 import type { PublicCalendar, PublicResultsWindow } from '@convexa/api';
 import { freshness, upcoming } from 'virtual:convexa-research';
 import { describe, expect, it } from 'vitest';
-import { calendarTriggers, FOMC_TRIGGER, fomcDays, withCalendar } from './reviewTriggers';
+import {
+  calendarTriggers,
+  ESTIMATE_TRIGGER,
+  FOMC_TRIGGER,
+  fomcDays,
+  sampleNoteAging,
+  withCalendar,
+} from './reviewTriggers';
 import type { Aging } from './types';
 
 // What goes wrong silently: a valued note that never comes due after the Fed moves the rate, an
@@ -124,6 +131,30 @@ describe('calendarTriggers', () => {
     expect(freshness(withCalendar(aging(), [est]), { today: '2026-10-15' }).state).toBe('current');
   });
 
+  it('estimates past another company’s results the note tracks', () => {
+    // NVDA's note tracks Broadcom's December report; after NVDA's own Nov 17 date it still needs
+    // the estimate, and the lock-up pinned to SPCX's report is not a results date either.
+    const w = [win('NVDA', '2027-02-18', '2027-02-26')];
+    const other = (label: string): Aging['events'][number] => ({
+      kind: 'catalyst',
+      label,
+      when: {
+        text: label,
+        kind: 'month',
+        start: '2026-12-01',
+        end: '2026-12-31',
+        approx: true,
+        label,
+      },
+      resolved: false,
+    });
+    for (const label of ['Broadcom FQ4-26 results', 'Lock-up tranche after Q3 results']) {
+      const n = note({ valued: false, aging: aging([results('2026-11-17'), other(label)]) });
+      const [est] = calendarTriggers({ note: n, today: '2026-11-18', fomc: days, windows: w });
+      expect(est?.label).toBe(ESTIMATE_TRIGGER);
+    }
+  });
+
   it('spans months in the window label and skips a window that is over', () => {
     const n = note({ ticker: 'CRWV', valued: false });
     const [est] = calendarTriggers({
@@ -141,5 +172,58 @@ describe('calendarTriggers', () => {
         windows: [win('CRWV', '2026-10-29', '2026-11-05')],
       }),
     ).toEqual([]);
+  });
+});
+
+describe('sampleNoteAging (staging Coming up, owner ruling 7)', () => {
+  // The scenario: Oct 7, with the sample calendar's FOMC on Oct 28. A sample-only decision on
+  // Oct 15 (not in the Fed's real table) shows that only the scenario's calendar is read.
+  const today = '2026-10-07';
+  const sample = sampleNoteAging({
+    followed: ['AAPL', 'MSFT', 'QQQ', 'TSLA'],
+    noteResults: [
+      { ticker: 'TSLA', date: '2026-10-22', label: 'Q3 results' },
+      { ticker: 'MSFT', date: '2026-10-29', label: 'Q1 FY27 results' },
+    ],
+    calendar: cal([fomc('2026-10-28')]),
+    windows: [win('AAPL', '2026-10-29', '2026-11-02'), win('MSFT', '2026-10-30', '2026-11-03')],
+    today,
+  });
+  const next = (t: string) =>
+    upcoming(sample.find((s) => s.ticker === t)?.aging.events ?? [], today, 70).map((u) => [
+      u.label,
+      u.start,
+      u.date,
+    ]);
+
+  it('gives every sample note the scenario’s FOMC and nothing from the real schedule', () => {
+    expect(next('QQQ')).toEqual([[FOMC_TRIGGER, '2026-10-28', '2026-10-28']]);
+    const only = sampleNoteAging({
+      followed: ['QQQ'],
+      noteResults: [],
+      calendar: cal([fomc('2026-10-15')]),
+      windows: [],
+      today,
+    });
+    expect(upcoming(only[0].aging.events, today, 70).map((u) => u.start)).toEqual(['2026-10-15']);
+  });
+
+  it('keeps a sample date over an estimate, and estimates the rest', () => {
+    expect(next('TSLA')).toEqual([
+      ['Q3 results', '2026-10-22', '2026-10-22'],
+      [FOMC_TRIGGER, '2026-10-28', '2026-10-28'],
+    ]);
+    expect(next('MSFT')).toEqual([
+      [FOMC_TRIGGER, '2026-10-28', '2026-10-28'],
+      ['Q1 FY27 results', '2026-10-29', '2026-10-29'],
+    ]);
+    expect(next('AAPL')).toEqual([
+      [FOMC_TRIGGER, '2026-10-28', '2026-10-28'],
+      [ESTIMATE_TRIGGER, '2026-10-29', '2026-11-02'],
+    ]);
+  });
+
+  it('leaves every sample note current on the scenario day', () => {
+    for (const s of sample) expect(freshness(s.aging, { today }).state).toBe('current');
   });
 });
