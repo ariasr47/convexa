@@ -235,7 +235,7 @@ const gapText = (b) => {
 };
 
 /** An issue is closed when fixed, or when a check could not reproduce it (it says why). */
-const closedIssue = (i) => i.status === 'fixed' || i.status === 'not_reproduced';
+const closedIssue = (i) => i.status === 'fixed' || i.status === 'not_reproduced' || i.status === 'decided';
 /** The issue's state after its env: fixed (commit), partly fixed and what's left, or not reproduced. */
 const issueState = (i) =>
   i.status === 'fixed'
@@ -244,7 +244,9 @@ const issueState = (i) =>
       ? ` · partly fixed${i.commit ? ` ${i.commit}` : ''}; left: ${i.left ?? 'see the card'}`
       : i.status === 'not_reproduced'
         ? ` · not reproduced${i.left ? `: ${i.left}` : ''}`
-        : '';
+        : i.status === 'decided'
+          ? ` · closed by your ruling${i.left ? `: ${i.left}` : ''}`
+          : '';
 
 /** The tracker board. `groups` as for progressBoard. */
 export function trackerBoard(groups) {

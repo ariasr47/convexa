@@ -3,7 +3,6 @@
 // light (production) and states. Renderers live in ./ticker-desk.mjs, ./ticker-tech.mjs, ./ticker-note.mjs.
 // Facts in the specs were read from the shipped app on main (2026-10-14); file:line cites are on main.
 import { TK_CSS, deskProductionBody, deskStagingBody, deskStatesBoardBody } from './ticker-desk.mjs';
-import { DR_CSS, deskReviewBody } from './desk-review.mjs';
 import { TT_CSS, techProductionBody, techStagingBody, techStatesBody } from './ticker-tech.mjs';
 import { TN_CSS, noteProductionBody, noteStagingBody, noteStatesBoardBody } from './ticker-note.mjs';
 
@@ -207,9 +206,8 @@ const NOTE = {
 
 export const ROWS = [
   {
-    key: 'desk', label: 'Ticker desk', css: TK_CSS + DR_CSS, specH: 3528, spec: DESK,
+    key: 'desk', label: 'Ticker desk', css: TK_CSS, specH: 3528, spec: DESK,
     boards: [
-      { id: 'review', title: 'Before → after · for your approval', w: 1440, h: 7200, body: (o) => deskReviewBody(o) },
       { id: 'staging', title: 'Staging · demo account', w: 1440, h: 2811, body: (o) => deskStagingBody(o) },
       { id: 'production', title: 'Production', w: 1440, h: 2939, body: (o) => deskProductionBody(o) },
       { id: 'phone', title: 'Phone · production', w: 390, h: 3532, body: (o) => deskProductionBody(o) },

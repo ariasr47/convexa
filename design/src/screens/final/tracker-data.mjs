@@ -27,28 +27,36 @@ export const OPEN_QUESTIONS = [
   {
     id: 'Q-MOVE-MARKS',
     asked: '2026-10-15',
-    status: 'open',
+    status: 'answered',
+    answered: '2026-10-16',
+    answer: 'Keep: an API deploy clears the “moved from” marks; the date shown is always right.',
     ask: 'Calendar “moved from” marks: is it fine that an API deploy clears them (provisional: yes)?',
     why: 'Wave 1 review W1-26. The marks live in memory; keeping them across deploys needs a database. The date shown is always right; only the “moved from” note resets. Built on the provisional answer.',
   },
   {
     id: 'Q-CLUSTER-MERGE',
     asked: '2026-10-15',
-    status: 'open',
+    status: 'answered',
+    answered: '2026-10-16',
+    answer: 'Keep: identical same-day buys reported by related filers count as one buy.',
     ask: 'Insider clusters: count identical same-day buys reported by related filers as one buy (provisional: yes)?',
     why: 'Wave 1 review W1-31. Stops one trade looking like several insiders buying. Side effect: unrelated insiders buying identical lots at an offering price on the same day also merge. Built on the provisional answer.',
   },
   {
     id: 'Q-SAMPLE-MERGE',
     asked: '2026-10-15',
-    status: 'open',
+    status: 'answered',
+    answered: '2026-10-16',
+    answer: 'Keep: returning staging visitors get new sample alerts merged in by id; their own edits stay.',
     ask: 'Returning staging visitors: merge newly added sample alerts into their saved ones by id (provisional: yes)?',
     why: 'Wave 1 review W1-53. Their own edits and deletions are kept. The same gap leaves an old filled sample order in place until Reset demo data. Built on the provisional answer.',
   },
   {
     id: 'Q-STORED-HERE-WORDS',
     asked: '2026-10-15',
-    status: 'open',
+    status: 'answered',
+    answered: '2026-10-16',
+    answer: '“Stored here” means kept in this browser or on your account (as built); the canon row supersedes answer (6).',
     ask: '“Stored here” means “kept in this browser or your account” (as built), not “this browser only” (as the canon row says)?',
     why: 'Signed-in Risk inputs are stored on the account, and Settings tags them Stored here. Methodology defines the word the wider way, which is the true one; the canon row would need a superseding line.',
   },
@@ -62,28 +70,36 @@ export const OPEN_QUESTIONS = [
   {
     id: 'Q-PEERS-SOURCE',
     asked: '2026-10-15',
-    status: 'open',
+    status: 'answered',
+    answered: '2026-10-16',
+    answer: 'Keep the peer lists in the API (xbrl_frames.rs) for now.',
     ask: 'Peer lists: keep them in the API (as built), or add a peers: field to each note’s front matter (as the Peers card says)?',
     why: 'Notes have no peers field today, so the lists live in xbrl_frames.rs. Moving them is a small change to the notes and the notes tool.',
   },
   {
     id: 'Q-DESK-HIERARCHY',
     asked: '2026-10-16',
-    status: 'open',
+    status: 'answered',
+    answered: '2026-10-16',
+    answer: 'Approved as built (2026-10-16): price, change and verdict first; the chart and every level on the first screen.',
     ask: 'Approve the ticker desk’s new visual hierarchy (Ticker desk row, “Before → after” board), or say what to change?',
     why: 'Built in the 2026-10-16 build round and redrawn on the desk boards; nothing ships until you rule. The board shows the real captures of both builds side by side.',
   },
   {
     id: 'Q-ROW-CLICK',
     asked: '2026-10-16',
-    status: 'open',
+    status: 'answered',
+    answered: '2026-10-16',
+    answer: 'Keep: a click on a row opens its preview, as Enter does; the symbol link and the preview’s desk link navigate.',
     ask: 'Scanner: a click on a row opens its preview (as built), or goes straight to the desk?',
     why: 'Built so mouse and keyboard behave alike (Enter on a row opens the preview). The symbol link and the preview’s “Open the desk” still navigate.',
   },
   {
     id: 'Q-PALETTE-NAMES',
     asked: '2026-10-16',
-    status: 'open',
+    status: 'answered',
+    answered: '2026-10-16',
+    answer: 'None for now: live rows show the symbol; no legal names in capitals, no hand-kept list.',
     ask: '⌘K company names for live tickers: SEC’s legal names (“NVIDIA CORP”), a static list in the repo, or none?',
     why: 'Site check D-13. universe.json lists symbols only; the only name source the API reads is SEC’s company_tickers.json, whose names are legal names in capitals and may not cover the ETFs.',
   },
@@ -182,8 +198,8 @@ export const OPEN_QUESTIONS = [
  * Known issues on built screens, from the checks that found them. `screens` uses the spec cards'
  * labels. `env`: where it shows (staging, production or both).
  * Source D = the site-wide check against the boards, 2026-10-15 (tmp/qa/REPORT-wave2-D.md; the fix
- * round reproduced each before fixing). `status`: open, fixed, partial (`left` says what is) or
- * not_reproduced (`left` says why); `commit` is the fix round's merge. The Wave 1 review's 71 findings
+ * round reproduced each before fixing). `status`: open, fixed, partial (`left` says what is), decided
+ * (closed by an owner ruling; `left` says which) or not_reproduced (`left` says why); `commit` is the fix round's merge. The Wave 1 review's 71 findings
  * (docs/handover/2026-10-15-review-wave1.md) were all fixed in the same round and are not listed here.
  */
 const D = 'Site check · 2026-10-15';
@@ -200,7 +216,7 @@ export const ISSUES = [
   { id: 'D-10', source: D, sev: 'medium', env: 'production', screens: ['Overlays', 'Settings'], status: 'fixed', commit: 'ac817eca', title: 'Log in and signed-out Settings never say sign-ups are closed; disabled Google button looks enabled' },
   { id: 'D-11', source: D, sev: 'medium', env: 'both', screens: ['Research · Markets'], status: 'fixed', commit: '798aef49', title: 'The curve title averages a twist into “rose”' },
   { id: 'D-12', source: D, sev: 'medium', env: 'production', screens: ['Data sources and credits'], status: 'fixed', commit: '7197eee6', title: 'Undated “Updated”, a doubled “Wednesday”, stale daily sources marked Updated, early summary count' },
-  { id: 'D-13', source: D, sev: 'medium', env: 'both', screens: ['Global shell'], status: 'partial', commit: 'ac817eca', left: 'company names for live tickers: no first-party name source (Q-PALETTE-NAMES)', title: '⌘K rows: wall-clock ages on sample data, no company names' },
+  { id: 'D-13', source: D, sev: 'medium', env: 'both', screens: ['Global shell'], status: 'decided', commit: 'ac817eca', left: 'company names for live tickers: none, by your ruling of 2026-10-16 (Q-PALETTE-NAMES)', title: '⌘K rows: wall-clock ages on sample data, no company names' },
   { id: 'D-14', source: D, sev: 'medium', env: 'both', screens: ['Methodology'], status: 'fixed', commit: '7197eee6', title: 'What’s live words disagree with Credits and the board; release schedules missing' },
   { id: 'D-15', source: D, sev: 'medium', env: 'both', screens: ['Methodology'], status: 'fixed', commit: '7197eee6', title: '“Open Scanner” is the primary though production walls the Scanner; the board makes Ticker primary' },
   { id: 'D-16', source: D, sev: 'low', env: 'both', screens: ['Foundations'], status: 'fixed', commit: 'e1062021', title: 'Amber on outlined and text buttons, the avatar and the active nav label (ruling A: make them neutral)' },
