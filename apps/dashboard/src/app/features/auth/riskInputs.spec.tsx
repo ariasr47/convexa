@@ -185,6 +185,35 @@ describe('the account size display reads back to the stored number (D-23)', () =
     expect(validateAccountSize('')).toEqual({ ok: true, value: null }); // clearing stays legal
   });
 
+  it('refuses a thousands group that starts with zero: "0,500" is a decimal comma to someone', () => {
+    const refused = { ok: false, error: C.errorGreaterThanZero };
+    for (const raw of ['0,500', '$0,500', '012,345', '000,001', '00,500.25']) {
+      expect(validateAccountSize(raw), raw).toEqual(refused);
+      expect(validateCap(raw, 'usd', null), raw).toEqual(refused);
+    }
+    expect(validateCap('0,5', 'percent', 25_000)).toEqual(refused);
+    // A real group still reads: the first group is 1–3 digits with no leading zero.
+    expect(validateAccountSize('1,000,000')).toEqual({ ok: true, value: 1_000_000 });
+    expect(validateAccountSize('$100,000.50')).toEqual({ ok: true, value: 100_000.5 });
+  });
+
+  it('refuses every number form but a plain decimal: hex, binary, octal, exponent', () => {
+    const refused = { ok: false, error: C.errorGreaterThanZero };
+    for (const raw of ['0x10', '$0x10', '1e3', '$1e3', '0b11', '0o17', '1_000', '.5', '5.']) {
+      expect(validateAccountSize(raw), raw).toEqual(refused);
+      expect(validateCap(raw, 'usd', null), raw).toEqual(refused);
+    }
+    // In range for a percent cap, so only the strict form keeps these out.
+    for (const raw of ['1e1', '0x5', '0b11']) {
+      expect(validateCap(raw, 'percent', 25_000), raw).toEqual(refused);
+    }
+    expect(validateAccountSize('25000.75')).toEqual({ ok: true, value: 25_000.75 });
+    expect(validateCap('2.5', 'percent', 25_000)).toEqual({
+      ok: true,
+      value: { value: 2.5, unit: 'percent' },
+    });
+  });
+
   it('a stored $25,000 shows as "$25,000" and an untouched Save sends 25000, the same number', async () => {
     const user = userEvent.setup();
     const backend = installAuthBackend({

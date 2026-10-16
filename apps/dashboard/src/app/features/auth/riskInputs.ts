@@ -21,25 +21,34 @@ function grouped(value: number): string {
   return m[1].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (m[2] ?? '');
 }
 
+/** Thousands groups: a first group of 1–3 digits that doesn't start with zero, then `,ddd`s.
+ *  "0,500" is refused, since to someone who writes a decimal comma it means 0.5, not 500. */
+const GROUPED = /^[1-9]\d{0,2}(,\d{3})+(\.\d+)?$/;
+/** The only form `Number()` is ever handed: digits, optionally a point and more digits. Keeps out
+ *  everything else `Number()` accepts: "0x10" (16), "0b11" (3), "0o17", "1e3" (1000), ".5", "". */
+const PLAIN_DECIMAL = /^\d+(\.\d+)?$/;
+
 /**
- * The typed text as the plain number text `Number()` reads, or `null` when it is malformed. A
- * leading `$` (when `dollar`) and thousands commas are accepted, so the field's own display
- * ("$25,000") saves back as the same number. Commas must be real thousands groups: "1,50" is
- * refused rather than read as 150 (a decimal comma would otherwise be off by a hundred).
+ * The typed text as plain decimal text, or `null` when it is malformed. A leading `$` (when
+ * `dollar`) and thousands commas are accepted, so the field's own display ("$25,000") saves back
+ * as the same number. Commas must be real thousands groups: "1,50" is refused rather than read as
+ * 150 (a decimal comma would otherwise be off by a hundred), and so is "0,500".
  */
 function amountText(raw: string, dollar: boolean): string | null {
   let s = raw.trim();
   if (dollar && s.startsWith('$')) s = s.slice(1).trim();
-  if (!s.includes(',')) return s;
-  return /^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s) ? s.replace(/,/g, '') : null;
+  if (s.includes(',')) {
+    if (!GROUPED.test(s)) return null;
+    s = s.replace(/,/g, '');
+  }
+  return PLAIN_DECIMAL.test(s) ? s : null;
 }
 
 /** Empty input clears the field (a legal, independently-clearable action) — never a refusal. */
 export function validateAccountSize(raw: string): ValidationResult<number | null> {
   if (raw.trim() === '') return { ok: true, value: null };
   const text = amountText(raw, true);
-  if (text === null || text === '')
-    return { ok: false, error: RISK_INPUTS_COPY.errorGreaterThanZero };
+  if (text === null) return { ok: false, error: RISK_INPUTS_COPY.errorGreaterThanZero };
   const n = Number(text);
   if (!Number.isFinite(n) || n <= 0)
     return { ok: false, error: RISK_INPUTS_COPY.errorGreaterThanZero };
@@ -56,8 +65,7 @@ export function validateCap(
 ): ValidationResult<PerTradeCap | null> {
   if (raw.trim() === '') return { ok: true, value: null };
   const text = amountText(raw, unit === 'usd');
-  if (text === null || text === '')
-    return { ok: false, error: RISK_INPUTS_COPY.errorGreaterThanZero };
+  if (text === null) return { ok: false, error: RISK_INPUTS_COPY.errorGreaterThanZero };
   const n = Number(text);
   if (!Number.isFinite(n) || n <= 0)
     return { ok: false, error: RISK_INPUTS_COPY.errorGreaterThanZero };
