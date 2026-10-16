@@ -267,10 +267,24 @@ function PositionsBook({ markFeed, lead }: { markFeed: MarkFeed; lead: Positions
             headless-browser pass, not by jsdom, which cannot evaluate container queries) — the SAME
             shape `ReadStrip.tsx:57`'s `minWidth: 140` already carries for its own nested
             `PanelContainer`s. */}
-          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
+          {/* Phone: the two figures share one full-width row instead of two narrow stacked boxes
+              (site check D-23); each keeps a floor, for the container-query reason above. */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'stretch',
+              gap: { xs: '12px', sm: '20px' },
+              flexWrap: 'wrap',
+              width: { xs: '100%', sm: 'auto' },
+            }}
+          >
             <PanelContainer
               data-testid="positions-capital-at-risk"
-              sx={{ maxWidth: 260, minWidth: 160, flexShrink: 0 }}
+              sx={{
+                maxWidth: { xs: 'none', sm: 260 },
+                minWidth: 140,
+                flex: { xs: '1 1 0', sm: '0 0 auto' },
+              }}
             >
               <FigureCell
                 label="Capital at risk"
@@ -282,7 +296,12 @@ function PositionsBook({ markFeed, lead }: { markFeed: MarkFeed; lead: Positions
             </PanelContainer>
             <PanelContainer
               data-testid="positions-net-pl"
-              sx={{ maxWidth: 320, minWidth: 200, flexShrink: 0, ...netPlTintSx(netPl.tint) }}
+              sx={{
+                maxWidth: { xs: 'none', sm: 320 },
+                minWidth: { xs: 140, sm: 200 },
+                flex: { xs: '1 1 0', sm: '0 0 auto' },
+                ...netPlTintSx(netPl.tint),
+              }}
             >
               <FigureCell
                 label="Net P/L (open)"
