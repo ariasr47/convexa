@@ -234,6 +234,18 @@ const gapText = (b) => {
   return clip(m ? t.slice(m.index + m[0].length).replace(/^./, (c) => c.toUpperCase()) : t, 230);
 };
 
+/** An issue is closed when fixed, or when a check could not reproduce it (it says why). */
+const closedIssue = (i) => i.status === 'fixed' || i.status === 'not_reproduced';
+/** The issue's state after its env: fixed (commit), partly fixed and what's left, or not reproduced. */
+const issueState = (i) =>
+  i.status === 'fixed'
+    ? ` · fixed${i.commit ? ` ${i.commit}` : ''}`
+    : i.status === 'partial'
+      ? ` · partly fixed${i.commit ? ` ${i.commit}` : ''}; left: ${i.left ?? 'see the card'}`
+      : i.status === 'not_reproduced'
+        ? ` · not reproduced${i.left ? `: ${i.left}` : ''}`
+        : '';
+
 /** The tracker board. `groups` as for progressBoard. */
 export function trackerBoard(groups) {
   return ({ scheme = 'dark', minHeight = 0 } = {}) => {
@@ -241,7 +253,7 @@ export function trackerBoard(groups) {
     const info = rows.map((r) => {
       const p = rowProgress(r);
       const issues = ISSUES.filter((i) => i.screens.includes(r.label)).sort(
-        (a, b) => (a.status === 'fixed') - (b.status === 'fixed') || SEV_ORDER[a.sev] - SEV_ORDER[b.sev],
+        (a, b) => closedIssue(a) - closedIssue(b) || SEV_ORDER[a.sev] - SEV_ORDER[b.sev],
       );
       return { r, p, issues };
     });
@@ -249,7 +261,7 @@ export function trackerBoard(groups) {
     const byWait = Object.fromEntries(Object.keys(WAITS).map((k) => [k, openItems.filter((b) => waitOf(b) === k).length]));
     const screens = { built: 0, progress: 0, designed: 0 };
     for (const x of info) screens[x.p.status] += 1;
-    const openIssues = ISSUES.filter((i) => i.status !== 'fixed');
+    const openIssues = ISSUES.filter((i) => !closedIssue(i));
     const sevCount = (s) => openIssues.filter((i) => i.sev === s).length;
     const questions = OPEN_QUESTIONS.filter((q) => q.status !== 'answered');
     const answered = OPEN_QUESTIONS.filter((q) => q.status === 'answered');
@@ -266,7 +278,7 @@ export function trackerBoard(groups) {
       </div></div>
       <div class="tile"><span class="h">Known issues open · ${openIssues.length}</span><div class="nums">
         ${['high', 'medium', 'low'].map((s) => row(s, sevCount(s), `<span class="chip sv-${s}">${SEV_WORD[s]}</span>`)).join('')}
-        ${row('fixed', ISSUES.length - openIssues.length, '<span class="none">Fixed</span>')}
+        ${row('fixed', ISSUES.length - openIssues.length, '<span class="none">Fixed or not reproduced</span>')}
       </div></div>
       <div class="tile"><span class="h">Waiting on you</span><div class="nums">
         ${row('q', questions.length, 'Open questions')}
@@ -298,7 +310,7 @@ export function trackerBoard(groups) {
     const group = (g) => {
       const xs = info.filter((x) => g.rows.includes(x.r));
       const nOpen = xs.reduce((a, x) => a + x.p.open.length, 0);
-      const nIss = xs.reduce((a, x) => a + x.issues.filter((i) => i.status !== 'fixed').length, 0);
+      const nIss = xs.reduce((a, x) => a + x.issues.filter((i) => !closedIssue(i)).length, 0);
       const body = xs
         .map(({ r, p, issues }) => {
           const s = STATUS[p.status];
@@ -306,11 +318,11 @@ export function trackerBoard(groups) {
             ? `<ul>${p.open.map((b) => `<li><span class="chip w-${waitOf(b)}">${WAITS[waitOf(b)].word}</span><span class="t">${gapText(b)}${b.ask ? ` <span class="ask">${b.ask}</span>` : ''}</span></li>`).join('')}</ul>`
             : '<span class="none">Nothing open</span>';
           const iss = issues.length
-            ? `<ul>${issues.map((i) => `<li class="${i.status === 'fixed' ? 'fixed' : ''}"><span class="chip sv-${i.sev}">${i.id}</span><span class="t">${i.title}<span class="env">${i.env}${i.status === 'fixed' ? ` · fixed${i.commit ? ` ${i.commit}` : ''}` : ''}</span></span></li>`).join('')}</ul>`
+            ? `<ul>${issues.map((i) => `<li class="${closedIssue(i) ? 'fixed' : ''}"><span class="chip sv-${i.sev}">${i.id}</span><span class="t">${i.title}<span class="env">${i.env}${issueState(i)}</span></span></li>`).join('')}</ul>`
             : '<span class="none">None known</span>';
           return `<tr>
             <td class="name"><strong>${r.label}</strong>${r.spec?.route ? `<span class="route">${r.spec.route}</span>` : ''}</td>
-            <td><span class="st ${s.cls}">${s.word}</span>${bar(p)}<div class="counts">${p.shipped}/${p.total} shipped${issues.some((i) => i.status !== 'fixed') ? ` · ${issues.filter((i) => i.status !== 'fixed').length} issue${issues.filter((i) => i.status !== 'fixed').length === 1 ? '' : 's'} open` : ''}</div></td>
+            <td><span class="st ${s.cls}">${s.word}</span>${bar(p)}<div class="counts">${p.shipped}/${p.total} shipped${issues.some((i) => !closedIssue(i)) ? ` · ${issues.filter((i) => !closedIssue(i)).length} issue${issues.filter((i) => !closedIssue(i)).length === 1 ? '' : 's'} open` : ''}</div></td>
             <td>${items}</td>
             <td>${iss}</td>
           </tr>`;

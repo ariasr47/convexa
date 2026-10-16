@@ -13,7 +13,8 @@
  * (`[theme-token-discipline]`, enforced by `hex-discipline.spec.ts`).
  *
  * Amber-vs-warning rule (binding, proposal §3): brand amber (`gammaAmber`) is FILLED/STRUCTURAL
- * — wordmark, primary actions, active states, the gamma-flip line. A surface that means
+ * — wordmark, the one primary action, active states (the gamma-flip line is neutral since
+ * 2026-10-15: P-15 and ruling A, LEVEL_STROKES.gammaFlip). A surface that means
  * "warning" binds `warning.*` (burnt orange) AND renders an icon/glyph — hue alone never
  * carries "warning". A surface that means "brand/active" binds `primary.*`. Never the old
  * shared-amber ambiguity. Links/info/live status bind `info` (signal — deliberately quieter
@@ -33,7 +34,7 @@ export const panel = '#131A24';
 export const phosphor = '#E9E4D6';
 /** Secondary text / quiet structure. */
 export const steel = '#8A9BB4';
-/** THE brand color, dominant — wordmark, primary actions, active states, the flip line. */
+/** THE brand color, dominant — wordmark, the one primary action, active states. */
 export const gammaAmber = '#F2A93B';
 /**
  * The light-scheme amber. §3 gave `#C9821A`; it MEASURED 2.90:1 against paper (below the 3:1
