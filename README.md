@@ -1,161 +1,136 @@
 # Convexa
 
-**Options dealer-gamma (GEX) analytics — read where price is pinned, where it's repelled, and whether there's an edge right now.**
+**See the dealer positioning behind the price.** Convexa turns a stock's option chain into dealer
+gamma structure (the call and put walls, the gamma flip, the magnet), reads it alongside public
+market data, and gives a risk-first read of the setup. Every trade is simulated.
 
-Convexa turns an equity's option chain into **dealer gamma-exposure (GEX) structure** — call/put walls, the gamma flip, the magnet — then layers volatility context, real-time order flow, and a rule-based read of the current setup. It's built for **longer-dated (~7–45 DTE) swing trading with optional intraday timing**.
+**[Open the full demo →](https://staging.convexa.pages.dev)** · [Live site](https://convexa.pages.dev) ·
+[How we read dealer structure](https://convexa.pages.dev/blog/how-we-read-dealer-structure)
 
-> **Convexa** is the product, the engine, and the codebase. (It's built with a reusable, project-neutral delivery framework — a separate kit.)
+![The Convexa ticker desk on the demo: SPY at $690.62, "+γ long gamma above 683.92", and a structure
+field whose title states its finding, beside the levels that frame it.](design/review/2026-10-16-desk/fs-staging-1280-after.jpg)
 
-> ⚠️ **Disclaimer** — This is a personal project for research and educational use. It is **not financial advice**, and it does **not** place real trades. Its editable portfolio and orders are **simulated (paper)**; the separate broker-holdings path is read-only. Markets are risky; do your own research.
-
-## Try the demo and explore the architecture
-
-- [Open the working portfolio demo](https://0c9f45c7.convexa.pages.dev) — six authored sample symbols, a browser-local paper portfolio, Technical analysis and Research; no account, API key or backend setup required. This exact preview is source `219d73a67b6f7a284172afaa3fc24b1b850e3319`.
-- [Interactive architecture atlas](docs/backend-atlas/index.html) — source-linked system maps, request flows, data ownership and verification evidence. Run `node docs/backend-atlas/serve.mjs`, then open [the local atlas](http://127.0.0.1:4387/).
-- [Demo and verification guide](docs/backend-atlas/README.md) — build modes, hosted QA and the remaining CI/visual-review boundaries. `VITE_DATA_MODE=demo|live` selects the dashboard's data mode at build time; switching a static deployment requires rebuilding.
-
----
-
-## What it does
-
-The live application uses the Rust backend and configured providers. The public demo uses explicitly labeled synthetic data and local services; it does not contact market-data, AI or broker providers.
-
-- **GEX strike profile** — net/call/put gamma by strike, walls, peak gamma, gamma flip (zero-crossing of net GEX), max pain, put/call ratio.
-- **Positioning context** — net DEX, Vol/OI, IV skew, and term structure (contango/backwardation), each surfaced as neutral, unscored reads.
-- **Live order flow** — real-time NBBO mid, spread, signed 5-minute net flow, and a live gamma flip over SSE, with honest live-vs-stale and session-aware status.
-- **Off-exchange / dark-pool context** — off-exchange volume ratio, volume-by-price, and the largest block prints (display-only, never a directional signal).
-- **Rule-based setup read + opportunity score/tier** — a gated, change-aware signal designed to resist over-trading.
-- **AI recommendations** _(optional)_ — an on-demand, risk-first entry recommendation from an LLM, fed a JSON export of the already-computed state and framed by a selectable trader persona. Advisory only; accepting one maps into the paper-sim tracker.
-- **Simulated positions** — a paper-trading portfolio (manual / market / limit fills) with P/L, trend, grouping, and saved views.
-- **Scanner** — a populated multi-symbol screener with URL filters/sort, saved views, structural snapshots and separate price updates.
-- **Broker holdings** — authenticated credential management, read-only holdings/refresh routes and a separate holdings view. The current Rust provider defaults to a deterministic stub; its Webull adapter is a placeholder, not a working live Webull feed.
-- **Technical analysis and Research** — demo ticker views with 60 authored daily bars, indicators and six symbol-specific cases; these local capabilities are unavailable in live mode.
-- **User accounts (live mode)** — email/username + password auth, sessions, and per-user preferences (Google sign-in is wired but disabled until OAuth credentials are configured). Demo uses a local visitor identity.
-
-The four primary destinations are **Scanner** (`/scanner`), **Ticker** (`/ticker/:symbol`), **Positions** (`/positions`) and **Alerts** (`/alerts`), alongside Landing (`/`) and Settings (`/settings`). Ticker-local views use `/ticker/:symbol/technical-analysis` and `/ticker/:symbol/research`. Scanner and Positions require sign-in in live mode and open with the local visitor in demo mode. Operator research remains a separate `/_ops/research` surface.
+> A personal portfolio project, built solo. It is not financial advice and places no real trades:
+> positions and orders are simulated (paper), and a connected brokerage is read-only.
 
 ---
 
-## Tech stack
+## Two sites, one codebase
 
-- **Monorepo:** [Nx](https://nx.dev) 23 (polyglot)
-- **Backend:** Rust · [Axum](https://github.com/tokio-rs/axum) · Tokio · Server-Sent Events · pure Rust quant engine
-- **Frontend:** [React 19](https://react.dev) · [Vite](https://vite.dev) · [MUI](https://mui.com)/Emotion · [Recharts](https://recharts.org) · React Router
-- **Data:** Massive REST/WebSocket for live market data; authored browser-local samples in demo mode
-- **Storage:** browser-local demo state; backend caches, JSON/filesystem stores and Postgres, with optional Redis prices
-- **Contracts and tests:** Rust-generated OpenAPI/TypeScript contracts · Vitest + Testing Library · Playwright · Cargo tests
+| | [Demo](https://staging.convexa.pages.dev) | [Live site](https://convexa.pages.dev) |
+|---|---|---|
+| **What runs** | Every screen: the Scanner, the dealer-structure desk, AI reads, a simulated book, alerts and research | What is free and live: TradingView's daily chart, SEC filings and insider trades, Treasury rates, CFTC futures positioning, Fed liquidity, release calendars and the research notes |
+| **Data** | One authored market day (Oct 7, 2026), in your browser | Real public sources, read by the Rust API; nothing is mocked |
+| **Network** | None: the demo makes zero requests, and an end-to-end check asserts it | The Pages site and its API on Railway |
+| **What it says** | Every figure is tagged *Demo · sample data* | Every panel names its source and how late it is; panels that need a paid options feed say *Not live* and what they would show |
+
+The dealer-structure engine needs a real-time options feed, which costs money a portfolio project
+doesn't spend. Rather than fake it, the live site says so on every panel that would need it, and the
+demo shows the whole product on an authored day.
 
 ---
 
-## Repository layout
+## What's worth a look
 
+**Honest data states, everywhere.** Each panel carries one state word from a closed list (*Updated*,
+*Delayed by source*, *Last good copy*, *Not live*, *Off*, *Sample*…), with its source and timestamp.
+Production mocks nothing; the demo never touches the network. When FINRA's display terms turned out to
+need a credential the project doesn't have yet, FINRA data was switched off with the reason shown,
+rather than shown without permission (`docs/public-data/FINRA-TERMS-2026-10-15.md`).
+
+**A Rust API with a pinned contract.** The Axum API generates its OpenAPI document from the Rust
+types; the TypeScript client is generated from that, and the artifacts' hashes are pinned, so a wire
+change that skips the contract fails the build. Public-data reads use per-source caches that serve a
+*last good copy* when a source fails, polite SEC access (a declared user agent and a request budget),
+and time-bounded reads, so one slow filer can't hold a page.
+
+**Real public data, checked against the filing.** The research notes' figures name the XBRL concept
+they come from; a check compares each against the company's SEC filing (35 of 35 match today). The
+FOMC decisions on the rates chart come from the Fed's own statements, each row citing its URL.
+
+**A WebGL dealer-gamma surface.** The landing's hero is a WebGL2 surface of gamma across strike and
+expiry, with a static projection as its designed fallback, rendering on demand inside a measured frame
+budget, keyboard-operable, and still under reduced motion.
+
+**A design system that drives the build.** The design lives as source (`design/src`): every screen has
+boards for each environment and width plus a spec card listing what's built. A screen tracker is
+generated from those cards, so "what's left" is never a hand-kept list. Binding rules (state words,
+neutral charts, sign never by color alone, one amber primary action per screen) live in
+`.spire/clusters/tech/context/DESIGN_SYSTEM.md`, with every change recorded as a dated amendment.
+
+**Risk-based testing.** Tests exist where a silent failure would cost something: money, dates,
+parsers, data writes, state words, account boundaries. About 3,400 automated tests today (2,053
+front-end, 1,232 Rust, 86 API-client) plus Playwright journeys; in fix rounds, each new test is shown to
+fail without its fix. A web-app audit of 83 practice fields was run against the deployed site, and four of
+its top five fixes shipped.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Browser
+    SPA["React 19 SPA<br/>(Vite, MUI)"]
+    Demo["Demo transport<br/>(authored day, no network)"]
+  end
+  SPA -- live build --> Pages["Cloudflare Pages<br/>/api proxy"]
+  SPA -. demo build .-> Demo
+  Pages --> API["api-rust<br/>(Axum, Tokio)"]
+  API --> PG[("Postgres")]
+  API --> Pub["Public sources<br/>SEC EDGAR · Treasury · CFTC<br/>Fed · BLS · BEA"]
+  API -. off until licensed .-> Feed["Options feed · FINRA"]
+  SPA --> TV["TradingView<br/>daily chart"]
 ```
-apps/
-  api/             Rust/Axum API (analytics, SSE, auth, books)       → :8000
-  dashboard/       React + Vite frontend (demo or live)              → :4200
-  dashboard-e2e/   Playwright browser checks and artifact server
-libs/
-  api/             @convexa/api — typed live/demo client (consumed as source)
-  quant-engine/    Pure Rust analytics (Cargo workspace member)
-archive/api-python/  Archived Python backend
-.spire/clusters/tech/ Shared product memory, contracts and design system
-.claude/ .codex/ .grok/ Host adapters for the delivery framework
-docs/              Design notes and backend-atlas/ interactive documentation
-```
 
-The Vite dev server proxies `/api` to the live backend on port 8000. Demo data stays in the browser and does not use that proxy.
+- **`apps/api`**: Rust (Axum, Tokio), crate `api-rust`: analytics, server-sent events, auth and
+  sessions, the synced paper book, public-data reads and caches. The quant engine is
+  `libs/quant-engine`.
+- **`apps/dashboard`**: React 19, Vite, MUI. One codebase builds both sites: `VITE_DATA_MODE=demo|live`.
+- **`libs/api`**: the typed client, generated from the API's OpenAPI document, plus the in-browser
+  demo transport.
+- **`apps/dashboard-e2e`**: Playwright journeys, including the demo's zero-network check.
+- Deploys: Cloudflare Pages builds `main` (live) and `staging` (demo); Railway runs the API from `main`.
+- Monorepo: Nx 23.
 
 ---
 
-## Getting started
+## Run it locally
 
-### Candidate toolchain status
-
-**Candidate — qualification pending:** Node `24.19.0`, npm `11.17.0`, and Rust `1.98.0`.
-Current accepted selectors remain in force until candidate binding is complete. Install the locked dependency
-graph with `npm ci`. Policy, qualification state, reproduction steps, remediation, and limits live in
-[Supply-chain operations](docs/SUPPLY_CHAIN.md).
-
-### Prerequisites
-
-- **Hosted demo:** a browser; no local toolchain or credentials.
-- **Local browser demo:** the repository's accepted Node/npm selectors (`nvm use` reads `.nvmrc`) and `npm ci`. No Rust server, database or provider key is needed for the frontend-only demo.
-- **Optional live backend and repository-wide checks:** the accepted Rust toolchain through [rustup](https://rustup.rs/). Live market reads require a **Massive API key**; `APP_ENV=prod` also requires configured Postgres and production preflight readiness.
-
-### Install
+Needs Node (see `.nvmrc`) and npm; Rust only for the API.
 
 ```bash
-nvm use          # reads the current accepted .nvmrc selector
-npm ci           # installs the exact package-lock.json graph
-
-# The optional Rust backend is a Cargo workspace member (libs/quant-engine + apps/api).
+npm ci
+VITE_DATA_MODE=demo npm run serve:dashboard   # the demo at http://localhost:4200, no backend
 ```
 
-### Run the browser demo
-
-From PowerShell:
-
-```powershell
-$env:VITE_DATA_MODE = 'demo'
-npm run serve:dashboard
-```
-
-Open [http://localhost:4200](http://localhost:4200). For a static production demo artifact, run `npm run build:dashboard:demo`; output is `apps/dashboard/dist`. Demo persistence uses its own browser-storage namespace.
-
-### Optional live backend configuration
-
-For the live backend, create `apps/api/.env` (gitignored — never commit it). The browser demo does not need this file:
-
-```dotenv
-MASSIVE_API_KEY=your_key_here        # required for live data
-# Optional:
-ANTHROPIC_API_KEY=sk-ant-...         # enables in-app AI recommendations
-AUTH_SESSION_SIGNING_KEY=...         # sessions that survive a backend restart
-AI_KEY_ENCRYPTION_KEY=...            # encrypt stored BYO AI keys
-DATABASE_URL=postgres://...          # multi-instance durable stores (Docker builds enable postgres)
-GOOGLE_CLIENT_ID=...                 # enables "Continue with Google" when set
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=...
-```
-
-`MARKET_DATA_MODE=paused` can start the backend without market-data producers or a Massive key; it refuses market reads and does not populate the browser demo.
-
-### Run with the live backend
-
-```powershell
-$env:VITE_DATA_MODE = 'live'
-npm run dev            # serve backend (:8000) + frontend (:4200) together
-# or individually:
-npm run serve:api       # cargo run -p api-rust --features postgres -- serve
-npm run serve:dashboard
-```
-
-Then open [http://localhost:4200](http://localhost:4200). This path needs the live backend configuration above.
-
-### Test / lint / format / build
+With the API (copy `apps/api/.env.example` to `apps/api/.env` first; public data needs no keys, and
+`MARKET_DATA_MODE=paused` runs without an options feed):
 
 ```bash
-npm run verify           # before a push: affected lint, typecheck and test (+ tool specs if tools changed)
-npm test                 # unit tests (dashboard, @convexa/api, cargo)
-npm run typecheck        # required — Vitest does not typecheck
-npm run lint
-npm run format:check     # scoped Prettier (never bare nx format:write)
-npm run build            # production: Vite minify + cargo --release --features postgres
-npm run build:dev        # unoptimized local builds
-npm run ci               # lint → typecheck → test → build
-npm run graph
+npm run dev            # API on :8000 and the site on :4200
 ```
 
-These repository-wide checks include Rust contract generation/tests; frontend-only demo builds use `npm run build:dashboard:demo`.
+Checks:
 
-Optional pre-push hook (affected lint and typecheck, under a minute): `git config core.hooksPath tools/hooks`.
-CI (`.github/workflows/ci.yml`) is manual: run it from the Actions tab when you want the full set.
+```bash
+npm run verify         # affected lint, typecheck and tests, a secret scan, and the notes' filing check
+npm run typecheck      # Vitest does not typecheck
+git config core.hooksPath tools/hooks   # pre-push: secret scan, lint, typecheck
+```
+
+`npm run verify` and the pre-push hook need [gitleaks](https://github.com/gitleaks/gitleaks). GitHub
+Actions is off for cost; the workflow files stay as the record, and verification runs locally.
 
 ---
 
-## A note on how this is built
+## How it's built
 
-This repo carries a **multi-host delivery system** (Spire Tech): shared product memory under [`.spire/clusters/tech/`](.spire/clusters/tech/) (context, contracts, design system, decision ledger), with host adapters in `.claude/`, `.codex/`, and `.grok/`. Pipeline: design council → plan → backend ‖ frontend → QA, with mechanical gate-checks and runtime interface-conformance. See [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and [`.spire/clusters/tech/context/PROJECT_CONTEXT.md`](.spire/clusters/tech/context/PROJECT_CONTEXT.md).
+Built solo with AI coding agents (Claude Code) working inside a structured delivery process: product
+memory, contracts and the design system live in `.spire/clusters/tech/`; host adapters for each agent
+live in `.claude/`, `.codex/` and `.grok/`. Decisions are dated and append-only; reviews are
+adversarial; nothing ships without its checks passing locally. See `CLAUDE.md` and
+`.spire/clusters/tech/context/PROJECT_CONTEXT.md`.
 
 ## License
 

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Convexa Is Built</title>
+<meta name="description" content="Two sites from one codebase, a Rust API with a pinned contract, data that says where it came from, and a design system that drives the build.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://convexa.pages.dev/blog/how-convexa-is-built">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Convexa">
+<meta property="og:title" content="How Convexa Is Built">
+<meta property="og:description" content="Two sites from one codebase, a Rust API with a pinned contract, data that says where it came from, and a design system that drives the build.">
+<meta property="og:url" content="https://convexa.pages.dev/blog/how-convexa-is-built">
+<meta property="og:image" content="https://convexa.pages.dev/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico">
+<style>
+  /* Curvature Terminal tokens (redesign-stage-1 §4.4) — values single-sourced from
+     apps/dashboard/src/app/shared/theme/tokens.ts (ink/panel/phosphor/steel/gammaAmber/signal);
+     the generator cannot import TypeScript, so the literals are carried here by hand
+     (change tokens.ts -> update these literals and re-run this script).
+     Fonts: the app's self-hosted same-origin faces (/fonts/..., OFL 1.1) — never a CDN. */
+  @font-face { font-family:'IBM Plex Sans'; font-style:normal; font-display:swap; font-weight:400;
+    src:url('/fonts/ibm-plex-sans/ibm-plex-sans-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family:'IBM Plex Sans'; font-style:normal; font-display:swap; font-weight:600;
+    src:url('/fonts/ibm-plex-sans/ibm-plex-sans-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family:'IBM Plex Sans'; font-style:normal; font-display:swap; font-weight:700;
+    src:url('/fonts/ibm-plex-sans/ibm-plex-sans-latin-700-normal.woff2') format('woff2'); }
+  @font-face { font-family:'IBM Plex Mono'; font-style:normal; font-display:swap; font-weight:400;
+    src:url('/fonts/ibm-plex-mono/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family:'Archivo'; font-style:normal; font-display:swap; font-weight:100 900;
+    font-stretch:62% 125%;
+    src:url('/fonts/archivo/archivo-latin-standard-normal.woff2') format('woff2-variations'); }
+  :root { color-scheme: dark; }
+  body { margin:0; background:#0B0F17; color:#E9E4D6; font-size:15px;
+    font-family:'IBM Plex Sans',system-ui,'Segoe UI',Roboto,sans-serif;
+    line-height:1.65; -webkit-font-smoothing:antialiased; }
+  main { max-width:760px; margin:0 auto; padding:48px 22px 80px; }
+  h1, h2, h3 { font-family:'Archivo','IBM Plex Sans',system-ui,sans-serif;
+    font-stretch:112.5%; }
+  h1 { font-size:2.05rem; line-height:1.2; margin:0 0 .2em; letter-spacing:-.01em; }
+  h2 { font-size:1.4rem; margin:2.4em 0 .5em; letter-spacing:-.01em; }
+  h3 { font-size:1.15rem; margin:1.8em 0 .4em; }
+  p { margin:0 0 1.05em; }
+  ul, ol { margin:0 0 1.2em; padding-left:1.25em; }
+  li { margin:.4em 0; }
+  strong { font-weight:650; }
+  code { background:#131A24; border-radius:5px; padding:.08em .35em; font-size:.92em;
+    font-family:'IBM Plex Mono',Consolas,Menlo,monospace; }
+  a { color:#5E8BC4; }
+  blockquote { margin:1.4em 0; padding:.4em 0 .4em 1.1em; border-left:3px solid #8A9BB4;
+    font-size:1.05rem; color:#8A9BB4; font-style:italic; }
+  hr { border:none; border-top:1px solid rgba(138,155,180,0.25); margin:2.4em 0; }
+  figure { margin:1.8em 0; }
+  figure svg { width:100%; height:auto; display:block; }
+  figcaption { margin-top:.5em; text-align:center; font-size:.82rem; color:#8A9BB4; }
+  table { border-collapse:collapse; margin:1.4em 0; width:100%; font-size:.95em; }
+  th, td { border:1px solid rgba(138,155,180,0.25); padding:.5em .7em; text-align:left;
+    vertical-align:top; }
+  th { background:#131A24; font-weight:650; }
+  .backlink { display:inline-block; margin-bottom:1.6em; font-size:.92rem; }
+  @media (max-width:560px) { h1 { font-size:1.7rem; } main { padding:32px 16px 60px; }
+    table { display:block; overflow-x:auto; } }
+</style>
+</head>
+<body>
+<main>
+<a class="backlink" href="/blog">&#8592; All posts</a>
+<h1>How Convexa Is Built</h1>
+<p><em>Two sites from one codebase, a Rust API with a pinned contract, data that says where it came from, and a design system that drives the build.</em></p>
+<hr>
+<h2>What Convexa is</h2>
+<p>Convexa turns a stock's option chain into <strong>dealer gamma structure</strong>: the call and put walls, the gamma flip and the magnet. It reads that structure beside public market data (filings, insider trades, rates, futures positioning) and gives a risk-first read of the setup. Every trade is simulated.</p>
+<p>It is a personal project, built solo. This page is about how it is built: the decisions worth making, and the ones it would have been easy to fake.</p>
+<blockquote>Not investment advice. Positions and orders are paper; a connected brokerage is read-only.</blockquote>
+<hr>
+<h2>Two sites, one codebase</h2>
+<p>The dealer-structure engine needs a real-time options feed, and that feed costs money a portfolio project doesn't spend. So Convexa ships as two builds of the same code:</p>
+<table><thead><tr><th></th><th>Demo</th><th>Live site</th></tr></thead><tbody><tr><td>What runs</td><td>Every screen, on one authored market day</td><td>What is free and live today</td></tr><tr><td>Data</td><td>Authored in the browser</td><td>Real public sources, read by the Rust API</td></tr><tr><td>Network</td><td>None</td><td>The site and its API</td></tr></tbody></table>
+<p>The <a href="https://staging.convexa.pages.dev">demo</a> makes <strong>zero network requests</strong>: an end-to-end check asserts it. The live site mocks <strong>nothing</strong>: where a panel would need the paid feed, it says <em>Not live</em> and what it would show, instead of drawing a plausible-looking number.</p>
+<hr>
+<h2>Data that says where it came from</h2>
+<p>Every panel carries one state word from a closed list (<em>Updated</em>, <em>Delayed by source</em>, <em>Last good copy</em>, <em>Not live</em>, <em>Off</em>, <em>Sample</em>) with its source and when it was read. When a source fails, the API serves its last good copy and says so; it never relabels an old figure as fresh.</p>
+<p>Three examples of what that costs, paid on purpose:</p>
+<ul><li><strong>FINRA.</strong> Short interest and short-sale volume were live, until a read of FINRA's terms showed public display needs a developer credential. The data is now <strong>Off</strong>, with the reason on every card, until the credential exists.</li><li><strong>SEC.</strong> EDGAR asks every program for a contact address and a polite request rate. The API sends one, keeps a request budget, and bounds each read in time, so one slow filer can't hold a page.</li><li><strong>The notes.</strong> Each figure in a research note names the XBRL concept it comes from, and a check compares it with the company's filing: 35 of 35 match. The FOMC decisions on the rates chart come from the Fed's own statements, each row citing its URL.</li></ul>
+<hr>
+<h2>A contract that can't drift</h2>
+<p>The API is Rust (Axum on Tokio). Its OpenAPI document is generated from the Rust types, the TypeScript client is generated from that document, and the generated files' hashes are pinned in the repository. A change to the wire that skips the contract fails the checks.</p>
+<p>Because the site deploys before the API, every new field is optional on the wire and read defensively: an older API simply draws less.</p>
+<hr>
+<h2>A desk that reads in order</h2>
+<p>The ticker desk is built around one question: what should the eye read first? The answer is <strong>the price and the structure verdict</strong>, then <strong>the levels that frame it</strong>, then <strong>supporting context</strong>.</p>
+<p>So the price leads the masthead with its day change, and the verdict reads “+γ long gamma above 683.92”: the sign is in the words, never in the color alone. The main chart's title states its finding (“spot sits 1.0% above the flip”), not the chart's name. On a phone the price now appears at y≈276 instead of y≈605, and the levels are reached about 350 pixels sooner.</p>
+<p>The design lives as source, not as a picture: every screen has boards for each environment and width, and a spec card listing what is built. A screen tracker is generated from those cards, so “what's left” is never a hand-kept list.</p>
+<hr>
+<h2>Tests where a silent failure costs something</h2>
+<p>Tests exist where a quiet bug would cost something: money arithmetic, dates and time zones, parsers of third-party documents, data writes, state words, the boundary between two accounts on one browser. About 3,400 automated tests today, and in fix rounds each new test is shown to fail without its fix.</p>
+<p>What isn't tested: layout, copy and styling. Those are checked by looking, at real widths, in both themes.</p>
+<hr>
+<h2>How the work gets done</h2>
+<p>Convexa is built solo with AI coding agents, inside a process that keeps them honest: product memory, contracts and the design system live in the repository; decisions are dated and append-only; each round of work is reviewed by a second agent whose job is to find what's wrong; nothing ships until its checks pass. The checks run locally (CI is off to keep the project free to run), with a secret scan before every push.</p>
+<p><a href="https://staging.convexa.pages.dev">Open the demo</a> to see the whole desk, or read <a href="/blog/how-we-read-dealer-structure">how we read dealer structure</a> for the method behind it.</p>
+</main>
+</body>
+</html>
