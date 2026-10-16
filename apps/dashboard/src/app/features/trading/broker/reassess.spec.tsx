@@ -51,7 +51,7 @@ describe('buildBrokerReassessment', () => {
 
   it('the modeled figure never travels without its named basis', () => {
     const req = buildBrokerReassessment(spreadView, BOOK_OK_FRESH);
-    expect(req.modeled_pl_dollar).toBe(spreadView.pl_dollar);
+    expect(req.modeled_pl_dollar).toBe(Math.round((spreadView.pl_dollar as number) * 100) / 100);
     expect(req.modeled_pl_basis).toBe('Convexa-modeled');
   });
 
