@@ -44,8 +44,9 @@ export const DATA_STATES: Record<DataStateKey, { word: string; kind: DataStateKi
   demo: { word: 'Demo · sample data', kind: 'dashed' },
   signIn: { word: 'Sign in', kind: 'quiet' },
   thirdParty: { word: 'Live · TradingView', kind: 'dotted' },
-  /** Design LOCAL (design/src/data/states.mjs): kept in this browser or the account, needs no feed.
-   *  Not yet in canon P-2's closed set; an amendment is requested with the Wave 1 lane 4 report. */
+  /** Design LOCAL (design/src/data/states.mjs): your own data, kept here, needs no feed (the
+   *  Settings panels). In P-2's closed set by the owner's answer of 2026-10-15 ("the nine answers",
+   *  question 6). */
   local: { word: 'Stored here', kind: 'solid' },
 };
 

@@ -1,13 +1,14 @@
 /**
  * “What’s live on this site” (#data) and the state words, in the form for this build: production
- * lists the live public sources with how late each is and the options-based reads that are Not
- * live (each linking to the same screen on the demo); staging opens “Nothing: this is the demo.”,
- * lists what each sample is shaped like and links to the live site. Static: no request, no chart.
+ * lists the live public sources with how late each is, the public sources switched off (FINRA, with
+ * the reason) and the options-based reads that are Not live (each linking to the same screen on the
+ * demo); staging opens “Nothing: this is the demo.”, lists what each sample is shaped like in the
+ * demo's own words (“Demo · shaped like …”, as on /credits) and links to the live site. Static: no
+ * request, no chart.
  *
  * Design: design/src/screens/final/shell-site-docs.mjs (liveSection).
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { LIVE_SITE_URL, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
@@ -19,7 +20,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
-import { STAGING_WORDS, STATE_WORDS, WHATS_LIVE } from './copy';
+import { STAGING_WORDS, STATE_WORDS, WHATS_LIVE, type StateWordRow } from './copy';
 
 const P_SX = { m: 0, mb: 1.5, lineHeight: 1.65 } as const;
 
@@ -57,7 +58,7 @@ function Scroll({ children }: { children: ReactNode }) {
   return <Box sx={{ overflowX: 'auto', mb: 2.5 }}>{children}</Box>;
 }
 
-function Words({ words }: { words: readonly (readonly [DataStateKey, string])[] }) {
+function Words({ words }: { words: readonly StateWordRow[] }) {
   return (
     <Box
       component="dl"
@@ -71,10 +72,10 @@ function Words({ words }: { words: readonly (readonly [DataStateKey, string])[] 
         alignItems: 'center',
       }}
     >
-      {words.map(([state, means]) => (
+      {words.map(([state, means, word]) => (
         <Box key={state} sx={{ display: 'contents' }}>
           <Box component="dt" sx={{ pt: { xs: 1, sm: 0 } }}>
-            <DataStateTag state={state} />
+            <DataStateTag state={state} word={word} />
           </Box>
           <Box component="dd" sx={{ m: 0, fontSize: 13.5, color: 'text.secondary' }}>
             {means}
@@ -92,7 +93,9 @@ function Production() {
   return (
     <>
       <Lead parts={c.lead} />
-      <SubHead>{c.liveHead}</SubHead>
+      <SubHead>
+        <DataStateTag state="updated" word={c.liveHead} />
+      </SubHead>
       <Scroll>
         <Table size="small" data-testid="whats-live-live">
           <TableHead>
@@ -114,7 +117,31 @@ function Production() {
         </Table>
       </Scroll>
       <SubHead>
-        {c.offHead} <DataStateTag state="notLive" />
+        <DataStateTag state="off" word={c.switchedOffHead} />
+      </SubHead>
+      <Typography component="p" variant="body2" sx={{ ...P_SX, color: 'text.secondary' }}>
+        {c.switchedOffBody}
+      </Typography>
+      <Scroll>
+        <Table size="small" data-testid="whats-live-switched-off">
+          <TableHead>
+            <TableRow>
+              <TableCell scope="col">What</TableCell>
+              <TableCell scope="col">Source</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {c.switchedOff.map(([what, source]) => (
+              <TableRow key={what}>
+                <TableCell>{what}</TableCell>
+                <TableCell>{source}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Scroll>
+      <SubHead>
+        <DataStateTag state="notLive" word={c.offHead} />
       </SubHead>
       <Scroll>
         <Table size="small" data-testid="whats-live-off">
@@ -175,7 +202,7 @@ function Staging() {
           <TableHead>
             <TableRow>
               <TableCell scope="col">What</TableCell>
-              <TableCell scope="col">Sample</TableCell>
+              <TableCell scope="col">Shaped like</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -183,7 +210,7 @@ function Staging() {
               <TableRow key={what}>
                 <TableCell>{what}</TableCell>
                 <TableCell>
-                  <DataStateTag state="sample" detail={shaped} />
+                  <DataStateTag state="demo" word="Demo" detail={shaped} />
                 </TableCell>
               </TableRow>
             ))}

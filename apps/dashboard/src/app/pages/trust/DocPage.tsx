@@ -8,15 +8,28 @@
  * load of `/privacy#id` scrolls once after mount, because the browser's own attempt ran before this
  * lazy route rendered.
  *
- * Design: design/src/screens/final/trust-pages.mjs (docPage, TR_CSS).
+ * As the boards draw it (D-24, 2026-10-15): the title and section headings are display type
+ * (Archivo, semi-expanded; the h1 32–44px, each h2 24px), and the index marks the section being read
+ * (filled, bold), the first one until a section scrolls under the nav. On a phone the rail scrolls
+ * itself to keep that chip in view.
+ *
+ * Design: design/src/screens/final/trust-pages.mjs (docPage, TR_CSS), v4/docs-dialogs.mjs (.doc).
  */
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 const SCROLL_CLEAR = { xs: 72, md: 80 } as const;
+
+/** Display type for the page's headings (the boards' `.display`). */
+const DISPLAY = {
+  fontFamily: typographyTokens.displayFontFamily,
+  fontStretch: typographyTokens.displayFontStretch,
+  fontWeight: 700,
+  lineHeight: 1.1,
+} as const;
 
 export const linkSx = { color: (t: Theme) => extrasFor(t).textInfo } as const;
 
@@ -50,6 +63,9 @@ export function DocPage({
     };
   }, [docTitle]);
 
+  // The index marks the section being read: the first one in view under the nav.
+  const [current, setCurrent] = useState<string | null>(null);
+
   useEffect(() => {
     if (!window.location.hash) return;
     let id: string;
@@ -59,7 +75,47 @@ export function DocPage({
       return;
     }
     document.getElementById(id)?.scrollIntoView({ block: 'start' });
+    setCurrent(id);
   }, []);
+
+  // Keyed by the ids, not the array: a page may build its index on each render (Privacy's demo form).
+  const tocIds = toc.map(([id]) => id).join(' ');
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const ids = tocIds.split(' ');
+    const visible = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) visible.add(e.target.id);
+          else visible.delete(e.target.id);
+        }
+        const first = ids.find((id) => visible.has(id));
+        if (first) setCurrent(first);
+      },
+      { rootMargin: '-80px 0px -55% 0px' },
+    );
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, [tocIds]);
+  const shownCurrent = current ?? toc[0]?.[0];
+
+  // Keep the current chip in view inside the phone rail; a no-op where the index doesn't overflow.
+  const railRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail || rail.scrollWidth <= rail.clientWidth) return;
+    const chip = rail.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!chip) return;
+    const left = chip.offsetLeft - rail.offsetLeft;
+    const right = left + chip.offsetWidth;
+    if (left < rail.scrollLeft || right > rail.scrollLeft + rail.clientWidth) {
+      rail.scrollLeft = Math.max(0, left - 16);
+    }
+  }, [shownCurrent]);
 
   return (
     <Box
@@ -75,12 +131,14 @@ export function DocPage({
       >
         <Box
           component="nav"
+          ref={railRef}
           aria-label="On this page"
           sx={{
             display: 'flex',
             flexDirection: { xs: 'row', md: 'column' },
             gap: { xs: 1, md: 0.25 },
             overflowX: { xs: 'auto', md: 'visible' },
+            overscrollBehaviorX: 'contain',
             position: { xs: 'static', md: 'sticky' },
             top: { md: SCROLL_CLEAR.md },
             alignSelf: 'start',
@@ -95,6 +153,7 @@ export function DocPage({
               key={id}
               component="a"
               href={`${path}#${id}`}
+              aria-current={shownCurrent === id ? 'true' : undefined}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -109,6 +168,12 @@ export function DocPage({
                 textDecoration: 'none',
                 whiteSpace: 'nowrap',
                 '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
+                '&:focus-visible': { outlineOffset: '-2px' },
+                '&[aria-current="true"]': {
+                  color: 'text.primary',
+                  bgcolor: 'action.selected',
+                  fontWeight: 600,
+                },
               }}
             >
               {label}
@@ -135,8 +200,13 @@ export function DocPage({
             </Typography>
             <Typography
               component="h1"
-              variant="h4"
-              sx={{ fontWeight: 700, letterSpacing: '-0.01em', m: 0, textWrap: 'balance' }}
+              sx={{
+                ...DISPLAY,
+                fontSize: 'clamp(32px, 3.4vw, 44px)',
+                letterSpacing: '-0.02em',
+                m: 0,
+                textWrap: 'balance',
+              }}
             >
               {title}
             </Typography>
@@ -167,9 +237,9 @@ export function H2({ id, children }: { id: string; children: ReactNode }) {
     <Typography
       component="h2"
       id={id}
-      variant="h6"
       sx={{
-        fontWeight: 700,
+        ...DISPLAY,
+        fontSize: 24,
         letterSpacing: '-0.01em',
         m: 0,
         mt: 1.5,

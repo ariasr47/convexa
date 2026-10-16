@@ -51,7 +51,6 @@
  */
 import { SANS_FACE } from '@/shared/figure';
 import { isDemoBuild } from '@/shared/lib/demoSite';
-import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -296,7 +295,10 @@ export function MethodologyPage() {
             tabIndex={-1}
             data-testid="methodology-whats-live"
             data-form={demo ? 'staging' : 'production'}
-            sx={{ scrollMarginTop: SCROLL_CLEAR, '&:focus:not(:focus-visible)': { outline: 'none' } }}
+            sx={{
+              scrollMarginTop: SCROLL_CLEAR,
+              '&:focus:not(:focus-visible)': { outline: 'none' },
+            }}
           >
             <Typography
               component="h2"
@@ -315,7 +317,10 @@ export function MethodologyPage() {
               id={section.id}
               aria-labelledby={headingId(section)}
               tabIndex={-1}
-              sx={{ scrollMarginTop: SCROLL_CLEAR, '&:focus:not(:focus-visible)': { outline: 'none' } }}
+              sx={{
+                scrollMarginTop: SCROLL_CLEAR,
+                '&:focus:not(:focus-visible)': { outline: 'none' },
+              }}
             >
               <Typography
                 component="h2"
@@ -346,35 +351,35 @@ export function MethodologyPage() {
         sx={{ mt: 3 }}
         data-testid="methodology-ctas"
       >
-        <Button
-          component={RouterLink}
-          to="/scanner"
-          variant="contained"
-          data-testid="methodology-cta-scanner"
-          sx={{ minHeight: 44 }}
-        >
-          {METHOD_COPY.ctaScanner}
-        </Button>
+        {/* D-15 / ruling A (2026-10-15): the free Ticker is the one amber primary, as the board
+            draws it; production walls the Scanner behind sign-in, so it is the neutral second.
+            Back to home is a neutral text button. */}
         <Button
           component={RouterLink}
           to="/ticker"
-          variant="outlined"
+          variant="contained"
           data-testid="methodology-cta-ticker"
-          // GATE Z I-2 (AC-G1, color-contrast, serious): outlined-button labels default to
-          // `primary.main` (measured 3.01:1 on `background.default` in light mode) — same
-          // text-grade-amber fix as the landing's `cta-secondary` (F7c, `591e2654`).
-          sx={{ minHeight: 44, color: (theme) => extrasFor(theme).textAmber }}
+          sx={{ minHeight: 44 }}
         >
           {METHOD_COPY.ctaTicker}
         </Button>
         <Button
           component={RouterLink}
+          to="/scanner"
+          variant="outlined"
+          color="inherit"
+          data-testid="methodology-cta-scanner"
+          sx={{ minHeight: 44, borderColor: 'divider' }}
+        >
+          {METHOD_COPY.ctaScanner}
+        </Button>
+        <Button
+          component={RouterLink}
           to="/"
           variant="text"
+          color="inherit"
           data-testid="methodology-cta-home"
-          // GATE Z I-2 (AC-G1, color-contrast, serious): same fix as `methodology-cta-ticker`
-          // above — a `text` variant button also labels itself with `primary.main` by default.
-          sx={{ minHeight: 44, color: (theme) => extrasFor(theme).textAmber }}
+          sx={{ minHeight: 44 }}
         >
           {METHOD_COPY.ctaBack}
         </Button>

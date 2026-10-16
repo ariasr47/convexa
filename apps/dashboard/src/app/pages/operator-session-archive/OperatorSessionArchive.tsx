@@ -1,3 +1,4 @@
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { OpsBar, OpsTag } from '@/shared/ui/OpsBar';
 import Alert from '@mui/material/Alert';
@@ -24,15 +25,40 @@ import { TRIO, type TrioSymbol } from './schedule';
 import { useSessionArchive, type UseSessionArchiveOptions } from './useSessionArchive';
 import type { ArchiveState } from './viewModel';
 
-/** The page's name for assistive tech; the ops bar carries the path. */
-const visuallyHidden = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-} as const;
+/** One of the page's panels: a heading, an optional tag, then its body (the board's hd-p). */
+function Panel({
+  title,
+  tag,
+  testId,
+  children,
+}: {
+  title: string;
+  tag?: React.ReactNode;
+  testId?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card variant="outlined" component="section" aria-label={title} data-testid={testId}>
+      <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1,
+          }}
+        >
+          <Typography component="h2" sx={{ m: 0, fontSize: 15, fontWeight: 700 }}>
+            {title}
+          </Typography>
+          {tag}
+        </Box>
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
 
 const mono = { fontFamily: typographyTokens.monoFontFamily } as const;
 
@@ -337,15 +363,21 @@ export function OperatorSessionArchive(props: OperatorSessionArchiveProps = {}) 
       <OpsBar path="/_ops/research">
         <OpsTag>{COPY.readOnlyChip}</OpsTag>
       </OpsBar>
-      <Typography component="h1" sx={visuallyHidden}>
-        {COPY.appBar}
-      </Typography>
+      <Container component="main" maxWidth="lg" sx={{ pt: 3.5, pb: 6 }}>
+        <Stack spacing={2.25} sx={{ maxWidth: 900 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <Typography component="h1" sx={{ m: 0, fontSize: { xs: 26, sm: 32 }, fontWeight: 700 }}>
+              {COPY.title}
+            </Typography>
+            <Typography sx={{ m: 0, fontSize: 14.5, color: 'text.secondary', maxWidth: '80ch' }}>
+              {COPY.lead}
+            </Typography>
+          </Box>
 
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Stack spacing={2}>
           {state.gateCollapsed && standing.kind === 'open' && (
             <Button
               size="small"
+              color="inherit"
               onClick={api.reopenGate}
               sx={{ alignSelf: 'flex-start', minHeight: 44 }}
               data-testid="osa-change-gate"
@@ -355,11 +387,29 @@ export function OperatorSessionArchive(props: OperatorSessionArchiveProps = {}) 
           )}
 
           {showGate && (
-            <GateForm
-              api={api}
-              originError={standing.kind === 'origin-rejected'}
-              tokenError={standing.kind === 'unauthorized'}
-            />
+            <Panel
+              title={COPY.unlockHead}
+              testId="osa-unlock-panel"
+              tag={
+                standing.kind === 'locked' || standing.kind === 'unauthorized' ? (
+                  <DataStateTag state="signIn" word={COPY.tokenNeeded} />
+                ) : undefined
+              }
+            >
+              <GateForm
+                api={api}
+                originError={standing.kind === 'origin-rejected'}
+                tokenError={standing.kind === 'unauthorized'}
+              />
+            </Panel>
+          )}
+
+          {standing.kind === 'locked' && (
+            <Panel title={COPY.booksHead} testId="osa-books-locked">
+              <Typography variant="body2" color="text.secondary">
+                {COPY.booksLocked}
+              </Typography>
+            </Panel>
           )}
 
           {standing.kind === 'origin-rejected' && (

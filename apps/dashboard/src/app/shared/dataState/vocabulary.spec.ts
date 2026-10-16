@@ -1,6 +1,34 @@
 import { describe, expect, it } from 'vitest';
 import { DATA_STATES, publicDataWord, publicPartGap, sourceStateWord } from './vocabulary';
 
+// P-2 is a closed list: a word renamed, dropped or added here changes what every panel says, so the
+// whole set is pinned. "Stored here" joined it by the owner's answer of 2026-10-15.
+describe('the closed set of state words', () => {
+  it('is exactly the P-2 list', () => {
+    expect(Object.fromEntries(Object.entries(DATA_STATES).map(([k, v]) => [k, v.word]))).toEqual({
+      updated: 'Updated',
+      delayed: 'Delayed by source',
+      computed: 'Computed',
+      lastGood: 'Last good copy',
+      sourceDown: 'Source down',
+      couldntLoad: 'Couldn’t load',
+      notSetUp: 'Not set up',
+      off: 'Off',
+      paused: 'Paused',
+      notLive: 'Not live',
+      sample: 'Sample',
+      demo: 'Demo · sample data',
+      signIn: 'Sign in',
+      thirdParty: 'Live · TradingView',
+      local: 'Stored here',
+    });
+  });
+
+  it('draws Stored here as current data, not a failure or a sample', () => {
+    expect(DATA_STATES.local.kind).toBe('solid');
+  });
+});
+
 // A wrong word here misleads silently: an outage that reads "Updated", sample data that reads as
 // live. One table for the mapping the public-data panels rely on.
 describe('publicDataWord', () => {

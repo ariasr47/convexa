@@ -16,7 +16,7 @@ describe('OperatorSessionArchive gate chrome', () => {
     wrap(<OperatorSessionArchive fetchImpl={fetchImpl} />);
 
     expect(screen.getByTestId('operator-session-archive')).toBeInTheDocument();
-    expect(screen.getByText(COPY.appBar)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: COPY.title })).toBeInTheDocument();
     expect(screen.getByText(COPY.readOnlyChip)).toBeInTheDocument();
     expect(document.title).toBe(COPY.documentTitle);
 
