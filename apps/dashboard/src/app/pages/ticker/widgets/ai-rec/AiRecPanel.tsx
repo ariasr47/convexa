@@ -14,6 +14,7 @@ import { AUTH_COPY } from '@/features/auth/copy';
 import { useGate } from '@/features/auth/useGate';
 import { useSettings } from '@/features/auth/useSettings';
 import { SCENARIO_CAPTION, SCENARIO_LABEL, SCENARIO_NONE } from '@/features/trading/orders/copy';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { Widget } from '@/shared/ui/Widget';
 import {
   dataMode,
@@ -32,7 +33,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ActionRegion,
@@ -209,6 +210,21 @@ export function AiRecPanel({
 
   const hasRec = phase === 'produced' || phase === 'no_trade';
   const [analysisOpen, setAnalysisOpen] = useState(false);
+
+  // Site check D-07: the demo's read is authored, not a model call, so it shows on arrival — the
+  // board draws the verdict without a click. One automatic read per ticker and snapshot (the expiry
+  // set picks the snapshot); a failure or a dismissal is never re-asked automatically.
+  const sampleFingerprint = demo ? (bundle?.ai_eval.state_fingerprint ?? null) : null;
+  const autoAsked = useRef<string | null>(null);
+  useEffect(() => {
+    if (!demo || !sampleFingerprint) return;
+    const key = `${ticker}|${sampleFingerprint}`;
+    if (autoAsked.current === key) return;
+    autoAsked.current = key;
+    void ai.request({ personaId: null, personaName: 'Authored sample' });
+    // `ai.request` changes identity with its own loading state; the key alone decides.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demo, ticker, sampleFingerprint]);
   // A retained response is still pinned while a new request is loading, but the decision card
   // must not present that old read as the current result. Analysis is likewise pinned to this
   // produced response and never recomputed by opening/closing the surface.
@@ -275,10 +291,17 @@ export function AiRecPanel({
         data-testid="ai-rec-panel"
         sx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
       >
-        <ReadSheet verdict={sampleVerdict} isTrade={Boolean(sampleIsTrade)}>
+        <ReadSheet verdict={sampleVerdict} isTrade={Boolean(sampleIsTrade)} defaultExpanded={false}>
           <Widget
             id="ai-rec"
             title={`Sample analysis · ${ticker}`}
+            // The board names this card's sample state "Sample read" (ticker-desk.mjs aiBrief).
+            sampleTag={false}
+            titleBadge={
+              <Box component="span" sx={{ flex: 'none', display: 'inline-flex' }}>
+                <DataStateTag state="sample" word="Sample read" />
+              </Box>
+            }
             actions={exportAction}
             bodySx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
           >

@@ -58,9 +58,15 @@ export interface ReadSheetProps {
   isTrade: boolean;
   /** The full `AiRecPanel` body — the SAME anatomy the wide layout renders, unmodified. */
   children: ReactNode;
+  /**
+   * Whether a verdict opens the sheet (default) or shows on the peek row. `false` for a read nobody
+   * asked for: the demo's authored read arrives with the page (site check D-07), and an open sheet
+   * would cover the phone desk on load. The peek row still carries the verdict, one tap from open.
+   */
+  defaultExpanded?: boolean;
 }
 
-export function ReadSheet({ verdict, isTrade, children }: ReadSheetProps) {
+export function ReadSheet({ verdict, isTrade, children, defaultExpanded = true }: ReadSheetProps) {
   const theme = useTheme();
   // The SAME `tablet` breakpoint `theme.ts`/DESIGN_SYSTEM.md already declare (768px) — never a
   // second literal. `useMediaQuery` degrades to `false` when `window.matchMedia` is absent (jsdom,
@@ -69,7 +75,7 @@ export function ReadSheet({ verdict, isTrade, children }: ReadSheetProps) {
   // Defaults OPEN: a freshly-produced read must show up immediately, full body, exactly as it
   // always has — see the module doc above for the shipped e2e flow this default protects. The
   // peek row is reached only by explicitly minimizing.
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   // Wide: the sheet is a container, not a variant. This `if` is the ONLY place `narrow` is
   // consulted in this file — every other visual difference between the two widths is CSS on the
