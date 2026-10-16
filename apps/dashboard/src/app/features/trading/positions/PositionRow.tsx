@@ -56,6 +56,7 @@ import {
   partialMarkTip,
   pct,
   PENDING_PL_TIP,
+  PL_NOT_LIVE_TIP,
   PL_TIP,
   plPctBasisTip,
   ROW_UNAVAILABLE_TIP,
@@ -244,6 +245,15 @@ function NoMarkCell({ view }: { view: PositionView }) {
       <MarkNotLiveTag />
     </Stack>
   );
+}
+
+/** No P/L this cycle. With no options feed on this site the mark never comes, so P/L and P/L % are
+ *  the not-live dash with the reason in its tip, never "unavailable … this cycle" beside a mark that
+ *  says Mark not live (canon P-2; review W1-55). */
+function NoPlCell({ view }: { view: PositionView }) {
+  const feed = useMarkFeed();
+  if (feed !== 'notLive') return unavailableCell(view);
+  return dashCell(PL_NOT_LIVE_TIP);
 }
 
 const notRecordedCell = (helpId: string) =>
@@ -488,7 +498,7 @@ export function cellContent(
         offline: streamOffline ? { retained: plFig.hasValue } : null,
       });
       if (!plFig.hasValue) {
-        if (!plState.showPause) return unavailableCell(view);
+        if (!plState.showPause) return <NoPlCell view={view} />;
         return (
           <Stack
             direction="row"
@@ -544,7 +554,7 @@ export function cellContent(
         const bare =
           st.kind === 'no_basis'
             ? literal(NO_BASIS_LABEL, NO_BASIS_TIP, 'cell-no-basis', p.id)
-            : unavailableCell(view);
+            : <NoPlCell view={view} />;
         if (!pctState.showPause) return bare;
         return (
           <Stack

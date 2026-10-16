@@ -14,7 +14,7 @@ import {
 } from '@/features/trading/positions/fixtures';
 import type { PositionView } from '@/features/trading/positions/view';
 import { describe, expect, it } from 'vitest';
-import { formatNetPl, netPlStateOf } from './netPl';
+import { formatNetPl, NET_PL_NOT_LIVE_CAPTION, netPlStateOf } from './netPl';
 
 /** A marked OPEN row with a GAIN: `FX_LONG_CALL` entered at 12.40, marked above entry. */
 function gainingOpen(): PositionView {
@@ -61,6 +61,27 @@ describe('netPlStateOf — five arms (SPEC §4.3)', () => {
     expect(state.value).toBe('unavailable');
     expect(state.tint).toBeNull();
     expect(state.caption).toBe('0 of 2 open marked');
+  });
+
+  it('with no options feed, an unmarked book is the not-live dash with its reason, never `unavailable`', () => {
+    const state = netPlStateOf({
+      views: [unmarkedOpen(), unmarkedOpen()],
+      streamOffline: false,
+      retainedTotal: null,
+      feedNotLive: true,
+    });
+    expect(state.value).toBe('—');
+    expect(state.caption).toBe(NET_PL_NOT_LIVE_CAPTION);
+    expect(state.tint).toBeNull();
+    // A user-entered mark still sums, with its coverage caption: the feed only explains the gap.
+    const partial = netPlStateOf({
+      views: [gainingOpen(), unmarkedOpen()],
+      streamOffline: false,
+      retainedTotal: null,
+      feedNotLive: true,
+    });
+    expect(partial.caption).toBe('1 of 2 open marked');
+    expect(partial.tint).toBe('positive');
   });
 
   it('35c: some open rows marked → the computable sum, mandatory coverage caption, positive tint', () => {

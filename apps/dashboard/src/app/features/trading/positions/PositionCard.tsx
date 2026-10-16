@@ -79,7 +79,12 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
     offline: streamOffline ? { retained: plFig.hasValue } : null,
   });
   const pctFig = plPctFigure(view);
-  const markFig = p.status === 'pending' ? null : markFigure(view);
+  const feed = useMarkFeed();
+  // With no options feed an unpriced P/L is the not-live dash, as in the row (review W1-55).
+  const plNotLive = feed === 'notLive' && !plFig.hasValue;
+  // A closed or cancelled record has no mark to wait for: the row's terminal dash, never "Mark not
+  // live" (review W1-56).
+  const markFig = p.status === 'pending' || isTerminal ? null : markFigure(view);
   const markState = markFig
     ? figureStateOf({
         value: markFig.text,
@@ -87,12 +92,11 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
         offline: streamOffline ? { retained: markFig.hasValue } : null,
       })
     : null;
-  const feed = useMarkFeed();
   const markNotLive = feed === 'notLive' && markFig != null && !markFig.hasValue;
   const markText =
     p.status === 'pending'
       ? `limit $${(p.limit_price ?? 0).toFixed(2)}`
-      : markNotLive
+      : isTerminal || markNotLive
         ? '—'
         : (markFig?.text ?? '');
   // Canon P-2/P-3: a demo mark names the sample chain; with no feed on this site, Mark not live.
@@ -197,7 +201,7 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
               color: isOpen && !plState.mono ? 'text.disabled' : plColor,
             }}
           >
-            {isOpen ? plFig.text : '—'}
+            {isOpen && !plNotLive ? plFig.text : '—'}
           </Box>
           <Box
             component="div"
@@ -207,7 +211,7 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
               color: isOpen && !plState.mono ? 'text.disabled' : plColor,
             }}
           >
-            {isOpen ? pctFig.text : ''}
+            {isOpen && !plNotLive ? pctFig.text : ''}
           </Box>
           {isOpen && plState.showPause && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', mt: 0.25 }}>
@@ -276,9 +280,11 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
           <Box
             component="span"
             sx={{
-              ...faceFor(markState ? markState.mono : true),
+              // The terminal dash is a not-a-number literal: Sans and disabled, like the row's.
+              ...faceFor(markState ? markState.mono : !isTerminal),
               fontWeight: 700,
-              color: markState && !markState.mono ? 'text.disabled' : 'text.primary',
+              color:
+                (markState && !markState.mono) || isTerminal ? 'text.disabled' : 'text.primary',
             }}
             data-testid="card-mark-value"
           >

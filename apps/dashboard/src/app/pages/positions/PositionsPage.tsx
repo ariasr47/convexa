@@ -30,6 +30,7 @@ import { PortfolioPanel } from '@/features/trading/positions/PortfolioPanel';
 import { allPositions } from '@/features/trading/positions/store';
 import { usePortfolio } from '@/features/trading/positions/usePortfolio';
 import { FigureCell } from '@/pages/ticker/widgets/_kit/FigureCell';
+import { marketDataOff } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { downText, upText } from '@/shared/theme/tokens';
@@ -68,11 +69,20 @@ function netPlTintSx(tint: NetPlTint) {
   };
 }
 
-const POSITIONS_LEAD: Record<MarkFeed, string> = {
+/** The lead under the title. It follows /api/health, not just the mark source: `paused` takes the
+ *  not-live treatment in its own word (a feed exists and an operator stopped it), and `unknown`
+ *  (the health read failed) claims nothing either way, like the bar's UNKNOWN_COPY (review W1-59). */
+type PositionsLead = MarkFeed | 'paused' | 'unknown';
+
+const POSITIONS_LEAD: Record<PositionsLead, string> = {
   sample:
     'Your simulated book, paper only. Saved in this browser’s demo workspace; marks come from the sample chain.',
   notLive:
     'Your simulated book, paper only, saved in this browser. Option marks need the options feed, which isn’t live on this site; records and user-entered prices still work.',
+  paused:
+    'Your simulated book, paper only, saved in this browser. Live market data is paused on this site, so option marks wait for it; records and user-entered prices still work.',
+  unknown:
+    'Your simulated book, paper only, saved in this browser. Couldn’t check whether option marks are live right now; records and user-entered prices still work.',
   live: 'Your simulated book, paper only, saved in this browser. Marks follow the options feed and name their basis; records never drop.',
 };
 
@@ -113,7 +123,7 @@ function personaLabelOf(id: string): string | null {
   return [...PRESETS, ...loadCustoms()].find((p) => p.id === id)?.name ?? null;
 }
 
-function PositionsBook({ markFeed }: { markFeed: MarkFeed }) {
+function PositionsBook({ markFeed, lead }: { markFeed: MarkFeed; lead: PositionsLead }) {
   // The focused ticker is derived once on mount from the durable book (re-derives on remount, like a
   // reload). It drives the anchor bundle + the single page-scoped SSE.
   const ticker = useMemo(() => focusedTicker(), []);
@@ -207,8 +217,13 @@ function PositionsBook({ markFeed }: { markFeed: MarkFeed }) {
     const marked = open.filter((v) => v.pl_dollar != null);
     const retainedTotal =
       marked.length > 0 ? marked.reduce((sum, v) => sum + (v.pl_dollar as number), 0) : null;
-    return netPlStateOf({ views: pf.views, streamOffline, retainedTotal });
-  }, [pf.views, streamOffline]);
+    return netPlStateOf({
+      views: pf.views,
+      streamOffline,
+      retainedTotal,
+      feedNotLive: markFeed === 'notLive',
+    });
+  }, [pf.views, streamOffline, markFeed]);
 
   // Capital at risk (design/src/screens/positions.mjs:63) — the OPEN book's max-loss sum, STATIC
   // (never live-derived, so no offline arm; `capitalAtRisk.ts`'s own header). Reuses the SAME
@@ -233,7 +248,7 @@ function PositionsBook({ markFeed }: { markFeed: MarkFeed }) {
               Positions
             </Typography>
             <Typography component="p" sx={{ fontSize: '0.88rem', color: 'text.secondary', m: 0 }}>
-              {POSITIONS_LEAD[markFeed]}
+              {POSITIONS_LEAD[lead]}
             </Typography>
           </Box>
           {/* The mast's stat cluster (design/src/screens/positions.mjs:62-65, `.pos-stats`): capital
@@ -300,17 +315,26 @@ function PositionsBook({ markFeed }: { markFeed: MarkFeed }) {
 }
 
 /** Where marks come from (markFeed.tsx): the demo's sample chain, or, on a live build whose server
- *  says `not_live`, no feed at all (records and user-entered prices still work; option marks can't,
- *  and the bundle, stream and contract routes are never asked). The health read is shared and
- *  answered once per page load; the book waits for it so no request starts on a guess. */
+ *  says `not_live` or `paused`, no feed at all (records and user-entered prices still work; option
+ *  marks can't, and the bundle, stream and contract routes are never asked: they can only refuse).
+ *  An `unknown` health answer still asks, since the feed may be running. The health read is shared
+ *  and answered once per page load; the book waits for it so no request starts on a guess. */
 export function PositionsPage() {
   const marketData = useMarketDataMode();
   if (dataMode !== 'demo' && marketData === null) return <RouteFallback />;
   const markFeed: MarkFeed =
-    dataMode === 'demo' ? 'sample' : marketData === 'not_live' ? 'notLive' : 'live';
+    dataMode === 'demo' ? 'sample' : marketDataOff(marketData) ? 'notLive' : 'live';
+  const lead: PositionsLead =
+    dataMode === 'demo'
+      ? 'sample'
+      : marketData === 'paused'
+        ? 'paused'
+        : marketData === 'unknown'
+          ? 'unknown'
+          : markFeed;
   return (
     <MarkFeedProvider value={markFeed}>
-      <PositionsBook markFeed={markFeed} />
+      <PositionsBook markFeed={markFeed} lead={lead} />
     </MarkFeedProvider>
   );
 }

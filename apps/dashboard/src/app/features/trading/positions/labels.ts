@@ -64,6 +64,9 @@ export const SAVED_VIEW_TIP =
 export const PENDING_PL_TIP = 'Fills at your limit; no P/L until it fills.';
 export const ROW_UNAVAILABLE_TIP =
   "This position's contract couldn't be priced this cycle — it's safe; other positions are unaffected.";
+/** P/L with no options feed on this site: a standing fact, not this cycle's miss (canon P-2). */
+export const PL_NOT_LIVE_TIP =
+  'P/L needs an option mark, and option marks need the options feed, which isn’t live on this site. Records and user-entered prices still work.';
 
 // ---- The three `—` tips (SPEC §4 *The four not-a-number literals*) ------------------------------
 //
