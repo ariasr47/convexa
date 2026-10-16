@@ -12,7 +12,8 @@
  * tracked, not yet computed) ≠ a DEGRADE (last-known rows under a warning banner). The per-row
  * `ok`/`stale`/`error`/`building` chips come from the closed lookup in `labels.ts`.
  *
- * A row is a link to the Ticker page and nothing else (`[no-real-order-path]`, AC-11); customization
+ * A row links to the Ticker page and opens its own read-only preview, nothing else
+ * (`[no-real-order-path]`, AC-11; the preview is ScanRowPreview.tsx); customization
  * is the one gated write and the SERVER refuses it, not this file (`[server-side-gate-enforcement]`).
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';

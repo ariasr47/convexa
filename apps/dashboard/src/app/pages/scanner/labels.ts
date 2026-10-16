@@ -87,6 +87,26 @@ export const SCAN_COPY = {
   leadGroup: 'Indexes & megacaps',
 } as const;
 
+/**
+ * The row preview (Final Scanner board, `design/src/screens/final/account-pages.mjs` demoScanTable
+ * and the SCN-03 state): the row's own fields under it, opened by its disclosure button or by Enter
+ * on the focused row, with the one way on to the desk. Its own object so `SCAN_COPY` stays as built.
+ */
+export const SCAN_PREVIEW_COPY = {
+  columnLabel: 'Preview',
+  open: (symbol: string) => `Preview ${symbol}`,
+  close: (symbol: string) => `Close the ${symbol} preview`,
+  region: (symbol: string) => `${symbol} preview`,
+  scoreTier: 'Score · tier',
+  flip: 'Gamma flip',
+  walls: 'Call wall · put wall',
+  why: 'Why this score',
+  /** "price +0.97% above" — the price's signed distance from the flip, said in words as well. */
+  flipDistance: (signedPct: string, above: boolean) =>
+    `price ${signedPct} ${above ? 'above' : 'below'}`,
+  openDesk: (symbol: string) => `Open the ${symbol} desk`,
+} as const;
+
 /** Desk session phases (US equities, America/New_York). Derived from the wall clock — not a stream. */
 export type MarketSessionPhase = 'rth' | 'pre' | 'after' | 'closed';
 
