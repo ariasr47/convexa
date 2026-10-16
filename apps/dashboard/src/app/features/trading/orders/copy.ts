@@ -113,6 +113,9 @@ export const WIDGET_EMPTY = (ticker: string) =>
 export const PANEL_EMPTY_OPEN =
   'No simulated orders yet. On a ticker page, Act on a produced AI read to create one.';
 export const PANEL_EMPTY_HISTORY = 'No completed orders yet.';
+/** The Open tab is empty but History isn't: never "No simulated orders yet" beside filled ones. */
+export const PANEL_EMPTY_OPEN_WITH_HISTORY =
+  'No open orders. Filled, expired and cancelled orders are in History.';
 
 export const recentCompleted = (n: number) => `Recent ${n} completed`;
 
