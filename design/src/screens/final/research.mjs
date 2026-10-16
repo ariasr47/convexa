@@ -332,7 +332,7 @@ function marketsStates({ scheme = 'dark', minHeight = 0 } = {}) {
 function filingsStates({ scheme = 'dark', minHeight = 0 } = {}) {
   const items = [
     { name: 'Loading · final size', tag: ['loading'], when: 'First paint while /api/public-data/filings answers.', html: frameState('loading', { metric: 'Filings, last 90 days', height: 150 }) },
-    { name: 'Not set up', tag: ['notConfigured'], when: 'Production today: SEC_USER_AGENT is unset (API state not_configured).', html: `<strong>SEC filings aren’t set up on this site yet.</strong><span class="dline">EDGAR asks every program that reads it to identify itself with a contact address. This site hasn’t been given one.</span><span class="fr-nc"><details><summary>For the site’s operator</summary></details></span>` },
+    { name: 'Not set up', tag: ['notConfigured'], when: 'Any server where SEC_USER_AGENT is unset (API state not_configured): reader copy, Expected from the notes, no feed. Production is set up.', html: `<strong>SEC filings aren’t set up on this site yet.</strong><span class="dline">EDGAR asks every program that reads it to identify itself with a contact address. This site hasn’t been given one.</span><span class="fr-nc"><details><summary>For the site’s operator</summary></details></span>` },
     { name: 'Couldn’t load', tag: ['error'], when: 'Convexa’s API didn’t answer.', html: msgFrame('Filings, last 90 days', 'error', 'Filings didn’t load.', 'Convexa’s server didn’t answer. The notes keep their own dates, so nothing comes due late because of it.', retry) },
     { name: 'Off', tag: ['off'], when: 'PUBLIC_DATA=off on this server.', html: msgFrame('Filings, last 90 days', 'off', 'Public data is switched off on this server.', 'Filings come from SEC EDGAR through Convexa’s API, which has them turned off.') },
     { name: 'Last good copy', tag: ['stale'], when: 'EDGAR failed this cycle; the earlier copy stays, dimmed, with its time.', html: `<div class="dwarn" role="status">${icon('warn', 14)}<span class="dline">SEC EDGAR did not answer at 14:00 UTC; showing data fetched at 13:00 UTC.</span></div>` },
@@ -376,10 +376,11 @@ export const ROWS = [
   ] },
   { key: 'research-filings', label: 'Research · Filings', css: FR_CSS, specH: 2187, spec: FILINGS_SPEC, boards: [
     B('staging', 'Staging · demo account', 1440, 1325, (o) => filingsBody({ ...o, demo: true })),
-    B('production', 'Production · today (Not set up)', 1440, 1218, (o) => filingsBody({ ...o, setUp: false })),
-    B('production-setup', 'Production · once SEC_USER_AGENT is set', 1440, 1547, (o) => filingsBody(o)),
-    B('phone', 'Phone · production (Not set up)', 390, 2132, (o) => filingsBody({ ...o, setUp: false })),
-    B('light', 'Light · production (Not set up)', 1440, 1218, (o) => filingsBody({ ...o, setUp: false }), { scheme: 'light' }),
+    // Production is set up (SEC_USER_AGENT set on the API, owner 2026-10-15): the production boards
+    // draw the live feed. Not set up stays as a state example on the states board (2026-10-16).
+    B('production', 'Production', 1440, 1547, (o) => filingsBody(o)),
+    B('phone', 'Phone · production', 390, 3200, (o) => filingsBody(o)),
+    B('light', 'Light · production', 1440, 1547, (o) => filingsBody(o), { scheme: 'light' }),
     B('states', 'States', 1440, 1823, (o) => filingsStates(o)),
   ] },
   { key: 'research-scorecard', label: 'Research · Scorecard', css: FR_CSS, specH: 1964, spec: SCORECARD_SPEC, boards: [
