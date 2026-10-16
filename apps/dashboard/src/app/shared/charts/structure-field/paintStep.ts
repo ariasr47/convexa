@@ -259,6 +259,27 @@ export function gexAt(samples: StructureFieldModel['samples'], strike: number): 
 }
 
 /**
+ * P-11: a level's gamma sign in words, so the sign never rides on hue alone. Read from the field
+ * itself at the level's strike, so the word can never disagree with the bars under it. A zero or
+ * non-finite value carries no sign (no claim beats a wrong one).
+ */
+export function gammaSignWord(netGex: number): '+γ' | '−γ' | null {
+  if (!Number.isFinite(netGex) || netGex === 0) return null;
+  return netGex > 0 ? '+γ' : '−γ';
+}
+
+/** A wall's marker label: `call wall 580 · +γ` / `put wall 560 · −γ` (the Final boards' wording). */
+export function wallLabel(
+  kind: 'call' | 'put',
+  strike: number,
+  samples: StructureFieldModel['samples'],
+): string {
+  const base = `${kind} wall ${strike.toFixed(0)}`;
+  const sign = gammaSignWord(gexAt(samples, strike));
+  return sign ? `${base} · ${sign}` : base;
+}
+
+/**
  * PAINT STEP 1 — the structure layer (levels, walls, flip, heat, vignette). Byte-identical to the
  * pre-extraction `paintStructure` body; only the inputs changed shape (props/geom instead of a
  * closure). Callers run this only when the structure key changes and draw it into an OFFSCREEN
@@ -308,7 +329,8 @@ export function paintStructureStep(
   };
   bloom(m.putWall, withAlpha(palette.putWall, 0.18), plotW * 0.14);
   bloom(m.callWall, withAlpha(palette.callWall, 0.16), plotW * 0.14);
-  bloom(m.gammaFlip, withAlpha(palette.gammaFlip, 0.12), plotW * 0.1);
+  // No bloom at the flip: it is neutral now (the text colour), and a halo of ink reads as a smudge
+  // on the light canvas. The flip carries its weight in the line itself (D-08).
 
   // Strike heat columns — |GEX| intensity (structure density)
   const colW = Math.max(2, plotW / samples.length);
@@ -408,19 +430,17 @@ export function paintStructureStep(
   level(m.callWall, palette.callWall, 1.6);
   level(m.spot, surfaces.steel, 1);
 
-  // Flip — structural amber (static core; breath is dynamic)
+  // Flip — neutral: phosphor in dark, ink in light (`palette.gammaFlip` resolves to `text.primary`),
+  // never amber (P-15, ruling A). No glow: a halo of the text colour reads as a smudge in light mode,
+  // and the weight already sets the flip apart from the thin steel spot line.
   {
     const x = xOf(geom, m.gammaFlip);
-    o.save();
-    o.shadowColor = withAlpha(palette.gammaFlip, 0.8);
-    o.shadowBlur = calm ? 10 : 20;
     o.strokeStyle = palette.gammaFlip;
     o.lineWidth = calm ? 2 : 2.75;
     o.beginPath();
     o.moveTo(x, pad.t);
     o.lineTo(x, pad.t + plotH);
     o.stroke();
-    o.restore();
   }
 
   // Max pain — dashed, steel (repair task item 5). Data-presence gated (a missing max pain drops
@@ -453,14 +473,14 @@ export function paintStructureStep(
     {
       id: 'put',
       x: xOf(geom, m.putWall),
-      label: `put wall ${m.putWall.toFixed(0)}`,
+      label: wallLabel('put', m.putWall, samples),
       color: palette.putWall,
       preferredLane: 0,
     },
     {
       id: 'call',
       x: xOf(geom, m.callWall),
-      label: `call wall ${m.callWall.toFixed(0)}`,
+      label: wallLabel('call', m.callWall, samples),
       color: palette.callWall,
       preferredLane: 0,
     },
@@ -499,6 +519,11 @@ export function paintStructureStep(
   });
   o.font = '600 11px "IBM Plex Mono", ui-monospace, monospace';
   for (const marker of markerBoxes) {
+    // Each label sits on its own knock-out plate, so a level line that runs under it (the flip
+    // through the put wall's label, say) never strikes the text through (site check D-08).
+    o.fillStyle = withAlpha(surfaces.ink, 0.88);
+    roundRect(o, marker.x + 3, marker.y, marker.width - 6, marker.height, 3);
+    o.fill();
     o.fillStyle = marker.color ?? surfaces.phosphor;
     o.fillText(marker.label, marker.x + 8, marker.y + 11);
   }

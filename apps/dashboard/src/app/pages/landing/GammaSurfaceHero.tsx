@@ -342,7 +342,11 @@ export function GammaSurfaceHero({ demo }: { demo: boolean }) {
         tabIndex={0}
         role="group"
         aria-roledescription="3D chart"
-        aria-label={`${LANDING_COPY.hero.surfaceName}. ${LANDING_COPY.hero.surfaceKeys}`}
+        // Only the WebGL view turns; the static projection (before the script, without WebGL2, or
+        // after a lost context) offers the probe alone, so its name promises only that (W1-69).
+        aria-label={`${LANDING_COPY.hero.surfaceName}. ${
+          mode === 'webgl' ? LANDING_COPY.hero.surfaceKeys : LANDING_COPY.hero.surfaceKeysStatic
+        }`}
         aria-describedby={`${READOUT_ID} ${CAPTION_ID}`}
         data-testid="gamma-surface-hero"
         onKeyDown={onKeyDown}
@@ -353,7 +357,9 @@ export function GammaSurfaceHero({ demo }: { demo: boolean }) {
           borderRadius: '10px',
           bgcolor: extrasFor(t).well,
           overflow: 'hidden',
-          touchAction: 'pan-y',
+          // Only the WebGL view takes a sideways drag; pinch-zoom always stays the reader's, so the
+          // 11px labels can be enlarged on a phone (W1-71). The projection takes no gesture at all.
+          touchAction: mode === 'webgl' ? 'pan-y pinch-zoom' : 'auto',
           containerType: 'inline-size',
           outline: 'none',
           '&:focus-visible': { outline: `2px solid ${extrasFor(t).textAmber}`, outlineOffset: 4 },
@@ -396,7 +402,7 @@ export function GammaSurfaceHero({ demo }: { demo: boolean }) {
             height: '100%',
             display: mode === 'webgl' ? 'block' : 'none',
             cursor: 'grab',
-            touchAction: 'pan-y',
+            touchAction: 'pan-y pinch-zoom',
             '&:active': { cursor: 'grabbing' },
           }}
         />

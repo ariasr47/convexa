@@ -47,6 +47,8 @@ export const LANDING_COPY = {
     /** The surface's accessible name; the stage adds how to move it. */
     surfaceName: 'Dealer gamma surface across strike and expiry',
     surfaceKeys: 'Arrow keys move the probe; Shift and arrows turn the surface.',
+    /** The static projection can't turn, so its name promises only the probe (W1-69). */
+    surfaceKeysStatic: 'Arrow keys move the probe.',
     /** The help line under the readout: the WebGL view, and the static projection (P-15). */
     helpTurn: 'Drag to turn it (sideways on a phone, so the page still scrolls)',
     helpStatic: 'The static projection: the same surface, labels and readout, drawn without WebGL.',
