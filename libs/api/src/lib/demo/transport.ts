@@ -544,6 +544,7 @@ function recommendationExport(
 
 type GroundingWire = NonNullable<RecommendationWire['grounding']>;
 type GroundingFieldWire = GroundingWire['fields']['invalidation_level'];
+type GroundingFieldsWire = GroundingWire['fields'];
 
 /** The API's grounding tolerance, stated once per response (services/recommendation.rs
  *  GROUNDING_TOL_PCT). */
@@ -561,45 +562,68 @@ const notApplicableField = (): GroundingFieldWire => ({
 });
 
 /**
- * Site check D-07: the authored read's grounding, computed from the one figure the read sets — its
- * watch level, the level that would change the call — checked against the snapshot the desk draws,
- * the way the API checks a read's invalidation level (an exact match on a named level traces). The
- * card follows the API's own rule (services/rec_inputs/grounding.rs card_member): nothing checked is
- * not applicable, every figure traced is all traced. The reasoning prose is never checked, as on a
- * live read.
+ * The counts, tallied as the API tallies them (services/rec_inputs/grounding.rs `counts`): a field
+ * that is not applicable, or not checkable for a structural reason, is not checked; every other
+ * state is. The demo's reads cite no contract, so the contract adds nothing.
+ */
+export function groundingCounts(fields: GroundingFieldsWire): GroundingWire['counts'] {
+  const c = { checked: 0, traced: 0, untraced: 0, not_checkable: 0 };
+  for (const f of Object.values(fields)) {
+    if (f.state === 'not_applicable') continue;
+    if (f.state === 'not_checkable') {
+      if (f.not_checkable_reason === 'structurally_unchecked') continue;
+      c.checked += 1;
+      c.not_checkable += 1;
+    } else if (f.state === 'traced') {
+      c.checked += 1;
+      c.traced += 1;
+    } else if (f.state === 'untraced') {
+      c.checked += 1;
+      c.untraced += 1;
+    }
+  }
+  return c;
+}
+
+/**
+ * The contract's card rule, in its fixed order, first match wins (the archived ai-rec-grounding
+ * INTERFACE_CONTRACT, `grounding.card`; the API's grounding.rs `card_member`): not applicable when
+ * the read states no trade or nothing was checked; then local rules; then none traced, could not
+ * check, some traced, all traced.
+ */
+export function groundingCard(
+  decision: string,
+  counts: GroundingWire['counts'],
+  localOnly = false,
+): GroundingWire['card'] {
+  if (decision !== 'trade' || counts.checked === 0) return 'not_applicable';
+  if (localOnly) return 'local_rules';
+  if (counts.traced === 0 && counts.untraced >= 1) return 'none_traced';
+  if (counts.traced === 0) return 'could_not_check';
+  if (counts.traced < counts.checked) return 'some_traced';
+  return 'all_traced';
+}
+
+/**
+ * The authored read's grounding block, as the API would send it (site check D-07, corrected
+ * 2026-10-16 after review: the demo follows the API). Every authored read states no trade, and a
+ * read that states no trade is not applicable by contract, whatever figures it names; the authored
+ * reads set none, so every field is not applicable and the counts are zero. The panel therefore
+ * shows no trace line on them, exactly as on a live no-trade read.
  */
 export function sampleReadGrounding(
-  watchLevel: number | null,
-  anchor: { kind: 'gamma_flip'; value: number | null },
-): GroundingWire {
-  const fields = {
+  decision: 'trade' | 'no_trade',
+  fields: GroundingFieldsWire = {
     exit_stop: notApplicableField(),
     exit_target: notApplicableField(),
     invalidation_level: notApplicableField(),
     max_risk: notApplicableField(),
     position_size: notApplicableField(),
-  };
-  if (watchLevel == null || !Number.isFinite(watchLevel))
-    return {
-      card: 'not_applicable',
-      counts: { checked: 0, traced: 0, untraced: 0, not_checkable: 0 },
-      fields,
-      tolerance_pct: GROUNDING_TOL_PCT,
-    };
-  const traced =
-    anchor.value != null && Math.abs(watchLevel - anchor.value) < 0.005 && anchor.value > 0;
-  fields.invalidation_level = traced
-    ? {
-        ...notApplicableField(),
-        state: 'traced',
-        basis: 'exact',
-        anchor_kind: anchor.kind,
-        anchor_value: anchor.value,
-      }
-    : { ...notApplicableField(), state: 'untraced' };
-  const counts = { checked: 1, traced: traced ? 1 : 0, untraced: traced ? 0 : 1, not_checkable: 0 };
+  },
+): GroundingWire {
+  const counts = groundingCounts(fields);
   return {
-    card: traced ? 'all_traced' : 'none_traced',
+    card: groundingCard(decision, counts),
     counts,
     fields,
     tolerance_pct: GROUNDING_TOL_PCT,
@@ -662,7 +686,6 @@ export function sampleReadReasons(
         'Or the call wall moves inside the implied move on the next structure refresh.',
       );
   }
-  keyPoints.push('No live market, broker, or AI provider was used.');
   return { keyPoints, reengage };
 }
 
@@ -673,7 +696,6 @@ function recommendation(
   snapshot: TickerBundle,
 ): RecommendationWire {
   const reasons = sampleReadReasons(snapshot.market_state, snapshot.signals.regime);
-  const watchLevel = snapshot.market_state.gamma_flip ?? null;
   return {
     status: 'produced',
     ticker: symbol,
@@ -688,20 +710,14 @@ function recommendation(
       confidence: 'low',
       decision: 'no_trade',
       exit_plan: { target: null, stop: null },
-      // The watch level: the level that would change this call (the flip), the one figure the
-      // authored read sets and the one its grounding checks (D-07).
-      invalidation_level: watchLevel,
       strikes: [],
       structure: variant.setup,
       summary: `Authored sample: ${symbol} shows ${variant.setup.toLowerCase()} with authored score ${variant.score}. Not a model recommendation.`,
-      rationale: `Synthetic ${symbol} structure has ${variant.setup.toLowerCase()} with authored score ${variant.score}. This is scenario copy, not a forecast or executable instruction.`,
+      rationale: `Synthetic ${symbol} structure has ${variant.setup.toLowerCase()} with authored score ${variant.score}. This is scenario copy, not a forecast or executable instruction; no live market, broker, or AI provider was used.`,
       key_points: reasons.keyPoints,
       reengage_when: [...reasons.reengage, 'Review when the selected authored expiry set changes.'],
     },
-    grounding: sampleReadGrounding(watchLevel, {
-      kind: 'gamma_flip',
-      value: snapshot.market_state.gamma_flip ?? null,
-    }),
+    grounding: sampleReadGrounding('no_trade'),
     pinned_fingerprint: variant.fingerprint,
     stale_born: false,
   };
