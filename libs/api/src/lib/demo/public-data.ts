@@ -110,6 +110,24 @@ const round = (value: number, places = 2) => {
 };
 const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
+/** The weekdays in the demo's window that the Treasury's own daily par curve files have no row for
+ *  (bond-market holidays), read from home.treasury.gov through the API on 2026-10-16. The sample
+ *  path skips the same days, so staging's 2s10s shows its "Not published" gaps where production's
+ *  does. Only the dates are real; every yield here is authored. */
+const TREASURY_SKIPPED = new Set([
+  '2025-10-13',
+  '2025-11-11',
+  '2025-11-27',
+  '2025-12-25',
+  '2026-01-01',
+  '2026-01-19',
+  '2026-02-16',
+  '2026-05-25',
+  '2026-06-19',
+  '2026-07-03',
+  '2026-09-07',
+]);
+
 /** Weekdays of the 400 days ending on the demo date, oldest first, on a smooth authored path. */
 function demoYields(): PublicYieldPoint[] {
   const end = Date.parse(`${DEMO_DATE}T00:00:00Z`);
@@ -117,12 +135,14 @@ function demoYields(): PublicYieldPoint[] {
   for (let back = 399; back >= 0; back -= 1) {
     const ms = end - back * DAY_MS;
     const weekday = new Date(ms).getUTCDay();
-    if (weekday === 0 || weekday === 6) continue;
+    if (weekday === 0 || weekday === 6 || TREASURY_SKIPPED.has(isoDay(ms))) continue;
     const t = (399 - back) / 399;
     const wave = Math.sin(t * Math.PI * 3) * 0.12;
     points.push({
       date: isoDay(ms),
+      t1m: round(4.38 - 0.24 * t + wave * 0.25),
       t3m: round(4.35 - 0.2 * t + wave * 0.3),
+      t1y: round(4.1 + 0.35 * t + wave * 0.6),
       t2y: round(3.9 + 0.8 * t + wave),
       t5y: round(3.95 + 0.95 * t + wave),
       t10y: round(4.15 + 1.0 * t + wave * 0.9),

@@ -9,11 +9,19 @@ import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary
 import { extrasFor } from '@/shared/theme/tokens';
 import { dataMode, DEMO_NOTE_PRICED, type PublicMarkets } from '@convexa/api';
 import Box from '@mui/material/Box';
-import { alpha, type Theme } from '@mui/material/styles';
-import { useMemo } from 'react';
+import { alpha, useTheme, type Theme } from '@mui/material/styles';
+import { useId, useMemo } from 'react';
 import { researchIndex } from 'virtual:convexa-research';
 import { ComingUpSection, MarketsSectionHead } from './ComingUpSection';
-import { FOMC_CHECKED, FOMC_SOURCE, fomcInSeries } from './fomc';
+import {
+  FOMC_CHECKED,
+  FOMC_OUTCOMES_CHECKED,
+  FOMC_SOURCE,
+  fomcInSeries,
+  fomcOutcome,
+  outcomeLabel,
+  outcomeWords,
+} from './fomc';
 import { formatNoteDate, formatShortDate } from './format';
 import { LiquiditySection } from './LiquiditySection';
 import {
@@ -22,6 +30,7 @@ import {
   DRIFT_FLAG_POINTS,
   monthsBefore,
   noteRates,
+  onWeekdays,
   servingLastGood,
   spread2s10s,
   type YieldPoint,
@@ -361,9 +370,7 @@ function RatesSection({ rates, stale = false }: { rates: Rates; stale?: boolean 
   const be = (p: YieldPoint | null) =>
     p && p.t10y !== null && p.real10y !== null ? p.t10y - p.real10y : null;
   const change = (k: keyof Omit<YieldPoint, 'date'>) =>
-    ago && latest[k] !== null && ago[k] !== null
-      ? (latest[k] as number) - (ago[k] as number)
-      : null;
+    ago && latest[k] != null && ago[k] != null ? (latest[k] as number) - (ago[k] as number) : null;
 
   const demo = dataMode === 'demo';
   return (
@@ -447,14 +454,28 @@ function RatesSection({ rates, stale = false }: { rates: Rates; stale?: boolean 
   );
 }
 
-const MATURITIES: { key: 't3m' | 't2y' | 't5y' | 't10y' | 't30y'; label: string; years: number }[] =
-  [
-    { key: 't3m', label: '3M', years: 0.25 },
-    { key: 't2y', label: '2Y', years: 2 },
-    { key: 't5y', label: '5Y', years: 5 },
-    { key: 't10y', label: '10Y', years: 10 },
-    { key: 't30y', label: '30Y', years: 30 },
-  ];
+type Maturity = {
+  key: 't1m' | 't3m' | 't1y' | 't2y' | 't5y' | 't10y' | 't30y';
+  label: string;
+  long: string;
+  years: number;
+  /** An axis label the board marks minor: dropped on a narrow plot (design curveChart x ticks). */
+  minor?: boolean;
+  /** No axis label at all: the board names the curve's 1-month end in the subtitle, not the axis,
+   *  where it would sit a few pixels from 3M on the √years scale. */
+  unlabelled?: boolean;
+};
+const MATURITIES: Maturity[] = [
+  { key: 't1m', label: '1M', long: '1 month', years: 1 / 12, unlabelled: true },
+  { key: 't3m', label: '3M', long: '3 months', years: 0.25, minor: true },
+  { key: 't1y', label: '1Y', long: '1 year', years: 1, minor: true },
+  { key: 't2y', label: '2Y', long: '2 years', years: 2 },
+  { key: 't5y', label: '5Y', long: '5 years', years: 5 },
+  { key: 't10y', label: '10Y', long: '10 years', years: 10 },
+  { key: 't30y', label: '30Y', long: '30 years', years: 30 },
+];
+/** A maturity's yield on one curve; an API from before the 1-month and 1-year sends neither. */
+const yieldAt = (p: YieldPoint, k: Maturity['key']): number | null => p[k] ?? null;
 
 function CurvePanel({
   latest,
@@ -468,9 +489,13 @@ function CurvePanel({
   stale?: boolean;
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
-  const now = MATURITIES.map((m) => latest[m.key]);
-  const mid = month ? MATURITIES.map((m) => month[m.key]) : [];
-  const before = ago ? MATURITIES.map((m) => ago[m.key]) : [];
+  // The maturities some curve has: an API from before the 1-month and 1-year draws what it sends.
+  const shown = MATURITIES.filter((m) =>
+    [latest, month, ago].some((p) => p !== null && yieldAt(p, m.key) !== null),
+  );
+  const now = shown.map((m) => yieldAt(latest, m.key));
+  const mid = month ? shown.map((m) => yieldAt(month, m.key)) : [];
+  const before = ago ? shown.map((m) => yieldAt(ago, m.key)) : [];
   // The year's change at both ends, never an average of the maturities (D-11, marketsMath.ts).
   const title = curveFinding(latest, ago) ?? 'The Treasury curve today.';
   const all = [...now, ...mid, ...before].filter((v): v is number => v !== null);
@@ -483,17 +508,34 @@ function CurvePanel({
   const R = narrow ? 66 : 104;
   const T = 24;
   const B = 36;
-  const s0 = Math.sqrt(MATURITIES[0].years);
-  const s1 = Math.sqrt(MATURITIES[MATURITIES.length - 1].years);
+  const first = shown.length > 1 ? shown[0] : MATURITIES[0];
+  const last = shown.length > 1 ? shown[shown.length - 1] : MATURITIES[MATURITIES.length - 1];
+  const s0 = Math.sqrt(first.years);
+  const s1 = Math.sqrt(last.years);
   const x = (years: number) => L + ((Math.sqrt(years) - s0) / (s1 - s0)) * (W - L - R);
   const y = (v: number) => T + ((yMax - v) / (yMax - yMin)) * (H - T - B);
   const line = (vals: (number | null)[]) =>
     vals
-      .map((v, i) =>
-        v === null ? null : `${x(MATURITIES[i].years).toFixed(1)},${y(v).toFixed(1)}`,
-      )
+      .map((v, i) => (v === null ? null : `${x(shown[i].years).toFixed(1)},${y(v).toFixed(1)}`))
       .filter(Boolean)
       .join(' ');
+  // Axis labels as the board ticks them: 3M and 1Y are minor and leave a narrow plot; 1M is named
+  // in the subtitle instead of beside 3M.
+  const axisLabels = shown.filter((m) => !m.unlabelled && !(narrow && m.minor));
+  // Today's values over their dots, from the long end in, each at least 32px from the last one
+  // drawn so the front end's close maturities never overprint (a narrow plot labels the major
+  // maturities only). The table twin carries every value.
+  const valueLabels = new Set<number>();
+  let lastLabelX = Infinity;
+  for (let i = shown.length - 1; i >= 0; i--) {
+    const v = now[i];
+    const m = shown[i];
+    if (v === null || (narrow && (m.minor || m.unlabelled))) continue;
+    const at = x(m.years);
+    if (lastLabelX - at < 32) continue;
+    valueLabels.add(i);
+    lastLabelX = at;
+  }
   const grid = Array.from({ length: yMax - yMin + 1 }, (_, i) => yMin + i);
   // The three curves, newest last so it draws on top; each named at its long end.
   const curves = [
@@ -519,14 +561,14 @@ function CurvePanel({
   const aria = `Yield curve. ${curves
     .map(
       (c) =>
-        `${formatNoteDate(c.p.date)}: ${MATURITIES.map((m, i) => `${m.label} ${pct(c.vals[i])}`).join(', ')}.`,
+        `${formatNoteDate(c.p.date)}: ${shown.map((m, i) => `${m.label} ${pct(c.vals[i])}`).join(', ')}.`,
     )
     .join(' ')}`;
   return (
     <ChartFrame
       finding={title}
       metric="Treasury yield curve"
-      sub={`U.S. Treasury par yields by maturity · percent · ${formatNoteDate(latest.date)}${ago || month ? ` against ${month && ago ? 'a month and a year' : month ? 'a month' : 'a year'} earlier` : ''} · maturities spaced by √years`}
+      sub={`U.S. Treasury par yields by maturity · percent · ${formatNoteDate(latest.date)}${ago || month ? ` against ${month && ago ? 'a month and a year' : month ? 'a month' : 'a year'} earlier` : ''} · ${first.long} to ${last.long}, spaced by √years`}
       height={H}
       {...treasuryFrame('U.S. Treasury · daily par yield curve', latest.date, {
         state: stale ? 'lastGood' : 'updated',
@@ -565,10 +607,7 @@ function CurvePanel({
       table={{
         caption: 'Treasury par yields by maturity, percent',
         cols: ['Maturity', ...[...curves].reverse().map((c) => formatNoteDate(c.p.date))],
-        rows: MATURITIES.map((m, i) => [
-          m.label,
-          ...[...curves].reverse().map((c) => pct(c.vals[i])),
-        ]),
+        rows: shown.map((m, i) => [m.label, ...[...curves].reverse().map((c) => pct(c.vals[i]))]),
       }}
       testId="chart-curve"
     >
@@ -606,7 +645,7 @@ function CurvePanel({
                 <text x={L - 8} y={y(g) + 4} textAnchor="end">{`${g}%`}</text>
               </g>
             ))}
-            {MATURITIES.map((m) => (
+            {axisLabels.map((m) => (
               <text key={m.key} x={x(m.years)} y={H - 14} textAnchor="middle">
                 {m.label}
               </text>
@@ -630,28 +669,30 @@ function CurvePanel({
           {now.map(
             (v, i) =>
               v !== null && (
-                <g key={i}>
+                <g key={shown[i].key}>
                   <Box
                     component="circle"
-                    cx={x(MATURITIES[i].years)}
+                    cx={x(shown[i].years)}
                     cy={y(v)}
                     r={3.5}
                     sx={{ fill: 'currentColor', color: 'text.primary' }}
                   />
-                  <Box
-                    component="text"
-                    x={x(MATURITIES[i].years) + (i === 0 ? 8 : 0)}
-                    y={y(v) - 10}
-                    textAnchor="middle"
-                    sx={{
-                      fontFamily: MONO.fontFamily,
-                      fontSize: 11,
-                      fill: 'currentColor',
-                      color: 'text.primary',
-                    }}
-                  >
-                    {v.toFixed(2)}
-                  </Box>
+                  {valueLabels.has(i) && (
+                    <Box
+                      component="text"
+                      x={x(shown[i].years) + (i === 0 ? 8 : 0)}
+                      y={y(v) - 10}
+                      textAnchor="middle"
+                      sx={{
+                        fontFamily: MONO.fontFamily,
+                        fontSize: 11,
+                        fill: 'currentColor',
+                        color: 'text.primary',
+                      }}
+                    >
+                      {v.toFixed(2)}
+                    </Box>
+                  )}
                 </g>
               ),
           )}
@@ -807,45 +848,128 @@ function SpreadPanel({
   asOf: string;
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
+  const hatchId = useId();
+  const theme = useTheme();
   const W = Math.max(280, width);
-  // The plot, then the FOMC lane under it, then the dates.
-  const H = 248;
+  const narrow = W < 480;
+  // The plot, then the FOMC lane under it (each decision's mark over its outcome), then the dates.
+  const H = 262;
   const L = 44;
   const R = 52;
   const T = 20;
-  const B = 60;
+  const B = 74;
   const LANE = H - B + 16;
-  const meetings = fomcInSeries(series.map((p) => p.date));
+  // Every weekday stays on the axis (P-8/P-10, design spreadPlot gaps): a weekday the Treasury
+  // published no spread for is a hatched "Not published" gap, never closed up or drawn across.
+  const axis = useMemo(() => onWeekdays(series.map((p) => p.date)), [series]);
+  const valueOn = useMemo(() => new Map(series.map((p) => [p.date, p.value])), [series]);
+  const n = axis.days.length;
+  const x = (i: number) => L + (n <= 1 ? 0 : (i / (n - 1)) * (W - L - R));
+  const ix = (date: string) => axis.index.get(date) ?? 0;
   const vMin = Math.min(0, Math.floor(lo.value * 5) / 5);
   const vMax = Math.ceil(hi.value * 5) / 5 + 0.2;
-  const n = series.length;
-  const x = (i: number) => L + (n <= 1 ? 0 : (i / (n - 1)) * (W - L - R));
   const y = (v: number) => T + ((vMax - v) / (vMax - vMin)) * (H - T - B);
-  const iLo = series.indexOf(lo);
-  const iHi = series.indexOf(hi);
+  const iLo = ix(lo.date);
+  const iHi = ix(hi.date);
   const ticks = [vMin, (vMin + vMax) / 2, vMax];
-  // One row per month (its last business day), then the year's high and low.
+  // The line breaks at every gap: one polyline per run of consecutive weekdays.
+  const runs: { date: string; value: number }[][] = [];
+  for (const p of series) {
+    const run = runs[runs.length - 1];
+    if (run && ix(p.date) === ix(run[run.length - 1].date) + 1) run.push(p);
+    else runs.push([p]);
+  }
+  // Each gap's hatch spans its missing weekdays, at least 3px wide so a single day still reads.
+  const gapBands = axis.gaps.map((g) => {
+    const x0 = Math.max(L, x(g.from - 0.5));
+    const x1 = Math.min(W - R, x(g.to + 0.5));
+    const pad = Math.max(0, (3 - (x1 - x0)) / 2);
+    return { ...g, x0: x0 - pad, x1: x1 + pad };
+  });
+  const gapDays = axis.gaps.flatMap((g) => axis.days.slice(g.from, g.to + 1));
+  const hiRight = iHi > n * 0.7;
+  const loRight = iLo > n * 0.7;
+  const hiText = `${hi.value.toFixed(2)} · ${formatShortDate(hi.date)}`;
+  const loText = `${lo.value.toFixed(2)} · ${formatShortDate(lo.date)}`;
+  // The latest gap is named on the plot, the subtitle names the hatch for the rest. Its words go at
+  // the foot of the plot, or the top, or the middle: the first place clear of the other labels.
+  const named = gapBands[gapBands.length - 1];
+  const namedRight = named ? (named.x0 + named.x1) / 2 > L + (W - L - R) / 2 : false;
+  const namedX = named ? (namedRight ? named.x0 - 4 : named.x1 + 4) : 0;
+  const textBox = (at: number, end: boolean, w: number, base: number) => ({
+    x0: end ? at - w : at,
+    x1: end ? at : at + w,
+    y0: base - 10,
+    y1: base + 3,
+  });
+  const taken = [
+    textBox(x(iHi) + (hiRight ? -6 : 6), hiRight, hiText.length * 6.7, y(hi.value) - 6),
+    textBox(x(iLo) + (loRight ? -6 : 6), loRight, loText.length * 6.7, y(lo.value) + 16),
+    textBox(L + 6, false, 16 * 6.7, y(0) - 6),
+  ];
+  const namedY =
+    [H - B - 6, T + 12, Math.round((T + H - B) / 2)].find((base) => {
+      const b = textBox(namedX, namedRight, 80, base);
+      return !taken.some((o) => b.x0 < o.x1 && o.x0 < b.x1 && b.y0 < o.y1 && o.y0 < b.y1);
+    }) ?? H - B - 6;
+  // Text over the hatch and the band keeps a halo of the panel colour, so neither strikes it out.
+  const halo = (t: Theme) => ({
+    stroke: t.palette.background.paper,
+    strokeWidth: 3,
+    paintOrder: 'stroke',
+    strokeLinejoin: 'round',
+  });
+  const meetings = fomcInSeries(axis.days).map((m) => ({ ...m, outcome: fomcOutcome(m.date) }));
+  // Outcome labels from the latest back, each at least 30px from the last one drawn; a narrow plot
+  // keeps the moves and the latest decision and drops the other holds (design: minor FOMC chips).
+  const labelled = new Set<string>();
+  let lastLabelX = Infinity;
+  const latestWithOutcome = [...meetings].reverse().find((m) => m.outcome)?.date;
+  for (const m of [...meetings].reverse()) {
+    if (!m.outcome) continue;
+    if (narrow && m.outcome.moveBp === 0 && m.date !== latestWithOutcome) continue;
+    const mx = x(m.index);
+    if (lastLabelX - mx < 30) continue;
+    labelled.add(m.date);
+    lastLabelX = mx;
+  }
+  // One row per month (its last published day), every weekday not published, in date order; then
+  // the year's high and low and each FOMC decision with its outcome.
   const monthly = series.filter(
-    (p, k) => k === n - 1 || series[k + 1].date.slice(0, 7) !== p.date.slice(0, 7),
+    (p, k) => k === series.length - 1 || series[k + 1].date.slice(0, 7) !== p.date.slice(0, 7),
   );
+  const dated = [
+    ...monthly.map((p) => ({ date: p.date, cell: pts(p.value) })),
+    ...gapDays.map((d) => ({ date: d, cell: 'not published' })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
+  const decisionAria = meetings
+    .map(
+      (m) =>
+        `${formatShortDate(m.date)} ${m.outcome ? outcomeLabel(m.outcome) : 'outcome not listed'}`,
+    )
+    .join(', ');
   return (
     <ChartFrame
       finding={`2s10s has held between ${lo.value.toFixed(2)} and ${hi.value.toFixed(2)} points all year. It is ${last.value.toFixed(2)} now.`}
       metric="2s10s spread"
-      sub="10-year less 2-year Treasury par yield · percentage points · each business day for a year · band = the year's range · below 0 the curve inverts · FOMC = a Fed rate decision (◆ with projections)"
+      sub="10-year less 2-year Treasury par yield · percentage points · each weekday for a year, hatched where the Treasury published none · band = the year's range · below 0 the curve inverts · FOMC = a Fed rate decision and its change to the target range in basis points (◆ with projections)"
       height={H}
       {...treasuryFrame('U.S. Treasury · daily par yield curve', asOf, { state: 'computed' })}
       table={{
-        caption: '2s10s spread, percentage points, month-end and the year’s extremes',
+        caption:
+          '2s10s spread, percentage points: month-end, every weekday not published, the year’s extremes and each FOMC decision',
         cols: ['Date', 'Spread'],
         rows: [
-          ...monthly.map((p) => [formatNoteDate(p.date), pts(p.value)]),
+          ...dated.map((r) => [formatNoteDate(r.date), r.cell]),
           [`High · ${formatNoteDate(hi.date)}`, pts(hi.value)],
           [`Low · ${formatNoteDate(lo.date)}`, pts(lo.value)],
-          ...meetings.map((m) => [
-            `FOMC decision · ${formatNoteDate(m.date)}${m.sep ? ' · projections' : ''}`,
-            pts(series[m.index].value),
-          ]),
+          ...meetings.map((m) => {
+            const v = valueOn.get(m.date);
+            return [
+              `FOMC decision · ${formatNoteDate(m.date)} · ${m.outcome ? outcomeWords(m.outcome) : 'outcome not yet copied from its statement'}${m.sep ? ' · projections' : ''}`,
+              v === undefined ? 'not published' : pts(v),
+            ];
+          }),
         ],
       }}
       note={
@@ -860,7 +984,9 @@ function SpreadPanel({
           >
             Federal Reserve’s meeting calendar
           </Box>{' '}
-          (checked {formatNoteDate(FOMC_CHECKED)}), each on its decision day.
+          (checked {formatNoteDate(FOMC_CHECKED)}), each on its decision day, with the change to the
+          target range copied from that day’s FOMC statement (checked{' '}
+          {formatNoteDate(FOMC_OUTCOMES_CHECKED)}).
         </>
       }
       testId="chart-spread"
@@ -868,12 +994,23 @@ function SpreadPanel({
       <Box ref={ref} sx={{ minWidth: 0 }}>
         <svg
           role="img"
-          aria-label={`2s10s over the past year: high ${hi.value.toFixed(2)} on ${formatNoteDate(hi.date)}, low ${lo.value.toFixed(2)} on ${formatNoteDate(lo.date)}, ${last.value.toFixed(2)} on ${formatNoteDate(last.date)}`}
+          aria-label={`2s10s over the past year: high ${hi.value.toFixed(2)} on ${formatNoteDate(hi.date)}, low ${lo.value.toFixed(2)} on ${formatNoteDate(lo.date)}, ${last.value.toFixed(2)} on ${formatNoteDate(last.date)}${gapDays.length ? `; not published on ${gapDays.length} weekday${gapDays.length === 1 ? '' : 's'}` : ''}${meetings.length ? `; FOMC decisions: ${decisionAria}` : ''}`}
           width="100%"
           height={H}
           viewBox={`0 0 ${W} ${H}`}
           style={{ display: 'block' }}
         >
+          <defs>
+            <pattern
+              id={hatchId}
+              width="3"
+              height="3"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect width="1" height="3" fill={alpha(theme.palette.text.secondary, 0.4)} />
+            </pattern>
+          </defs>
           {/* The year's range: a band wash whose edges are hairlines, never the wash alone (P-9). */}
           <Box
             component="rect"
@@ -892,6 +1029,17 @@ function SpreadPanel({
               y1={y(v)}
               y2={y(v)}
               sx={(t) => ({ stroke: chartRoles(t).edge, strokeWidth: 1 })}
+            />
+          ))}
+          {/* Weekdays with no spread: hatched over the plot's full height, the line broken there. */}
+          {gapBands.map((g) => (
+            <rect
+              key={g.from}
+              x={g.x0}
+              y={T}
+              width={g.x1 - g.x0}
+              height={H - B - T}
+              fill={`url(#${hatchId})`}
             />
           ))}
           <Box
@@ -933,11 +1081,27 @@ function SpreadPanel({
               y2={y(0)}
               sx={(t) => ({ stroke: chartRoles(t).axis, strokeWidth: 1.25 })}
             />
-            <text x={L + 6} y={y(0) - 6}>
+            <Box component="text" x={L + 6} y={y(0) - 6} sx={halo}>
               Inverted below 0
-            </text>
+            </Box>
+            {named && (
+              <Box
+                component="text"
+                x={namedX}
+                y={namedY}
+                textAnchor={namedRight ? 'end' : 'start'}
+                sx={(t) => ({
+                  ...halo(t),
+                  fontFamily: t.typography.fontFamily ?? 'inherit',
+                  fontSize: 11,
+                })}
+              >
+                Not published
+              </Box>
+            )}
             {/* The FOMC lane: a hairline through the plot at each decision, a mark in the lane
-                (a diamond when the Fed also published projections). */}
+                (a diamond when the Fed also published projections), and under it the change to
+                the target range from that day's statement. */}
             <text x={L - 6} y={LANE + 4} textAnchor="end">
               FOMC
             </text>
@@ -962,6 +1126,20 @@ function SpreadPanel({
                 ) : (
                   <circle cx={x(m.index)} cy={LANE} r={3.5} />
                 )}
+                {m.outcome && labelled.has(m.date) && (
+                  <Box
+                    component="text"
+                    x={Math.max(L + 12, x(m.index))}
+                    y={LANE + 19}
+                    textAnchor="middle"
+                    sx={{
+                      color: m.outcome.moveBp === 0 ? 'text.secondary' : 'text.primary',
+                      fontWeight: m.outcome.moveBp === 0 ? 400 : 600,
+                    }}
+                  >
+                    {outcomeLabel(m.outcome)}
+                  </Box>
+                )}
               </g>
             ))}
             <text x={L} y={H - 10}>
@@ -971,16 +1149,32 @@ function SpreadPanel({
               {formatShortDate(last.date)}
             </text>
           </Box>
-          <Box
-            component="polyline"
-            points={series.map((p, i) => `${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ')}
-            sx={(t) => ({
-              fill: 'none',
-              stroke: t.palette.text.primary,
-              strokeWidth: 1.75,
-              strokeLinejoin: 'round',
-            })}
-          />
+          {runs.map((run) =>
+            run.length === 1 ? (
+              <Box
+                key={run[0].date}
+                component="circle"
+                cx={x(ix(run[0].date))}
+                cy={y(run[0].value)}
+                r={1.5}
+                sx={(t) => ({ fill: t.palette.text.primary })}
+              />
+            ) : (
+              <Box
+                key={run[0].date}
+                component="polyline"
+                points={run
+                  .map((p) => `${x(ix(p.date)).toFixed(1)},${y(p.value).toFixed(1)}`)
+                  .join(' ')}
+                sx={(t) => ({
+                  fill: 'none',
+                  stroke: t.palette.text.primary,
+                  strokeWidth: 1.75,
+                  strokeLinejoin: 'round',
+                })}
+              />
+            ),
+          )}
           <Box
             component="g"
             sx={{
@@ -991,19 +1185,27 @@ function SpreadPanel({
             }}
           >
             <circle cx={x(iHi)} cy={y(hi.value)} r={3} />
-            <text
-              x={x(iHi) + (iHi > n * 0.7 ? -6 : 6)}
+            <Box
+              component="text"
+              x={x(iHi) + (hiRight ? -6 : 6)}
               y={y(hi.value) - 6}
-              textAnchor={iHi > n * 0.7 ? 'end' : 'start'}
-            >{`${hi.value.toFixed(2)} · ${formatShortDate(hi.date)}`}</text>
+              textAnchor={hiRight ? 'end' : 'start'}
+              sx={halo}
+            >
+              {hiText}
+            </Box>
             <circle cx={x(iLo)} cy={y(lo.value)} r={3} />
-            <text
-              x={x(iLo) + (iLo > n * 0.7 ? -6 : 6)}
+            <Box
+              component="text"
+              x={x(iLo) + (loRight ? -6 : 6)}
               y={y(lo.value) + 16}
-              textAnchor={iLo > n * 0.7 ? 'end' : 'start'}
-            >{`${lo.value.toFixed(2)} · ${formatShortDate(lo.date)}`}</text>
-            <circle cx={x(n - 1)} cy={y(last.value)} r={4} />
-            <text x={x(n - 1) + 8} y={y(last.value) + 4}>
+              textAnchor={loRight ? 'end' : 'start'}
+              sx={halo}
+            >
+              {loText}
+            </Box>
+            <circle cx={x(ix(last.date))} cy={y(last.value)} r={4} />
+            <text x={x(ix(last.date)) + 8} y={y(last.value) + 4}>
               {last.value.toFixed(2)}
             </text>
           </Box>
@@ -1752,7 +1954,7 @@ function MarketsLoading() {
             {frame(
               '2s10s spread',
               '10-year less 2-year Treasury par yield · percentage points',
-              248,
+              262,
             )}
           </Box>
           <Box sx={{ flex: '1 1 340px', minWidth: 0 }}>

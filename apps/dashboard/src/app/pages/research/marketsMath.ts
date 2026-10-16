@@ -4,10 +4,13 @@
  * percent, as the Treasury reports them; differences are in percentage points.
  */
 
-/** One business day of Treasury yields (`YieldPointWire`): any series may be missing that day. */
+/** One business day of Treasury yields (`YieldPointWire`): any series may be missing that day. The
+ *  1-month and 1-year are absent (undefined) from an API older than 2026-10-16: read them as missing. */
 export type YieldPoint = {
   date: string;
+  t1m?: number | null;
   t3m: number | null;
+  t1y?: number | null;
   t2y: number | null;
   t5y: number | null;
   t10y: number | null;
@@ -39,6 +42,41 @@ export function spread2s10s(daily: YieldPoint[]): { date: string; value: number 
   return daily
     .filter((p) => p.t2y !== null && p.t10y !== null)
     .map((p) => ({ date: p.date, value: round2((p.t10y as number) - (p.t2y as number)) }));
+}
+
+const DAY_MS = 86_400_000;
+
+/**
+ * A daily series laid on a weekday axis (Monday to Friday, first date to last): each weekday's
+ * position, and the runs of weekdays the series has no value for, which the 2s10s chart hatches as
+ * "Not published" instead of closing them up (a bond-market holiday or a day the Treasury left the
+ * 2- or 10-year blank). Weekends are not days on this axis, so they are never gaps. Dates are
+ * YYYY-MM-DD, oldest first, and are read as UTC days so no time zone shifts them.
+ */
+export function onWeekdays(dates: string[]): {
+  days: string[];
+  index: Map<string, number>;
+  gaps: { from: number; to: number }[];
+} {
+  const days: string[] = [];
+  const index = new Map<string, number>();
+  const gaps: { from: number; to: number }[] = [];
+  if (dates.length === 0) return { days, index, gaps };
+  const have = new Set(dates);
+  const end = Date.parse(`${dates[dates.length - 1]}T00:00:00Z`);
+  for (let t = Date.parse(`${dates[0]}T00:00:00Z`); t <= end; t += DAY_MS) {
+    const weekday = new Date(t).getUTCDay();
+    if (weekday === 0 || weekday === 6) continue;
+    const day = new Date(t).toISOString().slice(0, 10);
+    const i = days.length;
+    days.push(day);
+    index.set(day, i);
+    if (have.has(day)) continue;
+    const open = gaps[gaps.length - 1];
+    if (open && open.to === i - 1) open.to = i;
+    else gaps.push({ from: i, to: i });
+  }
+  return { days, index, gaps };
 }
 
 export type NoteRate = {
