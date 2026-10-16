@@ -23,6 +23,7 @@ import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
+import { extrasFor } from '@/shared/theme/tokens';
 import { dataMode, resetDemoWorkspace, type ThemePref } from '@convexa/api';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
@@ -148,11 +149,34 @@ function PanelCard({
   /** The panel's status tag (canon P-2): where its data lives, or what it needs. */
   tag?: PanelTag;
 }) {
+  // A panel of sample data (the demo's AI and broker, tagged Read-only sample) is dashed with the
+  // hatch stripe, as every sample frame is (canon P-3, P-8; D-19; design settingsStaging is-sample).
+  const sample = tag?.state === 'sample';
   return (
     <Card
       variant="outlined"
       data-testid={testId}
-      sx={{ bgcolor: 'background.paper', borderColor: 'divider', borderRadius: 1, p: 3 }}
+      sx={(t) => ({
+        bgcolor: 'background.paper',
+        borderColor: 'divider',
+        borderRadius: 1,
+        p: 3,
+        ...(sample && {
+          position: 'relative',
+          borderStyle: 'dashed',
+          borderColor: extrasFor(t).textTertiary,
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            height: 8,
+            pointerEvents: 'none',
+            background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`,
+          },
+        }),
+      })}
     >
       <Box
         sx={{

@@ -6,7 +6,7 @@
  */
 import { ChartFrame, type ChartStatus } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import { publicDataWord } from '@/shared/dataState/vocabulary';
+import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { STAGING_DEMO_SYMBOLS, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import {
   dataMode,
@@ -60,9 +60,25 @@ const notesByTicker = new Map<string, { date: string; accessions: string[] }>(
 );
 const TICKERS: string[] = DEMO ? [...STAGING_DEMO_SYMBOLS] : researchIndex.map((r) => r.ticker);
 const EDGAR_SEARCH = 'https://www.sec.gov/edgar/search/';
-/** Sample data is dashed (canon P-3). */
+/** Sample data is dashed, with the hatch stripe along its top (canon P-3, P-8). */
 const DEMO_EDGE = (t: Theme) =>
-  DEMO ? { border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}` } : {};
+  DEMO
+    ? {
+        position: 'relative' as const,
+        border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}`,
+        '&::before': {
+          content: '""',
+          position: 'absolute' as const,
+          left: 0,
+          right: 0,
+          top: 0,
+          height: 8,
+          borderRadius: '11px 11px 0 0',
+          pointerEvents: 'none' as const,
+          background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`,
+        },
+      }
+    : {};
 
 export function FilingsPage() {
   const today = useMemo(() => localToday(), []);
@@ -88,6 +104,17 @@ export function FilingsPage() {
   );
 
   const notSetUp = read.data?.state === 'not_configured' && !DEMO;
+  // One state word for the answer (canon P-2): the header says it, and so does the feed's frame.
+  const word = read.data
+    ? publicDataWord(read.data.state, {
+        stale:
+          read.data.state === 'live' &&
+          secStale(
+            read.data.sources?.find((s) => s.id === 'sec')?.state ?? read.data.source_state,
+            read.data.detail,
+          ),
+      })
+    : null;
   const expectedSection = (
     <Box component="section" aria-labelledby="expected" sx={{ display: 'grid', gap: 1 }}>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.25 }}>
@@ -216,19 +243,7 @@ export function FilingsPage() {
             {notSetUp && (
               <ProvenanceChip text="SEC EDGAR · not set up on this site" kind="primary" />
             )}
-            {read.data && dataMode !== 'demo' && (
-              <DataStateTag
-                state={publicDataWord(read.data.state, {
-                  stale:
-                    read.data.state === 'live' &&
-                    secStale(
-                      read.data.sources?.find((s) => s.id === 'sec')?.state ??
-                        read.data.source_state,
-                      read.data.detail,
-                    ),
-                })}
-              />
-            )}
+            {word && dataMode !== 'demo' && <DataStateTag state={word} />}
             <Box
               component="span"
               sx={{
@@ -323,7 +338,25 @@ export function FilingsPage() {
             ) : (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start' }}>
                 <Box sx={{ flex: '999 1 560px', minWidth: 0 }}>
-                  <Feed filings={shown} current={current} onSelect={setSelected} />
+                  <Feed
+                    filings={shown}
+                    current={current}
+                    onSelect={setSelected}
+                    // Sample filings say so on their own frame (D-19, P-3); live ones carry the
+                    // answer's word and when EDGAR was checked (design: Filings feedSection).
+                    tag={
+                      DEMO
+                        ? { state: 'demo' }
+                        : word
+                          ? {
+                              state: word,
+                              detail: read.data?.checked_at
+                                ? `checked ${read.data.checked_at.slice(11, 16)} UTC`
+                                : undefined,
+                            }
+                          : null
+                    }
+                  />
                 </Box>
                 <Box
                   sx={{
@@ -342,7 +375,10 @@ export function FilingsPage() {
         )}
 
         <Disclaimer>
-          Filings from SEC EDGAR, the public record. Personal research notes. Not financial advice.
+          {DEMO
+            ? // The demo cites no real source (D-19): its filings are samples (design: Filings staging).
+              'Sample filings shaped like SEC EDGAR; each links to the SEC’s browse page. Not investment advice.'
+            : 'Filings from SEC EDGAR, the public record. Personal research notes. Not financial advice.'}
         </Disclaimer>
       </Box>
     </ResearchColumn>
@@ -393,10 +429,12 @@ function Feed({
   filings,
   current,
   onSelect,
+  tag,
 }: {
   filings: PublicFiling[];
   current: PublicFiling | null;
   onSelect: (a: string) => void;
+  tag: { state: DataStateKey; detail?: string } | null;
 }) {
   const list = useRef<HTMLOListElement>(null);
   const move = (dir: 1 | -1) => {
@@ -408,119 +446,140 @@ function Feed({
   };
   return (
     <Box
-      component="ol"
-      ref={list}
-      aria-label="Filings, newest first"
-      onKeyDown={(e: React.KeyboardEvent) => {
-        if (e.metaKey || e.ctrlKey || e.altKey) return;
-        if (e.key === 'j') {
-          e.preventDefault();
-          move(1);
-        } else if (e.key === 'k') {
-          e.preventDefault();
-          move(-1);
-        } else if (e.key === 'o' && current) {
-          e.preventDefault();
-          window.open(current.url, '_blank', 'noopener,noreferrer');
-        }
-      }}
-      sx={[{ ...PANEL_SX, listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }, DEMO_EDGE]}
+      component="section"
+      aria-labelledby="feed-h"
+      sx={[{ ...PANEL_SX, overflow: 'hidden' }, DEMO_EDGE]}
     >
-      {filings.map((f, i) => {
-        const note = notesByTicker.get(f.ticker);
-        const stand = note ? standing(f, note) : 'unused';
-        const on = current?.accession === f.accession;
-        return (
-          <Box component="li" key={f.accession}>
-            <Box
-              component="button"
-              type="button"
-              data-accession={f.accession}
-              aria-current={on ? 'true' : undefined}
-              onClick={() => onSelect(f.accession)}
-              sx={(t) => ({
-                width: '100%',
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '56px minmax(0, 1fr)',
-                  sm: '64px 56px 72px minmax(0, 1fr) auto',
-                },
-                gap: { xs: '4px 12px', sm: 1.5 },
-                alignItems: 'center',
-                textAlign: 'left',
-                p: '12px 16px',
-                border: 0,
-                borderTop: i === 0 ? 0 : `1px solid ${t.palette.divider}`,
-                bgcolor: on ? alpha(t.palette.text.primary, 0.06) : 'transparent',
-                boxShadow: on ? `inset 2px 0 0 ${t.palette.text.primary}` : 'none',
-                color: 'text.primary',
-                font: 'inherit',
-                fontSize: 13,
-                cursor: 'pointer',
-                '&:hover': { bgcolor: alpha(t.palette.text.primary, on ? 0.06 : 0.03) },
-              })}
-            >
-              <Box component="span" sx={{ ...MONO, color: 'text.secondary' }}>
-                {formatShortDate(f.filed)}
-              </Box>
-              <TickerChip ticker={f.ticker} />
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '6px 12px',
+          p: DEMO ? '20px 16px 10px' : '14px 16px 10px',
+        }}
+      >
+        <Box component="h2" id="feed-h" sx={{ m: 0, fontSize: 14, fontWeight: 600 }}>
+          Filed · last 90 days · newest first
+        </Box>
+        {tag && <DataStateTag state={tag.state} detail={tag.detail} />}
+      </Box>
+      <Box
+        component="ol"
+        ref={list}
+        aria-label="Filings, newest first"
+        onKeyDown={(e: React.KeyboardEvent) => {
+          if (e.metaKey || e.ctrlKey || e.altKey) return;
+          if (e.key === 'j') {
+            e.preventDefault();
+            move(1);
+          } else if (e.key === 'k') {
+            e.preventDefault();
+            move(-1);
+          } else if (e.key === 'o' && current) {
+            e.preventDefault();
+            window.open(current.url, '_blank', 'noopener,noreferrer');
+          }
+        }}
+        sx={(t) => ({ listStyle: 'none', m: 0, p: 0, borderTop: `1px solid ${t.palette.divider}` })}
+      >
+        {filings.map((f, i) => {
+          const note = notesByTicker.get(f.ticker);
+          const stand = note ? standing(f, note) : 'unused';
+          const on = current?.accession === f.accession;
+          return (
+            <Box component="li" key={f.accession}>
               <Box
-                component="span"
-                sx={{
-                  ...MONO,
-                  fontSize: 11,
-                  color: 'text.secondary',
-                  display: { xs: 'none', sm: 'inline' },
-                }}
-              >
-                {f.items.length
-                  ? `${f.form} ${f.items.filter((it) => it !== '9.01').join(', ')}`
-                  : f.form}
-              </Box>
-              <Box
-                component="span"
-                sx={{
+                component="button"
+                type="button"
+                data-accession={f.accession}
+                aria-current={on ? 'true' : undefined}
+                onClick={() => onSelect(f.accession)}
+                sx={(t) => ({
+                  width: '100%',
                   display: 'grid',
-                  gap: 0.25,
-                  minWidth: 0,
-                  gridColumn: { xs: '1 / -1', sm: 'auto' },
-                }}
+                  gridTemplateColumns: {
+                    xs: '56px minmax(0, 1fr)',
+                    sm: '64px 56px 72px minmax(0, 1fr) auto',
+                  },
+                  gap: { xs: '4px 12px', sm: 1.5 },
+                  alignItems: 'center',
+                  textAlign: 'left',
+                  p: '12px 16px',
+                  border: 0,
+                  borderTop: i === 0 ? 0 : `1px solid ${t.palette.divider}`,
+                  bgcolor: on ? alpha(t.palette.text.primary, 0.06) : 'transparent',
+                  boxShadow: on ? `inset 2px 0 0 ${t.palette.text.primary}` : 'none',
+                  color: 'text.primary',
+                  font: 'inherit',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: alpha(t.palette.text.primary, on ? 0.06 : 0.03) },
+                })}
               >
+                <Box component="span" sx={{ ...MONO, color: 'text.secondary' }}>
+                  {formatShortDate(f.filed)}
+                </Box>
+                <TickerChip ticker={f.ticker} />
                 <Box
                   component="span"
                   sx={{
-                    fontWeight: 500,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    ...MONO,
+                    fontSize: 11,
+                    color: 'text.secondary',
+                    display: { xs: 'none', sm: 'inline' },
                   }}
                 >
-                  {f.description || f.form}
+                  {f.items.length
+                    ? `${f.form} ${f.items.filter((it) => it !== '9.01').join(', ')}`
+                    : f.form}
                 </Box>
-                <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-                  {KIND_WORD[f.kind]}
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'grid',
+                    gap: 0.25,
+                    minWidth: 0,
+                    gridColumn: { xs: '1 / -1', sm: 'auto' },
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {f.description || f.form}
+                  </Box>
+                  <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                    {KIND_WORD[f.kind]}
+                  </Box>
                 </Box>
-              </Box>
-              <Box
-                component="span"
-                sx={{
-                  fontSize: 12,
-                  whiteSpace: 'nowrap',
-                  color: stand === 'new' ? 'text.primary' : 'text.secondary',
-                  fontWeight: stand === 'new' ? 600 : 400,
-                  display: { xs: 'none', sm: 'inline' },
-                }}
-              >
-                {stand === 'cited'
-                  ? 'in note'
-                  : stand === 'new'
-                    ? 'new since the note'
-                    : 'not cited'}
+                <Box
+                  component="span"
+                  sx={{
+                    fontSize: 12,
+                    whiteSpace: 'nowrap',
+                    color: stand === 'new' ? 'text.primary' : 'text.secondary',
+                    fontWeight: stand === 'new' ? 600 : 400,
+                    display: { xs: 'none', sm: 'inline' },
+                  }}
+                >
+                  {stand === 'cited'
+                    ? 'in note'
+                    : stand === 'new'
+                      ? 'new since the note'
+                      : 'not cited'}
+                </Box>
               </Box>
             </Box>
-          </Box>
-        );
-      })}
+          );
+        })}
+      </Box>
     </Box>
   );
 }
@@ -559,6 +618,9 @@ function Detail({ filing }: { filing: PublicFiling }) {
           <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
             {`${filing.form}${filing.items.length ? ` · Item ${filing.items.filter((it) => it !== '9.01').join(', ')}` : ''} · ${formatNoteDate(filing.filed)}`}
           </Box>
+          {/* A sample filing's frame says so (D-19, P-3; design: Filings filingDetail). A live
+              one already shows its filing date in this row. */}
+          {DEMO && <DataStateTag state="demo" />}
         </Box>
         <Box
           component="h2"
