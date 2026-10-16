@@ -906,7 +906,7 @@ impl PublicDataService {
         let this = self.clone();
         let owned = ticker.to_string();
         let task = tokio::spawn(async move { this.sec_part(&owned).await });
-        match tokio::time::timeout(budget, task).await {
+        let mut part = match tokio::time::timeout(budget, task).await {
             Ok(Ok(part)) => part,
             // Timed out (the task keeps reading in the background), or the task failed.
             _ => {
@@ -919,7 +919,19 @@ impl PublicDataService {
                 row.failed_at = Some(Utc::now());
                 SecPart::without_data(DataState::Unavailable, detail, false, row)
             }
+        };
+        // A note with a peer list says why its peers aren't shown (not set up, unavailable).
+        if part.peers.is_none()
+            && part.filings_state != DataState::Live
+            && xbrl_frames::peer_list(ticker).is_some()
+        {
+            part.peers = Some(xbrl_frames::Peers::without_data(
+                part.filings_state,
+                source_state_for(part.filings_state),
+                part.filings_detail.clone().unwrap_or_default(),
+            ));
         }
+        part
     }
 
     async fn sec_part(&self, ticker: &str) -> SecPart {
