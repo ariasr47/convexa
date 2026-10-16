@@ -1275,7 +1275,9 @@ export function TickerDashboard() {
         </Fade>
       )}
 
-      {page.sourceBasis && (
+      {/* Only once the sample has loaded: before it, every optional part reads absent, and the
+          section would list them all as "unavailable for this sample" under the cold-load shimmer. */}
+      {page.sourceBasis && data && (
         <Box
           component="section"
           aria-label="About this sample"
