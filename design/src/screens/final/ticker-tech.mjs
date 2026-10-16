@@ -3,7 +3,7 @@
 // kept, privacy line, loading in words, 12 s timeout). Staging: Convexa's own chart drawn from the demo's
 // 60 sample bars, computed exactly as libs/api/src/lib/demo/indicators.ts does (EMA with SMA seed, Wilder
 // RSI, Wilder ADX, simple-mean ATR), in a dashed, hatched sample frame.
-import { icon, v4Page } from '../../lib.mjs';
+import { icon, finalPage } from '../../lib.mjs';
 import { chartFrame, dataTable, fmt, plot, stateBody } from '../../chart-kit.mjs';
 import { thirdPartyFrame } from '../../components/charts.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
@@ -112,7 +112,7 @@ export function sampleReadings(sym = 'SPY') {
 
 export function techStagingBody({ minHeight = 0, scheme = 'dark', t = 'SPY' } = {}) {
   const main = `<div class="wrap tch">${mast(t, SEEDS[t][3])}<div style="display: flex; flex-direction: column; gap: 8px;"><span class="caps">Technical analysis · ${t}</span><p class="tch-lead">Exponential 20- and 50-day averages, RSI 14, ADX 14 and ATR 14, computed from the demo’s 60 sample daily bars. They describe the trend; they are not calls to buy or sell.</p></div>${sampleTaChart({ sym: t })}${sampleReadings(t)}${links(t)}<p class="dline" style="margin: 0;">Research and tools, not investment advice. Figures on this board are illustrative design values.</p></div>`;
-  return v4Page({ scheme, minHeight, demo: true, active: 'ticker', label: `${t} technical analysis`, main });
+  return finalPage({ scheme, minHeight, demo: true, active: 'ticker', label: `${t} technical analysis`, main });
 }
 
 const readingsNotLive = (t) => `<section class="hd-p" aria-label="Readings, not live"><div class="ph"><h3>Readings Convexa computes</h3>${stateTag('notLive')}</div><p class="dline" style="margin: 0;"><strong style="color: var(--phosphor);">Would show</strong> EMA 20 and 50, RSI 14, ADX 14 and ATR 14 on the last daily bar, computed by Convexa and traceable to each bar.</p><p class="dline" style="margin: 0;"><strong style="color: var(--phosphor);">Off because</strong> they need daily bars from the market-data feed, which this site doesn’t run. None of them is read from TradingView’s chart.</p><a href="${DEMO_DESK(t)}/technical-analysis" class="t-info" style="display: inline-flex; gap: 4px; align-items: center; min-height: 24px; font-weight: 500;">See them on the demo →</a></section>`;
@@ -121,7 +121,7 @@ export function techProductionBody({ minHeight = 0, scheme = 'dark', t = 'NVDA' 
   const main = `<div class="wrap tch">${mast(t, 'NVIDIA · Nasdaq')}<div style="display: flex; flex-direction: column; gap: 8px;"><span class="caps">Technical analysis · ${t}</span><p class="tch-lead">Exponential 20- and 50-day averages and RSI 14, drawn by TradingView from its own prices. They describe the trend; they are not calls to buy or sell.</p></div>
     <div class="tch-grid">${thirdPartyFrame({ ticker: t, height: 620, phoneHeight: 480 })}<div style="display: flex; flex-direction: column; gap: 16px;">${readingsNotLive(t)}<section class="hd-p" aria-label="Research"><div class="ph"><h3>Research note</h3></div><span class="dline" style="font-size: 13px;">The note values ${t} from its own dated price (Oct 12), not from this chart.</span><a href="/ticker/${t}/research" class="t-info" style="display: inline-flex; gap: 4px; align-items: center; min-height: 24px; font-weight: 500;">Read ${t} research →</a></section></div></div>
     ${links(t, false)}<p class="dline" style="margin: 0;">Research and tools, not investment advice.</p></div>`;
-  return v4Page({ scheme, minHeight, active: 'ticker', label: `${t} technical analysis`, main });
+  return finalPage({ scheme, minHeight, active: 'ticker', label: `${t} technical analysis`, main });
 }
 
 export function techStatesBody({ minHeight = 0, scheme = 'dark' } = {}) {

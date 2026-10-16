@@ -597,7 +597,7 @@ export function v4Notice(mode = 'hybrid') {
   if (mode === 'paused') return `<div role="status" aria-label="Market data status" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('pause', 14)}<strong style="font-weight: 600;">Live market data is off.</strong><span class="steel">Prices, dealer structure and AI reads are paused. Daily charts come from TradingView, and research notes are current.</span><span style="flex: 1;"></span><a href="/research" class="t-info">Read research</a><a href="${STAGING_DEMO_URL}" class="t-info">Try the full demo →</a></div></div>`;
   return `<div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('notlive', 14)}<strong style="font-weight: 600;">Options data isn't live on this site.</strong><span class="steel only-wide">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, short data, filings, research and TradingView’s daily charts are live.</span><span class="steel only-phone">Public data is.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">What's live</a><a href="${STAGING_DEMO_URL}" class="t-info only-wide">See the full demo →</a></div></div>`;
 }
-export function v4Nav({ active = '', signedIn = false, demo = false } = {}) {
+export function v4Nav({ active = '', signedIn = false, demo = false, fullDemo = false } = {}) {
   const items = [['scanner', 'Scanner', '/scanner'], ['ticker', 'Ticker', '/ticker/SPY'], ['research', 'Research', '/research'], ['positions', 'Positions', '/positions'], ['alerts', 'Alerts', '/alerts']];
   const links = items.map(([k, l, h]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ''}>${l}</a>`).join('');
   const session = demo
@@ -611,8 +611,7 @@ export function v4Nav({ active = '', signedIn = false, demo = false } = {}) {
     <div class="v4n-right">
       <button type="button" class="v4n-search" aria-keyshortcuts="Meta+K">${icon('search', 15)}<span style="flex: 1; text-align: left;">Jump to a ticker or note</span><span class="kbd">⌘K</span></button>
       <button type="button" class="v4n-icon search" aria-label="Jump to a ticker or note">${icon('search', 20)}</button>
-      ${demo ? '' : `<a href="${STAGING_DEMO_URL}" class="btn secondary sm only-wide" style="white-space: nowrap;">Full demo ↗</a>`}
-      ${session}
+      ${fullDemo && !demo ? `<a href="${STAGING_DEMO_URL}" class="btn secondary sm only-wide" style="white-space: nowrap;">Full demo ↗</a>\n      ` : ''}${session}
       <button type="button" class="v4n-icon menu" aria-label="Open navigation menu" aria-expanded="false">${icon('menu', 20)}</button>
     </div>
   </div></header>`;
@@ -624,12 +623,15 @@ export function v4Tabs(active = 'Notes') {
 export function v4Footer() {
   return `<footer class="v4-foot"><div class="wrap v4-foot-in">${wordmark(14)}<nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/settings">Settings</a><a href="/credits">Sources and credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p></div></footer>`;
 }
+/** A Final-page board (2026-10-16): a v4 page whose production nav carries “Full demo ↗”. The v4 and v5
+ *  pages keep the nav they were drawn with. */
+export const finalPage = (o = {}) => v4Page({ fullDemo: true, ...o });
 /** A v4 page: scheme wrapper + notice + nav (+ research tabs) + main + footer. */
-export function v4Page({ scheme = 'dark', minHeight = 0, notice = 'hybrid', active = '', tabs = '', signedIn = false, demo = false, main = '', footer = true, label = '' } = {}) {
+export function v4Page({ scheme = 'dark', minHeight = 0, notice = 'hybrid', active = '', tabs = '', signedIn = false, demo = false, main = '', footer = true, label = '', fullDemo = false } = {}) {
   return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);">
     <a href="#main" class="btn secondary sm" style="position: absolute; left: -9999px;">Skip to main content</a>
     ${v4Notice(demo ? 'demo' : notice)}
-    ${v4Nav({ active, signedIn, demo })}
+    ${v4Nav({ active, signedIn, demo, fullDemo })}
     ${tabs ? v4Tabs(tabs) : ''}
     <main id="main"${label ? ` aria-label="${label}"` : ''}>${main}</main>
     ${footer ? v4Footer() : ''}

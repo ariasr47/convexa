@@ -4,7 +4,7 @@
 // 690 C, one waiting SPY Nov 20 limit, one closed QQQ, one SPY flip alert, a $25,000 / 2% risk seed.
 // Production is the portfolio site: nothing mocked; the options feed's widgets say Not live and link to
 // the same screen on the demo; account-only screens show the private-testing wall.
-import { STAGING_DEMO_URL, icon, v4Page } from '../../lib.mjs';
+import { STAGING_DEMO_URL, icon, finalPage } from '../../lib.mjs';
 import { dataCell, provChip, stateTag } from '../../components/data-states.mjs';
 import { fld, seg, statesBoard, sw } from '../v4/kit.mjs';
 import { ALERT_KINDS, FIRED, KIND, RULES, STRUCTURE_KINDS } from '../../data/alerts.mjs';
@@ -85,7 +85,7 @@ const scanTools = (n) => `<div class="ap-bar"><span style="font-weight: 600;">Yo
 export function scannerStaging({ minHeight = 0, scheme = 'dark' } = {}) {
   const sess = `<div class="ac-sess" aria-label="US equity session"><span class="ac-badge">RTH · scenario</span><span class="dline">Sample tape · structure ~3 min · <a href="/methodology#structure">How structure is computed</a></span><span class="dline mono">Structure as-of 2:30 PM ET, Oct 7</span></div>`;
   const main = `<div class="wrap ap">${H('Scanner', 'One dense read of the tracked universe, ranked by dealer structure. Open any row for its desk.', sess)}${legend([['demo', 'Demo · sample data', null]])}<span class="dline" style="margin-top: -12px;">Every figure on this page comes from the authored Oct 7 scenario. Nothing is fetched; prices don’t flash.</span>${scanTools(6)}${demoScanTable()}<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px;">${P('How a score is built', '', '<span class="dline">Four parts: distance to a wall, IV stretch, setups and the flip. <a href="/methodology#score">Methodology</a></span>')}${P('Your view', stateTag('local', 'Stored here'), '<span class="dline">Six names in the demo’s tracked universe. Edits and filters stay in this browser until you reset the demo.</span>')}</div></div>`;
-  return v4Page({ scheme, minHeight, active: 'scanner', demo: true, label: 'Scanner', main });
+  return finalPage({ scheme, minHeight, active: 'scanner', demo: true, label: 'Scanner', main });
 }
 const ghostTable = () => `<div class="ac-ghost" aria-hidden="true"><div class="hdr">${['Symbol', 'Price', 'Chg', 'Score', 'Tier', 'Regime', 'Flip dist', 'Walls'].map((h) => `<span>${h}</span>`).join('')}</div>${[0, 1, 2].map(() => `<div class="r">${Array.from({ length: 8 }, (_, i) => `<i style="width: ${[54, 70, 48, 80, 62, 66, 50, 74][i]}%;"></i>`).join('')}</div>`).join('')}</div>`;
 export const liveElsewhere = () => `<div class="ac-live">${[
@@ -99,12 +99,12 @@ export const scanNotLive = () => P('Scanner', stateTag('notLive'), `<p class="dl
 // signed in, the scan is Not live. The wall carries the way to the same screen on the demo.
 export const scannerWall = () => `<div class="ac-wall" role="region" aria-label="Sign in to open the scanner">${stateTag('locked', 'Private testing')}<h1 class="display">Sign in to open the scanner</h1><p class="steel">See ranked dealer-gamma setups across the universe, then jump into any name for walls, flip and flow.</p><div style="display: flex; flex-wrap: wrap; gap: 10px;"><a href="#signin" class="btn primary">Sign in</a><a href="/ticker/SPY" class="btn secondary">Open a ticker desk</a></div><p class="dline">Invited accounts only; new sign-ups are closed while Convexa is in private testing. Research, rates, positioning and short data are open to everyone.</p><p class="dline" style="border-top: 1px solid var(--line); padding-top: 12px;">Want to see a scan? The demo account runs one, on sample data. ${demoLink('/scanner', 'See it on the demo →')}</p></div>`;
 export function scannerProduction({ minHeight = 0, scheme = 'dark' } = {}) {
-  return v4Page({ scheme, minHeight, active: 'scanner', label: 'Scanner', main: `<div class="wrap ap">${scannerWall()}</div>` });
+  return finalPage({ scheme, minHeight, active: 'scanner', label: 'Scanner', main: `<div class="wrap ap">${scannerWall()}</div>` });
 }
 /** Production, signed in (the owner): Not live, because every column reads the options chain. */
 export function scannerProductionSignedIn({ minHeight = 0, scheme = 'dark' } = {}) {
   const main = `<div class="wrap ap">${H('Scanner', 'One dense read of the tracked universe, ranked by dealer structure. Open any row for its desk.')}${legend([['notLive', 'Not live', 1], ['current', 'Updated', 2], ['delayed', 'Delayed by source', 1], ['off', 'Off', 1]])}${scanNotLive()}<section aria-label="Live on this site" style="display: flex; flex-direction: column; gap: 12px;"><h2 style="margin: 0; font-size: 18px;">Live on this site</h2><span class="dline" style="margin-top: -6px;">Public data that needs no options feed. Each says how late its source is.</span>${liveElsewhere()}</section></div>`;
-  return v4Page({ scheme, minHeight, active: 'scanner', label: 'Scanner', main });
+  return finalPage({ scheme, minHeight, active: 'scanner', label: 'Scanner', main });
 }
 export function scannerStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const warn = (t, d, btn = '') => `<div class="dwarn">${icon('warn', 14)}<div style="display: flex; flex-direction: column; gap: 4px;"><strong style="font-size: 13px;">${t}</strong>${d ? `<span class="dline">${d}</span>` : ''}${btn}</div></div>`;
@@ -139,11 +139,11 @@ export function positionsStaging({ minHeight = 0, scheme = 'dark' } = {}) {
   const orders = P('Simulated orders', stateTag('sample', 'Sample tape'), `<div><div class="ac-ord"><b>SPY 690 C · Nov 20 · limit 4.25</b><span class="stag k-solid">${icon('clock', 12)}Triggered</span><span class="dline">Placed 2:30 PM · waits to fill at your limit on the sample tape · good til Nov 20</span></div><div class="ac-ord"><b>SPY 690 C · Oct 16</b><span class="stag k-solid">${icon('check', 12)}Filled</span><span class="dline">Triggered and filled 2:25 PM at 3.00 · <a href="#pos">View position</a></span></div></div><span class="dline" style="font-size: 12px;">Simulated only — no real order is ever placed. Orders are stored in this browser.</span>`, 'Simulated orders');
   const track = P('Track record', stateTag('local', 'Your records'), `<div class="hd-fig" style="grid-template-columns: repeat(3, minmax(0, 1fr));">${[['Closed', '1', ''], ['Net realized', '+$48', 't-up'], ['Largest loss', '—', '']].map(([l, v, c]) => `<div><span class="caps">${l}</span><span class="v ${c}">${v}</span></div>`).join('')}</div><div class="drows"><div style="grid-template-columns: 110px minmax(0, 1fr) auto;"><span class="mono steel">Oct 7 2:20 PM</span><span>QQQ 630 C · Oct 9 · closed 2.40 → 2.88</span><span class="mono t-up">+$48 · +20.0%</span></div></div><span class="dline">How your own simulated decisions closed. Counts stay neutral; only P&amp;L carries direction colour.</span>`, 'Track record');
   const main = `<div class="wrap ap">${H('Positions', 'Your simulated book, paper only. Saved in this browser’s demo workspace; marks come from the sample chain.', `<a href="#open" class="btn primary">${icon('plus', 16)}Open simulated position</a>`)}${strip}<div class="ap-bar">${seg(['Simulated', 'Broker'], 'Simulated')}${seg(['Open · 1', 'Pending · 1', 'History · 1'], 'Open · 1')}<span style="flex: 1;"></span>${seg(['Table', 'Cards'], 'Table')}</div>${table}${cards}<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px;">${orders}${track}</div></div>`;
-  return v4Page({ scheme, minHeight, active: 'positions', demo: true, label: 'Positions', main });
+  return finalPage({ scheme, minHeight, active: 'positions', demo: true, label: 'Positions', main });
 }
 export const positionsWall = () => `<div class="ac-wall" role="region" aria-label="Sign in to open your positions">${stateTag('locked', 'Private testing')}<h1 class="display">Sign in to open your positions</h1><p class="steel">Track simulated positions, saved views and P&amp;L so you can practise the plan after you read the structure. Positions are paper only.</p><div style="display: flex; flex-wrap: wrap; gap: 10px;"><a href="#signin" class="btn primary">Sign in</a><a href="/ticker/SPY" class="btn secondary">Open a ticker desk</a></div><p class="dline">Invited accounts only; new sign-ups are closed while Convexa is in private testing. Research, rates, positioning and short data are open to everyone.</p><p class="dline" style="border-top: 1px solid var(--line); padding-top: 12px;">Want to see a book? The demo account has one, on sample data. ${demoLink('/positions', 'See it on the demo →')}</p></div>`;
 export function positionsProduction({ minHeight = 0, scheme = 'dark' } = {}) {
-  return v4Page({ scheme, minHeight, active: 'positions', label: 'Positions', main: `<div class="wrap ap">${positionsWall()}</div>` });
+  return finalPage({ scheme, minHeight, active: 'positions', label: 'Positions', main: `<div class="wrap ap">${positionsWall()}</div>` });
 }
 export function positionsStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const items = [
@@ -183,7 +183,7 @@ export function alertsProduction({ minHeight = 0, scheme = 'dark' } = {}) {
   // FIRED[2] reads FINRA short interest, which is Off on production; production shows only what can fire.
   const fired = P('Fired', stateTag('current', 'Last checked 6:00 AM'), `<div>${[FIRED[0], FIRED[1]].map((f) => fireRow(f)).join('')}</div>`);
   const main = `<div class="wrap al5">${H('Alerts', ALERTS_LEAD + ' Structure alerts need the options feed, which isn’t live on this site.', right).replace(/ap-h/g, 'al5-h')}${lg}<div class="al5-g"><div class="al5-col">${rules}${P('What each kind watches', '', kindRef())}</div><div class="al5-col">${fired}${structureNotLive()}</div></div></div>`;
-  return v4Page({ scheme, minHeight, active: 'alerts', label: 'Alerts', main });
+  return finalPage({ scheme, minHeight, active: 'alerts', label: 'Alerts', main });
 }
 // Staging: the shipped seed holds one rule (workspace.ts:506-518, level touch on SPY's gamma flip). The
 // design seeds one rule per public kind beside it, on the demo's own symbols (gap recorded in the spec).
@@ -199,7 +199,7 @@ export function alertsStaging({ minHeight = 0, scheme = 'dark' } = {}) {
   const rules = P('Your alerts', `<span class="chip">${DEMO_RULES.length}</span>`, `<div>${DEMO_RULES.map((r) => ruleRow(r, { demo: true })).join('')}</div><p class="dline" style="margin: 0;">Saved in this browser’s demo workspace. Reset demo data puts the seed back.</p>`);
   const fired = P('Fired', stateTag('sample', 'Sample firings'), `<div>${fireRow({ date: 'Oct 7', title: '10-year T-note: leveraged funds within 5% of a 3-year low', detail: 'Sample report, positions as of Tue Oct 6', chip: 'Sample · shaped like CFTC TFF', link: ['Open Markets', '/research/markets'] }, 'dashed')}</div><span class="dline">Alerts never fire in the demo on their own; this firing is part of the scenario. Nothing here was published by a source.</span>`, 'Fired', 'is-sample');
   const main = `<div class="wrap al5">${H('Alerts', ALERTS_LEAD + ' In the demo every kind, structure included, checks the Oct 7 scenario.', right).replace(/ap-h/g, 'al5-h')}${legend([['demo', 'Demo · sample data', null], ['sample', 'Sample', DEMO_RULES.length]])}<div class="al5-g"><div class="al5-col">${rules}${P('What each kind watches', '', kindRef({ demo: true }))}</div><div class="al5-col">${fired}</div></div></div>`;
-  return v4Page({ scheme, minHeight, active: 'alerts', demo: true, label: 'Alerts', main });
+  return finalPage({ scheme, minHeight, active: 'alerts', demo: true, label: 'Alerts', main });
 }
 
 // ---- Settings ------------------------------------------------------------------------------------------
@@ -211,7 +211,7 @@ export function settingsStaging({ minHeight = 0, scheme = 'dark' } = {}) {
   const ai = P('AI providers', stateTag('sample', 'Read-only sample'), `<p class="dline" style="margin: 0;">AI connections are unavailable in this demo. No key is needed: reads on the demo are authored sample analyses, labelled as samples.</p><span class="dline" style="font-size: 12.5px;">Anthropic · OpenAI · Gemini · Grok — none connected in the demo.</span>${fld('API key', 'No key in the demo', { dis: true })}`, 'AI providers', 'is-sample');
   const broker = P('Brokerage', stateTag('sample', 'Read-only sample'), `<p class="dline" style="margin: 0;">Broker connections are unavailable in this demo. Holdings shown here are samples.</p><span class="dline" style="font-size: 12px;">Read-only sample holdings · Demo sample account · synthetic · 1 sample holding · no brokerage connection</span><div><div class="ac-hold"><span class="mono" style="font-weight: 600;">AAPL</span><span>25 shares · cost 240.00</span><span class="mono">mark 265.00</span><span class="mono t-up">+$625</span></div></div>${provChip('Sample · shaped like a Webull book', 'dashed')}`, 'Brokerage', 'is-sample');
   const main = `<div class="wrap ap">${H('Settings', 'Saved in this browser’s demo workspace.')}<div class="st-grid">${rail}<div style="display: flex; flex-direction: column; gap: 16px; max-width: 760px;">${demoAccountPanel()}${prefs}${riskInputsDemo()}${ai}${broker}<p class="dline" style="margin: 0; font-size: 12px;">Convexa is an analysis tool. Positions are simulated (paper); a connected brokerage is read-only. Not investment advice.</p></div></div></div>`;
-  return v4Page({ scheme, minHeight, active: '', demo: true, label: 'Settings', main });
+  return finalPage({ scheme, minHeight, active: '', demo: true, label: 'Settings', main });
 }
 export function settingsProduction({ minHeight = 0, scheme = 'dark' } = {}) {
   const account = P('Account', stateTag('locked'), `<span class="dline" style="font-size: 13.5px;">Sign in to sync your settings across devices. Theme and default ticker work without an account, in this browser.</span><div><a href="#signin" class="btn primary sm">Sign in</a></div><span class="dline">New sign-ups are closed while Convexa is in private testing.</span>`);
@@ -220,7 +220,7 @@ export function settingsProduction({ minHeight = 0, scheme = 'dark' } = {}) {
   const ai = P('AI providers', stateTag('locked'), '<span class="dline">Sign in to manage AI providers. Reads also need the options feed, which isn’t live on this site.</span>');
   const broker = P('Brokerage', stateTag('locked'), '<span class="dline">Sign in to connect a Webull account, read-only. Convexa never places, changes or cancels an order.</span>');
   const main = `<div class="wrap ap">${H('Settings', 'Stored in this browser.')}<div class="st-grid">${rail}<div style="display: flex; flex-direction: column; gap: 16px; max-width: 760px;">${account}${prefs}${risk}${ai}${broker}<p class="dline" style="margin: 0; font-size: 12px;">Convexa is an analysis tool. Positions are simulated (paper); a connected brokerage is read-only. Not investment advice.</p></div></div></div>`;
-  return v4Page({ scheme, minHeight, active: '', label: 'Settings', main });
+  return finalPage({ scheme, minHeight, active: '', label: 'Settings', main });
 }
 export function settingsStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const items = [

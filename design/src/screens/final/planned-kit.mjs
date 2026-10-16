@@ -5,7 +5,7 @@
 // figures dated Oct 14, 2026); 'demo' = staging, the demo account on the Oct 7, 2026 scenario (dashed,
 // hatched, "Demo · shaped like …"); 'target' = a blocked tool's design target in production (dashed and
 // hatched, "Design target · illustrative", never passed off as data).
-import { icon, v4Page, STAGING_DEMO_URL } from '../../lib.mjs';
+import { icon, finalPage, STAGING_DEMO_URL } from '../../lib.mjs';
 import { chartFrame } from '../../chart-kit.mjs';
 import { stateTag } from '../../components/data-states.mjs';
 import { TT_CSS } from './ticker-tech.mjs';
@@ -139,7 +139,7 @@ const jump = (items, on) => `<nav class="pl-jump" aria-label="On this page"><spa
 export function marketsHost(e, { scheme = 'dark', minHeight = 0, on, body, note }) {
   const lead = 'Rates, positioning and the money behind them, from public sources, refreshed each business day. The 10-year on this page is the risk-free rate every note’s valuation starts from.';
   const main = `<div class="wrap pl-page"><div class="pl-h"><h1 class="display">Markets</h1><p class="lead">${lead}</p></div>${jump([['rates', 'Rates'], ['positioning', 'Positioning'], ['liquidity', 'Liquidity'], ['coming-up', 'Coming up']], on)}${body}<p class="pl-foot">${e.demo ? 'Demo · sample data shaped like the Federal Reserve’s, the Treasury’s, the BLS’s and the BEA’s files; nothing on this page is a real observation. Research and tools, not investment advice.' : 'Federal Reserve, U.S. Treasury, BLS, BEA and SEC data are public record; Convexa’s arithmetic is marked Computed. Research and tools, not investment advice.'}</p></div>`;
-  return boardNote(scheme, note) + tabCounts(v4Page({ scheme, minHeight, active: 'research', tabs: 'Markets', demo: e.demo, label: 'Markets', main }), e.demo);
+  return boardNote(scheme, note) + tabCounts(finalPage({ scheme, minHeight, active: 'research', tabs: 'Markets', demo: e.demo, label: 'Markets', main }), e.demo);
 }
 
 /** /ticker/:symbol/research — the note view, with the planned section in the public-record band under the note. */
@@ -149,18 +149,18 @@ export function noteHost(e, { scheme = 'dark', minHeight = 0, t = 'NVDA', body, 
     ? `<div class="pl-note demo"><span class="caps">Sample research note · authored for this scenario</span><p class="t">NVDA higher-variation case</p><div class="m">${stateTag('sample', 'Sample note')}<span>Scenario of Oct 7, 2026 · Thesis, Evidence, Risks, Invalidation, Catalysts above</span></div></div>`
     : `<div class="pl-note"><span class="caps">Research note · Initiation · Oct 13, 2026</span><p class="t">A 70% growth guide on a $412B year. What comes after FY2028 is the whole question.</p><div class="m"><span class="stag k-solid">${icon('calendar', 12)}Price as of Oct 12</span><span>Sections 01–07 and the sources sit above this band</span></div></div>`;
   const main = `<div class="wrap pl-page"><div class="pl-mast"><div class="who"><h1 class="display">${t}</h1><span class="steel" style="font-size: 14px;">NVIDIA · Nasdaq</span></div>${tabsNav}</div>${head}<div class="pl-band"><span class="caps">${band} · ${t}</span>${body}</div><p class="pl-foot">${e.demo ? 'Demo · sample data; nothing here is an SEC or FINRA record. Not investment advice.' : 'From public SEC and FINRA records, each with its source and how late it reports. Personal research notes. Not investment advice.'}</p></div>`;
-  return boardNote(scheme, note) + v4Page({ scheme, minHeight, active: 'research', demo: e.demo, label: `${t} research note`, main });
+  return boardNote(scheme, note) + finalPage({ scheme, minHeight, active: 'research', demo: e.demo, label: `${t} research note`, main });
 }
 
 /** /research/scorecard with the signal track record section. */
 export function scorecardHost(e, { scheme = 'dark', minHeight = 0, body, note }) {
   const main = `<div class="wrap pl-page"><div class="pl-h"><h1 class="display">Scorecard</h1><p class="lead">How the notes’ forecasts and the scanner’s setups held up, scored only once their dates pass. A record of calls, not a recommendation.</p></div>${jump([['forecasts', 'Forecasts'], ['calibration', 'Calibration'], ['signals', 'Signal track record']], 'signals')}${body}<p class="pl-foot">${e.demo ? 'Sample setups and outcomes authored for the demo. Not investment advice.' : 'Forecasts come from each note’s forecasts block; setups from the scanner’s log. Personal research notes. Not investment advice.'}</p></div>`;
-  return boardNote(scheme, note) + tabCounts(v4Page({ scheme, minHeight, active: 'research', tabs: 'Scorecard', demo: e.demo, label: 'Scorecard', main }), e.demo);
+  return boardNote(scheme, note) + tabCounts(finalPage({ scheme, minHeight, active: 'research', tabs: 'Scorecard', demo: e.demo, label: 'Scorecard', main }), e.demo);
 }
 
 /** /ticker/:symbol/technical-analysis with Convexa's readings under the chart. */
 export function techHost(e, { scheme = 'dark', minHeight = 0, t = 'NVDA', body, note }) {
   const tabsNav = `<nav aria-label="${t}" class="hd-tabs"><a href="/ticker/${t}">Overview</a><a href="/ticker/${t}/technical-analysis" aria-current="page">Technical</a><a href="/ticker/${t}/research">Research</a></nav>`;
   const main = `<div class="wrap pl-page"><div class="pl-mast"><div class="who"><h1 class="display">${t}</h1><span class="steel" style="font-size: 14px;">NVIDIA · Nasdaq</span></div>${tabsNav}</div>${body}<p class="pl-foot">Indicators describe the trend; they are not calls to buy or sell. Research and tools, not investment advice.</p></div>`;
-  return boardNote(scheme, note) + v4Page({ scheme, minHeight, active: 'ticker', demo: e.demo, label: `${t} technical analysis`, main });
+  return boardNote(scheme, note) + finalPage({ scheme, minHeight, active: 'ticker', demo: e.demo, label: `${t} technical analysis`, main });
 }

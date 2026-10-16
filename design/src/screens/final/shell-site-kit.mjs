@@ -3,7 +3,7 @@
 // with "Log in"; staging: the demo bar and the "Demo account" control), the Not live card with its
 // "See it on the demo →" link, the ⌘K palette and mobile drawer per environment, the landing hero's
 // static projection of the F1 dealer-gamma surface (P-15), and the landing's three illustrations.
-import { STAGING_DEMO_URL, icon, v4Page, wordmark } from '../../lib.mjs';
+import { STAGING_DEMO_URL, icon, finalPage, wordmark } from '../../lib.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
 import { fmt, plot } from '../../chart-kit.mjs';
 import { GEX_STRIKES, GEX_TENORS, gexAt } from '../../data/charts.mjs';
@@ -115,7 +115,7 @@ const COPYRIGHT = '<p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: 
 /** A page in one environment. production: the not-live bar, signed out ("Log in", sign-ups closed so no
  *  "Sign up"). staging: the demo bar and the demo account. The footer gains the shipped copyright line. */
 export function sitePage({ env = 'production', scheme = 'dark', minHeight = 0, active = '', label = '', main = '', tabs = '', footer = true }) {
-  let html = v4Page({ scheme, minHeight, demo: env === 'staging', notice: 'hybrid', active, label, main, tabs, footer });
+  let html = finalPage({ scheme, minHeight, demo: env === 'staging', notice: 'hybrid', active, label, main, tabs, footer });
   if (env !== 'staging') html = html.replace('class="v4n-signin">Sign in</a>', 'class="v4n-signin">Log in</a>');
   return html.replace('Not investment advice.</p></div></footer>', `Not investment advice.</p>${COPYRIGHT}</div></footer>`);
 }

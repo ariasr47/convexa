@@ -3,7 +3,7 @@
 // research/ (14 tickers, all written Oct 13, 2026); staging is the demo account on the Oct 7, 2026
 // scenario with the demo's six authored sample notes. Charts are the ruled v5 forms (./research-charts.mjs);
 // spec cards are in ./research-spec.mjs.
-import { icon, v4Page, STAGING_DEMO_URL } from '../../lib.mjs';
+import { icon, finalPage, STAGING_DEMO_URL } from '../../lib.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
 import { chartFrame } from '../../chart-kit.mjs';
 import { statesBoard } from '../v4/kit.mjs';
@@ -84,7 +84,7 @@ const foot = (t) => `<p class="dline" style="margin: 0;">${t}</p>`;
 const chip = (e, real, shaped) => provChip(e.src(real, shaped), e.sk);
 const P = (title, tag, inner, { label = '', demo = false, id = '' } = {}) => `<section class="hd-p"${demo ? ' style="border-style: dashed; border-color: var(--steel-2);"' : ''} aria-label="${label || title.replace(/<[^>]+>/g, '')}"${id ? ` id="${id}"` : ''}><div class="ph"><h3>${title}</h3>${tag}</div>${inner}</section>`;
 // staging's tab badges count the demo's notes and forecasts, not production's
-const page = (o) => { const html = v4Page(o); return o.demo ? html.replace('<span class="cnt">14</span>', '<span class="cnt">6</span>').replace('<span class="cnt">77 open</span>', '<span class="cnt">34 open</span>') : html; };
+const page = (o) => { const html = finalPage(o); return o.demo ? html.replace('<span class="cnt">14</span>', '<span class="cnt">6</span>').replace('<span class="cnt">77 open</span>', '<span class="cnt">34 open</span>') : html; };
 
 // =================================================================================================
 // 1 · Research index (/research)

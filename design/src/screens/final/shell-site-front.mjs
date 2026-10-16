@@ -27,7 +27,7 @@ export function shellPhone(env) {
 
 const demoBar = (extra) => v4Notice('demo').replace('<span style="flex: 1;"></span>', `${extra}<span style="flex: 1;"></span>`);
 const unknownBar = `<div role="status" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center;">${icon('warn', 14, 'style="color: var(--warn);"')}<strong>Couldn’t check what’s live right now.</strong><span class="steel">Each panel still says where its numbers came from.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info">What’s live</a></div></div>`;
-const navLogIn = v4Nav({ active: 'ticker' }).replace('class="v4n-signin">Sign in</a>', 'class="v4n-signin">Log in</a>');
+const navLogIn = v4Nav({ active: 'ticker', fullDemo: true }).replace('class="v4n-signin">Sign in</a>', 'class="v4n-signin">Log in</a>');
 
 export function shellStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const items = [
@@ -41,7 +41,7 @@ export function shellStates({ minHeight = 0, scheme = 'dark' } = {}) {
     { name: 'Nav · production, signed out', tag: ['locked', 'Log in'], wide: true, when: 'Every visitor. Sign-ups are closed, so there is no “Sign up” button; “Log in” opens the sign-in dialog.', html: navLogIn },
     { name: 'Nav · production, a private tester', tag: null, wide: true, when: 'Signed in: email (hidden under 600px) and a neutral avatar linking to Settings; sign-out lives in Settings.', html: v4Nav({ active: 'positions', signedIn: true }).replace('aria-label="Account settings"', 'aria-label="Account settings" title="r…@…"') },
     { name: 'Nav · staging', tag: ['demo'], wide: true, when: 'Always the seed account: “Demo account” and its avatar. Never “Log in” or “Sign up”.', html: v4Nav({ active: 'scanner', demo: true }) },
-    { name: 'Nav · account loading', tag: null, wide: true, when: 'Production, while who-am-I answers: an 88 × 32 placeholder; the page renders around it.', html: v4Nav({ active: 'ticker' }).replace(/<a href="\/settings#account" class="v4n-signin">Sign in<\/a>/, '<span class="skel" style="width: 88px; height: 32px;"></span>') },
+    { name: 'Nav · account loading', tag: null, wide: true, when: 'Production, while who-am-I answers: an 88 × 32 placeholder; the page renders around it.', html: v4Nav({ active: 'ticker', fullDemo: true }).replace(/<a href="\/settings#account" class="v4n-signin">Sign in<\/a>/, '<span class="skel" style="width: 88px; height: 32px;"></span>') },
     { name: '⌘K · production', tag: null, when: 'Tickers by name (no scan call: scores need the options feed), then research notes.', html: paletteF({ env: 'production' }) },
     { name: '⌘K · staging', tag: ['demo'], when: 'Tickers ranked by the demo’s sample scan.', html: paletteF({ env: 'staging' }) },
     { name: '⌘K · empty query', tag: null, when: 'Go-to commands with their keys, then recents.', html: paletteF({ state: 'empty' }) },

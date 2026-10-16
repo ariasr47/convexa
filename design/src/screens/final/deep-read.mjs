@@ -4,7 +4,7 @@
 // the Oct 7 scenario, spot 690.62, flip 683.92, call wall 704.02, put wall 652.22, ±$2.48 to Oct 9 (the demo's own levels), the
 // "No trade · sit this one out" sample read, graded not applicable as the API grades a no-trade read). Copy reuses the shipped strings in
 // apps/dashboard/src/app/pages/ticker/widgets/ai-rec/copy.ts wherever the final design keeps them.
-import { icon, v4Page, STAGING_DEMO_URL } from '../../lib.mjs';
+import { icon, finalPage, STAGING_DEMO_URL } from '../../lib.mjs';
 import { chartFrame, stateBody } from '../../chart-kit.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
 import { statesBoard } from '../v4/kit.mjs';
@@ -205,7 +205,7 @@ export function productionBody({ minHeight = 0, scheme = 'dark' } = {}) {
     <div class="tk-zone"><h2 class="display">AI read</h2><span class="dline" style="font-size: 13px;">Part of the desk’s “Needs the options feed” zone; shown alone here.</span></div>
     ${panel}<div class="tk-row" style="align-items: start;">${sent}${how}</div>
     <p class="dline" style="margin: 0;">Research and tools, not investment advice.</p></div>`;
-  return v4Page({ scheme, minHeight, active: 'ticker', label: `${t} AI read`, main });
+  return finalPage({ scheme, minHeight, active: 'ticker', label: `${t} AI read`, main });
 }
 
 // =================================================================================================

@@ -5,7 +5,7 @@
 // same desk on the demo (P-1), plus the "On this page" legend.
 // Lane 4 (2026-10-16) redrew both to the hierarchy the app now builds (tmp/build/shots/lane4/CRITIQUE.md):
 // the price and the structure verdict first, then the levels that frame it, then supporting context.
-import { icon, v4Notice, v4Page, STAGING_DEMO_URL } from '../../lib.mjs';
+import { icon, v4Notice, finalPage, STAGING_DEMO_URL } from '../../lib.mjs';
 import { chartFrame, dataTable, fmt, plot, rangeBar, sparkline, stateBody, ticks } from '../../chart-kit.mjs';
 import { dataCell, gexBars, provChip, stateTag } from '../../components/data-states.mjs';
 import { thirdPartyFrame } from '../../components/charts.mjs';
@@ -231,7 +231,7 @@ export function deskStagingBody({ minHeight = 0, scheme = 'dark', t = 'SPY' } = 
       ${sampleCard('Off-exchange blocks', '1,371,000 sh @ $687.86', 'largest print, 2:28 PM ET in the scenario · −0.4% vs spot', 'Sample · shaped like block prints')}
       ${P(`${head('Setups', stateTag('sample'))}<span style="font-size: 16px; font-weight: 600;">Balanced structure · medium</span><span class="dline">Rule-based · the same structure snapshot · authored scenario variant</span><div style="margin-top: auto;">${provChip('Sample · shaped like scanner setups', 'dashed')}</div>`, { sample: true, style: 'grid-column: span 2;' })}</div>`;
   const about = `<section class="tk-about" aria-label="About this sample"><span class="caps">About this sample</span><strong style="font-size: 13px;">Demo · sample data · Authored scenario · October 7, 2026 · no market feed connected</strong><span class="dline">Structure and related signals use the selected expiry set: 2026-10-09, 2026-10-16, 2026-11-20. Full-chain context keeps its labeled full-chain basis. Sample analysis is authored for this scenario.</span></section>`;
-  return v4Page({ scheme, minHeight, demo: true, active: 'ticker', label: `${t} desk`, main: `<div class="wrap tkd">${stagingMast(t)}${hero}${readStrip()}${work}${ctx}${about}${DISCLAIM}</div>` });
+  return finalPage({ scheme, minHeight, demo: true, active: 'ticker', label: `${t} desk`, main: `<div class="wrap tkd">${stagingMast(t)}${hero}${readStrip()}${work}${ctx}${about}${DISCLAIM}</div>` });
 }
 
 // =================================================================================================
@@ -277,7 +277,7 @@ export function deskProductionBody({ minHeight = 0, scheme = 'dark', t = 'NVDA' 
       ${nlPanel('AI read · NVDA', 'a verdict-first read of NVDA’s dealer structure: Trade or No trade, the risk before the rationale, why, and when to look again. Every figure says whether it traces to a Convexa number.', t, '<p class="dline"><strong style="color: var(--phosphor);">Off because</strong> a read reads the options structure (walls, flip, flow, the candidate contracts). On a build with the feed, reads run on your own provider key after you sign in.</p>')}
       <div class="tk-ctx">${ctxPanels.map(([n, w]) => nlPanel(n, w, t)).join('')}</div>
     </div>`;
-  return v4Page({ scheme, minHeight, active: 'ticker', label: `${t} desk`, main: `<div class="wrap tkd">${mast}${legend()}${live}${notLive}${DISCLAIM}</div>` });
+  return finalPage({ scheme, minHeight, active: 'ticker', label: `${t} desk`, main: `<div class="wrap tkd">${mast}${legend()}${live}${notLive}${DISCLAIM}</div>` });
 }
 
 // =================================================================================================

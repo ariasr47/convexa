@@ -105,7 +105,7 @@ export function notFoundBoard({ minHeight = 0, scheme = 'dark', env = 'productio
   return sitePage({ env, scheme, minHeight, label: 'Not found', main });
 }
 export function notFoundStates({ minHeight = 0, scheme = 'dark' } = {}) {
-  const navLogIn = v4Nav({ active: 'research' }).replace('class="v4n-signin">Sign in</a>', 'class="v4n-signin">Log in</a>');
+  const navLogIn = v4Nav({ active: 'research', fullDemo: true }).replace('class="v4n-signin">Sign in</a>', 'class="v4n-signin">Log in</a>');
   const items = [
     { name: 'Route loading', tag: null, when: 'A page’s code is on its way: a page-shaped skeleton under the real nav, which never blanks. No centered spinner.', html: `${navLogIn}<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px 0;"><span class="skel" style="height: 40px; width: 40%;"></span><span class="skel" style="height: 16px; width: 70%;"></span><span class="skel" style="height: 220px;"></span></div>` },
     { name: 'Page couldn’t load', tag: ['error', 'Couldn’t load'], when: 'The route’s error boundary: the nav and footer stay; Retry, or a public page that loads on its own.', html: `<div class="hd-p" role="alert" style="max-width: 480px;"><div class="ph"><h3>This page could not load</h3>${stateTag('error')}</div><span class="dline">Something broke while rendering this view. You can retry or return to a public surface.</span><div style="display: flex; gap: 10px; flex-wrap: wrap;"><button class="btn secondary" type="button">${icon('refresh', 14)}Retry</button><a href="/research" class="btn ghost">Go to Research</a></div></div>` },
@@ -160,7 +160,7 @@ export function opsStates({ minHeight = 0, scheme = 'dark' } = {}) {
 // ================================================================================================
 // Methodology and Blog · states
 // ================================================================================================
-const routeLoading = () => `${v4Nav({ active: '' }).replace('class="v4n-signin">Sign in</a>', 'class="v4n-signin">Log in</a>')}<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px 0;"><span class="skel" style="height: 40px; width: 40%;"></span><span class="skel" style="height: 16px; width: 70%;"></span><span class="skel" style="height: 200px;"></span></div>`;
+const routeLoading = () => `${v4Nav({ active: '', fullDemo: true }).replace('class="v4n-signin">Sign in</a>', 'class="v4n-signin">Log in</a>')}<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px 0;"><span class="skel" style="height: 40px; width: 40%;"></span><span class="skel" style="height: 16px; width: 70%;"></span><span class="skel" style="height: 200px;"></span></div>`;
 const routeFailed = `<div class="hd-p" role="alert" style="max-width: 480px;"><div class="ph"><h3>This page could not load</h3>${stateTag('error')}</div><span class="dline">Something broke while rendering this view. You can retry or return to a public surface.</span><div style="display: flex; gap: 10px; flex-wrap: wrap;"><button class="btn secondary" type="button">${icon('refresh', 14)}Retry</button><a href="/research" class="btn ghost">Go to Research</a></div></div>`;
 export function methodologyStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const items = [

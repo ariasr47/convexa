@@ -5,7 +5,7 @@
 // and Updated; FINRA Off until its terms are confirmed — redrawn 2026-10-16). Staging: the shipped authored
 // sample case (demo/catalog/shared.ts NVDA narrative) laid out in the same template, every figure dashed
 // and hatched, with FINRA-shaped samples.
-import { icon, v4Page } from '../../lib.mjs';
+import { icon, finalPage } from '../../lib.mjs';
 import { barList, chartFrame, fmt, plot, rangeBar, stateBody, ticks } from '../../chart-kit.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
 import { bridgeRows } from '../v5/system.mjs';
@@ -110,7 +110,7 @@ export function noteProductionBody({ minHeight = 0, scheme = 'dark', t = 'NVDA' 
     <h2 id="s7" class="display">07 · Forecasts</h2>${forecasts}
     <p class="dline" style="font-size: 12px;">Personal research notes. Not investment advice. 26 sources, filings first.</p></div>`;
   const side = `<aside class="nv-side" aria-label="About this note">${P('This note comes due', '', `<div class="drows">${[['Oct 22', 'GTC Berlin ends (keynote Oct 21)'], ['Nov 11', 'Price turns 30 days old'], ['Nov 17', 'Q3 FY2027 results']].map(([d, w]) => `<div style="grid-template-columns: 56px minmax(0, 1fr);"><span class="mono steel">${d}</span><span>${w}</span></div>`).join('')}</div><span class="dline" style="font-size: 11.5px;">Worked out in your browser from the note’s own dates.</span>`)}${P('Why uncertainty is very high', '', '<span class="dline" style="font-size: 13px;">Consensus FY2028 revenue alone spans $506–778B, and three direct customers bought 44% of first-half revenue.</span>')}${publicPanels()}</aside>`;
-  return v4Page({ scheme, minHeight, active: 'research', label: `${t} research note`, main: `<div class="wrap tn">${tabs(t)}<div class="nv">${rail}${body}${side}</div></div>` });
+  return finalPage({ scheme, minHeight, active: 'research', label: `${t} research note`, main: `<div class="wrap tn">${tabs(t)}<div class="nv">${rail}${body}${side}</div></div>` });
 }
 
 // =================================================================================================
@@ -130,7 +130,7 @@ export function noteStagingBody({ minHeight = 0, scheme = 'dark', t = 'NVDA' } =
     <h2 id="d4" class="display">Catalysts</h2><div class="dna"><span class="caps">Not curated</span><span class="dline">The sample scenario carries no dated catalysts, so this note never comes due.</span></div>
     <p class="dline" style="font-size: 12px;">Same NVDA scenario · no external news, AI or forecast citations. Not investment advice.</p></div>`;
   const side = `<aside class="nv-side" aria-label="About this note">${P('About this sample', stateTag('demo'), '<span class="dline" style="font-size: 13px;">Every figure cites a sample bar from the Oct 7 scenario. The production site shows the owner’s real notes, with their sources, freshness and the public panels.</span>')}${P('Short interest · NVDA', stateTag('sample'), `<span class="dval" style="font-size: 22px;">1.3%<span class="steel" style="font-size: 13px; font-family: 'IBM Plex Sans';"> of float</span></span><span class="dline">Sample scenario, Oct 7. Not market data.</span><div>${provChip('Sample · shaped like FINRA short interest', 'dashed')}</div>`, { sample: true })}${P('Filed since this note', stateTag('sample'), `<span class="dline">Sample filing list: 8-K, Oct 2 (Item 7.01). Not an SEC record.</span><div>${provChip('Sample · shaped like SEC EDGAR', 'dashed')}</div>`, { sample: true })}</aside>`;
-  return v4Page({ scheme, minHeight, demo: true, active: 'research', label: `${t} sample research note`, main: `<div class="wrap tn">${tabs(t)}<div class="nv">${rail}${body}${side}</div></div>` });
+  return finalPage({ scheme, minHeight, demo: true, active: 'research', label: `${t} sample research note`, main: `<div class="wrap tn">${tabs(t)}<div class="nv">${rail}${body}${side}</div></div>` });
 }
 
 // =================================================================================================

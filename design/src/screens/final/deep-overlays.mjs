@@ -4,7 +4,7 @@
 // Copy reuses shipped strings: features/trading/broker/reassess.tsx, features/trading/outcomes/copy.ts,
 // shared/ui/Widget/Widget.tsx, features/trading/positions/{CustomizationToolbar.tsx,labels.ts},
 // pages/alerts/AlertsPage.tsx (notifyExplain), features/auth/copy.ts.
-import { icon, v4Nav, v4Notice, v4Page } from '../../lib.mjs';
+import { icon, v4Nav, v4Notice, finalPage } from '../../lib.mjs';
 import { chartFrame, plot, ticks } from '../../chart-kit.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
 import { dlg, fld, overPage, statesBoard } from '../v4/kit.mjs';
@@ -114,7 +114,7 @@ export function resetPageBody({ minHeight = 0, scheme = 'dark' } = {}) {
     ${fld('New password', '••••••••••••', { focus: true, help: 'At least 8 characters. A passphrase is fine; password managers work.' })}${fld('Confirm new password', '••••••••••••')}
     <button class="btn primary lg" type="button" style="width: 100%;">Set password and sign in</button>
     <p class="dline" style="margin: 0;">Setting it signs out every other session on this account. Your simulated positions stay in the browser they were made in.</p></section>`;
-  return v4Page({ scheme, minHeight, active: '', label: 'Set a new password', main: `<div class="wrap" style="padding-bottom: 56px;">${card}</div>` });
+  return finalPage({ scheme, minHeight, active: '', label: 'Set a new password', main: `<div class="wrap" style="padding-bottom: 56px;">${card}</div>` });
 }
 
 // ---- Phone · every overlay as a bottom sheet ----------------------------------------------------
