@@ -12,7 +12,12 @@ import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FreshnessLine } from './FreshnessLine';
 
-vi.mock('@convexa/api', () => ({ demoNowMs: () => Date.now() }));
+// sample.ts (via copy.ts) reads the build mode and the scenario at import; the live build here.
+vi.mock('@convexa/api', () => ({
+  demoNowMs: () => Date.now(),
+  dataMode: 'live',
+  scenarioProvenance: () => null,
+}));
 
 function renderFL(props: Partial<React.ComponentProps<typeof FreshnessLine>> = {}) {
   return render(

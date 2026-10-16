@@ -55,6 +55,14 @@ export function TradingViewDaily({
   // A bare symbol: neither the exchange map nor a note's listing placed it.
   const unknownListing = !tv.includes(':');
   const headId = `tv-${ticker}-head`;
+  // The frame's load phase, lifted (review W1-20): the header's state tag follows it. Keyed by the
+  // TradingView symbol, so a new symbol reads as loading until its own frame reports.
+  const [reported, setReported] = useState<{ tv: string; phase: TvPhase }>({
+    tv,
+    phase: 'loading',
+  });
+  const phase: TvPhase = reported.tv === tv ? reported.phase : 'loading';
+  const onPhase = useCallback((next: TvPhase) => setReported({ tv, phase: next }), [tv]);
 
   return (
     <Box
@@ -71,7 +79,10 @@ export function TradingViewDaily({
           {`${ticker} daily chart`}
         </Box>
         <ProvenanceChip text="Chart by TradingView · US prices delayed" kind="third-party" />
-        <DataStateTag state="thirdParty" />
+        {/* "Live · TradingView" only once its chart is in. While loading, the frame's own words say
+            so (P-2 has no loading word); blocked or timed out takes no tag (design ticker-tech.mjs
+            states board). The desk legend counts [data-state], so this also keeps it honest. */}
+        {phase === 'ready' && <DataStateTag state="thirdParty" />}
       </Box>
       <Box
         sx={(t) => ({
@@ -83,7 +94,14 @@ export function TradingViewDaily({
         })}
       >
         {/* Keyed by the symbol: a new symbol starts over (loading, then ready or failed). */}
-        <Frame key={tv} ticker={ticker} tv={tv} height={height} phoneHeight={phoneHeight} />
+        <Frame
+          key={tv}
+          ticker={ticker}
+          tv={tv}
+          height={height}
+          phoneHeight={phoneHeight}
+          onPhase={onPhase}
+        />
       </Box>
       {unknownListing && (
         <Box component="p" sx={{ m: 0, fontSize: 13, maxWidth: 640, textWrap: 'pretty' }}>
@@ -111,20 +129,27 @@ export function TradingViewDaily({
   );
 }
 
+export type TvPhase = 'loading' | 'ready' | 'failed';
+
 function Frame({
   ticker,
   tv,
   height,
   phoneHeight,
+  onPhase,
 }: {
   ticker: string;
   tv: string;
   height: number;
   phoneHeight: number;
+  onPhase?: (phase: TvPhase) => void;
 }) {
   const theme = useTheme();
   const phone = useMediaQuery(theme.breakpoints.down('sm'));
-  const [phase, setPhase] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [phase, setPhase] = useState<TvPhase>('loading');
+  useEffect(() => {
+    onPhase?.(phase);
+  }, [phase, onPhase]);
   const onFail = useCallback(() => setPhase('failed'), []);
   const onReady = useCallback(() => setPhase((p) => (p === 'loading' ? 'ready' : p)), []);
   // A loader that never errors and never draws (a stalled network, a blocker that swallows the

@@ -20,10 +20,10 @@
  *   - Every cell carries a sub-caption from the model (`readStripModel.ts`'s new `sub` field) via
  *     `FigureRow`'s existing `caption` prop — no new rendering path, `—` where the model has
  *     nothing to say this cycle.
- *   - The rail is `display:flex` (a true scrolling rail) below a 1000px `panel` CONTAINER (queries
- *     the Widget body's own named container — never a viewport media query) and `display:grid`
- *     (`1.35fr repeat(7, minmax(0,1fr))`, fluid, no fixed `minWidth` forcing overflow) at/above it —
- *     "never clip" (canon 15/17).
+ *   - The cells form a fluid grid that re-flows by the Widget body's own `panel` CONTAINER (never a
+ *     viewport media query): two columns, four from 600px, and `1.35fr repeat(7, minmax(0,1fr))`
+ *     from 1000px — "never clip" (canon 15/17). (2026-10-15, site check D-22: it was a sideways-
+ *     scrolling rail below 1000px with a hidden scrollbar; the board's `.tk-strip` re-flows.)
  *
  * THE CONTAINER-QUERY HAZARD (SPEC §2.5). `FigureCell.tsx` queries `theme.containerQueries('panel')`
  * against the NEAREST ancestor named `panel`. `Widget.tsx` and `PanelContainer.tsx` are the only two
@@ -36,19 +36,19 @@
  * itself never establishes that name, so there is no self-query and no collision with the per-cell
  * declarations (which are further DESCENDANTS of the rail, not ancestors of it).
  *
- * THE RAIL, NOT THE PAGE (criterion 50, SB). `overflowX: 'auto'` + `minWidth: 0` on the rail
- * unconditionally (harmless/dormant in grid mode, where fluid columns never overflow); the page
- * never scrolls sideways. The scrolling BEHAVIOUR itself is FE-12's browser row — `[lane-check]`:
- * jsdom cannot evaluate container queries or real scroll overflow, so this file's own tests assert
- * the DECLARATIONS only.
+ * NEVER THE PAGE (criterion 50, SB). `minmax(0, 1fr)` tracks and `minWidth: 0` keep every column
+ * inside the panel, so neither the strip nor the page scrolls sideways.
  *
  * PRESENTATIONAL — the caller builds the closed eight-tuple (`buildReadStrip`) and hands it down.
  */
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { extrasFor } from '@/shared/theme/tokens';
 import { PanelContainer } from '@/shared/ui/PanelContainer';
-import { Widget } from '@/shared/ui/Widget';
+import { useWidgetProvenance, Widget } from '@/shared/ui/Widget';
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import { FigureRow } from '../_kit/FigureCell';
+import { SampleSourceChip } from '../_kit/SampleSourceChip';
 import type { ReadStripCells } from './readStripModel';
 
 export interface ReadStripProps {
@@ -112,6 +112,7 @@ function RingGauge({ score, size = 48 }: { score: number | null; size?: number }
 
 export function ReadStrip({ cells, ringScore }: ReadStripProps) {
   const theme = useTheme();
+  const sample = useWidgetProvenance() === 'sample';
 
   return (
     // `span={2}` — the SAME full-bento-row placement the strip carried before this repair (and
@@ -127,29 +128,45 @@ export function ReadStrip({ cells, ringScore }: ReadStripProps) {
       bodyVariant="inset"
       bodyPad="none"
     >
+      {/* P-3/P-8: the strip has no header row, so on a sample board it carries its own Sample tag
+          and source chip (design ticker-desk.mjs readStrip()). */}
+      {sample && (
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.5,
+            pt: 1.25,
+            pb: 1,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <DataStateTag state="sample" />
+          <SampleSourceChip text="Sample · shaped like the options chain" />
+        </Box>
+      )}
+      {/* D-22: the cells re-flow instead of scrolling sideways (design `.tk-strip`: two columns on a
+          phone, four on a tablet, the 1.35fr + seven row at desk width). Hairlines are the 1px gaps
+          over the divider colour, so a short last row never leaves a dangling border. */}
       <Box
         data-testid="read-strip-rail"
-        sx={{
-          display: 'flex',
-          overflowX: 'auto',
+        sx={(t) => ({
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gap: '1px',
+          bgcolor: 'divider',
           minWidth: 0,
-          scrollbarWidth: 'none',
-          '&::-webkit-scrollbar': { display: 'none' },
-          '& > *': {
-            flex: '0 0 170px',
-            borderRight: '1px solid',
-            borderColor: 'divider',
-            minWidth: 0,
+          '& > *': { minWidth: 0, bgcolor: extrasFor(t).well },
+          [theme.containerQueries('panel').up(600)]: {
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
           },
-          '& > *:first-of-type': { flex: '0 0 220px' },
           [theme.containerQueries('panel').up(1000)]: {
-            display: 'grid',
             gridTemplateColumns: '1.35fr repeat(7, minmax(0, 1fr))',
-            overflowX: 'visible',
-            '& > *': { flex: 'unset' },
-            '& > *:last-child': { borderRight: 0 },
           },
-        }}
+        })}
       >
         {cells.map((cell) => (
           <PanelContainer

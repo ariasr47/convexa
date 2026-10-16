@@ -8,6 +8,7 @@
  */
 import type { NotANumber } from '@/shared/copy/notANumber';
 import type { IvSkew, TermStructure } from '@convexa/api';
+import { DESK_IS_SAMPLE, deskNowMs, SCENARIO_STAMP } from './sample';
 
 // Fallback for the blocks empty-state copy when a (pre-amendment) bundle omits the threshold.
 export const BLOCK_MIN_SHARES_DISPLAY = 5000;
@@ -593,16 +594,21 @@ const MS_PER_DAY = 86_400_000;
  * `fmtAsOfEt(iso, now)` -> `"10:41:52 ET · 48s ago"` (design: `read pinned as of 10:41:52 ET ·
  * 48s ago`, `Snapshot as of 10:41:52 ET`). Age via `humanAge` over the whole-second delta to `now`.
  * `null`/unparseable renders the closed-vocabulary member (`unavailable`) — never the raw string.
+ * In the demo build (`sample`) the instant is a scenario time, so it reads `"14:30:00 ET ·
+ * scenario"` with no age: an age against the wall clock read "7d 16h" on sample data (site check
+ * D-07; canon P-3, no clock time on sample data).
  */
 export function fmtAsOfEt(
   iso: string | null | undefined,
   now: number | Date = Date.now(),
+  sample: boolean = DESK_IS_SAMPLE,
 ): string | NotANumber {
   if (!iso) return 'unavailable';
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return 'unavailable';
   const nowMs = now instanceof Date ? now.getTime() : now;
   const p = partsOf(ET_TIME_PARTS, new Date(t));
+  if (sample) return `${p.hour}:${p.minute}:${p.second} ET · scenario`;
   const ageSeconds = Math.max(0, Math.round((nowMs - t) / 1000));
   return `${p.hour}:${p.minute}:${p.second} ET · ${humanAge(ageSeconds)}`;
 }
@@ -613,11 +619,12 @@ export function fmtAsOfEt(
  * -passed expiration reads `0 DTE`, never a negative count). `isoDate` is the wire's bare `YYYY-MM-DD`
  * (`libs/api/src/lib/convexa.ts:1563`'s own comment) — parsed as a calendar date, not a timezone
  * instant. `null`/unparseable renders the closed-vocabulary member (`unavailable`) — never the raw
- * string.
+ * string. `now` defaults to the desk's clock: the wall clock live, the scenario's as-of in the demo
+ * (where the wall clock made the Oct 9 expiry read "0 DTE" against an Oct 7 scenario; D-07).
  */
 export function fmtExpiry(
   isoDate: string | null | undefined,
-  now: number | Date = Date.now(),
+  now: number | Date = deskNowMs(),
 ): string | NotANumber {
   if (!isoDate) return 'unavailable';
   const t = Date.parse(isoDate);
@@ -633,17 +640,29 @@ export function fmtExpiry(
 // ---- Product spine #4 — age + basis always visible on structure-bound surfaces ---------------
 // Structure = REST bundle / chain snapshot (never the SSE tape). Live tape is labelled separately.
 
-/** "Structure as-of 42s" — the shared phrase for deck freshness + widget subtitles. */
-export function structureAsOfPhrase(ageSeconds: number | null | undefined): string {
+/** "Structure as-of 42s" — the shared phrase for deck freshness + widget subtitles. In the demo
+ *  build (`sample`) the structure is the authored scenario, so the phrase is the scenario's stamp,
+ *  never a clock age (canon P-3: no clock time on sample data). */
+export function structureAsOfPhrase(
+  ageSeconds: number | null | undefined,
+  sample: boolean = DESK_IS_SAMPLE,
+): string {
+  if (sample) return SCENARIO_STAMP;
   if (ageSeconds == null || !Number.isFinite(ageSeconds)) return 'Structure as-of unknown age';
   return `Structure as-of ${humanAge(ageSeconds)}`;
 }
 
 /**
  * Append structure age to a widget's basis subtitle. Does not invent age when missing — falls
- * back to an honest "structure snapshot" tag so the surface still names its basis.
+ * back to an honest "structure snapshot" tag so the surface still names its basis. The demo build
+ * appends the scenario stamp instead (see `structureAsOfPhrase`).
  */
-export function withStructureAge(basis: string, ageSeconds: number | null | undefined): string {
+export function withStructureAge(
+  basis: string,
+  ageSeconds: number | null | undefined,
+  sample: boolean = DESK_IS_SAMPLE,
+): string {
+  if (sample) return `${basis} · ${SCENARIO_STAMP}`;
   if (ageSeconds == null || !Number.isFinite(ageSeconds)) {
     return `${basis} · structure snapshot`;
   }

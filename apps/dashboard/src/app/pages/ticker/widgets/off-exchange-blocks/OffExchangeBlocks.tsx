@@ -20,6 +20,7 @@ import {
   PROXIMITY_TOOLTIP,
   withStructureAge,
 } from '../_kit/copy';
+import { DESK_IS_SAMPLE, scenarioAsOf, scenarioTimeOf } from '../_kit/sample';
 
 // The proximity chip's hover tip needs a keyboard/focus path too (criterion 59) — the file-local
 // `Tooltip describeChild` + `aria-describedby` + visually-hidden-description idiom
@@ -141,7 +142,9 @@ export function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: P
                     </Tooltip>
                   </Stack>
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    {humanAge(b.age_seconds)} ago
+                    {DESK_IS_SAMPLE
+                      ? scenarioTimeOf(scenarioAsOf(), b.age_seconds)
+                      : `${humanAge(b.age_seconds)} ago`}
                   </Typography>
                 </Box>
               );

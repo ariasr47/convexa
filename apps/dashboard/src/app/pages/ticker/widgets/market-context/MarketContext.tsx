@@ -157,14 +157,16 @@ function CaptionLabel({ label, info }: { label: string; info?: string }) {
  * single largest driver of Market context's 552px-then-464px stretch of its context-band row). The
  * FULL text stays in `textContent` (a `title` attribute doesn't remove anything from the a11y tree
  * or `getByText`) — only the paint is truncated.
+ *
+ * 2026-10-15 (site check D-22): the ellipsis is gone. A `title` is hover-only, so on touch and for
+ * keyboard readers the basis/as-of sentence the canon requires was simply cut off ("As of session
+ * Wed Oct 7 · da…"). The line wraps instead; the card grows to fit what it must say.
  */
 function BasisLine({ text, testid }: { text: string; testid: string }) {
   return (
     <Typography
       variant="caption"
-      noWrap
-      title={text}
-      sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+      sx={{ color: 'text.secondary', display: 'block', mt: 0.5, overflowWrap: 'break-word' }}
       data-testid={testid}
     >
       {text}

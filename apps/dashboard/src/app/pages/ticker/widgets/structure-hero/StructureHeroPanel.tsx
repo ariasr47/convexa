@@ -50,6 +50,7 @@ import { useLiveTape } from '../../liveTapeStore';
 import { sessionTapeOf } from '../../sessionTapeStanding';
 import { humanAge } from '../_kit/copy';
 import { levelSpot } from '../_kit/distanceToLevel';
+import { DESK_IS_SAMPLE, sampleReplayLine, SCENARIO_STAMP, scenarioAsOf } from '../_kit/sample';
 import { useStreamLatch } from '../_kit/useStreamLatch';
 import { rowsToSamples, windowedStrikes } from '../gex-profile-chart/chart';
 import { buildLadder, formatAnchorText, LadderFoot, LevelLadder } from '../level-ladder';
@@ -252,15 +253,9 @@ export function StructureHeroPanel({
     [tileOffline, midLatch.retained],
   );
   const midReplay = Boolean(st);
-  const sampleTime = sampleStanding
-    ? new Intl.DateTimeFormat('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'medium',
-        timeZone: 'UTC',
-      }).format(new Date(sampleStanding.scenarioTimeMs))
-    : null;
+  // P-3: the sample tape names the scenario it replays, never an advancing clock or "running".
   const sampleCaption = sampleStanding
-    ? `Sample tape · ${sampleTime} UTC · ${Math.round((tape.live?.flow_window_s ?? 60) / 60)}m window · ${sampleStanding.playback}`
+    ? sampleReplayLine(scenarioAsOf(), tape.live?.flow_window_s ?? 60)
     : null;
   const sampleStatusCaption =
     sampleStanding?.playback === 'paused'
@@ -299,10 +294,12 @@ export function StructureHeroPanel({
   const ageLabel = structureAgeSeconds != null ? humanAge(structureAgeSeconds) : 'unknown age';
   // Repair task item 6 — the design's basis line (`desk.mjs:294`), verbatim: what the field plots,
   // the expirations scope (the SAME phrase `TickerHeader` states beside the headline — never a
-  // second computation), then the REST/tape provenance clause this hero already carried.
-  const basis =
-    `Net dealer gamma by strike · ${expirationsLabel} · ` +
-    `levels are REST structure (as-of ${ageLabel}) · the mid is tape`;
+  // second computation), then the REST/tape provenance clause this hero already carried. The demo
+  // names its scenario instead of a clock age (P-3).
+  const basis = DESK_IS_SAMPLE
+    ? `Net dealer gamma by strike · ${expirationsLabel} · ${SCENARIO_STAMP}`
+    : `Net dealer gamma by strike · ${expirationsLabel} · ` +
+      `levels are REST structure (as-of ${ageLabel}) · the mid is tape`;
   const structureMid = anchor ?? m.price;
 
   const windowed = useMemo(
