@@ -94,7 +94,14 @@ export function BrokerTabPanel({ data, live, isLive, streamOffline }: Props) {
 
   const render = resolveRenderState({ book, hintSet, inFlight, firstFetch, nowMs });
 
-  const marks = useBrokerMarks(book?.positions ?? [], data, live, isLive, streamOffline);
+  // The demo's holdings are the sample book, not `book` (which stays null with no broker): price
+  // those, or the reassessment request exports a null modeled P/L beside a row that shows one
+  // (review W1-60).
+  const markedPositions = useMemo(
+    () => (dataMode === 'demo' ? (sampleBook?.positions ?? []) : (book?.positions ?? [])),
+    [book, sampleBook],
+  );
+  const marks = useBrokerMarks(markedPositions, data, live, isLive, streamOffline);
   const views = useMemo<BrokerPositionView[]>(
     () =>
       (book?.positions ?? []).map((bp) =>

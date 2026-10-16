@@ -51,7 +51,9 @@ export const ROWS = [
         'Phone: no horizontal scroll at 390; every control ≥ 44px.',
       ],
       built: [
-        { status: 'shipped', what: 'Scan table, filters, view editor, row preview, empty, loading and sweep-behind states; the Not live and Paused board banners (labels.ts marketDataNotLive / marketDataPaused).' },
+        { status: 'shipped', what: 'Scan table, filters, view editor, empty, loading and sweep-behind states; the Not live and Paused board banners (labels.ts marketDataNotLive / marketDataPaused).' },
+        { status: 'partial', what: 'Staging marking (site check D-03, 2026-10-15): the On this page legend with Demo · sample data, the scenario line, “RTH · scenario” and “Sample tape”, the dashed hatched sample frame with its Sample scan tag and Oct 7 date on table and cards, “Structure as-of 2:30 PM ET, Oct 7” instead of a 0s age, no warning box, and the How a score is built and Your view (Stored here) cards (Scanner.tsx, ScanTable.tsx SampleAwareFrame, format.ts scenarioStamp). Both walls as call / put; demo tiers on the API bands, so NVDA 81 is Prime (transport.ts demoTier). Left: the row preview (its button and Enter on a focused row) is not built; a row is still only a link to its desk, so Enter navigates.' },
+        { status: 'shipped', what: 'The Not live cards say Last good copy when the API serves one (liveCardTag.ts, review W1-21, 2026-10-15).' },
         { status: 'shipped', what: 'Staging scan through the demo transport, signed in (RequireAuth passes in demo mode).' },
         { status: 'shipped', what: 'Demo scan scores per name: NVDA 81, SPY 74, QQQ 70, AAPL 63, MSFT 52, TSLA 47 (catalog/shared.ts SCORE_OFFSET, 2026-10-14).' },
         { status: 'shipped', what: 'Demo scan change: the scenario’s own close-to-close move (transport.ts closeToClosePct, 2026-10-15): SPY −0.02% (690.75 → 690.62); every change has ▲/▼ before the signed figure.' },

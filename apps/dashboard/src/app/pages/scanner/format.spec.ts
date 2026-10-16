@@ -23,6 +23,7 @@ import {
   nearerWall,
   partitionLeadGroup,
   relAge,
+  scenarioStamp,
   sessionBadge,
   snapRows,
   sortRows,
@@ -318,6 +319,27 @@ describe('marketSessionPhase — US equity clock (America/New_York)', () => {
   it('early-close Friday 2026-11-27 10:00 ET remains RTH (still a session day)', () => {
     // EST: 10:00 ET = 15:00 UTC
     expect(marketSessionPhase(Date.UTC(2026, 10, 27, 15, 0, 0))).toBe('rth');
+  });
+});
+
+// The demo stamps every row at the scenario's now: an age would always read "0s" (site check D-03).
+describe('scenario stamp (demo)', () => {
+  const STAMP = Date.parse('2026-10-07T18:30:00Z') / 1000; // 2:30 PM EDT
+  it('reads the scenario clock in New York time, never an age', () => {
+    expect(scenarioStamp(STAMP)).toBe('2:30 PM ET, Oct 7');
+    expect(scenarioStamp(Date.parse('2026-11-02T03:30:00Z') / 1000)).toBe('10:30 PM ET, Nov 1');
+    expect(updatedText(row({ status: 'ok', as_of: STAMP }), STAMP, true)).toBe(
+      'Structure as-of 2:30 PM ET, Oct 7',
+    );
+    expect(structureAsOfRel(null, [row({ status: 'ok', as_of: STAMP })], STAMP, true)).toBe(
+      '2:30 PM ET, Oct 7',
+    );
+  });
+  it('keeps the age on a live build and claims nothing for a building row', () => {
+    expect(updatedText(row({ status: 'ok', as_of: STAMP - 42 }), STAMP, false)).toBe(
+      'Structure as-of 42s',
+    );
+    expect(updatedText(row({ status: 'building', as_of: STAMP }), STAMP, true)).toBeNull();
   });
 });
 

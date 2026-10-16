@@ -109,9 +109,22 @@ export function buildBrokerReassessment(
     structure_line: view.structure_line_full,
     qty: view.qty_text,
     position,
-    modeled_pl_dollar: view.pl_dollar,
+    // Dollars to the cent: the leg arithmetic leaves float noise (607.2500000000005) that a reader
+    // would copy into a read of their own.
+    modeled_pl_dollar: view.pl_dollar == null ? null : Math.round(view.pl_dollar * 100) / 100,
     modeled_pl_basis: BROKER_COPY.modeled.label,
   };
+}
+
+/** Write text to the clipboard; true only when the write resolved. */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (!navigator.clipboard?.writeText) return false;
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** The row affordance + advisory export dialog. Never a write; never an accept. */
@@ -123,10 +136,12 @@ export function BrokerReassessAction({
   book: Pick<BrokerBook, 'as_of'> | null;
 }) {
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  // The button says what the clipboard actually did: a denied or missing clipboard reads
+  // "Couldn't copy", never "Copied" (review W1-58).
+  const [copied, setCopied] = useState<'idle' | 'copied' | 'failed'>('idle');
   useEffect(() => {
-    if (!copied) return;
-    const id = setTimeout(() => setCopied(false), 1500);
+    if (copied === 'idle') return;
+    const id = setTimeout(() => setCopied('idle'), 1500);
     return () => clearTimeout(id);
   }, [copied]);
   if (view.fidelity === 'unrecognized') return null; // nothing faithful to reference
@@ -206,11 +221,14 @@ export function BrokerReassessAction({
             data-testid="broker-reassess-copy"
             aria-live="polite"
             onClick={() => {
-              void navigator.clipboard?.writeText?.(json);
-              setCopied(true);
+              void copyText(json).then((ok) => setCopied(ok ? 'copied' : 'failed'));
             }}
           >
-            {copied ? 'Copied' : 'Copy request'}
+            {copied === 'copied'
+              ? 'Copied'
+              : copied === 'failed'
+                ? 'Couldn’t copy'
+                : 'Copy request'}
           </Button>
           <Button onClick={() => setOpen(false)}>Close</Button>
         </DialogActions>

@@ -515,7 +515,11 @@ export function initializeDemoWorkspace(): void {
             side: 'long',
             qty: 1,
             trigger: null,
-            limit_price: 6.5,
+            // A buy limit waits only BELOW the market. The sample mark for this contract starts at
+            // 4.47 at 2:30 PM and only rises on the scenario tape (SPY drifts up), so 4.25 waits for
+            // the whole scenario, as the board draws it. At 6.50 the order filled on the first frame
+            // (site check D-04).
+            limit_price: 4.25,
             stop: null,
             target: null,
             expires_at: '2026-11-20T21:00:00Z',

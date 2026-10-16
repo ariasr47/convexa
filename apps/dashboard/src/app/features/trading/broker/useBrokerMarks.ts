@@ -18,6 +18,7 @@ import { type MarkResult } from '@/features/trading/model/mark';
 import { useTickerSpots } from '@/features/trading/model/useTickerSpots';
 import { legContractKey } from '@/features/trading/positions/composeMark';
 import type { Leg } from '@/features/trading/positions/leg';
+import { useMarkFeed } from '@/features/trading/positions/markFeed';
 import {
   fetchTrackedContract,
   type BrokerPosition,
@@ -82,8 +83,12 @@ export function useBrokerMarks(
   }, [legsById]);
   const trackKey = [...contractKeys.keys()].toSorted().join(',');
   const servedAt = data?.meta.served_at;
+  // With no options feed on this site the contract route can only refuse (503): never ask it. The
+  // legs then resolve as unpriced, the same answer a refused lookup gives (useContractLive.ts).
+  const skip = useMarkFeed() === 'notLive';
 
   useEffect(() => {
+    if (skip) return;
     let cancelled = false;
     contractKeys.forEach((c, key) => {
       fetchTrackedContract(c.ticker, {
@@ -107,7 +112,7 @@ export function useBrokerMarks(
     // The shipped usePortfolio dependency shape: re-fetch when the contract SET or the served
     // bundle changes, never from this effect's own writes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trackKey, servedAt]);
+  }, [trackKey, servedAt, skip]);
 
   const session = live?.market_session ?? null;
 

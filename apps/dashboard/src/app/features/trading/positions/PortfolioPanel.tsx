@@ -20,7 +20,7 @@ import { AUTH_COPY } from '@/features/auth/copy';
 import { useGate } from '@/features/auth/useGate';
 import { EntryPrefill } from '@/features/trading/TradeEntryDialog';
 import { BrokerTabPanel } from '@/features/trading/broker/BrokerTabPanel';
-import { extrasFor, upText } from '@/shared/theme/tokens';
+import { extrasFor } from '@/shared/theme/tokens';
 import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -168,9 +168,10 @@ export function PortfolioPanel({
             sx={{
               fontSize: '0.6875rem', // type floor >=11px (redesign-stage-0 item 4)
               fontWeight: 700,
-              color: upText,
+              // Neutral chrome: green is reserved for direction (canon; site check D-23).
+              color: 'text.secondary',
               border: '1px solid',
-              borderColor: (t) => `${t.palette.success.main}66`,
+              borderColor: 'divider',
               borderRadius: '4px',
               padding: '1px 5px',
             }}

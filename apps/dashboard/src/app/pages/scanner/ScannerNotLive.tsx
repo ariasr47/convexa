@@ -10,6 +10,7 @@
  * Design: design/src/screens/final/account-pages.mjs `scannerProductionSignedIn`.
  */
 import { formatShortDate } from '@/pages/research/format';
+import { servingLastGood } from '@/pages/research/marketsMath';
 import { usePublicMarkets, usePublicTicker } from '@/pages/research/publicData';
 import { Caps } from '@/pages/research/publicUi';
 import { MONO, PANEL_SX } from '@/pages/research/ui';
@@ -17,11 +18,11 @@ import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { DATA_STATES, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
-import type { PublicDataState } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import { Link as RouterLink } from 'react-router-dom';
 import { SCAN_COPY } from './labels';
+import { liveCardTag, type CardTag as Tag } from './liveCardTag';
 
 const linkSx = {
   color: (theme: Parameters<typeof extrasFor>[0]) => extrasFor(theme).textInfo,
@@ -33,15 +34,6 @@ const linkSx = {
 
 /** The FINRA short-interest card reads one well-covered name; the design draws AMD. */
 const SHORT_TICKER = 'AMD';
-
-type Tag = { state: DataStateKey; detail?: string } | null;
-
-/** A source-level answer's word when its part is missing (off, not set up, or down). */
-function partTag(state: PublicDataState, present: boolean, ok: Tag): Tag {
-  if (state === 'off') return { state: 'off' };
-  if (state === 'not_configured') return { state: 'notSetUp' };
-  return present ? ok : { state: 'sourceDown' };
-}
 
 interface LiveCard {
   to: string;
@@ -64,10 +56,15 @@ function useLiveCards(): LiveCard[] {
       tag: markets.error
         ? failed
         : m
-          ? partTag(m.state, m.rates != null, {
-              state: 'updated',
-              detail: m.rates ? formatShortDate(m.rates.as_of) : undefined,
-            })
+          ? liveCardTag(
+              m.state,
+              m.rates != null,
+              {
+                state: 'updated',
+                detail: m.rates ? formatShortDate(m.rates.as_of) : undefined,
+              },
+              servingLastGood(m.rates?.source_state, m.detail, 'U.S. Treasury'),
+            )
           : null,
     },
     {
@@ -77,10 +74,15 @@ function useLiveCards(): LiveCard[] {
       tag: markets.error
         ? failed
         : m
-          ? partTag(m.state, m.futures != null, {
-              state: 'delayed',
-              detail: m.futures ? `as of ${formatShortDate(m.futures.report_date)}` : undefined,
-            })
+          ? liveCardTag(
+              m.state,
+              m.futures != null,
+              {
+                state: 'delayed',
+                detail: m.futures ? `as of ${formatShortDate(m.futures.report_date)}` : undefined,
+              },
+              servingLastGood(m.futures?.source_state, m.detail, 'CFTC'),
+            )
           : null,
     },
     {
@@ -92,12 +94,17 @@ function useLiveCards(): LiveCard[] {
         : t
           ? t.state === 'off'
             ? { state: 'off' }
-            : partTag(t.short_interest_state, t.short_interest != null, {
-                state: 'delayed',
-                detail: t.short_interest
-                  ? `as of ${formatShortDate(t.short_interest.settlement_date)}`
-                  : undefined,
-              })
+            : liveCardTag(
+                t.short_interest_state,
+                t.short_interest != null,
+                {
+                  state: 'delayed',
+                  detail: t.short_interest
+                    ? `as of ${formatShortDate(t.short_interest.settlement_date)}`
+                    : undefined,
+                },
+                t.short_interest_source_state === 'last_good',
+              )
           : null,
     },
     {
@@ -113,7 +120,12 @@ function useLiveCards(): LiveCard[] {
         : t
           ? t.state === 'off'
             ? { state: 'off' }
-            : partTag(t.filings_state, t.filings_state === 'live', { state: 'updated' })
+            : liveCardTag(
+                t.filings_state,
+                t.filings_state === 'live',
+                { state: 'updated' },
+                t.filings_source_state === 'last_good',
+              )
           : null,
     },
   ];

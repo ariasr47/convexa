@@ -293,7 +293,7 @@ export const TR_AIREC_PATH_NOTE =
   'counted in your totals but not in any AI-rec cell.';
 
 export const trFamilyEmpty = (family: FamilyKey): string =>
-  `Nothing recorded yet for this cut. Cells appear as trades close with a recorded ${FAMILY_NOUN[family]}.`;
+  `Nothing recorded yet for this cut. Cells appear as trades close with a ${FAMILY_NOUN[family]}.`;
 
 // ---- Closed label lookups (§2.6) — `[digested-labels-not-raw-dump]` ------------------------------
 

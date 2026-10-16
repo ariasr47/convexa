@@ -76,6 +76,10 @@ export const notEvaluatedTip = (ticker: string) =>
   `cannot trigger or fill right now — and it will not catch up on moves it missed. Open ` +
   `${ticker}'s ticker page during live hours to watch it. It can still expire on the clock, and ` +
   `you can still cancel it.`;
+/** DLG-02 — the same state with no options feed on this site: a standing fact, so the tip never
+ *  sends the trader to a ticker page that can't evaluate the order either (review W1-57). */
+export const NOT_EVALUATED_FEED_OFF_TIP =
+  'Can’t trigger without the live tape; the plan stays as placed and can still expire or be cancelled.';
 
 /** D8-4 — scripted-scenario marking: the chip + the strip (panel/detail variant). */
 export const SCRIPTED_CHIP = 'SCRIPTED SCENARIO';
@@ -109,6 +113,9 @@ export const WIDGET_EMPTY = (ticker: string) =>
 export const PANEL_EMPTY_OPEN =
   'No simulated orders yet. On a ticker page, Act on a produced AI read to create one.';
 export const PANEL_EMPTY_HISTORY = 'No completed orders yet.';
+/** The Open tab is empty but History isn't: never "No simulated orders yet" beside filled ones. */
+export const PANEL_EMPTY_OPEN_WITH_HISTORY =
+  'No open orders. Filled, expired and cancelled orders are in History.';
 
 export const recentCompleted = (n: number) => `Recent ${n} completed`;
 

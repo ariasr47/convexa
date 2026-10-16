@@ -121,7 +121,7 @@ describe('G3 demo workspace and paper order flow', () => {
         scenarioTimeMs: demoNowMs() + 10_000,
         symbol: 'SPY',
         underlyingMid: 690.8,
-        marksByContractId: { 'SPY|2026-11-20|690|call': 6.2 },
+        marksByContractId: { 'SPY|2026-11-20|690|call': 4.1 },
       };
       act(() => hook.rerender(pendingFrame));
       expect(getOrder('demo-order-spy-nov20-limit')?.status).toBe('filled');

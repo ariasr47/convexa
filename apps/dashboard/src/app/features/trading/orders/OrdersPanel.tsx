@@ -23,6 +23,7 @@ import {
   ACTION_EXPORT,
   PANEL_EMPTY_HISTORY,
   PANEL_EMPTY_OPEN,
+  PANEL_EMPTY_OPEN_WITH_HISTORY,
   PANEL_SUBTITLE,
   PANEL_TITLE,
 } from './copy';
@@ -142,7 +143,11 @@ export function OrdersPanel({ coverage, openDetailOrderId, onDetailClose, onView
           sx={{ color: 'text.secondary' }}
           data-testid={tab === 'open' ? 'orders-empty-open' : 'orders-empty-history'}
         >
-          {tab === 'open' ? PANEL_EMPTY_OPEN : PANEL_EMPTY_HISTORY}
+          {tab === 'open'
+            ? history.length > 0
+              ? PANEL_EMPTY_OPEN_WITH_HISTORY
+              : PANEL_EMPTY_OPEN
+            : PANEL_EMPTY_HISTORY}
         </Typography>
       ) : (
         <Box>

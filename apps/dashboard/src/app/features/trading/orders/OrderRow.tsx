@@ -32,6 +32,7 @@ import {
   FILLED_TIP,
   GOOD_TIL_GLOSSARY,
   goodTilText,
+  NOT_EVALUATED_FEED_OFF_TIP,
   NOT_EVALUATED_TEXT,
   notEvaluatedTip,
   sourceAiRead,
@@ -183,7 +184,11 @@ function NotEvaluated({ ticker }: { ticker: string }) {
   const marketDataMode = useMarketDataMode();
   const feedOff = dataMode === 'live' && marketDataOff(marketDataMode);
   return (
-    <Tooltip arrow describeChild title={notEvaluatedTip(ticker)}>
+    <Tooltip
+      arrow
+      describeChild
+      title={feedOff ? NOT_EVALUATED_FEED_OFF_TIP : notEvaluatedTip(ticker)}
+    >
       <Stack
         direction="row"
         spacing={0.75}

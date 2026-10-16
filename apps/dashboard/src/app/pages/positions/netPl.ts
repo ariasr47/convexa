@@ -41,7 +41,14 @@ export interface NetPlInputs {
   /** The sum over currently-marked OPEN rows, or `null` when none are marked. See the file header
    *  for why this is an input rather than re-derived here. */
   retainedTotal: number | null;
+  /** No options feed on this site (markFeed `notLive`): an unmarked book is a standing fact, not
+   *  this cycle's miss, so F8 reads the not-live dash with its reason (canon P-2; review W1-55).
+   *  Optional, so every existing caller keeps today's arms. */
+  feedNotLive?: boolean;
 }
+
+/** F8's caption with no options feed: why nothing is marked, not a count that implies a retry. */
+export const NET_PL_NOT_LIVE_CAPTION = 'Option marks need the options feed';
 
 export interface NetPlState {
   value: string | NotANumber;
@@ -56,7 +63,12 @@ export function formatNetPl(v: number): string {
   return `${v >= 0 ? '+$' : '−$'}${Math.abs(Math.round(v)).toLocaleString()}`;
 }
 
-export function netPlStateOf({ views, streamOffline, retainedTotal }: NetPlInputs): NetPlState {
+export function netPlStateOf({
+  views,
+  streamOffline,
+  retainedTotal,
+  feedNotLive = false,
+}: NetPlInputs): NetPlState {
   if (streamOffline) {
     // F4 (retained) / F5 (bare) — see the file header on why `caption` is `null` here.
     return retainedTotal != null
@@ -87,6 +99,15 @@ export function netPlStateOf({ views, streamOffline, retainedTotal }: NetPlInput
   }
   if (n === 0) {
     // F8 — open rows exist, none marked. Never a number, never a zero, never a tint.
+    if (feedNotLive) {
+      return {
+        value: '—',
+        register: 'traced',
+        caption: NET_PL_NOT_LIVE_CAPTION,
+        tint: null,
+        offline: null,
+      };
+    }
     return {
       value: 'unavailable',
       register: 'traced',

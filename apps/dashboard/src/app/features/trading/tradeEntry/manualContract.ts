@@ -77,8 +77,26 @@ function calendarDate(s: string): { y: number; m: number; d: number } | null {
 }
 
 /**
- * `today` is the YYYY-MM-DD the dialog's other date checks use (`todayIso`). An expiration of today
- * is accepted: a same-day contract is live until the close, and the good-til check takes today too.
+ * Today's date in New York, YYYY-MM-DD: the calendar US equity options expire on. The browser's own
+ * date is wrong at the edges: at 8 PM in Honolulu it is already tomorrow in New York, so an option
+ * that expired at today's close would still be accepted, and in Tokyo the morning after an
+ * expiration the browser is a day ahead and refuses a contract that is still listed.
+ */
+export function newYorkDateIso(ms: number): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(ms));
+  const pick = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? '';
+  return `${pick('year')}-${pick('month')}-${pick('day')}`;
+}
+
+/**
+ * `today` is New York's date (`newYorkDateIso`), never the browser's. An expiration of today is
+ * accepted: a same-day contract is live until the close.
  */
 export function expirationError(expiration: string, today: string): string | null {
   if (!expiration) return MANUAL_ENTRY_COPY.expirationEmpty;

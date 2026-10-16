@@ -15,6 +15,7 @@
  *    payload (AC-27). Clock expiry is swept on every tick too (the only off-stream transition).
  */
 import { computeMark } from '@/features/trading/model/mark';
+import { useMarkFeed } from '@/features/trading/positions/markFeed';
 import {
   dataMode,
   fetchTrackedContract,
@@ -97,9 +98,12 @@ export function useOrderEngine({
   trackedRef.current = tracked;
   const consumedDemoFrame = useRef(demoFrame?.frameId ?? null);
   const servedAt = bundle?.meta.served_at;
+  // With no options feed on this site the contract route can only refuse (503): never ask it. The
+  // fill leg then has no mark, exactly as a refused lookup would leave it (useContractLive.ts).
+  const skipContracts = useMarkFeed() === 'notLive';
 
   useEffect(() => {
-    if (dataMode === 'demo') return;
+    if (dataMode === 'demo' || skipContracts) return;
     let cancelled = false;
     active.forEach((o) => {
       fetchTrackedContract(o.ticker, { expiration: o.expiration, strike: o.strike, right: o.right })
@@ -115,7 +119,7 @@ export function useOrderEngine({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeKey, servedAt]);
+  }, [activeKey, servedAt, skipContracts]);
 
   // Demo evaluation is exclusively driven by a new immutable controller frame. Mount, bundle
   // updates, pause/end, and absent contract marks never enter the pure transition engine.

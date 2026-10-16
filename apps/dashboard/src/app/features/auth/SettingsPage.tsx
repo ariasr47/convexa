@@ -20,7 +20,9 @@
 import { usePersona } from '@/features/personas/usePersona';
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { marketDataOff } from '@/shared/dataState/marketData';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
+import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { extrasFor } from '@/shared/theme/tokens';
 import { dataMode, resetDemoWorkspace, type ThemePref } from '@convexa/api';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
@@ -54,6 +56,85 @@ import { RiskInputsSection } from './RiskInputsSection';
 import { useSettings } from './useSettings';
 
 const C = AUTH_COPY.settings;
+
+/** Signed out on a live build, the account-only panels say in one line what signing in unlocks,
+ *  never a disabled form (Final Settings, production signed out; site check D-23). */
+const SIGNED_OUT_LINE = {
+  risk: 'Sign in to save your risk inputs. They’re stored with your account, never in this browser.',
+  ai: 'Sign in to manage AI providers.',
+  aiNotLive: ' Reads also need the options feed, which isn’t live on this site.',
+  brokerage:
+    'Sign in to connect a Webull account, read-only. Convexa never places, changes or cancels an order.',
+} as const;
+
+function SignedOutLine({ text, testId }: { text: string; testId: string }) {
+  return (
+    <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid={testId}>
+      {text}
+    </Typography>
+  );
+}
+
+/** The demo's Reset, asked in place first (it clears every demo change in this browser), as the
+ *  bar's Reset demo data does; the board's "confirmed in place" pattern, no modal (D-23). */
+function DemoResetInPlace() {
+  const [asking, setAsking] = useState(false);
+  if (!asking)
+    return (
+      <Button
+        variant="outlined"
+        size="small"
+        data-testid="settings-demo-reset"
+        onClick={() => setAsking(true)}
+        sx={{ flex: 'none' }}
+      >
+        Reset demo data
+      </Button>
+    );
+  return (
+    <Box
+      role="group"
+      aria-label="Reset the demo?"
+      data-testid="settings-demo-reset-confirm"
+      sx={{
+        flex: '1 1 100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1,
+        p: 1.5,
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1,
+      }}
+    >
+      <Typography sx={{ fontSize: 14, fontWeight: 700 }}>Reset the demo?</Typography>
+      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+        Clears your demo positions, alerts and settings in this browser and puts the seed account
+        back.
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          data-testid="settings-demo-reset-yes"
+          onClick={resetDemoWorkspace}
+          sx={{ minHeight: 44 }}
+        >
+          Reset demo data
+        </Button>
+        <Button
+          variant="text"
+          size="small"
+          autoFocus
+          onClick={() => setAsking(false)}
+          sx={{ minHeight: 44, color: 'text.primary' }}
+        >
+          Keep my changes
+        </Button>
+      </Box>
+    </Box>
+  );
+}
 
 /** A `background.paper` panel card — rounded `card` radius, 1px `divider` border, ~24 padding. */
 function PanelCard({
@@ -223,6 +304,9 @@ export function SettingsPage() {
   const tags = panelTags(
     dataMode === 'demo' ? 'demo' : auth.authenticated ? 'signedIn' : 'signedOut',
   );
+  // The same test the sections and tags use, so nothing swaps when the session resolves.
+  const signedOut = dataMode !== 'demo' && !auth.authenticated;
+  const feedOff = marketDataOff(useMarketDataMode());
 
   return (
     // design/src/screens/settings.mjs:5 — `minmax(0, 760px)` content column; the section rail
@@ -268,15 +352,7 @@ export function SettingsPage() {
                   Sample data. Your changes stay in this browser until you reset.
                 </Typography>
               </Box>
-              <Button
-                variant="outlined"
-                size="small"
-                data-testid="settings-demo-reset"
-                onClick={resetDemoWorkspace}
-                sx={{ flex: 'none' }}
-              >
-                Reset demo data
-              </Button>
+              <DemoResetInPlace />
             </Stack>
           ) : auth.authenticated ? (
             <Stack
@@ -514,12 +590,27 @@ export function SettingsPage() {
           tag={tags.risk}
           testId="settings-risk-inputs-panel"
         >
-          <RiskInputsSection />
+          {signedOut ? (
+            <SignedOutLine text={SIGNED_OUT_LINE.risk} testId="risk-inputs-anonymous" />
+          ) : (
+            <RiskInputsSection />
+          )}
         </PanelCard>
 
         {/* ===== 4. AI providers panel (ai-providers — keep #ai-key for Ask-AI deep-link) ===== */}
         <PanelCard heading={C.aiKey.heading} tag={tags.ai} testId="settings-ai-key-panel">
-          <AiKeySection embedded />
+          {signedOut ? (
+            // The #ai-key / #ai-providers anchors stay: Ask-AI deep-links here signed out too.
+            <Box id="ai-key" data-testid="settings-ai-key-section">
+              <Box id="ai-providers" />
+              <SignedOutLine
+                text={SIGNED_OUT_LINE.ai + (feedOff ? SIGNED_OUT_LINE.aiNotLive : '')}
+                testId="settings-ai-key-anonymous"
+              />
+            </Box>
+          ) : (
+            <AiKeySection embedded />
+          )}
         </PanelCard>
 
         {/* ===== 5. Brokerage panel (broker-connect — the byo-ai-key shape; #brokerage anchor) ===== */}
@@ -528,7 +619,16 @@ export function SettingsPage() {
           tag={tags.brokerage}
           testId="settings-brokerage-panel"
         >
-          <BrokerageSection embedded />
+          {signedOut ? (
+            <Box id="brokerage" data-testid="settings-brokerage-section">
+              <SignedOutLine
+                text={SIGNED_OUT_LINE.brokerage}
+                testId="settings-brokerage-anonymous"
+              />
+            </Box>
+          ) : (
+            <BrokerageSection embedded />
+          )}
         </PanelCard>
 
         {/* The standing disclaimer — ONE shared source with the site footer, so the two copies
