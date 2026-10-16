@@ -84,6 +84,15 @@ vitest.config.*.timestamp*
 test-output
 .supply-chain/out/
 
+# Secrets anywhere in the tree. apps/api/src/main.rs load_dotenv also reads the repo-root and the
+# working-directory .env (and .env.$APP_ENV beside it); before 2026-10-15 only apps/api/ was covered
+# here, and a root .env stayed out of git only through one machine's global excludes file.
+.env
+.env.*
+!.env.example
+credentials.json
+*runtimeconfig*
+
 # Rust / API local secrets & runtime data
 apps/api/.env
 apps/api/.env.*
