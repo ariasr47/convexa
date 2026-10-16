@@ -134,15 +134,18 @@ function Mark() {
 }
 
 /** "What a read sends": the export's production form. Nothing is sent, so it lists what a read
- *  would send and what never leaves. */
+ *  would send and what never leaves. Its tag and first line follow the panel's own state (review
+ *  W1-43): Not live when no feed exists, Paused when an operator paused one. */
 export function WhatAReadSends({
   open,
   onClose,
   ticker,
+  feed = 'not_live',
 }: {
   open: boolean;
   onClose: () => void;
   ticker: string;
+  feed?: AiFeedOff;
 }) {
   return (
     <Drawer
@@ -181,11 +184,12 @@ export function WhatAReadSends({
         </IconButton>
       </Box>
       <Box sx={{ justifySelf: 'start' }}>
-        <DataStateTag state="notLive" detail="Nothing sent" />
+        <DataStateTag state={feed === 'paused' ? 'paused' : 'notLive'} detail="Nothing sent" />
       </Box>
       <Para>
-        Nothing leaves this site right now: no read runs without the options feed. When one does, it
-        sends exactly this, and the export shows it before you ask:
+        {feed === 'paused'
+          ? 'Nothing leaves this site right now: no read runs while the options feed is paused. When one does, it sends exactly this, and the export shows it before you ask:'
+          : 'Nothing leaves this site right now: no read runs without the options feed. When one does, it sends exactly this, and the export shows it before you ask:'}
       </Para>
       <Box component="dl" sx={{ m: 0, display: 'grid' }}>
         {SENT.map(([what, detail]) => (
@@ -332,13 +336,19 @@ export function AiReadNotLive({
           <Anatomy />
         </Box>
       </Box>
-      <WhatAReadSends open={open} onClose={() => setOpen(false)} ticker={ticker} />
+      <WhatAReadSends open={open} onClose={() => setOpen(false)} ticker={ticker} feed={feed} />
     </Box>
   );
 }
 
 /** On a phone the twelve panels fold into one list; the export stays one tap away under it. */
-export function WhatAReadSendsLink({ ticker }: { ticker: string }) {
+export function WhatAReadSendsLink({
+  ticker,
+  feed = 'not_live',
+}: {
+  ticker: string;
+  feed?: AiFeedOff;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -357,7 +367,7 @@ export function WhatAReadSendsLink({ ticker }: { ticker: string }) {
       >
         What an AI read sends →
       </Button>
-      <WhatAReadSends open={open} onClose={() => setOpen(false)} ticker={ticker} />
+      <WhatAReadSends open={open} onClose={() => setOpen(false)} ticker={ticker} feed={feed} />
     </>
   );
 }
