@@ -2,11 +2,11 @@
 // Staging: SPY on the demo account, every options panel filled with the authored Oct 7 scenario in the v5
 // chart forms (dashed frame + hatch = sample, P-8; gamma sign by position and text as well as hue, P-11).
 // Production: NVDA with the public panels live and every options-feed panel Not live with a link to the
-// same desk on the demo (P-1), plus the "On this page" legend. The v5 "after" forms are not exported from
-// screens/v5/families-desk.mjs, so they are adapted here (same data, same marks).
+// same desk on the demo (P-1), plus the "On this page" legend.
+// Lane 4 (2026-10-16) redrew both to the hierarchy the app now builds (tmp/build/shots/lane4/CRITIQUE.md):
+// the price and the structure verdict first, then the levels that frame it, then supporting context.
 import { icon, v4Notice, v4Page, STAGING_DEMO_URL } from '../../lib.mjs';
 import { chartFrame, dataTable, fmt, plot, rangeBar, sparkline, stateBody, ticks } from '../../chart-kit.mjs';
-import { SI, SI_GAP } from '../../data/charts.mjs';
 import { dataCell, gexBars, provChip, stateTag } from '../../components/data-states.mjs';
 import { thirdPartyFrame } from '../../components/charts.mjs';
 import { statesBoard } from '../v4/kit.mjs';
@@ -29,7 +29,7 @@ export const TK_CSS = `
   .tk-sel .caps { font-size: 11px; }
   .tk-hero { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 16px; align-items: stretch; }
   .tk-row { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 16px; align-items: stretch; }
-  .tk-work { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 16px; align-items: stretch; }
+  .tk-work { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 16px; align-items: stretch; }
   .tk-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   .tk-ctx { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
   .tk-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
@@ -57,6 +57,36 @@ export const TK_CSS = `
   @media (max-width: 1099px) { .tk-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tk-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tk-work { grid-template-columns: 1fr; } .tk-side { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 899px) { .tk-hero, .tk-row { grid-template-columns: 1fr; } .tk-ctx { grid-template-columns: 1fr; } .tk-ai { grid-template-columns: 1fr; gap: 16px; } }
   @media (max-width: 767px) { .tkd { gap: 16px; padding-top: 16px; } .tk-mast .act { justify-content: flex-start; } .tk-mast .act .btn { width: 100%; min-height: 44px; } .tkd .hd-tabs a { min-height: 44px; } .tkd .hd-syms a { height: 44px; } .tk-cards, .tk-side { grid-template-columns: 1fr; } .tk-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tk-zone h2 { font-size: 20px; } .tkd .hd-p { padding: 16px; } .tkd .btn { min-height: 44px; } .tk-sel { min-height: 44px; flex: 1 1 100%; } .tk-verdict { font-size: 24px; } }
+  /* Lane 4 (2026-10-16): the hierarchy the app builds. */
+  .tk-mast .who h1 { font-size: clamp(30px, 2.8vw, 36px); }
+  .tk-mast .act { flex: 0 1 600px; flex-direction: column; align-items: flex-end; }
+  .tk-ctl { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px 12px; }
+  .tk-verdict-chip { display: inline-flex; align-items: center; align-self: center; min-height: 24px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--steel); font-size: 12px; font-weight: 600; color: var(--phosphor); white-space: nowrap; }
+  .tk-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  .tk-zl { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); margin-bottom: -8px; }
+  .tk-seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; font-size: 12px; font-weight: 600; }
+  .tk-seg > * { padding: 6px 10px; } .tk-seg b { background: var(--raised-2); }
+  .tk-field { display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: "field ladder" "lane ladder"; column-gap: 18px; row-gap: 12px; }
+  .tk-fieldl { grid-area: field; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .tk-flegend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 16px; font-size: 11px; color: var(--steel); }
+  .tk-flegend span { display: inline-flex; align-items: center; gap: 6px; } .tk-flegend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; } .tk-flegend i.ln { height: 2px; border-radius: 1px; }
+  .tk-lane { grid-area: lane; display: flex; flex-direction: column; gap: 10px; min-width: 0; padding-top: 10px; border-top: 1px solid var(--line); }
+  .tk-path { display: flex; flex-direction: column; gap: 6px; }
+  .tk-ladder { grid-area: ladder; display: flex; flex-direction: column; gap: 12px; min-width: 0; padding-left: 18px; border-left: 1px solid var(--line); }
+  .tk-lfind { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--phosphor); }
+  .tk-lhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .tk-lrows > div { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto 52px; gap: 8px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .tk-lrows > div:first-child { border-top: 0; }
+  .tk-lrows i { display: inline-block; width: 14px; height: 2px; }
+  .tk-lrows .mono { text-align: right; } .tk-lrows .big { font-size: 17px; font-weight: 600; }
+  .tk-ladder .tk-risk .v { font-size: 14px; }
+  .tk-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
+  .tk-foot > div { background: transparent; border: 0; padding: 0; }
+  .tk-watch { display: flex; flex-direction: column; gap: 2px; }
+  .tk-trace { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; line-height: 1.45; color: var(--steel); }
+  .tk-about { display: flex; flex-direction: column; gap: 4px; padding-top: 12px; border-top: 1px solid var(--line); }
+  @media (max-width: 999px) { .tk-field { grid-template-columns: 1fr; grid-template-areas: "field" "ladder" "lane"; } .tk-ladder { padding-left: 0; border-left: 0; padding-top: 12px; border-top: 1px solid var(--line); } }
+  @media (max-width: 899px) { .tk-ctx > * { grid-column: auto !important; } .tk-mast .act { align-items: stretch; max-width: none; } .tk-ctl { justify-content: flex-start; } }
 `;
 
 // ---- shared bits ----------------------------------------------------------------------------------
@@ -70,123 +100,123 @@ export const DEMO_SYMS = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA'];
 const PROD_SYMS = ['SPY', 'QQQ', 'IWM', 'NVDA', 'TSLA', 'AAPL', 'MSFT', 'AMD'];
 const DISCLAIM = '<p class="dline" style="margin: 0;">Research and tools, not investment advice. Figures on this board are illustrative design values.</p>';
 
-// ---- the SPY scenario (v5 families-desk values, the demo's Oct 7 scenario) ------------------------
-// Re-based to the demo seed (libs/api/src/lib/demo/catalog/spy.seed.json: base 670, step 0.32 → last close
-// about 690.62 on Oct 7) so the board, the seeded paper book (SPY Oct 16 690C) and the demo agree.
-// Levels as the demo computes them for SPY on the full expiry set (owner ruling 2026-10-14: where the demo
-// and a board disagree, the board follows the demo): call wall 704.02, flip 683.92, put wall 652.22, max pain
-// at spot, and the ±2.48 move the Oct 9 at-the-money straddle prices. The bell widths are fitted so the bars
-// cross zero once, between 682.5 and 685 (the flip), peak at 705 and bottom at 652.5.
-const SPOT = 690.62, FLIP = 683.92, PUTW = 652.22, CALLW = 704.02, PAIN = 690.62, MOVE = 2.48;
+// ---- the SPY scenario, as the demo desk renders it --------------------------------------------------
+// Lane 4 (2026-10-16): every figure below was read off the running demo desk for SPY on the full expiry
+// set (owner ruling 2026-10-14: where the demo and a board disagree, the board follows the demo). The
+// authored series: libs/api/src/lib/demo/catalog/spy.seed.json through catalog/shared.ts makeScenario
+// (last close 690.62 on Oct 7, prior close 690.75 on Oct 6); flow figures from demo/flowSeed.ts.
+const SPOT = 690.62, PRIOR = 690.75, FLIP = 683.92, PUTW = 652.22, CALLW = 704.02, PAIN = 690.62, MOVE = 2.48, MID = 690.63;
 const MOVE_EXPIRY = 'Oct 9';
 const STRIKES = Array.from({ length: 33 }, (_, i) => 640 + i * 2.5);
 const gex = (k) => +((Math.exp(-(((k - CALLW) / 12) ** 2)) * 1.104 - Math.exp(-(((k - PUTW) / 18) ** 2)) * 1.5411 + Math.exp(-(((k - SPOT) / 4) ** 2)) * 0.0424) * 1.8).toFixed(2);
 const SAMPLE = { source: 'Sample · shaped like SPY options structure', sourceKind: 'dashed', asof: 'Scenario · Oct 7, 2026 · 2:30 PM ET', kind: 'sample' };
+const pctFrom = (v) => fmt.signed(((v - SPOT) / SPOT) * 100, 1, '%');
 
-function fieldChart({ height = 300 } = {}) {
+/** The masthead: the symbol, then the price with its day change and the structure verdict, then the
+ *  provenance chips; the tabs head the right column with the controls and the one amber action. */
+function stagingMast(t) {
+  const chg = SPOT - PRIOR, pct = (chg / PRIOR) * 100;
+  const dir = chg >= 0 ? 'up' : 'down';
+  return `<div class="tk-mast">
+    <div class="who">
+      <h1 class="display">${t}</h1>
+      <div class="tk-px"><span class="p">$${fmt.num(SPOT, 2)}</span><span class="c t-${dir}">${chg >= 0 ? '▲ +' : '▼ −'}${fmt.num(Math.abs(chg), 2)} (${chg >= 0 ? '+' : '−'}${fmt.num(Math.abs(pct), 2)}%)</span><span class="tk-verdict-chip">+γ long gamma above ${fmt.num(FLIP, 2)}</span></div>
+      <div class="tk-chips">${stateTag('demo')}${provChip('Shaped like a delayed SPY quote · Oct 7, 2:30 PM ET', 'dashed')}<span class="dline">Sample last trade $${fmt.num(MID, 2)}</span></div>
+      <span class="dline">Levels @ $${fmt.num(SPOT, 2)} · Scenario · Oct 7, 2026 · 2:30 PM ET · All expirations</span>
+    </div>
+    <div class="act">${tabsNav(t)}<div class="tk-ctl"><span class="tk-sel"><span class="caps">Expirations</span><strong style="font-weight: 600;">All</strong>${icon('chevron', 14)}</span><span class="tk-sel"><span class="caps">Persona</span><strong style="font-weight: 600;">Careful sample reader</strong>${icon('chevron', 14)}</span><button class="btn primary" type="button">+ Open simulated trade</button></div></div>
+  </div>${quick(DEMO_SYMS, t)}`;
+}
+
+function fieldPlot({ height = 300 } = {}) {
   const pts = STRIKES.map((k) => [k, gex(k)]);
   const max = Math.max(...pts.map(([, v]) => Math.abs(v)));
-  const fx = 687.5, fv = pts.find(([k]) => k === fx)[1];
+  return plot({
+    height, pt: 58, pl: 58, pr: 24, prn: 12,
+    x: { min: STRIKES[0] - 1.5, max: STRIKES[STRIKES.length - 1] + 1.5, ticks: ticks(640, 720, 20, (v) => String(v)).map((t, i) => ({ ...t, minor: i % 2 === 1 })) },
+    y: { min: -max * 1.15, max: max * 1.15, ticks: [{ v: -2, label: '−$2M' }, { v: 0, label: '0' }, { v: 2, label: '+$2M' }] },
+    hlines: [{ v: 0, kind: 'zero', label: '+γ above · −γ below' }],
+    bars: pts.map(([k, v]) => ({ x: k, v, role: v >= 0 ? 'up' : 'down' })), barW: 12,
+    events: [{ x: PUTW, label: { long: `Put wall ${fmt.num(PUTW, 2)}`, short: 'Put' }, title: `Put wall ${fmt.num(PUTW, 2)}`, keep: true }, { x: FLIP, label: { long: `Flip ${fmt.num(FLIP, 2)}`, short: 'Flip' }, title: `Flip ${fmt.num(FLIP, 2)}`, keep: true }, { x: SPOT, label: `Mid ${fmt.num(MID, 2)}`, lane: 2 }, { x: CALLW, label: { long: `Call wall ${CALLW} · +γ`, short: 'Call' }, title: `Call wall ${CALLW}`, keep: true }], eventLane: { long: 'Levels', short: '' },
+    aria: `SPY net dealer gamma by strike, ${STRIKES[0]} to ${STRIKES[STRIKES.length - 1]}; flip ${FLIP}, put wall ${PUTW}, call wall ${CALLW}, mid ${MID}`,
+  });
+}
+
+/** The structure hero: ONE panel (StructureHeroPanel), the field and its levels side by side. Title:
+ *  the finding (P-10); the legend over the field; the slow lane under it; the ladder column carries
+ *  its own finding line, the five levels, the figures that frame the price, and the ladder foot. */
+function heroPanel() {
+  const rows = [['Call wall', CALLW, 'up', '+γ'], ['Mid', MID, 'emph', ''], ['Max pain', PAIN, 'ctx', ''], ['Gamma flip', FLIP, 'edge', '±'], ['Put wall', PUTW, 'down', '−γ']];
+  const sw = (r) => (r === 'up' ? 'var(--up)' : r === 'down' ? 'var(--down)' : r === 'edge' ? 'var(--phosphor)' : r === 'emph' ? 'var(--signal)' : 'var(--steel)');
+  const legendHtml = `<div class="tk-flegend"><span><i style="background: var(--up);"></i>+γ call-dominated</span><span><i style="background: var(--down);"></i>−γ put-dominated</span><span><i class="ln" style="background: var(--phosphor);"></i>flip</span></div>`;
+  const ladder = `<div class="tk-ladder">
+      <p class="tk-lfind">The flip is 1.0% below; the walls sit 1.9% above and 5.6% below</p>
+      <div class="tk-lhead"><span class="caps">Levels</span><span class="mono steel" style="font-size: 11px;">distance from levels @ $${fmt.num(SPOT, 2)}</span></div>
+      <div class="tk-lrows">${rows.map(([l, v, r, s]) => `<div><i style="background: ${sw(r)};${r === 'ctx' ? ' background: repeating-linear-gradient(90deg, var(--steel) 0 4px, transparent 4px 6px);' : ''}"></i><span>${l}${s ? ` <span class="mono steel" style="font-size: 11px;">${s}</span>` : ''}</span><span class="mono${r === 'emph' ? ' big' : ''}">$${fmt.num(v, 2)}</span><span class="mono steel" style="font-size: 11px;">${r === 'emph' ? '—' : v === SPOT ? 'at spot' : pctFrom(v)}</span></div>`).join('')}</div>
+      <div class="tk-risk"><div><span class="caps">Regime</span><span class="v" style="font-size: 15px;">+γ long gamma</span><span class="dline" style="font-size: 11px;">above the flip by 1.0%</span></div><div><span class="caps">Implied move</span><span class="v" style="font-size: 15px;">±$${fmt.num(MOVE, 2)}</span><span class="dline" style="font-size: 11px;">ATM straddle · 2 DTE</span></div></div>
+      <div class="tk-risk tk-foot"><div><span class="caps">Vol-norm GEX</span><span class="v">$517.2M</span><span class="dline" style="font-size: 11px;">primary magnitude</span></div><div><span class="caps">Raw GEX (1% shock)</span><span class="v">$93.1M</span><span class="dline" style="font-size: 11px;">secondary</span></div></div>
+    </div>`;
+  const lane = `<div class="tk-lane"><span class="dline"><span class="steel">Sample tape · Mid</span> <span class="mono" style="color: var(--phosphor);">$${fmt.num(MID, 2)}</span> Replays the Oct 7, 2026 scenario from 2:30 PM ET · 1m window</span>
+      <div class="tk-path"><span class="caps">Structure path · slow lane</span><div style="display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center;">${sparkline([58, 60, 61, 63, 62, 64, 66, 65, 67, 69, 71, 74], { width: 120, height: 24, value: '74', scale: 'score · this session', aria: 'Score from 58 to 74' })}${sparkline([-1.9, -1.7, -1.6, -1.2, -1.0, -0.8, -0.9, -0.6, -0.5, -0.4, -0.35, -0.38], { width: 120, height: 24, value: '↑', scale: 'distance to the flip', aria: 'Distance to the flip narrowing' })}</div><span class="dline" style="font-size: 11px;">Authored synthetic daily scenario snapshots; not live or stored history.</span></div>
+    </div>`;
   return chartFrame({
-    claim: `Dealers are long gamma above the ${fmt.num(FLIP, 2)} flip; the call wall at ${fmt.num(CALLW, 2)} carries the most positive gamma`,
-    sub: 'SPY net dealer gamma by strike · $M per 1% move · all expirations · above zero (+γ): dealers long gamma, moves tend to be damped · below zero (−γ): short gamma, moves tend to be amplified',
-    body: plot({
-      height, pt: 58, pl: 58, pr: 24, prn: 12,
-      x: { min: STRIKES[0] - 1.5, max: STRIKES[STRIKES.length - 1] + 1.5, ticks: ticks(640, 720, 20, (v) => String(v)).map((t, i) => ({ ...t, minor: i % 2 === 1 })) },
-      y: { min: -max * 1.15, max: max * 1.15, ticks: [{ v: -2, label: '−$2M' }, { v: 0, label: '0' }, { v: 2, label: '+$2M' }] },
-      hlines: [{ v: 0, kind: 'zero', label: '+γ above · −γ below' }],
-      bars: pts.map(([k, v]) => ({ x: k, v, role: v >= 0 ? 'up' : 'down' })), barW: 12,
-      events: [{ x: PUTW, label: { long: `Put wall ${fmt.num(PUTW, 2)}`, short: 'Put' }, title: `Put wall ${fmt.num(PUTW, 2)}`, keep: true }, { x: FLIP, label: { long: `Flip ${fmt.num(FLIP, 2)}`, short: 'Flip' }, title: `Flip ${fmt.num(FLIP, 2)}`, keep: true }, { x: SPOT, label: `Spot ${fmt.num(SPOT, 2)}`, lane: 2 }, { x: CALLW, label: { long: `Call wall ${CALLW}`, short: 'Call' }, title: `Call wall ${CALLW}`, keep: true }], eventLane: { long: 'Levels', short: '' },
-      focus: { x: fx, title: `Strike ${fmt.num(fx, 1)} · point 20 of 33`, rows: [{ role: fv >= 0 ? 'up' : 'down', value: `${fmt.signed(fv, 2)}M`, name: fv >= 0 ? '+γ dealers long gamma' : '−γ dealers short gamma' }] },
-      aria: `SPY net dealer gamma by strike, ${STRIKES[0]} to ${STRIKES[STRIKES.length - 1]}; flip ${FLIP}, put wall ${PUTW}, call wall ${CALLW}, spot ${SPOT}`,
-    }),
+    claim: `Dealers are long gamma (+γ): spot ${fmt.num(SPOT, 2)} sits 1.0% above the ${fmt.num(FLIP, 2)} flip`,
+    sub: 'Net dealer gamma by strike · all expirations · Scenario · Oct 7, 2026 · 2:30 PM ET',
+    extraTop: `<span class="tk-seg" role="group" aria-label="Dealer positioning view"><b>Field</b><span>Magnet</span></span>`,
+    body: `<div class="tk-field"><div class="tk-fieldl">${legendHtml}${fieldPlot()}<span class="dline">Point at the field, or focus it and use ← →, to read a strike.</span></div>${ladder}${lane}</div>`,
     ...SAMPLE, state: 'sample',
-    table: dataTable({ caption: 'SPY net dealer gamma by strike, $M per 1% move', cols: ['Strike', 'Net gamma ($M)', 'Sign'], rows: pts.filter((_, i) => i % 2 === 0).map(([k, v]) => [fmt.num(k, 1), fmt.signed(v, 2), { t: v >= 0 ? '+γ long' : '−γ short' }]) }),
+    table: dataTable({ caption: 'SPY net dealer gamma by strike, $M per 1% move', cols: ['Strike', 'Net gamma ($M)', 'Sign'], rows: STRIKES.map((k) => [k, gex(k)]).filter((_, i) => i % 2 === 0).map(([k, v]) => [fmt.num(k, 1), fmt.signed(v, 2), { t: v >= 0 ? '+γ long' : '−γ short' }]) }),
   });
 }
 
-function ladderChart() {
-  const rows = [['Call wall', CALLW, 'up', '+γ'], ['Max pain', PAIN, 'ctx', ''], ['Spot · levels anchor', SPOT, 'emph', ''], ['Gamma flip', FLIP, 'edge', '±'], ['Put wall', PUTW, 'down', '−γ']];
-  const sw = (r) => (r === 'up' ? 'var(--up)' : r === 'down' ? 'var(--down)' : r === 'edge' ? 'var(--steel-2)' : r === 'emph' ? 'var(--phosphor)' : 'var(--steel)');
-  return chartFrame({
-    claim: 'The flip is 1.0% below; the walls sit 1.9% above and 5.6% below',
-    sub: `SPY levels by price · distance from the levels anchor $${fmt.num(SPOT, 2)}`,
-    body: `<div class="cf-tw" role="region" aria-label="Level ladder" tabindex="0"><table><thead><tr><th scope="col">Level</th><th scope="col">Price</th><th scope="col">Distance</th><th scope="col">$</th></tr></thead><tbody>${rows.map(([l, v, r, s]) => `<tr><th scope="row" class="t"><span style="display: inline-flex; align-items: center; gap: 8px;"><i style="display: inline-block; width: 14px; height: 2px; background: ${sw(r)};${r === 'ctx' ? ' background: repeating-linear-gradient(90deg, var(--steel) 0 4px, transparent 4px 6px);' : ''}"></i>${l}${s ? ` <span class="mono steel" style="font-size: 11px;">${s}</span>` : ''}</span></th><td>${fmt.num(v, 2)}</td><td>${r === 'emph' ? '—' : fmt.signed(((v - SPOT) / SPOT) * 100, 1, '%')}</td><td>${r === 'emph' ? '—' : fmt.signed(v - SPOT, 2)}</td></tr>`).join('')}</tbody></table></div>
-      <div class="tk-risk" style="margin-top: 4px;"><div><span class="caps">Regime</span><span class="v" style="font-size: 14px;">+γ long gamma</span><span class="dline" style="font-size: 11px;">above the flip by 1.0%</span></div><div><span class="caps">Implied move</span><span class="v" style="font-size: 14px;">±$${fmt.num(MOVE, 2)}</span><span class="dline" style="font-size: 11px;">ATM straddle · Oct 16</span></div></div>`,
-    ...SAMPLE, state: 'sample',
-  });
-}
-
-function tapeChart() {
-  const n = 300; const vals = Array.from({ length: n }, (_, i) => 690.5 + Math.sin(i / 23) * 0.18 + Math.sin(i / 7) * 0.05 + i * 0.0004);
-  return chartFrame({
-    claim: 'The mid held within 40 cents of the structure mid for five minutes',
-    sub: 'SPY mid, one point a second · last 5 minutes · dashed = the structure mid the levels use',
-    body: plot({ height: 130, pl: 56, pr: 80, prn: 56, x: { min: 0, max: n - 1, ticks: [{ v: 0, label: '−5 min', align: 0 }, { v: 150, label: '−2.5' }, { v: n - 1, label: 'now', align: 1 }] }, y: { min: 690.1, max: 691.1, ticks: [{ v: 690.3, label: '690.30' }, { v: 690.9, label: '690.90' }] }, hlines: [{ v: 690.55, kind: 'ref' }], series: [{ points: vals.map((v, i) => [i, v]), role: 'emph', width: 1.5, end: 'Mid', endValue: fmt.num(vals[n - 1], 2) }], keyboard: false, aria: 'SPY mid over five minutes, sample' }),
-    note: 'In the demo the tape replays the scenario’s session and says so; nothing here is a live print.',
-    ...SAMPLE, state: 'sample', stateText: 'Sample · replay',
-  });
-}
-
-function pathPanel() {
-  const s1 = [58, 60, 61, 63, 62, 64, 66, 65, 67, 69, 71, 74], s2 = [-1.9, -1.7, -1.6, -1.2, -1.0, -0.8, -0.9, -0.6, -0.5, -0.4, -0.35, -0.38];
-  const ring = (score) => { const r = 20, c = 2 * Math.PI * r; return `<svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="${r}" fill="none" stroke="var(--line-2)" stroke-width="5"></circle><circle cx="26" cy="26" r="${r}" fill="none" stroke="var(--steel)" stroke-width="5" stroke-dasharray="${((score / 100) * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 26 26)" data-mark="essential"></circle></svg>`; };
-  return P(`${head('Score and structure path', stateTag('sample'))}
-    <div style="display: flex; align-items: center; gap: 14px;">${ring(74)}<div style="display: flex; flex-direction: column; gap: 2px;"><span class="caps">Opportunity</span><span class="mono" style="font-size: 22px;">74 <span class="steel" style="font-size: 13px;">of 100</span></span><span class="dline">Actionable · near the call wall, cheap vol</span></div></div>
-    <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line);">${sparkline(s1, { width: 140, height: 26, value: '74', scale: 'score · 0–100 · this session', aria: 'Score from 58 to 74 this session' })}${sparkline(s2, { width: 140, height: 26, value: '−0.38%', scale: 'distance to the flip · own range', aria: 'Distance to the flip from −1.9% to −0.38%' })}</div>
-    <span class="dline" style="font-size: 11px;">12 samples · 10:00–10:42 in the scenario, spaced by time</span>
-    <div style="margin-top: auto;">${provChip('Sample · shaped like the scanner’s score', 'dashed')}</div>`, { sample: true, label: 'Score and structure path, sample' });
-}
-
+/** The read strip: the figure alone in each value, the qualifier in the caption (lane 4). */
 function readStrip() {
-  const cells = [['Opportunity', '74 · Actionable', 'of 100 · near the call wall'], ['Net DEX', '−$412M', 'dealer delta · −, short'], ['IV / HV', '1.08', 'options a touch rich'], ['IV rank', '34', '1-year range'], ['Vol / OI', '0.61×', 'today vs open interest'], ['IV skew', '+2.4 pts', '25Δ put over call'], ['Term', 'Contango', '7d 14.2 → 90d 18.0'], ['Off-exch. %', '41%', 'of today’s shares']];
-  return P(`${head('Read strip', stateTag('sample'), provChip('Sample · shaped like the options chain', 'dashed'))}<div class="tk-strip">${cells.map(([l, v, s]) => `<div><span class="caps">${l}</span><span class="v">${v}</span><span class="s">${s}</span></div>`).join('')}</div>`, { sample: true, label: 'Read strip, sample' });
+  const cells = [['Opportunity', '74', 'Actionable · 1 setup'], ['Net DEX', '+$1.1B', 'delta hedging pressure'], ['IV / HV', '1.10', 'options look expensive'], ['IV rank', '75', 'premium rich · 3rd quartile · 70th pct'], ['Vol / OI', '0.51×', '3 unusual strikes'], ['IV skew', '+1.8 pts', 'downside hedging is bid (fear)'], ['Term', 'contango', '2d 26.8 → 44d 27.6'], ['Off-exch. %', '32%', 'context only, no side']];
+  return P(`<div class="ph">${stateTag('sample')}${provChip('Sample · shaped like the options chain', 'dashed')}</div><div class="tk-strip">${cells.map(([l, v, s]) => `<div><span class="caps">${l}</span><span class="v">${v}</span><span class="s">${s}</span></div>`).join('')}</div>`, { sample: true, label: 'Read strip, sample' });
 }
 
+/** The read: verdict first, the watch level with its clause, Why and Re-engage, the unchecked-prose
+ *  caption and the trace line (D-07), then the actions. */
 function aiBrief() {
-  return P(`<div class="ph"><span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: var(--raised-2); color: var(--phosphor);">${icon('sparkle', 15)}</span><h3>Sample analysis · SPY</h3>${stateTag('sample', 'Sample read')}<a href="#whats-sent" class="t-info" style="font-size: 12px; font-weight: 500; min-height: 24px; display: inline-flex; align-items: center;">What’s sent →</a></div>
-    <div class="tk-ai">
-      <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
-        <span class="mono steel" style="font-size: 11px;">Pinned to the scenario snapshot · Oct 7, 2:30 PM ET · Careful sample reader</span>
-        <p class="tk-verdict">No trade · sit this one out</p>
-        <p style="margin: 0; font-size: 14px; line-height: 1.55;">Spot sits between the flip and the call wall with no directional flow. “No trade” is a complete answer: nothing in this snapshot is worth the risk of a position.</p>
-        <div><span class="caps">Why</span><ul style="margin-top: 6px;"><li>Spot is <span class="mono">+1.0%</span> above the flip at <span class="mono">683.92</span>: <span class="mono">+γ</span>, dealer hedging tends to damp moves here.</li><li>The <span class="mono">704.02</span> call wall sits outside the <span class="mono">±$2.48</span> implied move.</li><li>Flow over the last hour nets to about zero.</li></ul></div>
-        <div><span class="caps">Re-engage when</span><ul style="margin-top: 6px;"><li>Spot closes below the flip at <span class="mono">683.92</span>, where hedging turns <span class="mono">−γ</span>.</li><li>Or the call wall moves inside the implied move on the next structure refresh.</li></ul></div>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
-        <div class="tk-risk"><div><span class="caps">Watch level</span><span class="v">683.92</span><span class="dline" style="font-size: 11px;">traces to the flip</span></div><div><span class="caps">Call wall</span><span class="v">704.02</span><span class="dline" style="font-size: 11px;">traces to the ladder</span></div><div><span class="caps">Implied move</span><span class="v">±$2.48</span><span class="dline" style="font-size: 11px;">ATM straddle · Oct 9</span></div><div><span class="caps">Flow watch</span><span class="v u">1 hour</span><span class="dline" style="font-size: 11px;">the read’s own · untraced</span></div></div>
-        <div style="display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 8px; background: var(--raised); font-size: 12px; line-height: 1.45; color: var(--steel);">${icon('shield', 14)}<span><strong style="color: var(--phosphor); font-weight: 600;">3 of 4 figures trace to Convexa.</strong> Mono figures come from the structure above; the dotted one is the read’s own.</span></div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;"><button class="btn secondary" type="button">${icon('bell', 14)}Alert me at the flip</button><button class="btn ghost" type="button">${icon('refresh', 14)}View sample analysis</button></div>
-        <p class="dline" style="margin: 0;">This is an authored example. No model was called and nothing is sent. A read, not an order.</p>
-      </div>
-    </div>
-    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">${provChip('Sample · shaped like an AI read', 'dashed')}<span class="cf-asof">Scenario · Oct 7, 2026</span></div>`, { sample: true, label: 'Sample analysis' });
+  const why = [`Spot ${fmt.num(SPOT, 2)} is 1.0% above the flip at ${fmt.num(FLIP, 2)}: +γ, dealer hedging tends to damp moves here.`, `The ${fmt.num(CALLW, 2)} call wall sits outside the ±$${fmt.num(MOVE, 2)} move the ${MOVE_EXPIRY} straddle prices.`, 'No live market, broker, or AI provider was used.'];
+  const re = [`Spot closes below the flip at ${fmt.num(FLIP, 2)}, where hedging turns −γ.`, 'Or the call wall moves inside the implied move on the next structure refresh.', 'Review when the selected authored expiry set changes.'];
+  return P(`<div class="ph"><span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: var(--raised-2); color: var(--phosphor);">${icon('sparkle', 15)}</span><h3>Sample analysis · SPY</h3>${stateTag('sample', 'Sample read')}<a href="#whats-sent" class="t-info" style="font-size: 12px; font-weight: 500; min-height: 24px; display: inline-flex; align-items: center;">View sample export →</a></div>
+    <span class="dline">Sample analysis · authored for this scenario. This is an authored example. No model was called.</span>
+    <p class="tk-verdict">No trade · sit this one out</p>
+    <div class="tk-watch"><span class="caps">Watch level</span><span class="mono" style="font-size: 16px;">${fmt.num(FLIP, 2)}</span><span class="dline" style="font-size: 11px;">traces to Convexa’s gamma flip (${fmt.num(FLIP, 2)})</span></div>
+    <p class="dline" style="margin: 0;">Authored sample: SPY shows balanced structure with authored score 74. Not a model recommendation.</p>
+    <div><span class="caps">Why</span><ul style="margin: 6px 0 0;">${why.map((w) => `<li>${w}</li>`).join('')}</ul></div>
+    <div><span class="caps">Re-engage when</span><ul style="margin: 6px 0 0; list-style: '→  ';">${re.map((w) => `<li>${w}</li>`).join('')}</ul></div>
+    <span class="dline" style="font-size: 11px;">Numbers written out in this reasoning aren’t checked; only the stop, target and invalidation level above are.</span>
+    <div class="tk-trace">${icon('shield', 14)}<span>Every checked figure traces to a Convexa number.</span></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line);"><button class="btn ghost" type="button">Full analysis &amp; data</button><button class="btn ghost" type="button">Dismiss</button></div>`, { sample: true, label: 'Sample analysis' });
+}
+
+function tapePanel() {
+  const cells = [['Net flow (1m)', '+383', ''], ['Spread', '$0.04', ''], ['Gamma flip · sample', `$${fmt.num(FLIP, 2)}`, '−$6.7 · 1.0% below'], ['VWAP', '$689.37', '']];
+  return P(`${head('Sample tape', stateTag('sample'))}<span class="dline">Replays the Oct 7, 2026 scenario from 2:30 PM ET · 1m window</span><div class="tk-risk">${cells.map(([l, v, s]) => `<div><span class="caps">${l}</span><span class="v">${v}</span>${s ? `<span class="dline" style="font-size: 11px;">${s}</span>` : ''}</div>`).join('')}</div>`, { sample: true, label: 'Sample tape' });
 }
 
 function positionPanel() {
-  return P(`${head('Paper positions · SPY', stateTag('sample'))}
-    <div class="tk-pos" style="border-top: 0; padding-top: 0;"><span class="mono" style="font-weight: 600;">SPY Oct 16 690C × 1</span><span class="mono t-up">▲ +$185</span><span class="dline">Opened at 3.00 · now 4.85 · 9 days left</span><span class="dline">up 62%</span></div>
-    <div class="tk-pos"><span class="mono steel" style="font-weight: 600;">QQQ Oct 9 630C × 1</span><span class="mono t-down">▼ −$240</span><span class="dline">Closed · opened at 2.40, expired worthless</span><span class="dline">down 100%</span></div>
+  return P(`${head('Your book · simulated', stateTag('sample'))}
+    <div class="tk-pos" style="border-top: 0; padding-top: 0;"><span class="mono" style="font-weight: 600;">$690 Call · long call × 1</span><span class="mono t-down">▼ −$53 (−17.7%)</span><span class="dline">snapshot mid · simulated</span><a class="t-info" href="/positions" style="font-size: 13px;">Open book →</a></div>
     <span class="dline" style="font-size: 11px;">Simulated (paper) on the demo account. Sign is carried by ▲/▼ and +/−, not colour alone.</span>`, { sample: true, label: 'Paper positions, sample' });
 }
 function ordersPanel() {
-  return P(`${head('Sim orders · SPY', stateTag('sample'))}
-    <div class="tk-pos" style="border-top: 0; padding-top: 0;"><span class="mono" style="font-weight: 600;">Nov 20 690C · limit 4.25</span><span class="stag k-solid">Triggered</span><span class="dline">Waiting on the scenario’s next fill check</span><button class="btn ghost sm" type="button">Cancel</button></div>
-    <div class="tk-pos"><span class="mono steel" style="font-weight: 600;">Oct 16 690C · 1 at 3.00</span><span class="stag k-solid">Filled</span><span class="dline">Opened the position above</span><span></span></div>
+  return P(`${head('Sim orders · SPY', stateTag('sample'), '<span class="stag k-solid">Simulated</span>')}
+    <div class="tk-pos" style="border-top: 0; padding-top: 0;"><span class="mono" style="font-weight: 600;">SPY 690C · 2026-11-20 × 1</span><span class="stag k-solid">Triggered · working entry</span><span class="dline">limit $4.25 · stop — · target — · good-til 2026-11-20</span><button class="btn ghost sm" type="button">Cancel order</button></div>
     <span class="dline" style="font-size: 11px;">Paper orders on the demo account. Convexa never sends a real order.</span>`, { sample: true, label: 'Sim orders, sample' });
 }
 
 function termChart() {
-  const T = [[7, 14.2], [14, 15.1], [30, 16.4], [60, 17.3], [90, 18.0]];
-  return chartFrame({ claim: 'Contango: 90-day implied vol at 18.0% sits 3.8 points above 7-day', sub: 'SPY at-the-money implied volatility by days to expiry · %', body: plot({ height: 170, pr: 70, prn: 50, pl: 40, x: { min: 0, max: 95, ticks: T.map(([d]) => ({ v: d, label: `${d}d` })) }, y: { min: 12, max: 20, ticks: ticks(12, 20, 4, (v) => (v === 20 ? '20%' : String(v))) }, series: [{ points: T, role: 'emph', dots: true, end: 'Contango', endValue: '+3.8 pts' }], keyboard: false, aria: T.map(([d, v]) => `${d} days ${v}%`).join(', ') }), ...SAMPLE, state: 'sample' });
+  const T = [[2, 26.8], [9, 26.1], [44, 27.6]];
+  return chartFrame({ claim: '44-day implied vol at 27.6% sits 0.8 points above 2-day', sub: 'SPY at-the-money implied volatility by days to expiry · % · contango', body: plot({ height: 170, pr: 70, prn: 50, pl: 40, x: { min: 0, max: 46, ticks: T.map(([d]) => ({ v: d, label: `${d}d` })) }, y: { min: 24, max: 30, ticks: ticks(24, 30, 2, (v) => (v === 30 ? '30%' : String(v))) }, series: [{ points: T, role: 'emph', dots: true, end: 'Contango', endValue: '+0.8 pts' }], keyboard: false, aria: T.map(([d, v]) => `${d} days ${v}%`).join(', ') }), ...SAMPLE, state: 'sample' });
 }
+/** The straddle's move against the walls (StraddleMove, lane 4): the finding as the title, the move at
+ *  card scale, and the band, the spot and both walls on one price scale. */
 function straddleChart() {
-  const lo = 645, hi = 712;
-  return chartFrame({ claim: `Options price a ±$${fmt.num(MOVE, 2)} move (±${fmt.num((MOVE / SPOT) * 100, 1)}%) by ${MOVE_EXPIRY}; both walls sit outside it`, sub: `SPY at-the-money straddle, ${MOVE_EXPIRY} expiry · the move it implies, on the levels’ price scale`, body: `<div style="padding: 18px 0 4px;">${rangeBar({ lo, hi, band: [SPOT - MOVE, SPOT + MOVE], now: SPOT, labels: [{ v: PUTW, text: `Put wall ${PUTW}` }, { v: SPOT - MOVE, text: fmt.num(SPOT - MOVE, 2), row: 2 }, { v: SPOT + MOVE, text: fmt.num(SPOT + MOVE, 2), row: 2 }, { v: CALLW, text: `Call wall ${CALLW}` }], aria: `Implied move ±${MOVE} around ${SPOT}` })}</div>`, ...SAMPLE, state: 'sample' });
-}
-function magnetChart() {
-  const lo = 645, hi = 712, Pc = (v) => (((v - lo) / (hi - lo)) * 100).toFixed(2);
-  return chartFrame({ claim: `Spot ${fmt.num(SPOT, 2)} sits ${fmt.num(((SPOT - FLIP) / SPOT) * 100, 1)}% above the flip, inside the +γ zone below the call wall`, sub: 'SPY levels on one price scale · where dealers are positioned, not a forecast', body: `<div style="position: relative; height: 92px; margin: 8px 0 0;"><span style="position: absolute; left: 0; right: 0; top: 40px; height: 2px; background: var(--line);"></span><span style="position: absolute; top: 30px; height: 22px; left: ${Pc(FLIP)}%; width: ${(Pc(CALLW) - Pc(FLIP)).toFixed(2)}%; background: var(--c-band); border-top: 1px solid var(--c-edge); border-bottom: 1px solid var(--c-edge);"></span>${[[PUTW, '−γ Put wall', 'down'], [FLIP, 'Flip', 'edge'], [CALLW, '+γ Call wall', 'up']].map(([v, l, r], i) => `<span data-mark="essential" style="position: absolute; top: 22px; height: 38px; left: ${Pc(v)}%; border-left: 2px solid var(--${r === 'edge' ? 'steel-2' : r});"></span><span style="position: absolute; top: ${i === 1 ? 64 : 0}px; left: ${Pc(v)}%; transform: translateX(${i === 2 ? '-100%' : i === 0 ? '0' : '-50%'}); font: 500 11px/1.3 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; text-align: ${i === 2 ? 'right' : 'left'};">${l}${i === 1 ? ' ' : '<br>'}${fmt.num(v, 2)}</span>`).join('')}<span data-mark="essential" style="position: absolute; top: 33px; left: ${Pc(SPOT)}%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--phosphor); box-shadow: 0 0 0 2px var(--panel);"></span><span style="position: absolute; top: 0; left: ${Pc(SPOT)}%; transform: translateX(-50%); font: 600 11px 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap;">Spot</span></div><p class="cf-note" style="color: var(--phosphor);">Above ${fmt.num(FLIP, 2)} dealers are long gamma (+γ): hedging tends to damp moves. Below it they are short gamma (−γ): hedging tends to amplify them.</p>`, ...SAMPLE, state: 'sample' });
+  const lo = 649, hi = 707;
+  return chartFrame({ claim: `Options price a ±$${fmt.num(MOVE, 2)} move (±${fmt.num((MOVE / SPOT) * 100, 1)}%) to ${MOVE_EXPIRY}; both walls sit outside it`, sub: 'Straddle-implied move · ATM straddle · mid quotes', body: `<span class="mono" style="font-size: 22px; font-weight: 600;">± $${fmt.num(MOVE, 2)} (± ${fmt.num((MOVE / SPOT) * 100, 1)}%)</span><div style="padding: 14px 0 4px;">${rangeBar({ lo, hi, band: [SPOT - MOVE, SPOT + MOVE], now: SPOT, labels: [{ v: PUTW, text: `Put wall ${PUTW}`, align: 0 }, { v: SPOT, text: `${fmt.num(SPOT - MOVE, 2)} – ${fmt.num(SPOT + MOVE, 2)}`, row: 2 }, { v: CALLW, text: `Call wall ${CALLW}`, align: 1 }], aria: `Implied move ±${MOVE} around ${SPOT}; put wall ${PUTW}; call wall ${CALLW}` })}</div><span class="dline">From the 2026-10-09 ATM straddle · 2 DTE · mid quotes. What options are priced for, not a forecast.</span>`, ...SAMPLE, state: 'sample', style: ' grid-column: span 2;' });
 }
 const sampleCard = (title, value, line, chip, sans = false) => P(`${head(title, stateTag('sample'))}<span class="${sans ? '' : 'mono'}" style="font-size: ${sans ? 16 : 18}px;${sans ? ' font-weight: 600;' : ''}">${value}</span><span class="dline">${line}</span><div style="margin-top: auto;">${provChip(chip, 'dashed')}</div>`, { sample: true });
 
@@ -194,64 +224,61 @@ const sampleCard = (title, value, line, chip, sans = false) => P(`${head(title, 
 // Staging · the demo account (SPY)
 // =================================================================================================
 export function deskStagingBody({ minHeight = 0, scheme = 'dark', t = 'SPY' } = {}) {
-  const mast = `<div class="tk-mast">
-    <div class="who">
-      <div style="display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;"><h1 class="display">${t}</h1><span class="steel" style="font-size: 14px;">SPDR S&amp;P 500 ETF · NYSE Arca</span></div>
-      <div class="tk-px"><span class="p">${fmt.num(SPOT, 2)}</span><span class="c t-up">▲ +2.19 (+0.32%)</span><span class="stag k-solid">+γ long gamma above ${fmt.num(FLIP, 2)}</span>${provChip('Shaped like a delayed SPY quote · Oct 7, 2:30 PM ET', 'dashed')}</div>
-    </div>
-    <div class="act">${tabsNav(t)}<span class="tk-sel"><span class="caps">Expirations</span><strong style="font-weight: 600;">All</strong>${icon('chevron', 14)}</span></div>
-  </div>${quick(DEMO_SYMS, t)}`;
-  const hero = `<div class="tk-hero">${fieldChart()}${ladderChart()}</div><div class="tk-row">${tapeChart()}${pathPanel()}</div>`;
-  const work = `<div class="tk-work">${aiBrief()}<div class="tk-side">${positionPanel()}${ordersPanel()}</div></div>`;
-  const ctx = `<div class="tk-zone"><h2 class="display">Context</h2><span class="dline" style="font-size: 13px;">Slower reads around the structure. Every panel runs the Oct 7 scenario.</span></div>
-    <div class="tk-row">${magnetChart()}${termChart()}</div>${straddleChart()}
-    <div class="tk-cards">${sampleCard('Dealer flow projection', '−$412M', 'delta drift to Oct 16 from charm and vanna', 'Sample · shaped like dealer flow')}${sampleCard('Fresh positioning · Vol/OI', '695C 2.4× · 700C 1.9×', 'strikes where today’s volume outruns open interest', 'Sample · shaped like the chain')}${sampleCard('Off-exchange blocks', '$31M · 54,100 sh', 'largest print, 10:41 in the scenario · ATS', 'Sample · shaped like block prints')}${sampleCard('Setups', 'Near call wall · IV cheap', '2 of the scanner’s named setups match', 'Sample · shaped like scanner setups', true)}</div>`;
-  return v4Page({ scheme, minHeight, demo: true, active: 'ticker', label: `${t} desk`, main: `<div class="wrap tkd">${mast}${hero}${readStrip()}${work}${ctx}${DISCLAIM}</div>` });
+  const hero = `<span class="tk-zl">Structure</span>${heroPanel()}`;
+  const work = `<span class="tk-zl">Read &amp; plan</span><div class="tk-work">${aiBrief()}<div class="tk-side">${tapePanel()}${positionPanel()}${ordersPanel()}</div></div>`;
+  const ctx = `<div class="tk-zone"><h2 class="display">Context</h2><span class="dline" style="font-size: 13px;">Slower reads around the structure. Snapshots, never live; they never feed the score.</span></div>
+    <div class="tk-ctx">${straddleChart()}${termChart()}
+      ${sampleCard('Projected dealer flow', '+$66.6K delta drift', 'to Fri Oct 16 (9 days) from charm · vanna −$67 on +1 IV pt', 'Sample · shaped like dealer flow')}
+      ${sampleCard('Market context', 'Uptrend · Dispersed', 'flow vs positioning divergent · ATR 14d $12.94 (1.9%)', 'Sample · shaped like market context', true)}
+      ${sampleCard('Fresh positioning (Vol/OI)', '$715 · 1.68×', 'the top of three strikes where today’s volume outruns open interest ($710 1.56×, $705 1.44×)', 'Sample · shaped like the chain')}
+      ${sampleCard('Off-exchange blocks', '1,371,000 sh @ $687.86', 'largest print, 2:28 PM ET in the scenario · −0.4% vs spot', 'Sample · shaped like block prints')}
+      ${P(`${head('Setups', stateTag('sample'))}<span style="font-size: 16px; font-weight: 600;">Balanced structure · medium</span><span class="dline">Rule-based · the same structure snapshot · authored scenario variant</span><div style="margin-top: auto;">${provChip('Sample · shaped like scanner setups', 'dashed')}</div>`, { sample: true, style: 'grid-column: span 2;' })}</div>`;
+  const about = `<section class="tk-about" aria-label="About this sample"><span class="caps">About this sample</span><strong style="font-size: 13px;">Demo · sample data · Authored scenario · October 7, 2026 · no market feed connected</strong><span class="dline">Structure and related signals use the selected expiry set: 2026-10-09, 2026-10-16, 2026-11-20. Full-chain context keeps its labeled full-chain basis. Sample analysis is authored for this scenario.</span></section>`;
+  return v4Page({ scheme, minHeight, demo: true, active: 'ticker', label: `${t} desk`, main: `<div class="wrap tkd">${stagingMast(t)}${hero}${readStrip()}${work}${ctx}${about}${DISCLAIM}</div>` });
 }
 
 // =================================================================================================
 // Production · the portfolio site (NVDA): public data live, options panels Not live
 // =================================================================================================
 const nlFrame = (claim, sub, would, t = 'NVDA', h = 150) => chartFrame({ claim, sub, state: 'notLive', body: stateBody('notLive', { height: h, text: `<strong>Would show</strong> ${would}`, cause: 'Off because it reads the options chain, a paid feed this site doesn’t run. Public data on this page is live.', action: demoLink(t) }) });
-const nlPanel = (title, would, t = 'NVDA', extra = '') => P(`${head(title, stateTag('notLive'))}<div class="tk-nl"><p class="dline"><strong style="color: var(--phosphor);">Would show</strong> ${would}</p><p class="dline"><strong style="color: var(--phosphor);">Off because</strong> it needs the options feed, which this site doesn’t run.</p>${extra}<div style="margin-top: auto;">${demoLink(t)}</div></div>`, { label: `${title}, not live` });
+/** A Not live panel (PublicDesk FeedPanel): what it would show and the same desk on the demo. The cause
+ *  is stated once, in the zone head (lane 4). */
+const nlPanel = (title, would, t = 'NVDA', extra = '') => P(`${head(title, stateTag('notLive'))}<div class="tk-nl"><p class="dline"><strong style="color: var(--phosphor);">Would show</strong> ${would}</p>${extra}<div style="margin-top: auto;">${demoLink(t)}</div></div>`, { label: `${title}, not live` });
 
-function siCompact({ height = 150 } = {}) {
-  const k = 311 / SI[SI.length - 1].shares; const S = SI.slice(-12).map((s) => ({ ...s, shares: +(s.shares * k).toFixed(1) }));
-  const gap = SI_GAP - (SI.length - 12);
-  return chartFrame({
-    claim: `Shares sold short rose ${Math.round((S[S.length - 1].shares / S[0].shares - 1) * 100)}% in six months, to 311M (1.3% of the float)`, sub: 'NVDA short interest at each FINRA settlement · millions of shares · last 12 settlements · 2.75 days to cover',
-    state: 'delayed', stateText: 'Delayed · 9 days',
-    body: plot({ height, pr: 16, prn: 8, pl: 46, pt: 22, keyboard: false, x: { min: -0.6, max: S.length - 0.4, ticks: S.filter((_, i) => i % 3 === 0).map((s, i) => ({ v: i * 3, label: { long: s.label, short: s.label.split(' ')[0] } })) }, y: { min: 0, max: 300, ticks: ticks(0, 300, 150, (v) => (v === 300 ? '300M' : String(v))) }, hlines: [{ v: 0, kind: 'zero' }], bars: S.map((s, i) => ({ x: i, v: s.shares, role: i === S.length - 1 ? 'emph' : 'ctx', label: i === S.length - 1 ? `${fmt.num(s.shares, 0)}M` : '' })).filter((_, i) => i !== gap), gaps: gap >= 0 && gap < 12 ? [{ x0: gap - 0.45, x1: gap + 0.45, label: { long: 'Not published', short: '—' } }] : [], barW: 14, aria: 'NVDA shares short by settlement, last 12' }),
-    source: 'FINRA · short interest', asof: 'Settled Sep 30 · published Oct 9',
-  });
-}
-
-function legend(sample = false) {
+function legend() {
   const it = (k, w, n) => `<span class="i">${stateTag(k, w)}<span class="n">${n}</span></span>`;
-  return `<section class="tk-legend" aria-label="Data on this page"><span class="caps" style="color: var(--phosphor);">On this page</span>${it('current', 'Updated', 1)}${it('delayed', 'Delayed by source', 1)}${it('notConfigured', 'Not set up', 2)}${it('thirdParty', 'Live · TradingView', 1)}${it('notLive', 'Not live', 12)}<span style="flex: 1 1 auto;"></span>${demoLink('NVDA', 'See the whole desk on the demo')}</section>`;
+  return `<section class="tk-legend" aria-label="Data on this page"><span class="caps" style="color: var(--phosphor);">On this page</span>${it('current', 'Updated', 2)}${it('off', 'Off', 1)}${it('notLive', 'Not live', 12)}${it('thirdParty', 'Live · TradingView', 1)}<span style="flex: 1 1 auto;"></span>${demoLink('NVDA', 'See the whole desk on the demo')}</section>`;
 }
+
+/** FINRA is Off on production (owner answer 4, 2026-10-15; shared/dataState/finraSwitch.ts): one card,
+ *  the owner's reason, after the live SEC panels. */
+const FINRA_OFF_REASON = 'Off on this site until FINRA’s terms for showing its data here are confirmed. The demo shows sample data shaped like it.';
 
 export function deskProductionBody({ minHeight = 0, scheme = 'dark', t = 'NVDA' } = {}) {
   const mast = `<div class="tk-mast">
     <div class="who">
-      <div style="display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;"><h1 class="display">${t}</h1><span class="steel" style="font-size: 14px;">NVIDIA · Nasdaq · Semiconductors</span></div>
+      <div style="display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;"><h1 class="display">${t}</h1><span class="steel" style="font-size: 14px;">NVIDIA</span></div>
       <p class="dline" style="margin: 0; max-width: 66ch; font-size: 13px;">Convexa shows no price of its own on this site: the daily chart below is TradingView’s, with US prices delayed. Panels that need the options feed say what they would show.</p>
     </div>
     <div class="act">${tabsNav(t)}<a href="/ticker/${t}/research" class="btn primary">Read the ${t} note</a></div>
   </div>${quick(PROD_SYMS, t)}`;
-  const note = P(`${head('Research note', `<span style="display: inline-flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 600;"><span aria-hidden="true" style="width: 9px; height: 9px; border-radius: 50%; background: var(--phosphor);"></span>Current</span>`)}<p style="margin: 0; font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 600; font-size: 17px; line-height: 1.3; text-wrap: balance;">A 70% growth guide on a $412B year. What comes after FY2028 is the whole question.</p><span class="dline">Written Oct 13 · price as of Oct 12 · review by Oct 22 (GTC Berlin). Stance: your call.</span><a href="/ticker/${t}/research" class="t-info" style="display: inline-flex; gap: 6px; align-items: center; min-height: 24px; margin-top: auto; font-weight: 500;">Open the note ${icon('arrow', 14)}</a>`, { label: 'Research note' });
-  const shortVol = P(`${head('Short-sale volume', stateTag('current', 'Updated Oct 13'))}<span class="dval" style="font-size: 24px;">41%<span class="steel" style="font-size: 13px; font-family: 'IBM Plex Sans';"> of Oct 13 volume</span></span><span class="dline">20-day average 43%. Counts market makers hedging, so a high share is normal; it is not short interest.</span><div style="margin-top: auto;">${provChip('FINRA Reg SHO daily · Oct 13', 'solid')}</div>`, { label: 'Short-sale volume' });
-  const sec = (title, line) => P(`${head(title, stateTag('notConfigured'))}<strong style="font-size: 13px;">SEC filings aren’t set up on this site yet.</strong><span class="dline">${line}</span><details class="dop"><summary>For the operator</summary><span class="mono" style="font-size: 11px; color: var(--steel);">Set SEC_USER_AGENT on the API</span></details>`, { label: `${title}, not set up` });
+  const note = P(`${head('Research note', `<span style="display: inline-flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 600;"><span aria-hidden="true" style="width: 9px; height: 9px; border-radius: 50%; background: var(--phosphor);"></span>Current</span>`)}<p style="margin: 0; font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 600; font-size: 17px; line-height: 1.3; text-wrap: balance;">A 70% growth guide on a $412B year. What comes after FY2028 is the whole question.</p><span class="dline">Written Oct 13, 2026 · price as of Oct 12 · review by Oct 22</span><a href="/ticker/${t}/research" class="t-info" style="display: inline-flex; gap: 6px; align-items: center; min-height: 24px; margin-top: auto; font-weight: 500;">Open the note ${icon('arrow', 14)}</a>`, { label: 'Research note' });
+  // SEC is set up on production (SEC_USER_AGENT, 2026-10-15). The rows are the filings the NVDA note
+  // cites from EDGAR (research/NVDA/2026-10-13-initiation.md, sources 1 and 4); the live card lists
+  // EDGAR's latest four, which may be newer.
+  const filings = P(`${head('Recent filings', stateTag('current', 'Updated'))}<div class="drows">${[['Aug 26', '10-Q', 'Quarter ended Jul 26, 2026'], ['Aug 26', '8-K', 'Q2 FY2027 results · Ex. 99.1']].map((r) => `<div style="grid-template-columns: 54px 40px minmax(0, 1fr) auto;"><span class="mono steel">${r[0]}</span><span class="mono" style="font-size: 11px; font-weight: 600;">${r[1]}</span><span>${r[2]}</span><span class="t-info" style="font-size: 12px;">Open</span></div>`).join('')}</div><span class="dline" style="font-size: 11px;">SEC EDGAR · checked every hour</span>`, { label: 'Recent filings' });
+  const insiders = P(`${head('Insider trades · 90 days', stateTag('current', 'Updated'))}<span class="dline">Sales and buys from SEC Form 4, counted over 90 days, with the latest filing’s date. (No count is drawn on this board: none we have read.)</span><span class="dline" style="font-size: 11px;">SEC EDGAR · Form 4 · cached 30 days</span>`, { label: 'Insider trades' });
+  const finra = P(`${head('Short interest · Short-sale volume', stateTag('off'))}<span class="dline">${FINRA_OFF_REASON}</span>`, { label: 'FINRA short data, off' });
   const live = `<div class="tk-zone"><h2 class="display">Live from public data</h2><span class="dline" style="font-size: 13px;">Each panel names its source and how late that source reports.</span></div>
-    <div class="tk-hero">${thirdPartyFrame({ ticker: t, height: 520, phoneHeight: 420 })}<div class="tk-side" style="display: flex;">${note}${shortVol}</div></div>
-    <div class="tk-row" style="align-items: start;">${siCompact()}<div class="tk-side" style="display: flex;">${sec('Recent filings', 'Filings come from SEC EDGAR, which asks every program that reads it for a contact address. The note still lists the filings it cites.')}${sec('Insider trades · 90 days', 'Insider trades come from SEC Form 4, through the same EDGAR setting.')}</div></div>`;
-  const notLive = `<div class="tk-zone" id="not-live"><h2 class="display">Needs the options feed</h2><span class="dline" style="font-size: 13px;">These panels read the options chain or the intraday tape, a paid feed this site doesn’t run. Each says what it would show; the demo shows all of them on sample data.</span></div>
-    <section class="hd-p only-phone" aria-label="Panels that need the options feed">${head('12 panels need the options feed', stateTag('notLive'))}<div class="hd-list">${['Dealer gamma by strike', 'Levels', 'Read strip', 'Score and structure path', 'AI read', 'Live tape', 'Dealer flow projection', 'Term structure', 'Straddle-implied move', 'Fresh positioning · Vol/OI', 'Off-exchange blocks', 'Setups'].map((n) => `<div><span style="font-size: 13px;">${n}</span><span class="dline" style="font-size: 11px;">Not live</span></div>`).join('')}</div>${demoLink(t, 'See them on the demo')}</section>
+    <div class="tk-hero">${thirdPartyFrame({ ticker: t, height: 520, phoneHeight: 420 })}<div class="tk-side" style="display: flex;">${note}${filings}${insiders}</div></div>
+    ${finra}`;
+  const ctxPanels = [['Read strip', 'eight figures from the chain: opportunity, net DEX, IV/HV, IV rank, Vol/OI, IV skew, term structure and the off-exchange share.'], ['Score and structure path', 'the scanner’s 0–100 score for this ticker, and how it and the distance to the flip moved this session.'], [`${t} mid · last 5 minutes`, 'the live mid, one point a second, against the mid the levels use.'], ['Dealer flow projection', 'how charm and vanna push dealer hedging into the nearest expiry.'], ['Term structure', 'implied volatility by days to expiry, and whether it slopes up or down.'], ['Straddle-implied move', 'the move the nearest at-the-money straddle prices in, against the walls.'], ['Fresh positioning · Vol/OI', 'strikes where today’s volume outruns open interest.'], ['Off-exchange blocks', 'large prints away from the exchanges, as they happen.'], ['Setups', 'the scanner’s named setups on this ticker.']];
+  const notLive = `<div class="tk-zone" id="not-live"><h2 class="display">Needs the options feed</h2><span class="dline" style="font-size: 13px;">Off because these panels read the options chain or the intraday tape, a paid feed this site doesn’t run. Each panel says what it would show; the demo shows all of them on sample data.</span></div>
+    <section class="hd-p only-phone" aria-label="Panels that need the options feed">${head('12 panels need the options feed')}<div class="hd-list">${['NVDA net dealer gamma by strike', 'Levels', 'Read strip', 'Score and structure path', 'AI read', 'NVDA mid · last 5 minutes', 'Dealer flow projection', 'Term structure', 'Straddle-implied move', 'Fresh positioning · Vol/OI', 'Off-exchange blocks', 'Setups'].map((n) => `<div><span style="font-size: 13px;">${n}</span>${stateTag('notLive')}</div>`).join('')}</div>${demoLink(t, 'See them on the demo')}</section>
     <div class="only-wide" style="display: flex; flex-direction: column; gap: 16px;">
-      <div class="tk-hero">${chartFrame({ claim: `${t} net dealer gamma by strike`, sub: 'Dealer gamma at each strike, the walls, the flip and max pain · $M per 1% move', state: 'notLive', body: `<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: center;"><div aria-hidden="true">${gexBars('outline', 130)}</div><div class="tk-nl"><p class="dline"><strong style="color: var(--phosphor);">Would show</strong> net dealer gamma at each strike, with +γ above the zero line and −γ below, the walls, the gamma flip and max pain.</p><p class="dline"><strong style="color: var(--phosphor);">Off because</strong> every level is computed from the options chain, a paid feed this site doesn’t run.</p>${demoLink(t)}</div></div>` })}${P(`${head('Levels', stateTag('notLive'))}<div class="hd-list">${['Call wall', 'Max pain', 'Gamma flip', 'Put wall'].map((n) => `<div><span class="steel" style="font-size: 13px;">${n}</span><span class="dnan" style="font-size: 13px;">—</span></div>`).join('')}</div><span class="dline">No level is shown as a number: a dash is not a price.</span>`, { label: 'Levels, not live' })}</div>
-      <div class="tk-row">${nlPanel('Read strip', 'eight figures from the chain: opportunity, net DEX, IV/HV, IV rank, Vol/OI, IV skew, term structure and the off-exchange share.', t)}${nlPanel('Score and structure path', 'the scanner’s 0–100 score for this ticker and how it and the distance to the flip moved this session.', t)}</div>
-      <div class="tk-row">${nlPanel('AI read', 'a verdict-first brief on the dealer structure, risk before rationale, on your own provider key.', t, '<p class="dline">It reads the structure above, so it can’t run without it.</p>')}${nlFrame(`${t} mid · last 5 minutes`, 'Mid, one point a second, against the structure mid', 'the live mid, one point a second, against the mid the levels use.', t, 190)}</div>
-      <div class="tk-ctx">${nlPanel('Dealer flow projection', 'how charm and vanna push dealer hedging into the nearest expiry.', t)}${nlFrame('Term structure', 'At-the-money implied vol by days to expiry', 'implied volatility by tenor and whether it slopes up or down.', t, 190)}${nlPanel('Straddle-implied move', 'the move the nearest at-the-money straddle prices in, against the walls.', t)}${nlPanel('Fresh positioning · Vol/OI', 'strikes where today’s volume outruns open interest.', t)}${nlPanel('Off-exchange blocks', 'large prints away from the exchanges, as they happen.', t)}${nlPanel('Setups', 'the scanner’s named setups on this ticker.', t)}</div>
+      <div class="tk-hero">${P(`${head(`${t} net dealer gamma by strike`, stateTag('notLive'))}<div aria-hidden="true">${gexBars('outline', 120)}</div><p class="dline"><strong style="color: var(--phosphor);">Would show</strong> net dealer gamma at each strike, with +γ above the zero line and −γ below, the walls, the gamma flip and max pain.</p><div>${demoLink(t)}</div>`, { label: 'Net dealer gamma, not live' })}${P(`${head('Levels', stateTag('notLive'))}<div class="hd-list">${['Call wall', 'Max pain', 'Gamma flip', 'Put wall'].map((n) => `<div><span class="steel" style="font-size: 13px;">${n}</span><span class="dnan" style="font-size: 13px;">—</span></div>`).join('')}</div><p class="dline"><strong style="color: var(--phosphor);">Would show</strong> the call wall, max pain, the gamma flip and the put wall.</p><span class="dline">No level is shown as a number: a dash is not a price.</span><div>${demoLink(t)}</div>`, { label: 'Levels, not live' })}</div>
+      ${nlPanel('AI read · NVDA', 'a verdict-first read of NVDA’s dealer structure: Trade or No trade, the risk before the rationale, why, and when to look again. Every figure says whether it traces to a Convexa number.', t, '<p class="dline"><strong style="color: var(--phosphor);">Off because</strong> a read reads the options structure (walls, flip, flow, the candidate contracts). On a build with the feed, reads run on your own provider key after you sign in.</p>')}
+      <div class="tk-ctx">${ctxPanels.map(([n, w]) => nlPanel(n, w, t)).join('')}</div>
     </div>`;
   return v4Page({ scheme, minHeight, active: 'ticker', label: `${t} desk`, main: `<div class="wrap tkd">${mast}${legend()}${live}${notLive}${DISCLAIM}</div>` });
 }

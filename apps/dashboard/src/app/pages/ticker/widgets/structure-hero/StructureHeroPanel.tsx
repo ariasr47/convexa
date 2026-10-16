@@ -34,27 +34,29 @@
 import { StructureFieldCanvas, type StructureFieldModel } from '@/shared/charts/structure-field';
 import { resolveLevelPalette } from '@/shared/charts/structure-field/levelStrokes';
 import { LiveDot } from '@/shared/figure';
-import { andPresent, isDeliveringLive } from '@/shared/liveness/liveClaim';
+import { andPresent, isDeliveringLive, NOT_LIVE } from '@/shared/liveness/liveClaim';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { Widget } from '@/shared/ui/Widget';
 import type { MarketState, StrikeRow, StructureSample } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import { useTheme } from '@mui/material/styles';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
 import { useLiveTape } from '../../liveTapeStore';
 import { sessionTapeOf } from '../../sessionTapeStanding';
 import { humanAge } from '../_kit/copy';
 import { levelSpot } from '../_kit/distanceToLevel';
+import { FigureRow } from '../_kit/FigureCell';
 import { DESK_IS_SAMPLE, sampleReplayLine, SCENARIO_STAMP, scenarioAsOf } from '../_kit/sample';
 import { useStreamLatch } from '../_kit/useStreamLatch';
 import { rowsToSamples, windowedStrikes } from '../gex-profile-chart/chart';
 import { buildLadder, formatAnchorText, LadderFoot, LevelLadder } from '../level-ladder';
 import { StructurePathStrip } from '../structure-history/StructurePathStrip';
+import { FIELD_METRIC, heroFinding, ladderFinding } from './findings';
 import { TapeTrailRow } from './TapeTrailRow';
 import { WallMagnetView } from './WallMagnetView';
 
@@ -71,6 +73,8 @@ export interface StructureHeroPanelProps {
   /** "all expirations" / "N expirations" — the SAME phrase `TickerHeader` already states beside the
    *  headline (repair task item 6's subtitle). Never a second, independent computation. */
   expirationsLabel?: string;
+  /** The API's regime word (`signals.regime`) for the finding title; absent → the metric title. */
+  regime?: string | null;
 }
 
 const HERO_INFO =
@@ -132,7 +136,7 @@ function MidTapeChip() {
  * renders OUTSIDE the panel-named container (`Widget.tsx`'s body box is the one wrapped in
  * `containerName: 'panel'`), so a container query here would never match any ancestor.
  */
-function FieldLegend() {
+function FieldLegend({ flipColor }: { flipColor: string }) {
   const swatch = (color: string) => (
     <Box
       component="span"
@@ -171,7 +175,7 @@ function FieldLegend() {
         −γ put-dominated
       </Box>
       <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
-        {line('primary.main')}
+        {line(flipColor)}
         flip
       </Box>
     </Box>
@@ -188,6 +192,7 @@ export function StructureHeroPanel({
   pathError = null,
   pathBasis = null,
   expirationsLabel = 'all expirations',
+  regime = null,
 }: StructureHeroPanelProps) {
   const [view, setView] = useState<ViewMode>('levels');
   const theme = useTheme();
@@ -339,10 +344,37 @@ export function StructureHeroPanel({
     midLive,
   ]);
 
+  // P-10 (lane 4): the title states the finding over data, and names the metric otherwise.
+  const title = fieldModel
+    ? heroFinding({ regime, spot: anchor, flip: m.gamma_flip })
+    : FIELD_METRIC;
+  const ladderLine = ladderFinding({
+    anchor,
+    flip: m.gamma_flip,
+    callWall: m.call_wall,
+    putWall: m.put_wall,
+  });
+  const regimeCell =
+    regime === 'positive_gamma' || regime === 'negative_gamma'
+      ? {
+          value: regime === 'positive_gamma' ? '+γ long gamma' : '−γ short gamma',
+          caption:
+            anchor != null && m.gamma_flip != null && m.gamma_flip > 0
+              ? `${anchor >= m.gamma_flip ? 'above' : 'below'} the flip by ${Math.abs(((anchor - m.gamma_flip) / m.gamma_flip) * 100).toFixed(1)}%`
+              : 'the API’s regime read',
+        }
+      : null;
+  const moveTenor =
+    m.straddle_move?.state === 'ok'
+      ? (m.straddle_move.tenors.find((t) => t.expiration === m.straddle_move?.primary_expiration) ??
+        null)
+      : null;
+
   return (
     <Widget
       id="structure-hero"
-      title="Structure field"
+      title={title}
+      titleWrap
       subtitle={basis}
       info={HERO_INFO}
       span={2}
@@ -355,7 +387,6 @@ export function StructureHeroPanel({
       titleBadge={claim && <MidTapeChip />}
       actions={
         <Stack direction="row" spacing={1.75} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          <FieldLegend />
           <ToggleButtonGroup
             exclusive
             size="small"
@@ -388,15 +419,26 @@ export function StructureHeroPanel({
         sx={{
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr) 300px',
+          gridTemplateAreas: '"field ladder" "lane ladder"',
+          gridTemplateRows: 'auto 1fr',
           [theme.containerQueries('panel').up(1600)]: {
             gridTemplateColumns: 'minmax(0, 1fr) 340px',
           },
+          // Lane 4: under a 1000px panel the levels follow the field directly (the second read),
+          // ahead of the sample tape line and the session path (the slow lane).
           [theme.containerQueries('panel').down(1000)]: {
             gridTemplateColumns: '1fr',
+            gridTemplateAreas: '"field" "ladder" "lane"',
+            gridTemplateRows: 'auto',
           },
         }}
       >
-        <Box sx={{ minWidth: 0, padding: '10px 6px 0' }}>
+        <Box sx={{ gridArea: 'field', minWidth: 0, padding: '10px 6px 0' }}>
+          {/* Lane 4: the legend sits over the field it keys (it shared the header with the title,
+              the Sample tag, the ⓘ and the toggle, and pushed the finding onto three lines). */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 0.5, pb: 0.75 }}>
+            <FieldLegend flipColor={palette.gammaFlip} />
+          </Box>
           <ErrorBoundary variant="widget" label="Structure field">
             {view === 'magnet' ? (
               <WallMagnetView
@@ -419,6 +461,8 @@ export function StructureHeroPanel({
               )
             )}
           </ErrorBoundary>
+        </Box>
+        <Box sx={{ gridArea: 'lane', minWidth: 0, padding: '0 6px' }}>
           {sampleStanding ? (
             <Box
               data-testid="sample-mid-readout"
@@ -475,21 +519,91 @@ export function StructureHeroPanel({
         </Box>
         <Box
           sx={{
+            gridArea: 'ladder',
             borderLeft: '1px solid',
             borderColor: 'divider',
             padding: '12px 18px 14px',
             display: 'flex',
             flexDirection: 'column',
+            gap: 1.5,
             [theme.containerQueries('panel').down(1000)]: {
               borderLeft: 0,
               borderTop: '1px solid',
+              borderBottom: '1px solid',
               borderColor: 'divider',
               padding: '12px 14px',
             },
           }}
         >
+          {ladderLine && (
+            <Typography
+              component="p"
+              data-testid="level-ladder-finding"
+              sx={{ m: 0, fontSize: 14, fontWeight: 600, lineHeight: 1.35, color: 'text.primary' }}
+            >
+              {ladderLine}
+            </Typography>
+          )}
           <LevelLadder rows={rows} anchorText={anchorText} palette={palette} />
-          <LadderFoot volNormalizedGex={m.vol_normalized_gex} netGex={m.net_gex} />
+          {/* Lane 4: the figures that frame the price fill what was ~180px of empty column at
+              1280 (board ticker-desk.mjs ladderChart): the regime in words with its sign (P-11)
+              and the move options price, both from the bundle. Under a 1000px panel (the ladder
+              runs five-up below the field) they share one row with the ladder foot from 600px. */}
+          <Box
+            data-testid="structure-hero-figures"
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.5,
+              flex: '1 1 auto',
+              [theme.containerQueries('panel').between(600, 1000)]: {
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                alignItems: 'end',
+                gap: 2,
+              },
+            }}
+          >
+            {(regimeCell || moveTenor) && (
+              <Box
+                data-testid="structure-hero-frame"
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '10px',
+                  [theme.containerQueries('panel').between(600, 1000)]: {
+                    pt: '12px',
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                  },
+                }}
+              >
+                {regimeCell && (
+                  <FigureRow
+                    register="traced"
+                    direction="column"
+                    valueSize={15}
+                    label="Regime"
+                    value={regimeCell.value}
+                    live={NOT_LIVE}
+                    caption={regimeCell.caption}
+                  />
+                )}
+                {moveTenor && (
+                  <FigureRow
+                    register="traced"
+                    direction="column"
+                    valueSize={15}
+                    label="Implied move"
+                    value={`±$${Math.abs(moveTenor.move_dollars).toFixed(2)}`}
+                    live={NOT_LIVE}
+                    caption={`ATM straddle · ${moveTenor.dte} DTE`}
+                  />
+                )}
+              </Box>
+            )}
+            <LadderFoot volNormalizedGex={m.vol_normalized_gex} netGex={m.net_gex} />
+          </Box>
         </Box>
       </Box>
     </Widget>

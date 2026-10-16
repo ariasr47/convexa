@@ -24,7 +24,7 @@ import Stack from '@mui/material/Stack';
 import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ConnectionChip } from '../../connection/ConnectionChip';
 import { connectionStateFor } from '../../connection/connectionState';
 import { LivenessAnnouncer } from '../../connection/LivenessAnnouncer';
@@ -81,6 +81,8 @@ interface CommandDeckProps {
    *  names` note (`useUniverseMembership`'s `size`, pre-formatted by the caller); `null` for a
    *  nonmember/unknown symbol or before the universe read resolves (no invented count). */
   universeMemberNote?: string | null;
+  /** The ticker's Overview · Technical · Research tabs, carried in the masthead's right region. */
+  tabs?: ReactNode;
 }
 
 /** The slim condensed bar shown once the deck has scrolled out of view — restores mark · ticker ·
@@ -197,6 +199,7 @@ export function CommandDeck(props: CommandDeckProps) {
     routeSymbol,
     onSelectQuickSymbol,
     universeMemberNote,
+    tabs,
   } = props;
 
   const reduced = useReducedMotion();
@@ -219,9 +222,17 @@ export function CommandDeck(props: CommandDeckProps) {
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el || typeof IntersectionObserver !== 'function') return;
-    const io = new IntersectionObserver(([entry]) => setCondensed(!entry.isIntersecting), {
-      threshold: 0,
-    });
+    // Condensed only once the masthead has scrolled PAST (the sentinel above the viewport), never
+    // while it is merely below the fold: on a phone the sentinel starts below the fold, and the
+    // bar used to print the price a second time above the masthead on first paint (lane 4).
+    const io = new IntersectionObserver(
+      ([entry]) =>
+        setCondensed(
+          !entry.isIntersecting &&
+            (entry.boundingClientRect ? entry.boundingClientRect.top < 0 : true),
+        ),
+      { threshold: 0 },
+    );
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -348,6 +359,7 @@ export function CommandDeck(props: CommandDeckProps) {
             freshness={freshness}
             singleNameCaveat={singleNameCaveat}
             inlineControls={controlsJoinHeadline ? toolbar : null}
+            tabs={tabs}
           />
 
           {/* Tier 2 — the segmented control strip (one instrument panel), below 1100 only; at

@@ -39,3 +39,46 @@ export function headline(moveDollars: number, movePct: number): string {
   const sign = moveDollars >= 0 ? '±' : '±';
   return `${sign} $${Math.abs(moveDollars).toFixed(2)}  (${sign} ${Math.abs(movePct).toFixed(1)}%)`;
 }
+
+const EXPIRY_LABEL = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+
+/**
+ * The card's title over data (canon P-10): the move and where the walls sit against it, e.g.
+ * "Options price a ±$2.48 move (±0.4%) to Oct 9; both walls sit outside it". A wall is inside the
+ * move when it is no further from the spot than the move. Without a spot or a wall, the move alone.
+ */
+export function moveFinding({
+  moveDollars,
+  movePct,
+  expiration,
+  spot,
+  callWall,
+  putWall,
+}: {
+  moveDollars: number;
+  movePct: number;
+  expiration: string;
+  spot: number | null;
+  callWall: number | null;
+  putWall: number | null;
+}): string {
+  const t = Date.parse(`${expiration}T12:00:00Z`);
+  const when = Number.isFinite(t) ? EXPIRY_LABEL.format(new Date(t)) : expiration;
+  const lead = `Options price a ±$${Math.abs(moveDollars).toFixed(2)} move (±${Math.abs(movePct).toFixed(1)}%) to ${when}`;
+  const ok = (v: number | null): v is number => v != null && Number.isFinite(v);
+  if (!ok(spot) || (!ok(callWall) && !ok(putWall))) return lead;
+  const inside = (w: number) => Math.abs(w - spot) <= Math.abs(moveDollars);
+  const call = ok(callWall) ? inside(callWall) : null;
+  const put = ok(putWall) ? inside(putWall) : null;
+  if (call !== null && put !== null) {
+    if (call && put) return `${lead}; both walls sit inside it`;
+    if (!call && !put) return `${lead}; both walls sit outside it`;
+    return `${lead}; the ${call ? 'call' : 'put'} wall sits inside it`;
+  }
+  const which = call !== null ? 'call' : 'put';
+  return `${lead}; the ${which} wall sits ${(call ?? put) ? 'inside' : 'outside'} it`;
+}

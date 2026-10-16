@@ -1,8 +1,9 @@
 /**
- * TickerHeader — the headline ANCHOR block (Figma `Ticker · Header`, node 149:96): a status-chip row
- * (regime + the stream-driven connection chip), the `TICKER · $price` h1 (NBBO mid when live, else the
- * bundle's static price) with the levels/expiration sub-line, and the display-only **last-trade**
- * readout beneath it.
+ * TickerHeader — the headline ANCHOR block: the symbol as the page's h1, the price as a Mono figure
+ * (NBBO mid when live, else the bundle's static price) with its day change and the structure verdict
+ * beside it, then the connection chip with the display-only **last-trade** readout, and the
+ * levels/expiration sub-line. The ticker's tabs head the right region (lane 4 hierarchy pass, board
+ * design/src/screens/final/ticker-desk.mjs).
  *
  * The last-trade is a live-derived sibling that degrades WITH the live tiles on a stream drop; it
  * NEVER feeds the anchor/levels/flip (`live-spot=NBBO-mid`, AC-LastTrade-5).
@@ -20,16 +21,15 @@ import {
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { Refused } from '@/shared/ui/Refused';
-import type { LiveUpdate, MarketState, Signals } from '@convexa/api';
+import { dayChange, type LiveUpdate, type MarketState, type Signals } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { alpha } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { ConnectionChip } from '../../connection/ConnectionChip';
 import { connectionStateFor } from '../../connection/connectionState';
@@ -43,12 +43,14 @@ import {
   LAST_TRADE_TOOLTIP,
   SINGLE_NAME_CAVEAT,
 } from '../_kit/copy';
+import { levelSpot } from '../_kit/distanceToLevel';
 import { DESK_IS_SAMPLE, sampleQuoteSource, scenarioAsOf } from '../_kit/sample';
 import { FreshnessLine } from './FreshnessLine';
+import { useSamplePriorClose } from './useSamplePriorClose';
 
 const REGIME_TIP =
-  'Positive gamma: dealers dampen moves → range-bound, fade extremes. Negative gamma: dealers ' +
-  "amplify moves → trending, don't fade.";
+  'Long gamma (+γ): dealer hedging dampens moves → range-bound, fade extremes. Short gamma (−γ): ' +
+  "dealer hedging amplifies moves → trending, don't fade.";
 
 /** A dim `·` divider between second-line meta items (design: `desk.mjs`'s `<span class="dim">·`). */
 function MetaDot() {
@@ -59,51 +61,35 @@ function MetaDot() {
   );
 }
 
-/**
- * Tinted status chip (Figma: colored text on a subtle same-color tint). `neutral` = muted grey.
- * Used for the REGIME chip only — the connection chip moved to its own `ConnectionChip` renderer
- * (curvature-v2-foundations, SPEC §2.4), taking the `liveDotPulse` keyframe with it (this is no
- * longer that declaration's home; nothing here ever needs a dot or a warn icon).
- */
-export function TintChip({
-  tone,
-  label,
-  tip,
-}: {
-  tone: 'success' | 'error' | 'info' | 'warning' | 'neutral';
-  label: string;
-  tip?: string;
+/** The day's change as text: ▲/▼ and +/− carry the sign (P-11), the caller adds the hue (P-5). */
+export function signedChange(c: {
+  change: number;
+  pct: number;
+  direction: 'up' | 'down' | 'flat';
 }) {
-  const chip = (
-    <Box
-      component="span"
-      sx={(t) => ({
-        display: 'inline-flex',
-        alignItems: 'center',
-        px: 1,
-        py: '3px',
-        borderRadius: '999px',
-        fontSize: 11,
-        fontWeight: 500,
-        lineHeight: 1.2,
-        whiteSpace: 'nowrap',
-        color: tone === 'neutral' ? t.palette.text.secondary : t.palette[tone].main,
-        bgcolor:
-          tone === 'neutral'
-            ? alpha(t.palette.text.secondary, 0.14)
-            : alpha(t.palette[tone].main, 0.16),
-      })}
-    >
-      {label}
-    </Box>
-  );
-  return tip ? (
-    <Tooltip arrow title={tip}>
-      {chip}
-    </Tooltip>
-  ) : (
-    chip
-  );
+  if (c.direction === 'flat') return 'unch 0.00 (0.00%)';
+  const sign = c.direction === 'up' ? '+' : '−';
+  const arrow = c.direction === 'up' ? '▲' : '▼';
+  return `${arrow} ${sign}${Math.abs(c.change).toFixed(2)} (${sign}${Math.abs(c.pct).toFixed(2)}%)`;
+}
+
+/**
+ * The structure verdict for the masthead chip, in words with its sign (P-11: "+γ long gamma", never a
+ * green chip alone). The flip is named only when the price sits on the side the regime implies, so
+ * the chip never pairs two facts that disagree; the hero title states the distance either way.
+ */
+export function regimeVerdict(
+  regime: string | null,
+  spot: number | null,
+  flip: number | null | undefined,
+): string | null {
+  if (regime !== 'positive_gamma' && regime !== 'negative_gamma') return null;
+  const positive = regime === 'positive_gamma';
+  const words = positive ? '+γ long gamma' : '−γ short gamma';
+  if (spot == null || flip == null || !Number.isFinite(flip) || flip <= 0) return words;
+  if (positive && spot >= flip) return `${words} above ${flip.toFixed(2)}`;
+  if (!positive && spot < flip) return `${words} below ${flip.toFixed(2)}`;
+  return words;
 }
 
 // ---- Live last-trade readout (AC-LastTrade-1..5) --------------------------------------------
@@ -283,6 +269,9 @@ interface TickerHeaderProps {
    * (`CommandDeck`) decides placement; this component only reserves the slot, beside its own CTA.
    */
   inlineControls?: ReactNode;
+  /** The ticker's Overview · Technical · Research tabs, at the top of the right region (lane 4:
+   *  the board puts them in the masthead, not above it). */
+  tabs?: ReactNode;
 }
 
 export function TickerHeader({
@@ -301,6 +290,7 @@ export function TickerHeader({
   singleNameCaveat = false,
   lastSessionPhase = null,
   inlineControls = null,
+  tabs = null,
 }: TickerHeaderProps) {
   const reduced = useReducedMotion();
   const connState = connectionStateFor({
@@ -316,38 +306,122 @@ export function TickerHeader({
     active: numbersActive && !streamOffline && !DESK_IS_SAMPLE,
   });
 
+  // The day's change (site check D-22): the demo's authored prior close against the price the anchor
+  // shows; a live build has no prior close on the wire, so nothing renders there, never a fake 0.
+  const anchorPrice = numbersActive && live ? live.mid : m.price;
+  const priorClose = useSamplePriorClose(m.ticker);
+  const change = dayChange(anchorPrice, priorClose);
+  const verdict = regimeVerdict(sig?.regime ?? null, levelSpot(m), m.gamma_flip);
+
   return (
     <Box>
       {/* Stage 0 item 1 (the measured 580px offender): the hero row STACKS vertically below `sm` —
-          chips/anchor/meta re-stack and the CTA drops under the anchor on its own left-aligned row.
-          Nothing is removed; at `sm+` the row layout is unchanged. */}
+          the anchor first, then the tabs and the CTA on their own rows. Nothing is removed. */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={2}
         sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'flex-start' } }}
       >
-        <Stack spacing={1} sx={{ minWidth: 0 }}>
-          {/* Ticker fidelity repair, change 3 (F3) — the design's chip row
-              (`design/src/screens/desk.mjs:264-272`'s `.mast-meta`): regime + the ONE stream-driven
-              connection chip + the last-trade readout, all on one row (last-trade MOVES here from
-              the old separate meta line — still the SAME `LastTradeReadout`, byte-identical states
-              and testid). The chip slot is UNCONDITIONAL (ruling 1 / AC-9): before the first stream
-              fact it renders the wordless placeholder, never nothing — so the row itself always
-              renders once mounted. */}
+        <Stack spacing={1} sx={{ minWidth: 0, flex: '1 1 auto' }}>
+          {/* The first read (lane 4 hierarchy pass; board ticker-desk.mjs deskStagingBody): the
+              symbol as the page's one heading, then the price as a Mono figure with its day change
+              and the structure verdict beside it. A stat value is never a heading element (canon,
+              Banned), so the price is its own line under the h1. Mid when live, else the bundle's
+              price; last trade is display-only and never feeds this anchor (`live-spot=NBBO-mid`). */}
+          <Typography
+            variant="h1"
+            data-testid="deck-symbol"
+            sx={{
+              fontFamily: typographyTokens.displayFontFamily,
+              fontStretch: typographyTokens.displayFontStretch,
+              fontSize: { xs: 30, sm: 36 },
+              fontWeight: 700,
+              lineHeight: 1,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {m.ticker}
+          </Typography>
+          <Stack
+            direction="row"
+            sx={{ alignItems: 'baseline', flexWrap: 'wrap', columnGap: 1.75, rowGap: 0.75 }}
+          >
+            <Box
+              component="p"
+              data-testid="deck-price"
+              sx={[
+                {
+                  m: 0,
+                  fontFamily: typographyTokens.monoFontFamily,
+                  fontSize: { xs: 28, sm: 32 },
+                  fontWeight: 500,
+                  lineHeight: 1.05,
+                  letterSpacing: '-0.01em',
+                  fontVariantNumeric: 'tabular-nums',
+                },
+                flashColorSx(priceFlash),
+              ]}
+            >
+              {anchorPrice != null ? `$${anchorPrice.toFixed(2)}` : '—'}
+            </Box>
+            {change && (
+              <Box
+                component="span"
+                data-testid="deck-change"
+                sx={(t) => ({
+                  fontFamily: typographyTokens.monoFontFamily,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  // P-5: a price change stays green/red as TEXT (textUp/textDown); P-11: the sign
+                  // also rides on ▲/▼ and +/−, never on hue alone.
+                  color:
+                    change.direction === 'up'
+                      ? extrasFor(t).textUp
+                      : change.direction === 'down'
+                        ? extrasFor(t).textDown
+                        : t.palette.text.secondary,
+                })}
+              >
+                {signedChange(change)}
+              </Box>
+            )}
+            {verdict && (
+              <Tooltip arrow title={REGIME_TIP}>
+                <Box
+                  component="span"
+                  data-testid="deck-verdict"
+                  tabIndex={0}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    alignSelf: 'center',
+                    minHeight: 24,
+                    px: 1,
+                    borderRadius: '999px',
+                    border: '1px solid',
+                    borderColor: 'text.secondary',
+                    color: 'text.primary',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {verdict}
+                </Box>
+              </Tooltip>
+            )}
+          </Stack>
+
+          {/* Provenance and the tape: the one connection chip (P-1/P-3: the demo gives its slot to
+              "Demo · sample data", its tape being a scenario replay) and the display-only last
+              trade. The chip slot is UNCONDITIONAL (ruling 1 / AC-9): before the first stream fact
+              it renders the wordless placeholder, never nothing. */}
           <Stack
             direction="row"
             spacing={1}
             sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
           >
-            {sig?.regime && (
-              <TintChip
-                tone={sig.regime === 'positive_gamma' ? 'success' : 'error'}
-                label={sig.regime.replace('_', ' ')}
-                tip={REGIME_TIP}
-              />
-            )}
-            {/* P-1/P-3: the demo gives the connection-chip slot to "Demo · sample data"; its tape
-                is a scenario replay, so no stream-state words (no "no live ticks") either. */}
             {DESK_IS_SAMPLE ? (
               <DataStateTag state="demo" />
             ) : (
@@ -358,6 +432,10 @@ export function TickerHeader({
                 reduced={reduced}
               />
             )}
+            {/* P-8: the demo's quote is sample data, so the masthead names what it is shaped like. */}
+            {DESK_IS_SAMPLE && (
+              <SampleSourceChip text={sampleQuoteSource(m.ticker, scenarioAsOf())} />
+            )}
             <LastTradeReadout
               live={live}
               streamOffline={streamOffline}
@@ -365,33 +443,9 @@ export function TickerHeader({
             />
           </Stack>
 
-          {/* Headline ANCHOR — SYMBOL + mid only (design: `SPY 573.12 +1.84 · +0.32%`). The bundle
-              carries no prior close, signed change or instrument name (`market_state` has
-              `price`/`gex_spot` only, checked against the saved real bundle) — the design's
-              `+1.84 · +0.32%` and `SPDR S&P 500 ETF` are OMITTED here, not faked and not rendered as
-              `—` (F3 — filed as an API follow-up in this folder's `RESUME.md`). The "levels @ ·
-              expirations" parenthetical moves to the second line below, matching the design. Mono
-              figure; last-trade is DISPLAY-ONLY and NEVER feeds this anchor (`live-spot=NBBO-mid`). */}
-          <Typography variant="h1" sx={{ fontSize: 32, fontWeight: 700, lineHeight: 1.12 }}>
-            <Box
-              component="span"
-              sx={[{ fontVariantNumeric: 'tabular-nums' }, flashColorSx(priceFlash)]}
-            >
-              {m.ticker} · ${(numbersActive && live ? live.mid : m.price)?.toFixed(2)}
-            </Box>
-          </Typography>
-          {/* P-8: the demo's quote is sample data, so the masthead names what it is shaped like. */}
-          {DESK_IS_SAMPLE && (
-            <Box>
-              <SampleSourceChip text={sampleQuoteSource(m.ticker, scenarioAsOf())} />
-            </Box>
-          )}
-
-          {/* Second line (design: `Levels @ · Structure as-of · refreshes · All expirations`,
-              `desk.mjs:269-271`) — levels anchor, the relocated REST-bundle freshness (STRUCTURE,
-              spine #4, never the live stream), the documented ~60s bundle poll
-              (`useTickerBundle.ts`'s `TICKER_BUNDLE_POLL_MS`, not invented), then the expirations
-              count that used to live in the headline's parenthetical. */}
+          {/* Second line (design: `Levels @ · Structure as-of · refreshes · All expirations`) —
+              levels anchor, the REST-bundle freshness (STRUCTURE, spine #4, never the live stream),
+              the documented ~60s bundle poll, then the expirations count. */}
           <Stack
             direction="row"
             data-testid="deck-meta"
@@ -427,10 +481,8 @@ export function TickerHeader({
             </Typography>
           </Stack>
 
-          {/* index-first-defaults AC-4 — the single-name honesty caption, on the freshness/context
-              line of the deck. Muted secondary-text token ONLY (both themes via the palette) — no
-              warn/red semantics, no icon, never blocking. Absent for universe members AND while the
-              universe is unknown (AC-5 — absence IS the degraded state). */}
+          {/* index-first-defaults AC-4 — the single-name honesty caption, muted, never warn/red;
+              absent for universe members and while the universe is unknown (AC-5). */}
           {singleNameCaveat && (
             <Typography
               variant="caption"
@@ -442,64 +494,69 @@ export function TickerHeader({
           )}
         </Stack>
 
-        {/* Right region — PASS 2 change 9: at ≥ laptop (1100) `inlineControls` (the toolbar's
-            Expirations/Persona fields, `CommandDeck.tsx`'s `controlsJoinHeadline`) joins this row
-            ahead of the CTA, matching the design's `.mast-controls` (`desk.mjs:274-278`: fields
-            then the one amber button, `align-items: center`). `null` below 1100 (or when the caller
-            passes nothing) — this wrapper then renders exactly as it always did, one child. */}
-        {(inlineControls || onOpenTrade) && (
+        {/* Right region — the ticker's tabs on top (board: the masthead's right column), then at
+            ≥ laptop (1100) the toolbar's fields and the one amber action. */}
+        {(tabs || inlineControls || onOpenTrade) && (
           <Stack
-            direction="row"
-            spacing={1.5}
+            spacing={1.25}
             sx={{
-              alignItems: 'center',
-              flexShrink: 0,
-              flexWrap: 'wrap',
-              justifyContent: 'flex-end',
-              rowGap: 1,
+              alignItems: { xs: 'stretch', sm: 'flex-end' },
+              flex: '0 1 auto',
+              maxWidth: { sm: 600 },
+              minWidth: 0,
             }}
           >
-            {inlineControls}
-
-            {/* Persistent trade CTA (right-aligned) — primary action kept in the header, out of the
-                analysis flow. Opens the shipped simulated-trade entry dialog. */}
-            {onOpenTrade && (
+            {tabs}
+            {(inlineControls || onOpenTrade) && (
               <Stack
+                direction="row"
+                spacing={1.5}
                 sx={{
-                  flexShrink: 0,
-                  // `flex-end` (not `stretch`): without it the notice's width would drag the CTA out
-                  // into a full-width bar across the header — amber is spent exactly once on this page
-                  // and a 800px slab of it is not that one spend.
-                  alignItems: { xs: 'flex-start', sm: 'flex-end' },
-                  alignSelf: { xs: 'flex-start', sm: 'auto' },
-                  maxWidth: 460,
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  justifyContent: { xs: 'flex-start', sm: 'flex-end' },
+                  rowGap: 1,
                 }}
               >
-                {storeFaulted && <TickerFaultedNotice />}
-                {!tradeAllowed ? (
-                  <Box sx={{ mt: 0.5, maxWidth: 360 }}>
-                    <Refused
-                      actionLabel="+ Open simulated trade"
-                      reason="Sign in to open a paper position. No real order is ever sent."
-                      onSignIn={onSignIn}
-                      testId="open-sim-trade-refused"
-                    />
-                  </Box>
-                ) : (
-                  <FaultedRefused when={storeFaulted}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={onOpenTrade}
-                      data-testid="open-sim-trade"
-                      // At xs the CTA sits under the anchor on its own row (left-aligned, intrinsic width)
-                      // so its nowrap label can never force the viewport wider. Still THE one entry point
-                      // to the shared TradeEntryDialog (`[single-shared-sim-entry-dialog]`).
-                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5 }}
-                    >
-                      + Open simulated trade
-                    </Button>
-                  </FaultedRefused>
+                {inlineControls}
+
+                {/* Persistent trade CTA — the page's one primary action. Opens the shipped
+                    simulated-trade entry dialog. */}
+                {onOpenTrade && (
+                  <Stack
+                    sx={{
+                      flexShrink: 0,
+                      // `flex-end` (not `stretch`): amber is spent exactly once on this page and an
+                      // 800px slab of it is not that one spend.
+                      alignItems: { xs: 'flex-start', sm: 'flex-end' },
+                      alignSelf: { xs: 'flex-start', sm: 'auto' },
+                      maxWidth: 460,
+                    }}
+                  >
+                    {storeFaulted && <TickerFaultedNotice />}
+                    {!tradeAllowed ? (
+                      <Box sx={{ mt: 0.5, maxWidth: 360 }}>
+                        <Refused
+                          actionLabel="+ Open simulated trade"
+                          reason="Sign in to open a paper position. No real order is ever sent."
+                          onSignIn={onSignIn}
+                          testId="open-sim-trade-refused"
+                        />
+                      </Box>
+                    ) : (
+                      <FaultedRefused when={storeFaulted}>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={onOpenTrade}
+                          data-testid="open-sim-trade"
+                          sx={{ flexShrink: 0, whiteSpace: 'nowrap', minHeight: 36 }}
+                        >
+                          + Open simulated trade
+                        </Button>
+                      </FaultedRefused>
+                    )}
+                  </Stack>
                 )}
               </Stack>
             )}

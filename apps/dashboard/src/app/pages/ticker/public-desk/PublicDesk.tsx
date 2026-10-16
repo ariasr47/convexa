@@ -28,7 +28,13 @@ import { recordVisit } from '@/pages/ticker/recentTickers/store';
 import { TradingViewDaily } from '@/pages/ticker/technical-analysis/TradingViewDaily';
 import { QuickSymbols } from '@/pages/ticker/widgets/chrome/QuickSymbols';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import { DATA_STATES, publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
+import { FINRA_OFF_REASON } from '@/shared/dataState/finraSwitch';
+import {
+  DATA_STATES,
+  publicDataWord,
+  publicPartGap,
+  type DataStateKey,
+} from '@/shared/dataState/vocabulary';
 import { demoDeskUrl } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
 import type { PublicTicker } from '@convexa/api';
@@ -310,6 +316,11 @@ function PublicZone({
     return null;
   })();
 
+  // Lane 4: when FINRA is Off for both of its parts (the owner's switch, finraSwitch.ts), its two
+  // cards no longer take the side column beside the chart and a 3fr row to say the same sentence:
+  // the live SEC panels move up beside the chart, and FINRA folds into one Off card after them, with
+  // the owner's reason. With FINRA on, the cards render as before.
+  const finraOff = !!d && !read.error && d.state !== 'off' && finraFolded(d);
   return (
     <Box component="section" aria-labelledby="public-zone" sx={{ display: 'grid', gap: 2 }}>
       <ZoneHead
@@ -328,45 +339,76 @@ function PublicZone({
         <TradingViewDaily ticker={ticker} height={520} phoneHeight={420} />
         <Box sx={{ display: 'grid', gap: 2, minWidth: 0 }}>
           <NoteCard ticker={ticker} note={note} d={d} />
-          {d && d.state !== 'off' && !read.error && <ShortVolumeCard d={d} />}
+          {d && finraOff && (
+            <>
+              <FilingsCard d={d} />
+              <InsidersCard d={d} />
+            </>
+          )}
+          {d && d.state !== 'off' && !read.error && !finraOff && <ShortVolumeCard d={d} />}
         </Box>
       </Box>
-      {cards ??
-        (d && (
-          <>
-            <Box
-              sx={{
-                display: 'grid',
-                gap: 2,
-                gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 3fr) minmax(0, 2fr)' },
-                alignItems: 'start',
-              }}
-            >
-              <ShortInterestCard d={d} compact />
-              <Box sx={{ display: 'grid', gap: 2, minWidth: 0 }}>
-                <FilingsCard d={d} />
-                <InsidersCard d={d} />
-              </Box>
-            </Box>
-            {finraShown(d) && (
+      {finraOff && <FinraOffCard />}
+      {!finraOff &&
+        (cards ??
+          (d && (
+            <>
               <Box
-                component="p"
                 sx={{
-                  m: 0,
-                  fontSize: 12,
-                  color: 'text.secondary',
-                  maxWidth: 720,
-                  textWrap: 'pretty',
+                  display: 'grid',
+                  gap: 2,
+                  gridTemplateColumns: {
+                    xs: 'minmax(0, 1fr)',
+                    md: 'minmax(0, 3fr) minmax(0, 2fr)',
+                  },
+                  alignItems: 'start',
                 }}
               >
-                FINRA owns and is the source of the short-interest and short-sale-volume data here,
-                including the percentages and averages Convexa calculates from it. Shown free for
-                non-commercial personal use; please don&apos;t redistribute it.
+                <ShortInterestCard d={d} compact />
+                <Box sx={{ display: 'grid', gap: 2, minWidth: 0 }}>
+                  <FilingsCard d={d} />
+                  <InsidersCard d={d} />
+                </Box>
               </Box>
-            )}
-          </>
-        ))}
+              {finraShown(d) && (
+                <Box
+                  component="p"
+                  sx={{
+                    m: 0,
+                    fontSize: 12,
+                    color: 'text.secondary',
+                    maxWidth: 720,
+                    textWrap: 'pretty',
+                  }}
+                >
+                  FINRA owns and is the source of the short-interest and short-sale-volume data
+                  here, including the percentages and averages Convexa calculates from it. Shown
+                  free for non-commercial personal use; please don&apos;t redistribute it.
+                </Box>
+              )}
+            </>
+          )))}
+      {finraOff && cards}
     </Box>
+  );
+}
+
+/** Both FINRA parts read Off (the owner's switch): nothing of FINRA's to show, one reason to give. */
+function finraFolded(d: PublicTicker): boolean {
+  return (
+    publicPartGap(d.short_interest_state, !!d.short_interest) === 'off' &&
+    publicPartGap(d.short_volume_state, !!d.short_volume) === 'off'
+  );
+}
+
+/** FINRA's two panels, folded into one Off card with the owner's reason (finraSwitch.ts). */
+function FinraOffCard() {
+  return (
+    <Missing
+      label="Short interest · Short-sale volume"
+      tag={<DataStateTag state="off" />}
+      text={FINRA_OFF_REASON}
+    />
   );
 }
 
@@ -564,77 +606,219 @@ type FeedPanel = {
   title: (t: string) => string;
   would: string;
   levels?: boolean;
+  /** Where the panel sits on a wide screen: beside the field, or in the context rows. The AI read
+   *  has its own row between them. */
+  group: 'structure' | 'ai' | 'context';
 };
 
 /** The desk's panels that read the options chain or the intraday tape, in the desk's reading order. */
 const FEED_PANELS: FeedPanel[] = [
   {
     key: 'gamma',
+    group: 'structure',
     title: (t) => `${t} net dealer gamma by strike`,
     would:
       'net dealer gamma at each strike, with +γ above the zero line and −γ below, the walls, the gamma flip and max pain.',
   },
   {
     key: 'levels',
+    group: 'structure',
     title: () => 'Levels',
     would: 'the call wall, max pain, the gamma flip and the put wall.',
     levels: true,
   },
   {
     key: 'read',
+    group: 'context',
     title: () => 'Read strip',
     would:
       'eight figures from the chain: opportunity, net DEX, IV/HV, IV rank, Vol/OI, IV skew, term structure and the off-exchange share.',
   },
   {
     key: 'score',
+    group: 'context',
     title: () => 'Score and structure path',
     would:
       'the scanner’s 0–100 score for this ticker, and how it and the distance to the flip moved this session.',
   },
   {
     key: 'ai',
+    group: 'ai',
     title: () => 'AI read',
     would:
       'a verdict-first brief on the dealer structure, risk before rationale, on your own provider key.',
   },
   {
     key: 'tape',
+    group: 'context',
     title: (t) => `${t} mid · last 5 minutes`,
     would: 'the live mid, one point a second, against the mid the levels use.',
   },
   {
     key: 'flow',
+    group: 'context',
     title: () => 'Dealer flow projection',
     would: 'how charm and vanna push dealer hedging into the nearest expiry.',
   },
   {
     key: 'term',
+    group: 'context',
     title: () => 'Term structure',
     would: 'implied volatility by days to expiry, and whether it slopes up or down.',
   },
   {
     key: 'straddle',
+    group: 'context',
     title: () => 'Straddle-implied move',
     would: 'the move the nearest at-the-money straddle prices in, against the walls.',
   },
   {
     key: 'fresh',
+    group: 'context',
     title: () => 'Fresh positioning · Vol/OI',
     would: 'strikes where today’s volume outruns open interest.',
   },
   {
     key: 'blocks',
+    group: 'context',
     title: () => 'Off-exchange blocks',
     would: 'large prints away from the exchanges, as they happen.',
   },
-  { key: 'setups', title: () => 'Setups', would: 'the scanner’s named setups on this ticker.' },
+  {
+    key: 'setups',
+    group: 'context',
+    title: () => 'Setups',
+    would: 'the scanner’s named setups on this ticker.',
+  },
 ];
 
-const OFF_BECAUSE: Record<FeedOff, string> = {
-  not_live: 'it needs the options feed, a paid feed this site doesn’t run.',
-  paused: 'it needs the options feed, which is paused on this site.',
-};
+/**
+ * The shape the gamma panel would draw, as an outline with no values (board ticker-desk.mjs
+ * `gexBars('outline')`): dashed, neutral, aria-hidden. It shows the form of the chart, never a
+ * figure — no axis, no level, no number.
+ */
+function GammaOutline() {
+  const vals = [-6, -10, -14, -8, -3, 4, 9, 15, 11, 6, 3, 1];
+  const h = 120;
+  const mid = h / 2;
+  return (
+    <Box
+      component="svg"
+      aria-hidden="true"
+      viewBox={`0 0 240 ${h}`}
+      preserveAspectRatio="none"
+      sx={(t) => ({ width: '100%', height: h, display: 'block', color: extrasFor(t).lineStrong })}
+    >
+      <line x1="0" x2="240" y1={mid} y2={mid} stroke="currentColor" />
+      {vals.map((v, i) => {
+        const bh = (Math.abs(v) * (h / 2 - 6)) / 15;
+        return (
+          <rect
+            key={i}
+            x={6 + i * 19.5}
+            y={v > 0 ? mid - bh : mid}
+            width="13"
+            height={bh}
+            rx="2"
+            fill="none"
+            stroke="currentColor"
+            strokeDasharray="3 3"
+          />
+        );
+      })}
+    </Box>
+  );
+}
+
+/** One Not live panel: its title and tag, what it would show, and the same desk on the demo. */
+function FeedPanel({
+  p,
+  ticker,
+  tag,
+  demoUrl,
+}: {
+  p: FeedPanel;
+  ticker: string;
+  tag: DataStateKey;
+  demoUrl: string;
+}) {
+  return (
+    <Box
+      component="article"
+      aria-labelledby={`feed-${p.key}`}
+      sx={{ ...PANEL_SX, p: '16px 18px', display: 'grid', gap: 1, alignContent: 'start' }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '6px 10px',
+        }}
+      >
+        <Box component="h3" id={`feed-${p.key}`} sx={{ m: 0, fontSize: 15, fontWeight: 600 }}>
+          {p.title(ticker)}
+        </Box>
+        <DataStateTag state={tag} />
+      </Box>
+      {p.key === 'gamma' && <GammaOutline />}
+      {p.levels ? (
+        <Box
+          component="dl"
+          sx={{
+            m: 0,
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) auto',
+            gap: '6px 12px',
+            fontSize: 13,
+          }}
+        >
+          {['Call wall', 'Max pain', 'Gamma flip', 'Put wall'].map((l) => (
+            <Box key={l} sx={{ display: 'contents' }}>
+              <Box component="dt" sx={{ color: 'text.secondary' }}>
+                {l}
+              </Box>
+              <Box
+                component="dd"
+                sx={{ ...MONO, m: 0, color: 'text.secondary' }}
+                aria-label="No value"
+              >
+                —
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      ) : null}
+      <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
+        <Box component="strong" sx={{ color: 'text.primary', fontWeight: 600 }}>
+          Would show
+        </Box>{' '}
+        {p.would}
+      </Box>
+      {p.levels && (
+        <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
+          No level is shown as a number: a dash is not a price.
+        </Box>
+      )}
+      <Link
+        href={demoUrl}
+        variant="body2"
+        underline="always"
+        sx={{ ...linkSx, justifySelf: 'start', mt: 0.5 }}
+      >
+        See it on the demo →
+      </Link>
+    </Box>
+  );
+}
+
+/** Why the zone is off, said once at its head. */
+function feedCause(feed: FeedOff): string {
+  return feed === 'paused'
+    ? 'these panels read the options chain or the intraday tape, and that feed is paused on this site.'
+    : 'these panels read the options chain or the intraday tape, a paid feed this site doesn’t run.';
+}
 
 function FeedZone({
   ticker,
@@ -653,7 +837,7 @@ function FeedZone({
       <ZoneHead
         id="feed-zone"
         title="Needs the options feed"
-        sub="These panels read the options chain or the intraday tape. Each says what it would show; the demo shows all of them on sample data."
+        sub={`Off because ${feedCause(feed)} Each panel says what it would show; the demo shows all of them on sample data.`}
       />
       {phone ? (
         <Box component="article" sx={{ ...PANEL_SX, p: '16px 18px', display: 'grid', gap: 1 }}>
@@ -663,9 +847,6 @@ function FeedZone({
             <Box component="h3" sx={{ m: 0, fontSize: 15, fontWeight: 600 }}>
               {`${FEED_PANELS.length} panels need the options feed`}
             </Box>
-          </Box>
-          <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary' }}>
-            {`Off because ${OFF_BECAUSE[feed]}`}
           </Box>
           <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
             {FEED_PANELS.map((p) => (
@@ -698,105 +879,38 @@ function FeedZone({
           <WhatAReadSendsLink ticker={ticker} feed={feed} />
         </Box>
       ) : (
-        <Box
-          sx={{
-            display: 'grid',
-            gap: 2,
-            gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))',
-            // The AI read spans its row. No dense packing: back-filling the cells before it would
-            // put the tape and flow above the AI read on screen while focus order keeps them after
-            // it (WCAG 2.4.3, 1.3.2). A short row before it is the cost of a matching order.
-          }}
-        >
-          {FEED_PANELS.map((p) =>
-            p.key === 'ai' ? (
-              <AiReadNotLive key={p.key} ticker={ticker} feed={feed} demoUrl={demoUrl} />
-            ) : (
-              <Box
-                component="article"
-                key={p.key}
-                aria-labelledby={`feed-${p.key}`}
-                sx={{ ...PANEL_SX, p: '18px 20px', display: 'grid', gap: 1, alignContent: 'start' }}
-              >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '6px 10px',
-                  }}
-                >
-                  <Box
-                    component="h3"
-                    id={`feed-${p.key}`}
-                    sx={{ m: 0, fontSize: 15, fontWeight: 600 }}
-                  >
-                    {p.title(ticker)}
-                  </Box>
-                  <DataStateTag state={tag} />
-                </Box>
-                {p.levels ? (
-                  <Box
-                    component="dl"
-                    sx={{
-                      m: 0,
-                      display: 'grid',
-                      gridTemplateColumns: 'minmax(0, 1fr) auto',
-                      gap: '6px 12px',
-                      fontSize: 13,
-                    }}
-                  >
-                    {['Call wall', 'Max pain', 'Gamma flip', 'Put wall'].map((l) => (
-                      <Box key={l} sx={{ display: 'contents' }}>
-                        <Box component="dt" sx={{ color: 'text.secondary' }}>
-                          {l}
-                        </Box>
-                        <Box
-                          component="dd"
-                          sx={{ ...MONO, m: 0, color: 'text.secondary' }}
-                          aria-label="No value"
-                        >
-                          —
-                        </Box>
-                      </Box>
-                    ))}
-                  </Box>
-                ) : null}
-                <Box
-                  component="p"
-                  sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}
-                >
-                  <Box component="strong" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                    Would show
-                  </Box>{' '}
-                  {p.would}
-                </Box>
-                <Box
-                  component="p"
-                  sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}
-                >
-                  <Box component="strong" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                    Off because
-                  </Box>{' '}
-                  {OFF_BECAUSE[feed]}
-                </Box>
-                {p.levels && (
-                  <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
-                    No level is shown as a number: a dash is not a price.
-                  </Box>
-                )}
-                <Link
-                  href={demoUrl}
-                  variant="body2"
-                  underline="always"
-                  sx={{ ...linkSx, justifySelf: 'start', mt: 0.5 }}
-                >
-                  See it on the demo →
-                </Link>
-              </Box>
-            ),
-          )}
+        // Lane 4: grouped by the desk's own read, in full rows: the structure (gamma by strike wide,
+        // the levels beside it, as the hero draws them), the AI read across, then the context panels
+        // three to a row. The cause sits once in the zone head; the panels no longer repeat it
+        // eleven times (the phone list above already states it once).
+        <Box sx={{ display: 'grid', gap: 2 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 2,
+              gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 2fr) minmax(0, 1fr)' },
+            }}
+          >
+            {FEED_PANELS.filter((p) => p.group === 'structure').map((p) => (
+              <FeedPanel key={p.key} p={p} ticker={ticker} tag={tag} demoUrl={demoUrl} />
+            ))}
+          </Box>
+          <AiReadNotLive ticker={ticker} feed={feed} demoUrl={demoUrl} />
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 2,
+              gridTemplateColumns: {
+                xs: 'minmax(0, 1fr)',
+                sm: 'repeat(2, minmax(0, 1fr))',
+                md: 'repeat(3, minmax(0, 1fr))',
+              },
+            }}
+          >
+            {FEED_PANELS.filter((p) => p.group === 'context').map((p) => (
+              <FeedPanel key={p.key} p={p} ticker={ticker} tag={tag} demoUrl={demoUrl} />
+            ))}
+          </Box>
         </Box>
       )}
     </Box>

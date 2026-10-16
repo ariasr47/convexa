@@ -38,7 +38,7 @@ import {
 import { shouldShowPlanFieldsNotChecked } from './planScopeCaption';
 import type { AiRecPresentation } from './presentationPolicy';
 import { ProvenanceChip } from './ProvenanceChip';
-import { deriveReasoning } from './reasoning';
+import { deriveReasoning, ReasoningSection } from './reasoning';
 
 export interface DecisionCardProps {
   rec: RecResponse;
@@ -313,6 +313,18 @@ export function DecisionCard({
   if (!strategy) return null;
   const isTrade = strategy.decision === 'trade';
   const reasoning = deriveReasoning(strategy);
+  // A no-trade read that sets a watch level and was checked (site check D-07: the demo's authored
+  // read; the API grounds a live no-trade read as not applicable, so this never shows there): the
+  // watch level with its clause, and the card's trace line, from the server's grounding block.
+  const watchLevel =
+    !isTrade &&
+    rec.grounding != null &&
+    rec.grounding.card !== 'not_applicable' &&
+    typeof strategy.invalidation_level === 'number' &&
+    Number.isFinite(strategy.invalidation_level)
+      ? strategy.invalidation_level
+      : null;
+  const checkedNoTrade = watchLevel != null;
   const missing = presentation.missingPositionFields;
   const maxRiskLiteral = fieldLiteral({
     decision: strategy.decision,
@@ -469,6 +481,19 @@ export function DecisionCard({
           </Box>
         </>
       )}
+      {watchLevel != null && rec.grounding && (
+        <Box data-testid="decision-watch" sx={{ mt: 1 }}>
+          <RiskField
+            label="Watch level"
+            literal={{ kind: 'value', text: watchLevel.toFixed(2) }}
+            tip="The level that would change this call."
+            groundingState={rec.grounding.fields.invalidation_level.state}
+            clause={
+              <FigureClause field={rec.grounding.fields.invalidation_level} testId="clause-watch" />
+            }
+          />
+        </Box>
+      )}
       {reasoning.lead && (
         <Typography
           data-testid="decision-thesis"
@@ -478,13 +503,16 @@ export function DecisionCard({
           {reasoning.lead}
         </Typography>
       )}
-      {!isTrade && strategy.reengage_when?.length ? (
-        <Typography variant="body2" sx={{ mt: 1 }}>
-          {strategy.reengage_when.join(' · ')}
-        </Typography>
+      {/* Canon 16: the panel carries the folded Why. A no-trade read has no risk fields to lead with,
+          so its Why and Re-engage lists sit on the panel; the full analyst read stays in the drawer
+          (rationale left out here) and the prose stays unchecked, as the caption says. */}
+      {!isTrade && (reasoning.keyPoints.length > 0 || reasoning.reengage.length > 0) ? (
+        <Box data-testid="decision-reasons" sx={{ mt: 1.5 }}>
+          <ReasoningSection strategy={{ ...strategy, rationale: '' }} suppressLead />
+        </Box>
       ) : null}
       <Box data-testid="decision-evidence" sx={{ mt: 1 }}>
-        {isTrade && <GroundingNote grounding={rec.grounding} />}
+        {(isTrade || checkedNoTrade) && <GroundingNote grounding={rec.grounding} />}
         <CapAnnotation capCheck={rec.cap_check} />
       </Box>
       <Divider sx={{ my: 1.5 }} />

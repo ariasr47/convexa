@@ -16,6 +16,7 @@ import {
   loadScenario,
   sampleContractQuote,
 } from './catalog';
+import { callDelta, flowSeed } from './flowSeed';
 import { computeIndicators } from './indicators';
 import { DEMO_ACCOUNT, dataMode, demoStorageKey } from './mode';
 import { demoPublicData } from './public-data';
@@ -541,11 +542,138 @@ function recommendationExport(
   };
 }
 
+type GroundingWire = NonNullable<RecommendationWire['grounding']>;
+type GroundingFieldWire = GroundingWire['fields']['invalidation_level'];
+
+/** The API's grounding tolerance, stated once per response (services/recommendation.rs
+ *  GROUNDING_TOL_PCT). */
+const GROUNDING_TOL_PCT = 0.1;
+
+const notApplicableField = (): GroundingFieldWire => ({
+  state: 'not_applicable',
+  basis: null,
+  anchor_kind: null,
+  anchor_value: null,
+  range_low: null,
+  range_high: null,
+  expiration: null,
+  not_checkable_reason: null,
+});
+
+/**
+ * Site check D-07: the authored read's grounding, computed from the one figure the read sets — its
+ * watch level, the level that would change the call — checked against the snapshot the desk draws,
+ * the way the API checks a read's invalidation level (an exact match on a named level traces). The
+ * card follows the API's own rule (services/rec_inputs/grounding.rs card_member): nothing checked is
+ * not applicable, every figure traced is all traced. The reasoning prose is never checked, as on a
+ * live read.
+ */
+export function sampleReadGrounding(
+  watchLevel: number | null,
+  anchor: { kind: 'gamma_flip'; value: number | null },
+): GroundingWire {
+  const fields = {
+    exit_stop: notApplicableField(),
+    exit_target: notApplicableField(),
+    invalidation_level: notApplicableField(),
+    max_risk: notApplicableField(),
+    position_size: notApplicableField(),
+  };
+  if (watchLevel == null || !Number.isFinite(watchLevel))
+    return {
+      card: 'not_applicable',
+      counts: { checked: 0, traced: 0, untraced: 0, not_checkable: 0 },
+      fields,
+      tolerance_pct: GROUNDING_TOL_PCT,
+    };
+  const traced =
+    anchor.value != null && Math.abs(watchLevel - anchor.value) < 0.005 && anchor.value > 0;
+  fields.invalidation_level = traced
+    ? {
+        ...notApplicableField(),
+        state: 'traced',
+        basis: 'exact',
+        anchor_kind: anchor.kind,
+        anchor_value: anchor.value,
+      }
+    : { ...notApplicableField(), state: 'untraced' };
+  const counts = { checked: 1, traced: traced ? 1 : 0, untraced: traced ? 0 : 1, not_checkable: 0 };
+  return {
+    card: traced ? 'all_traced' : 'none_traced',
+    counts,
+    fields,
+    tolerance_pct: GROUNDING_TOL_PCT,
+  };
+}
+
+const twoDp = (value: number) => value.toFixed(2);
+const SHORT_DATE = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+const shortDate = (iso: string) => {
+  const t = Date.parse(`${iso}T12:00:00Z`);
+  return Number.isFinite(t) ? SHORT_DATE.format(new Date(t)) : iso;
+};
+
+/**
+ * The authored read's key points and re-engage lines, written from the same snapshot the desk draws
+ * for the selected expiry set (tickerPayload), so every level they name is a level on the page.
+ */
+export function sampleReadReasons(
+  snapshot: TickerBundle['market_state'],
+  regime: TickerBundle['signals']['regime'],
+): { keyPoints: string[]; reengage: string[] } {
+  const spot = snapshot.price;
+  const flip = snapshot.gamma_flip;
+  const wall = snapshot.call_wall;
+  const keyPoints: string[] = [];
+  const reengage: string[] = [];
+  const positive = regime === 'positive_gamma';
+  if (spot != null && flip != null && flip > 0) {
+    const above = spot >= flip;
+    const pct = Math.abs(((spot - flip) / flip) * 100).toFixed(1);
+    keyPoints.push(
+      `Spot ${twoDp(spot)} is ${pct}% ${above ? 'above' : 'below'} the flip at ${twoDp(flip)}: ` +
+        (positive
+          ? '+γ, dealer hedging tends to damp moves here.'
+          : '−γ, dealer hedging tends to amplify moves here.'),
+    );
+    reengage.push(
+      `Spot closes ${above ? 'below' : 'above'} the flip at ${twoDp(flip)}, where hedging turns ` +
+        `${positive ? '−γ' : '+γ'}.`,
+    );
+  }
+  const tenor =
+    snapshot.straddle_move?.state === 'ok'
+      ? snapshot.straddle_move.tenors.find(
+          (t) => t.expiration === snapshot.straddle_move?.primary_expiration,
+        )
+      : undefined;
+  if (spot != null && wall != null && tenor) {
+    const inside = Math.abs(wall - spot) <= tenor.move_dollars;
+    keyPoints.push(
+      `The ${twoDp(wall)} call wall sits ${inside ? 'inside' : 'outside'} the ±$${twoDp(tenor.move_dollars)} ` +
+        `move the ${shortDate(tenor.expiration)} straddle prices.`,
+    );
+    if (!inside)
+      reengage.push(
+        'Or the call wall moves inside the implied move on the next structure refresh.',
+      );
+  }
+  keyPoints.push('No live market, broker, or AI provider was used.');
+  return { keyPoints, reengage };
+}
+
 function recommendation(
   symbol: string,
   variant: NonNullable<Awaited<ReturnType<typeof loadScenario>>>['variants'][string],
-  personaId?: string | null,
+  personaId: string | null | undefined,
+  snapshot: TickerBundle,
 ): RecommendationWire {
+  const reasons = sampleReadReasons(snapshot.market_state, snapshot.signals.regime);
+  const watchLevel = snapshot.market_state.gamma_flip ?? null;
   return {
     status: 'produced',
     ticker: symbol,
@@ -560,16 +688,20 @@ function recommendation(
       confidence: 'low',
       decision: 'no_trade',
       exit_plan: { target: null, stop: null },
+      // The watch level: the level that would change this call (the flip), the one figure the
+      // authored read sets and the one its grounding checks (D-07).
+      invalidation_level: watchLevel,
       strikes: [],
       structure: variant.setup,
       summary: `Authored sample: ${symbol} shows ${variant.setup.toLowerCase()} with authored score ${variant.score}. Not a model recommendation.`,
       rationale: `Synthetic ${symbol} structure has ${variant.setup.toLowerCase()} with authored score ${variant.score}. This is scenario copy, not a forecast or executable instruction.`,
-      key_points: [
-        `Variant fingerprint: ${variant.fingerprint}.`,
-        'No live market, broker, or AI provider was used.',
-      ],
-      reengage_when: ['Review when the selected authored expiry set changes.'],
+      key_points: reasons.keyPoints,
+      reengage_when: [...reasons.reengage, 'Review when the selected authored expiry set changes.'],
     },
+    grounding: sampleReadGrounding(watchLevel, {
+      kind: 'gamma_flip',
+      value: snapshot.market_state.gamma_flip ?? null,
+    }),
     pinned_fingerprint: variant.fingerprint,
     stale_born: false,
   };
@@ -632,6 +764,11 @@ function tickerPayload(
       observations.length
     ).toFixed(2),
   );
+  const selectedExpiry = expirations[0];
+  const selectedDte = DTE[selectedExpiry as keyof typeof DTE];
+  // D-22: Net DEX, Vol/OI, IV skew and the off-exchange share come from this symbol's own bars and
+  // authored IV (flowSeed.ts), not one set of constants every symbol shared.
+  const flow = flowSeed({ bars: scenario.bars, atmIvPct: atmIv });
   const strikes = Array.from({ length: 11 }, (_, i) => {
     const strike = Number((Math.floor(spot / 5) * 5 - 25 + i * 5).toFixed(2));
     const callGex = Number((100_000_000 - Math.abs(strike - variant.wall) * 1_500_000).toFixed(2));
@@ -639,7 +776,12 @@ function tickerPayload(
     const callOi = 20_000 + i * 101;
     const putOi = 18_000 + i * 89;
     const totalOi = callOi + putOi;
-    const volume = i >= 8 ? Math.round(totalOi * (1.2 + (i - 8) * 0.1)) : 3_500 + i * 41;
+    const baseVolume = i >= 8 ? totalOi * (1.2 + (i - 8) * 0.1) : 3_500 + i * 41;
+    const volume = Math.round(baseVolume * flow.volumeMultiplier);
+    // The API's own dollar DEX: delta × open interest × 100 × spot (quant-engine gex.rs).
+    const delta = callDelta(spot, strike, atmIv, selectedDte);
+    const callDex = Number((delta * callOi * 100 * spot).toFixed(2));
+    const putDex = Number(((delta - 1) * putOi * 100 * spot).toFixed(2));
     return {
       strike,
       net_gex: callGex + putGex,
@@ -648,9 +790,9 @@ function tickerPayload(
       call_oi: callOi,
       put_oi: putOi,
       total_oi: totalOi,
-      net_dex: 1_000_000,
-      call_dex: 2_000_000,
-      put_dex: -1_000_000,
+      net_dex: Number((callDex + putDex).toFixed(2)),
+      call_dex: callDex,
+      put_dex: putDex,
       volume,
       vol_oi_ratio: Number((volume / totalOi).toFixed(6)),
     };
@@ -665,11 +807,9 @@ function tickerPayload(
   const totalVolume = strikes.reduce((sum, row) => sum + row.volume!, 0);
   const callOi = strikes.reduce((sum, row) => sum + row.call_oi!, 0);
   const putOi = strikes.reduce((sum, row) => sum + row.put_oi!, 0);
-  const selectedExpiry = expirations[0];
-  const selectedDte = DTE[selectedExpiry as keyof typeof DTE];
   const charmPerDayBase = Number((variant.score * 100).toFixed(2));
-  const skewCallIv = Number((atmIv - 0.8).toFixed(2));
-  const skewPutIv = Number((atmIv + 1.2).toFixed(2));
+  const skewCallIv = Number((atmIv - 0.4 * flow.skewPts).toFixed(2));
+  const skewPutIv = Number((atmIv + 0.6 * flow.skewPts).toFixed(2));
   const termSlope = Number((ivByExpiry[2] - ivByExpiry[0]).toFixed(2));
   const indicators = computeIndicators(scenario.bars);
   const finalIndicator = (name: keyof typeof indicators) => {
@@ -735,10 +875,20 @@ function tickerPayload(
   const straddleQuoteSpreadPct = Number(
     (100 * (callQuote.ask + putQuote.ask - callQuote.bid - putQuote.bid)) / straddlePrice,
   );
+  // D-22: this symbol's off-exchange share of a 10M-share window, in whole percent, split across the
+  // three block prints 12 : 9 : 7 (the shape the shared constants had) and rounded to 1,000 shares.
+  const offexTotal = 10_000_000;
+  const offexTarget = Math.round(flow.offExchangeShare * 100) * 100_000;
+  const blockA = Math.round((offexTarget * 12) / 28 / 1_000) * 1_000;
+  const blockB = Math.round((offexTarget * 9) / 28 / 1_000) * 1_000;
   const blockRows = [
-    { price: Number((spot * 0.996).toFixed(2)), shares: 1_200_000, age_seconds: 75 },
-    { price: Number((spot * 1.002).toFixed(2)), shares: 900_000, age_seconds: 130 },
-    { price: Number((spot * 1.006).toFixed(2)), shares: 700_000, age_seconds: 210 },
+    { price: Number((spot * 0.996).toFixed(2)), shares: blockA, age_seconds: 75 },
+    { price: Number((spot * 1.002).toFixed(2)), shares: blockB, age_seconds: 130 },
+    {
+      price: Number((spot * 1.006).toFixed(2)),
+      shares: offexTarget - blockA - blockB,
+      age_seconds: 210,
+    },
   ];
   const offexShares = blockRows.reduce((sum, row) => sum + row.shares, 0);
   const volBasis = 0.18;
@@ -1000,9 +1150,9 @@ function tickerPayload(
       },
     },
     off_exchange: {
-      ratio_pct: Number(((100 * offexShares) / 10_000_000).toFixed(4)),
+      ratio_pct: Number(((100 * offexShares) / offexTotal).toFixed(4)),
       offex_shares: offexShares,
-      total_shares: 10_000_000,
+      total_shares: offexTotal,
       levels: blockRows.map((row) => ({
         price: row.price,
         shares: row.shares,
@@ -1491,7 +1641,9 @@ export async function demoFetch(request: Request): Promise<Response> {
         'The recommendation route is not part of the local sample contract.',
       );
     const personaId = typeof requestBody.persona_id === 'string' ? requestBody.persona_id : null;
-    return json(recommendation(symbol, variant, personaId));
+    // The read cites the snapshot the desk draws for the same expiry set.
+    const snapshot = tickerPayload(scenario, selected.key, selected.key.split(','));
+    return json(recommendation(symbol, variant, personaId, snapshot));
   }
   if (pathname === '/api/positions/sim-trade/gate') {
     const body: components['schemas']['SimTradeGateBody'] = {

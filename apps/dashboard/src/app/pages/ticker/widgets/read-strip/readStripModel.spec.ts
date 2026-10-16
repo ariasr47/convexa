@@ -113,9 +113,12 @@ function bySlot(input: ReadStripInput) {
 }
 
 describe('buildReadStrip — the seven decomposed cells, byte-for-byte with the old dealer positioning widget', () => {
-  it('opportunity — score · tier word', () => {
+  // Lane 4: a cell's value is its figure alone (one line at 18px); the qualifier word leads the
+  // caption. The words are unchanged, only their slot.
+  it('opportunity — the score, its tier word leading the caption', () => {
     const c = bySlot(FULL_INPUT);
-    expect(c.opportunity.value).toBe('73 · Actionable');
+    expect(c.opportunity.value).toBe('73');
+    expect(c.opportunity.sub).toBe('Actionable · 2 setups');
   });
 
   it('opportunity — an unscored ticker reads —, never 0 (TD-07)', () => {
@@ -125,7 +128,11 @@ describe('buildReadStrip — the seven decomposed cells, byte-for-byte with the 
   });
 
   it('netDex — unavailable when null, formatted otherwise', () => {
-    expect(bySlot(FULL_INPUT).netDex.value).toBe('$500.0M');
+    // P-11: a positive figure carries its + sign (a negative one its − from fmtUsdCompact).
+    expect(bySlot(FULL_INPUT).netDex.value).toBe('+$500.0M');
+    expect(bySlot({ ...FULL_INPUT, m: marketState({ net_dex: -412e6 }) }).netDex.value).toBe(
+      '−$412.0M',
+    );
     const nulled = bySlot({ ...FULL_INPUT, m: marketState({ net_dex: null }) });
     expect(nulled.netDex.value).toBe('unavailable');
   });
@@ -147,7 +154,8 @@ describe('buildReadStrip — the seven decomposed cells, byte-for-byte with the 
         iv_skew: { call_iv: 20, put_iv: 25, slope: -2.4, expiration: 'x', reference: 'delta' },
       }),
     });
-    expect(withSkew.ivSkew.value).toBe('−2.4 pts · greed');
+    expect(withSkew.ivSkew.value).toBe('−2.4 pts');
+    expect(withSkew.ivSkew.sub).toContain('greed');
     expect(bySlot(FULL_INPUT).ivSkew.value).toBe('unavailable');
   });
 });
@@ -228,22 +236,25 @@ describe('buildReadStrip — term structure keeps the shipped three-way render (
 });
 
 describe('buildReadStrip — IV rank is the eighth cell, closed-lookup digest (criterion 28)', () => {
-  it('computed with a recognized band — rank + the closed band label', () => {
-    expect(bySlot(FULL_INPUT).ivRank.value).toBe('82 · premium rich');
+  it('computed with a recognized band — the rank, the closed band label leading the caption', () => {
+    expect(bySlot(FULL_INPUT).ivRank.value).toBe('82');
+    expect(bySlot(FULL_INPUT).ivRank.sub).toBe('premium rich · 3rd quartile · 74th pct');
   });
 
   // The band is the WIRE's, never re-derived from the rank. Each row pairs a band with a rank on
   // the far side of a documented cut (`IVR_TIP_BAND`: rich ≥ 70, cheap < 30), so any local
   // mapping — including an off-by-one at either cut — prints a different label than the wire sent.
   it.each<[number, string, string]>([
-    [70, 'neutral', '70 · neutral'],
-    [29, 'neutral', '29 · neutral'],
-    [30, 'premium_cheap', '30 · premium cheap'],
-    [69, 'premium_rich', '69 · premium rich'],
+    [70, 'neutral', 'neutral'],
+    [29, 'neutral', 'neutral'],
+    [30, 'premium_cheap', 'premium cheap'],
+    [69, 'premium_rich', 'premium rich'],
   ])(
-    'rank %d with wire band %s renders %s — the wire band wins at the cut',
-    (rank, band, value) => {
-      expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ rank, band }) }).ivRank.value).toBe(value);
+    'rank %d with wire band %s renders the label %s — the wire band wins at the cut',
+    (rank, band, label) => {
+      const cell = bySlot({ ...FULL_INPUT, ivRank: ivRank({ rank, band }) }).ivRank;
+      expect(cell.value).toBe(String(rank));
+      expect(cell.sub.startsWith(`${label} · `)).toBe(true);
     },
   );
 });
@@ -258,10 +269,12 @@ describe('buildReadStrip — IV rank is the eighth cell, closed-lookup digest (c
 // =================================================================================================
 describe('buildReadStrip — sub-caption (F4): derived from the model, `—` where it has nothing to say', () => {
   it('opportunity: setups count, singular/plural, "no setups" at zero, `—` when unresolved', () => {
-    expect(bySlot({ ...FULL_INPUT, setupsCount: 2 }).opportunity.sub).toBe('2 setups');
-    expect(bySlot({ ...FULL_INPUT, setupsCount: 1 }).opportunity.sub).toBe('1 setup');
-    expect(bySlot({ ...FULL_INPUT, setupsCount: 0 }).opportunity.sub).toBe('no setups');
-    expect(bySlot({ ...FULL_INPUT, setupsCount: null }).opportunity.sub).toBe('—');
+    expect(bySlot({ ...FULL_INPUT, setupsCount: 2 }).opportunity.sub).toBe('Actionable · 2 setups');
+    expect(bySlot({ ...FULL_INPUT, setupsCount: 1 }).opportunity.sub).toBe('Actionable · 1 setup');
+    expect(bySlot({ ...FULL_INPUT, setupsCount: 0 }).opportunity.sub).toBe(
+      'Actionable · no setups',
+    );
+    expect(bySlot({ ...FULL_INPUT, setupsCount: null }).opportunity.sub).toBe('Actionable');
   });
 
   it('ivHv: derived from the SAME ratio the value renders — >1 expensive, <1 cheap, ===1 fair', () => {
@@ -281,24 +294,26 @@ describe('buildReadStrip — sub-caption (F4): derived from the model, `—` whe
     // from a small fixed table, the percentile's own ordinal from the general 1st/2nd/3rd/…th rule
     // (11th/12th/13th excepted).
     expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 74 }) }).ivRank.sub).toBe(
-      '3rd quartile · 74th pct',
+      'premium rich · 3rd quartile · 74th pct',
     );
     expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 12 }) }).ivRank.sub).toBe(
-      '1st quartile · 12th pct', // the "teens" exception: 12th, not 12nd
+      'premium rich · 1st quartile · 12th pct', // the "teens" exception: 12th, not 12nd
     );
     expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 41 }) }).ivRank.sub).toBe(
-      '2nd quartile · 41st pct',
+      'premium rich · 2nd quartile · 41st pct',
     );
     expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 22 }) }).ivRank.sub).toBe(
-      '1st quartile · 22nd pct',
+      'premium rich · 1st quartile · 22nd pct',
     );
     expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 63 }) }).ivRank.sub).toBe(
-      '3rd quartile · 63rd pct',
+      'premium rich · 3rd quartile · 63rd pct',
     );
     expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 90 }) }).ivRank.sub).toBe(
-      '4th quartile · 90th pct',
+      'premium rich · 4th quartile · 90th pct',
     );
-    expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: null }) }).ivRank.sub).toBe('—');
+    expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: null }) }).ivRank.sub).toBe(
+      'premium rich',
+    );
     expect(bySlot({ ...FULL_INPUT, ivRank: null }).ivRank.sub).toBe('—');
   });
 
