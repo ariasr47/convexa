@@ -574,7 +574,9 @@ output cannot be acted on.
 - **`artifacts-mjs-surfaces-build-errors`** — `artifacts.mjs` swallowed the container build's
   compiler output; `error[E0583]: file not found for module 'coverage'` was invisible until a
   temporary `--progress=plain` workflow exposed it. *Value M · Effort L.*
-- **`untrack-api-contract-cache-marker`** — `convexa-api-contract-candidate-a291ffee….ok` is
+- ~~**`untrack-api-contract-cache-marker`**~~ **RESOLVED 2026-10-16**: untracked with
+  `git rm --cached` before the repo goes public; the gitignore rule now covers the local copy.
+  Original entry: `convexa-api-contract-candidate-a291ffee….ok` is
   **committed on `main`**. PR #44 fixed the cause (marker now lands in `os.tmpdir()`) and
   gitignored the pattern, but `.gitignore` does not affect tracked files. One `git rm --cached`.
   *Value L · Effort L.*
