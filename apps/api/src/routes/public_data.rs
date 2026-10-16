@@ -726,6 +726,221 @@ impl From<&service::insider_trades::InsiderWindow> for InsiderWindowWire {
     }
 }
 
+/// One manager's 13F-HR position in the security at the quarter's end.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HolderWire {
+    /// The filer's name as EDGAR lists it.
+    pub manager: String,
+    /// Ten-digit, zero-padded SEC CIK.
+    pub cik: String,
+    pub accession: String,
+    /// The filing on EDGAR.
+    pub url: String,
+    /// YYYY-MM-DD
+    pub filed: String,
+    /// Shares (or depositary receipts, when `units` says so) held.
+    pub shares: f64,
+    /// US dollars at the quarter's end, as filed.
+    pub value: f64,
+    /// % of shares outstanding; null for receipts or without a shares-outstanding figure.
+    #[schema(required = true)]
+    pub pct: Option<f64>,
+    /// Change in points of shares outstanding since the prior quarter; null when the manager
+    /// didn't report the prior quarter.
+    #[schema(required = true)]
+    pub change_pts: Option<f64>,
+    #[schema(required = true)]
+    pub prior_shares: Option<f64>,
+}
+
+/// The next quarter's 13F-HRs arriving: how many of the listed managers have filed by now.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HoldersWindowWire {
+    /// YYYY-MM-DD
+    pub quarter_end: String,
+    pub deadline: String,
+    pub filed: u32,
+    pub of: u32,
+}
+
+/// The largest 13F holders at the last complete quarter, among the managers Convexa reads (the
+/// largest 13F filers). Delayed by law: a 13F-HR is due 45 days after the quarter.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HoldersWire {
+    pub state: PublicDataState,
+    #[schema(required = true)]
+    pub detail: Option<String>,
+    pub source_state: PublicSourceState,
+    /// YYYY-MM-DD of the quarter shown and the one compared with.
+    #[schema(required = true)]
+    pub quarter_end: Option<String>,
+    #[schema(required = true)]
+    pub prior_quarter_end: Option<String>,
+    #[schema(required = true)]
+    pub cusip: Option<String>,
+    /// The issuer and class as the 13Fs name them.
+    #[schema(required = true)]
+    pub issuer: Option<String>,
+    #[schema(required = true)]
+    pub title: Option<String>,
+    /// `shares` (% of shares outstanding) or `receipts` (depositary receipts held; no %).
+    pub units: String,
+    #[schema(required = true)]
+    pub shares_outstanding: Option<DatedValueWire>,
+    #[schema(required = true)]
+    pub prior_shares_outstanding: Option<DatedValueWire>,
+    /// Largest first, at most eight.
+    pub holders: Vec<HolderWire>,
+    pub managers_listed: u32,
+    pub managers_read: u32,
+    pub managers_holding: u32,
+    /// Every holding manager read, together.
+    #[schema(required = true)]
+    pub total_pct: Option<f64>,
+    #[schema(required = true)]
+    pub total_change_pts: Option<f64>,
+    #[schema(required = true)]
+    pub window: Option<HoldersWindowWire>,
+}
+
+impl From<service::edgar_13f::Holders> for HoldersWire {
+    fn from(h: service::edgar_13f::Holders) -> Self {
+        let dated = |d: service::DatedValue| DatedValueWire {
+            value: d.value,
+            as_of: day(d.as_of),
+        };
+        Self {
+            state: h.state.into(),
+            detail: h.detail,
+            source_state: h.source_state.into(),
+            quarter_end: h.quarter_end.map(day),
+            prior_quarter_end: h.prior_quarter_end.map(day),
+            cusip: h.cusip,
+            issuer: h.issuer,
+            title: h.title,
+            units: h.units.to_string(),
+            shares_outstanding: h.shares_outstanding.map(dated),
+            prior_shares_outstanding: h.prior_shares_outstanding.map(dated),
+            holders: h
+                .holders
+                .into_iter()
+                .map(|r| HolderWire {
+                    manager: r.manager,
+                    cik: format!("{:010}", r.cik),
+                    accession: r.accession,
+                    url: r.url,
+                    filed: day(r.filed),
+                    shares: r.shares,
+                    value: r.value,
+                    pct: r.pct,
+                    change_pts: r.change_pts,
+                    prior_shares: r.prior_shares,
+                })
+                .collect(),
+            managers_listed: h.managers_listed,
+            managers_read: h.managers_read,
+            managers_holding: h.managers_holding,
+            total_pct: h.total_pct,
+            total_change_pts: h.total_change_pts,
+            window: h
+                .window
+                .map(|(quarter_end, deadline, filed)| HoldersWindowWire {
+                    quarter_end: day(quarter_end),
+                    deadline: day(deadline),
+                    filed,
+                    of: h.managers_listed,
+                }),
+        }
+    }
+}
+
+/// One company's reported quarter in the peer comparison (SEC XBRL frames).
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct PeerRowWire {
+    pub ticker: String,
+    /// Ten-digit, zero-padded SEC CIK.
+    pub cik: String,
+    /// The filer as the frames name it.
+    pub entity: String,
+    /// The note's own company.
+    pub subject: bool,
+    /// The revenue concept read: `Revenues` or `RevenueFromContractWithCustomerExcludingAssessedTax`.
+    pub concept: String,
+    /// US dollars, the calendar quarter.
+    pub revenue: f64,
+    #[schema(required = true)]
+    pub revenue_year_ago: Option<f64>,
+    #[schema(required = true)]
+    pub gross_profit: Option<f64>,
+    /// Gross profit over revenue, %; null when gross profit isn't tagged.
+    #[schema(required = true)]
+    pub gross_margin_pct: Option<f64>,
+    /// Revenue against the same calendar quarter a year earlier, %.
+    #[schema(required = true)]
+    pub growth_pct: Option<f64>,
+    /// YYYY-MM-DD: the filer's own fiscal quarter placed in the calendar quarter.
+    #[schema(required = true)]
+    pub start: Option<String>,
+    pub end: String,
+    pub accession: String,
+}
+
+/// The note's company against its peer list on one calendar quarter (SEC XBRL frames).
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct PeersWire {
+    pub state: PublicDataState,
+    #[schema(required = true)]
+    pub detail: Option<String>,
+    pub source_state: PublicSourceState,
+    /// `CY2026Q2`.
+    #[schema(required = true)]
+    pub quarter: Option<String>,
+    #[schema(required = true)]
+    pub quarter_end: Option<String>,
+    /// The subject first (when it filed), then peers by gross margin.
+    pub rows: Vec<PeerRowWire>,
+    /// Peers with no revenue in the quarter's frames: not filed yet, or not tagged.
+    pub missing: Vec<String>,
+    /// Peers EDGAR lists no company for.
+    pub unknown: Vec<String>,
+    /// A comparison needs at least this many peers with the figure.
+    pub min_peers: u32,
+}
+
+impl From<service::xbrl_frames::Peers> for PeersWire {
+    fn from(p: service::xbrl_frames::Peers) -> Self {
+        Self {
+            state: p.state.into(),
+            detail: p.detail,
+            source_state: p.source_state.into(),
+            quarter: p.quarter,
+            quarter_end: p.quarter_end.map(day),
+            rows: p
+                .rows
+                .into_iter()
+                .map(|r| PeerRowWire {
+                    ticker: r.ticker,
+                    cik: format!("{:010}", r.cik),
+                    entity: r.entity,
+                    subject: r.subject,
+                    concept: r.concept.to_string(),
+                    revenue: r.revenue,
+                    revenue_year_ago: r.revenue_year_ago,
+                    gross_profit: r.gross_profit,
+                    gross_margin_pct: r.gross_margin_pct,
+                    growth_pct: r.growth_pct,
+                    start: r.start.map(day),
+                    end: day(r.end),
+                    accession: r.accession,
+                })
+                .collect(),
+            missing: p.missing,
+            unknown: p.unknown,
+            min_peers: p.min_peers,
+        }
+    }
+}
+
 /// One checked XBRL concept's value for its filing's own period (quarter, year or period end).
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct TaggedFactWire {
@@ -846,6 +1061,14 @@ pub struct PublicTickerWire {
     /// SEC EDGAR's state, for `filings`, `insiders` and `periodic` (`updated` when current).
     #[serde(default)]
     pub filings_source_state: Option<PublicSourceState>,
+    /// The largest 13F holders at the last complete quarter; null when public data is off or
+    /// EDGAR lists no company. Absent from servers before 2026-10-15 (fix round).
+    #[serde(default)]
+    pub holders: Option<HoldersWire>,
+    /// The company against its note's peer list on one calendar quarter; null when the ticker has
+    /// no peer list. Absent from servers before 2026-10-15 (fix round).
+    #[serde(default)]
+    pub peers: Option<PeersWire>,
 }
 
 impl From<service::TickerReport> for PublicTickerWire {
@@ -987,6 +1210,8 @@ impl From<service::TickerReport> for PublicTickerWire {
             filings: t.filings.into_iter().map(Into::into).collect(),
             filings_state: t.filings_state.into(),
             filings_detail: t.filings_detail,
+            holders: t.holders.map(Into::into),
+            peers: t.peers.map(Into::into),
         }
     }
 }
@@ -1276,6 +1501,27 @@ fn representative_ticker() -> PublicTickerWire {
         filings: vec![representative_filing()],
         filings_state: PublicDataState::Live,
         filings_detail: None,
+        holders: Some(HoldersWire {
+            state: PublicDataState::NotConfigured,
+            detail: Some(crate::services::public_data::edgar::NOT_CONFIGURED.into()),
+            source_state: PublicSourceState::NotSetUp,
+            quarter_end: None,
+            prior_quarter_end: None,
+            cusip: None,
+            issuer: None,
+            title: None,
+            units: "shares".into(),
+            shares_outstanding: None,
+            prior_shares_outstanding: None,
+            holders: Vec::new(),
+            managers_listed: 12,
+            managers_read: 0,
+            managers_holding: 0,
+            total_pct: None,
+            total_change_pts: None,
+            window: None,
+        }),
+        peers: None,
         sources: vec![
             representative_source("finra-si", PublicSourceState::Delayed, Some("2026-09-30")),
             representative_source(

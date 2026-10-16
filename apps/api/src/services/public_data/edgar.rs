@@ -396,6 +396,8 @@ pub(crate) struct FactPoint {
 #[derive(Debug, Default, Clone)]
 pub(crate) struct CompanyFacts {
     pub concepts: HashMap<&'static str, Vec<(String, Vec<FactPoint>)>>,
+    /// The registrant's name as company facts gives it (`NVIDIA CORP`).
+    pub entity_name: Option<String>,
     /// The checked concepts a note figure may cite (filed_figures.rs).
     pub filed: super::filed_figures::FiledFacts,
 }
@@ -469,6 +471,8 @@ struct RawTaxonomies {
 
 #[derive(Deserialize)]
 struct RawCompanyFacts {
+    #[serde(rename = "entityName", default)]
+    entity_name: Option<String>,
     #[serde(default)]
     facts: RawTaxonomies,
 }
@@ -538,6 +542,10 @@ pub(crate) fn parse_company_facts(json: &[u8]) -> Result<CompanyFacts, String> {
     }
     Ok(CompanyFacts {
         concepts,
+        entity_name: raw
+            .entity_name
+            .map(|n| n.trim().to_string())
+            .filter(|n| !n.is_empty()),
         filed: super::filed_figures::parse_filed_facts(json),
     })
 }

@@ -12,6 +12,7 @@ pub(crate) mod cache;
 pub(crate) mod calendar;
 pub(crate) mod cftc;
 pub(crate) mod edgar;
+pub(crate) mod edgar_13f;
 pub(crate) mod fetch;
 pub(crate) mod filed_figures;
 pub(crate) mod finra;
@@ -20,6 +21,7 @@ pub(crate) mod liquidity;
 pub(crate) mod sources;
 pub(crate) mod treasury;
 pub mod types;
+pub(crate) mod xbrl_frames;
 
 pub use types::*;
 
@@ -134,6 +136,13 @@ struct Inner {
     submissions: TtlCache<u64, Vec<SubmissionRow>>,
     company_facts: TtlCache<u64, Option<CompanyFacts>>,
     form4: TtlCache<String, Form4Doc>,
+    /// 13F: each listed manager's submissions index, each filing's information table, and the
+    /// quarter's read built from them (edgar_13f.rs).
+    managers: TtlCache<u64, edgar_13f::ManagerIndex>,
+    holdings: TtlCache<String, edgar_13f::Holdings>,
+    thirteen_f: TtlCache<NaiveDate, edgar_13f::Dataset>,
+    /// XBRL frames by (concept, quarter end) (xbrl_frames.rs).
+    frames: TtlCache<(&'static str, NaiveDate), xbrl_frames::Frame>,
 }
 
 /// Process-wide public-data reader (cheap to clone).
@@ -178,6 +187,12 @@ impl PublicDataService {
                 company_facts: TtlCache::new(|_| 24 * HOUR, RETRY_AFTER_FAILURE, 256),
                 // A filed Form 4 is immutable.
                 form4: TtlCache::new(|_| 30 * 24 * HOUR, RETRY_AFTER_FAILURE, 4096),
+                managers: TtlCache::new(|_| 12 * HOUR, RETRY_AFTER_FAILURE, 32),
+                // A filed report never changes; two quarters of the listed managers.
+                holdings: TtlCache::new(|_| 30 * 24 * HOUR, RETRY_AFTER_FAILURE, 64),
+                // Rebuilt twice a day from the cached tables, so the window count moves.
+                thirteen_f: TtlCache::new(|_| 12 * HOUR, RETRY_AFTER_FAILURE, 2),
+                frames: TtlCache::new(|_| 6 * HOUR, RETRY_AFTER_FAILURE, 32),
             }),
         })
     }
@@ -610,6 +625,8 @@ impl PublicDataService {
                 shares_outstanding: None,
                 periodic: Vec::new(),
                 annual_revenue: Vec::new(),
+                holders: None,
+                peers: None,
                 filings: Vec::new(),
                 filings_state: DataState::Off,
                 filings_detail: Some(OFF_DETAIL.into()),
@@ -664,6 +681,8 @@ impl PublicDataService {
             shares_outstanding: sec.shares_outstanding,
             periodic: sec.periodic,
             annual_revenue: sec.annual_revenue,
+            holders: sec.holders,
+            peers: sec.peers,
             filings: sec.filings,
             filings_state: sec.filings_state,
             filings_detail: sec.filings_detail,
@@ -927,6 +946,7 @@ impl PublicDataService {
                 row,
             );
             part.insiders = None;
+            part.holders = None;
             return part;
         };
         let submissions = self.submissions(sec, cik).await;
@@ -1029,6 +1049,10 @@ impl PublicDataService {
             .map(filed_figures::annual_revenue)
             .unwrap_or_default();
         let shares_outstanding = facts_value.as_ref().and_then(edgar::shares_outstanding);
+        let holders = self
+            .holders_part(sec, ticker, facts_value.as_ref(), today)
+            .await;
+        let peers = self.peers_part(sec, ticker, &map_copy.value, today).await;
 
         SecPart {
             insiders: Some(insiders),
@@ -1038,6 +1062,8 @@ impl PublicDataService {
             periodic,
             annual_revenue,
             shares_outstanding,
+            holders: Some(holders),
+            peers,
             notes: facts
                 .note(&format!("{} company facts", edgar::SOURCE))
                 .into_iter()
@@ -1065,6 +1091,8 @@ struct SecPart {
     periodic: Vec<PeriodicFiling>,
     annual_revenue: Vec<filed_figures::AnnualRevenue>,
     shares_outstanding: Option<DatedValue>,
+    holders: Option<edgar_13f::Holders>,
+    peers: Option<xbrl_frames::Peers>,
     notes: Vec<String>,
     answered: bool,
     source: SourceStatus,
@@ -1078,7 +1106,14 @@ impl SecPart {
         source: SourceStatus,
     ) -> Self {
         let detail = (!detail.is_empty()).then_some(detail);
+        // Without data the sections say why (not set up, unavailable) in their own frame.
+        let holders = edgar_13f::Holders::without_data(
+            state,
+            source_state_for(state),
+            detail.clone().unwrap_or_default(),
+        );
         Self {
+            holders: Some(holders),
             insiders: Some(Insiders::empty(state, detail.clone())),
             filings: Vec::new(),
             filings_state: state,
@@ -1086,6 +1121,7 @@ impl SecPart {
             periodic: Vec::new(),
             annual_revenue: Vec::new(),
             shares_outstanding: None,
+            peers: None,
             notes: Vec::new(),
             answered,
             source,
@@ -1122,6 +1158,28 @@ fn today_eastern() -> NaiveDate {
 
 fn required(source: &'static str, body: Option<Vec<u8>>) -> Result<Vec<u8>, FetchError> {
     body.ok_or_else(|| FetchError::new(source, "empty answer"))
+}
+
+/// The P-2 word for a part answered without data.
+fn source_state_for(state: DataState) -> SourceState {
+    match state {
+        DataState::NotConfigured => SourceState::NotSetUp,
+        DataState::Off => SourceState::Off,
+        DataState::Live => SourceState::Updated,
+        DataState::Unavailable => SourceState::SourceDown,
+    }
+}
+
+/// Run `work` as its own task and wait for it at most `budget`. Past that the caller answers
+/// without it while the task keeps going (and fills its cache for the next request).
+pub(crate) async fn within<T: Send + 'static>(
+    budget: Duration,
+    work: impl std::future::Future<Output = T> + Send + 'static,
+) -> Option<T> {
+    tokio::time::timeout(budget, tokio::spawn(work))
+        .await
+        .ok()?
+        .ok()
 }
 
 fn join(notes: Vec<String>) -> Option<String> {

@@ -364,6 +364,10 @@ pub struct TickerReport {
     pub periodic: Vec<PeriodicFiling>,
     /// Annual revenue as each year's annual report first filed it, oldest first.
     pub annual_revenue: Vec<super::filed_figures::AnnualRevenue>,
+    /// The largest 13F holders at the last complete quarter (None: off, or no company).
+    pub holders: Option<super::edgar_13f::Holders>,
+    /// The company against its peer list for one calendar quarter (None: no peer list).
+    pub peers: Option<super::xbrl_frames::Peers>,
     pub filings: Vec<Filing>,
     pub filings_state: DataState,
     pub filings_detail: Option<String>,

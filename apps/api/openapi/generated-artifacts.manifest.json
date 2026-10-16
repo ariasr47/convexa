@@ -4,14 +4,14 @@
       "kind": "structured-json",
       "media_type": "application/json",
       "path": "apps/api/openapi/convexa.openapi.json",
-      "sha256": "3a6f33dd9750e79fea1ed24ed9830f343795fce078c76d97b4f528629ad1d210",
+      "sha256": "00d0c6d79ee858b767e097102f549f95d08cf82b8dede5ab3536675f069b9c6c",
       "writer": "npm run api:contract:generate"
     },
     {
       "kind": "structured-json",
       "media_type": "application/json",
       "path": "apps/api/openapi/parity-coverage.json",
-      "sha256": "52f360e43d1e9d628ed8bd46466a5bd50826463f38b13ca53359a6656144981a",
+      "sha256": "23deaeeabb63e869ede0f477c26dff56d6fef1757f51bd160d5ba5a9b62d301c",
       "writer": "npm run api:contract:generate"
     },
     {
@@ -25,7 +25,7 @@
       "kind": "comment-capable-source",
       "media_type": "text/typescript",
       "path": "libs/api/src/generated/schema.ts",
-      "sha256": "a61346531223ccf1038a5f857e7cd65aadab73c5215dab98e0705a7199201f82",
+      "sha256": "fb4cb77f8c2e7618cd67d35bd7a54de131a97e84e150215066b1501025ed2b60",
       "writer": "npm run api:contract:generate"
     }
   ],
