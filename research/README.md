@@ -207,9 +207,12 @@ names a new concept or period, save them with
 `SEC_USER_AGENT='<name> <email>' node tools/research-notes/save-filings.mjs [TICKER ...]`: it reads
 `https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json`, keeps only the concepts the latest
 note names, and writes `research/_filings/<TICKER>.json` with a `<TICKER>.source.json` beside it (the
-URL and the day it was read). The contact address stays in your shell; no file records it.
+URL, the day it was read, and the concepts it asked for). The contact address stays in your shell; no
+file records it.
 It exits 1 on a difference with no `;` reason, a concept the filing doesn't tag, units that don't fit,
-or a figure or period it can't read; a ticker with no saved answer is listed as not checked.
+or a figure or period it can't read. A ticker with no saved answer is listed as not checked, and so is
+a figure whose concept the saved facts predate (not in `concepts`): run `save-filings.mjs` again. A
+concept that was asked for and isn't in the facts is one the filing doesn't tag.
 `npm run verify` runs it whenever `research/` or `tools/` changed.
 
 ## What the check refuses
