@@ -584,6 +584,8 @@ describe('note coming due', () => {
     const fresh = { state: 'current' as const, since: null, passed: [], next };
     expect(checkNoteDue(r, fresh, '2026-10-10', null, NOTE).note).toMatch(/SEC access/);
     expect(checkNoteDue(r, fresh, '2026-10-10', [], NOTE).note).not.toMatch(/SEC access/);
+    // EDGAR down is not "not set up" (W1-17).
+    expect(checkNoteDue(r, fresh, '2026-10-10', null, NOTE, 'down').note).toMatch(/didn’t answer/);
   });
 });
 

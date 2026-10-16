@@ -498,7 +498,8 @@ export interface NoteFiling {
  * - each filing that lands after the note's date: once per accession, and only when filings were
  *   read (`filings` null: SEC didn't answer for this ticker, or isn't set up).
  *
- * `fresh` null: no note on this ticker. `noteDate`: the note's own date (YYYY-MM-DD).
+ * `fresh` null: no note on this ticker. `noteDate`: the note's own date (YYYY-MM-DD). `unread`: why
+ * filings weren't read, for the row's line (SEC not set up, down, or off).
  */
 export function checkNoteDue(
   rule: AlertRule,
@@ -506,9 +507,16 @@ export function checkNoteDue(
   today: string,
   filings: NoteFiling[] | null,
   noteDate: string,
+  unread: 'notSetUp' | 'down' | 'off' = 'notSetUp',
 ): CheckResult {
   if (!fresh) return unchecked(`No research note on ${rule.symbol}`);
-  const half = filings ? '' : ' · filings after it start when SEC access is set up';
+  const half = filings
+    ? ''
+    : unread === 'down'
+      ? ` · filings after it not checked: ${SEC_DOWN}`
+      : unread === 'off'
+        ? ` · filings after it not read: ${SEC_OFF}`
+        : ' · filings after it start when SEC access is set up';
   if (fresh.state === 'superseded' || fresh.state === 'archived')
     return { outcome: 'quiet', note: `The note is ${fresh.state}${half}`, firings: [] };
   const link = { label: 'Open the note', href: `/ticker/${rule.symbol}/research` };

@@ -271,7 +271,9 @@ function checkOne(
         notFollowingSince: note.notFollowingSince,
         filed: landed ?? [],
       });
-      return checkNoteDue(rule, fresh, src.today, landed, note.date);
+      const unread =
+        f?.state === 'not_configured' ? 'notSetUp' : f?.state === 'off' ? 'off' : 'down';
+      return checkNoteDue(rule, fresh, src.today, landed, note.date, unread);
     }
     default:
       return { outcome: 'unchecked', firings: [] };
