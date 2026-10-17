@@ -55,15 +55,22 @@ export function useTickerBundle({
   // Fetch disabled when the user explicitly cleared all expirations.
   const enabled = selected === null || selected.length > 0;
 
-  // Key must change when anything affecting the request changes.
-  const key = useMemo(() => {
+  // Key must change when anything affecting the request changes. `resetKey` is the same minus the
+  // position leg: a new position on this ticker re-queries the bundle (for `position_eval`) but is
+  // still this ticker's structure, so the desk keeps it up instead of falling back to the cold-load
+  // skeleton. A ticker or filter change still clears.
+  const resetKey = useMemo(() => {
     if (!enabled) return null;
+    const exp = selected === null ? 'all' : selected.join(',');
+    return `${ticker.toUpperCase()}|dp=${darkPool}|exp=${exp}`;
+  }, [ticker, selected, darkPool, enabled]);
+  const key = useMemo(() => {
+    if (resetKey == null) return null;
     const pos = positionQuery
       ? `${positionQuery.expiration}:${positionQuery.strike}:${positionQuery.right}`
       : '';
-    const exp = selected === null ? 'all' : selected.join(',');
-    return `${ticker.toUpperCase()}|dp=${darkPool}|exp=${exp}|pos=${pos}`;
-  }, [ticker, selected, darkPool, positionQuery, enabled]);
+    return `${resetKey}|pos=${pos}`;
+  }, [resetKey, positionQuery]);
 
   const fetcher = useCallback(
     async (signal: AbortSignal) => {
@@ -90,14 +97,23 @@ export function useTickerBundle({
     [ticker, selected, darkPool, positionQuery],
   );
 
-  const { data, error, errorCause, loading, refresh } = usePollingResource(key, fetcher, {
+  const { data, dataKey, error, errorCause, loading, refresh } = usePollingResource(key, fetcher, {
     intervalMs: TICKER_BUNDLE_POLL_MS,
     keepOnError: true,
     enabled,
     // F2b: once paused is known, no further request to this B2 route for this ticker — changing
     // the ticker (a new `key`) is the only thing that fetches again.
     haltOn: isMarketDataPaused,
+    resetKey,
   });
 
-  return { data, loading, error, paused: isMarketDataPaused(errorCause), refresh };
+  // While a kept answer is still up, its `position_eval` belongs to the PREVIOUS position query.
+  // Never attribute it to the new one (decision records copy its fingerprint): absent until the
+  // re-query lands.
+  const current = useMemo(
+    () => (data && dataKey !== key && data.position_eval ? { ...data, position_eval: null } : data),
+    [data, dataKey, key],
+  );
+
+  return { data: current, loading, error, paused: isMarketDataPaused(errorCause), refresh };
 }

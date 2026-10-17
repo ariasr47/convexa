@@ -160,4 +160,51 @@ describe('usePollingResource', () => {
     });
     expect(fetcher).not.toHaveBeenCalled();
   });
+
+  // The data-honesty floor: one resource's answer is never shown as another's. `resetKey` only
+  // widens what counts as "the same resource re-queried"; everything else still blanks.
+  describe('key change: clear vs keep', () => {
+    const deferred = () => {
+      const pending = new Map<string, (v: string) => void>();
+      const fetcher = vi.fn(
+        (_signal: AbortSignal) => new Promise<string>((resolve) => pending.set(`call${fetcher.mock.calls.length}`, resolve)),
+      );
+      return { fetcher, answer: (n: number, v: string) => act(async () => pending.get(`call${n}`)?.(v)) };
+    };
+    type P = { k: string; r?: string };
+    const mount = (fetcher: (s: AbortSignal) => Promise<string>, initial: P) =>
+      renderHook(({ k, r }: P) => usePollingResource(k, fetcher, { intervalMs: 60_000, resetKey: r }), {
+        initialProps: initial,
+      });
+
+    it('without resetKey, a new key blanks the old answer until its own lands', async () => {
+      const { fetcher, answer } = deferred();
+      const { result, rerender } = mount(fetcher, { k: 'SPY' });
+      await answer(1, 'spy');
+      expect(result.current).toMatchObject({ data: 'spy', dataKey: 'SPY' });
+      rerender({ k: 'QQQ' });
+      expect(result.current).toMatchObject({ data: null, dataKey: null });
+      await answer(2, 'qqq');
+      expect(result.current).toMatchObject({ data: 'qqq', dataKey: 'QQQ' });
+    });
+
+    it('with an unchanged resetKey, the old answer stays up, still labelled with its own key', async () => {
+      const { fetcher, answer } = deferred();
+      const { result, rerender } = mount(fetcher, { k: 'SPY|pos=', r: 'SPY' });
+      await answer(1, 'no position');
+      rerender({ k: 'SPY|pos=690C', r: 'SPY' });
+      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(result.current).toMatchObject({ data: 'no position', dataKey: 'SPY|pos=', loading: false });
+      await answer(2, 'with position');
+      expect(result.current).toMatchObject({ data: 'with position', dataKey: 'SPY|pos=690C' });
+    });
+
+    it('a changed resetKey blanks, exactly like a plain key change', async () => {
+      const { fetcher, answer } = deferred();
+      const { result, rerender } = mount(fetcher, { k: 'SPY|pos=', r: 'SPY' });
+      await answer(1, 'spy');
+      rerender({ k: 'QQQ|pos=', r: 'QQQ' });
+      expect(result.current).toMatchObject({ data: null, dataKey: null });
+    });
+  });
 });

@@ -325,4 +325,35 @@ describe('desk header CTA with a position already open on the ticker', () => {
     await user.click(screen.getByTestId('open-sim-trade'));
     expect(await screen.findByTestId('trade-entry-dialog')).toBeInTheDocument();
   }, 20000);
+
+  // Opening a position gives the ticker an eval subject, so the bundle is re-queried with the
+  // position's leg (`pos_*`). That key change used to clear the bundle, and the already-loaded desk
+  // fell back to its cold-load skeleton until the re-query landed (a full round trip on live).
+  it('re-queries for the new position without dropping the desk back to its cold-load skeleton', async () => {
+    const user = userEvent.setup();
+    renderAt('/ticker/TSLA');
+    await user.click(await screen.findByTestId('open-sim-trade'));
+    const dlg = await screen.findByTestId('trade-entry-dialog');
+    await user.type(within(dlg).getByLabelText('Manual price'), '1.50');
+
+    let skeletons = 0;
+    const count = (records: MutationRecord[]) => {
+      for (const r of records)
+        for (const n of r.addedNodes)
+          if (n instanceof Element && (n.matches('[data-testid="cold-load"]') || n.querySelector('[data-testid="cold-load"]')))
+            skeletons++;
+    };
+    const watch = new MutationObserver(count);
+    watch.observe(document.body, { childList: true, subtree: true });
+
+    await user.click(within(dlg).getByRole('button', { name: 'Open simulated position' }));
+    const tickerUrls = () =>
+      vi.mocked(fetch).mock.calls.map(([u]) => String(u)).filter((u) => u.includes('/api/ticker/'));
+    await waitFor(() => expect(tickerUrls().some((u) => u.includes('pos_strike='))).toBe(true));
+    await waitFor(() => expect(screen.queryByTestId('cold-load')).toBeNull());
+    count(watch.takeRecords());
+    watch.disconnect();
+
+    expect(skeletons).toBe(0);
+  }, 20000);
 });
