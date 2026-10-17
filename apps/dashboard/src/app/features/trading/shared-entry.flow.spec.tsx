@@ -302,3 +302,27 @@ describe('sim-entry-unification — one shared dialog across both launch sites',
     });
   }, 20000);
 });
+
+// A ticker can hold more than one position (positions-legs SPEC §2.8). The desk's entry dialog was
+// still gated on the old one-ghost-trade-per-ticker rule, so once a position was open the header CTA
+// stayed enabled and every click was swallowed: a silent no-op (found on the demo's SPY desk).
+describe('desk header CTA with a position already open on the ticker', () => {
+  it('opens the shared entry dialog again instead of silently doing nothing', async () => {
+    const user = userEvent.setup();
+    renderAt('/ticker/TSLA');
+
+    await user.click(await screen.findByTestId('open-sim-trade'));
+    const first = await screen.findByTestId('trade-entry-dialog');
+    await user.type(within(first).getByLabelText('Manual price'), '1.50');
+    await user.click(within(first).getByRole('button', { name: 'Open simulated position' }));
+    await waitFor(() =>
+      expect(
+        allPositions().some((p) => p.status === 'open' && p.legs[0]?.ticker === 'TSLA'),
+      ).toBe(true),
+    );
+    await waitFor(() => expect(screen.queryByTestId('trade-entry-dialog')).toBeNull());
+
+    await user.click(screen.getByTestId('open-sim-trade'));
+    expect(await screen.findByTestId('trade-entry-dialog')).toBeInTheDocument();
+  }, 20000);
+});

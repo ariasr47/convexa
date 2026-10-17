@@ -1149,7 +1149,7 @@ export function TickerDashboard() {
                           ticker={ticker}
                           openViews={openBookViews}
                           storeFaulted={storeFaulted}
-                          entryBlocked={storeFaulted || tradeOpen}
+                          entryBlocked={storeFaulted}
                           onOpenTrade={() => openEntry()}
                           tradeAllowed={orderGate.allowed}
                           onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
@@ -1363,9 +1363,11 @@ export function TickerDashboard() {
           longer offers a position concept separate from the portfolio (AC-72). The dialog stays
           single-leg here (no `multiLeg`, no `restingLimit`) — that is a variant of the one shared
           dialog, never a fork — so `s.legs` is a one-element array and there is exactly ONE open
-          path for one leg and for six. */}
+          path for one leg and for six. An open position never blocks a new entry: a ticker can hold
+          more than one (positions-legs SPEC §2.8). The old one-ghost-trade gate made the header CTA
+          and the AI read's Accept silent no-ops once a position was open. */}
       <TradeEntryDialog
-        open={entryOpen && !tradeOpen && !storeFaulted}
+        open={entryOpen && !storeFaulted}
         ticker={ticker}
         expirations={allDates}
         strikes={strikeList}
