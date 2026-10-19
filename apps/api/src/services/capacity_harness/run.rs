@@ -673,10 +673,9 @@ pub async fn run_with_hooks(
         None
     };
 
-    let request_count =
-        hold.massive.as_ref().map_or(0, |m| m.request_count())
-            + probe.massive.as_ref().map_or(0, |m| m.request_count())
-            + hooks.bump_request_count;
+    let request_count = hold.massive.as_ref().map_or(0, |m| m.request_count())
+        + probe.massive.as_ref().map_or(0, |m| m.request_count())
+        + hooks.bump_request_count;
 
     hold_handle.abort();
     probe_handle.abort();

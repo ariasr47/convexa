@@ -2,8 +2,8 @@
 
 use super::clocks::{is_due, today_et_date};
 use super::literals::{
-    self, FRAMING_HIT, FRAMING_HOLIDAY, FRAMING_MISS, FRAMING_NOT_ELAPSED, FRAMING_NOT_IN_WATCHLIST,
-    FRAMING_WEEKEND, UNREADABLE_ERROR,
+    self, FRAMING_HIT, FRAMING_HOLIDAY, FRAMING_MISS, FRAMING_NOT_ELAPSED,
+    FRAMING_NOT_IN_WATCHLIST, FRAMING_WEEKEND, UNREADABLE_ERROR,
 };
 use super::watchlist::in_flat_files_watchlist;
 use crate::domain::{is_et_weekend as domain_weekend, is_nyse_full_day_holiday};

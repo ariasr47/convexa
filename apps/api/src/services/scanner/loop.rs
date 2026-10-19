@@ -288,10 +288,7 @@ fn should_sweep(market_hours_only: bool) -> bool {
 }
 
 /// Injected-clock form of [`should_sweep`] so holiday/weekend idle tests are not wall-clock flakes.
-pub(crate) fn should_sweep_at(
-    now: chrono::DateTime<chrono::Utc>,
-    market_hours_only: bool,
-) -> bool {
+pub(crate) fn should_sweep_at(now: chrono::DateTime<chrono::Utc>, market_hours_only: bool) -> bool {
     if !market_hours_only {
         return true;
     }

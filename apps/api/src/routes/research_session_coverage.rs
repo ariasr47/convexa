@@ -462,7 +462,11 @@ mod tests {
         assert_eq!(status, StatusCode::OK, "{v}");
         assert_eq!(v["verdict"], "not_due");
         assert_eq!(v["framing"], FRAMING_WEEKEND);
-        assert!(!v["framing"].as_str().unwrap().to_lowercase().contains("weekend"));
+        assert!(!v["framing"]
+            .as_str()
+            .unwrap()
+            .to_lowercase()
+            .contains("weekend"));
         assert_eq!(v["expected_due"], 0);
         assert_eq!(v["rows"].as_array().unwrap().len(), 0);
         assert_eq!(v["holes"].as_array().unwrap().len(), 0);

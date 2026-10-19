@@ -439,18 +439,10 @@ mod tests {
         let tape = SessionDayTape::memory();
         let did_bind = Arc::new(AtomicBool::new(false));
         let c = did_bind.clone();
-        let err = prepare_then_bind(
-            "SPY",
-            "2026-11-26",
-            None,
-            tape,
-            now,
-            None,
-            |_| async move {
-                c.store(true, Ordering::SeqCst);
-                Ok(())
-            },
-        )
+        let err = prepare_then_bind("SPY", "2026-11-26", None, tape, now, None, |_| async move {
+            c.store(true, Ordering::SeqCst);
+            Ok(())
+        })
         .await
         .expect_err("holiday");
         assert_eq!(err, literals::ineligible_holiday("SPY", "2026-11-26"));
