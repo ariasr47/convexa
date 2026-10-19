@@ -7,7 +7,7 @@ This is a single **Nx 23 polyglot monorepo** (the Convexa backend + web frontend
 Tests are risk-based. Write a test only for logic that can fail silently and cost something: money, auth, data writes, parsers and contracts. Write no test per change, and no tests of UI, copy, styling or snapshots. This overrides superpowers:test-driven-development. Retire a test by deleting it and adding a RETIRED: line. Prove your work with the local verify command. CI runs only in this repository's CI mode. Never add a CI job, matrix leg or cron without stating its monthly minutes.
 
 **Verify:** `npm run verify`; pre-push hook `tools/hooks/pre-push` (install: `git config core.hooksPath tools/hooks`). Both run gitleaks over the new commits and fail without it (`brew install gitleaks`); reviewed historical matches live in `.gitleaksignore`.
-**CI mode:** off (owner, 2026-10-15, cost). GitHub Actions is disabled in the repository settings, so no workflow can run, not even on dispatch; the workflow files stay as the record of what CI was (manual: `workflow_dispatch`, supply-chain also `workflow_call`). Dependabot is off too: `.github/dependabot.yml` is removed (restore it from git history), and Dependabot alerts and security updates are off in the settings. Restore Actions: `gh api -X PUT repos/ariasr47/convexa/actions/permissions -F enabled=true`. RETIRED: lines go in `.spire/clusters/tech/state/RETIRED.md`.
+**CI mode:** off (owner, 2026-10-15, cost). GitHub Actions is disabled in the repository settings, so no workflow can run, not even on dispatch; the workflow files stay as the record of what CI was (`ci.yml` and `browser-visual-linux-candidates.yml` manual via `workflow_dispatch`, supply-chain also `workflow_call`; the ops workflows `conformance.yml` and `deploy-smoke.yml` still declare push triggers, and `conformance.yml` a daily schedule, all inert while Actions is off). Dependabot is off too: `.github/dependabot.yml` is removed (restore it from git history), and Dependabot alerts and security updates are off in the settings. Restore Actions: `gh api -X PUT repos/ariasr47/convexa/actions/permissions -F enabled=true`. RETIRED: lines go in `.spire/clusters/tech/state/RETIRED.md`.
 
 ## Nx guidance
 
@@ -41,7 +41,8 @@ it is exempt from Prettier in `.prettierignore` for the same reason.
 ## Layout
 
 - `apps/api` — **production backend** (Axum / Tokio). `npm run serve:api` →
-  `cargo run -p api-rust -- serve` (:8000). Crate name `api-rust`. Universe:
+  `cargo run -p api-rust --features postgres -- serve` (:8000; without `DATABASE_URL` the stores
+  fall back to JSON files). Crate name `api-rust`. Universe:
   `apps/api/config/universe.json`. Quant: `libs/quant-engine`. Archived Python:
   `archive/api-python/`.
 - `apps/dashboard` (`@convexa/dashboard`) — React 19 + Vite + MUI (`npm run serve:dashboard`
@@ -86,8 +87,8 @@ the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
 | `npm run typecheck`               | `tsc` (required — Vitest does not typecheck)                            |
 | `npm run lint`                    | ESLint on TS projects only                                              |
 | `npm run format` / `format:check` | Prettier scoped to apps/libs/tools (never bare `nx format:write`)       |
-| `npm run ci`                      | lint → typecheck → test → build                                         |
-| GitHub Actions                    | `.github/workflows/ci.yml` — frontend job + Rust job (no Python)        |
+| `npm run ci`                      | contract check → lint → typecheck → test → build → bundle budgets       |
+| GitHub Actions                    | Off (see CI mode). `ci.yml` kept as the record: supply-chain, frontend, Rust and capacity-linux jobs |
 
 ## Traps (learned the hard way — read before running these)
 

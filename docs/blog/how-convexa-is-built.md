@@ -24,7 +24,7 @@ The dealer-structure engine needs a real-time options feed, and that feed costs 
 | Data | Authored in the browser | Real public sources, read by the Rust API |
 | Network | None | The site and its API |
 
-The [demo](https://staging.convexa.pages.dev) makes **zero network requests**: an end-to-end check asserts it. The live site mocks **nothing**: where a panel would need the paid feed, it says *Not live* and what it would show, instead of drawing a plausible-looking number.
+The [demo](https://staging.convexa.pages.dev) loads **only its own files**: no API, server or third-party request, and an end-to-end check blocks every other request and asserts there were none. The live site mocks **nothing**: where a panel would need the paid feed, it says *Not live* and what it would show, instead of drawing a plausible-looking number.
 
 ---
 

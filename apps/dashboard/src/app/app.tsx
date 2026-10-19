@@ -1,7 +1,8 @@
 /**
  * App root — the ROUTE TABLE ONLY (ARCHITECTURE §1.2, FRONTEND_EXECUTION_CONTRACT §2). It no longer is
- * the GEX dashboard: that relocated to `ticker/TickerDashboard.tsx`. The single `<BrowserRouter>` +
- * single `<ThemeProvider>`/`<CssBaseline>` live in `main.tsx` (unchanged) — this file nests neither
+ * the GEX dashboard: that relocated to `ticker/TickerDashboard.tsx`. The single `<BrowserRouter>`
+ * lives in `mountApp.tsx`, and the single `<ThemeProvider>`/`<CssBaseline>` in
+ * `features/auth/ThemeProvider.tsx` (`AppThemeProvider`, below) — this file nests neither directly
  * (AC-Inv-8).
  *
  * Route shape (the binding table):

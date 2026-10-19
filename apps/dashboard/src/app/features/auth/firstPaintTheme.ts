@@ -1,6 +1,7 @@
 /**
  * First-paint theme hint. Two homes, same algorithm:
- *   1. Blocking inline script in `index.html` (cannot import this module — first paint is
+ *   1. The blocking `convexa-bootstrap-<hash>.js` script that the `convexa-build-bootstrap` Vite
+ *      plugin injects into `index.html`'s head (cannot import this module — first paint is
  *      before the bundle). Structural spec pins the script to these keys + canvas tokens.
  *   2. `AppThemeProvider`, after the effective pref resolves (server-wins when signed in).
  *

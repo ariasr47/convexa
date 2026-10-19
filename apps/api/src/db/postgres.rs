@@ -55,8 +55,8 @@ impl Pg {
         Ok(pg)
     }
 
-    /// Connect + apply numbered migrations. Does not crash the process on a dead DB at boot
-    /// if migrate fails — first op may succeed after DB comes up.
+    /// Open the pool. Applies no migrations: `api-rust postgres-migrate` does, and Railway runs
+    /// it before each deploy.
     pub async fn connect(database_url: &str) -> AppResult<Self> {
         let max = std::env::var("DATABASE_POOL_MAX")
             .ok()

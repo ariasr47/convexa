@@ -13,7 +13,7 @@ export default defineConfig(() => ({
     watch: false,
     globals: true,
     environment: 'jsdom',
-    // The lib has no specs yet; don't fail CI on "no test files" until they're added.
+    // Kept from before the lib had specs (it has twelve now); harmless either way.
     passWithNoTests: true,
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],

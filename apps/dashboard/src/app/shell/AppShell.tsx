@@ -36,8 +36,8 @@ import { useScrollToTopOnPageChange } from './useScrollToTopOnPageChange';
 
 export function AppShell() {
   // (v2) The ⌘K palette — mounted ONCE in the shell so "one keystroke anywhere" holds on every
-  // in-shell route (SPEC §2.6). NOT mounted on `/` — landing sits outside AppShell (canon rule 19
-  // scopes the palette to the shell). Fires REGARDLESS of what currently holds focus — including a
+  // in-shell route (SPEC §2.6). Landing is the shell's index route, so that includes `/` (canon
+  // rule 19 scopes the palette to the shell). Fires REGARDLESS of what currently holds focus — including a
   // text field (AC-33 requires the palette to open while a field holds unsaved text) — because
   // ⌘K/Ctrl-K is never a text-INSERTION key in any browser or OS; unlike a plain letter, it carries
   // no risk of "fighting" a form field, so no typing-target guard is needed (or correct: VS Code /

@@ -4,8 +4,8 @@
  *
  * WHY: `http-server@14.1.1` 302s a request for an existing directory to add the trailing slash, then
  * serves a directory listing or a 403 when that directory carries no `index.html`
- * (`node_modules/http-server/lib/core/index.js:374-417`). `apps/dashboard/public/blog/` holds one
- * standalone article (`how-we-read-dealer-structure.html`) and no index file, so `GET /blog` never
+ * (`node_modules/http-server/lib/core/index.js:374-417`). `apps/dashboard/public/blog/` holds static
+ * files (today the `plain/` article copies) and no index file, so `GET /blog` never
  * reached the SPA under `http-server` — it 302s to `/blog/`, which lists the directory instead of
  * mounting the app. No `http-server` flag combination fixes this without breaking `/`:
  * `-i false -d false` 404s the root and loops the `-P` proxy fallback.

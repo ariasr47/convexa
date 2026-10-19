@@ -15,8 +15,10 @@ problems. Review the regenerated diff for removed/added packages and new SPDX ex
 
 ## Dependency proposals
 
-Dependabot proposes weekly grouped npm, Cargo, Docker, and Actions updates. Humans review and merge them;
-there is no auto-merge. Review the sanitized check report, policy owner, and required action before merging.
+Dependabot is off (owner, 2026-10-15, with GitHub Actions): `.github/dependabot.yml` was removed, and
+alerts and security updates are off in the repository settings. When it was on, it proposed weekly
+grouped npm, Cargo, Docker, and Actions updates for humans to review and merge, with no auto-merge;
+restore the file from git history to bring that back.
 
 ## Limits
 

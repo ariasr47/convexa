@@ -138,6 +138,8 @@ pub struct JsonAuthStore {
 }
 
 impl JsonAuthStore {
+    /// Opens the JSON-file auth store. The name predates the move off SQLite: a `.sqlite3`,
+    /// `.sqlite` or `.db` path from the environment is rewritten to `.json`.
     pub fn open_sqlite(path: &Path) -> AppResult<Self> {
         // Path may be `.sqlite3` from env; we persist JSON.
         let path = normalize_json_path(path);
@@ -608,6 +610,7 @@ pub enum AuthStore {
 }
 
 impl AuthStore {
+    /// The file-backed store (JSON; see [`JsonAuthStore::open_sqlite`]).
     pub fn open_sqlite(path: &Path) -> AppResult<Self> {
         Ok(Self::Json(JsonAuthStore::open_sqlite(path)?))
     }

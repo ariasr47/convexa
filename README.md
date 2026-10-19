@@ -21,7 +21,7 @@ field whose title states its finding, beside the levels that frame it.](design/r
 |---|---|---|
 | **What runs** | Every screen: the Scanner, the dealer-structure desk, AI reads, a simulated book, alerts and research | What is free and live: TradingView's daily chart, SEC filings and insider trades, Treasury rates, CFTC futures positioning, Fed liquidity, release calendars and the research notes |
 | **Data** | One authored market day (Oct 7, 2026), in your browser | Real public sources, read by the Rust API; nothing is mocked |
-| **Network** | None: the demo makes zero requests, and an end-to-end check asserts it | The Pages site and its API on Railway |
+| **Network** | Its own static files only: no API, server or third-party request, and an end-to-end check blocks and asserts every other request | The Pages site and its API on Railway |
 | **What it says** | Every figure is tagged *Demo · sample data* | Every panel names its source and how late it is; panels that need a paid options feed say *Not live* and what they would show |
 
 The dealer-structure engine needs a real-time options feed, which costs money a portfolio project

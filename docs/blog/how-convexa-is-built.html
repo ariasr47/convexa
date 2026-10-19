@@ -78,7 +78,7 @@
 <h2>Two sites, one codebase</h2>
 <p>The dealer-structure engine needs a real-time options feed, and that feed costs money a portfolio project doesn't spend. So Convexa ships as two builds of the same code:</p>
 <table><thead><tr><th></th><th>Demo</th><th>Live site</th></tr></thead><tbody><tr><td>What runs</td><td>Every screen, on one authored market day</td><td>What is free and live today</td></tr><tr><td>Data</td><td>Authored in the browser</td><td>Real public sources, read by the Rust API</td></tr><tr><td>Network</td><td>None</td><td>The site and its API</td></tr></tbody></table>
-<p>The <a href="https://staging.convexa.pages.dev">demo</a> makes <strong>zero network requests</strong>: an end-to-end check asserts it. The live site mocks <strong>nothing</strong>: where a panel would need the paid feed, it says <em>Not live</em> and what it would show, instead of drawing a plausible-looking number.</p>
+<p>The <a href="https://staging.convexa.pages.dev">demo</a> loads <strong>only its own files</strong>: no API, server or third-party request, and an end-to-end check blocks every other request and asserts there were none. The live site mocks <strong>nothing</strong>: where a panel would need the paid feed, it says <em>Not live</em> and what it would show, instead of drawing a plausible-looking number.</p>
 <hr>
 <h2>Data that says where it came from</h2>
 <p>Every panel carries one state word from a closed list (<em>Updated</em>, <em>Delayed by source</em>, <em>Last good copy</em>, <em>Not live</em>, <em>Off</em>, <em>Sample</em>) with its source and when it was read. When a source fails, the API serves its last good copy and says so; it never relabels an old figure as fresh.</p>

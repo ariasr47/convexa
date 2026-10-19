@@ -111,7 +111,7 @@ jobs:
         env:
           VITE_DATA_MODE: live
 
-      # §3.8 Phase A — gzip chunk budgets (see tools/check-dashboard-bundle.mjs).
+      # §3.8 Phase A — brotli chunk budgets (see tools/check-dashboard-bundle.mjs).
       - name: Bundle size gate
         run: npm run check:bundle
 

@@ -1,6 +1,7 @@
 //! Numbered Postgres migrations (idempotent baseline + forward-only versions).
 //!
-//! Applied once at boot and recorded in `schema_migrations`. Each migration body
+//! Applied by `api-rust postgres-migrate` (Railway's pre-deploy command), never by `serve`, and
+//! recorded in `schema_migrations`. Each migration body
 //! may contain multiple statements — they are split and executed one-by-one
 //! (sqlx extended protocol = one statement per call).
 

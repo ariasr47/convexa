@@ -7,15 +7,25 @@ only**: `features/` and `pages/` may import `shared/`; **pages never import sibl
 
 ## `pages/` — one folder per route
 
-| Route             | Folder                            | Notes                                                         |
-| ----------------- | --------------------------------- | ------------------------------------------------------------- |
-| `/`               | `pages/landing/`                  | Landing splash.                                               |
-| `/ticker/:ticker` | `pages/ticker/`                   | The GEX viewer — a **widget bento** (see below).              |
-| `/positions`      | `pages/positions/`                | Route shell; the book/logic is `features/trading/positions/`. |
-| `/scanner`        | `pages/scanner/`                  | Coming-soon stub.                                             |
-| `/settings`       | `features/auth/SettingsPage`      | Route shell lives with the auth domain (tightly coupled).     |
-| `/_ops/metrics`   | `pages/operator-metrics/`         | Operator-only, off the trader shell.                          |
-| `/_ops/research`  | `pages/operator-session-archive/` | Operator session-archive corpus browser, off-shell, URL-only. |
+The binding table is the route list in `app.tsx`; this is its map. Every page is lazy except Landing.
+
+| Route                                                        | Folder                             | Notes                                                                                       |
+| ------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------- |
+| `/`                                                          | `pages/landing/`                   | The front door; the shell's index route, eager (no chunk wait).                             |
+| `/ticker`                                                    | (in `app.tsx`)                     | Redirects to the default ticker once the session is known (SPY if unset).                   |
+| `/ticker/:ticker`                                            | `pages/ticker/`                    | The desk — a **widget bento** (see below); `PublicDesk` when the options feed is off.       |
+| `/ticker/:symbol/technical-analysis`, `…/research[/:slug]`   | `pages/ticker/`, `pages/research/` | Demo: sample chart and `ResearchView`; live: TradingView and `NotesView`.                   |
+| `/research`, `/research/markets`, `…/filings`, `…/scorecard` | `pages/research/`                  | Notes index and the public-data pages.                                                      |
+| `/positions`                                                 | `pages/positions/`                 | Behind `RequireAuth` on live. Route shell; the book/logic is `features/trading/positions/`. |
+| `/scanner`                                                   | `pages/scanner/`                   | Behind `RequireAuth` on live; `ScannerNotLive` when the options feed is off.                |
+| `/alerts`                                                    | `pages/alerts/`                    | Browser-checked alerts.                                                                     |
+| `/blog`, `/blog/:file`                                       | `pages/blog/`                      | Posts listed in `docs/blog/posts.json`.                                                     |
+| `/methodology`                                               | `pages/methodology/`               |                                                                                             |
+| `/credits`, `/privacy`, `/terms`                             | `pages/trust/`                     |                                                                                             |
+| `/settings`                                                  | `features/auth/SettingsPage`       | Route shell lives with the auth domain (tightly coupled).                                   |
+| `*`                                                          | `pages/not-found/`                 | The shell's last child, so a 404 keeps the nav and footer.                                  |
+| `/_ops/metrics`                                              | `pages/operator-metrics/`          | Operator-only, off the trader shell; unavailable in the demo.                               |
+| `/_ops/research`                                             | `pages/operator-session-archive/`  | Operator session-archive corpus browser, off-shell, URL-only; unavailable in the demo.      |
 
 ## `features/` — cross-cutting domains (each used by ≥1 page)
 
@@ -23,6 +33,7 @@ only**: `features/` and `pages/` may import `shared/`; **pages never import sibl
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `features/trading/`  | The whole trading domain (sim now, live later): `TradeEntryDialog` (the ONE shared **SIMULATED** entry surface — see below) · `model/` (foundational trade/decision types + P&L engine + store) · `orders/` (sim-order engine) · `positions/` (portfolio book/logic). |
 | `features/auth/`     | Accounts — session context, sign-in dialog, `useGate`, settings.                                                                                                                                                                                                      |
+| `features/alerts/`   | Alerts — the browser-checked alert store (`useAlerts`), evaluation, and the public-data checks.                                                                                                                                                                       |
 | `features/personas/` | Persona presets, customize form, durable store, the `PersonaPicker`.                                                                                                                                                                                                  |
 
 > **⚠ `TradeEntryDialog` is SIM-ONLY — do not extend it to real orders.** Every _simulated_ entry flow

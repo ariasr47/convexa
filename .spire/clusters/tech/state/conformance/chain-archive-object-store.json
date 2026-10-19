@@ -1,4 +1,5 @@
-"endpoints": [
+{
+  "endpoints": [
     {
       "method": "GET",
       "path": "/api/_research/session-books/{symbol}",

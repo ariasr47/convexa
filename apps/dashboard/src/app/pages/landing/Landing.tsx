@@ -1,5 +1,5 @@
 /**
- * Convexa landing (`/`, the shell index route — `app.tsx:140-147`).
+ * Convexa landing (`/`, the shell's index route in `app.tsx`).
  *
  * Six sections, in the design's order (SPEC §1/§3 AC-L1), and no seventh: hero · structure field ·
  * triage score · AI read · "Numbers say where they came from" (the honesty section — the three trust
@@ -16,8 +16,8 @@
  * at all, so there is no `ready` branch and no first-paint swap (AC-L17). The one intentional
  * non-data edge is `scheduleLandingPrefetch()` — it warms route chunks and touches no API.
  *
- * NO `<main>` and NO `<Footer/>` here (AC-F4): `AppShell.tsx:97` owns the app's one `<main>`
- * landmark, and `AppShell.tsx:116` mounts the footer once for every in-shell page (F3) — mounting
+ * NO `<main>` and NO `<Footer/>` here (AC-F4): `AppShell` owns the app's one `<main>`
+ * landmark and mounts the footer once for every in-shell page (F3) — mounting
  * either here would nest a second landmark / render a second footer, which is the exact defect this
  * rewrite fixes (`Landing.tsx:61` used to nest a second `<main>` inside `AppShell`'s).
  *

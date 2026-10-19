@@ -15,7 +15,7 @@
  * shared/theme/tokens.ts `typographyTokens` — components never name a face directly.
  *
  * First-paint canvas: anonymous / no-JS stays ink (AC-A3). `html[data-theme=light]` is set
- * by the blocking index.html script (and later AppThemeProvider) so a stored light pref
+ * by the blocking bootstrap script injected into index.html's head (and later AppThemeProvider) so a stored light pref
  * does not flash dark. Hexes are palette.dark/light.background.default — pinned in
  * firstPaintTheme.spec.ts.
  */
