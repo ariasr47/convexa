@@ -252,8 +252,8 @@ export function AppRoutes() {
             top nav shows on `/` too. Full-bleed below the bar (no width container). `/` is NEVER a
             redirect to a ticker. EAGER (the entry experience — no chunk wait on first paint).
             EAGER index — a BARE route ErrorBoundary, no Suspense: a Suspense here would reintroduce
-            the chunk wait the eager route exists to avoid (SPEC §2.5). Today a throw inside Landing
-            unmounts the whole React tree, because `main.tsx:16-26` adds no boundary above <App/>. */}
+            the chunk wait the eager route exists to avoid (SPEC §2.5). A throw that escapes this
+            boundary lands in `mountApp.tsx`'s `RootErrorBoundary`, never a blank page. */}
         <Route
           index
           element={
