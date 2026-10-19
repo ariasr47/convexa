@@ -4,6 +4,7 @@
  * (`$strike · Vol/OI N× · N contracts`). Static bundle field; activity only, no side/direction;
  * catches strikes outside the chart window.
  */
+import { memo } from 'react';
 import { faceFor, figureStateOf } from '@/shared/figure';
 import { Widget } from '@/shared/ui/Widget';
 import type { StrikeRow } from '@convexa/api';
@@ -22,7 +23,7 @@ interface Props {
   structureAgeSeconds?: number | null;
 }
 
-export function FreshPositioning({
+export const FreshPositioning = memo(function FreshPositioning({
   chainVolOiRatio,
   volOiThreshold,
   unusualStrikes,
@@ -96,6 +97,6 @@ export function FreshPositioning({
       </Box>
     </Widget>
   );
-}
+});
 
 export default FreshPositioning;

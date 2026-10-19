@@ -41,6 +41,7 @@
  *
  * PRESENTATIONAL — the caller builds the closed eight-tuple (`buildReadStrip`) and hands it down.
  */
+import { memo } from 'react';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { extrasFor } from '@/shared/theme/tokens';
 import { PanelContainer } from '@/shared/ui/PanelContainer';
@@ -110,7 +111,7 @@ function RingGauge({ score, size = 48 }: { score: number | null; size?: number }
   );
 }
 
-export function ReadStrip({ cells, ringScore }: ReadStripProps) {
+export const ReadStrip = memo(function ReadStrip({ cells, ringScore }: ReadStripProps) {
   const theme = useTheme();
   const sample = useWidgetProvenance() === 'sample';
 
@@ -205,6 +206,6 @@ export function ReadStrip({ cells, ringScore }: ReadStripProps) {
       </Box>
     </Widget>
   );
-}
+});
 
 export default ReadStrip;

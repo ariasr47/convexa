@@ -5,6 +5,7 @@
  * live stream), no offline state of its own, ages with the bundle freshness. Hidden when the Dark
  * pool toggle is off. Best-effort: off_exchange absent → its own "unavailable this cycle" copy.
  */
+import { memo } from 'react';
 import { faceFor, figureStateOf } from '@/shared/figure';
 import { TintChip } from '@/shared/ui/TintChip';
 import { Widget } from '@/shared/ui/Widget';
@@ -45,7 +46,7 @@ interface Props {
   structureAgeSeconds?: number | null;
 }
 
-export function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: Props) {
+export const OffExchangeBlocks = memo(function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: Props) {
   return (
     <Widget
       id="off-exchange-blocks"
@@ -154,6 +155,6 @@ export function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: P
       </Box>
     </Widget>
   );
-}
+});
 
 export default OffExchangeBlocks;

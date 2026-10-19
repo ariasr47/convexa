@@ -13,7 +13,7 @@
  * only run AFTER `allowed` is true, in the existing surfaces.
  */
 import { AuthError, dataMode, simTradeGate } from '@convexa/api';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
 import { AUTH_COPY } from './copy';
@@ -106,5 +106,10 @@ export function useGate(): GateApi {
     [auth],
   );
 
-  return { allowed, promptText, prompt, signIn, clear, guard, simTradeGate };
+  // One object per state change, not per render: callers put the gate in their callbacks' deps, so
+  // a fresh literal here re-created every gated callback (and broke memoized widgets) on each render.
+  return useMemo(
+    () => ({ allowed, promptText, prompt, signIn, clear, guard, simTradeGate }),
+    [allowed, promptText, prompt, signIn, clear, guard],
+  );
 }

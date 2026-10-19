@@ -18,6 +18,7 @@
  *   - `theme-token-discipline` — token-only via MUI theme (`text.disabled`/`text.secondary`/`divider`,
  *     mono via tokens), zero hardcoded hex; dark/light parity comes from the shared `Widget`/tile chrome.
  */
+import { memo } from 'react';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
@@ -146,7 +147,7 @@ function VannaSection({ vanna }: { vanna: NonNullable<Dfp['vanna']> }) {
   );
 }
 
-export function DealerFlowProjection({ dfp }: Props) {
+export const DealerFlowProjection = memo(function DealerFlowProjection({ dfp }: Props) {
   return (
     <Widget
       id="dealer-flow-projection"
@@ -225,6 +226,6 @@ export function DealerFlowProjection({ dfp }: Props) {
       </Box>
     </Widget>
   );
-}
+});
 
 export default DealerFlowProjection;

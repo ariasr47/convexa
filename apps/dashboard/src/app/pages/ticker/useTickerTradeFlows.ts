@@ -17,6 +17,7 @@ import { recToPrefill } from '@/pages/ticker/widgets/ai-rec/prefill';
 import type { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import type { LiveUpdate, RecResponse, TickerBundle } from '@convexa/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { readLiveTape } from './liveTapeStore';
 
 type AiRecApi = ReturnType<typeof useAiRecommendation>;
 
@@ -24,13 +25,12 @@ export function useTickerTradeFlows(opts: {
   ticker: string;
   data: TickerBundle | null;
   live: LiveUpdate | null;
-  isLive: boolean;
   aiRec: AiRecApi;
   opportunityTier: string | undefined;
   primeEligible: boolean | undefined;
   structurePrice: number | undefined;
 }) {
-  const { data, live, isLive, aiRec, opportunityTier, primeEligible, structurePrice } = opts;
+  const { data, live, aiRec, opportunityTier, primeEligible, structurePrice } = opts;
 
   const orderGate = useGate();
   const [entryOpen, setEntryOpen] = useState(false);
@@ -99,12 +99,16 @@ export function useTickerTradeFlows(opts: {
           ...(scenario ? { scenarioName: scenario.name } : {}),
         },
         stale: aiRec.stale,
-        liveMid: isLive ? (live?.mid ?? null) : null,
+        // Read at click time, so this callback stays stable across ticks (AiRecPanel is memoized).
+        liveMid: (() => {
+          const tape = readLiveTape();
+          return tape.isLive ? (tape.live?.mid ?? null) : null;
+        })(),
       };
       setOrderError(null);
       setActState({ open: true, plan, prefill: pf, provenance });
     },
-    [aiRec.stale, isLive, live?.mid, orderGate],
+    [aiRec.stale, orderGate],
   );
 
   const onConfirmOrder = useCallback(

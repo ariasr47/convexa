@@ -73,6 +73,9 @@ export function useTickerStreamConnection(
         publishLiveTape({ demoOrderFrame: event.frame, ticker: sym });
       } else if (event.kind === 'playback' && dataMode === 'demo') {
         const previousSample = getLiveTapeSnapshot().sampleStanding;
+        // The demo clock reports playback every second. Only a change of state is news: republishing
+        // the same standing is a new snapshot object, and every useLiveTape() host re-renders on it.
+        if (previousSample?.symbol === sym && previousSample.playback === event.state) return;
         publishLiveTape({
           sampleStanding: {
             kind: 'sample',

@@ -45,7 +45,7 @@ import { useTheme } from '@mui/material/styles';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useLiveTape } from '../../liveTapeStore';
 import { sessionTapeOf } from '../../sessionTapeStanding';
 import { humanAge } from '../_kit/copy';
@@ -182,7 +182,7 @@ function FieldLegend({ flipColor }: { flipColor: string }) {
   );
 }
 
-export function StructureHeroPanel({
+export const StructureHeroPanel = memo(function StructureHeroPanel({
   symbol,
   m,
   strikes,
@@ -608,6 +608,6 @@ export function StructureHeroPanel({
       </Box>
     </Widget>
   );
-}
+});
 
 export default StructureHeroPanel;

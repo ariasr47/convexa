@@ -265,28 +265,50 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
   const readinessGateState: 'available' | 'no_fresh_edge' =
     gate.state === 'no_fresh_edge' ? 'no_fresh_edge' : 'available';
 
-  return {
-    // gating / availability
-    inAppEnabled,
-    powering,
-    gate,
-    cap,
-    statusReady,
-    cooldownRemaining,
-    readinessGateState,
-    // scenario advertisement (ai-rec-backtest-orders — wire-driven, default disabled)
-    scenarios,
-    // the pinned artifact
-    rec,
-    loading,
-    requestFailed,
-    stale,
-    // actions
-    request,
-    retry,
-    dismiss,
-    refreshStatus,
-  };
+  // One object per change, not per render: the desk root re-renders on every live tick, and
+  // AiRecPanel (memoized) takes this object as a prop.
+  return useMemo(
+    () => ({
+      // gating / availability
+      inAppEnabled,
+      powering,
+      gate,
+      cap,
+      statusReady,
+      cooldownRemaining,
+      readinessGateState,
+      // scenario advertisement (ai-rec-backtest-orders — wire-driven, default disabled)
+      scenarios,
+      // the pinned artifact
+      rec,
+      loading,
+      requestFailed,
+      stale,
+      // actions
+      request,
+      retry,
+      dismiss,
+      refreshStatus,
+    }),
+    [
+      inAppEnabled,
+      powering,
+      gate,
+      cap,
+      statusReady,
+      cooldownRemaining,
+      readinessGateState,
+      scenarios,
+      rec,
+      loading,
+      requestFailed,
+      stale,
+      request,
+      retry,
+      dismiss,
+      refreshStatus,
+    ],
+  );
 }
 
 export type AiRec = ReturnType<typeof useAiRecommendation>;

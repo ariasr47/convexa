@@ -16,6 +16,7 @@
  * metric. The figure sits at card scale (22px): it was a 34px h4, the largest numeral under the
  * masthead, outweighing the price it frames.
  */
+import { memo } from 'react';
 import { chartRoles } from '@/shared/charts/frame/roles';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { AccessibleHelp } from '@/shared/ui';
@@ -184,7 +185,7 @@ function MoveRange({
   );
 }
 
-export function StraddleMove({ move, callWall = null, putWall = null }: Props) {
+export const StraddleMove = memo(function StraddleMove({ move, callWall = null, putWall = null }: Props) {
   const state = move?.state ?? 'not_computed';
   const primary =
     state === 'ok'
@@ -284,6 +285,6 @@ export function StraddleMove({ move, callWall = null, putWall = null }: Props) {
       </Box>
     </Widget>
   );
-}
+});
 
 export default StraddleMove;

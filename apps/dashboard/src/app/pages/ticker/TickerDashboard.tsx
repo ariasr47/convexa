@@ -672,10 +672,16 @@ export function TickerDashboard() {
 
   // Vol/OI "Fresh positioning": strikes at/above the cutoff, ranked desc, short top-N (full-chain).
   const volOiThreshold = m?.vol_oi_unusual_threshold ?? 1;
-  const unusualStrikes = (data?.strike_profile.strikes ?? [])
-    .filter((s) => s.vol_oi_ratio != null && s.vol_oi_ratio >= volOiThreshold)
-    .toSorted((a, b) => (b.vol_oi_ratio as number) - (a.vol_oi_ratio as number))
-    .slice(0, 8);
+  // Memoized on the bundle so a live tick (this root re-renders on every tape publish) hands
+  // FreshPositioning the same array and its memo holds.
+  const unusualStrikes = useMemo(
+    () =>
+      (data?.strike_profile.strikes ?? [])
+        .filter((s) => s.vol_oi_ratio != null && s.vol_oi_ratio >= volOiThreshold)
+        .toSorted((a, b) => (b.vol_oi_ratio as number) - (a.vol_oi_ratio as number))
+        .slice(0, 8),
+    [data?.strike_profile.strikes, volOiThreshold],
+  );
 
   const allDates = data?.expirations.map((e) => e.date) ?? [];
   const selectableExpirations =
@@ -726,7 +732,6 @@ export function TickerDashboard() {
     ticker,
     data,
     live,
-    isLive,
     aiRec,
     opportunityTier: sig?.opportunity_tier,
     primeEligible: sig?.prime_prompt_eligible,
@@ -736,6 +741,31 @@ export function TickerDashboard() {
     new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike)),
   ).toSorted((a, b) => a - b);
   const tm = tierMeta(theme, sig?.opportunity_tier ?? 'dormant');
+  // Same reason as `unusualStrikes`: built once per bundle, so ReadStrip's memo holds on a tick.
+  const readStripCells = useMemo(
+    () =>
+      m
+        ? buildReadStrip({
+            m,
+            offExchange: data?.off_exchange,
+            volOiThreshold,
+            unusualCount: unusualStrikes.length,
+            tierWord: tm.word,
+            opportunityScore: sig?.opportunity_score ?? null,
+            ivRank: m.iv_rank ?? null,
+            setupsCount: sig?.setups?.length ?? null,
+          })
+        : null,
+    [
+      m,
+      data?.off_exchange,
+      volOiThreshold,
+      unusualStrikes.length,
+      tm.word,
+      sig?.opportunity_score,
+      sig?.setups?.length,
+    ],
+  );
 
   // Persona customize dialog (the hand-off viewer was removed to match the Figma toolbar).
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -1055,21 +1085,11 @@ export function TickerDashboard() {
                       regime={sig?.regime ?? null}
                     />
                   </ErrorBoundary>
-                  <ErrorBoundary variant="widget" label="Read strip">
-                    <ReadStrip
-                      cells={buildReadStrip({
-                        m,
-                        offExchange: data?.off_exchange,
-                        volOiThreshold,
-                        unusualCount: unusualStrikes.length,
-                        tierWord: tm.word,
-                        opportunityScore: sig?.opportunity_score ?? null,
-                        ivRank: m.iv_rank ?? null,
-                        setupsCount: sig?.setups?.length ?? null,
-                      })}
-                      ringScore={sig?.opportunity_score ?? null}
-                    />
-                  </ErrorBoundary>
+                  {readStripCells && (
+                    <ErrorBoundary variant="widget" label="Read strip">
+                      <ReadStrip cells={readStripCells} ringScore={sig?.opportunity_score ?? null} />
+                    </ErrorBoundary>
+                  )}
 
                   {/* ── 2. TAPE & PLAN ───────────────────────────────────────────────── */}
                   <BoardZoneLabel zone="plan">Read & plan</BoardZoneLabel>

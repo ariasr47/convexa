@@ -33,7 +33,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ActionRegion,
@@ -84,7 +84,7 @@ interface Props {
   fillHeight?: boolean;
 }
 
-export function AiRecPanel({
+export const AiRecPanel = memo(function AiRecPanel({
   ticker,
   bundle,
   ai,
@@ -654,4 +654,4 @@ export function AiRecPanel({
       />
     </Box>
   );
-}
+});

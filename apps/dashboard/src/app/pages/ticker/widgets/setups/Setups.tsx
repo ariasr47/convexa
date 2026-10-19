@@ -8,6 +8,7 @@
  * lays its own cards out as a 2-column `ctx-2` grid inside that span, not a vertical stack (the
  * pre-repair app rendered "three full-width rows" — `FIDELITY_AUDIT.md` F2).
  */
+import { memo } from 'react';
 import { TintChip } from '@/shared/ui/TintChip';
 import { Widget } from '@/shared/ui/Widget';
 import type { Setup } from '@convexa/api';
@@ -30,7 +31,7 @@ const convictionTone = (c: string): 'emphasis' | 'info' | 'neutral' => {
   return v === 'high' ? 'emphasis' : v === 'medium' ? 'info' : 'neutral';
 };
 
-export function Setups({ setups, structureAgeSeconds = null }: Props) {
+export const Setups = memo(function Setups({ setups, structureAgeSeconds = null }: Props) {
   // Two states collapsed to one sentence (SPEC §4.6 criterion 56a): `undefined` — never delivered,
   // a ticker nobody scored, no market fact to state — reads "Setups unavailable this cycle."; `[]`
   // — checked and genuinely empty — keeps the shipped sentence byte-for-byte. Nothing else in this
@@ -77,6 +78,6 @@ export function Setups({ setups, structureAgeSeconds = null }: Props) {
       )}
     </Widget>
   );
-}
+});
 
 export default Setups;

@@ -39,6 +39,7 @@
  *     `divider`, mono via tokens), zero hardcoded hex; dark/light parity from the shared chrome.
  *   - No auth gate — renders for anonymous visitors; no session/gate call anywhere in it.
  */
+import { memo } from 'react';
 import { faceFor, figureStateOf } from '@/shared/figure';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { AccessibleHelp } from '@/shared/ui';
@@ -316,7 +317,7 @@ function AtrCell({ read }: { read: AtrRead | null }) {
   );
 }
 
-export function MarketContext({ pack }: Props) {
+export const MarketContext = memo(function MarketContext({ pack }: Props) {
   return (
     <Widget id="market-context" title={MC_TITLE} subtitle={MC_SUBTITLE} info={MC_INFO}>
       <Box data-testid="market-context">
@@ -352,6 +353,6 @@ export function MarketContext({ pack }: Props) {
       </Box>
     </Widget>
   );
-}
+});
 
 export default MarketContext;
