@@ -104,7 +104,7 @@ apps/api/serve-conformance.log.err
 **/*_serve.err.log
 /data/
 
-# Python leftovers (archived under archive/api-python)
+# Python leftovers (the retired Python backend, removed 2026-10-19)
 __pycache__/
 *.py[cod]
 .pytest_cache/

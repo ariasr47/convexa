@@ -1,6 +1,6 @@
 # apps/api (Rust) — Postgres + Docker / Railway deploy
 
-**Status:** Python FastAPI is archived under `archive/api-python/`. Runtime is
+**Status:** Python FastAPI was archived under `archive/api-python/` and removed 2026-10-19 (last present at `38276a03`). Runtime is
 Axum under `apps/api` (Cargo package name `api-rust`).
 
 Public URL: `https://convexa-production.up.railway.app`  

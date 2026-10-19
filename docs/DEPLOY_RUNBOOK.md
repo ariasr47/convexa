@@ -1,6 +1,6 @@
 # Convexa — deploy runbook (Rust)
 
-> **Last updated 2026-08-10.** Python FastAPI is **archived** (`archive/api-python/`). Production
+> **Last updated 2026-08-10.** Python FastAPI was **archived** (`archive/api-python/`), removed 2026-10-19 (last present at `38276a03`). Production
 > backend is **`api-rust`** (Axum). The scanner is **embedded in `serve`** — not a separate
 > `python worker.py` process.
 >

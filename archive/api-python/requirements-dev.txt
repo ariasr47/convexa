@@ -1,6 +1,0 @@
-# DEV-ONLY dependencies. Deliberately NOT in requirements.txt, which is what apps/api/Dockerfile
-# installs — the production image should not carry a test runner ([no-secrets-in-image] is about
-# secrets, but the same "ship only what runs" instinct applies to the image surface).
-#
-# Install:  apps/api/.venv/Scripts/python.exe -m pip install -r apps/api/requirements-dev.txt
-pytest==9.0.1

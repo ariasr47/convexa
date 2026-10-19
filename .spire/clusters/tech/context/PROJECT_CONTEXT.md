@@ -30,8 +30,8 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 <!-- shard: tags=architecture,backend,api,engine,signals,live,sse,providers,observability -->
 > **Repaired 2026-08-20 (`project-context-s2-is-python-era`).** The live server is **Axum / Tokio**,
 > crate **`api-rust`**, tree `apps/api/src/`. Quant compute is **`libs/quant-engine`** (pure; no I/O).
-> Python FastAPI (`main.py`, `src/core/*.py`, `src/providers/*.py`) is **archived** at
-> `archive/api-python/` and is **not** ground truth. Do not cite it.
+> Python FastAPI (`main.py`, `src/core/*.py`, `src/providers/*.py`) was archived at
+> `archive/api-python/`, removed 2026-10-19 (last present at `38276a03`), and is **not** ground truth. Do not cite it.
 
 **Serve / process:** `main.rs` + `server.rs` — clap: `serve` (HTTP) plus research CLIs
 (`join-outcomes`, `score-lab`, `batch-backtest`, `replay-outcome-join`). Bind/port from

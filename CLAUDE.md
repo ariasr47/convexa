@@ -43,8 +43,8 @@ it is exempt from Prettier in `.prettierignore` for the same reason.
 - `apps/api` — **production backend** (Axum / Tokio). `npm run serve:api` →
   `cargo run -p api-rust --features postgres -- serve` (:8000; without `DATABASE_URL` the stores
   fall back to JSON files). Crate name `api-rust`. Universe:
-  `apps/api/config/universe.json`. Quant: `libs/quant-engine`. Archived Python:
-  `archive/api-python/`.
+  `apps/api/config/universe.json`. Quant: `libs/quant-engine`. The retired Python
+  backend was removed 2026-10-19; `git show 38276a03:archive/api-python/<path>` restores any file.
 - `apps/dashboard` (`@convexa/dashboard`) — React 19 + Vite + MUI (`npm run serve:dashboard`
   → :4200, proxies `/api` → :8000). Tests: `nx test @convexa/dashboard`.
 - `apps/dashboard-e2e` — Playwright e2e.

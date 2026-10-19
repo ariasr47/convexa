@@ -1,3 +1,6 @@
+# Record only (2026-10-19): the pixel tests this served were retired (RETIRED.md), and their evidence
+# store apps/dashboard-e2e/visual-review/ was removed. It is last present at 38276a03; restore it before
+# running this.
 name: Browser visual Linux candidates
 
 on:
