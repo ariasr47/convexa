@@ -78,6 +78,8 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // Re-pinned 2026-10-16 before the repository goes public: the document's `info` is Convexa's own
 // (title, contact, MIT) instead of utoipa-axum's crate metadata. No schema or operation changes,
 // so `schema.ts` and `precutover-operation-baseline.json` keep their hashes and three move.
+// Re-pinned 2026-10-18: the session security scheme names the server's real cookie
+// (`services::auth::COOKIE_NAME`, `gf_session`) instead of `convexa_session`. Same three move.
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -85,15 +87,15 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "7f98198acb57c2dcbd4769edad4dddfb187161eefde29292100454db0756f476",
+        "a9dd9038c3c0294d1ef5331defad27a55706b00adc8cd62f67d368e98e6871bd",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "b5d92838102326ca995279c388ff5ecbcfc0da478adb1008d6697c9ccdd5f984",
+        "c9dcc245f615a6e828b85f120ffc51ead3163eb3710c8b38560f0d1f3b53eb5b",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "838cb9c24395ac8f3134f59d18e30dae50e1eb312ebc0e9f59048b694ec9568c",
+        "e0eaff2ef4988237942570a41bbc1c9656c7c7de7db31f033dbb2413048d3ee0",
     ),
     (
         "libs/api/src/generated/schema.ts",

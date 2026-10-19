@@ -16,9 +16,9 @@
   ],
   "api_contract_artifacts": [
     {"path":"apps/api/openapi/precutover-operation-baseline.json","base_sha256":"8607f825d4d90e36223dd1177b56f9c2213fed124f779aafcb76d3a2e1775434"},
-    {"path":"apps/api/openapi/convexa.openapi.json","base_sha256":"7f98198acb57c2dcbd4769edad4dddfb187161eefde29292100454db0756f476"},
-    {"path":"apps/api/openapi/parity-coverage.json","base_sha256":"b5d92838102326ca995279c388ff5ecbcfc0da478adb1008d6697c9ccdd5f984"},
-    {"path":"apps/api/openapi/generated-artifacts.manifest.json","base_sha256":"838cb9c24395ac8f3134f59d18e30dae50e1eb312ebc0e9f59048b694ec9568c"},
+    {"path":"apps/api/openapi/convexa.openapi.json","base_sha256":"a9dd9038c3c0294d1ef5331defad27a55706b00adc8cd62f67d368e98e6871bd"},
+    {"path":"apps/api/openapi/parity-coverage.json","base_sha256":"c9dcc245f615a6e828b85f120ffc51ead3163eb3710c8b38560f0d1f3b53eb5b"},
+    {"path":"apps/api/openapi/generated-artifacts.manifest.json","base_sha256":"e0eaff2ef4988237942570a41bbc1c9656c7c7de7db31f033dbb2413048d3ee0"},
     {"path":"libs/api/src/generated/schema.ts","base_sha256":"169e7d85271619ae50e10c22c019dd98f8714e64a5b37fdbe9adc903f707b5ce"}
   ],
   "generated_client_baseline": {"entries":["file\tlibs/api/src/generated/schema.ts\n"],"sha256":"262f9c4f4e9fd5641c82b686237d58086c5d7d16a02fd9209821ae86e42bcbe9"},

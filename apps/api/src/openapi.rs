@@ -184,8 +184,10 @@ pub fn validate_map_value_policy(policy: MapValuePolicy) -> Result<(), &'static 
 pub fn security_scheme(mode: SecurityMode) -> Option<SecurityScheme> {
     match mode {
         SecurityMode::Public | SecurityMode::OptionalSession => None,
+        // The server's own cookie name, so the contract can never name a different one again
+        // (it said `convexa_session` while the server set `gf_session`).
         SecurityMode::Session => Some(SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new(
-            "convexa_session",
+            crate::services::auth::COOKIE_NAME,
         )))),
         SecurityMode::OperatorToken => Some(SecurityScheme::ApiKey(ApiKey::Header(
             ApiKeyValue::new("x-metrics-token"),

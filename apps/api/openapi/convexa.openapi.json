@@ -7904,7 +7904,7 @@
       },
       "session-cookie": {
         "in": "cookie",
-        "name": "convexa_session",
+        "name": "gf_session",
         "type": "apiKey"
       }
     }
