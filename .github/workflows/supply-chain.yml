@@ -56,7 +56,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24.19.0
+          node-version: 24.19.0 # rotate together: .nvmrc and .supply-chain/tools.json (npm sha256 of this Node tarball)
           cache: npm
       - id: identity
         env:
@@ -92,7 +92,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24.19.0
+          node-version: 24.19.0 # rotate together: .nvmrc and .supply-chain/tools.json (npm sha256 of this Node tarball)
           cache: npm
       - run: npm ci
       - name: Acquire checksum-verified policy tools
@@ -124,7 +124,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24.19.0
+          node-version: 24.19.0 # rotate together: .nvmrc and .supply-chain/tools.json (npm sha256 of this Node tarball)
           cache: npm
       - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
       - run: npm ci
@@ -151,7 +151,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24.19.0
+          node-version: 24.19.0 # rotate together: .nvmrc and .supply-chain/tools.json (npm sha256 of this Node tarball)
           cache: npm
       - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
       - run: npm ci

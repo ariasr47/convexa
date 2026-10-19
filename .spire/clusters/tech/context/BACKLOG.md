@@ -580,7 +580,9 @@ output cannot be acted on.
   **committed on `main`**. PR #44 fixed the cause (marker now lands in `os.tmpdir()`) and
   gitignored the pattern, but `.gitignore` does not affect tracked files. One `git rm --cached`.
   *Value L · Effort L.*
-- **`node-26-toolchain-rotation`** — `.nvmrc` says 26.7.0 while `supply-chain.yml` pins
+- **`node-26-toolchain-rotation`** — **2026-10-19:** `.nvmrc` now says 24.19.0, matching the pin and the
+  supply-chain bootstrap's `.nvmrc` parity check; the rotation to 26 below stays open. Original entry:
+  `.nvmrc` says 26.7.0 while `supply-chain.yml` pins
   `node-version: 24.19.0` in four places. That pin is **load-bearing, not stale**:
   `.supply-chain/tools.json` pins npm `11.17.0` by `sha256` of the Node **24.19.0** tarball
   (`source_kind: bundled_with_node`), `acquire-tools.mjs` verifies it, and the capability
@@ -588,7 +590,8 @@ output cannot be acted on.
   **reverted** (`c5d2a02`) for this reason — a floor CI sits below is not a floor. Moving to 26
   means rotating tarball, sha256, and receipts together. *Value L · Effort M — deliberate
   rotation, never a drive-by.*
-- **`toolchain-pin-coupling-comments`** — the `node-version: 24.19.0` pin gives no hint that a
+- ~~**`toolchain-pin-coupling-comments`**~~ **RESOLVED 2026-10-19**: each of the four pins in
+  `supply-chain.yml` now names `.nvmrc` and `.supply-chain/tools.json`. Original entry: the `node-version: 24.19.0` pin gives no hint that a
   `sha256` in `.supply-chain/tools.json` depends on it. The coupling is invisible from the
   workspace where the edit would be made; a comment naming `tools.json` at each of the four
   pins prevents the next reader (human or agent) from "modernising" it. *Value M (near-miss
