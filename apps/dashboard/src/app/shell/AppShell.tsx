@@ -49,6 +49,16 @@ function BarSeparator({ sx }: { sx?: SxProps<Theme> }) {
   );
 }
 
+/**
+ * Below 600px, a full-width, zero-height flex item: whatever follows it starts a line of its own.
+ * The row's 0 row gap means it adds no height. From 600px up it is gone and a separator stands in.
+ */
+function PhoneLineBreak() {
+  return (
+    <Box aria-hidden sx={{ flexBasis: '100%', height: 0, display: { xs: 'block', sm: 'none' } }} />
+  );
+}
+
 export function AppShell() {
   // (v2) The ⌘K palette — mounted ONCE in the shell so "one keystroke anywhere" holds on every
   // in-shell route (SPEC §2.6). Landing is the shell's index route, so that includes `/` (canon
@@ -199,17 +209,23 @@ export function AppShell() {
             <Typography variant="caption" color="text.secondary" sx={PHONE_ONLY}>
               Oct 7, 2026
             </Typography>
+            {/* From 600px up the bar names the product: a deep link to the desk or Research never
+                shows the landing's explanation (spec 01, Why §1). The as-of is the owner's D2
+                wording; "Signed in as the demo account" is gone, since the nav already shows the
+                "Demo account" name from 600px up and the drawer shows it on a phone. */}
             <Typography variant="caption" color="text.secondary" sx={WIDE_ONLY}>
-              Authored scenario · October 7, 2026 · no market feed connected
+              Convexa is an options desk: dealer positioning, SEC filings and research notes.
             </Typography>
             <BarSeparator sx={WIDE_ONLY} />
             <Typography variant="caption" color="text.secondary" sx={WIDE_ONLY}>
-              Signed in as the demo account
+              As of Oct 7, 2026 · no market feed connected
             </Typography>
-            {/* On a phone the playback line always starts a line of its own, so it takes no
-                separator there; the row may wrap in these states at any width. */}
+            {/* Below 600px the playback line starts a line of its own (PhoneLineBreak), so it takes
+                no separator there; from 600px up a separator precedes it. The row may wrap in these
+                states at any width. */}
             {playback.playback === 'paused' && (
               <>
+                <PhoneLineBreak />
                 <BarSeparator sx={WIDE_ONLY} />
                 <Typography variant="caption" color="text.secondary">
                   Simulated playback paused. Showing the last sample.
@@ -221,6 +237,7 @@ export function AppShell() {
             )}
             {playback.playback === 'ended' && (
               <>
+                <PhoneLineBreak />
                 <BarSeparator sx={WIDE_ONLY} />
                 <Typography variant="caption" color="text.secondary">
                   Sample playback complete. Showing the last sample.

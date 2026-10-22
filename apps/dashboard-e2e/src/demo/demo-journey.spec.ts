@@ -61,8 +61,9 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
 
   await page.goto('/');
   await expect(page.getByTestId('demo-provenance')).toContainText('Demo · sample data');
-  await expect(page.getByTestId('demo-provenance')).toContainText('October 7, 2026');
-  await expect(page.getByTestId('demo-provenance')).toContainText('Signed in as the demo account');
+  await expect(page.getByTestId('demo-provenance')).toContainText('As of Oct 7, 2026');
+  // The bar no longer says who is signed in; the nav's account control does, from 600px up.
+  await expect(page.getByTestId('account-email')).toContainText('Demo account');
   const entryAssets = await page.evaluate(() =>
     performance
       .getEntriesByType('resource')
@@ -312,7 +313,7 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   await screenshot(page, 'technical-desktop-dark');
   await page.reload();
   await expect(page.getByText(/Technical analysis · SPY/)).toBeVisible();
-  await expect(page.getByTestId('demo-provenance')).toContainText('October 7, 2026');
+  await expect(page.getByTestId('demo-provenance')).toContainText('As of Oct 7, 2026');
 
   await page.evaluate(() => performance.clearResourceTimings());
   await page.goto('/ticker/QQQ/research');
