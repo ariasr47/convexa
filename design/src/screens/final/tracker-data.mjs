@@ -104,6 +104,26 @@ export const OPEN_QUESTIONS = [
     why: 'Site check D-13. universe.json lists symbols only; the only name source the API reads is SEC’s company_tickers.json, whose names are legal names in capitals and may not cover the ETFs.',
   },
   {
+    id: 'Q-SAMPLE-ONCE',
+    asked: '2026-10-22',
+    status: 'answered',
+    answered: '2026-10-22',
+    answer:
+      'Spec 3’s text: the bar is the page’s one “Demo · sample data”; a frame names the sample once, by a Sample or Demo source chip or else one word in its head; the “Sample note” kind pill stays (DESIGN_SYSTEM.md Amendments, 2026-10-22).',
+    ask: 'D1 (spec 1 Q1, spec 3 Q2): on the demo, the bar is the page’s one “Demo · sample data”; does a sample frame with no source line still say “Sample” in its head (spec 3), or only show its dashed, hatched border (spec 1)?',
+    why: 'docs/product/specs/2026-10-21/README.md, Owner decisions. The border and hatch never reach the accessibility tree. Holds up spec 1 steps 5 and 8, spec 3 commit (d), spec 4 C2, spec 5’s staging heading and spec 7 criterion 5. Under this answer spec 1’s criterion 12 is recounted and its criterion 13 takes the spec-3 form.',
+  },
+  {
+    id: 'Q-BAR-AS-OF',
+    asked: '2026-10-22',
+    status: 'answered',
+    answered: '2026-10-22',
+    answer:
+      'Yes: from 600px up the demo bar reads “As of Oct 7, 2026” (DESIGN_SYSTEM.md Amendments, 2026-10-22).',
+    ask: 'D2 (spec 1 Q2): from 600px up, should the demo bar’s as-of read “As of Oct 7, 2026” rather than the brief’s “Sample scenario · Oct 7, 2026”?',
+    why: 'docs/product/specs/2026-10-21/README.md, Owner decisions. The brief’s wording spends the page’s whole sample-word budget on chrome (6 of 6 at 1440). Below 600px the bar reads “Demo · sample data · Oct 7, 2026”, which needs no ruling. Spec 3’s desk and Scanner strings follow it.',
+  },
+  {
     id: 'Q-SEC-LOCAL',
     asked: '2026-10-15',
     status: 'answered',
