@@ -148,10 +148,15 @@ fn no_http_client_on_the_score_lab_path() {
 
 /// Step 4 — the diary is byte-identical before and after a run (AC-66). Copy a JSON store to a
 /// temp path, hash it, run the lab's strict read against it, hash again, assert equality.
-#[tokio::test]
+///
+/// The store writes back on a debounced flush (`FLUSH_INTERVAL`, 2 s, `scanner/store.rs`), so
+/// tokio time is paused and the test waits past it; the wait costs no wall time. The seed is
+/// pretty-printed and the store persists compact JSON, so any write-back changes the bytes.
+#[tokio::test(start_paused = true)]
 async fn the_diary_is_byte_identical_before_and_after_a_lab_read() {
-    use api_rust::services::scanner::store::ScanStore;
+    use api_rust::services::scanner::store::{ScanStore, SweepHeartbeat};
     use sha2::{Digest, Sha256};
+    const PAST_FLUSH: std::time::Duration = std::time::Duration::from_secs(3);
 
     let root = workspace_root();
     let fixture_store =
@@ -174,7 +179,7 @@ async fn the_diary_is_byte_identical_before_and_after_a_lab_read() {
             }]
         }
     });
-    std::fs::write(&store_path, serde_json::to_vec(&seed).unwrap()).unwrap();
+    std::fs::write(&store_path, serde_json::to_vec_pretty(&seed).unwrap()).unwrap();
     let _ = fixture_store; // presence-only sanity anchor; not read here
 
     let hash_of = |p: &Path| -> String {
@@ -192,15 +197,30 @@ async fn the_diary_is_byte_identical_before_and_after_a_lab_read() {
     // The lab's own read path — never the fallback-bearing read.
     let _ = store.read_structure_history_strict("SPY", 10).await;
     let _ = store.read_structure_history_strict("QQQ", 10).await; // symbol absent — still a read
-    drop(store);
 
     // No debounced flush should have marked anything dirty from a read-only path.
-    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    tokio::time::sleep(PAST_FLUSH).await;
     let after = hash_of(&store_path);
     assert_eq!(
         before, after,
         "the diary must be byte-identical before and after a lab read"
     );
+
+    // Anti-vacuity: a write the store does persist reaches the file within the same wait.
+    store
+        .write_heartbeat(SweepHeartbeat {
+            updated_at: 1.0,
+            sweep_last_completed: None,
+            universe_size: 0,
+        })
+        .await;
+    tokio::time::sleep(PAST_FLUSH).await;
+    assert_ne!(
+        after,
+        hash_of(&store_path),
+        "a dirty store must flush within PAST_FLUSH; raise it if FLUSH_INTERVAL grew"
+    );
+    drop(store);
 
     let _ = std::fs::remove_dir_all(&dir);
 }

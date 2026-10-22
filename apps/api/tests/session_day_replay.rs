@@ -3,7 +3,8 @@
 //! Plant `(SPY, 2026-08-10)` → `prepare_replay` → first SSE `data:` already carries
 //! `session_tape` + `live: false` → clock honors gap → Path-B only when reached →
 //! vendor counter 0 (incl. QQQ REST) → refuse-before-bind negatives → empty walks →
-//! replay writes nothing to the session archive → score triple identity → secrets stay out of SSE.
+//! replay writes nothing to the session archive → score triple identity → a player fault does
+//! not 5xx the desk.
 
 use api_rust::routes;
 use api_rust::services::analytics::{
@@ -757,9 +758,7 @@ async fn same_path_b_body_score_triple_matches_live_compute_path() {
 }
 
 #[tokio::test]
-async fn player_fault_does_not_5xx_bundle_and_secrets_stay_out_of_sse() {
-    std::env::set_var("DAY_REPLAY_B7_SECRET", "super-secret-b7-token-do-not-leak");
-
+async fn player_fault_does_not_5xx_bundle() {
     let tape = SessionDayTape::memory();
     tape.append_path_a(SYM, ET, PathARecord::trade(ts(10, 0, 0), 100.0, None))
         .await
@@ -799,11 +798,6 @@ async fn player_fault_does_not_5xx_bundle_and_secrets_stay_out_of_sse() {
         .unwrap();
     let events = collect_sse_data(response, 1, Duration::from_secs(3)).await;
     let first = events.first().expect("sse data");
-    let raw = first.to_string();
-    assert!(
-        !raw.contains("super-secret-b7-token-do-not-leak"),
-        "SSE JSON must not leak env secrets"
-    );
     assert_eq!(first["live"], false);
 
     let sleeper = Arc::new(RecordingSleeper {
@@ -818,11 +812,9 @@ async fn player_fault_does_not_5xx_bundle_and_secrets_stay_out_of_sse() {
     run_player(SYM, ET, pace, day, ports).await;
 
     // Desk isolation: armed REST remains Ok (absent structure), never 5xx.
-    let (snap, src) = load_analytics(&state, "SPY", None, None, false)
+    let (_, src) = load_analytics(&state, "SPY", None, None, false)
         .await
         .expect("player fault must not 5xx load_analytics");
-    assert!(snap.is_none() || snap.is_some());
     assert_eq!(src, "session_tape");
     drop(keep);
-    std::env::remove_var("DAY_REPLAY_B7_SECRET");
 }

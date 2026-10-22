@@ -57,7 +57,7 @@ utoipa = { version = "=5.5.0", features = ["axum_extras", "auto_into_responses"]
 url = "2"
 
 [dev-dependencies]
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "test-util"] }
 tower = { version = "0.5", features = ["util"] }
 
 [features]

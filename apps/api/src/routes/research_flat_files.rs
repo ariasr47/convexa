@@ -611,6 +611,21 @@ mod tests {
     use axum::body::to_bytes;
     use axum::http::HeaderValue;
 
+    const CANARY: &str = "canary-secret-value-do-not-print";
+
+    /// Stored trades extracts for 2026-08-10 whose bytes carry the canary: SPY (watchlisted) and
+    /// NVDA (outside the watchlist; the memory store accepts it, as a stray file on disk would
+    /// sit there). Only an authorized, watchlisted, dated load may serve these bytes.
+    async fn plant_canary(store: &FlatFilesStore) {
+        for symbol in ["SPY", "NVDA"] {
+            let csv = format!("ticker,note\n{symbol},{CANARY}\n");
+            store
+                .put_extract(symbol, "2026-08-10", ExtractClass::Trades, csv, 1)
+                .await
+                .unwrap();
+        }
+    }
+
     fn poison_absent(v: &Value) {
         let s = v.to_string();
         for banned in [
@@ -705,13 +720,13 @@ mod tests {
 
     #[tokio::test]
     async fn token_missing_is_401_without_extract_body() {
-        let canary = "canary-secret-value-do-not-print";
         // metrics_token_ok requires URL-safe base64 decoding to ≥32 bytes.
         let token = "CwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCws";
         let mut state = AppState::for_runtime_guardrail_tests(token.into())
             .await
             .unwrap();
         state.flat_files = FlatFilesStore::memory();
+        plant_canary(&state.flat_files).await;
         let res = list_flat_files(
             State(state.clone()),
             Path("NVDA".into()),
@@ -723,7 +738,7 @@ mod tests {
         assert_eq!(status, StatusCode::UNAUTHORIZED);
         assert_eq!(v["error"], "metrics_unauthorized");
         assert!(v.get("extracts").is_none());
-        assert!(!v.to_string().contains(canary));
+        assert!(!v.to_string().contains(CANARY));
         assert!(!v.to_string().contains(token));
 
         let res = load_flat_files(
@@ -736,11 +751,12 @@ mod tests {
         )
         .await;
         let (status, v) = body_json(res).await;
+        // The stored SPY bytes are checked before the status, so a skipped gate fails on the leak.
+        assert!(!v.to_string().contains(CANARY), "{v}");
+        assert!(!v.to_string().contains(token), "{v}");
         assert_eq!(status, StatusCode::UNAUTHORIZED);
         assert_eq!(v["error"], "metrics_unauthorized");
         assert!(v.get("trades_extract").is_none());
-        assert!(!v.to_string().contains(canary));
-        assert!(!v.to_string().contains(token));
     }
 
     #[tokio::test]
@@ -1075,38 +1091,50 @@ mod tests {
 
     #[tokio::test]
     async fn canary_secret_absent_from_list_load_bodies() {
-        let canary = "canary-secret-value-do-not-print";
         let token = "CwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCws";
         let mut state = AppState::for_runtime_guardrail_tests(token.into())
             .await
             .unwrap();
         state.flat_files = FlatFilesStore::memory();
+        plant_canary(&state.flat_files).await;
         let mut headers = HeaderMap::new();
         headers.insert("x-metrics-token", HeaderValue::from_static(token));
+        let load = |symbol: &str| {
+            load_flat_files(
+                State(state.clone()),
+                Path(symbol.into()),
+                Query(FlatFilesLoadQuery {
+                    et_date: Some("2026-08-10".into()),
+                }),
+                headers.clone(),
+            )
+        };
+
+        // The list is metadata only, even for a symbol whose stored extract holds the canary.
         let res = list_flat_files(
             State(state.clone()),
-            Path("NVDA".into()),
+            Path("SPY".into()),
             Query(FlatFilesListQuery { limit: None }),
             headers.clone(),
         )
         .await;
         let (status, v) = body_json(res).await;
         assert_eq!(status, StatusCode::OK, "{v}");
-        assert!(!v.to_string().contains(canary), "{v}");
+        assert!(!v.to_string().contains(CANARY), "{v}");
         assert!(!v.to_string().contains(token), "{v}");
 
-        let res = load_flat_files(
-            State(state),
-            Path("NVDA".into()),
-            Query(FlatFilesLoadQuery {
-                et_date: Some("2026-08-10".into()),
-            }),
-            headers,
-        )
-        .await;
-        let (status, v) = body_json(res).await;
+        // A symbol outside the watchlist never serves its stored bytes.
+        let (status, v) = body_json(load("NVDA").await).await;
         assert_eq!(status, StatusCode::OK, "{v}");
-        assert!(!v.to_string().contains(canary), "{v}");
+        assert!(!v.to_string().contains(CANARY), "{v}");
         assert!(!v.to_string().contains(token), "{v}");
+
+        // Anti-vacuity: the planted bytes are servable, so the two absences above can fail.
+        let (status, v) = body_json(load("SPY").await).await;
+        assert_eq!(status, StatusCode::OK, "{v}");
+        assert!(
+            v["trades_extract"].as_str().unwrap().contains(CANARY),
+            "{v}"
+        );
     }
 }
