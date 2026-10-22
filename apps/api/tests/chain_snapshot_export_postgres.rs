@@ -11,7 +11,7 @@ use api_rust::services::chain_snapshot::{
 };
 use chrono::{DateTime, Utc};
 use sqlx::{postgres::PgPoolOptions, Row};
-use std::{path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command, time::Duration};
 
 fn base_url() -> String {
     std::env::var("TEST_DATABASE_URL")
@@ -98,4 +98,98 @@ async fn export_coordinator_uses_isolated_db_and_reports_safe_failures() {
     }.await;
     drop_db(&admin, &db).await;
     result
+}
+
+/// Wide enough that the age arm of `prune_symbol` keeps every fixed as-of below, whatever the wall
+/// clock reads, until 2123. The count arm is the subject; the clock decides nothing.
+const KEEP_ALL_BY_AGE: Duration = Duration::from_secs(100 * 365 * 24 * 60 * 60);
+
+async fn listed_as_ofs(
+    store: &ChainSnapshotStore,
+    symbol: &str,
+) -> Result<Vec<DateTime<Utc>>, String> {
+    let rows = store
+        .list(symbol, None)
+        .await
+        .map_err(|e| format!("list: {e}"))?;
+    Ok(rows.into_iter().map(|m| m.as_of).collect())
+}
+
+/// Appends `as_ofs` through the production store on a freshly migrated database, prunes to the
+/// newest 2, and returns the as-ofs listed before and after the prune. Errors come back as text so
+/// the caller can drop the database before asserting.
+async fn list_around_prune_to_two(
+    database_url: &str,
+    symbol: &str,
+    as_ofs: &[DateTime<Utc>],
+) -> Result<(Vec<DateTime<Utc>>, Vec<DateTime<Utc>>), String> {
+    let migrate = Command::new(bin())
+        .arg("postgres-migrate")
+        .env("DATABASE_URL", database_url)
+        .output()
+        .map_err(|e| format!("run canonical postgres-migrate: {e}"))?;
+    if !migrate.status.success() {
+        return Err(format!(
+            "migration failed: {}",
+            String::from_utf8_lossy(&migrate.stderr)
+        ));
+    }
+    let pg = Pg::connect(database_url)
+        .await
+        .map_err(|e| format!("connect: {e}"))?;
+    let store = ChainSnapshotStore::open_postgres(pg.clone());
+    for as_of in as_ofs {
+        let wire = to_wire(&fixture_probe_bundle(symbol, *as_of));
+        let body = serialize_capture(&wire).map_err(|e| format!("serialize: {e}"))?;
+        store
+            .append(&wire, &body)
+            .await
+            .map_err(|e| format!("append: {e}"))?;
+    }
+    let before = listed_as_ofs(&store, symbol).await?;
+    store
+        .prune_symbol(symbol, KEEP_ALL_BY_AGE, 2)
+        .await
+        .map_err(|e| format!("prune: {e}"))?;
+    let after = listed_as_ofs(&store, symbol).await?;
+    pg.pool.close().await;
+    Ok((before, after))
+}
+
+/// The Postgres count prune keeps the newest `max_per` snapshots and deletes the older ones. Its
+/// only prune tests ran on the memory and JSON stores (`chain_snapshot/store.rs`), so a wrong
+/// OFFSET, sort order or age cutoff in `pg_chain_snapshot.rs` deleted the wrong snapshots, or
+/// none, with every suite green. The snapshots go in out of time order, so insertion order cannot
+/// stand in for `as_of_ns`.
+#[tokio::test]
+async fn prune_on_postgres_keeps_the_newest_n() {
+    let base = base_url();
+    let admin = PgPoolOptions::new()
+        .max_connections(2)
+        .connect(&base)
+        .await
+        .expect("connect TEST_DATABASE_URL admin");
+    let db = disposable_name();
+    sqlx::query(&format!(r#"CREATE DATABASE "{db}""#))
+        .execute(&admin)
+        .await
+        .expect("create disposable database");
+    let at = |hour: i64| DateTime::<Utc>::from_timestamp(1_700_000_000 + hour * 3600, 0).unwrap();
+    let (oldest, middle, newest) = (at(0), at(1), at(2));
+    let outcome =
+        list_around_prune_to_two(&db_url(&base, &db), "SPY", &[newest, oldest, middle]).await;
+
+    drop_db(&admin, &db).await;
+
+    let (before, after) = outcome.expect("append, prune and list on Postgres");
+    assert_eq!(
+        before,
+        vec![oldest, middle, newest],
+        "all three snapshots must be stored before the prune, or this test proves nothing"
+    );
+    assert_eq!(
+        after,
+        vec![middle, newest],
+        "prune to 2 on Postgres must keep the newest two and delete the oldest"
+    );
 }
