@@ -21,6 +21,19 @@ the per-entry `node_modules` links of §1.4), so other lanes' uncommitted edits 
 b6febc15 has test-plan batches 1, 2 and 12; it does not have batch 3. The logs of every figure are
 in `/private/tmp/claude-501/bite-4-logs/` (scratch; not kept by git).
 
+**Correction (review, 2026-10-22, lane TT; supersedes "The logs of every figure" above).** Not
+every figure has a log. These came from the session's own timing and `uptime` output and were never
+written to `bite-4-logs/`: all of §2 (every exit code, the 1.2 s, 92.8 s, 8.0 s and 10.3 s times,
+every load reading, and the cold target's 2.2 GB and 1,725 files; `contract-cold2.log` and
+`contract-warm.log` hold only the two pass lines, `libapi-tsc.log` is empty, and `contract-cold.log`
+holds only the failed attempt's TS6305 output); the exit codes and the 28.2 s and 23.5 s walls in §3
+(the logs give Vitest's `Duration`, 27.76 s and 23.11 s); the exit codes, the 9.6 s and 40.2 s walls
+and the 49.8 s total in §4 (the logs give the Nx run's 5.1 s and Playwright's `1 passed (39.5s)`);
+and, under Conditions, the top 1-minute load of 37.5 (it is §2's) and the account of the other
+lanes' Cargo processes. Logged: §1, §3's loads and JSON reports, §4's loads, all of §5, the export
+clone and the parity warm-up. A re-run of §2–§4 should write each command's time, exit code and
+`uptime` lines to its log.
+
 ### 1. `target/` size (the repo's, not the export's)
 
 | Measure | Result | Plan figure |
@@ -115,6 +128,11 @@ fixture's 216 boundary names, asserts there are 216, and calls `assert_persisted
 not affect the binary and was not prototyped. Every round exited 0: HEAD 230 passed, prototype 15
 passed. After the last round the HEAD file was restored and `cmp` was clean against the repo.
 
+**Correction (review, 2026-10-22, lane TT; supersedes "1,434 → 1,221 lines" above).** 1,433 →
+1,220 lines. `wc -l` and `awk 'END{print NR}'` both give 1,433 for `parity.head.rs` and 1,220 for
+`parity.proto.rs`, and both files end in a newline. `parity.head.rs` matches b6febc15's
+`apps/api/tests/api_contract_parity.rs` byte for byte (`cmp` exit 0).
+
 | Measure (median of 8; mean; range) | HEAD | Prototype | Cut |
 |---|---|---|---:|
 | Build (`--no-run`) | 2.6 s; 2.88; 2.0–4.6 | 1.95 s; 2.14; 1.8–3.1 | 25% |
@@ -131,6 +149,17 @@ build-plus-run time. Both readings fall short: 19.1% on build plus execution, 12
 developer sees. Batch 49 does not qualify on this measurement. Its gate is close enough (19.1%) that
 one quiet-machine re-run of the same 8-round script should settle it, and batch 49 stays held until
 then.
+
+**Verdict superseded (review, 2026-10-22, lane TT; replaces the two sentences above that begin
+"Its gate is close enough").** The plan has no "held" state. §4.3 (`TEST_PLAN.md:422`) runs batch
+49 only if this measurement shows at least a 20% cut, "otherwise it is dropped", and its §8 row
+(`:741`) says the same. This measurement gives 19.1% < 20%, so **batch 49 is dropped**, and the
+plan's figures without it apply (Rust default 1,209 instead of 994, `TEST_PLAN.md:27`). Whether a
+loaded machine makes the measurement unfit is for the owner to decide, not this lane. **Owner
+question:** may one quiet-machine re-run of `parity-measure.sh` (the same 8 alternating rounds)
+reopen batch 49 if it measures at least 20%? The lane asks because the rounds ran at a 1-minute
+load of 8.8–11.8 and the cut is 0.9 points under the gate. Until the owner says yes, §5's place on
+the re-run list below stands only as that question, and batch 49 stays dropped.
 
 ### Not measured, and why
 
