@@ -1077,7 +1077,11 @@ impl AppState {
     }
 }
 
-pub(crate) fn test_stub_config() -> Config {
+/// Hermetic config for tests: no process environment read, no vendor key. Public only so the
+/// integration suites under `tests/` can build a config without mutating env (which races in a
+/// parallel test binary).
+#[doc(hidden)]
+pub fn test_stub_config() -> Config {
     use crate::config::DataFeed;
     use std::collections::HashSet;
     use std::path::PathBuf;

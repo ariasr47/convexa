@@ -39,6 +39,7 @@
     "graph": "nx graph",
     "ports:free": "node tools/free-ports.mjs",
     "test:tools": "node tools/test-tools.mjs",
+    "test:postgres": "node apps/api/scripts/test-postgres.mjs",
     "verify": "node tools/verify.mjs",
     "atlas": "node tools/atlas/run.mjs",
     "atlas:offline": "node tools/atlas/run.mjs --offline",

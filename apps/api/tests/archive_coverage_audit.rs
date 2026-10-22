@@ -303,24 +303,75 @@ async fn audit_leaves_files_metadata_tree_and_database_rows_identical() {
     assert!(source.contains("SELECT symbol, et_date, source_as_of, source"));
     let _ = std::fs::remove_dir_all(base);
 
+    // The Postgres arm migrates a disposable database of its own and builds its config without
+    // reading the process environment, so it needs only TEST_DATABASE_URL (an admin connection).
     #[cfg(feature = "postgres")]
     {
-        let database_url = std::env::var("TEST_DATABASE_URL")
+        let admin_url = std::env::var("TEST_DATABASE_URL")
             .expect("TEST_DATABASE_URL is required: real PostgreSQL fixture is mandatory");
+        let admin = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(2)
+            .connect(&admin_url)
+            .await
+            .expect("connect TEST_DATABASE_URL admin");
+        let db_name = format!(
+            "archive_audit_{}_{}",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap()
+        );
+        sqlx::query(&format!(r#"CREATE DATABASE "{db_name}""#))
+            .execute(&admin)
+            .await
+            .expect("create disposable database");
+        let mut parsed = url::Url::parse(&admin_url).expect("TEST_DATABASE_URL must be a URL");
+        parsed.set_path(&format!("/{db_name}"));
+        parsed.set_query(None);
+        let database_url = parsed.to_string();
+        let migrated = std::process::Command::new(env!("CARGO_BIN_EXE_api-rust"))
+            .arg("postgres-migrate")
+            .env("DATABASE_URL", &database_url)
+            .output()
+            .expect("run postgres-migrate");
+        assert!(
+            migrated.status.success(),
+            "postgres-migrate failed: {}",
+            String::from_utf8_lossy(&migrated.stdout)
+        );
         let pg = api_rust::db::postgres::Pg::connect(&database_url)
             .await
-            .expect("connect TEST_DATABASE_URL");
+            .expect("connect disposable database");
+
+        // One readable book, so the row and file comparisons below have something to lose.
+        let pg_base = std::env::temp_dir().join(&db_name);
+        let pg_bodies = pg_base.join("bodies");
+        let as_of = DateTime::parse_from_rfc3339("2026-08-26T18:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let as_of_ns = as_of.timestamp_nanos_opt().unwrap();
+        let locator = format!("SPY/2026-08-26/{as_of_ns}-0000000000000000.bin");
+        let body_path = pg_bodies.join(&locator);
+        std::fs::create_dir_all(body_path.parent().unwrap()).unwrap();
+        let wire = to_wire(&fixture_probe_bundle("SPY", as_of));
+        std::fs::write(&body_path, serialize_capture(&wire).unwrap()).unwrap();
+        sqlx::query(
+            "INSERT INTO session_chain_archive (symbol, et_date, source_as_of, source_as_of_ns, source, body_locator) VALUES ('SPY', '2026-08-26', $1, $2, 'fixture', $3)",
+        )
+        .bind(as_of.to_rfc3339_opts(chrono::SecondsFormat::Nanos, true))
+        .bind(as_of_ns)
+        .bind(&locator)
+        .execute(&pg.pool)
+        .await
+        .expect("seed one archive row");
+
         let before_rows = sqlx::query_as::<_, (String, String, String, String, Option<String>)>(
             "SELECT symbol, et_date, source_as_of, source, body_locator FROM session_chain_archive ORDER BY symbol, et_date",
         )
         .fetch_all(&pg.pool)
         .await
         .expect("snapshot archive rows before audit");
-        let pg_base = std::env::temp_dir().join(format!("archive-audit-pg-{}", std::process::id()));
-        let pg_bodies = pg_base.join("bodies");
-        std::fs::create_dir_all(&pg_bodies).unwrap();
-        let mut config =
-            api_rust::Config::from_env().expect("production config for postgres audit");
+        assert_eq!(before_rows.len(), 1);
+        let before_files = tree_snapshot(&pg_base);
+        let mut config = api_rust::state::test_stub_config();
         config.database_url = Some(database_url);
         config.session_chain_archive_enabled = true;
         config.session_chain_archive_body_root = Some(pg_bodies.clone());
@@ -346,6 +397,14 @@ async fn audit_leaves_files_metadata_tree_and_database_rows_identical() {
         .await
         .expect("snapshot archive rows after audit");
         assert_eq!(after_rows, before_rows);
+        assert_eq!(tree_snapshot(&pg_base), before_files);
+        drop(reader);
+        pg.pool.close().await;
+        let _ = sqlx::query(&format!(
+            r#"DROP DATABASE IF EXISTS "{db_name}" WITH (FORCE)"#
+        ))
+        .execute(&admin)
+        .await;
         let _ = std::fs::remove_dir_all(pg_base);
     }
 }

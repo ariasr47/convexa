@@ -1049,39 +1049,44 @@ mod tests {
             .get_or_init(|| tokio::sync::Mutex::new(()))
             .lock()
             .await;
+        // Every expected version comes from the compiled manifest, never a literal: the literals
+        // this test once carried went red when migration v13 landed, and nothing ran it to see.
+        let manifest = migrations::compiled_manifest();
+        assert!(manifest.len() >= 2, "a pending suffix needs two versions");
+        let all_versions: Vec<i64> = manifest.iter().map(|m| m.version).collect();
+        let last = *all_versions.last().unwrap();
+        let ledger = |db: String| async move {
+            let p = PgPool::connect(&db).await.unwrap();
+            let versions: Vec<i64> =
+                sqlx::query_scalar("SELECT version FROM schema_migrations ORDER BY version")
+                    .fetch_all(&p)
+                    .await
+                    .unwrap();
+            versions
+        };
+
         let (admin, db, name) = real_db("fresh").await;
-        let first = run_real(&db, None).await;
-        assert_eq!(outcome(&first), &TerminalOutcome::WorkApplied);
-        let p = PgPool::connect(&db).await.unwrap();
-        sqlx::query("DELETE FROM schema_migrations WHERE version = 12")
-            .execute(&p)
-            .await
-            .unwrap();
-        let table_name = ["arch", "ive"].concat();
-        sqlx::query(&format!(
-            "ALTER TABLE session_chain_{table_name} DROP COLUMN body_locator"
-        ))
-        .execute(&p)
-        .await
-        .unwrap();
-        sqlx::query(&format!(
-            "ALTER TABLE session_chain_{table_name} ALTER COLUMN body SET NOT NULL"
-        ))
-        .execute(&p)
-        .await
-        .unwrap();
-        let versions: Vec<i64> =
-            sqlx::query_scalar("SELECT version FROM schema_migrations ORDER BY version")
-                .fetch_all(&p)
-                .await
-                .unwrap();
-        assert_eq!(versions, (1_i64..=11).collect::<Vec<_>>());
-        drop(p);
-        let prefix = run_real(&db, None).await;
-        assert_eq!(outcome(&prefix), &TerminalOutcome::WorkApplied);
-        assert_eq!(prefix.terminal.highest_committed_version, Some(12));
-        let second = run_real(&db, None).await;
-        assert_eq!(outcome(&second), &TerminalOutcome::AlreadyCurrent);
+        let fresh = run_real(&db, None).await;
+        assert_eq!(outcome(&fresh), &TerminalOutcome::WorkApplied);
+        assert_eq!(fresh.terminal.highest_committed_version, Some(last));
+        assert_eq!(ledger(db.clone()).await, all_versions);
+        drop_real_db(&admin, &name).await;
+
+        // An older release's database: the manifest minus its last version, applied for real.
+        // Deleting a ledger row instead leaves a hole, which classify_history calls Diverged.
+        let (admin, db, name) = real_db("prefix").await;
+        let older = run_injected(&db, &manifest[..manifest.len() - 1], false).await;
+        assert_eq!(outcome(&older), &TerminalOutcome::WorkApplied);
+        assert_eq!(
+            ledger(db.clone()).await,
+            all_versions[..all_versions.len() - 1]
+        );
+        let suffix = run_real(&db, None).await;
+        assert_eq!(outcome(&suffix), &TerminalOutcome::WorkApplied);
+        assert_eq!(suffix.terminal.highest_committed_version, Some(last));
+        assert_eq!(ledger(db.clone()).await, all_versions);
+        let again = run_real(&db, None).await;
+        assert_eq!(outcome(&again), &TerminalOutcome::AlreadyCurrent);
         drop_real_db(&admin, &name).await;
     }
 
@@ -1344,7 +1349,10 @@ mod tests {
             cancelled.terminal.message,
             "Migration failed: the migration operation was cancelled."
         );
-        assert_eq!(cancelled.terminal.target_version, Some(12));
+        assert_eq!(
+            cancelled.terminal.target_version,
+            Some(migrations::compiled_manifest().last().unwrap().version)
+        );
         assert_eq!(cancelled.exit_code, 1);
         assert_eq!(capture.0.len(), 1);
         let (admin, db, name) = real_db("busy").await;
