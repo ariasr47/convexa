@@ -259,7 +259,7 @@ function demoLiquidity(): NonNullable<PublicMarkets['liquidity']> {
     };
   });
   return {
-    source: 'Demo sample (shaped like Fed H.4.1, Treasury DTS and NY Fed reverse repo)',
+    source: 'Demo · shaped like Fed H.4.1, Treasury DTS and NY Fed reverse repo',
     as_of: weeks[W - 1].date,
     fetched_at: DEMO_TIME,
     weeks,
@@ -274,7 +274,7 @@ export function demoPublicMarkets(): PublicMarkets {
     state: 'live',
     detail: SAMPLE,
     rates: {
-      source: 'Demo sample (shaped like U.S. Treasury daily par and real yield curves)',
+      source: 'Demo · shaped like U.S. Treasury daily par and real yield curves',
       as_of: latest.date,
       fetched_at: DEMO_TIME,
       latest,
@@ -282,7 +282,7 @@ export function demoPublicMarkets(): PublicMarkets {
       daily,
     },
     futures: {
-      source: 'Demo sample (shaped like CFTC Traders in Financial Futures)',
+      source: 'Demo · shaped like CFTC Traders in Financial Futures',
       report_date: '2026-10-06',
       fetched_at: DEMO_TIME,
       markets: [

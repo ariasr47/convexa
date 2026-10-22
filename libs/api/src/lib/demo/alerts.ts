@@ -22,7 +22,7 @@ export const DEMO_ALERTS_SEED = {
       enabled: true,
       createdAt: ANCHOR,
       level: 'gamma_flip',
-      note: 'Watch the authored sample flip',
+      note: 'Watch the flip',
     },
     {
       id: 'demo-alert-nvda-results',
@@ -92,7 +92,7 @@ export const DEMO_ALERTS_SEED = {
       kind: 'cftc',
       symbol: '10-year T-note',
       message: '10-year T-note: asset managers within 5% of a 3-year high',
-      detail: '+2.70M contracts net, sample report, positions as of Tue Oct 6',
+      detail: '+2.70M contracts net, positions as of Tue Oct 6',
       at: ANCHOR,
       date: '2026-10-07',
       read: true,
