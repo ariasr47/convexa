@@ -137,16 +137,29 @@ impl RedisPriceCache {
         Ok(Self { con })
     }
 
+    /// Run `cmd` on the shared connection, once more if it failed because the socket was lost.
+    ///
+    /// When the server closes the socket (restart, idle timeout, proxy drop), the manager starts
+    /// a reconnect only after a command fails on it, and returns that failure to the caller. A
+    /// per-call connection never saw a lost socket, so the retry keeps that behaviour: it waits
+    /// for the reconnect. GET and SET are idempotent, so one retry is safe. A down Redis still
+    /// fails fast, because with zero connect retries the retry's connect is refused at once.
+    async fn query<T: redis::FromRedisValue>(&self, cmd: &redis::Cmd) -> redis::RedisResult<T> {
+        let mut con = self.con.clone();
+        match cmd.query_async(&mut con).await {
+            Err(e) if e.is_unrecoverable_error() => cmd.query_async(&mut con).await,
+            result => result,
+        }
+    }
+
     pub async fn set_price(&self, price: &LivePrice) -> AppResult<()> {
         let key = LivePrice::redis_key(&price.symbol);
         let mut row = price.clone();
         row.symbol = price.symbol.to_ascii_uppercase();
         let payload = serde_json::to_string(&row)?;
-        let mut con = self.con.clone();
-        redis::cmd("SET")
-            .arg(&key)
-            .arg(payload)
-            .query_async::<()>(&mut con)
+        let mut cmd = redis::cmd("SET");
+        cmd.arg(&key).arg(payload);
+        self.query::<()>(&cmd)
             .await
             .map_err(|e| AppError::Redis(format!("SET {key}: {e}")))?;
         debug!(%key, price = price.price, "redis SET");
@@ -155,10 +168,10 @@ impl RedisPriceCache {
 
     pub async fn get_price(&self, symbol: &str) -> AppResult<Option<LivePrice>> {
         let key = LivePrice::redis_key(symbol);
-        let mut con = self.con.clone();
-        let raw: Option<String> = redis::cmd("GET")
-            .arg(&key)
-            .query_async(&mut con)
+        let mut cmd = redis::cmd("GET");
+        cmd.arg(&key);
+        let raw: Option<String> = self
+            .query(&cmd)
             .await
             .map_err(|e| AppError::Redis(format!("GET {key}: {e}")))?;
         match raw {
