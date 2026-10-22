@@ -497,6 +497,84 @@ describe('demo HTTP projections', () => {
   });
 });
 
+// Matrix row 57 (docs/testing/2026-10-22/TEST_PLAN.md, batch 14a): a demo visitor's traffic must
+// never reach the API. Dashboard code that calls `fetch` itself is batch 67's smoke, not this case.
+describe('demo transport · zero egress', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.resetModules();
+    delete window.__CONVEXA_BOOT__;
+  });
+
+  it('serves the bundle, scan, streams and auth session with no network call and no EventSource', async () => {
+    installStorage();
+    window.__CONVEXA_BOOT__ = { mode: 'demo', key: (key) => `convexa.demo.v1.${key}` };
+    const { scenarioSeedAssets } = await import('./catalog/assets');
+    const seedAssets = new Set<string>(Object.values(scenarioSeedAssets));
+    // Strict: the bundled seed asset is the demo's one allowed read. Anything else is recorded
+    // (a transport that swallows the throw is still caught) and throws.
+    const egress: string[] = [];
+    let seedReads = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = input instanceof Request ? input.url : String(input);
+        if (seedAssets.has(url)) {
+          seedReads += 1;
+          return new Response(JSON.stringify(canonicalScenarioSeedForAsset(url)), {
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        egress.push(url);
+        throw new Error(`Unexpected fetch in the demo: ${url}`);
+      }),
+    );
+    let eventSources = 0;
+    vi.stubGlobal(
+      'EventSource',
+      class {
+        constructor() {
+          eventSources += 1;
+        }
+        close() {
+          /* no-op */
+        }
+      },
+    );
+    // The real seed read, so its fetch goes through the strict mock above.
+    const actualAssetFetch =
+      await vi.importActual<typeof import('./catalog/asset-fetch')>('./catalog/asset-fetch');
+    fetchSeedAssetMock.mockImplementation(actualAssetFetch.fetchScenarioSeedAsset);
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    const [api, { subscribeScannerPrices }] = await Promise.all([
+      import('../convexa'),
+      import('./streams'),
+    ]);
+
+    expect((await api.getTicker('SPY')).strike_profile.ticker).toBe('SPY');
+    expect((await api.getScan()).rows.length).toBeGreaterThan(0);
+    expect((await api.getSession()).authenticated).toBe(true);
+    const tickerUpdates: unknown[] = [];
+    const scannerPrices: unknown[] = [];
+    const stopTicker = api.streamTicker('SPY', {}, (update) => tickerUpdates.push(update));
+    const stopPrices = subscribeScannerPrices(['SPY'], (event) => {
+      if (event.kind === 'scanner_prices') scannerPrices.push(event.prices);
+    });
+    await vi.advanceTimersByTimeAsync(2_000);
+    stopTicker();
+    stopPrices();
+
+    // Anti-vacuity: the seed came through this mock and both streams delivered, so the surface
+    // above really ran with this fetch in its path.
+    expect(seedReads).toBeGreaterThan(0);
+    expect(tickerUpdates.length).toBeGreaterThan(0);
+    expect(scannerPrices.length).toBeGreaterThan(0);
+    expect(egress).toEqual([]);
+    expect(eventSources).toBe(0);
+  });
+});
+
 describe('demoTier', () => {
   it('uses the API bands: prime 80, actionable 60, else watch', async () => {
     const { demoTier } = await import('./transport');
