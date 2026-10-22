@@ -728,7 +728,7 @@ export function NoteView({
             )}
           </Box>
         )}
-        {rest.length > 0 && <NoteBody blocks={rest} />}
+        {rest.length > 0 && <NoteBody blocks={rest} label={note.title} />}
         <Box
           sx={{
             display: { xs: 'grid', lg: 'none' },
@@ -768,7 +768,9 @@ export function NoteView({
               return (
                 <Box key={pi} sx={{ display: 'grid', gap: 5, minWidth: 0 }}>
                   {part.title && <PartRule n={partNumber} title={part.title} />}
-                  {part.intro.length > 0 && <NoteBody blocks={part.intro} />}
+                  {part.intro.length > 0 && (
+                    <NoteBody blocks={part.intro} label={part.title ?? note.title} />
+                  )}
                   {part.sections.map((s) => (
                     <Box
                       component="section"
@@ -806,7 +808,7 @@ export function NoteView({
                           <NoteInlines nodes={s.title} />
                         </Box>
                       </Box>
-                      <NoteBody blocks={s.blocks} />
+                      <NoteBody blocks={s.blocks} label={s.label} />
                     </Box>
                   ))}
                 </Box>

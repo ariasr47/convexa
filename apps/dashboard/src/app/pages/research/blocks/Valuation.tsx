@@ -9,9 +9,11 @@
  * (canon P-8 to P-13; design/src/screens/v5/families-research.mjs, RN-06 and RN-08 to RN-11).
  */
 import { ChartFrame, chartRoles } from '@/shared/charts/frame';
+import { useScrollRegion } from '@/shared/ui/useScrollRegion';
 import Box from '@mui/material/Box';
 import type { Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
+import { useRef } from 'react';
 import {
   arrow,
   formatAsOf,
@@ -1138,6 +1140,10 @@ function Sensitivity({ v, stale }: { v: ValuationBlock; stale: boolean }) {
 }
 
 function Assumptions({ v }: { v: ValuationBlock }) {
+  // The inputs table is 420px wide at least, so it scrolls in a phone's column once the details
+  // opens. It is a tab stop only while it scrolls (useScrollRegion; spec 2026-10-21/02, part (d)).
+  const inputsRef = useRef<HTMLDivElement>(null);
+  const inputsRegion = useScrollRegion(inputsRef, 'Model inputs by scenario');
   const keys = [
     'rev_y1',
     'reinvest_y1',
@@ -1199,7 +1205,7 @@ function Assumptions({ v }: { v: ValuationBlock }) {
         </Box>
       </Box>
       <Box sx={{ px: 2, pb: 2, display: 'grid', gap: 1.75, fontSize: 13, lineHeight: 1.6 }}>
-        <Box sx={{ overflowX: 'auto' }}>
+        <Box ref={inputsRef} {...inputsRegion} sx={{ overflowX: 'auto' }}>
           <Box
             component="table"
             sx={{
