@@ -30,7 +30,7 @@ import { MARK_BASIS_META } from '@/features/trading/model/mark';
 import type { MarkBasis } from '@/features/trading/model/types';
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import { downText, upText } from '@/shared/theme/tokens';
-import { dataMode, demoNowMs } from '@convexa/api';
+import { appNowMs } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -108,7 +108,7 @@ export function formatExpiry(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
   const md = `${MONTHS[m - 1]} ${d}`;
-  const now = new Date(dataMode === 'demo' ? demoNowMs() : Date.now());
+  const now = new Date(appNowMs());
   const dte = Math.max(
     0,
     Math.round(

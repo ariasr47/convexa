@@ -18,7 +18,7 @@ import { EntryPrefill, TradeEntryDialog } from '@/features/trading/TradeEntryDia
 import { OrdersPanel } from '@/features/trading/orders/OrdersPanel';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
-import { dataMode, type LiveUpdate, type TickerBundle } from '@convexa/api';
+import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useMemo, useState } from 'react';
@@ -83,7 +83,7 @@ export function PositionsPanel({
   // without one and the contract is typed (tradeEntry/manualContract.ts). With a feed, the entry
   // waits for the bundle as before.
   const marketDataMode = useMarketDataMode();
-  const chainless = dataMode === 'live' && marketDataOff(marketDataMode);
+  const chainless = marketDataOff(marketDataMode);
   // Position-side backlink (AC-31): "From sim order · view order →" opens the order detail in the
   // Orders panel above.
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);

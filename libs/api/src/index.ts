@@ -13,9 +13,9 @@ export { demoNoteFilings } from './lib/demo/public-data';
 export * from './lib/demo/streams';
 export * from './lib/demo/views';
 export {
+  appNowMs,
   canSimulatePaperAction,
   demoClock,
-  demoNowMs,
   initializeDemoWorkspace,
   resetDemoWorkspace,
   resumeDemoPlayback,

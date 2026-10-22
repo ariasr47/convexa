@@ -6,7 +6,7 @@ import type { Trigger } from '@/features/trading/orders/types';
 import type { InstrumentKind, LegSide } from '@/features/trading/positions/leg';
 import type { LegInput } from '@/features/trading/positions/usePortfolio';
 import type { OptionRight } from '@convexa/api';
-import { dataMode, demoNowMs } from '@convexa/api';
+import { appNowMs, dataMode } from '@convexa/api';
 
 /** Fill mode — how the entry price is decided. Local dialog state only (no store / lifecycle). */
 export type FillMode = 'manual' | 'market' | 'limit';
@@ -119,10 +119,7 @@ export interface OrderEntrySubmit extends SubmitBase, OrderContract {
 }
 
 /** D3 default: min(now + 7 days, contract expiration), as a YYYY-MM-DD local date. */
-export function defaultGoodTil(
-  expiration: string,
-  now: Date = new Date(dataMode === 'demo' ? demoNowMs() : Date.now()),
-): string {
+export function defaultGoodTil(expiration: string, now: Date = new Date(appNowMs())): string {
   const y0 = dataMode === 'demo' ? now.getUTCFullYear() : now.getFullYear();
   const m0 = dataMode === 'demo' ? now.getUTCMonth() : now.getMonth();
   const d0 = dataMode === 'demo' ? now.getUTCDate() : now.getDate();
@@ -138,9 +135,7 @@ export function defaultGoodTil(
 }
 
 /** Local YYYY-MM-DD for "today" (the good-til lower bound). */
-export function todayIso(
-  now: Date = new Date(dataMode === 'demo' ? demoNowMs() : Date.now()),
-): string {
+export function todayIso(now: Date = new Date(appNowMs())): string {
   const y = dataMode === 'demo' ? now.getUTCFullYear() : now.getFullYear();
   const m = String((dataMode === 'demo' ? now.getUTCMonth() : now.getMonth()) + 1).padStart(2, '0');
   const d = String(dataMode === 'demo' ? now.getUTCDate() : now.getDate()).padStart(2, '0');

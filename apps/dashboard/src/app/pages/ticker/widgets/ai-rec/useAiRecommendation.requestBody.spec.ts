@@ -87,7 +87,6 @@ describe('useAiRecommendation — the request body, exactly as sent', () => {
         personaName: 'Income writer',
         dteMin: 7,
         dteMax: 45,
-        darkPool: true,
         openPositions: () => digest,
       },
       { override: true, scenarioId: 'sc-earnings-gap' },
@@ -114,7 +113,6 @@ describe('useAiRecommendation — the request body, exactly as sent', () => {
       personaName: 'Default (no persona)',
       dteMin: null,
       dteMax: null,
-      darkPool: false,
     });
 
     expect(sentBody()).toEqual({
@@ -124,7 +122,7 @@ describe('useAiRecommendation — the request body, exactly as sent', () => {
         snapshot_fingerprint: 'fp-A',
         dte_min: null,
         dte_max: null,
-        dark_pool: false,
+        dark_pool: true,
         override: false,
       },
     });

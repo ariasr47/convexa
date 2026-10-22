@@ -45,7 +45,6 @@ import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommen
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
 import { dataMode, getTicker, OptionRight, type Expiration } from '@convexa/api';
 import PauseCircleOutlinedIcon from '@mui/icons-material/PauseCircleOutlined';
-import SensorsOffOutlinedIcon from '@mui/icons-material/SensorsOffOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
@@ -63,8 +62,6 @@ import { useTheme, type Theme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 
-import { NOT_LIVE_COPY } from '@/shared/dataState/marketData';
-import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
@@ -519,15 +516,8 @@ export function TickerDashboard() {
     selected === null
       ? 'all expirations'
       : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`;
-  // Dark-pool (off-exchange) context: fixed ON (the toolbar toggle was removed to match the Figma).
-  const darkPool = true;
 
   // Persona DTE pre-fill (one-shot, explicit-navigation only) — consumed by the bundle hook.
-  const [dtePrefill, setDtePrefill] = useState<{
-    min: number;
-    max: number;
-    persona: string;
-  } | null>(null);
   const pendingPrefill = useRef<{ min: number; max: number } | null>(null);
   const takeDtePrefill = useCallback(() => {
     const d = pendingPrefill.current;
@@ -547,7 +537,6 @@ export function TickerDashboard() {
   const page = useTickerPageModel({
     ticker,
     selected,
-    darkPool,
     positionQuery,
     takeDtePrefill,
   });
@@ -559,10 +548,9 @@ export function TickerDashboard() {
   // on REST props so they skip re-render when only the tape changes (§3.8 Phase C).
   const { live, demoOrderFrame, streamOffline, isLive, displayActive, lastSessionPhase } =
     useLiveTape();
+  // A `not_live` site never mounts this desk (app.tsx's TickerDeskRoute mounts the public desk), so
+  // a bundle that says market data is off here means an operator paused the feed.
   const { data, loading, error, paused: marketDataPaused, refresh: load } = page.bundle;
-  // The bundle only says market data is off; /api/health says why. `not_live` (no paid feed exists,
-  // canon P-1) gets its honest words; a real operator pause keeps the paused panel.
-  const marketDataNotLive = useMarketDataMode() === 'not_live';
   useEffect(() => {
     if (dataMode !== 'demo') return;
     const symbol = ticker.toUpperCase();
@@ -621,7 +609,6 @@ export function TickerDashboard() {
     personaName: persona.active.name,
     dteMin: data?.market_state.dte_min ?? null,
     dteMax: data?.market_state.dte_max ?? null,
-    darkPool,
     // tradeable-rec-inputs (F10): read the durable store FRESH at request time (never a stale
     // render-time snapshot) — a faulted store resolves to `unavailable`, never `none_open`.
     openPositions: () =>
@@ -771,17 +758,15 @@ export function TickerDashboard() {
   const [customizeOpen, setCustomizeOpen] = useState(false);
 
   // Offer the active persona's DTE preference as a staged pre-fill — ONLY when the user hasn't set an
-  // explicit expiration window. Setting it touches no fetch; applied to the next nav via the one-shot.
-  useEffect(() => {
-    if (selected !== null) {
-      setDtePrefill(null);
-      return;
-    } // user picked expirations → their window wins
-    const pref = persona.active.dte_pref;
-    setDtePrefill(
-      pref ? { min: pref.min_dte, max: pref.max_dte, persona: persona.active.name } : null,
-    );
-  }, [persona.active, selected]);
+  // explicit expiration window (user picked expirations → their window wins). Staging it touches no
+  // fetch; it is applied to the next nav via the one-shot.
+  const stagedPref = selected === null ? persona.active.dte_pref : null;
+  const prefMin = stagedPref?.min_dte;
+  const prefMax = stagedPref?.max_dte;
+  const dtePrefill = useMemo(
+    () => (prefMin === undefined || prefMax === undefined ? null : { min: prefMin, max: prefMax }),
+    [prefMin, prefMax],
+  );
 
   const onSubmitSymbol = () => {
     // Apply the staged DTE pre-fill to THIS explicit navigation only (one-shot).
@@ -851,18 +836,11 @@ export function TickerDashboard() {
           behind `error` has already stopped polling by the time this renders (`useTickerBundle`'s
           `haltOn: isMarketDataPaused`) — changing the ticker is the only thing that asks again. */}
       {error && !data && marketDataPaused && (
-        <Alert
-          severity="info"
-          icon={marketDataNotLive ? <SensorsOffOutlinedIcon /> : <PauseCircleOutlinedIcon />}
-          role="status"
-        >
-          <AlertTitle>
-            {marketDataNotLive ? NOT_LIVE_COPY.title : 'Market data is paused.'}
-          </AlertTitle>
+        <Alert severity="info" icon={<PauseCircleOutlinedIcon />} role="status">
+          <AlertTitle>Market data is paused.</AlertTitle>
           <Typography variant="body2">
-            {marketDataNotLive
-              ? `This desk reads dealer structure from a paid options feed this site doesn’t run, so its structure, flow and AI read can’t load. Nothing is broken, and retrying won’t change it. For ${ticker.toUpperCase()}, research, positioning, filings and TradingView’s daily chart are live.`
-              : 'Convexa isn’t connected to a market-data feed right now, so this desk can’t load prices or dealer structure. Nothing is broken, and retrying won’t change it.'}
+            Convexa isn’t connected to a market-data feed right now, so this desk can’t load prices
+            or dealer structure. Nothing is broken, and retrying won’t change it.
           </Typography>
           <Stack direction="row" spacing={2} sx={{ mt: 1, rowGap: 0.5, flexWrap: 'wrap' }}>
             {/* `info.main` is the deliberately-quiet FILL-grade blue (`[theme-token-discipline]`'s
@@ -1087,7 +1065,10 @@ export function TickerDashboard() {
                   </ErrorBoundary>
                   {readStripCells && (
                     <ErrorBoundary variant="widget" label="Read strip">
-                      <ReadStrip cells={readStripCells} ringScore={sig?.opportunity_score ?? null} />
+                      <ReadStrip
+                        cells={readStripCells}
+                        ringScore={sig?.opportunity_score ?? null}
+                      />
                     </ErrorBoundary>
                   )}
 
@@ -1292,12 +1273,10 @@ export function TickerDashboard() {
                           unusualStrikes={unusualStrikes}
                           structureAgeSeconds={structureAgeSeconds}
                         />
-                        {darkPool && (
-                          <OffExchangeBlocks
-                            offExchange={data?.off_exchange}
-                            structureAgeSeconds={structureAgeSeconds}
-                          />
-                        )}
+                        <OffExchangeBlocks
+                          offExchange={data?.off_exchange}
+                          structureAgeSeconds={structureAgeSeconds}
+                        />
 
                         <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
                       </Box>

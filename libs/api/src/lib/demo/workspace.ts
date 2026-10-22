@@ -191,7 +191,8 @@ export function resumeDemoPlayback() {
   emitClock();
   startTimer();
 }
-export function demoNowMs() {
+/** The app's clock: the demo's scenario time on a demo build, the wall clock on a live one. */
+export function appNowMs() {
   return dataMode === 'demo' ? ANCHOR + offset : Date.now();
 }
 export function canSimulatePaperAction() {

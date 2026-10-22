@@ -14,7 +14,7 @@ import { FreshnessLine } from './FreshnessLine';
 
 // sample.ts (via copy.ts) reads the build mode and the scenario at import; the live build here.
 vi.mock('@convexa/api', () => ({
-  demoNowMs: () => Date.now(),
+  appNowMs: () => Date.now(),
   dataMode: 'live',
   scenarioProvenance: () => null,
 }));

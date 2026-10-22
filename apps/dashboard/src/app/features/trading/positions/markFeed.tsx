@@ -11,7 +11,7 @@
  * /api/health says so.
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import { dataMode, demoNowMs } from '@convexa/api';
+import { appNowMs, dataMode } from '@convexa/api';
 import { createContext, useContext } from 'react';
 
 export type MarkFeed = 'live' | 'sample' | 'notLive';
@@ -25,7 +25,7 @@ export function useMarkFeed(): MarkFeed {
 }
 
 /** The scenario clock in New York time, e.g. "2:30 PM". */
-export function scenarioClock(ms: number = demoNowMs()): string {
+export function scenarioClock(ms: number = appNowMs()): string {
   return new Date(ms).toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',

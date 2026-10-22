@@ -21,7 +21,7 @@ import { resolveLegMark } from '@/features/trading/model/legMark';
 import { MarkResult } from '@/features/trading/model/mark';
 import { SCHEMA_VERSION as GT_SCHEMA } from '@/features/trading/model/types';
 import { useTickerSpots } from '@/features/trading/model/useTickerSpots';
-import { dataMode, demoNowMs, LiveUpdate, OptionRight, TickerBundle } from '@convexa/api';
+import { appNowMs, LiveUpdate, OptionRight, TickerBundle } from '@convexa/api';
 import {
   useCallback,
   useDeferredValue,
@@ -347,7 +347,7 @@ export function usePortfolio(
       const head = p.legs.find((l) => l.kind === 'option') ?? p.legs[0];
       const rec: DecisionRecord = {
         id: newId(),
-        clock_time: new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString(),
+        clock_time: new Date(appNowMs()).toISOString(),
         trade_id: p.id,
         contract: contractOf(p),
         mark_price: markPrice ?? head?.entry_price ?? 0,
@@ -391,7 +391,7 @@ export function usePortfolio(
       if (tickers.size !== 1) return { ok: false, reason: OPEN_REFUSED_MULTI_UNDERLYING };
       const ticker = [...tickers][0];
 
-      const now = new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString();
+      const now = new Date(appNowMs()).toISOString();
       const isLimit = input.entryMode === 'limit';
       const limitPrice = input.limitPrice ?? input.legs[0]?.price ?? 0;
 
@@ -474,7 +474,7 @@ export function usePortfolio(
         // A resting limit is single-leg by construction (`netLimitDollarsFor` returns null for
         // more than one leg), so the fill price lands on the leg it was quoted against.
         legs: p.legs.map((l) => ({ ...l, entry_price: fillPrice, entry_basis: LIMIT_FILL_BASIS })),
-        opened_time: new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString(),
+        opened_time: new Date(appNowMs()).toISOString(),
       };
       if (!putPosition(filled)) return;
       refreshPositions();
@@ -496,7 +496,7 @@ export function usePortfolio(
       const cancelled: SimPosition = {
         ...p,
         status: 'cancelled',
-        close_time: new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString(),
+        close_time: new Date(appNowMs()).toISOString(),
       };
       if (!putPosition(cancelled)) return;
       refreshPositions();
@@ -531,7 +531,7 @@ export function usePortfolio(
       const closed: SimPosition = {
         ...p,
         status: 'closed',
-        close_time: new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString(),
+        close_time: new Date(appNowMs()).toISOString(),
         realized_pl_dollar: composed.dollar ?? 0,
         realized_pl_pct: composed.pct ?? 0,
       };

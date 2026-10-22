@@ -13,7 +13,6 @@ import { marketDataOff } from '@/shared/dataState/marketData';
 import { MONO_FACE } from '@/shared/figure';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { upText } from '@/shared/theme/tokens';
-import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -182,7 +181,7 @@ function EvalCell({ order, evalState }: { order: SimOrder; evalState: OrderEvalS
  *  the Not live tag, no warning colour (Final Positions states, DLG-02). */
 function NotEvaluated({ ticker }: { ticker: string }) {
   const marketDataMode = useMarketDataMode();
-  const feedOff = dataMode === 'live' && marketDataOff(marketDataMode);
+  const feedOff = marketDataOff(marketDataMode);
   return (
     <Tooltip
       arrow

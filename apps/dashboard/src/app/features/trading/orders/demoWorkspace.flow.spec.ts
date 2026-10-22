@@ -26,7 +26,7 @@ import { defaultGoodTil, goodTilToExpiresAt, todayIso } from '@/features/trading
 import { scanMarketDataMode, sweepBanner } from '@/pages/scanner/format';
 import { __resetRecentTickers, listRecents, recordVisit } from '@/pages/ticker/recentTickers/store';
 import {
-  demoNowMs,
+  appNowMs,
   initializeDemoWorkspace,
   resetDemoWorkspace,
   type DemoOrderFrame,
@@ -73,7 +73,7 @@ describe('G3 demo workspace and paper order flow', () => {
     try {
       const mountedFrame: DemoOrderFrame = {
         frameId: 'SPY-mount-stale',
-        scenarioTimeMs: demoNowMs() + 5_000,
+        scenarioTimeMs: appNowMs() + 5_000,
         symbol: 'SPY',
         underlyingMid: 690.7,
         marksByContractId: { 'SPY|2026-11-20|690|put': 6.2 },
@@ -111,14 +111,14 @@ describe('G3 demo workspace and paper order flow', () => {
       });
       expect(created.ok).toBe(true);
       const order = created.order as SimOrder;
-      expect(order.created_time).toBe(new Date(demoNowMs()).toISOString());
+      expect(order.created_time).toBe(new Date(appNowMs()).toISOString());
       expect(getOrder(order.id)?.status).toBe('triggered'); // confirmation/store rerender cannot reuse old frame
       act(() => hook.rerender(undefined)); // pause/end emits no frame: retain the last order state
       expect(getOrder(order.id)?.status).toBe('triggered');
 
       const pendingFrame: DemoOrderFrame = {
         frameId: 'SPY-fresh-pending',
-        scenarioTimeMs: demoNowMs() + 10_000,
+        scenarioTimeMs: appNowMs() + 10_000,
         symbol: 'SPY',
         underlyingMid: 690.8,
         marksByContractId: { 'SPY|2026-11-20|690|call': 4.1 },
@@ -132,7 +132,7 @@ describe('G3 demo workspace and paper order flow', () => {
 
       const confirmedFrame: DemoOrderFrame = {
         frameId: 'SPY-fresh-confirmed',
-        scenarioTimeMs: demoNowMs() + 15_000,
+        scenarioTimeMs: appNowMs() + 15_000,
         symbol: 'SPY',
         underlyingMid: 690.9,
         marksByContractId: { 'SPY|2026-10-16|690|call': 2.8 },
@@ -198,13 +198,13 @@ describe('G3 demo workspace and paper order flow', () => {
       expect(created.ok).toBe(true);
       cancelOrder((created.order as SimOrder).id);
       expect(getOrder((created.order as SimOrder).id)?.close_time).toBe(
-        new Date(demoNowMs()).toISOString(),
+        new Date(appNowMs()).toISOString(),
       );
       expect(
         allDecisions()
           .filter((decision) => decision.trade_id === (created.order as SimOrder).id)
           .map((decision) => decision.clock_time),
-      ).toEqual([new Date(demoNowMs()).toISOString(), new Date(demoNowMs()).toISOString()]);
+      ).toEqual([new Date(appNowMs()).toISOString(), new Date(appNowMs()).toISOString()]);
       const expiredCandidate = createOrder({
         ticker: 'SPY',
         expiration: '2026-11-20',
@@ -215,14 +215,14 @@ describe('G3 demo workspace and paper order flow', () => {
         limit_price: 2,
         stop: null,
         target: null,
-        expires_at: new Date(demoNowMs() - 1).toISOString(),
+        expires_at: new Date(appNowMs() - 1).toISOString(),
         provenance: { source: 'manual' },
       });
       expect(expiredCandidate.ok).toBe(true);
       renderHook(() => useOrders()); // render-time sweep uses scenario time, independent of host 2027
       expect(getOrder((expiredCandidate.order as SimOrder).id)).toMatchObject({
         status: 'expired',
-        close_time: new Date(demoNowMs()).toISOString(),
+        close_time: new Date(appNowMs()).toISOString(),
       });
     } finally {
       vi.useRealTimers();

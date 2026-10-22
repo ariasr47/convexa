@@ -14,7 +14,7 @@
  * drilling — mutations bump the version and notify.
  */
 import type { DecisionRecord } from '@/features/trading/model/types';
-import { dataMode, demoNowMs, demoStorageKey, scenarioProvenance } from '@convexa/api';
+import { appNowMs, dataMode, demoStorageKey, scenarioProvenance } from '@convexa/api';
 import { ORDERS_SCHEMA_VERSION, SimOrder } from './types';
 
 export const ORDERS_KEY = 'convexa.orders.v1';
@@ -151,9 +151,7 @@ export function buildOrdersExport(decisions: DecisionRecord[]): OrdersExport {
 }
 
 /** `convexa-orders-{YYYY-MM-DD}.json` (UX §4.5). */
-export function exportFilename(
-  now: Date = new Date(dataMode === 'demo' ? demoNowMs() : Date.now()),
-): string {
+export function exportFilename(now: Date = new Date(appNowMs())): string {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');

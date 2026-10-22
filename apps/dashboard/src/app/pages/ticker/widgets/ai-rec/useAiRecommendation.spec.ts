@@ -52,7 +52,6 @@ const opts = {
   personaName: 'Default (no persona)',
   dteMin: null,
   dteMax: null,
-  darkPool: false,
 };
 
 beforeEach(() => {

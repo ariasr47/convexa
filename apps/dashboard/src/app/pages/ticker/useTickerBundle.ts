@@ -25,7 +25,6 @@ export interface UseTickerBundleArgs {
   ticker: string;
   /** null = all expirations; [] = none selected (fetch disabled); string[] = filter. */
   selected: string[] | null;
-  darkPool?: boolean;
   positionQuery?: PositionQueryLeg | null;
   /** One-shot DTE prefill — read once per forced fetch when present. */
   takeDtePrefill?: () => { min: number; max: number } | null;
@@ -45,7 +44,6 @@ export interface TickerBundleApi {
 export function useTickerBundle({
   ticker,
   selected,
-  darkPool = true,
   positionQuery = null,
   takeDtePrefill,
 }: UseTickerBundleArgs): TickerBundleApi {
@@ -62,8 +60,8 @@ export function useTickerBundle({
   const resetKey = useMemo(() => {
     if (!enabled) return null;
     const exp = selected === null ? 'all' : selected.join(',');
-    return `${ticker.toUpperCase()}|dp=${darkPool}|exp=${exp}`;
-  }, [ticker, selected, darkPool, enabled]);
+    return `${ticker.toUpperCase()}|exp=${exp}`;
+  }, [ticker, selected, enabled]);
   const key = useMemo(() => {
     if (resetKey == null) return null;
     const pos = positionQuery
@@ -79,7 +77,8 @@ export function useTickerBundle({
         ticker,
         {
           expirations: selected ?? undefined,
-          darkPool,
+          // Off-exchange context is always on (the desk's toggle was removed to match the Figma).
+          darkPool: true,
           position: positionQuery
             ? {
                 expiration: positionQuery.expiration,
@@ -94,7 +93,7 @@ export function useTickerBundle({
         { signal },
       );
     },
-    [ticker, selected, darkPool, positionQuery],
+    [ticker, selected, positionQuery],
   );
 
   const { data, dataKey, error, errorCause, loading, refresh } = usePollingResource(key, fetcher, {

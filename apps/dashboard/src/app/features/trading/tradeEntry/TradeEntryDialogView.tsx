@@ -71,7 +71,7 @@ import type { LegInput } from '@/features/trading/positions/usePortfolio';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { downText, extrasFor, upText } from '@/shared/theme/tokens';
-import { dataMode, demoNowMs, fetchTrackedContract } from '@convexa/api';
+import { appNowMs, fetchTrackedContract } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -207,7 +207,7 @@ export function TradeEntryDialog({
 
   // Market and Limit fill at a live quote. With no options feed on this site (live build, `not_live`
   // or `paused`), only Manual price is offered, and the control says why (Final Overlays, DLG-01).
-  const feedOff = dataMode === 'live' && marketDataOff(marketDataMode);
+  const feedOff = marketDataOff(marketDataMode);
   // MANUAL CONTRACT ENTRY (manualContract.ts): with the feed off there is no chain to pick an
   // expiry or strike from, so the trader types the underlying and each contract. Nothing is looked
   // up — the contract route is never asked — and the shape is checked before anything can open.
@@ -325,7 +325,7 @@ export function TradeEntryDialog({
 
   // Options expire on New York's calendar, so the typed expiration is checked against New York's
   // date (the scenario clock on the demo), never the browser's (Wave 2 review risk).
-  const expiryToday = newYorkDateIso(dataMode === 'demo' ? demoNowMs() : Date.now());
+  const expiryToday = newYorkDateIso(appNowMs());
   // The typed contract's check (null when the chain supplies the contract). Its ticker is the one
   // the position is stored under; until the symbol is valid the host's ticker never stands in.
   const manualCheck = manualContract

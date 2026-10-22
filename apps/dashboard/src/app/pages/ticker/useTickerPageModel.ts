@@ -30,7 +30,6 @@ import { useUniverseMembership } from './useUniverseMembership';
 export interface UseTickerPageModelArgs {
   ticker: string;
   selected: string[] | null;
-  darkPool?: boolean;
   positionQuery?: PositionQueryLeg | null;
   takeDtePrefill?: UseTickerBundleArgs['takeDtePrefill'];
 }
@@ -66,7 +65,6 @@ export interface TickerPageModel {
 export function useTickerPageModel({
   ticker,
   selected,
-  darkPool = true,
   positionQuery = null,
   takeDtePrefill,
 }: UseTickerPageModelArgs): TickerPageModel {
@@ -82,7 +80,6 @@ export function useTickerPageModel({
   const bundle = useTickerBundle({
     ticker,
     selected,
-    darkPool,
     positionQuery,
     takeDtePrefill,
   });

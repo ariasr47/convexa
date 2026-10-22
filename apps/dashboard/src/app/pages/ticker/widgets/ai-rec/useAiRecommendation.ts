@@ -52,7 +52,6 @@ interface AiRecOpts {
   personaName: string;
   dteMin: number | null;
   dteMax: number | null;
-  darkPool: boolean;
   /** tradeable-rec-inputs (INTERFACE §5): the bounded, client-supplied, NEVER-persisted-server-side
    *  open-positions digest — read fresh at request time (never stale-cached) via a supplier so a
    *  React-state-timing edge can never send last-render's snapshot. */
@@ -184,7 +183,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
           snapshot_fingerprint: bundle.ai_eval.state_fingerprint,
           dte_min: o.dteMin,
           dte_max: o.dteMax,
-          dark_pool: o.darkPool,
+          dark_pool: true, // off-exchange context is always on, as on the desk's bundle request
           override: reqOpts.override ?? false,
           // Additive scenario selector (INTERFACE §1.1): the field is included ONLY when the
           // operator actually selected a scenario — absent otherwise (the shipped path stays

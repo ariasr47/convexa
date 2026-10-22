@@ -19,7 +19,7 @@
  * Reads stay guarded so a storage failure degrades to in-memory only and never throws into the UI.
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
-import { dataMode, demoNowMs, demoStorageKey, scenarioProvenance } from '@convexa/api';
+import { appNowMs, dataMode, demoStorageKey, scenarioProvenance } from '@convexa/api';
 import { DecisionRecord, SCHEMA_VERSION } from './types';
 
 const STORAGE_KEY = 'convexa.ghost-trade.v1';
@@ -85,7 +85,7 @@ export function exportLog() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `convexa-decision-history-${new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString().slice(0, 10)}.json`;
+  a.download = `convexa-decision-history-${new Date(appNowMs()).toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();

@@ -3,7 +3,7 @@ import { fmtAsOfEt, fmtExpiry } from '@/pages/ticker/widgets/_kit/copy';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { AccessibleHelp } from '@/shared/ui';
 import type { RecResponse, TickerBundle } from '@convexa/api';
-import { demoNowMs } from '@convexa/api';
+import { appNowMs } from '@convexa/api';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -143,11 +143,11 @@ export function Provenance({ rec }: { rec: RecResponse }) {
         label="Persona provenance help"
         text={COPY.tooltip.persona.replace('{name}', rec.persona.name)}
       />
-      {/* The age runs on the demo's scenario clock there (demoNowMs is Date.now() on a live build).
+      {/* The age runs on the demo's scenario clock there (appNowMs is Date.now() on a live build).
           Fidelity repair 2, N5 — the exchange-clock form (design: `read pinned as of 10:41:52 ET ·
           48s ago`), never the raw ISO instant. `data-rec-as-of` (below, the card root) keeps the raw
           ISO for machine consumers — this chip is copy, not the attribute. */}
-      <Chip size="small" variant="outlined" label={`As of ${fmtAsOfEt(rec.as_of, demoNowMs())}`} />
+      <Chip size="small" variant="outlined" label={`As of ${fmtAsOfEt(rec.as_of, appNowMs())}`} />
       <AccessibleHelp label="Snapshot provenance help" text={COPY.tooltip.asOf} />
       <Chip size="small" variant="outlined" label={COPY.provenance.sim} />
       <AccessibleHelp label="Simulated advisory help" text={COPY.tooltip.advisory} />

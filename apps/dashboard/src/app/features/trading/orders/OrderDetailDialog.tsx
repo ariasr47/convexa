@@ -11,7 +11,6 @@ import { MONO_FACE } from '@/shared/figure';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor, upText } from '@/shared/theme/tokens';
-import { dataMode } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -79,7 +78,7 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
   // With no options feed on this site an order can't trigger: say so quietly, and link the demo,
   // where orders trigger on the sample tape (Final Overlays, DLG-02).
   const marketDataMode = useMarketDataMode();
-  const feedOff = dataMode === 'live' && marketDataOff(marketDataMode);
+  const feedOff = marketDataOff(marketDataMode);
   return (
     <Dialog
       open={o != null}

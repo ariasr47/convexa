@@ -42,7 +42,7 @@
  * store, and mutators return `false` as the second line of defence.
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
-import { dataMode, demoNowMs, demoStorageKey } from '@convexa/api';
+import { appNowMs, dataMode, demoStorageKey } from '@convexa/api';
 import { defaultCustomization } from './defaults';
 import type { SimPosition } from './leg';
 import { liftLegacyRecord, unionSources, type ParsedSource } from './migrate';
@@ -299,7 +299,7 @@ function read(): PersistShapeV3 {
     decisions: union.decisions,
     customization,
     provenance: {
-      migrated_at: new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString(),
+      migrated_at: new Date(appNowMs()).toISOString(),
       source_counts: union.source_counts,
       merge_notice_dismissed: false,
     },
@@ -319,10 +319,7 @@ function write(s: PersistShapeV3): boolean {
   memory = s;
   try {
     localStorage.setItem(demoStorageKey(V3_KEY), JSON.stringify(s));
-    localStorage.setItem(
-      demoStorageKey(BOOK_TOUCH_KEY),
-      String((dataMode === 'demo' ? demoNowMs() : Date.now()) / 1000),
-    );
+    localStorage.setItem(demoStorageKey(BOOK_TOUCH_KEY), String(appNowMs() / 1000));
     tagOwner();
   } catch {
     /* quota/private mode — keep the in-memory copy this session */
