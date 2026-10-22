@@ -9,7 +9,7 @@
  * A step that cannot find its control fails the run: a recording that silently skipped the click
  * would show an action that sets nothing off.
  */
-import { openContext, stripOrigin } from './browser.mjs';
+import { assertAnswered, closeContext, openContext, stripOrigin } from './browser.mjs';
 
 const FLOWS = [
   {
@@ -100,9 +100,12 @@ export async function recordClicks(browser, { ours, origins, log }) {
       try {
         await act(page);
       } catch (error) {
-        await ctx.close();
+        const failed = await closeContext(ctx);
         throw new Error(
-          `clicks ${flow.key}, step "${label}": ${error instanceof Error ? error.message.split('\n')[0] : error}`,
+          `clicks ${flow.key}, step "${label}": ${error instanceof Error ? error.message.split('\n')[0] : error}` +
+            (failed.length
+              ? `; production did not answer ${failed.length} forwarded GET${failed.length === 1 ? '' : 's'}`
+              : ''),
         );
       }
       await page.waitForTimeout(STEP_GAP_MS);
@@ -124,7 +127,7 @@ export async function recordClicks(browser, { ours, origins, log }) {
       start,
     );
     const finalUrl = await page.evaluate(() => location.pathname);
-    await ctx.close();
+    assertAnswered(`clicks ${flow.key}`, await closeContext(ctx));
     const after = (x) => x.t >= start;
     const commits = rec.commits.filter(after);
     log(

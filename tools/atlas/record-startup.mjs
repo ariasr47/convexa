@@ -7,7 +7,7 @@
  * Live runs read production's real /api (GET only). Without a live origin (--offline) only the
  * demo runs are recorded and the page says the live ones were skipped.
  */
-import { openContext, stripOrigin } from './browser.mjs';
+import { assertAnswered, closeContext, openContext, stripOrigin } from './browser.mjs';
 
 const RUNS = [
   ['demo-landing', 'demo', '/', 'Demo · landing'],
@@ -64,7 +64,7 @@ export async function recordStartup(browser, { ours, origins, log }) {
           setTimeout(() => resolve(null), 1500);
         }),
     );
-    await ctx.close();
+    assertAnswered(`startup ${key}`, await closeContext(ctx));
     const run = stripOrigin({ label, url, errors, ...data }, origin);
     const r = run.rec;
     const mounts = r.commits.reduce((a, c) => a + (c.m ? c.m.reduce((x, y) => x + y[3], 0) : 0), 0);

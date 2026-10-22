@@ -11,7 +11,7 @@
  */
 import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { openContext } from './browser.mjs';
+import { assertAnswered, closeContext, openContext } from './browser.mjs';
 
 const PAGES = [
   ['liveLanding', 'live', '/'],
@@ -88,7 +88,7 @@ export async function recordWire(browser, { origins, dist, log }) {
           setTimeout(() => resolve(null), 2000);
         }),
     );
-    await ctx.close();
+    assertAnswered(`wire ${key}`, await closeContext(ctx));
 
     const kept = [];
     const tv = { n: 0, t: Infinity, e: 0, bytes: 0 };

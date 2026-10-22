@@ -40,17 +40,29 @@ node tools/atlas/run.mjs --ref <ref> --out <file> [--offline]
 | `--out`     | `docs/atlas/index.html` | Where to write the page.                                                                                          |
 | `--offline` | off                     | Skip every recording of the live build and production's `/api/health`. The page says so where that data would be. |
 
-It needs `npm ci` and Playwright's Chromium (`npx playwright install chromium`). A full run takes
-about a minute and a half on an M1 Pro. Without `--offline` it reads production's API
+It needs Playwright's Chromium (`npx playwright install chromium`) and a checkout of the ref
+itself: the generator, its template and `node_modules` come from this checkout (see below), so run
+`npm ci` after checking out a ref whose `package-lock.json` differs. A full run takes about a minute
+and a half on an M1 Pro. Without `--offline` it reads production's API
 (`https://convexa.pages.dev/api/*`, GET only) for the live recordings and loads the TradingView embed
-on the live desk, as a visitor would. Commit the regenerated page in its own commit.
+on the live desk, as a visitor would; a forwarded GET that production does not answer fails the run,
+naming the request. Commit the regenerated page in its own commit.
 
 ## How it works
 
-`tools/atlas/run.mjs` never reads the working tree's code, so uncommitted edits cannot leak in:
+The code the page describes, and the builds it records, come from a clean export of the ref,
+never from the working tree, so uncommitted edits to that code cannot leak in. Three things do come
+from this checkout: the generator (`tools/atlas/*.mjs`), its template (`tools/atlas/template/`, the
+hand-written facts) and `node_modules`. They must match the ref, and `tools/atlas/run.mjs` checks:
 
 1. It resolves `--ref` to a full sha and its commit date. The page's only stamp is
-   "generated from `<sha>` (`<commit date>`)".
+   "generated from `<sha>` (`<commit date>`)". If `tools/atlas` (tracked or untracked files) or
+   `package-lock.json` in this checkout differs from that sha, it stops before doing anything:
+   "tools/atlas or package-lock.json in this checkout differs from `<short>`: commit the edits or
+   check out `<ref>`". A `--ref` older than the atlas therefore fails at once. If the installed
+   `node_modules` differs from `package-lock.json` (npm's `node_modules/.package-lock.json` says
+   which versions are installed), it logs a warning with the count and the first difference, and
+   goes on; `npm ci` makes them match.
 2. `git archive <sha> | tar -x` into a scratch folder under the OS temp dir. The export gets a
    `node_modules` of symlinks to this checkout's packages; workspace packages (`@convexa/*`) point
    at the export's own folders, so the build reads the commit's `libs/api`.
@@ -71,8 +83,11 @@ on the live desk, as a visitor would. Commit the regenerated page in its own com
 6. `build.mjs` fills the template's tokens from those facts (a token that names nothing fails the
    build), embeds the recordings as JSON and the fonts as data URIs, and writes one HTML file.
 
-The scratch folder and every server the run started are removed on exit, on error and on Ctrl-C.
-The run never stops a process it did not start.
+The scratch folder and every server the run started are removed on exit, on error and on Ctrl-C,
+and also if the process dies of an unhandled rejection: the clean-up is synchronous and runs from
+Node's `exit` handler too. The browser's network routes never reject (a request still in flight
+when a context closes is dropped, not left to crash the run). The run never stops a process it did
+not start.
 
 ### What changes between two runs on one commit
 
@@ -87,14 +102,21 @@ production reports at the time.
 
 The page states some facts that nothing derives. They live in `tools/atlas/template/content.js`
 (and a few in `atlas.html`), and each was checked against the code on the date below. When a commit
-changes one of them, update the template and this list. `file:line` citations throughout the page
-were carried from a55e0271 (the first atlas) to **8ef735c4** on **2026-10-22** by following each
-cited line through `git diff`; the ones that landed in changed lines were re-read by hand. The
-other facts were checked at 791ebd88 and against the two commits after it (2cb4c8ef, 8ef735c4).
+changes one of them, update the template and this list. The `file:line` citations outside the
+docs-vs-code record were carried from a55e0271 (the first atlas) to **8ef735c4** on **2026-10-22**
+by following each cited line through `git diff`; the ones that landed in changed lines were re-read
+by hand. The docs-vs-code record keeps its a55e0271 line numbers on purpose: it says where each
+mismatch was when it was found, and the page says so. The other facts were checked at 791ebd88 and
+against the two commits after it (2cb4c8ef, 8ef735c4).
+
+A page generated from a later commit carries these citations unchanged, so a commit after 8ef735c4
+that edits a cited file has to be checked too (`git diff --stat 8ef735c4 <ref>` lists them).
+e1bdc487, the atlas commit, changed `package.json` (two scripts above `ci`) and `README.md`; no
+citation outside the docs-vs-code record points at a line of either.
 
 | Fact                                                                                                                                                                                                | Where on the page                          | Checked against                                                                                                                                                                                            | Verified   |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| Every `file:line` citation                                                                                                                                                                          | all chapters                               | the cited file at 8ef735c4, line by line through `git diff a55e0271 8ef735c4`                                                                                                                              | 2026-10-22 |
+| Every `file:line` citation outside the docs-vs-code record                                                                                                                                          | all chapters                               | the cited file at 8ef735c4, line by line through `git diff a55e0271 8ef735c4`                                                                                                                              | 2026-10-22 |
 | Test cases: dashboard 2,059, Rust 1,232 (61 test binaries), tools 217, libs/api 86; the hero's 3,377 is the first, second and fourth                                                                | hero, Tests & gates                        | 2cb4c8ef's, 8ef735c4's and f5a8a9d0's recorded runs; libs/api re-run on a clean export of 791ebd88                                                                                                         | 2026-10-22 |
 | Playwright inventory: 13 chromium + 35 a11y + 18 compat + 1 demo; 28 axe scans plus 7 behaviour checks; five configs; test ports 4200, 4210-4212, 4217                                              | Tests & gates, map, Environments           | `apps/dashboard-e2e`, unchanged since the 16 Oct inventory                                                                                                                                                 | 2026-10-22 |
 | `api-rust` has 21 top-level subcommands                                                                                                                                                             | Inside the API, map                        | `enum Commands`, `apps/api/src/main.rs`                                                                                                                                                                    | 2026-10-22 |
@@ -118,7 +140,7 @@ other facts were checked at 791ebd88 and against the two commits after it (2cb4c
 | October's lean pass retired 920 tests across 106 files (5,173 → 3,187 cases); the deliberate breaks                                                                                                 | Tests & gates                              | `docs/testing/2026-10/` (history)                                                                                                                                                                          | 2026-10-16 |
 | CI off since 2026-10-15; three conformance files are run receipts                                                                                                                                   | Tests & gates                              | `CLAUDE.md`, `.spire/clusters/tech/state/conformance`                                                                                                                                                      | 2026-10-22 |
 | Fonts before and after 508f1ae7 (22 → 11 files on `/`)                                                                                                                                              | Bundle & speed                             | that commit's measurements (history)                                                                                                                                                                       | 2026-10-22 |
-| The docs-vs-code record: seventeen mismatches found at a55e0271, fixed in 77160d5f and 31017589                                                                                                     | Docs vs code                               | those commits (history)                                                                                                                                                                                    | 2026-10-22 |
+| The docs-vs-code record: seventeen mismatches found at a55e0271, fixed in 77160d5f and 31017589; its line numbers are a55e0271's                                                                    | Docs vs code                               | those commits (history); each citation at a55e0271                                                                                                                                                         | 2026-10-22 |
 
 Derived on every run, so not listed: tracked files, every folder and test-file count, the OpenAPI
 operation count, Nx projects and Rust crates, dependency and Node versions, bundle sizes and budget

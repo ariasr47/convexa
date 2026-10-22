@@ -277,6 +277,9 @@ export const REACT_HOOK = (ours) => {
 /** Where live builds' /api GETs go. Every other /api method is aborted: nothing is ever written. */
 export const LIVE_API_ORIGIN = 'https://convexa.pages.dev';
 
+/** Per context from openContext: the forwarded /api GETs that production did not answer. */
+const FAILURES = new WeakMap();
+
 /**
  * A fresh browser context for one site.
  * - demo: any request off the local server is aborted, so a demo recording never touches the
@@ -284,25 +287,66 @@ export const LIVE_API_ORIGIN = 'https://convexa.pages.dev';
  * - live: /api GETs are forwarded to production; other /api methods are aborted; third-party
  *   requests (the TradingView embed) go out as they would for a visitor.
  *
+ * The route handler never rejects: an unhandled rejection would end the process before run.mjs
+ * could stop its servers. A forwarded GET that production does not answer (unreachable, reset)
+ * is aborted in the page and kept for closeContext to report. Every other routing call can only
+ * fail because the page or context already closed, and that is ignored.
+ *
  * @param {import('@playwright/test').Browser} browser
  * @param {{ site: 'demo' | 'live', origin: string, viewport: { width: number, height: number }, hookNames?: string[] }} o
  */
 export async function openContext(browser, { site, origin, viewport, hookNames }) {
   const ctx = await browser.newContext({ viewport, colorScheme: 'dark' });
+  const failures = [];
+  FAILURES.set(ctx, failures);
   if (hookNames) await ctx.addInitScript(REACT_HOOK, hookNames);
+  const ignoreClosed = () => undefined;
   await ctx.route('**/*', async (route) => {
     const req = route.request();
     const url = req.url();
     if (url.startsWith(`${origin}/api/`)) {
-      if (site !== 'live' || req.method() !== 'GET') return route.abort();
-      const res = await route.fetch({ url: LIVE_API_ORIGIN + url.slice(origin.length) });
-      return route.fulfill({ response: res });
+      if (site !== 'live' || req.method() !== 'GET') return route.abort().catch(ignoreClosed);
+      const rest = url.slice(origin.length);
+      let res;
+      try {
+        res = await route.fetch({ url: LIVE_API_ORIGIN + rest });
+      } catch (error) {
+        failures.push(
+          `GET ${LIVE_API_ORIGIN}${rest}: ${error instanceof Error ? error.message.split('\n')[0] : error}`,
+        );
+        return route.abort('failed').catch(ignoreClosed);
+      }
+      return route.fulfill({ response: res }).catch(ignoreClosed);
     }
     if (url.startsWith(`${origin}/`) || url.startsWith('data:') || url.startsWith('blob:'))
-      return route.continue();
-    return site === 'live' ? route.continue() : route.abort();
+      return route.continue().catch(ignoreClosed);
+    return (site === 'live' ? route.continue() : route.abort()).catch(ignoreClosed);
   });
   return ctx;
+}
+
+/**
+ * Close a context from openContext and return the forwarded GETs production did not answer while
+ * it was open. The routes come off first (`ignoreErrors`), so a request still in flight at the
+ * close is dropped instead of being routed into a disposed context; what such a request reports
+ * after this point is not a failure of the recording, so it is not counted.
+ *
+ * @param {import('@playwright/test').BrowserContext} ctx
+ * @returns {Promise<string[]>}
+ */
+export async function closeContext(ctx) {
+  const failed = [...(FAILURES.get(ctx) ?? [])];
+  await ctx.unrouteAll({ behavior: 'ignoreErrors' });
+  await ctx.close();
+  return failed;
+}
+
+/** Throw when a recording ran on answers production never gave. */
+export function assertAnswered(what, failed) {
+  if (!failed.length) return;
+  throw new Error(
+    `${what}: production did not answer ${failed.length} forwarded GET${failed.length === 1 ? '' : 's'}; first: ${failed[0]}`,
+  );
 }
 
 /**

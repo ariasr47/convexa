@@ -1938,7 +1938,7 @@ const DRIFT = [
   [
     'CLAUDE.md: <code>cargo run -p api-rust -- serve</code>',
     'The Nx target adds <code>--features postgres</code>',
-    'CLAUDE.md:43 · fixed in 77160d5f',
+    'CLAUDE.md:43-44 · fixed in 77160d5f',
   ],
   [
     'CLAUDE.md: <code>npm run ci</code> is lint → typecheck → test → build',
@@ -1953,7 +1953,7 @@ const DRIFT = [
   [
     'SUPPLY_CHAIN.md: Dependabot proposes weekly updates',
     'Dependabot is off and its config removed',
-    'docs/SUPPLY_CHAIN.md:17 · fixed in 77160d5f',
+    'docs/SUPPLY_CHAIN.md:18 · fixed in 77160d5f',
   ],
   ['ci.yml: "gzip chunk budgets"', 'The script gates on brotli', 'ci.yml:114 · fixed in 77160d5f'],
   [
@@ -1984,7 +1984,7 @@ const DRIFT = [
   [
     'The dashboard app README route table',
     'Missed alerts, blog, methodology, research and trust; called Scanner a stub',
-    'apps/dashboard/src/app/README.md:10-26 · fixed in 77160d5f',
+    'apps/dashboard/src/app/README.md:10-18 · fixed in 77160d5f',
   ],
   [
     'Comments in app.tsx, Landing.tsx and AppShell.tsx',

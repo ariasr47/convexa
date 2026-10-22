@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 /**
  * `npm run atlas`: regenerate the repo atlas (docs/atlas/index.html) from a clean export of a
- * commit, never from the working tree, so uncommitted edits cannot leak into it.
+ * commit. The code the page describes, and the builds it records, come from the export, never
+ * from the working tree. The generator itself, its template (the hand-written facts) and
+ * node_modules come from this checkout, so they must match the ref: the run refuses to start when
+ * tools/atlas or package-lock.json here differs from it, and warns when node_modules differs from
+ * the lock (`npm ci` fixes that).
  *
  *   1. Resolve --ref (default HEAD) to a full sha and its commit date: the page's only stamp.
+ *      Check that this checkout's tools/atlas and package-lock.json are the ref's.
  *   2. `git archive <sha> | tar -x` into a scratch folder under the OS temp dir, and give it a
  *      node_modules of symlinks to this checkout's packages. Workspace packages (@convexa/*) point
  *      at the export's own folders, so the build reads the commit's libs/api, not the working tree's.
@@ -15,7 +20,8 @@
  *      clicks and the cold visits in Chromium (record-*.mjs). Live builds' /api GETs go to
  *      production (browser.mjs); --offline skips every live recording and the page says so.
  *   6. Assemble one self-contained HTML file (build.mjs) and write it to --out.
- * The scratch folder and every server this run started are removed on exit, error or Ctrl-C.
+ * The scratch folder and every server this run started are removed on exit, error or Ctrl-C,
+ * and also when the process dies of an unhandled rejection (the `exit` handler).
  *
  * Usage: node tools/atlas/run.mjs [--ref <ref>] [--out <file>] [--offline]
  */
@@ -90,6 +96,52 @@ function parseArgs(argv) {
 
 const git = (...args) =>
   execFileSync('git', args, { cwd: REPO, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
+
+/**
+ * The generator, its template and node_modules are read from this checkout, not from the export.
+ * A page stamped with one commit must not carry another commit's hand-written facts or a lock
+ * file the export's builds were not resolved against, so a difference stops the run before any
+ * work: it also makes a --ref older than the atlas fail at once.
+ */
+function assertCheckoutMatches(sha, ref) {
+  const changed = [
+    ...git('diff', '--name-only', sha, '--', 'tools/atlas', 'package-lock.json').split('\n'),
+    ...git('ls-files', '--others', '--exclude-standard', '--', 'tools/atlas').split('\n'),
+  ].filter(Boolean);
+  if (!changed.length) return;
+  const listed = changed.slice(0, 5).join(', ') + (changed.length > 5 ? ', …' : '');
+  throw new Error(
+    `tools/atlas or package-lock.json in this checkout differs from ${sha.slice(0, 8)}: commit the edits or check out ${ref} (${changed.length} path${changed.length === 1 ? '' : 's'}: ${listed})`,
+  );
+}
+
+/**
+ * Installed packages whose version differs from package-lock.json, read from npm's own record of
+ * node_modules (node_modules/.package-lock.json). Optional packages that are not installed (other
+ * platforms' binaries) are not a difference. Returns null when either file cannot be read.
+ */
+function lockDrift() {
+  let locked;
+  let installed;
+  try {
+    locked = JSON.parse(readFileSync(path.join(REPO, 'package-lock.json'), 'utf8')).packages;
+    installed = JSON.parse(
+      readFileSync(path.join(REPO, 'node_modules', '.package-lock.json'), 'utf8'),
+    ).packages;
+  } catch {
+    return null;
+  }
+  const drift = [];
+  for (const [key, want] of Object.entries(locked)) {
+    if (!key.startsWith('node_modules/') || want.link) continue;
+    const got = installed[key];
+    if (got ? got.version !== want.version : !(want.optional || want.devOptional))
+      drift.push(
+        `${key.slice('node_modules/'.length)} ${got ? `${got.version} installed` : 'not installed'}, ${want.version} locked`,
+      );
+  }
+  return drift;
+}
 
 /** `git archive <sha> | tar -x -C <dir>`, failing if either side fails. */
 function exportCommit(sha, dir) {
@@ -216,13 +268,25 @@ async function main() {
   const sha = git('rev-parse', '--verify', `${opts.ref}^{commit}`);
   const date = git('show', '-s', '--format=%cs', sha);
   log(`ref ${opts.ref} → ${sha} (${date})${opts.offline ? ', offline' : ''}`);
+  assertCheckoutMatches(sha, opts.ref);
+  const drift = lockDrift();
+  if (drift === null)
+    log(
+      'warning: node_modules not compared with package-lock.json (cannot read node_modules/.package-lock.json)',
+    );
+  else if (drift.length)
+    log(
+      `warning: node_modules differs from package-lock.json in ${drift.length} package${drift.length === 1 ? '' : 's'} (first: ${drift[0]}); npm ci makes them match`,
+    );
 
   const scratch = mkdtempSync(path.join(os.tmpdir(), 'convexa-atlas-'));
   const servers = [];
   let links = [];
   let browser = null;
+  // Every step is synchronous, so it also runs from the `exit` handler, which Node calls on
+  // process.exit and on a crash alike. A second call finds nothing left to do.
   const cleanup = () => {
-    for (const s of servers) if (s.exitCode === null) s.kill();
+    for (const s of servers) if (s.exitCode === null && s.signalCode === null) s.kill();
     for (const l of links) {
       try {
         unlinkSync(l);
@@ -230,6 +294,7 @@ async function main() {
         // already gone
       }
     }
+    links = [];
     rmSync(scratch, { recursive: true, force: true });
   };
   const onSignal = (signal) => {
@@ -239,6 +304,13 @@ async function main() {
   };
   process.once('SIGINT', onSignal);
   process.once('SIGTERM', onSignal);
+  process.on('exit', cleanup);
+  // A rejection nothing awaits (a Playwright event handler, say) would otherwise end the run with
+  // a bare stack; this names it, and process.exit runs the `exit` clean-up above.
+  process.on('unhandledRejection', (error) => {
+    console.error('[atlas] failed: unhandled rejection:', error);
+    process.exit(1);
+  });
 
   try {
     const src = path.join(scratch, 'src');
