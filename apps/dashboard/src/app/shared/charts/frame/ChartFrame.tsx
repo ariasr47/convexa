@@ -3,7 +3,9 @@
  * it, so every chart says the same things in the same places:
  *
  * - The border is the provenance (P-8): solid for Convexa's own figures or a primary source, dotted
- *   for a third party's, dashed with a hatch stripe for sample data.
+ *   for a third party's, dashed with a hatch stripe for sample data. A frame given no provenance
+ *   takes the board's (WidgetProvenanceContext: the shell sets it from the build, `sample` on the
+ *   demo and `primary` on the live site), and on a sample board it wears the demo's state tag.
  * - The title states the finding only when the chart has data; every other state names the metric
  *   (P-10, frameTitle.ts). The subtitle holds the metric, the unit and the period.
  * - A state tag sits beside the title (Updated Oct 13, Computed, Demo · sample data…).
@@ -21,6 +23,7 @@ import { CreditsLink } from '@/shared/credits/CreditsLink';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { useWidgetProvenance } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
@@ -48,9 +51,9 @@ export function ChartFrame({
   finding,
   metric,
   sub,
-  provenance,
+  provenance: given,
   status = { kind: 'ready' },
-  tag,
+  tag: givenTag,
   height,
   legend,
   note,
@@ -67,7 +70,9 @@ export function ChartFrame({
   /** The title in every other state: what the chart measures. */
   metric: string;
   sub?: ReactNode;
-  provenance: Provenance;
+  /** Omitted: the board's provenance. On a sample board (the demo build) the frame then shows the
+   *  demo tag in every state, whatever `tag` says, so a call site passes only its live tag. */
+  provenance?: Provenance;
   status?: ChartStatus;
   tag?: { state: DataStateKey; detail?: string; word?: string };
   /** The plot's height, kept by the loading and message bodies. */
@@ -83,6 +88,10 @@ export function ChartFrame({
   children?: ReactNode;
   testId?: string;
 }) {
+  const board = useWidgetProvenance();
+  const provenance = given ?? board;
+  const tag =
+    given === undefined && provenance === 'sample' ? { state: 'demo' as const } : givenTag;
   const title = frameTitle(status, finding, metric);
   const ready = status.kind === 'ready';
   return (

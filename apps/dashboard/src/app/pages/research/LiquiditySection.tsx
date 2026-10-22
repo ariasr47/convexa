@@ -121,15 +121,12 @@ export function LiquiditySection({
       sub={`Fed total assets less the Treasury General Account less overnight reverse repo · $ trillions · weekly, on the H.4.1 Wednesday · the axis starts at $${lo.toFixed(1)}T, not zero: it shows change, not size`}
       headingLevel="h3"
       height={320}
-      provenance={demo ? 'sample' : 'primary'}
       tag={
-        demo
-          ? { state: 'demo' }
-          : stale
-            ? { state: 'lastGood', detail: `week to ${formatShortDate(liquidity.as_of)}` }
-            : schedule.state === 'delayed'
-              ? { state: 'delayed', detail: 'H.4.1' }
-              : { state: 'computed', detail: 'weekly' }
+        stale
+          ? { state: 'lastGood', detail: `week to ${formatShortDate(liquidity.as_of)}` }
+          : schedule.state === 'delayed'
+            ? { state: 'delayed', detail: 'H.4.1' }
+            : { state: 'computed', detail: 'weekly' }
       }
       source={
         demo

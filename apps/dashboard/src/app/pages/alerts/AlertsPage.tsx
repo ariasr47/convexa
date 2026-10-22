@@ -1010,7 +1010,6 @@ function Suggestions({
                 {/* Not a link: the suggestion is a button, and a click must pick it, not leave. */}
                 <ProvenanceChip
                   text={demo ? `Sample · shaped like ${info.chip}` : info.chip}
-                  kind={demo ? 'sample' : 'primary'}
                   link={false}
                 />
                 <StateTag {...st} />
@@ -1099,10 +1098,7 @@ function KindReference({ ctx }: { ctx: SiteContext }) {
               </Box>
               <Box component="td" sx={cell}>{`${k.fires}.`}</Box>
               <Box component="td" sx={cell}>
-                <ProvenanceChip
-                  text={ctx.demo ? `Sample · shaped like ${k.chip}` : k.chip}
-                  kind={ctx.demo ? 'sample' : 'primary'}
-                />
+                <ProvenanceChip text={ctx.demo ? `Sample · shaped like ${k.chip}` : k.chip} />
                 <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
                   {`${k.delay}.`}
                   {!ctx.demo && ` ${checksLine(k.key)}`}

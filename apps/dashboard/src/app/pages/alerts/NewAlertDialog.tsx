@@ -438,7 +438,6 @@ function ChooseStep({
                 {/* Not a link: the tile is a button, and a click must choose, not leave. */}
                 <ProvenanceChip
                   text={ctx.demo ? `Sample · shaped like ${k.chip}` : k.chip}
-                  kind={ctx.demo ? 'sample' : 'primary'}
                   link={false}
                 />
                 <StateTag {...st} />
@@ -1254,7 +1253,6 @@ function ReviewStep({
               ? `Sample · shaped like ${pub?.chip ?? 'a Massive options chain'}`
               : (pub?.chip ?? 'Options chain')
           }
-          kind={ctx.demo ? 'sample' : 'primary'}
           link={false}
         />
         <StateTag {...st} />

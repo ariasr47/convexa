@@ -53,27 +53,25 @@ const CFTC = 'CFTC';
 
 const TSY_URL = 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates';
 
-/** A Treasury chart's provenance on this build (canon P-8): the primary source on the live site, the
- *  demo's sample data, dashed, on staging. Every chart in the rates section takes its frame from here. */
+/** A Treasury chart's source and as-of on this build: the primary source on the live site, the
+ *  demo's sample data on staging (its dashed frame and demo tag come from the board, canon P-8).
+ *  Every chart in the rates section takes its frame from here. */
 function treasuryFrame(
   source: string,
   asOf: string,
   tag: { state: DataStateKey; detail?: string },
 ): {
-  provenance: Provenance;
   source: { text: string; href?: string };
   asOf: string;
   tag: { state: DataStateKey; detail?: string };
 } {
   return dataMode === 'demo'
     ? {
-        provenance: 'sample',
         source: { text: 'Demo · shaped like U.S. Treasury data' },
         asOf: `Scenario · ${formatNoteDate(asOf)}`,
-        tag: { state: 'demo' },
+        tag,
       }
     : {
-        provenance: 'primary',
         source: { text: source, href: TSY_URL },
         asOf: `As of ${formatNoteDate(asOf)}`,
         tag,
@@ -127,13 +125,11 @@ export function MarketsPage() {
             {data?.rates && (
               <ProvenanceChip
                 text={`${data.rates.source} · through ${formatNoteDate(data.rates.as_of)}`}
-                kind={dataMode === 'demo' ? 'sample' : 'primary'}
               />
             )}
             {data?.futures && (
               <ProvenanceChip
                 text={`${data.futures.source} · as of ${formatShortDate(data.futures.report_date)}`}
-                kind={dataMode === 'demo' ? 'sample' : 'primary'}
               />
             )}
             {/* One state word per source (canon P-2); demo builds say it once, in the chip above. */}
@@ -1447,20 +1443,17 @@ const fmtK = (n: number) =>
 
 const CFTC_URL = 'https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm';
 
-/** What every CFTC frame shares: provenance, state tag, source and the as-of (positions are as of
- *  a Tuesday and published the Friday after). */
+/** What every CFTC frame shares: state tag, source and the as-of (positions are as of a Tuesday
+ *  and published the Friday after). Its provenance, and the demo's tag, come from the board. */
 function cftcFrame(futures: Futures, stale = false) {
   const published = new Date(`${futures.report_date}T12:00:00Z`);
   published.setUTCDate(published.getUTCDate() + 3);
   const demo = dataMode === 'demo';
   return {
-    provenance: (demo ? 'sample' : 'primary') as Provenance,
-    tag: demo
-      ? { state: 'demo' as const }
-      : {
-          state: stale ? ('lastGood' as const) : ('delayed' as const),
-          detail: `as of ${formatShortDate(futures.report_date)}`,
-        },
+    tag: {
+      state: stale ? ('lastGood' as const) : ('delayed' as const),
+      detail: `as of ${formatShortDate(futures.report_date)}`,
+    },
     source: demo
       ? { text: 'Demo · shaped like CFTC data' }
       : { text: 'CFTC · Traders in Financial Futures', href: CFTC_URL },

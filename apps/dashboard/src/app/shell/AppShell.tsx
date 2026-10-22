@@ -11,6 +11,7 @@
  * Product spine #6 — keyboard: a skip link is the first tab stop, targeting the ONE `<main>` landmark.
  */
 import { extrasFor } from '@/shared/theme/tokens';
+import { WidgetProvenanceProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import {
   dataMode,
   demoClock,
@@ -216,7 +217,11 @@ export function AppShell() {
           minWidth: 0,
         }}
       >
-        <Outlet />
+        {/* P-8: on the demo build every figure is the demo's sample, so a frame or chip that names no
+            provenance of its own is dashed; the live build's stay solid. */}
+        <WidgetProvenanceProvider value={dataMode === 'demo' ? 'sample' : 'primary'}>
+          <Outlet />
+        </WidgetProvenanceProvider>
       </Box>
       {/* Canon rule 19 — Lab and Blog live in the footer, so the footer must reach every full page.
           ONE mount point is what makes "reachable from every in-shell page" STRUCTURAL instead of a

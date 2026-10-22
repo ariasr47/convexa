@@ -244,15 +244,12 @@ function CheckFrame({ d }: { d: PublicTicker }) {
       finding={filedFinding(rows, form, demo)}
       metric={metric}
       sub={sub}
-      provenance={demo ? 'sample' : 'primary'}
       tag={
-        demo
-          ? { state: 'demo' }
-          : stale
-            ? { state: 'lastGood' }
-            : pending
-              ? { state: 'delayed', detail: 'facts not in yet' }
-              : { state: 'computed', detail: 'checked against the filing' }
+        stale
+          ? { state: 'lastGood' }
+          : pending
+            ? { state: 'delayed', detail: 'facts not in yet' }
+            : { state: 'computed', detail: 'checked against the filing' }
       }
       height={rows.length * 48 + 40}
       source={source}
@@ -521,14 +518,7 @@ function RevenueAsFiled({ d, years }: { d: PublicTicker; years: PublicAnnualReve
       finding={finding}
       metric={`${d.ticker} annual revenue as filed`}
       sub={`${d.ticker} annual revenue · ${billionsWord(unit)} · as tagged in each year’s annual report · a figure a later filing changed carries a “Restated” marker`}
-      provenance={demo ? 'sample' : 'primary'}
-      tag={
-        demo
-          ? { state: 'demo' }
-          : stale
-            ? { state: 'lastGood' }
-            : { state: 'updated', detail: 'on filing' }
-      }
+      tag={stale ? { state: 'lastGood' } : { state: 'updated', detail: 'on filing' }}
       height={220}
       source={
         demo

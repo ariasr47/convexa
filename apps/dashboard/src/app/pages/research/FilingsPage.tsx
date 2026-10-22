@@ -238,7 +238,6 @@ export function FilingsPage() {
                     ? `Sample filings, shaped like SEC EDGAR · ${formatShortDate(read.data.checked_at.slice(0, 10))}`
                     : `SEC EDGAR · checked ${formatShortDate(read.data.checked_at.slice(0, 10))}, ${read.data.checked_at.slice(11, 16)} UTC`
                 }
-                kind={dataMode === 'demo' ? 'sample' : 'primary'}
               />
             )}
             {notSetUp && (

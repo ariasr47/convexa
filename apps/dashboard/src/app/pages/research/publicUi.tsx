@@ -4,6 +4,7 @@
  * in. Colours come from the theme; a warning is burnt orange with its icon, never amber alone.
  */
 import { CreditsLink } from '@/shared/credits/CreditsLink';
+import { useWidgetProvenance } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
@@ -31,15 +32,18 @@ export function Caps({ children, sx }: { children: ReactNode; sx?: SxProps<Theme
 /** Solid: a primary source. Dotted: a third party's (TradingView). Dashed: the demo's sample data. */
 export function ProvenanceChip({
   text,
-  kind,
+  kind: given,
   link = true,
 }: {
   text: string;
-  kind: 'primary' | 'third-party' | 'sample';
+  /** Omitted: the board's provenance (the shell's, from the build: sample on the demo). */
+  kind?: 'primary' | 'third-party' | 'sample';
   /** False inside another control (a choice button): a link nested in a button is invalid, and a
    *  click on it would leave the page and lose what the reader was filling in. */
   link?: boolean;
 }) {
+  const board = useWidgetProvenance();
+  const kind = given ?? (board === 'third' ? 'third-party' : board);
   if (!link) return <ChipBody text={text} kind={kind} />;
   // A chip that names a source links to its card on /credits (one place for every chip).
   return (

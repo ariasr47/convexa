@@ -232,14 +232,7 @@ function InsiderClustersFrame({ d }: { d: PublicTicker }) {
       finding={clustersFinding(ins, demo, days, end)}
       metric={metric}
       sub={sub}
-      provenance={demo ? 'sample' : 'primary'}
-      tag={
-        demo
-          ? { state: 'demo' }
-          : stale
-            ? { state: 'lastGood' }
-            : { state: 'computed', detail: 'from Form 4' }
-      }
+      tag={stale ? { state: 'lastGood' } : { state: 'computed', detail: 'from Form 4' }}
       height={roles.length * 30 + 64}
       legend={<Legend />}
       source={source}

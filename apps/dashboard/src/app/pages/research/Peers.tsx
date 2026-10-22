@@ -86,9 +86,8 @@ function PeersFrame({ d }: { d: PublicTicker }) {
       finding={metric}
       metric={metric}
       sub={sub}
-      provenance={demo ? 'sample' : 'primary'}
       status={{ kind: 'message', tone, text, cause }}
-      tag={demo ? { state: 'demo' } : { state: tag }}
+      tag={{ state: tag }}
       height={200}
       source={source}
       action={action}
@@ -127,15 +126,12 @@ function PeersFrame({ d }: { d: PublicTicker }) {
       finding={peersFinding(p, d.ticker, demo)}
       metric={metric}
       sub={sub}
-      provenance={demo ? 'sample' : 'primary'}
       tag={
-        demo
-          ? { state: 'demo' }
-          : view.stale
-            ? { state: 'lastGood' }
-            : missing.length
-              ? { state: 'delayed', word: `${missing.length} of ${listed} not filed` }
-              : { state: 'computed', detail: q }
+        view.stale
+          ? { state: 'lastGood' }
+          : missing.length
+            ? { state: 'delayed', word: `${missing.length} of ${listed} not filed` }
+            : { state: 'computed', detail: q }
       }
       height={2 * 112}
       source={source}

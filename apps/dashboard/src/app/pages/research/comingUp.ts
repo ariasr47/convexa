@@ -341,15 +341,14 @@ export function comingUpState({
                     'Fed, BLS, BEA and Treasury releases and the followed companies’ results appear here as their dates are set.',
                 }
               : { kind: 'ready' };
-  const tag = demo
-    ? ({ state: 'demo' } as const)
-    : off
-      ? ({ state: 'off' } as const)
-      : schedulesDown
-        ? ({ state: 'sourceDown', detail: 'schedules' } as const)
-        : schedules.length
-          ? scheduleTag(schedules, sec.word)
-          : undefined;
+  // The demo's frame takes its sample tag from the board (ChartFrame), so this is the live word.
+  const tag = off
+    ? ({ state: 'off' } as const)
+    : schedulesDown
+      ? ({ state: 'sourceDown', detail: 'schedules' } as const)
+      : schedules.length
+        ? scheduleTag(schedules, sec.word)
+        : undefined;
   return { status, tag, atLeast: !demo && (sec.missing || sec.notSet) };
 }
 

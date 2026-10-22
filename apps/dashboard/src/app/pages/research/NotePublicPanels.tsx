@@ -446,7 +446,6 @@ export function ShortInterestCard({ d, compact = false }: { d: PublicTicker; com
       metric="Short interest"
       sub={`${d.ticker} short interest at each FINRA settlement · ${u === 'B' ? 'billions' : 'millions'} of shares${out ? ` · right: % of the ${formatShortDate(out.as_of)} shares outstanding (SEC)` : ''}${hist.length > 1 ? (compact ? ` · last ${hist.length} settlements` : ` · ${formatShortDate(first.settlement_date)} – ${formatShortDate(si.settlement_date)}`) : ''}${compact && si.days_to_cover != null ? ` · ${si.days_to_cover.toFixed(2)} days to cover` : ''}`}
       height={PLOT + 28}
-      provenance={demo ? 'sample' : 'primary'}
       tag={{
         state: publicDataWord(d.short_interest_state, { stale, delayed: true, demo }),
         detail: stale || demo ? undefined : `settled ${formatShortDate(si.settlement_date)}`,
@@ -654,7 +653,6 @@ export function ShortVolumeCard({ d }: { d: PublicTicker }) {
       metric="Short-sale volume"
       sub={`${d.ticker} · share of each day’s reported volume marked short · ${sv.days} trading days${first ? `, ${formatShortDate(first.date)} – ${formatShortDate(sv.date)}` : ''} · dashed = their average`}
       height={150}
-      provenance={demo ? 'sample' : 'primary'}
       tag={{
         state: publicDataWord(d.short_volume_state, { demo }),
         detail: demo ? undefined : formatShortDate(sv.date),

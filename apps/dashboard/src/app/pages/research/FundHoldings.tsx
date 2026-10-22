@@ -173,16 +173,11 @@ function HoldersFrame({ d }: { d: PublicTicker }) {
       finding={metric}
       metric={metric}
       sub={sub}
-      provenance={demo ? 'sample' : 'primary'}
       status={{ kind: 'message', tone, text, cause }}
-      tag={
-        demo
-          ? { state: 'demo' }
-          : {
-              state: tag,
-              ...(tag === 'delayed' ? { word: 'Delayed by law', detail: '45 days' } : {}),
-            }
-      }
+      tag={{
+        state: tag,
+        ...(tag === 'delayed' ? { word: 'Delayed by law', detail: '45 days' } : {}),
+      }}
       height={150}
       source={source}
       action={action}
@@ -218,13 +213,10 @@ function HoldersFrame({ d }: { d: PublicTicker }) {
       finding={holdersFinding(h, d.ticker, demo)}
       metric={metric}
       sub={sub}
-      provenance={demo ? 'sample' : 'primary'}
       tag={
-        demo
-          ? { state: 'demo' }
-          : view.stale
-            ? { state: 'lastGood' }
-            : { state: 'delayed', word: 'Delayed by law', detail: '45 days' }
+        view.stale
+          ? { state: 'lastGood' }
+          : { state: 'delayed', word: 'Delayed by law', detail: '45 days' }
       }
       height={rows.length * 34 + 30}
       source={source}

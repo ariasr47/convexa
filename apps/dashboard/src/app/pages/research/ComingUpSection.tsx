@@ -147,7 +147,6 @@ export function ComingUpSection({ read }: { read: Read<PublicMarkets> }) {
         sub={`Macro releases from the agencies’ published schedules and results dates from the notes, or estimated from each company’s filing history · ${shortDay(built.from)} – ${shortDay(built.weeks[5].end)} · times Eastern`}
         headingLevel="h3"
         height={180}
-        provenance={demo ? 'sample' : 'primary'}
         status={status}
         tag={tag}
         action={
