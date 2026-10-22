@@ -745,13 +745,4 @@ impl PgScanStore {
         }
         Ok(n)
     }
-
-    /// Count outcome rows for operator health / join CLI summary.
-    pub async fn count_structure_outcomes(&self) -> AppResult<i64> {
-        let n: i64 = sqlx::query_scalar(r#"SELECT COUNT(*)::bigint FROM structure_outcomes"#)
-            .fetch_one(&self.pg.pool)
-            .await
-            .map_err(|e| AppError::Config(format!("postgres structure_outcomes count: {e}")))?;
-        Ok(n)
-    }
 }

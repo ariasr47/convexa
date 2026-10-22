@@ -2041,27 +2041,3 @@ impl From<&LivePrice> for PriceResponse {
         }
     }
 }
-
-/// Combined progressive ticker payload (REST one-shot).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProgressiveTickerResponse {
-    pub ticker: String,
-    /// Path A — may be null when cold.
-    pub price: Option<PriceResponse>,
-    /// Path B — may be null only if analytics failed (REST waits for compute).
-    pub analytics: Option<AnalyticsSnapshot>,
-    pub meta: ProgressiveMeta,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProgressiveMeta {
-    pub price_source: Option<String>,
-    pub analytics_source: Option<String>,
-    pub elapsed_ms: f64,
-    pub gex_cache_ttl_secs: u64,
-    /// Actual TTL tier used for this ticker (default vs liquid).
-    #[serde(default)]
-    pub gex_ttl_tier_secs: Option<u64>,
-    #[serde(default)]
-    pub cache_hit: Option<bool>,
-}

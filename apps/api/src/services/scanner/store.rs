@@ -785,10 +785,6 @@ impl JsonScanStore {
     }
 }
 
-pub fn default_scan_db_path(workspace_root: &Path) -> PathBuf {
-    workspace_root.join("data/scan.json")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

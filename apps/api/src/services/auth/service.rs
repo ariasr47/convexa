@@ -916,10 +916,6 @@ impl AuthService {
 
     // ------------------------------------------------------------------ Google OAuth
 
-    pub fn google_start_url(&self) -> Result<String, AuthError> {
-        self.google_start().map(|(url, _state)| url)
-    }
-
     /// Consent URL plus the state value. The route stores the state in an HttpOnly cookie so the
     /// callback can prove it is finishing the flow THIS browser started (login-CSRF defence).
     pub fn google_start(&self) -> Result<(String, String), AuthError> {

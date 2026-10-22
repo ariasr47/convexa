@@ -68,14 +68,6 @@ pub fn session_key(year: i32, month: u32, day: u32) -> u32 {
     (year as u32) * 10_000 + month * 100 + day
 }
 
-/// Format packed session key as `YYYY-MM-DD` (for debug / optional wire metadata).
-pub fn session_key_iso(key: u32) -> String {
-    let y = key / 10_000;
-    let m = (key / 100) % 100;
-    let d = key % 100;
-    format!("{y:04}-{m:02}-{d:02}")
-}
-
 /// Session VWAP and ±2σ / ±3σ bands (all rounded to 2 decimals like Python).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct VwapBands {

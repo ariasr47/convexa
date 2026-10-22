@@ -32,13 +32,6 @@ pub fn d1_d2(s: f64, k: f64, t: f64, r: f64, sigma: f64, q: f64) -> (f64, f64) {
     (d1, d2)
 }
 
-/// BSM gamma = e^{−q t} · φ(d1) / (S · σ · √t).
-#[inline]
-pub fn calc_gamma(s: f64, k: f64, t: f64, r: f64, sigma: f64, q: f64) -> f64 {
-    let (d1, _) = d1_d2(s, k, t, r, sigma, q);
-    libm::exp(-q * t) * norm_pdf(d1) / (s * sigma * t.sqrt())
-}
-
 /// Vanna = ∂Δ/∂σ = −e^{−q t} · φ(d1) · d2 / σ.
 #[inline]
 pub fn calc_vanna(d1: f64, d2: f64, sigma: f64, t: f64, q: f64) -> f64 {

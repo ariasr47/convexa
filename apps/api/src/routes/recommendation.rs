@@ -653,13 +653,3 @@ async fn sim_trade_gate_http(State(state): State<AppState>, headers: HeaderMap) 
     }
     (StatusCode::OK, Json(SimTradeGateBody { authorized: true })).into_response()
 }
-
-/// Helper: resolve optional session without failing (for status free-use fields later).
-#[allow(dead_code)]
-pub fn optional_user(state: &AppState, headers: &HeaderMap) -> bool {
-    let cookie = cookie_opt(headers);
-    state
-        .auth
-        .resolve_session(cookie.as_deref())
-        .authenticated()
-}

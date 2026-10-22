@@ -85,10 +85,8 @@ pub enum CapacityAction {
 }
 
 pub use manifest::{
-    manifest, ChildId, OutcomeClass, PhaseBudget, Profile, ScenarioId, ScenarioStatus,
-    ValidatedManifest,
+    manifest, ChildId, OutcomeClass, PhaseBudget, Profile, ScenarioId, ValidatedManifest,
 };
-pub use model::{ObservationError, RunObservations};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CapacityError {

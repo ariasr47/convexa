@@ -20,11 +20,7 @@ use axum::Json;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::sync::atomic::{AtomicU64, Ordering};
 use utoipa::{IntoParams, IntoResponses, ToSchema};
-
-/// Incremented only if a research flat-files handler were to call Massive — must stay 0.
-pub static FLAT_FILES_READ_VENDOR_CALLS: AtomicU64 = AtomicU64::new(0);
 
 fn watchlist_json() -> Value {
     json!(FLAT_FILES_WATCHLIST)
@@ -379,7 +375,6 @@ pub async fn list_flat_files(
     if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
-    let _ = FLAT_FILES_READ_VENDOR_CALLS.load(Ordering::Relaxed);
     let symbol = normalize_symbol(&symbol);
     if let Some(limit) = q.limit {
         if limit < 1 {
@@ -476,7 +471,6 @@ pub async fn load_flat_files(
     if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
-    let _ = FLAT_FILES_READ_VENDOR_CALLS.load(Ordering::Relaxed);
     let symbol = normalize_symbol(&symbol);
     let Some(raw_et) = q
         .et_date
@@ -605,12 +599,6 @@ pub async fn load_flat_files(
         "quotes_extract": quotes_extract,
     }))
     .into_response()
-}
-
-/// Exposed so isolation tests can prove handlers never increment this.
-#[allow(dead_code)]
-pub fn flat_files_read_vendor_call_count() -> u64 {
-    FLAT_FILES_READ_VENDOR_CALLS.load(Ordering::Relaxed)
 }
 
 #[cfg(test)]

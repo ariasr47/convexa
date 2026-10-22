@@ -14,12 +14,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::sync::atomic::{AtomicU64, Ordering};
 use utoipa::{IntoParams, IntoResponses, ToSchema};
-
-/// Incremented only if a research handler were to call Massive — must stay 0.
-#[allow(dead_code)]
-pub static RESEARCH_VENDOR_CALLS: AtomicU64 = AtomicU64::new(0);
 
 const LICENSE: &str = "Our research · not redistributed on a trader route.";
 const FRAMING_HIT: &str = "RESEARCH READ — SESSION BOOK";
@@ -495,12 +490,6 @@ pub async fn load_session_book(
         "trades": wire.trades,
     }))
     .into_response()
-}
-
-/// Exposed so isolation tests can prove handlers never increment this.
-#[allow(dead_code)]
-pub fn research_vendor_call_count() -> u64 {
-    RESEARCH_VENDOR_CALLS.load(Ordering::Relaxed)
 }
 
 #[cfg(test)]

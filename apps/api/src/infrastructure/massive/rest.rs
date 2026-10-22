@@ -475,19 +475,6 @@ impl MassiveRestClient {
         Ok(bars)
     }
 
-    /// Convenience: closes only (HV path). Prefer [`Self::fetch_daily_bars`] when OHLC is needed.
-    pub async fn fetch_daily_closes(
-        &self,
-        ticker: &str,
-        lookback_days: i64,
-    ) -> AppResult<Vec<f64>> {
-        let bars = self.fetch_daily_bars(ticker, lookback_days).await?;
-        Ok(bars
-            .into_iter()
-            .filter_map(|b| b.close.filter(|c| *c > 0.0 && c.is_finite()))
-            .collect())
-    }
-
     /// 1-minute bars over a short trailing window for session-anchored VWAP.
     ///
     /// Massive/Polygon: `GET /v2/aggs/ticker/{T}/range/1/minute/{from}/{to}`.

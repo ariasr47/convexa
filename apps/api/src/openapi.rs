@@ -10,8 +10,7 @@ use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 use utoipa::openapi::{
     content::ContentBuilder,
-    header::Header,
-    response::{ResponseBuilder, Responses},
+    response::ResponseBuilder,
     security::{ApiKey, ApiKeyValue, SecurityScheme},
     Object, RefOr, Type,
 };
@@ -166,21 +165,6 @@ pub enum FieldPresence {
     Empty,
 }
 
-/// A map used on the HTTP boundary must declare the type of each value.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum MapValuePolicy {
-    Typed(&'static str),
-    Unconstrained,
-}
-
-pub fn validate_map_value_policy(policy: MapValuePolicy) -> Result<(), &'static str> {
-    match policy {
-        MapValuePolicy::Typed(name) if !name.is_empty() => Ok(()),
-        MapValuePolicy::Typed(_) => Err("typed map values require a non-empty schema name"),
-        MapValuePolicy::Unconstrained => Err("unconstrained JSON map values are not permitted"),
-    }
-}
-
 pub fn security_scheme(mode: SecurityMode) -> Option<SecurityScheme> {
     match mode {
         SecurityMode::Public | SecurityMode::OptionalSession => None,
@@ -213,37 +197,6 @@ pub fn security_schemes() -> BTreeMap<String, SecurityScheme> {
     .collect()
 }
 
-fn string_header() -> Header {
-    Header::new(Object::with_type(Type::String))
-}
-
-pub fn set_cookie_response(description: &str) -> ResponseBuilder {
-    ResponseBuilder::new()
-        .description(description)
-        .header("Set-Cookie", string_header())
-}
-
-pub fn location_response(description: &str) -> ResponseBuilder {
-    ResponseBuilder::new()
-        .description(description)
-        .header("Location", string_header())
-}
-
-pub fn retry_after_response(description: &str) -> ResponseBuilder {
-    ResponseBuilder::new()
-        .description(description)
-        .header("Retry-After", string_header())
-}
-
-pub fn html_response(description: &str) -> ResponseBuilder {
-    ResponseBuilder::new().description(description).content(
-        "text/html",
-        ContentBuilder::new()
-            .schema(Some(Object::with_type(Type::String)))
-            .build(),
-    )
-}
-
 pub fn no_body_response(description: &str) -> ResponseBuilder {
     ResponseBuilder::new().description(description)
 }
@@ -255,20 +208,6 @@ pub fn sse_response(description: &str) -> ResponseBuilder {
             .schema(Some(Object::with_type(Type::String)))
             .build(),
     )
-}
-
-pub fn responses_with_json_error(status: &str, description: &str) -> Responses {
-    utoipa::openapi::ResponsesBuilder::new()
-        .response(
-            status,
-            ResponseBuilder::new().description(description).content(
-                "application/json",
-                ContentBuilder::new()
-                    .schema(Some(utoipa::openapi::Ref::from_schema_name("WireError")))
-                    .build(),
-            ),
-        )
-        .build()
 }
 
 /// Structural guard used by policy tests and future CI checks.
@@ -284,6 +223,11 @@ pub fn assert_no_openapi_authority(source: &str, label: &str) -> Result<(), Stri
 mod tests {
     use super::*;
     use axum::{body::Body, http::StatusCode, response::Response};
+    use utoipa::openapi::header::Header;
+
+    fn string_header() -> Header {
+        Header::new(Object::with_type(Type::String))
+    }
 
     struct DeclaredJson;
 

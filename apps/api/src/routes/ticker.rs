@@ -1,18 +1,21 @@
 //! Progressive ticker: Path A price (instant) + Path B GEX (follows).
 //!
-//! - `GET /api/ticker/{ticker}` — price (cache or stock snapshot) **in parallel** with GEX
 //! - `GET /api/ticker/{ticker}/progressive` — SSE:
 //!     1. `price` ASAP (cache hit = immediate; else fast stock snapshot)
 //!     2. `analytics` when chain + GEX finish
 //!     3. `done`
 //!
 //! Path A never waits on the options chain.
+//!
+//! The one-shot `GET /api/ticker/{ticker}` bundle is served by `routes/market.rs`
+//! (`get_ticker_bundle`). The `Ticker*Wire` schemas below stay registered as OpenAPI
+//! components in `routes/mod.rs`.
 
 use crate::error::AppError;
 use crate::openapi::RouteResponse;
 use crate::routes::price::PriceWire;
 use crate::services::analytics::load_analytics;
-use crate::state::{AppState, PriceResponse, ProgressiveMeta, ProgressiveTickerResponse};
+use crate::state::{AppState, PriceResponse};
 use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderValue};
 use axum::response::sse::{Event, KeepAlive, Sse};
@@ -60,21 +63,6 @@ pub struct TickerMetaWire {
     pub gex_cache_ttl_secs: u64,
     pub gex_ttl_tier_secs: Option<u64>,
     pub cache_hit: Option<bool>,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, IntoResponses)]
-pub enum TickerResponse {
-    #[response(status = 200, content_type = "application/json")]
-    Ok(TickerWire),
-}
-
-impl IntoResponse for TickerResponse {
-    fn into_response(self) -> Response {
-        match self {
-            Self::Ok(body) => Json(body).into_response(),
-        }
-    }
 }
 
 pub(crate) fn contract_representative_for(
@@ -144,56 +132,6 @@ impl IntoResponse for ProgressiveStreamResponse {
             }
         }
     }
-}
-
-/// REST progressive DTO (Path A + Path B). Prefer FE bundle at `/api/ticker/{t}`;
-/// this remains available for dual-path clients.
-#[allow(dead_code)]
-pub async fn get_ticker(
-    State(state): State<AppState>,
-    Path(ticker): Path<String>,
-    Query(q): Query<TickerQuery>,
-) -> Result<TickerResponse, AppError> {
-    let t0 = Instant::now();
-    let sym = normalize_ticker(&ticker)?;
-
-    let price_fut = resolve_price_fast(&state, &sym);
-    let gex_fut = load_analytics(&state, &sym, q.min_dte, q.max_dte, q.refresh);
-
-    let (price_res, gex_res) = tokio::join!(price_fut, gex_fut);
-
-    let (price, price_source) = match price_res {
-        Ok(p) => {
-            let src = p.source.clone();
-            (Some(p), Some(src))
-        }
-        Err(e) => {
-            warn!(ticker = %sym, error = %e, "fast price failed");
-            (None, None)
-        }
-    };
-
-    let (analytics, analytics_source) = gex_res?;
-    let cache_hit = analytics_source == "cache";
-    let gex_ttl_tier_secs = Some(state.config.gex_ttl_for(&sym).as_secs());
-
-    let body = ProgressiveTickerResponse {
-        ticker: sym,
-        price,
-        analytics,
-        meta: ProgressiveMeta {
-            price_source,
-            analytics_source: Some(analytics_source),
-            elapsed_ms: t0.elapsed().as_secs_f64() * 1000.0,
-            gex_cache_ttl_secs: state.config.gex_cache_ttl_secs,
-            gex_ttl_tier_secs,
-            cache_hit: Some(cache_hit),
-        },
-    };
-    Ok(TickerResponse::Ok(
-        serde_json::from_value(serde_json::to_value(body)?)
-            .expect("ticker wire matches closed schema"),
-    ))
 }
 
 /// SSE: emit price the moment Path A has it; GEX follows on Path B.

@@ -595,10 +595,6 @@ impl Config {
             Duration::from_secs(self.gex_cache_ttl_secs)
         }
     }
-
-    pub fn is_liquid(&self, ticker: &str) -> bool {
-        self.liquid_symbols.contains(&ticker.to_ascii_uppercase())
-    }
 }
 
 fn env_u64(key: &str, default: u64) -> u64 {

@@ -54,51 +54,6 @@ const D2_PRIME_SYMBOLS: [&str; 5] = [
     COALESCED_SYMBOL,
 ];
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LanePlan {
-    pub name: &'static str,
-    pub children: &'static [ChildId],
-    pub budget: std::time::Duration,
-}
-
-const A_CHILDREN: &[ChildId] = &[ChildId::A];
-const B_CHILDREN: &[ChildId] = &[ChildId::B];
-const C_CHILDREN: &[ChildId] = &[ChildId::C];
-const D_CHILDREN: &[ChildId] = &[ChildId::D1, ChildId::D2, ChildId::D3];
-const E_CHILDREN: &[ChildId] = &[ChildId::E];
-
-/// The fixed concurrent lane ledger. These values are policy inputs, not
-/// observations; unfinished lanes remain failed in the retained report.
-pub const fn lane_plans() -> [LanePlan; 5] {
-    [
-        LanePlan {
-            name: "A",
-            children: A_CHILDREN,
-            budget: std::time::Duration::from_secs(70),
-        },
-        LanePlan {
-            name: "B",
-            children: B_CHILDREN,
-            budget: std::time::Duration::from_secs(60),
-        },
-        LanePlan {
-            name: "C",
-            children: C_CHILDREN,
-            budget: std::time::Duration::from_secs(50),
-        },
-        LanePlan {
-            name: "D",
-            children: D_CHILDREN,
-            budget: std::time::Duration::from_secs(55),
-        },
-        LanePlan {
-            name: "E",
-            children: E_CHILDREN,
-            budget: std::time::Duration::from_secs(20),
-        },
-    ]
-}
-
 /// Versioned private JSONL control protocol. It is intentionally not an HTTP surface.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "command", rename_all = "snake_case")]

@@ -31,7 +31,7 @@ use crate::services::rec_inputs::max_risk::{parse_max_risk_dollars, ParsedRisk};
 use crate::state::AppState;
 use quant_engine::{
     restrict_move_to_tenors, CandidateBudget, CandidateSet, ContractType, DteWindow, SnapshotMeta,
-    StraddleMove, StraddleMoveState, DEFAULT_GATE_SCORE,
+    StraddleMove, StraddleMoveState,
 };
 use serde_json::{json, Value};
 use std::sync::Mutex;
@@ -969,31 +969,6 @@ pub struct RecRequestBody {
 
 fn default_true() -> bool {
     true
-}
-
-/// Ensure ai_eval on bundle when missing (for status).
-pub fn ensure_ai_eval(bundle: &mut Value) {
-    if bundle.get("ai_eval").is_some() {
-        return;
-    }
-    if let Some(sig) = bundle.get("signals") {
-        // Best-effort: reconstruct gate from score if signals present.
-        let score = sig
-            .get("opportunity_score")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0) as i32;
-        let ready = score >= DEFAULT_GATE_SCORE;
-        bundle.as_object_mut().map(|o| {
-            o.insert(
-                "ai_eval".into(),
-                json!({
-                    "ready": ready,
-                    "reasons": if ready { json!([format!("score>={DEFAULT_GATE_SCORE}")]) } else { json!([]) },
-                    "score_threshold": DEFAULT_GATE_SCORE,
-                }),
-            )
-        });
-    }
 }
 
 #[cfg(test)]

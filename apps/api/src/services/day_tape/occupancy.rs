@@ -370,33 +370,6 @@ pub fn axis_a_label(a: AxisA) -> &'static str {
     }
 }
 
-#[allow(dead_code)] // exhaustive-match tripwire
-pub fn axis_b_path_a_label(a: AxisBPathA) -> &'static str {
-    match a {
-        AxisBPathA::EmptyWhileStoring => "empty_while_storing",
-        AxisBPathA::Occupied => "occupied",
-        AxisBPathA::Recording => "recording",
-    }
-}
-
-#[allow(dead_code)] // exhaustive-match tripwire
-pub fn axis_b_path_b_label(a: AxisBPathB) -> &'static str {
-    match a {
-        AxisBPathB::PathBNotCapturing => "path_b_not_capturing",
-        AxisBPathB::EmptyWhileStoring => "empty_while_storing",
-        AxisBPathB::Occupied => "occupied",
-        AxisBPathB::Recording => "recording",
-    }
-}
-
-#[allow(dead_code)] // exhaustive-match tripwire
-pub fn axis_c_label(a: AxisC) -> &'static str {
-    match a {
-        AxisC::Partial => "partial",
-        AxisC::ThroughWindow => "through_window",
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

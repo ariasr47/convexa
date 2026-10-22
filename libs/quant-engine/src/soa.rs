@@ -78,23 +78,9 @@ impl AlignedF64Buf {
         unsafe { std::slice::from_raw_parts(self.ptr, self.len) }
     }
 
-    #[inline]
-    pub fn as_mut_slice(&mut self) -> &mut [f64] {
-        if self.len == 0 {
-            return &mut [];
-        }
-        // SAFETY: unique &mut, valid for `len` f64s.
-        unsafe { std::slice::from_raw_parts_mut(self.ptr, self.len) }
-    }
-
     /// Aligned pointer (64-byte) when non-empty; may be null when empty.
     #[inline]
     pub fn as_ptr(&self) -> *const f64 {
-        self.ptr
-    }
-
-    #[inline]
-    pub fn as_mut_ptr(&mut self) -> *mut f64 {
         self.ptr
     }
 

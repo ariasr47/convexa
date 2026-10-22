@@ -303,11 +303,6 @@ async fn capture_current() -> Result<(Value, Value, Value)> {
     ))
 }
 
-#[doc(hidden)]
-pub async fn capture_for_corpus() -> Result<(Value, Value, Value)> {
-    capture_current().await
-}
-
 fn run_contract_check() -> Result<Value> {
     let root = repo_root();
     let mut command = if cfg!(windows) {

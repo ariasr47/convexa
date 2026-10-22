@@ -20,11 +20,7 @@ use axum::Json;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::sync::atomic::{AtomicU64, Ordering};
 use utoipa::{IntoParams, IntoResponses, ToSchema};
-
-/// Incremented only if a research tape handler were to call Massive — must stay 0.
-pub static TAPE_READ_VENDOR_CALLS: AtomicU64 = AtomicU64::new(0);
 
 const EVIDENCE: &str = "this process";
 const AUTHORIZES: &str = "nothing";
@@ -485,7 +481,6 @@ pub async fn list_session_day_tape(
     if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
-    let _ = TAPE_READ_VENDOR_CALLS.load(Ordering::Relaxed);
     let symbol = normalize_symbol(&symbol);
     if let Some(limit) = q.limit {
         if limit < 1 {
@@ -630,7 +625,6 @@ pub async fn load_session_day_tape(
     if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
-    let _ = TAPE_READ_VENDOR_CALLS.load(Ordering::Relaxed);
     let symbol = normalize_symbol(&symbol);
     let Some(raw_et) = q
         .et_date
@@ -812,12 +806,6 @@ pub async fn load_session_day_tape(
             Json(body).into_response()
         }
     }
-}
-
-/// Exposed so isolation tests can prove handlers never increment this.
-#[allow(dead_code)]
-pub fn tape_read_vendor_call_count() -> u64 {
-    TAPE_READ_VENDOR_CALLS.load(Ordering::Relaxed)
 }
 
 #[cfg(test)]

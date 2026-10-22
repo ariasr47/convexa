@@ -19,18 +19,6 @@ impl CitedKey {
             right,
         }
     }
-
-    /// The ONLY derivation from a parsed rec: EXACTLY one strike AND an expiration AND a right.
-    pub fn from_strategy(
-        strikes: &[f64],
-        expiration: Option<&str>,
-        right: Option<ContractType>,
-    ) -> Option<Self> {
-        match (strikes, expiration, right) {
-            ([k], Some(e), Some(r)) => Some(Self::new(e.to_string(), *k, r)),
-            _ => None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

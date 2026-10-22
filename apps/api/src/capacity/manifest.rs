@@ -70,13 +70,6 @@ pub enum OutcomeClass {
     UnexpectedError,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ScenarioStatus {
-    Pass,
-    DidNotPass,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum ChildId {
     A,

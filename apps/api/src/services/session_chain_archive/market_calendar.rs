@@ -177,19 +177,6 @@ impl MarketCalendar {
         }
         Ok(date.weekday().number_from_monday() < 6 && !self.closed.contains(&date))
     }
-    pub fn domain_dates(&self) -> impl Iterator<Item = NaiveDate> {
-        let mut d = self.domain_start;
-        let end = self.domain_end;
-        std::iter::from_fn(move || {
-            if d <= end {
-                let out = d;
-                d = d.succ_opt().unwrap();
-                Some(out)
-            } else {
-                None
-            }
-        })
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
