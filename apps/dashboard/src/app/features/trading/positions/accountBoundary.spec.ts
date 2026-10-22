@@ -70,3 +70,14 @@ describe('the synced book at the account boundary', () => {
     expect(ids()).toEqual([]);
   });
 });
+
+describe('pulling the server book', () => {
+  it('refuses a server book older than the local book, and leaves the local positions as they were', () => {
+    vi.setSystemTime(2_000_000); // the local write stamps its touch at 2000 s
+    expect(putPosition(mkPosition([mkLeg({ ticker: 'AAPL' })], { id: 'local' }))).toBe(true);
+    const before = JSON.stringify(exportBookBlob().positions);
+
+    expect(importBookBlobIfNewer(book('server-stale', 'SPY'), 1000)).toBe(false);
+    expect(JSON.stringify(exportBookBlob().positions)).toBe(before);
+  });
+});
