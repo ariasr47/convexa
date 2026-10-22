@@ -171,10 +171,8 @@ async fn harness_append_list_load_fail_miss_retention_secrets_identity() {
     .unwrap();
     assert!(age_store.list("IWM", None).await.unwrap().is_empty());
 
-    // 8. Cache-hit analog: no VendorBundle → no row invented (AC-11).
-    let pre = store.list(t, None).await.unwrap().len();
-    // Nothing to append when there is no bundle — count stays put.
-    assert_eq!(store.list(t, None).await.unwrap().len(), pre);
+    // 8. A cache hit appends no row (AC-11): held by `gex_cache_hit_does_not_append` below,
+    //    which waits for spawned work before it counts.
 
     // 9. Score/tier/fingerprint independent of capture (AC-17).
     let (s1, t1, f1) = score_triple().await;
@@ -234,7 +232,15 @@ fn empty_snap(ticker: &str) -> api_rust::state::AnalyticsSnapshot {
     }
 }
 
-#[tokio::test]
+/// Lets every spawned task run to completion before the caller reads the store.
+/// `spawn_capture` is fire-and-forget, so a count read straight after the call that would
+/// spawn it sees nothing either way. On paused time (`start_paused`) this sleep returns only
+/// once the runtime is idle: tokio advances a paused clock only when no task is ready.
+async fn settle_spawned_work() {
+    tokio::time::sleep(Duration::from_secs(1)).await;
+}
+
+#[tokio::test(start_paused = true)]
 async fn gex_cache_hit_does_not_append() {
     let store = ChainSnapshotStore::memory();
     let state = AppState::for_tests(
@@ -244,24 +250,26 @@ async fn gex_cache_hit_does_not_append() {
     .await
     .unwrap();
     state.gex_cache.set(empty_snap("TSLA")).await;
-    let before = state
-        .chain_snapshots
-        .list("TSLA", None)
-        .await
-        .unwrap()
-        .len();
+    let st = &state;
+    let count = move || async move { st.chain_snapshots.list("TSLA", None).await.unwrap().len() };
+    let before = count().await;
     let snap = api_rust::services::analytics::load_or_compute(&state, "TSLA")
         .await
         .expect("cache hit must not fetch");
     assert_eq!(snap.ticker, "TSLA");
-    // spawn is fire-and-forget; cache hit must not schedule work, so count stays put immediately
+    settle_spawned_work().await;
+    assert_eq!(count().await, before, "a cache hit must not capture");
+
+    // Anti-vacuity: the same wait does see a capture that was spawned, so the count above
+    // could fail.
+    api_rust::services::chain_snapshot::spawn_capture(
+        state.clone(),
+        fixture_probe_bundle("TSLA", Utc::now()),
+    );
+    settle_spawned_work().await;
     assert_eq!(
-        state
-            .chain_snapshots
-            .list("TSLA", None)
-            .await
-            .unwrap()
-            .len(),
-        before
+        count().await,
+        before + 1,
+        "a spawned capture lands within settle_spawned_work"
     );
 }

@@ -1990,10 +1990,16 @@ mod tests {
     }
 
     /// SPEC B1: "no boot subscription" — construct() must never reach the hub subscribe call
-    /// except behind the live-mode guard. Source-level, hermetic (construct() itself opens real
-    /// filesystem stores, which a unit test should not exercise just to prove this ordering).
+    /// except inside the live-mode block. Source-level, hermetic (construct() itself opens real
+    /// filesystem stores, which a unit test should not exercise just to prove this nesting). The
+    /// poison arm proves the scan checks nesting, not just text order.
     #[test]
     fn construct_only_subscribes_stock_hub_when_live() {
+        use crate::server::market_data_paused_boot_tests::{
+            calls_outside_guard, close_guard_early,
+        };
+        const LIVE_GUARD: &str = "if config.market_data_mode.is_live() {";
+        const SUBSCRIBE: [&str; 1] = ["stock_hub.subscribe(&config.warm_symbols)"];
         let src = include_str!("state.rs");
         let start = src
             .find("async fn construct(\n")
@@ -2003,15 +2009,20 @@ mod tests {
             .find("\n    /// Hermetic constructor")
             .expect("construct fn body bounded by the next doc'd method");
         let fn_body = &body[..end];
-        let subscribe_at = fn_body
-            .find("stock_hub.subscribe(&config.warm_symbols)")
-            .expect("boot subscribe call present");
-        let guard_at = fn_body
-            .find("if config.market_data_mode.is_live()")
-            .expect("live-mode guard present");
-        assert!(
-            guard_at < subscribe_at,
-            "boot subscribe must be textually inside the live-mode guard"
+        assert_eq!(
+            calls_outside_guard(fn_body, LIVE_GUARD, &SUBSCRIBE),
+            Vec::<&str>::new(),
+            "boot subscribe must sit inside the live-mode block"
+        );
+
+        // Poison arm (in memory, never written to disk): the live-mode block closed straight
+        // after it opens. The subscribe still follows the guard in the text; the scan must
+        // report it.
+        let poisoned = close_guard_early(fn_body, LIVE_GUARD);
+        assert_eq!(
+            calls_outside_guard(&poisoned, LIVE_GUARD, &SUBSCRIBE),
+            SUBSCRIBE.to_vec(),
+            "the scan must fail a subscribe that follows the live-mode block"
         );
     }
 }

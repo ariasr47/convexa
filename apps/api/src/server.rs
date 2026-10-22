@@ -571,12 +571,91 @@ mod snapshot_validation_tests {
 }
 
 #[cfg(test)]
-mod market_data_paused_boot_tests {
+pub(crate) mod market_data_paused_boot_tests {
+    /// Byte offset of the `}` that closes a block whose body starts at `body[0]` (just past the
+    /// opening `{`). Braces inside string literals and `//` comments do not count. `None` when
+    /// the block never closes.
+    fn block_end(body: &str) -> Option<usize> {
+        let b = body.as_bytes();
+        let (mut depth, mut i) = (1usize, 0usize);
+        while i < b.len() {
+            match b[i] {
+                b'"' => {
+                    i += 1;
+                    while i < b.len() && b[i] != b'"' {
+                        i += if b[i] == b'\\' { 2 } else { 1 };
+                    }
+                }
+                b'/' if b.get(i + 1) == Some(&b'/') => {
+                    while i < b.len() && b[i] != b'\n' {
+                        i += 1;
+                    }
+                }
+                b'{' => depth += 1,
+                b'}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return Some(i);
+                    }
+                }
+                _ => {}
+            }
+            i += 1;
+        }
+        None
+    }
+
+    /// The calls in `calls` that `src` makes anywhere outside the block `guard` opens. `guard`
+    /// ends with the block's `{`. A call counts as guarded only when every occurrence of it sits
+    /// between that `{` and its matching `}`, so a call placed after the block (later in the
+    /// text, but no longer under the condition) is reported. Panics when the guard, its closing
+    /// brace or any listed call is missing, so a renamed needle cannot pass vacuously.
+    pub(crate) fn calls_outside_guard<'c>(
+        src: &str,
+        guard: &str,
+        calls: &[&'c str],
+    ) -> Vec<&'c str> {
+        assert!(
+            guard.ends_with('{'),
+            "guard needle must end at the block's opening brace"
+        );
+        let open = src
+            .find(guard)
+            .unwrap_or_else(|| panic!("live-mode guard missing: {guard}"))
+            + guard.len();
+        let close = open + block_end(&src[open..]).expect("guarded block closes");
+        calls
+            .iter()
+            .copied()
+            .filter(|call| {
+                let at: Vec<usize> = src.match_indices(call).map(|(i, _)| i).collect();
+                assert!(!at.is_empty(), "missing expected call: {call}");
+                at.iter().any(|&i| i < open || i >= close)
+            })
+            .collect()
+    }
+
+    /// The guard's block closed straight after it opens: every call that sat inside it still
+    /// follows the guard in the text, but none runs under the condition any more.
+    pub(crate) fn close_guard_early(src: &str, guard: &str) -> String {
+        src.replacen(guard, &format!("{guard} }} {{"), 1)
+    }
+
+    const LIVE_GUARD: &str = "if worker_state.config.market_data_mode.is_live() {";
+    const VENDOR_SPAWNS: [&str; 5] = [
+        "worker_state.stock_worker.start()",
+        "crate::services::day_tape::path_a::spawn(worker_state.clone())",
+        "warmer::spawn(worker_state.clone())",
+        "crate::services::session_chain_archive::ensure_worker::spawn(worker_state.clone())",
+        "scanner::spawn(worker_state.clone()",
+    ];
+
     /// SPEC B1: "no warmer, no scanner sweeps, no stock-stream hub subscription or connect, no
     /// flat-file or chain-archive fetcher" — source-level proof that every vendor-touching worker
-    /// spawn is textually inside the live-mode branch, so paused boot cannot reach any of them
-    /// regardless of how long the process stays up (AC-2's "3 minutes idle" is unconditional by
-    /// construction, not by timing).
+    /// spawn sits inside the live-mode block, so paused boot cannot reach any of them regardless
+    /// of how long the process stays up (AC-2's "3 minutes idle" is unconditional by
+    /// construction, not by timing). The poison arm proves the scan checks nesting, not just
+    /// text order.
     #[test]
     fn paused_boot_gate_wraps_every_vendor_touching_worker_spawn() {
         let src = include_str!("server.rs");
@@ -586,23 +665,20 @@ mod market_data_paused_boot_tests {
             .find("\n/// Bind the existing HTTP/SSE graph")
             .expect("serve fn body bounded by the next doc'd fn");
         let fn_body = &body[..end];
-        let guard_at = fn_body
-            .find("if worker_state.config.market_data_mode.is_live()")
-            .expect("live-mode guard present");
-        for call in [
-            "worker_state.stock_worker.start()",
-            "crate::services::day_tape::path_a::spawn(worker_state.clone())",
-            "warmer::spawn(worker_state.clone())",
-            "crate::services::session_chain_archive::ensure_worker::spawn(worker_state.clone())",
-            "scanner::spawn(worker_state.clone()",
-        ] {
-            let call_at = fn_body
-                .find(call)
-                .unwrap_or_else(|| panic!("missing expected call: {call}"));
-            assert!(
-                guard_at < call_at,
-                "{call} must be textually inside the live-mode guard"
-            );
-        }
+        assert_eq!(
+            calls_outside_guard(fn_body, LIVE_GUARD, &VENDOR_SPAWNS),
+            Vec::<&str>::new(),
+            "every vendor-touching spawn must sit inside the live-mode block"
+        );
+
+        // Poison arm (in memory, never written to disk): the same body with the live-mode block
+        // closed straight after it opens. Text order is unchanged, so a guard-before-call check
+        // passes it; the scan must report all five spawns.
+        let poisoned = close_guard_early(fn_body, LIVE_GUARD);
+        assert_eq!(
+            calls_outside_guard(&poisoned, LIVE_GUARD, &VENDOR_SPAWNS),
+            VENDOR_SPAWNS.to_vec(),
+            "the scan must fail a spawn that follows the live-mode block"
+        );
     }
 }
