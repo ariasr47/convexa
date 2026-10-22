@@ -343,9 +343,22 @@ impl ReplayHold {
     }
 
     pub async fn get(&self, symbol: &str) -> Option<AnalyticsSnapshot> {
+        self.read_with(symbol, AnalyticsSnapshot::clone).await
+    }
+
+    /// The held snapshot's gamma flip, read under the guard (no snapshot clone).
+    pub async fn gamma_flip(&self, symbol: &str) -> Option<f64> {
+        self.read_with(symbol, |s| s.gex.gamma_flip).await
+    }
+
+    async fn read_with<R>(
+        &self,
+        symbol: &str,
+        f: impl FnOnce(&AnalyticsSnapshot) -> R,
+    ) -> Option<R> {
         let g = self.inner.read().await;
         g.as_ref()
-            .and_then(|e| (e.symbol == symbol.to_ascii_uppercase()).then(|| e.snapshot.clone()))
+            .and_then(|e| (e.symbol == symbol.to_ascii_uppercase()).then(|| f(&e.snapshot)))
     }
 }
 
@@ -1415,9 +1428,10 @@ pub struct AnalyticsSnapshot {
     /// closed `state` when present; `None` only for snapshots written before this feature.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub straddle_move: Option<quant_engine::StraddleMove>,
-    /// Full chain for `GET /api/contract` (not sent on progressive wire).
+    /// Full chain for `GET /api/contract` (not sent on progressive wire). Shared, so a cache
+    /// hit or a snapshot clone never copies the chain.
     #[serde(skip)]
-    pub contracts: Vec<Contract>,
+    pub contracts: Arc<[Contract]>,
     /// Compute wall time in milliseconds.
     pub compute_ms: f64,
     pub cached_at: i64,
@@ -1515,6 +1529,23 @@ impl GexCache {
     /// Lookup with hit/miss accounting. Expired entries count as miss + expiration.
     pub async fn get(&self, ticker: &str) -> Option<AnalyticsSnapshot> {
         let key = ticker.to_ascii_uppercase();
+        // A live hit or a plain miss needs only the read lock; only eviction writes.
+        {
+            let guard = self.inner.read().await;
+            match guard.get(&key) {
+                Some(entry) if entry.inserted.elapsed() <= entry.ttl => {
+                    self.metrics.hits.fetch_add(1, Ordering::Relaxed);
+                    return Some(entry.snap.clone());
+                }
+                None => {
+                    self.metrics.misses.fetch_add(1, Ordering::Relaxed);
+                    return None;
+                }
+                Some(_) => {}
+            }
+        }
+        // Expired under the read lock: re-check under the write lock, since another task may
+        // have replaced or evicted the entry in between.
         let mut guard = self.inner.write().await;
         match guard.get(&key) {
             Some(entry) if entry.inserted.elapsed() <= entry.ttl => {
@@ -1536,13 +1567,26 @@ impl GexCache {
 
     /// Peek without mutating metrics (warmer / diagnostics).
     pub async fn peek(&self, ticker: &str) -> Option<AnalyticsSnapshot> {
+        self.peek_with(ticker, AnalyticsSnapshot::clone).await
+    }
+
+    /// A live entry's gamma flip, read under the guard (no snapshot clone; no metrics).
+    pub async fn gamma_flip(&self, ticker: &str) -> Option<f64> {
+        self.peek_with(ticker, |s| s.gex.gamma_flip).await
+    }
+
+    async fn peek_with<R>(
+        &self,
+        ticker: &str,
+        f: impl FnOnce(&AnalyticsSnapshot) -> R,
+    ) -> Option<R> {
         let key = ticker.to_ascii_uppercase();
         let guard = self.inner.read().await;
         let entry = guard.get(&key)?;
         if entry.inserted.elapsed() > entry.ttl {
             return None;
         }
-        Some(entry.snap.clone())
+        Some(f(&entry.snap))
     }
 
     /// Age of a warm entry, if present and not expired.
@@ -1690,7 +1734,7 @@ mod tests {
             iv_rank: None,
             vol_normalized_gex: None,
             straddle_move: None,
-            contracts: Vec::new(),
+            contracts: Default::default(),
             compute_ms: 1.0,
             cached_at: 0,
             ttl_secs: 0,

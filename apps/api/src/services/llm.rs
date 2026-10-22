@@ -4,7 +4,17 @@
 //! and generic base URLs), Google Gemini generateContent.
 
 use serde_json::{json, Value};
+use std::sync::LazyLock;
+use std::time::Duration;
 use tracing::warn;
+
+/// Whole-request budget for one provider call (connect through the response body).
+const LLM_TIMEOUT: Duration = Duration::from_secs(60);
+
+/// One HTTP client for every provider call, so connections and TLS sessions are pooled.
+/// `None` when the client cannot be built; each call then fails with `llm_error`, as before.
+static LLM_HTTP: LazyLock<Option<reqwest::Client>> =
+    LazyLock::new(|| reqwest::Client::builder().build().ok());
 
 /// Supported LLM providers for BYO keys.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -239,20 +249,17 @@ pub async fn complete_strategy(
 ) -> Result<Value, &'static str> {
     let key = resolved.key_material.as_deref().ok_or("no_key")?;
     let model = &resolved.model;
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(60))
-        .build()
-        .map_err(|_| "llm_error")?;
+    let client = LLM_HTTP.as_ref().ok_or("llm_error")?;
 
     let text = match resolved.provider {
-        LlmProvider::Anthropic => anthropic_messages(&client, key, model, system, user).await?,
+        LlmProvider::Anthropic => anthropic_messages(client, key, model, system, user).await?,
         LlmProvider::OpenAi | LlmProvider::Xai | LlmProvider::OpenAiCompatible => {
             let base = resolved
                 .base_url
                 .clone()
                 .or_else(|| resolved.provider.default_base_url().map(|s| s.to_string()))
                 .unwrap_or_else(|| "https://api.openai.com/v1".into());
-            openai_chat(&client, &base, key, model, system, user).await?
+            openai_chat(client, &base, key, model, system, user).await?
         }
         LlmProvider::Gemini => {
             let base = resolved
@@ -260,7 +267,7 @@ pub async fn complete_strategy(
                 .clone()
                 .or_else(|| resolved.provider.default_base_url().map(|s| s.to_string()))
                 .unwrap_or_else(|| "https://generativelanguage.googleapis.com/v1beta".into());
-            gemini_generate(&client, &base, key, model, system, user).await?
+            gemini_generate(client, &base, key, model, system, user).await?
         }
     };
 
@@ -283,6 +290,7 @@ async fn anthropic_messages(
     });
     let resp = client
         .post(url)
+        .timeout(LLM_TIMEOUT)
         .header("x-api-key", key)
         .header("anthropic-version", "2023-06-01")
         .header("content-type", "application/json")
@@ -332,6 +340,7 @@ async fn openai_chat(
     });
     let resp = client
         .post(&url)
+        .timeout(LLM_TIMEOUT)
         .bearer_auth(key)
         .header("content-type", "application/json")
         .json(&body)
@@ -382,6 +391,7 @@ async fn gemini_generate(
     });
     let resp = client
         .post(&url)
+        .timeout(LLM_TIMEOUT)
         .header("content-type", "application/json")
         .json(&body)
         .send()

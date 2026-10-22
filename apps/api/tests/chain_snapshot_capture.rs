@@ -227,7 +227,7 @@ fn empty_snap(ticker: &str) -> api_rust::state::AnalyticsSnapshot {
         iv_rank: None,
         vol_normalized_gex: None,
         straddle_move: None,
-        contracts: Vec::new(),
+        contracts: Default::default(),
         compute_ms: 1.0,
         cached_at: 0,
         ttl_secs: 0,

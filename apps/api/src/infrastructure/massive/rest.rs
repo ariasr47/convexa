@@ -100,10 +100,22 @@ impl MassiveRestClient {
         info!(%ticker, "fetching options chain snapshot (parallel call|put)");
         let t0 = std::time::Instant::now();
 
+        // Outside RTH the GEX spot needs the session closes, which depend only on the ticker,
+        // so that lookup runs alongside the chain streams instead of after them.
+        let phase = MarketPhase::classify(Utc::now());
+        let closes = async {
+            if phase == MarketPhase::Rth {
+                None
+            } else {
+                Some(self.fetch_stock_session_closes(&ticker).await)
+            }
+        };
+
         // Two independent paginated streams — vendor max limit=250 each.
-        let (calls_res, puts_res) = tokio::join!(
+        let (calls_res, puts_res, closes_res) = tokio::join!(
             self.fetch_chain_stream(&ticker, "call"),
             self.fetch_chain_stream(&ticker, "put"),
+            closes,
         );
 
         let calls = calls_res?;
@@ -134,16 +146,12 @@ impl MassiveRestClient {
             )));
         }
 
-        let phase = MarketPhase::classify(Utc::now());
-        let (day_close, prev_close) = if phase == MarketPhase::Rth {
-            (None, None)
-        } else {
-            match self.fetch_stock_session_closes(&ticker).await {
-                Ok(pair) => pair,
-                Err(e) => {
-                    warn!(%ticker, error = %e, "session-close lookup failed; keeping live spot");
-                    (None, None)
-                }
+        let (day_close, prev_close) = match closes_res {
+            None => (None, None),
+            Some(Ok(pair)) => pair,
+            Some(Err(e)) => {
+                warn!(%ticker, error = %e, "session-close lookup failed; keeping live spot");
+                (None, None)
             }
         };
 

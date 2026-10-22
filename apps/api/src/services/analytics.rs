@@ -8,8 +8,9 @@ use quant_engine::{
     calculate_vwap_bands_default, compute_iv_rank_read, compute_iv_structure,
     compute_market_context, derive_cm30_sample, generate_signals, iv_hv_ratio,
     market_state_from_gex, off_exchange_signal_input, process_gex_profile, session_date_from_ns,
-    vol_normalize_gex, GexOptions, HvPercent, IvDecimal, IV_RANK_WINDOW_CAP,
+    vol_normalize_gex, Contract, GexOptions, HvPercent, IvDecimal, IV_RANK_WINDOW_CAP,
 };
+use std::sync::Arc;
 use std::time::Instant;
 use tracing::{info, warn};
 
@@ -354,17 +355,18 @@ pub async fn compute_analytics_from_vendor(
     // CPU phase: GEX + IV structure on blocking pool; VWAP is cheap.
     let t_cpu = Instant::now();
     let spot = market.synchronized_spot;
-    let contracts = market.contracts.clone();
+    // One copy of the chain, shared by both blocking tasks and the snapshot.
+    let contracts: Arc<[Contract]> = Arc::from(market.contracts.as_slice());
     let atm_exp = market.atm_iv_expiration.clone();
     let atm_dte = market.atm_iv_dte;
     let (gex_res, iv_res, vwap) = tokio::join!(
         tokio::task::spawn_blocking({
-            let contracts = contracts.clone();
+            let contracts = Arc::clone(&contracts);
             let opts = opts.clone();
             move || process_gex_profile(&contracts, spot, &opts)
         }),
         tokio::task::spawn_blocking({
-            let contracts = contracts.clone();
+            let contracts = Arc::clone(&contracts);
             move || compute_iv_structure(&contracts, spot, atm_exp.as_deref(), atm_dte, as_of)
         }),
         async { calculate_vwap_bands_default(minutes) },
@@ -526,7 +528,7 @@ pub async fn compute_analytics_from_vendor(
         iv_rank,
         vol_normalized_gex,
         straddle_move,
-        contracts: market.contracts.clone(),
+        contracts,
         compute_ms,
         cached_at: as_of.timestamp(),
         ttl_secs: params.ttl_secs,
@@ -666,7 +668,7 @@ mod hermetic_tests {
             iv_rank: None,
             vol_normalized_gex: None,
             straddle_move: None,
-            contracts: Vec::new(),
+            contracts: Default::default(),
             compute_ms: 1.0,
             cached_at: 0,
             ttl_secs: 0,

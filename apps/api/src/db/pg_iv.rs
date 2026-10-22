@@ -4,16 +4,49 @@ use crate::db::postgres::Pg;
 use crate::error::{AppError, AppResult};
 use quant_engine::IvSample;
 use sqlx::Row;
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
 use tracing::warn;
 
 #[derive(Clone)]
 pub struct PgIvStore {
     pg: Pg,
+    written: Arc<Mutex<WrittenSession>>,
+}
+
+/// `(ticker, session_date)` keys this process has already written for the newest session date.
+///
+/// The insert is `ON CONFLICT DO NOTHING`, so once a key is written every later insert for it is
+/// a no-op round trip. Only the newest session date is remembered (a newer date clears the set),
+/// so this holds at most one day of tickers. Older dates are never remembered and always insert.
+#[derive(Default)]
+struct WrittenSession {
+    session_date: String,
+    tickers: HashSet<String>,
+}
+
+impl WrittenSession {
+    fn contains(&self, sample: &IvSample) -> bool {
+        sample.session_date == self.session_date && self.tickers.contains(&sample.ticker)
+    }
+
+    fn record(&mut self, sample: &IvSample) {
+        if sample.session_date > self.session_date {
+            self.session_date = sample.session_date.clone();
+            self.tickers.clear();
+        }
+        if sample.session_date == self.session_date {
+            self.tickers.insert(sample.ticker.clone());
+        }
+    }
 }
 
 impl PgIvStore {
     pub fn new(pg: Pg) -> Self {
-        Self { pg }
+        Self {
+            pg,
+            written: Arc::default(),
+        }
     }
 
     fn block<T, Fut>(&self, f: impl FnOnce(Pg) -> Fut + Send) -> AppResult<T>
@@ -27,6 +60,9 @@ impl PgIvStore {
     }
 
     pub fn upsert_if_absent(&self, sample: &IvSample) -> AppResult<()> {
+        if self.written.lock().is_ok_and(|w| w.contains(sample)) {
+            return Ok(());
+        }
         let s = sample.clone();
         self.block(move |pg| async move {
             sqlx::query(
@@ -48,7 +84,11 @@ impl PgIvStore {
                 AppError::Config(format!("postgres iv: {e}"))
             })?;
             Ok(())
-        })
+        })?;
+        if let Ok(mut w) = self.written.lock() {
+            w.record(sample);
+        }
+        Ok(())
     }
 
     pub fn read_recent(&self, ticker: &str, limit: usize) -> AppResult<Vec<IvSample>> {

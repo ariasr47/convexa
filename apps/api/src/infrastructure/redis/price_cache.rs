@@ -113,17 +113,20 @@ impl InMemoryPriceCache {
 
 #[derive(Clone)]
 pub struct RedisPriceCache {
-    client: redis::Client,
+    /// One multiplexed connection for the process; cloning it is cheap and shares the socket.
+    con: redis::aio::ConnectionManager,
 }
 
 impl RedisPriceCache {
     pub async fn connect(url: &str) -> AppResult<Self> {
         let client = redis::Client::open(url).map_err(|e| AppError::Redis(format!("open: {e}")))?;
-        // Probe connectivity
-        let mut con = client
-            .get_multiplexed_async_connection()
+        // No connect retries: a down Redis fails fast at startup (in-memory fallback) and per
+        // call afterwards, as it did when every call opened its own connection.
+        let config = redis::aio::ConnectionManagerConfig::new().set_number_of_retries(0);
+        let mut con = redis::aio::ConnectionManager::new_with_config(client, config)
             .await
             .map_err(|e| AppError::Redis(format!("connect: {e}")))?;
+        // Probe connectivity
         let pong: String = redis::cmd("PING")
             .query_async(&mut con)
             .await
@@ -131,14 +134,7 @@ impl RedisPriceCache {
         if pong.to_ascii_uppercase() != "PONG" {
             return Err(AppError::Redis(format!("unexpected PING reply: {pong}")));
         }
-        Ok(Self { client })
-    }
-
-    async fn conn(&self) -> AppResult<redis::aio::MultiplexedConnection> {
-        self.client
-            .get_multiplexed_async_connection()
-            .await
-            .map_err(|e| AppError::Redis(format!("conn: {e}")))
+        Ok(Self { con })
     }
 
     pub async fn set_price(&self, price: &LivePrice) -> AppResult<()> {
@@ -146,7 +142,7 @@ impl RedisPriceCache {
         let mut row = price.clone();
         row.symbol = price.symbol.to_ascii_uppercase();
         let payload = serde_json::to_string(&row)?;
-        let mut con = self.conn().await?;
+        let mut con = self.con.clone();
         redis::cmd("SET")
             .arg(&key)
             .arg(payload)
@@ -159,7 +155,7 @@ impl RedisPriceCache {
 
     pub async fn get_price(&self, symbol: &str) -> AppResult<Option<LivePrice>> {
         let key = LivePrice::redis_key(symbol);
-        let mut con = self.conn().await?;
+        let mut con = self.con.clone();
         let raw: Option<String> = redis::cmd("GET")
             .arg(&key)
             .query_async(&mut con)

@@ -349,9 +349,18 @@ async fn apply_fast_tick(
 ) {
     let now = now_secs();
     let mut rows = Vec::with_capacity(st.universe.len());
+    // One store read for the whole universe; a symbol without a row reads as `None`, exactly as
+    // a per-symbol `get_row` miss did. Keys are the stored (upper-case) symbols.
+    let mut prev_rows: HashMap<String, ScanRow> = state
+        .scan
+        .read_rows(Some(&st.universe))
+        .await
+        .into_iter()
+        .map(|r| (r.symbol.clone(), r))
+        .collect();
 
     for sym in st.universe.clone() {
-        let prev = state.scan.get_row(&sym).await;
+        let prev = prev_rows.remove(&sym.to_ascii_uppercase());
         if let Some(snap) = snaps.get(&sym) {
             let price = snap.price;
             let chg = snap.chg_pct;

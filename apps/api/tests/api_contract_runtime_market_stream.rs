@@ -70,7 +70,7 @@ fn empty_snapshot(ticker: &str) -> AnalyticsSnapshot {
         iv_rank: None,
         vol_normalized_gex: None,
         straddle_move: None,
-        contracts: Vec::new(),
+        contracts: Default::default(),
         compute_ms: 1.0,
         cached_at: chrono::Utc::now().timestamp(),
         ttl_secs: 60,

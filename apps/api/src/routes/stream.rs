@@ -599,17 +599,13 @@ async fn peek_gamma_flip(
     gex_cache: &crate::state::GexCache,
 ) -> Option<f64> {
     if armed {
-        if let Some(hit) = replay_hold.get(sym).await {
-            if hit.gex.gamma_flip != 0.0 {
-                return Some(hit.gex.gamma_flip);
+        if let Some(flip) = replay_hold.gamma_flip(sym).await {
+            if flip != 0.0 {
+                return Some(flip);
             }
         }
     }
-    gex_cache
-        .peek(sym)
-        .await
-        .map(|s| s.gex.gamma_flip)
-        .filter(|f| *f != 0.0)
+    gex_cache.gamma_flip(sym).await.filter(|f| *f != 0.0)
 }
 
 async fn stream_ticker_http(
