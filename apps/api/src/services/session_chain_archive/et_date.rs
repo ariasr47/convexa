@@ -6,6 +6,8 @@
 use chrono::{DateTime, Datelike, Utc};
 use chrono_tz::America::New_York;
 
+pub use crate::domain::parse_et_date;
+
 /// America/New_York calendar `YYYY-MM-DD` for a ring `as_of`.
 /// Returns `None` when whole-second UTC timestamp is `<= 0` (not archival).
 pub fn et_date_from_as_of(as_of: DateTime<Utc>) -> Option<String> {
@@ -19,17 +21,6 @@ pub fn et_date_from_as_of(as_of: DateTime<Utc>) -> Option<String> {
         et.month(),
         et.day()
     ))
-}
-
-/// Parse operator `et_date` query as `YYYY-MM-DD`. `None` = missing/unparseable.
-pub fn parse_et_date(raw: &str) -> Option<String> {
-    let s = raw.trim();
-    let date = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok()?;
-    let normalized = format!("{:04}-{:02}-{:02}", date.year(), date.month(), date.day());
-    if normalized != s {
-        return None;
-    }
-    Some(normalized)
 }
 
 #[cfg(test)]

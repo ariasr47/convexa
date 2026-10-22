@@ -1,5 +1,6 @@
 //! Auth persistence — pure-Rust JSON-on-disk (survives restart; no C toolchain).
 
+use crate::db::normalize_json_path;
 use crate::error::{AppError, AppResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -580,21 +581,6 @@ pub struct SettingsPatch {
     pub ai_power_path: Option<Option<String>>,
     pub ai_provider: Option<Option<String>>,
     pub ai_model: Option<Option<String>>,
-}
-
-fn normalize_json_path(path: &Path) -> PathBuf {
-    let s = path.to_string_lossy();
-    if s.ends_with(".sqlite3") || s.ends_with(".sqlite") || s.ends_with(".db") {
-        PathBuf::from(
-            s.replace(".sqlite3", ".json")
-                .replace(".sqlite", ".json")
-                .replace(".db", ".json"),
-        )
-    } else if s.ends_with(".json") {
-        path.to_path_buf()
-    } else {
-        path.with_extension("json")
-    }
 }
 
 fn now_secs() -> f64 {

@@ -14,6 +14,7 @@
 //! Fast-lane price-only ticks do **not** append. Samples are thinned (`MIN_INTERVAL`) and
 //! capped per symbol (`MAX_SAMPLES`) so the desk can show a session path after refresh.
 
+use crate::db::normalize_json_path;
 use crate::error::AppResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -781,21 +782,6 @@ impl JsonScanStore {
         pairs.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
         pairs.truncate(lim);
         pairs
-    }
-}
-
-fn normalize_json_path(path: &Path) -> PathBuf {
-    let s = path.to_string_lossy();
-    if s.ends_with(".sqlite3") || s.ends_with(".sqlite") || s.ends_with(".db") {
-        PathBuf::from(
-            s.replace(".sqlite3", ".json")
-                .replace(".sqlite", ".json")
-                .replace(".db", ".json"),
-        )
-    } else if s.ends_with(".json") {
-        path.to_path_buf()
-    } else {
-        path.with_extension("json")
     }
 }
 

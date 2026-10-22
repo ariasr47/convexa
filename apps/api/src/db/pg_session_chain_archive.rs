@@ -33,11 +33,7 @@ impl PgSessionChainArchive {
         if self.identity_exists(symbol, et_date).await? {
             return Ok(false);
         }
-        let source_s = match source {
-            MarketDataSourceKind::LiveMassive => "live_massive",
-            MarketDataSourceKind::Fixture => "fixture",
-            MarketDataSourceKind::SessionTape => "session_tape",
-        };
+        let source_s = source.as_str();
         let as_of = as_of_string(source_as_of);
         let as_of_ns = source_as_of.timestamp_nanos_opt().unwrap_or(0);
         let locator = mint_body_locator(symbol, et_date, as_of_ns);
@@ -101,15 +97,9 @@ impl PgSessionChainArchive {
         let source_s: String = r
             .try_get("source")
             .map_err(|e| AppError::Config(format!("session_chain_archive source: {e}")))?;
-        let source = match source_s.as_str() {
-            "live_massive" => MarketDataSourceKind::LiveMassive,
-            "fixture" => MarketDataSourceKind::Fixture,
-            _ => {
-                return Err(AppError::Config(
-                    "session_chain_archive source is invalid".into(),
-                ))
-            }
-        };
+        let source: MarketDataSourceKind = source_s
+            .parse()
+            .map_err(|()| AppError::Config("session_chain_archive source is invalid".into()))?;
         let row_symbol: String = r
             .try_get("symbol")
             .map_err(|e| AppError::Config(format!("session_chain_archive symbol: {e}")))?;
@@ -146,11 +136,7 @@ impl PgSessionChainArchive {
                 continue;
             };
             let source_s: String = r.try_get("source").unwrap_or_default();
-            let source = match source_s.as_str() {
-                "live_massive" => MarketDataSourceKind::LiveMassive,
-                "session_tape" => MarketDataSourceKind::SessionTape,
-                _ => MarketDataSourceKind::Fixture,
-            };
+            let source = source_s.parse().unwrap_or(MarketDataSourceKind::Fixture);
             out.push(SessionBookMeta {
                 symbol: r.try_get("symbol").unwrap_or_else(|_| symbol.to_string()),
                 et_date: r.try_get("et_date").unwrap_or_default(),
@@ -190,11 +176,7 @@ impl PgSessionChainArchive {
         let source_as_of = parse_as_of(&source_as_of_s)
             .map_err(|e| AppError::Config(format!("session_chain_archive source_as_of: {e}")))?;
         let source_s: String = r.try_get("source").unwrap_or_default();
-        let source = match source_s.as_str() {
-            "live_massive" => MarketDataSourceKind::LiveMassive,
-            "session_tape" => MarketDataSourceKind::SessionTape,
-            _ => MarketDataSourceKind::Fixture,
-        };
+        let source = source_s.parse().unwrap_or(MarketDataSourceKind::Fixture);
         let meta = SessionBookMeta {
             symbol: r.try_get("symbol").unwrap_or_else(|_| symbol.to_string()),
             et_date: r.try_get("et_date").unwrap_or_else(|_| et_date.to_string()),

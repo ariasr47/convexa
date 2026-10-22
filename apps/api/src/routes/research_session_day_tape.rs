@@ -3,13 +3,13 @@
 //! Zero Massive I/O. Token gate matches `GET /api/_metrics` (not session-cookie auth).
 //! Combined Path-A + Path-B envelope; no path filter. GATE Z: no NotExpectedPreStore 200.
 
-use super::health::metrics_token_ok;
+use super::health::metrics_gate;
 use crate::openapi::RouteResponse;
 use crate::services::day_tape::{
     axis_a_detail, derive_axis_a, derive_axis_c, derive_path_a, derive_path_b, in_tape_watchlist,
     is_not_storing_err, is_store_error, list_clock, load_clock_literal, normalize_symbol,
-    parse_et_date, path_a_detail, path_b_detail, AxisA, DayContainer, DeriveInput, PathAKind,
-    PathARecord, COMMAND, HIT_PROVENANCE, LICENSE, MISS_PROVENANCE, NOT_STORING, PATH_B_INTERVAL,
+    parse_et_date, path_a_detail, path_b_detail, AxisA, DeriveInput, PathAKind, PathARecord,
+    COMMAND, HIT_PROVENANCE, LICENSE, MISS_PROVENANCE, NOT_STORING, PATH_B_INTERVAL,
     TAPE_WATCHLIST,
 };
 use crate::state::AppState;
@@ -36,25 +36,6 @@ const FRAMING_NOT_ELAPSED: &str = "RESEARCH READ — SESSION DAY TAPE NOT ELAPSE
 const FRAMING_NOT_IN_WATCHLIST: &str = "RESEARCH READ — SESSION DAY TAPE NOT IN WATCHLIST";
 const FRAMING_NOT_STORING: &str = "RESEARCH READ — SESSION DAY TAPE NOT STORING";
 const FRAMING_UNREADABLE: &str = "RESEARCH READ — SESSION DAY TAPE UNREADABLE";
-
-fn token_gate(state: &AppState, headers: &HeaderMap) -> Option<Response> {
-    let Some(expected) = state.config.metrics_secret_token.as_deref() else {
-        return None;
-    };
-    if metrics_token_ok(headers, expected) {
-        return None;
-    }
-    Some(
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({
-                "error": "metrics_unauthorized",
-                "detail": "Set Authorization: Bearer <METRICS_SECRET_TOKEN> or X-Metrics-Token",
-            })),
-        )
-            .into_response(),
-    )
-}
 
 fn strip_config_prefix(reason: &str) -> &str {
     reason.strip_prefix("config: ").unwrap_or(reason)
@@ -91,24 +72,6 @@ fn unreadable_body(reason: &str) -> Value {
 
 fn watchlist_json() -> Value {
     json!(TAPE_WATCHLIST)
-}
-
-fn count_path_a(day: &DayContainer) -> (usize, usize, usize) {
-    let mut trades = 0usize;
-    let mut quotes = 0usize;
-    let mut gaps = 0usize;
-    for r in &day.path_a {
-        match r.kind {
-            PathAKind::Trade => trades += 1,
-            PathAKind::Quote => quotes += 1,
-            PathAKind::PathAGap => gaps += 1,
-        }
-    }
-    (trades, quotes, gaps)
-}
-
-fn path_b_marks_of(day: &DayContainer) -> Vec<(u32, u32)> {
-    day.path_b.iter().map(|s| s.mark).collect()
 }
 
 fn framing_for_axis_a(axis: AxisA) -> &'static str {
@@ -519,7 +482,7 @@ pub async fn list_session_day_tape(
     Query(q): Query<TapeListQuery>,
     headers: HeaderMap,
 ) -> Response {
-    if let Some(deny) = token_gate(&state, &headers) {
+    if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
     let _ = TAPE_READ_VENDOR_CALLS.load(Ordering::Relaxed);
@@ -586,8 +549,8 @@ pub async fn list_session_day_tape(
                     .into_response();
             }
         };
-        let (trades, quotes, gaps) = count_path_a(&day);
-        let marks = path_b_marks_of(&day);
+        let (trades, quotes, gaps) = day.count_path_a();
+        let marks = day.stored_path_b_marks();
         let path_b_capturing = day.path_b_armed_from.is_some();
         let unreadable = day.unreadable_reason.is_some();
         let axis_a = derive_axis_a(&meta.symbol, &meta.et_date, now, true, true, unreadable);
@@ -664,7 +627,7 @@ pub async fn load_session_day_tape(
     Query(q): Query<TapeLoadQuery>,
     headers: HeaderMap,
 ) -> Response {
-    if let Some(deny) = token_gate(&state, &headers) {
+    if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
     let _ = TAPE_READ_VENDOR_CALLS.load(Ordering::Relaxed);
@@ -777,8 +740,8 @@ pub async fn load_session_day_tape(
             .into_response(),
         AxisA::StoringReady => {
             let day = loaded.expect("StoringReady requires container");
-            let (trades, quotes, gaps) = count_path_a(&day);
-            let marks = path_b_marks_of(&day);
+            let (trades, quotes, gaps) = day.count_path_a();
+            let marks = day.stored_path_b_marks();
             let path_b_capturing = day.path_b_armed_from.is_some();
             let input = DeriveInput {
                 symbol: &symbol,
@@ -863,7 +826,7 @@ mod tests {
     // Used only by these tests; keeps the lib build free of unused imports.
     use crate::services::chain_snapshot::ChainSnapshotStore;
     use crate::services::day_tape::SessionDayTape;
-    use crate::services::day_tape::{PathBSnapshot, LIST_CLOCK_CLOSED};
+    use crate::services::day_tape::{DayContainer, PathBSnapshot, LIST_CLOCK_CLOSED};
     use crate::services::session_chain_archive::SessionChainArchive;
     use axum::body::to_bytes;
     use chrono::{NaiveTime, TimeZone};

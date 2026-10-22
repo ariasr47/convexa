@@ -11,6 +11,7 @@
 //!
 //! LLM calls use `services::llm` (Anthropic / OpenAI-compatible / Gemini).
 
+use crate::domain::today_et_date;
 use crate::routes::market::build_bundle;
 use crate::services::analytics::load_analytics;
 use crate::services::llm::{
@@ -68,15 +69,6 @@ pub fn meter_scope_label() -> &'static str {
     } else {
         "process_local"
     }
-}
-
-fn today_et() -> String {
-    use chrono::Utc;
-    use chrono_tz::America::New_York;
-    Utc::now()
-        .with_timezone(&New_York)
-        .format("%Y-%m-%d")
-        .to_string()
 }
 
 fn resets_at_iso() -> String {
@@ -239,7 +231,7 @@ fn rate_snapshot() -> (i32, bool, String) {
     // Railway `api` replica. Multi-replica deploys must either pin one replica or
     // accept N× DAILY_CAP until a durable shared counter ships.
     let mut g = RATE.lock().unwrap_or_else(|e| e.into_inner());
-    let today = today_et();
+    let today = today_et_date(chrono::Utc::now());
     if g.day != today {
         g.day = today;
         g.count = 0;
@@ -262,7 +254,7 @@ fn cooldown_remaining() -> u64 {
 
 fn commit_query() {
     let mut g = RATE.lock().unwrap_or_else(|e| e.into_inner());
-    let today = today_et();
+    let today = today_et_date(chrono::Utc::now());
     if g.day != today {
         g.day = today;
         g.count = 0;

@@ -52,15 +52,11 @@ impl PgChainSnapshotStore {
                 let source_name: String = r
                     .try_get("source")
                     .map_err(|e| AppError::Config(format!("chain_snapshots export source: {e}")))?;
-                let source = match source_name.as_str() {
-                    "live_massive" => MarketDataSourceKind::LiveMassive,
-                    "fixture" => MarketDataSourceKind::Fixture,
-                    other => {
-                        return Err(AppError::Config(format!(
-                            "chain_snapshots export unknown source: {other}"
-                        )))
-                    }
-                };
+                let source: MarketDataSourceKind = source_name.parse().map_err(|()| {
+                    AppError::Config(format!(
+                        "chain_snapshots export unknown source: {source_name}"
+                    ))
+                })?;
                 Ok(LegacySnapshotRow {
                     symbol: r.try_get("symbol").unwrap_or_default(),
                     as_of,
@@ -77,11 +73,7 @@ impl PgChainSnapshotStore {
         let symbol = wire.symbol.trim().to_ascii_uppercase();
         let as_of = as_of_string(wire.as_of);
         let as_of_ns = wire.as_of.timestamp_nanos_opt().unwrap_or(0);
-        let source = match wire.source {
-            MarketDataSourceKind::LiveMassive => "live_massive",
-            MarketDataSourceKind::Fixture => "fixture",
-            MarketDataSourceKind::SessionTape => "session_tape",
-        };
+        let source = wire.source.as_str();
         sqlx::query(
             r#"INSERT INTO chain_snapshots (symbol, as_of, as_of_ns, source, body)
                VALUES ($1, $2, $3, $4, $5)
@@ -117,11 +109,7 @@ impl PgChainSnapshotStore {
                 continue;
             };
             let source_s: String = r.try_get("source").unwrap_or_default();
-            let source = match source_s.as_str() {
-                "live_massive" => MarketDataSourceKind::LiveMassive,
-                "session_tape" => MarketDataSourceKind::SessionTape,
-                _ => MarketDataSourceKind::Fixture,
-            };
+            let source = source_s.parse().unwrap_or(MarketDataSourceKind::Fixture);
             out.push(SnapshotMeta {
                 symbol: r.try_get("symbol").unwrap_or_else(|_| symbol.clone()),
                 as_of: as_of.with_timezone(&Utc),

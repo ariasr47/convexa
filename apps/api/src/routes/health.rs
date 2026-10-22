@@ -617,21 +617,8 @@ pub async fn cache_metrics(
     State(state): State<AppState>,
     headers: axum::http::HeaderMap,
 ) -> axum::response::Response {
-    use axum::http::StatusCode;
-    use axum::response::IntoResponse;
-
-    if let Some(expected) = state.config.metrics_secret_token.as_deref() {
-        let ok = metrics_token_ok(&headers, expected);
-        if !ok {
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(json!({
-                    "error": "metrics_unauthorized",
-                    "detail": "Set Authorization: Bearer <METRICS_SECRET_TOKEN> or X-Metrics-Token",
-                })),
-            )
-                .into_response();
-        }
+    if let Some(deny) = metrics_gate(&state, &headers) {
+        return deny;
     }
     let metrics = state.gex_cache.metrics_snapshot().await;
     let coverage = coverage_wire(&state).await;
@@ -807,6 +794,27 @@ fn empty_metrics_scope() -> Value {
         "cache": { "hits": 0, "misses": 0, "hit_ratio": 0.0, "current_data_age_seconds": 0.0 },
         "vendor": { "call_count": 0, "latency_p50_ms": 0.0, "latency_p95_ms": 0.0, "min_rate_limit_headroom": null }
     })
+}
+
+/// The metrics/research token gate shared by `GET /api/_metrics` and every `_research` read.
+///
+/// `None` lets the request through: no `METRICS_SECRET_TOKEN` is configured, or the request
+/// carries it (see `metrics_token_ok`). `Some` is the closed 401 `metrics_unauthorized` body.
+pub(crate) fn metrics_gate(state: &AppState, headers: &axum::http::HeaderMap) -> Option<Response> {
+    let expected = state.config.metrics_secret_token.as_deref()?;
+    if metrics_token_ok(headers, expected) {
+        return None;
+    }
+    Some(
+        (
+            axum::http::StatusCode::UNAUTHORIZED,
+            Json(json!({
+                "error": "metrics_unauthorized",
+                "detail": "Set Authorization: Bearer <METRICS_SECRET_TOKEN> or X-Metrics-Token",
+            })),
+        )
+            .into_response(),
+    )
 }
 
 pub(crate) fn metrics_token_ok(headers: &axum::http::HeaderMap, expected: &str) -> bool {

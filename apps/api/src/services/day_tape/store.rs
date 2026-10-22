@@ -118,6 +118,28 @@ pub struct DayContainer {
     pub unreadable_reason: Option<String>,
 }
 
+impl DayContainer {
+    /// Path-A record counts as `(trades, quotes, gaps)`.
+    pub fn count_path_a(&self) -> (usize, usize, usize) {
+        let mut trades = 0usize;
+        let mut quotes = 0usize;
+        let mut gaps = 0usize;
+        for r in &self.path_a {
+            match r.kind {
+                PathAKind::Trade => trades += 1,
+                PathAKind::Quote => quotes += 1,
+                PathAKind::PathAGap => gaps += 1,
+            }
+        }
+        (trades, quotes, gaps)
+    }
+
+    /// The Path-B marks this day actually holds, in stored order (not the locked mark grid).
+    pub fn stored_path_b_marks(&self) -> Vec<(u32, u32)> {
+        self.path_b.iter().map(|s| s.mark).collect()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct DayMeta {
     pub symbol: String,

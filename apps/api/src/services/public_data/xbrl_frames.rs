@@ -15,7 +15,7 @@
 //! US-GAAP quarters and always read as missing.
 
 use super::cache::Lookup;
-use super::edgar;
+use super::edgar::{self, date};
 use super::fetch::{FetchError, Http};
 use super::types::{DataState, SourceState};
 use super::PublicDataService;
@@ -131,10 +131,6 @@ struct RawPoint {
     start: Option<String>,
     end: String,
     val: f64,
-}
-
-fn date(raw: Option<&str>) -> Option<NaiveDate> {
-    NaiveDate::parse_from_str(raw?.trim().get(..10)?, "%Y-%m-%d").ok()
 }
 
 pub(crate) fn parse_frame(json: &[u8]) -> Result<Frame, String> {

@@ -52,20 +52,7 @@ Is not: a live paid session book; not coverage present; not live_massive; not th
 }
 
 fn wrap_ok(body: &str, verdict: &str) -> (String, String, ExitCode) {
-    let mut out = standing_block();
-    out.push_str(body);
-    if !body.is_empty() && !body.ends_with('\n') {
-        out.push('\n');
-    }
-    out.push_str(LICENSE);
-    out.push('\n');
-    out.push_str(CLI_CLOSING);
-    out.push('\n');
-    out.push_str(verdict);
-    if !verdict.is_empty() && !verdict.ends_with('\n') {
-        out.push('\n');
-    }
-    (out, RUNNING.to_string(), ExitCode::SUCCESS)
+    wrap_with_code(body, verdict, ExitCode::SUCCESS)
 }
 
 fn wrap_err(verdict: &str) -> (String, String, ExitCode) {

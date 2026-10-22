@@ -3,7 +3,7 @@
 //! Zero Massive / files.massive.com I/O. Token gate matches `GET /api/_metrics`
 //! (not session-cookie auth). Combined trades+quotes load envelope; no aggregates.
 
-use super::health::metrics_token_ok;
+use super::health::metrics_gate;
 use crate::openapi::RouteResponse;
 use crate::services::flat_file_keep::{
     in_flat_files_watchlist, is_content_hit, normalize_symbol, occupancy_token, parse_et_date,
@@ -25,25 +25,6 @@ use utoipa::{IntoParams, IntoResponses, ToSchema};
 
 /// Incremented only if a research flat-files handler were to call Massive — must stay 0.
 pub static FLAT_FILES_READ_VENDOR_CALLS: AtomicU64 = AtomicU64::new(0);
-
-fn token_gate(state: &AppState, headers: &HeaderMap) -> Option<Response> {
-    let Some(expected) = state.config.metrics_secret_token.as_deref() else {
-        return None;
-    };
-    if metrics_token_ok(headers, expected) {
-        return None;
-    }
-    Some(
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({
-                "error": "metrics_unauthorized",
-                "detail": UNAUTHORIZED_DETAIL,
-            })),
-        )
-            .into_response(),
-    )
-}
 
 fn watchlist_json() -> Value {
     json!(FLAT_FILES_WATCHLIST)
@@ -395,7 +376,7 @@ pub async fn list_flat_files(
     Query(q): Query<FlatFilesListQuery>,
     headers: HeaderMap,
 ) -> Response {
-    if let Some(deny) = token_gate(&state, &headers) {
+    if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
     let _ = FLAT_FILES_READ_VENDOR_CALLS.load(Ordering::Relaxed);
@@ -492,7 +473,7 @@ pub async fn load_flat_files(
     Query(q): Query<FlatFilesLoadQuery>,
     headers: HeaderMap,
 ) -> Response {
-    if let Some(deny) = token_gate(&state, &headers) {
+    if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
     let _ = FLAT_FILES_READ_VENDOR_CALLS.load(Ordering::Relaxed);

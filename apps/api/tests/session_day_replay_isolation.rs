@@ -145,11 +145,23 @@ fn tape_read_token_gate_is_metrics_not_auth_true() {
     .unwrap();
     let prod = prod_only(&route);
     assert!(
-        prod.contains("token_gate") && prod.contains("metrics_token_ok"),
+        prod.contains("metrics_gate(&state, &headers)"),
+        "tape read must use metrics/research token gate"
+    );
+    // The gate is shared with `GET /api/_metrics` and lives next to `metrics_token_ok`.
+    let health =
+        fs::read_to_string(workspace_root().join("apps/api/src/routes/health.rs")).unwrap();
+    let gate = health
+        .split("pub(crate) fn metrics_gate")
+        .nth(1)
+        .and_then(|s| s.split("\n}\n").next())
+        .expect("metrics_gate in routes/health.rs");
+    assert!(
+        gate.contains("metrics_token_ok"),
         "tape read must use metrics/research token gate"
     );
     assert!(
-        prod.contains("metrics_unauthorized") || prod.contains("UNAUTHORIZED"),
+        gate.contains("metrics_unauthorized") && gate.contains("UNAUTHORIZED"),
         "tape read must 401 when token configured and missing"
     );
     // Do not mark auth:true — OpenAPI / contract path must not claim session-cookie auth.

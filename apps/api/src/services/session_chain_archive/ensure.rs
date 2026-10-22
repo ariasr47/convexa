@@ -16,6 +16,8 @@ use std::time::Duration;
 use tokio::sync::Notify;
 use tracing::{debug, warn};
 
+pub use crate::domain::today_et_date;
+
 pub const ENSURE_SYMBOLS: &[&str] = &["SPY", "QQQ", "IWM"];
 pub const MASSIVE_RETRY_SPACING_SECS: u64 = 300;
 const DEFAULT_RING_MAX_AGE_SECS: u64 = 1_209_600;
@@ -135,11 +137,6 @@ pub fn should_wake_ensure(sym: &str) -> bool {
 pub fn is_et_weekday(now: DateTime<Utc>) -> bool {
     let et = now.with_timezone(&New_York);
     et.weekday().num_days_from_monday() < 5
-}
-
-pub fn today_et_date(now: DateTime<Utc>) -> String {
-    let et = now.with_timezone(&New_York);
-    format!("{:04}-{:02}-{:02}", et.year(), et.month(), et.day())
 }
 
 pub fn ensure_eligible_with_calendar(

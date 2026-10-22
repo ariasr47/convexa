@@ -20,7 +20,7 @@
 //!   the filing.
 
 use super::cache::Lookup;
-use super::edgar::{self, elements, first_text, CompanyFacts};
+use super::edgar::{self, date, elements, first_text, CompanyFacts};
 use super::fetch::{FetchError, Http};
 use super::types::{DataState, DatedValue};
 use super::PublicDataService;
@@ -159,10 +159,6 @@ struct RawRecent {
     report_date: Vec<Option<String>>,
     #[serde(default)]
     form: Vec<Option<String>>,
-}
-
-fn date(raw: Option<&str>) -> Option<NaiveDate> {
-    NaiveDate::parse_from_str(raw?.trim().get(..10)?, "%Y-%m-%d").ok()
 }
 
 /// A manager's submissions index: its name and its 13F filings.

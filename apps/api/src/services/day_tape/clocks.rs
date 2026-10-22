@@ -1,25 +1,11 @@
 //! ET calendar helpers + Path-A / Path-B clock predicates.
-//! Local copies — do not import ensure.rs / coverage.rs.
+//! `parse_et_date` / `today_et_date` are the shared `crate::domain` pair; the rest are local
+//! copies — do not import ensure.rs / coverage.rs.
 
 use crate::domain::is_et_session_day;
+pub use crate::domain::{parse_et_date, today_et_date};
 use chrono::{DateTime, Datelike, NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
 use chrono_tz::America::New_York;
-
-/// Parse operator `et_date` as `YYYY-MM-DD`. `None` = missing/unparseable.
-pub fn parse_et_date(raw: &str) -> Option<String> {
-    let s = raw.trim();
-    let date = NaiveDate::parse_from_str(s, "%Y-%m-%d").ok()?;
-    let normalized = format!("{:04}-{:02}-{:02}", date.year(), date.month(), date.day());
-    if normalized != s {
-        return None;
-    }
-    Some(normalized)
-}
-
-pub fn today_et_date(now: DateTime<Utc>) -> String {
-    let et = now.with_timezone(&New_York);
-    format!("{:04}-{:02}-{:02}", et.year(), et.month(), et.day())
-}
 
 pub fn is_et_date_weekday(et_date: &str) -> bool {
     NaiveDate::parse_from_str(et_date, "%Y-%m-%d")

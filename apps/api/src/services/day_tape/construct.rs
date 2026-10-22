@@ -4,7 +4,7 @@ use super::clocks::parse_et_date;
 use super::literals;
 use super::occupancy::{derive_axis_a, derive_path_a, derive_path_b, AxisA, DeriveInput};
 use super::player::first_playing_voucher;
-use super::store::{is_not_storing_err, DayContainer, PathAKind, SessionDayTape};
+use super::store::{is_not_storing_err, DayContainer, SessionDayTape};
 use super::watchlist::normalize_symbol;
 use crate::error::AppResult;
 use crate::state::AppState;
@@ -55,24 +55,6 @@ impl std::fmt::Debug for Prepare {
             Self::Refuse { literal } => f.debug_struct("Refuse").field("literal", literal).finish(),
         }
     }
-}
-
-fn count_path_a(day: &DayContainer) -> (usize, usize, usize) {
-    let mut trades = 0usize;
-    let mut quotes = 0usize;
-    let mut gaps = 0usize;
-    for rec in &day.path_a {
-        match rec.kind {
-            PathAKind::Trade => trades += 1,
-            PathAKind::Quote => quotes += 1,
-            PathAKind::PathAGap => gaps += 1,
-        }
-    }
-    (trades, quotes, gaps)
-}
-
-fn path_b_marks_of(day: &DayContainer) -> Vec<(u32, u32)> {
-    day.path_b.iter().map(|s| s.mark).collect()
 }
 
 /// Prepare identity + vouch first playing occupancy. Never binds HTTP.
@@ -209,8 +191,8 @@ pub async fn prepare_replay(
         }
     };
 
-    let (trades, quotes, gaps) = count_path_a(&day);
-    let marks = path_b_marks_of(&day);
+    let (trades, quotes, gaps) = day.count_path_a();
+    let marks = day.stored_path_b_marks();
     let path_b_capturing = day.path_b_armed_from.is_some();
     let input = DeriveInput {
         symbol: &symbol,

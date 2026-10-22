@@ -2,10 +2,9 @@
 //!
 //! Zero Massive I/O. Token gate matches `GET /api/_metrics` (not session-cookie auth).
 
-use super::health::metrics_token_ok;
+use super::health::metrics_gate;
 use crate::openapi::RouteResponse;
 use crate::services::chain_snapshot::wire::{as_of_string, deserialize_capture};
-use crate::services::market_data::MarketDataSourceKind;
 use crate::services::session_chain_archive::parse_et_date;
 use crate::services::session_chain_archive::SessionBookMeta;
 use crate::state::AppState;
@@ -38,33 +37,6 @@ fn session_miss_detail(symbol: &str, et_date: Option<&str>) -> String {
         Some(d) => format!("no session book for {symbol} on {d}"),
         None => format!("no session book for {symbol}"),
     }
-}
-
-fn source_token(kind: MarketDataSourceKind) -> &'static str {
-    match kind {
-        MarketDataSourceKind::LiveMassive => "live_massive",
-        MarketDataSourceKind::Fixture => "fixture",
-        MarketDataSourceKind::SessionTape => "session_tape",
-    }
-}
-
-fn token_gate(state: &AppState, headers: &HeaderMap) -> Option<Response> {
-    let Some(expected) = state.config.metrics_secret_token.as_deref() else {
-        return None;
-    };
-    if metrics_token_ok(headers, expected) {
-        return None;
-    }
-    Some(
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({
-                "error": "metrics_unauthorized",
-                "detail": "Set Authorization: Bearer <METRICS_SECRET_TOKEN> or X-Metrics-Token",
-            })),
-        )
-            .into_response(),
-    )
 }
 
 fn not_storing_body() -> Value {
@@ -363,7 +335,7 @@ pub async fn list_session_books(
     Query(q): Query<ListQuery>,
     headers: HeaderMap,
 ) -> Response {
-    if let Some(deny) = token_gate(&state, &headers) {
+    if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
     let symbol = normalize_symbol(&symbol);
@@ -422,7 +394,7 @@ fn list_row(m: &SessionBookMeta) -> Value {
         "symbol": m.symbol,
         "et_date": m.et_date,
         "source_as_of": as_of_string(m.source_as_of),
-        "source": source_token(m.source),
+        "source": m.source.as_str(),
     })
 }
 
@@ -432,7 +404,7 @@ pub async fn load_session_book(
     Query(q): Query<LoadQuery>,
     headers: HeaderMap,
 ) -> Response {
-    if let Some(deny) = token_gate(&state, &headers) {
+    if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
     let symbol = normalize_symbol(&symbol);
@@ -510,7 +482,7 @@ pub async fn load_session_book(
         "symbol": symbol,
         "et_date": et_date,
         "source_as_of": as_of_string(book.meta.source_as_of),
-        "source": source_token(book.meta.source),
+        "source": book.meta.source.as_str(),
         "store": "hit",
         "vendor_called": false,
         "framing": FRAMING_HIT,
@@ -535,6 +507,7 @@ pub fn research_vendor_call_count() -> u64 {
 mod tests {
     use super::*;
     use crate::services::chain_snapshot::ChainSnapshotStore;
+    use crate::services::market_data::MarketDataSourceKind;
     use crate::services::session_chain_archive::{
         SessionChainArchive, SESSION_ARCHIVE_SEED_ET_DATE, SESSION_ARCHIVE_SEED_SYMBOL,
     };

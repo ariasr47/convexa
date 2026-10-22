@@ -109,7 +109,8 @@ struct RawRecent {
     description: Vec<Option<String>>,
 }
 
-fn date(raw: Option<&str>) -> Option<NaiveDate> {
+/// SEC `YYYY-MM-DD…` date cell (trimmed, first 10 chars). `None` when absent or unparseable.
+pub(crate) fn date(raw: Option<&str>) -> Option<NaiveDate> {
     let raw = raw?.trim();
     NaiveDate::parse_from_str(raw.get(..10)?, "%Y-%m-%d").ok()
 }

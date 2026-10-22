@@ -6,6 +6,8 @@
 //! Schema mirrors Python `auth/postgres_store.py` + `marketdata` + `scanstore` so a
 //! shared Postgres plugin can serve both stacks during cutover if needed.
 
+use std::path::{Path, PathBuf};
+
 #[cfg(feature = "postgres")]
 mod migration_runner;
 #[cfg(feature = "postgres")]
@@ -53,5 +55,22 @@ pub fn backend_label() -> &'static str {
         "postgres"
     } else {
         "json"
+    }
+}
+
+/// JSON-on-disk store file for a configured (possibly SQLite-named) store path.
+/// Shared by the auth and scanner JSON stores.
+pub(crate) fn normalize_json_path(path: &Path) -> PathBuf {
+    let s = path.to_string_lossy();
+    if s.ends_with(".sqlite3") || s.ends_with(".sqlite") || s.ends_with(".db") {
+        PathBuf::from(
+            s.replace(".sqlite3", ".json")
+                .replace(".sqlite", ".json")
+                .replace(".db", ".json"),
+        )
+    } else if s.ends_with(".json") {
+        path.to_path_buf()
+    } else {
+        path.with_extension("json")
     }
 }

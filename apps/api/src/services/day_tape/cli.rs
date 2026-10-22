@@ -7,7 +7,7 @@ use super::occupancy::{
     axis_a_detail, derive_axis_a, derive_axis_c, derive_path_a, derive_path_b, load_clock_literal,
     path_a_detail, path_b_detail, AxisA, DeriveInput,
 };
-use super::store::{is_not_storing_err, DayContainer, PathAKind, SessionDayTape};
+use super::store::{is_not_storing_err, SessionDayTape};
 use super::watchlist::{in_tape_watchlist, normalize_symbol, TAPE_WATCHLIST};
 use crate::config::{tape_root_conflicts, Config};
 use chrono::{DateTime, Utc};
@@ -103,24 +103,6 @@ pub async fn open_session_day_tape_for_cli(cfg: &Config) -> Result<SessionDayTap
             }
         }
     }
-}
-
-fn count_path_a(day: &DayContainer) -> (usize, usize, usize) {
-    let mut trades = 0usize;
-    let mut quotes = 0usize;
-    let mut gaps = 0usize;
-    for r in &day.path_a {
-        match r.kind {
-            PathAKind::Trade => trades += 1,
-            PathAKind::Quote => quotes += 1,
-            PathAKind::PathAGap => gaps += 1,
-        }
-    }
-    (trades, quotes, gaps)
-}
-
-fn path_b_marks_of(day: &DayContainer) -> Vec<(u32, u32)> {
-    day.path_b.iter().map(|s| s.mark).collect()
 }
 
 fn ok_gate_line(detail: &str) -> String {
@@ -257,8 +239,8 @@ pub async fn evaluate_load(
         }
         AxisA::StoringReady => {
             let day = loaded.expect("StoringReady requires container");
-            let (trades, quotes, gaps) = count_path_a(&day);
-            let marks = path_b_marks_of(&day);
+            let (trades, quotes, gaps) = day.count_path_a();
+            let marks = day.stored_path_b_marks();
             let path_b_capturing = day.path_b_armed_from.is_some();
             let input = DeriveInput {
                 symbol: &symbol,
@@ -365,7 +347,7 @@ pub async fn evaluate_list(
                 Err(e) if is_not_storing_err(&e) => return wrap_err(&error_not_storing()),
                 Err(_) => return wrap_err(&error_unreadable()),
             };
-            let (trades, quotes, _gaps) = count_path_a(&day);
+            let (trades, quotes, _gaps) = day.count_path_a();
             let k = day.path_b.len();
             body.push_str(&format!(
                 "  {:<6}  {}  {trades} trades · {quotes} quotes   {k} snapshots\n",

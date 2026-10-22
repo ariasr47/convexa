@@ -9,7 +9,6 @@ use crate::services::chain_snapshot::wire::{
     as_of_string, deserialize_capture, parse_as_of, to_vendor_bundle,
 };
 use crate::services::chain_snapshot::ChainSnapshotStore;
-use crate::services::market_data::MarketDataSourceKind;
 use crate::state::AnalyticsSnapshot;
 use chrono::{DateTime, SecondsFormat, Utc};
 use quant_engine::{
@@ -472,7 +471,7 @@ async fn replay_one(
         Ok(Some(bytes)) => match deserialize_capture(&bytes) {
             Err(e) => ResearchRow::unreadable(symbol, &as_of_s, "", e.to_string()),
             Ok(wire) => {
-                let source = source_token(wire.source).to_string();
+                let source = wire.source.as_str().to_string();
                 let vendor = to_vendor_bundle(wire);
                 if vendor.market.contracts.is_empty() {
                     return ResearchRow::empty_book(symbol, &as_of_s, &source);
@@ -516,14 +515,6 @@ async fn do_compute(
         }
     }
     compute_analytics_from_vendor(vendor, params, None).await
-}
-
-fn source_token(kind: MarketDataSourceKind) -> &'static str {
-    match kind {
-        MarketDataSourceKind::LiveMassive => "live_massive",
-        MarketDataSourceKind::Fixture => "fixture",
-        MarketDataSourceKind::SessionTape => "session_tape",
-    }
 }
 
 fn desk_tier(snap: &AnalyticsSnapshot) -> (i32, String) {

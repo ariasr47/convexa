@@ -2,7 +2,7 @@
 //!
 //! Zero Massive I/O. Token gate matches `GET /api/_metrics` / session-books (not session-cookie).
 
-use super::health::metrics_token_ok;
+use super::health::metrics_gate;
 use crate::openapi::RouteResponse;
 use crate::services::session_chain_archive::{
     derive, parse_et_date, today_et_date, CoverageFault, CoverageMatrix, COVERAGE_VENDOR_CALLS,
@@ -27,25 +27,6 @@ const AUTHORIZES: &str = "nothing";
 const COMMAND: &str = "archive-coverage";
 const EVIDENCE: &str = "this process";
 const CHECKPOINT: &str = "after 16:00 America/New_York";
-
-fn token_gate(state: &AppState, headers: &HeaderMap) -> Option<Response> {
-    let Some(expected) = state.config.metrics_secret_token.as_deref() else {
-        return None;
-    };
-    if metrics_token_ok(headers, expected) {
-        return None;
-    }
-    Some(
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({
-                "error": "metrics_unauthorized",
-                "detail": "Set Authorization: Bearer <METRICS_SECRET_TOKEN> or X-Metrics-Token",
-            })),
-        )
-            .into_response(),
-    )
-}
 
 fn not_storing_body() -> Value {
     json!({
@@ -282,7 +263,7 @@ pub async fn session_archive_coverage(
     Query(q): Query<CoverageQuery>,
     headers: HeaderMap,
 ) -> Response {
-    if let Some(deny) = token_gate(&state, &headers) {
+    if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
     if COVERAGE_VENDOR_CALLS.load(Ordering::SeqCst) != 0 {

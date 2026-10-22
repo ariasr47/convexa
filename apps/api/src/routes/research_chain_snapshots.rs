@@ -2,13 +2,12 @@
 //!
 //! Zero Massive I/O. Token gate matches `GET /api/_metrics` (not session-cookie auth).
 
-use super::health::metrics_token_ok;
+use super::health::metrics_gate;
 use crate::openapi::RouteResponse;
 use crate::services::chain_snapshot::wire::{
     as_of_string, deserialize_capture, parse_as_of, ChainSnapshotWire,
 };
 use crate::services::chain_snapshot::SnapshotMeta;
-use crate::services::market_data::MarketDataSourceKind;
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
@@ -39,33 +38,6 @@ fn miss_detail(symbol: &str, as_of: Option<&str>) -> String {
         Some(ts) => format!("no stored snapshot for {symbol} at {ts}"),
         None => format!("no stored snapshot for {symbol}"),
     }
-}
-
-fn source_token(kind: MarketDataSourceKind) -> &'static str {
-    match kind {
-        MarketDataSourceKind::LiveMassive => "live_massive",
-        MarketDataSourceKind::Fixture => "fixture",
-        MarketDataSourceKind::SessionTape => "session_tape",
-    }
-}
-
-fn token_gate(state: &AppState, headers: &HeaderMap) -> Option<Response> {
-    let Some(expected) = state.config.metrics_secret_token.as_deref() else {
-        return None;
-    };
-    if metrics_token_ok(headers, expected) {
-        return None;
-    }
-    Some(
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({
-                "error": "metrics_unauthorized",
-                "detail": "Set Authorization: Bearer <METRICS_SECRET_TOKEN> or X-Metrics-Token",
-            })),
-        )
-            .into_response(),
-    )
 }
 
 fn store_error_body(reason: &str) -> Value {
@@ -384,7 +356,7 @@ impl From<&SnapshotMeta> for ListSnapshotRow {
         Self {
             symbol: m.symbol.clone(),
             as_of: as_of_string(m.as_of),
-            source: source_token(m.source).to_string(),
+            source: m.source.as_str().to_string(),
         }
     }
 }
@@ -395,7 +367,7 @@ pub async fn list_snapshots(
     Query(q): Query<ListQuery>,
     headers: HeaderMap,
 ) -> Response {
-    if let Some(deny) = token_gate(&state, &headers) {
+    if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
     let symbol = normalize_symbol(&symbol);
@@ -469,7 +441,7 @@ pub async fn load_snapshot(
     Query(q): Query<LoadQuery>,
     headers: HeaderMap,
 ) -> Response {
-    if let Some(deny) = token_gate(&state, &headers) {
+    if let Some(deny) = metrics_gate(&state, &headers) {
         return deny;
     }
     let symbol = normalize_symbol(&symbol);
@@ -544,7 +516,7 @@ fn hit_body(wire: &ChainSnapshotWire) -> Value {
     json!({
         "symbol": wire.symbol,
         "as_of": as_of_string(wire.as_of),
-        "source": source_token(wire.source),
+        "source": wire.source.as_str(),
         "store": "hit",
         "vendor_called": false,
         "framing": FRAMING_HIT,

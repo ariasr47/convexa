@@ -44,6 +44,31 @@ pub enum MarketDataSourceKind {
     SessionTape,
 }
 
+impl MarketDataSourceKind {
+    /// The stored/wire token — the same string serde writes (`snake_case`).
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::LiveMassive => "live_massive",
+            Self::Fixture => "fixture",
+            Self::SessionTape => "session_tape",
+        }
+    }
+}
+
+impl std::str::FromStr for MarketDataSourceKind {
+    /// Unknown token. Each reader decides whether that is an error or a fallback.
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "live_massive" => Ok(Self::LiveMassive),
+            "fixture" => Ok(Self::Fixture),
+            "session_tape" => Ok(Self::SessionTape),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Serde-friendly daily bar for fixture JSON (maps to quant-engine [`DailyBar`]).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DailyBarWire {

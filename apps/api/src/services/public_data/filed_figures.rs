@@ -11,7 +11,7 @@
 //! Only `CHECKED_CONCEPTS` are kept. Company facts run to many megabytes, so the reader skips every
 //! other concept while it parses, and keeps only the latest few periodic filings' points.
 
-use super::edgar::CompanyFacts;
+use super::edgar::{date, CompanyFacts};
 use super::types::PeriodicFiling;
 use chrono::NaiveDate;
 use serde::de::{DeserializeSeed, IgnoredAny, MapAccess, Visitor};
@@ -140,10 +140,6 @@ struct RawPoint {
 struct RawConcept {
     #[serde(default)]
     units: HashMap<String, Vec<RawPoint>>,
-}
-
-fn date(raw: Option<&str>) -> Option<NaiveDate> {
-    NaiveDate::parse_from_str(raw?.trim().get(..10)?, "%Y-%m-%d").ok()
 }
 
 /// `{"facts": {taxonomy: {concept: {...}}}}`, keeping only the checked concepts.
