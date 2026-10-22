@@ -15,9 +15,9 @@ import { ThemeProvider } from '@mui/material/styles';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import App from '@/app';
+import App, { preloadRoutes } from '@/app';
 import { theme } from '@/shared/theme/theme';
 import { BROKER_COPY } from './copy';
 import { POS_SPREAD, optionLeg, supplied } from './fixtures';
@@ -135,6 +135,9 @@ function makeBundle() {
   };
 }
 
+// The lazy pages this file opens through <App/> load here, at the hook timeout, not inside a
+// 5 s `findBy` wait (docs/testing/2026-10-22/TEST_PLAN.md section 6.1, batch 3).
+beforeAll(() => preloadRoutes(['PositionsPage', 'SettingsPage']));
 beforeEach(() => {
   localStorage.clear();
   asOfIso = new Date(Date.now() - 30_000).toISOString(); // genuinely fresh vs the real clock

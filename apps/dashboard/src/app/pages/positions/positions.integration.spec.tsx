@@ -18,9 +18,9 @@ import { ThemeProvider } from '@mui/material/styles';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import App from '@/app';
+import App, { preloadRoutes } from '@/app';
 import { STALE_SAVED_VIEW_CUSTOMIZATION } from '@/features/trading/positions/fixtures';
 import { staleViewNotice } from '@/features/trading/positions/labels';
 import {
@@ -157,6 +157,9 @@ let unresolvableStrikes = new Set<number>();
 let esInstances: { onmessage: ((e: MessageEvent) => void) | null }[] = [];
 let fetchMock: ReturnType<typeof vi.fn>;
 
+// The lazy pages this file opens through <App/> load here, at the hook timeout, not inside a
+// 5 s `findBy` wait (docs/testing/2026-10-22/TEST_PLAN.md section 6.1, batch 3).
+beforeAll(() => preloadRoutes(['PositionsPage', 'TickerDashboard']));
 beforeEach(() => {
   localStorage.clear();
   __resetMemory();

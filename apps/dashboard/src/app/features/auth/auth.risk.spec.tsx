@@ -37,7 +37,7 @@
  *
  * Mocks ONLY the network boundary (`fetch` + `EventSource` via testBackend); never a live backend.
  */
-import App from '@/app';
+import App, { preloadRoutes } from '@/app';
 import { __resetMemory, allPositions } from '@/features/trading/positions/store';
 import { PositionsPage } from '@/pages/positions/PositionsPage';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
@@ -45,7 +45,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from './AuthContext';
 import { AuthDialog, type AuthMode } from './AuthDialog';
 import { AuthDialogProvider } from './AuthDialogProvider';
@@ -61,6 +61,9 @@ import {
 
 let backend: AuthBackend;
 
+// The lazy pages this file opens through <App/> load here, at the hook timeout, not inside a
+// 5 s `findBy` wait (docs/testing/2026-10-22/TEST_PLAN.md section 6.1, batch 3).
+beforeAll(() => preloadRoutes(['TickerDashboard', 'PositionsPage', 'SettingsPage']));
 beforeEach(() => {
   localStorage.clear();
   __resetMemory();

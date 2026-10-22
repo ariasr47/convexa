@@ -28,7 +28,7 @@
  * Server-side enforcement (key resolution, allowance decrement, caps) is backend-verified — these
  * tests cover the FE half only: render what the wire says, leak nothing it doesn't.
  */
-import App from '@/app';
+import App, { preloadRoutes } from '@/app';
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { SettingsPage } from '@/features/auth/SettingsPage';
@@ -56,7 +56,7 @@ import type {
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COPY, PREFILL_WITHHELD } from './copy';
 import {
   recAllTraced,
@@ -524,6 +524,9 @@ function expectPinnedActionsUnchanged(be: ReturnType<typeof installBackend>) {
   expect(within(panel()).queryByRole('button', { name: COPY.action.refresh })).toBeNull();
 }
 
+// The lazy pages this file opens through <App/> load here, at the hook timeout, not inside a
+// 5 s `findBy` wait (docs/testing/2026-10-22/TEST_PLAN.md section 6.1, batch 3).
+beforeAll(() => preloadRoutes(['TickerDashboard']));
 beforeEach(() => {
   localStorage.clear();
   __resetPositions(); // the ONE book — the ghost-trade store has no writer any more
