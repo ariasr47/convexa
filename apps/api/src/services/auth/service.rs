@@ -1170,6 +1170,35 @@ mod tests {
         assert_eq!(err.code, "signups_closed");
     }
 
+    /// The Google arm of the same lock. The identity is unknown (no account has its `sub`) and
+    /// its verified email matches no account, so the callback reaches the new-user path, which
+    /// must refuse and create nothing. The injected exchange keeps it off the network and env.
+    #[tokio::test]
+    async fn google_signups_closed_when_locked() {
+        use crate::services::auth::google_oauth::{remember_state, GoogleIdentity};
+        let mut s = svc(false);
+        s.set_google_exchange_override(|_code| async {
+            Ok(GoogleIdentity {
+                sub: "google-sub-unknown".into(),
+                email: "new@b.co".into(),
+                email_verified: true,
+                name: None,
+            })
+        });
+        let state = "service-google-lock-state";
+        remember_state(state);
+        let err = s
+            .google_callback(Some("code"), Some(state))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code, "signups_closed");
+        assert!(s
+            .test_store()
+            .get_by_google_sub("google-sub-unknown")
+            .unwrap()
+            .is_none());
+    }
+
     /// Rewrite the stored session behind `sid` so its deadlines sit `idle_offset` /
     /// `absolute_offset` seconds from the same clock `resolve_session` reads.
     fn set_session_deadlines(s: &AuthService, sid: &str, idle_offset: f64, absolute_offset: f64) {
