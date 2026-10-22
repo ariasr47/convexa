@@ -1,5 +1,3 @@
-import { spawnSync } from 'node:child_process';
-import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { verifyOrAcquireTools } from './acquire-tools.mjs';
@@ -8,8 +6,8 @@ import {
   deriveCargoComponents,
   deriveNpmComponents,
 } from './component-oracle.mjs';
-import { canonicalSha256 } from './lib/canonical.mjs';
-import { spawnCaptured } from './lib/process.mjs';
+import { canonicalSha256, sha256 as sha } from './lib/canonical.mjs';
+import { gitSha, spawnCaptured } from './lib/process.mjs';
 import {
   ociLayoutReference,
   rawSha256Digest,
@@ -498,16 +496,6 @@ async function sourceHash(root) {
     ),
   );
 }
-function gitSha(root) {
-  const run = spawnSync('git', ['rev-parse', 'HEAD'], {
-    cwd: root,
-    encoding: 'utf8',
-    shell: false,
-  });
-  return run.status === 0 && /^[0-9a-f]{40}$/.test(run.stdout.trim())
-    ? run.stdout.trim()
-    : '0'.repeat(40);
-}
 function parseArgs(argv) {
   const out = {};
   for (let index = 0; index < argv.length; index += 2) {
@@ -519,7 +507,6 @@ function parseArgs(argv) {
   }
   return out;
 }
-const sha = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 class Blocked extends Error {}
 
 if (import.meta.url === new URL(`file://${process.argv[1]?.replaceAll('\\', '/')}`).href) {

@@ -4,6 +4,7 @@
  * `building` row that grows a fabricated freshness claim, a sort that floats `null`s to the top, a
  * direction colour that leaks onto a rate. None of that is visible in a screenshot review.
  */
+import { fmtDelta } from '@/shared/lib/fmtDelta';
 import { downText, upText } from '@/shared/theme/tokens';
 import type { ScanRow, SweepHeartbeat } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
@@ -16,7 +17,6 @@ import {
   EMPTY_FILTERS,
   filterRows,
   filtersActive,
-  fmtDelta,
   fmtPrice,
   fmtSignedPct,
   marketSessionPhase,

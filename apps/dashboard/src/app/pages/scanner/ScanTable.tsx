@@ -12,6 +12,7 @@
  * One preview is open at a time. There is no order, trade, or broker affordance anywhere on this
  * surface.
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { MONO_FACE } from '@/shared/figure';
 import { extrasFor } from '@/shared/theme/tokens';
 import type { ScanDensity, ScanRow, ScanViewSort } from '@convexa/api';
@@ -229,16 +230,6 @@ type PreviewOpener = 'row' | 'button';
 /** The table's columns plus the preview chevron's own trailing column. */
 const COLUMN_COUNT = SCAN_COLUMNS.length + 1;
 
-/** Screen-reader-only text ('1px' strings: a bare `1` in sx is 100%, OrdersWidget.tsx srOnly). */
-const srOnly = {
-  position: 'absolute',
-  width: '1px',
-  height: '1px',
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-} as const;
-
 function ScanTableRow({
   row,
   density,
@@ -411,7 +402,7 @@ export function ScanTable({
               data-testid="scan-th-preview"
               sx={{ ...thSx, width: 44 }}
             >
-              <Box component="span" sx={srOnly}>
+              <Box component="span" sx={visuallyHidden}>
                 {SCAN_PREVIEW_COPY.columnLabel}
               </Box>
             </Box>

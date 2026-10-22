@@ -1,10 +1,9 @@
 import { spawnSync } from 'node:child_process';
-import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { evaluateParity, selectorFiles, selectorSetSha256 } from './bootstrap-candidate.mjs';
-import { canonicalSha256 } from './lib/canonical.mjs';
+import { canonicalSha256, sha256 as hash } from './lib/canonical.mjs';
 import { runKey } from './run-key.mjs';
 
 export const REQUIRED_CHECK_IDS = Object.freeze([
@@ -31,7 +30,6 @@ export const REQUIRED_CHECK_IDS = Object.freeze([
   'score_tier_gate_fingerprint_identity',
 ]);
 export const requiredCheckSetSha256 = () => canonicalSha256([...REQUIRED_CHECK_IDS].sort());
-const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
 export function validateAcceptedCi(receipt, acceptedSha) {
   if (

@@ -28,7 +28,6 @@ import { MONO_FACE } from '@/shared/figure';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
-import type { FocusEvent } from 'react';
 import {
   LEGS_TIP,
   MAX_LOSS_ASSUMPTION,
@@ -36,23 +35,8 @@ import {
   ROW_UNAVAILABLE_TIP,
   SHORT_LEG_TIP,
 } from './labels';
+import { revealFocusedControl } from './revealFocusedControl';
 import type { PositionView } from './view';
-
-function revealFocusedControl(event: FocusEvent<HTMLElement>) {
-  const viewport = window.visualViewport;
-  if (!viewport) return;
-  const rect = event.currentTarget.getBoundingClientRect();
-  const left = viewport.offsetLeft;
-  const top = viewport.offsetTop;
-  const right = left + viewport.width;
-  const bottom = top + viewport.height;
-  const intersects =
-    rect.right > left && rect.left < right && rect.bottom > top && rect.top < bottom;
-  if (intersects) return;
-  const dx = rect.right <= left ? rect.left - left : rect.left >= right ? rect.right - right : 0;
-  const dy = rect.bottom <= top ? rect.top - top : rect.top >= bottom ? rect.bottom - bottom : 0;
-  window.scrollBy({ left: dx, top: dy, behavior: 'auto' });
-}
 
 /** 0.8rem = 12.8px — above the 11px floor, in the mono data face with tabular numerals. The face
  *  itself comes from `shared/figure` (curvature-v2-surfaces criterion N-1); the size is this row's

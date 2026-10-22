@@ -214,7 +214,7 @@ export function DocPage({
               <Typography
                 component="span"
                 sx={{
-                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontFamily: typographyTokens.monoFontFamily,
                   fontSize: 12,
                   color: 'text.secondary',
                 }}
@@ -353,7 +353,7 @@ export function DocTable({
           },
           ...(monoFirst && {
             '& td:first-of-type': {
-              fontFamily: '"IBM Plex Mono", monospace',
+              fontFamily: typographyTokens.monoFontFamily,
               fontSize: 12.5,
               whiteSpace: { xs: 'normal', sm: 'nowrap' },
               overflowWrap: 'anywhere',

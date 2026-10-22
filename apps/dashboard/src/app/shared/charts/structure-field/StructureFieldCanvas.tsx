@@ -21,8 +21,10 @@
  * only what cannot be pure: canvas/DPR/layout setup, the mutable `FrameState`, the structure-key
  * dirty check, the blit, rAF scheduling and the DOM listeners.
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { TableTwin } from '@/shared/charts/frame';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { typographyTokens } from '@/shared/theme/tokens';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { LevelPalette } from './levelStrokes';
 import {
@@ -347,20 +349,7 @@ export function StructureFieldCanvas({
           supplying its own description (the landing's frozen sample) has neither fact to claim,
           and the override above already points screen readers at that host's own caption. */}
         {!describedById && (
-          <p
-            id={summaryId}
-            style={{
-              position: 'absolute',
-              width: 1,
-              height: 1,
-              padding: 0,
-              margin: -1,
-              overflow: 'hidden',
-              clip: 'rect(0 0 0 0)',
-              whiteSpace: 'nowrap',
-              border: 0,
-            }}
-          >
+          <p id={summaryId} style={visuallyHidden}>
             Net dealer gamma by strike for {model.symbol}, marking the call wall, put wall, gamma
             flip and max pain levels plus the live tape mid. The level ladder beside this field
             states the same levels and distances as text.
@@ -374,7 +363,7 @@ export function StructureFieldCanvas({
           style={{
             minHeight: 20,
             marginTop: 6,
-            fontFamily: hoverReadout ? '"IBM Plex Mono", ui-monospace, monospace' : undefined,
+            fontFamily: hoverReadout ? typographyTokens.monoFontFamily : undefined,
             fontSize: 12,
             lineHeight: '18px',
             color: hoverReadout ? surfaces.phosphor : surfaces.steel,

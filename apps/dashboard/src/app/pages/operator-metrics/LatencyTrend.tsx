@@ -19,6 +19,7 @@ import {
   type TableTwinData,
 } from '@/shared/charts/frame';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
+import { typographyTokens } from '@/shared/theme/tokens';
 import DownloadIcon from '@mui/icons-material/Download';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -552,7 +553,7 @@ export function LatencyTrend({ trend }: { trend: Trend }) {
                   <Box
                     component="span"
                     sx={{
-                      fontFamily: '"IBM Plex Mono", monospace',
+                      fontFamily: typographyTokens.monoFontFamily,
                       fontSize: 12,
                       color: 'text.secondary',
                     }}

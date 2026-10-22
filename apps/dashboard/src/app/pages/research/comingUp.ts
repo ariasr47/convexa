@@ -16,6 +16,7 @@ import type {
   PublicResultsWindow,
   PublicSource,
 } from '@convexa/api';
+import { addDays } from './format';
 import type { AgingEvent } from './types';
 
 export type CalKind = 'macro' | 'note' | 'est';
@@ -92,10 +93,7 @@ export function noteResultsOf(ticker: string, events: readonly AgingEvent[]): No
     }));
 }
 
-const DAY_MS = 86_400_000;
 const ms = (iso: string) => Date.parse(`${iso.slice(0, 10)}T00:00:00Z`);
-const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
-export const addDays = (day: string, n: number) => iso(ms(day) + n * DAY_MS);
 /** The Monday of `day`'s week. */
 export const mondayOf = (day: string) => addDays(day, -((new Date(ms(day)).getUTCDay() + 6) % 7));
 

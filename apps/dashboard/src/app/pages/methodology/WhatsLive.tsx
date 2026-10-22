@@ -8,6 +8,7 @@
  *
  * Design: design/src/screens/final/shell-site-docs.mjs (liveSection).
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { LIVE_SITE_URL, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
@@ -149,17 +150,7 @@ function Production() {
             <TableRow>
               <TableCell scope="col">{c.offColumn}</TableCell>
               <TableCell scope="col">
-                <Box
-                  component="span"
-                  sx={{
-                    position: 'absolute',
-                    width: '1px',
-                    height: '1px',
-                    overflow: 'hidden',
-                    clip: 'rect(0 0 0 0)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
+                <Box component="span" sx={visuallyHidden}>
                   Same screen on the demo
                 </Box>
               </TableCell>

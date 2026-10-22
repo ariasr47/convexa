@@ -5,6 +5,7 @@
  *
  * Design: design/src/screens/final/shell-site-front.mjs (shellStates, “Keyboard shortcuts”).
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { typographyTokens } from '@/shared/theme/tokens';
 import CloseIcon from '@mui/icons-material/Close';
 import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
@@ -13,20 +14,6 @@ import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { useId, type ReactNode } from 'react';
-
-/** Read by screen readers, not drawn. Same clip-rect pattern as shared/figure/FigureMarks.tsx. */
-const visuallyHidden = {
-  position: 'absolute',
-  // '1px' strings: in MUI sx a bare width/height <= 1 is a percentage (1 -> '100%').
-  width: '1px',
-  height: '1px',
-  p: 0,
-  m: '-1px',
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-  border: 0,
-} as const;
 
 function Kbd({ children }: { children: ReactNode }) {
   return (

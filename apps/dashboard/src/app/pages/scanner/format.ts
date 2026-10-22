@@ -98,15 +98,6 @@ export function computePollDeltas(
   return out;
 }
 
-/** Compact delta label: ↑2 · ↓1.5 — neutral glyphs, real minus for negatives. */
-export function fmtDelta(n: number, digits = 0): string {
-  const abs = Math.abs(n);
-  const body = digits > 0 ? abs.toFixed(digits) : String(Math.round(abs));
-  if (n > 0) return `↑${body}`;
-  if (n < 0) return `↓${body}`;
-  return '';
-}
-
 /**
  * Pure client-side filter over already-fetched rows. Nulls fail a numeric threshold (an absent
  * score is not ≥70). Empty filters return the same array reference when nothing is active.

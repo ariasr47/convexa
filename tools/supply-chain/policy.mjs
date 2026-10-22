@@ -1,9 +1,8 @@
-import { spawnSync } from 'node:child_process';
-import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 
 import { verifyOrAcquireTools } from './acquire-tools.mjs';
-import { canonicalSha256 } from './lib/canonical.mjs';
+import { canonicalSha256, sha256 } from './lib/canonical.mjs';
+import { gitSha } from './lib/process.mjs';
 import { CHECK_AUTHORITIES, normalizePolicyReport, requiredChecksFor } from './normalize.mjs';
 import { runCargoDeny } from './policy/cargo-deny.mjs';
 import { validateExceptions } from './policy/exceptions.mjs';
@@ -19,7 +18,6 @@ import { checkNpmLock } from './policy/npm-lock.mjs';
 import { runTrivyConfig } from './policy/trivy.mjs';
 import { computeRunKey, subjectSetHash } from './run-key.mjs';
 
-const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 const events = new Set(['pull_request', 'default_branch', 'schedule', 'workflow_dispatch']);
 
 export async function runPolicy({
@@ -222,12 +220,6 @@ function combineConfiguration(...results) {
       results.map((result) => result.raw_output_sha256 ?? result.rule_id),
     ),
   };
-}
-function gitSha(root) {
-  const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', shell: false });
-  return r.status === 0 && /^[a-f0-9]{40}$/.test(r.stdout.trim())
-    ? r.stdout.trim()
-    : '0'.repeat(40);
 }
 function invocationReport(event, path, run_key, reason_code, revision_sha = '0'.repeat(40)) {
   return {

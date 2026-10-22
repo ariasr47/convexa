@@ -12,11 +12,9 @@
  * "Delayed by source", so liquidityCalendar.spec.ts pins it against the real holidays.
  */
 import { FOMC_DECISIONS } from './fomc';
+import { addDays } from './format';
 
-const DAY = 86_400_000;
 const at = (date: string) => Date.parse(`${date}T12:00:00Z`);
-const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-export const addDays = (date: string, n: number) => iso(at(date) + n * DAY);
 const weekday = (date: string) => new Date(at(date)).getUTCDay();
 
 /** The n-th (1-based) `dow` (0 = Sunday) of a month, or the last one when n is -1. */

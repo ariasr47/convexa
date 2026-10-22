@@ -41,6 +41,7 @@
  * already collapses to a fixed 0.35 whenever `!m.live || reduced`, which is what gives the beam its
  * row-22 "static frame" reading without a dedicated gate.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
 import type { LevelPalette } from './levelStrokes';
 import { withAlpha } from './levelStrokes';
 import type { MarkerLayoutBox } from './markerLayout';
@@ -456,7 +457,7 @@ export function paintStructureStep(
   // never cover one another. The bare `spot` label is REMOVED: the spot line stays, thin steel,
   // unlabelled (it is the ladder anchor, not a second price) — the tape/mid pill below is the one
   // price label on the field.
-  o.font = '600 11px "IBM Plex Mono", ui-monospace, monospace';
+  o.font = `600 11px ${typographyTokens.monoFontFamily}`;
   const markerDefs = [
     {
       id: 'put',
@@ -505,7 +506,7 @@ export function paintStructureStep(
       { x: pad.l, y: pad.t + plotH - 18, width: 56, height: 14 },
     ],
   });
-  o.font = '600 11px "IBM Plex Mono", ui-monospace, monospace';
+  o.font = `600 11px ${typographyTokens.monoFontFamily}`;
   for (const marker of markerBoxes) {
     // Each label sits on its own knock-out plate, so a level line that runs under it (the flip
     // through the put wall's label, say) never strikes the text through (site check D-08).
@@ -519,7 +520,7 @@ export function paintStructureStep(
   // Axis (repair task item 4): strike ticks at a round step along the bottom, `±$<max>M` and `0` on
   // the left — both Mono 10 steel. Replaces the old two-corner `$min`/`$max` + `± dealer γ` labels.
   o.fillStyle = surfaces.steel;
-  o.font = '500 11px "IBM Plex Mono", ui-monospace, monospace';
+  o.font = `500 11px ${typographyTokens.monoFontFamily}`;
   const strikeStep = chooseStrikeStep(maxK - minK);
   const firstTick = Math.ceil(minK / strikeStep) * strikeStep;
   const tickDecimals = Number.isInteger(strikeStep) ? 0 : 1;
@@ -742,7 +743,7 @@ export function paintFrameStep(
     // retained/offline (the SAME `m.live` branch the label already used), panel fill + a signal
     // (mid) stroke. Fixed at the zero line beside the mid's own vertical line, never lane-stacked
     // with the level markers above the plot — this is the field's ONE price label.
-    ctx.font = '600 11px "IBM Plex Mono", ui-monospace, monospace';
+    ctx.font = `600 11px ${typographyTokens.monoFontFamily}`;
     const pillLabel = `${m.live ? '●' : '○'} mid ${m.liveMid.toFixed(2)}`;
     const textW = ctx.measureText(pillLabel).width;
     const boxW = textW + 16;

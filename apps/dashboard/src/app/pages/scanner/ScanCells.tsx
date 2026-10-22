@@ -28,6 +28,7 @@
  */
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
+import { fmtDelta } from '@/shared/lib/fmtDelta';
 import { extrasFor } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui/TintChip';
 import type { ScanRow } from '@convexa/api';
@@ -38,7 +39,6 @@ import {
   dash,
   directionColor,
   EM_DASH,
-  fmtDelta,
   fmtPrice,
   fmtScore,
   fmtSignedPct,

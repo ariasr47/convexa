@@ -7,6 +7,7 @@
  * action (`[no-real-order-path]`, AC-11). It reuses the SAME `ScanCells` atoms as the table, so a
  * datum can never be rendered two ways.
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { MONO_FACE } from '@/shared/figure';
 import type { ScanRow } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -41,17 +42,6 @@ const factLabelSx = { fontSize: '0.6875rem', color: 'text.secondary' };
 
 export function ScanCard({ row, nowS, flashActive, delta, priceOffline }: ScanCardProps) {
   const scoreDescriptionId = useId();
-  const visuallyHidden = {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    p: 0,
-    m: -1,
-    overflow: 'hidden',
-    clip: 'rect(0 0 0 0)',
-    whiteSpace: 'nowrap',
-    border: 0,
-  } as const;
   return (
     <Box
       component={RouterLink}

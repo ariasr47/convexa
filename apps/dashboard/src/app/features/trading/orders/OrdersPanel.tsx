@@ -7,6 +7,7 @@
  * focused/streamed one show the §4.3 not-evaluated state — CORRECT and required, not a bug (D5).
  */
 import { SIMULATED_TIP } from '@/features/trading/positions/labels';
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -30,18 +31,6 @@ import {
 import { exportFilename } from './store';
 import { isTerminal } from './types';
 import { deriveEval, LiveCoverage, useOrders } from './useOrders';
-
-const srOnly = {
-  position: 'absolute',
-  // '1px' STRINGS, deliberately: in MUI sx a bare numeric width/height <= 1 means a PERCENTAGE
-  // (width: 1 -> '100%'), which made this "1px" sr-only span a full-width absolute box that
-  // overhung the 393px viewport (caught by the Stage 0 no-overflow enforcement row).
-  width: '1px',
-  height: '1px',
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-} as const;
 
 interface Props {
   /** The page's live coverage (the focused/streamed ticker). Null ⇒ every row not-evaluated. */
@@ -90,7 +79,7 @@ export function OrdersPanel({ coverage, openDetailOrderId, onDetailClose, onView
         bgcolor: 'background.paper',
       }}
     >
-      <Box component="span" aria-live="polite" sx={srOnly}>
+      <Box component="span" aria-live="polite" sx={visuallyHidden}>
         {announcement}
       </Box>
       <Stack

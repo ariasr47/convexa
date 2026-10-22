@@ -6,6 +6,7 @@
  * its own background and bottom border — a flat row with a top hairline, matching the tape row above
  * it. Every testid, and the empty/error/loading arms, are unchanged.
  */
+import { fmtDelta } from '@/shared/lib/fmtDelta';
 import { typographyTokens } from '@/shared/theme/tokens';
 import type { StructureSample } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -14,7 +15,7 @@ import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { humanAge } from '../_kit';
-import { fmtPathDelta, sparkPoints, summarizePath } from './historyMath';
+import { sparkPoints, summarizePath } from './historyMath';
 
 const SPARK_W = 96;
 const SPARK_H = 22;
@@ -191,7 +192,7 @@ export function StructurePathStrip({
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  {fmtPathDelta(path.scoreDelta)}
+                  {fmtDelta(path.scoreDelta)}
                 </Typography>
               ) : null}
             </Box>
@@ -228,7 +229,7 @@ export function StructurePathStrip({
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  {fmtPathDelta(path.flipDistDelta, 1)}
+                  {fmtDelta(path.flipDistDelta, 1)}
                 </Typography>
               ) : null}
             </Box>

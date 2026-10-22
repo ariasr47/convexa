@@ -32,6 +32,7 @@ import { usePortfolio } from '@/features/trading/positions/usePortfolio';
 import { FigureCell } from '@/pages/ticker/widgets/_kit/FigureCell';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
+import { usePollingResource } from '@/shared/hooks/usePollingResource';
 import { isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { downText, upText } from '@/shared/theme/tokens';
 import { PanelContainer } from '@/shared/ui/PanelContainer';
@@ -127,46 +128,27 @@ function PositionsBook({ markFeed, lead }: { markFeed: MarkFeed; lead: Positions
   // The focused ticker is derived once on mount from the durable book (re-derives on remount, like a
   // reload). It drives the anchor bundle + the single page-scoped SSE.
   const ticker = useMemo(() => focusedTicker(), []);
-  const [data, setData] = useState<TickerBundle | null>(null);
   const [live, setLive] = useState<LiveUpdate | null>(null);
   const [demoFrame, setDemoFrame] = useState<DemoOrderFrame | null>(null);
   const [streamOffline, setStreamOffline] = useState(false);
 
   const isLive = isDeliveringLive(live, streamOffline);
 
-  // Anchor bundle: best-effort. A failure leaves `data` null — `usePortfolio` then degrades marks to
-  // `tracking unavailable` / last-known per row, never blanking the records. Polls on the cache cadence.
+  // Anchor bundle: best-effort. A failure keeps the last bundle (null before the first one), and
+  // `usePortfolio` degrades marks to `tracking unavailable` / last-known per row, never blanking the
+  // records. Polls on the cache cadence; skips ticks while the tab is hidden.
   //
   // no-vendor-production-posture F4 ("positions pricing"): `GET /api/ticker` is a B2 route. A
-  // `market_data_paused` fault is a STANDING fact, not a transient miss — once it lands, this effect
-  // stops polling for the rest of this ticker's lifetime (mirrors the ticker desk's own
-  // `usePollingResource`'s `haltOn`); a focused-ticker change (a new effect run) is the only thing
-  // that asks again. Marks already degrade to their existing closed-vocabulary absent value with
-  // `data` staying null — this only stops the silent, indefinite re-ask of a route that will never
-  // answer differently.
-  useEffect(() => {
-    // No options feed on this site: the bundle route can only refuse, so it is never asked.
-    if (markFeed === 'notLive') return;
-    let cancelled = false;
-    let halted = false;
-    const load = () => {
-      if (halted) return;
-      getTicker(ticker)
-        .then((d) => {
-          if (!cancelled) setData(d);
-        })
-        .catch((err: unknown) => {
-          /* best-effort: leave prior data; per-row marks degrade, records persist */
-          if (isMarketDataPaused(err)) halted = true;
-        });
-    };
-    load();
-    const id = setInterval(load, POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [ticker, markFeed]);
+  // `market_data_paused` fault is a STANDING fact, not a transient miss — once it lands, `haltOn`
+  // stops polling for the rest of this ticker's lifetime, as on the ticker desk. Marks already
+  // degrade to their existing closed-vocabulary absent value; this only stops the silent,
+  // indefinite re-ask of a route that will never answer differently. With no options feed on this
+  // site the route can only refuse, so it is never asked (`markFeed` is fixed for the page load).
+  const { data } = usePollingResource<TickerBundle>(
+    markFeed === 'notLive' ? null : ticker,
+    (signal) => getTicker(ticker, {}, { signal }),
+    { intervalMs: POLL_MS, haltOn: isMarketDataPaused },
+  );
 
   // ONE page-scoped SSE for the focused ticker (same lifecycle/teardown as the Ticker viewer). At most
   // one EventSource per ticker; closed on unmount. The watchdog flips `streamOffline` on a drop so live

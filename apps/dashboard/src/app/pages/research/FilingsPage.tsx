@@ -4,6 +4,7 @@
  * prior period; a results release says where its figures will arrive. The filter lives in the URL so
  * Back and a shared link keep it; j and k move through the list, o opens the filing.
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { ChartFrame, type ChartStatus } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
@@ -704,18 +705,7 @@ function Detail({ filing }: { filing: PublicFiling }) {
           {`Run ${command} in the repo: it writes a dated update note from the latest one, with every figure blanked to re-read against this filing. Nothing published changes until you push it.`}
         </Box>
       )}
-      <Box
-        component="span"
-        role="status"
-        aria-live="polite"
-        sx={{
-          position: 'absolute',
-          width: '1px',
-          height: '1px',
-          overflow: 'hidden',
-          clip: 'rect(0 0 0 0)',
-        }}
-      >
+      <Box component="span" role="status" aria-live="polite" sx={visuallyHidden}>
         {copied ? 'Command copied' : ''}
       </Box>
     </Box>
@@ -1026,16 +1016,7 @@ function ReportedFigures({
       testId="chart-reported-figures"
     >
       <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-        <Box
-          component="caption"
-          sx={{
-            position: 'absolute',
-            width: '1px',
-            height: '1px',
-            overflow: 'hidden',
-            clip: 'rect(0 0 0 0)',
-          }}
-        >
+        <Box component="caption" sx={visuallyHidden}>
           {`Reported figures, ${filing.ticker} ${filing.form}, against the prior period`}
         </Box>
         <thead>

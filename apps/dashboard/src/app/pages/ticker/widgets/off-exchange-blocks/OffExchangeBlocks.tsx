@@ -5,7 +5,7 @@
  * live stream), no offline state of its own, ages with the bundle freshness. Hidden when the Dark
  * pool toggle is off. Best-effort: off_exchange absent → its own "unavailable this cycle" copy.
  */
-import { memo } from 'react';
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { faceFor, figureStateOf } from '@/shared/figure';
 import { TintChip } from '@/shared/ui/TintChip';
 import { Widget } from '@/shared/ui/Widget';
@@ -14,6 +14,7 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { memo } from 'react';
 import {
   BLOCK_MIN_SHARES_DISPLAY,
   BLOCKS_TOOLTIP,
@@ -23,20 +24,9 @@ import {
 } from '../_kit/copy';
 import { DESK_IS_SAMPLE, scenarioAsOf, scenarioTimeOf } from '../_kit/sample';
 
-// The proximity chip's hover tip needs a keyboard/focus path too (criterion 59) — the file-local
+// The proximity chip's hover tip needs a keyboard/focus path too (criterion 59) — the
 // `Tooltip describeChild` + `aria-describedby` + visually-hidden-description idiom
-// (`PositionRow.tsx:154-185`'s pattern), not `AccessibleHelp` (a data chip, not a help icon).
-const VISUALLY_HIDDEN = {
-  position: 'absolute',
-  width: '1px',
-  height: '1px',
-  p: 0,
-  m: -1,
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-  border: 0,
-} as const;
+// (`PositionRow.tsx`'s pattern), not `AccessibleHelp` (a data chip, not a help icon).
 
 interface Props {
   offExchange: OffExchange | null | undefined;
@@ -46,7 +36,10 @@ interface Props {
   structureAgeSeconds?: number | null;
 }
 
-export const OffExchangeBlocks = memo(function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: Props) {
+export const OffExchangeBlocks = memo(function OffExchangeBlocks({
+  offExchange,
+  structureAgeSeconds = null,
+}: Props) {
   return (
     <Widget
       id="off-exchange-blocks"
@@ -136,7 +129,7 @@ export const OffExchangeBlocks = memo(function OffExchangeBlocks({ offExchange, 
                         }}
                       >
                         <TintChip tone="neutral" label={prox} />
-                        <Box component="span" id={proximityDescId} sx={VISUALLY_HIDDEN}>
+                        <Box component="span" id={proximityDescId} sx={visuallyHidden}>
                           {PROXIMITY_TOOLTIP}
                         </Box>
                       </Box>

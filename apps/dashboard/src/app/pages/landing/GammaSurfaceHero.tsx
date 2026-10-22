@@ -18,7 +18,7 @@
  * No request: the values are frozen and bundled with the page (AC-L17).
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import { alpha, useTheme, type Theme } from '@mui/material/styles';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
@@ -47,7 +47,7 @@ import {
 } from './heroSurface';
 import { SAMPLE_MARK } from './samples';
 
-const MONO = '"IBM Plex Mono", ui-monospace, monospace';
+const MONO = typographyTokens.monoFontFamily;
 const SANS = '"IBM Plex Sans", system-ui, sans-serif';
 const READOUT_ID = 'landing-hero-readout';
 const CAPTION_ID = 'gs-sample-caption';

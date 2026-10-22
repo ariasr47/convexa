@@ -20,7 +20,7 @@ import { creditsAnchor } from '@/shared/credits/anchor';
 import { CreditsLink } from '@/shared/credits/CreditsLink';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
@@ -37,7 +37,7 @@ export interface TableTwinData {
   rows: (string | number)[][];
 }
 
-const MONO = '"IBM Plex Mono", ui-monospace, monospace';
+const MONO = typographyTokens.monoFontFamily;
 const BORDER: Record<Provenance, 'solid' | 'dotted' | 'dashed'> = {
   primary: 'solid',
   third: 'dotted',

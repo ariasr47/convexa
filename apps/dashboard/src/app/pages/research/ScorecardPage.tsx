@@ -7,6 +7,7 @@
  * The demo build reads the six sample notes' ledger instead (sampleLedger.ts), with an authored scored
  * history, on the scenario's own date, every frame dashed as sample data (canon P-3, P-8).
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { STAGING_DEMO_SYMBOLS, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
@@ -15,7 +16,7 @@ import Box from '@mui/material/Box';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { localToday, researchIndex, scoreForecasts } from 'virtual:convexa-research';
-import { formatNoteDate, formatShortDate } from './format';
+import { addDays, formatNoteDate, formatShortDate } from './format';
 import { ResearchColumn } from './NotesView';
 import { ProvenanceChip } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
@@ -53,12 +54,6 @@ const caps = {
   textTransform: 'uppercase',
   color: 'text.secondary',
 } as const;
-
-function addDays(day: string, n: number) {
-  const d = new Date(`${day}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
 
 const LIVE_ROWS: Row[] = researchIndex.flatMap((r) =>
   r.latest.forecasts.map((f, i) => ({ ...f, ticker: r.ticker, id: `${r.ticker}-${i}` })),
@@ -365,18 +360,7 @@ function ForecastList({ title, hint, rows }: { title: string; hint: string; rows
           {hint}
         </Box>
       </Box>
-      <Box
-        component="span"
-        role="status"
-        aria-live="polite"
-        sx={{
-          position: 'absolute',
-          width: '1px',
-          height: '1px',
-          overflow: 'hidden',
-          clip: 'rect(0 0 0 0)',
-        }}
-      >
+      <Box component="span" role="status" aria-live="polite" sx={visuallyHidden}>
         {copied ? 'Row copied' : ''}
       </Box>
       {rows.length > 0 && (

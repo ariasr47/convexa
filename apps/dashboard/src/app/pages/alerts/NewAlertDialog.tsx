@@ -37,6 +37,7 @@ import { usePublicMarkets } from '@/pages/research/publicData';
 import { ProvenanceChip } from '@/pages/research/publicUi';
 import { chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { typographyTokens } from '@/shared/theme/tokens';
 import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import InfoOutlined from '@mui/icons-material/InfoOutlined';
@@ -663,7 +664,7 @@ function TickerField({
             'aria-label': 'Ticker',
             autoCapitalize: 'characters',
             spellCheck: false,
-            style: { fontFamily: 'IBM Plex Mono, monospace' },
+            style: { fontFamily: typographyTokens.monoFontFamily },
           },
         }}
       />
@@ -1197,7 +1198,7 @@ function RangeNow({
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
-          fontFamily: 'IBM Plex Mono, monospace',
+          fontFamily: typographyTokens.monoFontFamily,
           fontSize: 11,
           color: 'text.secondary',
           gap: 1,

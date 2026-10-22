@@ -28,6 +28,7 @@
  */
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
 import type { MarkBasis } from '@/features/trading/model/types';
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import { downText, upText } from '@/shared/theme/tokens';
 import { appNowMs } from '@convexa/api';
@@ -83,17 +84,6 @@ const DASH = '—';
 // (SPEC §2.1): `faceFor(mono)` supplies the face (family/tabular-nums/tracking), this file keeps the
 // panel-local size. Spread the face LAST in each cell's sx so it wins.
 const CELL_MONO_SIZE = { fontSize: '0.86rem' } as const;
-const VISUALLY_HIDDEN = {
-  position: 'absolute',
-  width: '1px',
-  height: '1px',
-  p: 0,
-  m: -1,
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-  border: 0,
-} as const;
 
 /** UNSIGNED dollars — the qualifier word or the column header carries the direction. */
 const dollars = (n: number) => `$${Math.abs(Math.round(n))}`;
@@ -193,7 +183,7 @@ function literal(text: string, tip: string, testid?: string, helpId?: string) {
         >
           {text}
         </Typography>
-        <Box component="span" id={descriptionId} sx={VISUALLY_HIDDEN}>
+        <Box component="span" id={descriptionId} sx={visuallyHidden}>
           {tip}
         </Box>
       </Box>
@@ -698,14 +688,14 @@ export function cellContent(
             // Keyboard-reachable, so the tooltip is too (v5 PO-01); the sparkline carries its twin.
             tabIndex={0}
             // GATE Z, latent duplicate of the FE-5 regression (`5c07dc40`): without `position:
-            // 'relative'` this is not a positioned ancestor, so the `VISUALLY_HIDDEN` sibling
+            // 'relative'` this is not a positioned ancestor, so the `visuallyHidden` sibling
             // below (`position: 'absolute'`) escapes to the initial containing block — invisible
             // to the eye but not clipped by `positions-table-frame`'s `overflow-x: auto`. Same
             // fix idiom as `:181` above.
             sx={{ display: 'inline-flex', position: 'relative' }}
           >
             <PlSparkline samples={ctx.trend} offline={streamOffline} />
-            <Box component="span" id={`trend-help-description-${p.id}`} sx={VISUALLY_HIDDEN}>
+            <Box component="span" id={`trend-help-description-${p.id}`} sx={visuallyHidden}>
               {TREND_TIP}
             </Box>
           </Box>

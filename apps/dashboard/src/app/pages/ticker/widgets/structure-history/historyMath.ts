@@ -49,15 +49,6 @@ export function summarizePath(samples: readonly StructureSample[]): SessionPathS
   };
 }
 
-/** Compact neutral path label: ↑2 · ↓1.5 — same glyphs as scanner poll deltas. */
-export function fmtPathDelta(n: number, digits = 0): string {
-  const abs = Math.abs(n);
-  const body = digits > 0 ? abs.toFixed(digits) : String(Math.round(abs));
-  if (n > 0) return `↑${body}`;
-  if (n < 0) return `↓${body}`;
-  return '';
-}
-
 /** Build SVG polyline points for a numeric series (nulls skip). Need ≥2 finite points. */
 export function sparkPoints(
   samples: readonly StructureSample[],

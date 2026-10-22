@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 
 export function spawnCaptured(executable, argv = [], options = {}) {
@@ -73,4 +73,12 @@ export function spawnCaptured(executable, argv = [], options = {}) {
 }
 function hash(bytes) {
   return crypto.createHash('sha256').update(bytes).digest('hex');
+}
+
+/** The checked-out HEAD commit under `root`, or forty zeros when git cannot answer. */
+export function gitSha(root) {
+  const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', shell: false });
+  return r.status === 0 && /^[a-f0-9]{40}$/.test(r.stdout.trim())
+    ? r.stdout.trim()
+    : '0'.repeat(40);
 }

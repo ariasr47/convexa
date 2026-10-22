@@ -13,24 +13,9 @@
  * visually-hidden word `live` included — nine shipped desk specs key on that testid, and this task
  * is a move, not a rewrite.
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import PauseIcon from '@mui/icons-material/Pause';
 import Box from '@mui/material/Box';
-
-/** Standard MUI clip-rect visually-hidden technique (matches the established local pattern in
- *  `pages/scanner/ScanCard.tsx` — no shared util exists yet, so this follows that convention). */
-const visuallyHidden = {
-  position: 'absolute',
-  // '1px' strings: in MUI sx a bare width/height <= 1 is a percentage (1 -> '100%') and a bare
-  // margin is spacing units (-1 -> -8px), which made this hidden label a full-width box.
-  width: '1px',
-  height: '1px',
-  p: 0,
-  m: '-1px',
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-  border: 0,
-} as const;
 
 /** The label-row live dot — the FIGURE's own claim, never the widget/chip claim (SPEC §4.1: three
  *  scopes never merge). Decorative + static; carries the single visually-hidden word "live". */

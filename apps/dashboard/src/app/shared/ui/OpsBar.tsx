@@ -5,11 +5,12 @@
  *
  * Design: design/src/screens/final/shell-site-docs.mjs `opsBar`.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
 import { ConvexaMark } from '@/shell/ConvexaMark';
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 
-const MONO = '"IBM Plex Mono", ui-monospace, monospace';
+const MONO = typographyTokens.monoFontFamily;
 
 /** A plain, neutral tag: a fact about the page, not a data state. */
 export function OpsTag({ children, testId }: { children: ReactNode; testId?: string }) {

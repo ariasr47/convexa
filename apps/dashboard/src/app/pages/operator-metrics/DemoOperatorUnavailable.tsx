@@ -4,7 +4,7 @@
  *
  * Design: design/src/screens/final/shell-site-docs.mjs `opsStagingBoard`.
  */
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
@@ -27,7 +27,7 @@ export function DemoOperatorUnavailable() {
     >
       <Box
         component="span"
-        sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: 'text.secondary' }}
+        sx={{ fontFamily: typographyTokens.monoFontFamily, fontSize: 13, color: 'text.secondary' }}
       >
         /_ops/metrics · /_ops/research
       </Box>

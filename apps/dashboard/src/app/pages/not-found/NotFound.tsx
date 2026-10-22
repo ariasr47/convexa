@@ -6,6 +6,7 @@
  * artboard's own <h1>, and shipping that verbatim gives a document whose outline starts at level 2 —
  * an accessibility-gate regression on a feature that requires zero waivers (SPEC §4).
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { typographyTokens } from '@/shared/theme/tokens';
 import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
 import Box from '@mui/material/Box';
@@ -38,20 +39,6 @@ function Kbd({ children }: { children: ReactNode }) {
     </Box>
   );
 }
-
-/** Read by screen readers, not drawn. Same clip-rect pattern as shared/figure/FigureMarks.tsx. */
-const visuallyHidden = {
-  position: 'absolute',
-  // '1px' strings: in MUI sx a bare width/height <= 1 is a percentage (1 -> '100%').
-  width: '1px',
-  height: '1px',
-  p: 0,
-  m: '-1px',
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-  border: 0,
-} as const;
 
 /** ⌘K on a Mac, Ctrl K elsewhere (both open the jump-to box; so does /). The ⌘ is an icon: no
  *  bundled face carries U+2318 (TopNav.tsx, PR #46 §B). The icon is hidden from screen readers and

@@ -25,27 +25,12 @@ import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Snackbar from '@mui/material/Snackbar';
-import { useState, type FocusEvent } from 'react';
+import { useState } from 'react';
 import { PositionsPanel } from './PositionsPanel';
+import { revealFocusedControl } from './revealFocusedControl';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';
 
 type Portfolio = ReturnType<typeof usePortfolio>;
-
-function revealFocusedControl(event: FocusEvent<HTMLElement>) {
-  const viewport = window.visualViewport;
-  if (!viewport) return;
-  const rect = event.currentTarget.getBoundingClientRect();
-  const left = viewport.offsetLeft;
-  const top = viewport.offsetTop;
-  const right = left + viewport.width;
-  const bottom = top + viewport.height;
-  const intersects =
-    rect.right > left && rect.left < right && rect.bottom > top && rect.top < bottom;
-  if (intersects) return;
-  const dx = rect.right <= left ? rect.left - left : rect.left >= right ? rect.right - right : 0;
-  const dy = rect.bottom <= top ? rect.top - top : rect.top >= bottom ? rect.bottom - bottom : 0;
-  window.scrollBy({ left: dx, top: dy, behavior: 'auto' });
-}
 
 interface Props {
   pf: Portfolio;

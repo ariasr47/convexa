@@ -10,24 +10,13 @@
  * Fires ONLY when the resolved CLASS changes (one of the six `kind`s) — never on a mid-only tick,
  * because the resolver's mid comes from `live` and a text-keyed region would announce every tick.
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import type { LiveUpdate } from '@convexa/api';
 import { useEffect, useRef, useState } from 'react';
 import { sessionTapeOf } from '../sessionTapeStanding';
 import { humanSessionDate } from '../widgets/_kit/copy';
 import type { ConnectionState } from './connectionState';
 import { announceSentence } from './copy';
-
-const visuallyHidden = {
-  position: 'absolute' as const,
-  width: 1,
-  height: 1,
-  padding: 0,
-  margin: -1,
-  overflow: 'hidden' as const,
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap' as const,
-  border: 0,
-};
 
 export interface LivenessAnnouncerProps {
   state: ConnectionState | null;

@@ -6,6 +6,7 @@
  * "coming up" are worked out in the reader's browser. In the demo build the per-ticker tabs carry
  * authored sample notes instead, so this page points at those.
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
@@ -820,17 +821,7 @@ export function ResearchIndexPage() {
               sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 10px' }}
             >
               <Box sx={{ flex: '1 1 260px', maxWidth: { sm: 340 }, minWidth: 0 }}>
-                <Box
-                  component="label"
-                  htmlFor="research-find"
-                  sx={{
-                    position: 'absolute',
-                    width: '1px',
-                    height: '1px',
-                    overflow: 'hidden',
-                    clip: 'rect(0 0 0 0)',
-                  }}
-                >
+                <Box component="label" htmlFor="research-find" sx={visuallyHidden}>
                   Find a ticker
                 </Box>
                 <Box

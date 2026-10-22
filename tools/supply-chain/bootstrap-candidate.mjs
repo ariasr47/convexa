@@ -1,10 +1,9 @@
 import { spawnSync } from 'node:child_process';
-import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { canonicalSha256 } from './lib/canonical.mjs';
+import { canonicalSha256, sha256 as hash } from './lib/canonical.mjs';
 
 export const REQUIRED_CHECK_IDS = Object.freeze([
   'npm_ci',
@@ -52,7 +51,6 @@ export const candidateSources = Object.freeze({
     sha256: '20a06e644b0d9bd2fbdbfd52d42540bdde820ea7df86e92e533c073da0cdd43c',
   },
 });
-const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 const git = (cwd, args) => spawnSync('git', args, { cwd, encoding: 'utf8', shell: false });
 
 export function validateCandidateBase(baseSha, { root = process.cwd() } = {}) {

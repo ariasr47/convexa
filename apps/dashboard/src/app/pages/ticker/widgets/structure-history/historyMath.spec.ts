@@ -1,6 +1,7 @@
+import { fmtDelta } from '@/shared/lib/fmtDelta';
 import type { StructureSample } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
-import { fmtPathDelta, sparkPoints, summarizePath } from './historyMath';
+import { sparkPoints, summarizePath } from './historyMath';
 
 function s(
   as_of: number,
@@ -40,9 +41,9 @@ describe('structure history math', () => {
     expect(path?.flipDelta).toBe(2);
   });
 
-  it('fmtPathDelta uses neutral glyphs', () => {
-    expect(fmtPathDelta(2)).toBe('↑2');
-    expect(fmtPathDelta(-1.5, 1)).toBe('↓1.5');
+  it('fmtDelta (the path delta label) uses neutral glyphs', () => {
+    expect(fmtDelta(2)).toBe('↑2');
+    expect(fmtDelta(-1.5, 1)).toBe('↓1.5');
   });
 
   it('sparkPoints needs ≥2 finite values', () => {

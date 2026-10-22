@@ -15,6 +15,18 @@ export function formatShortDate(date: string): string {
   return `${MONTHS[m - 1]} ${d}`;
 }
 
+const DAY_MS = 86_400_000;
+/** A YYYY-MM-DD day as its UTC midnight, so no time zone or daylight-saving change can shift it. */
+const utcDay = (day: string) => Date.parse(`${day.slice(0, 10)}T00:00:00Z`);
+
+/** `day` (YYYY-MM-DD) moved by `n` calendar days: addDays("2026-10-30", 3) → "2026-11-02". */
+export const addDays = (day: string, n: number) =>
+  new Date(utcDay(day) + n * DAY_MS).toISOString().slice(0, 10);
+
+/** Whole calendar days from `from` to `to` (YYYY-MM-DD), negative when `to` is earlier. */
+export const daysBetween = (from: string, to: string) =>
+  Math.round((utcDay(to) - utcDay(from)) / DAY_MS);
+
 /** An as-of written in a note: real days shorten to "Jun 30"; periods ("Q2 2026") stay as written. */
 export function formatAsOf(asOf: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(asOf) ? formatShortDate(asOf) : asOf;

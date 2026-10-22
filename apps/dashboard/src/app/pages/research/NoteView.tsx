@@ -15,7 +15,14 @@ import { Link as RouterLink } from 'react-router-dom';
 import { freshness as freshnessOf, localToday, upcoming } from 'virtual:convexa-research';
 import { StripBlock, TldrBlock } from './blocks/Figures';
 import { PriceValueFrame, stripData } from './blocks/Valuation';
-import { formatNoteDate, formatShortDate, money, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
+import {
+  daysBetween,
+  formatNoteDate,
+  formatShortDate,
+  money,
+  STANCE_LABEL,
+  UNCERTAINTY_LABEL,
+} from './format';
 import { NoteInlines } from './Inlines';
 import { NoteBody } from './NoteBody';
 import { NoteContext } from './noteContext';
@@ -47,12 +54,6 @@ function daysAgo(n: number) {
   return `${n} days ago`;
 }
 
-function dayDiff(from: string, to: string) {
-  const [y1, m1, d1] = from.split('-').map(Number);
-  const [y2, m2, d2] = to.split('-').map(Number);
-  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86_400_000);
-}
-
 function FreshnessBanner({
   note,
   f,
@@ -78,7 +79,7 @@ function FreshnessBanner({
       </Link>
     ) : null;
   } else {
-    head = `Review due. Written ${formatNoteDate(note.date)}, ${daysAgo(dayDiff(note.date, today))}.`;
+    head = `Review due. Written ${formatNoteDate(note.date)}, ${daysAgo(daysBetween(note.date, today))}.`;
     body = (
       <>
         Since then:{' '}
@@ -229,7 +230,7 @@ function Header({
             Thesis
           </Box>{' '}
           reviewed {formatNoteDate(note.updated ?? note.date)} ·{' '}
-          {daysAgo(dayDiff(note.updated ?? note.date, today))}
+          {daysAgo(daysBetween(note.updated ?? note.date, today))}
         </span>
         <Box
           component="span"

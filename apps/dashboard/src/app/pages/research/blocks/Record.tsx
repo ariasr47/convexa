@@ -7,7 +7,7 @@ import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import { alpha } from '@mui/material/styles';
-import { formatNoteDate, formatShortDate, INPUT_LABEL } from '../format';
+import { addDays, daysBetween, formatNoteDate, formatShortDate, INPUT_LABEL } from '../format';
 import { NoteInlines } from '../Inlines';
 import { useNoteContext } from '../noteContext';
 import type { NoteBlock, When } from '../types';
@@ -30,24 +30,12 @@ export function whenText(when: When) {
 
 const passed = (when: When, today: string) => Boolean(when.end && today > when.end);
 
-function daysUntil(today: string, day: string) {
-  const [y1, m1, d1] = today.split('-').map(Number);
-  const [y2, m2, d2] = day.split('-').map(Number);
-  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86_400_000);
-}
-
 function inDays(n: number) {
   if (n <= 0) return 'today';
   if (n === 1) return 'tomorrow';
   if (n < 14) return `in ${n} days`;
   if (n < 70) return `in ${Math.round(n / 7)} weeks`;
   return `in ${Math.round(n / 30)} months`;
-}
-
-function addDays(day: string, n: number) {
-  const [y, m, d] = day.split('-').map(Number);
-  const t = new Date(Date.UTC(y, m - 1, d + n));
-  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
 }
 
 const SPAN = 120;
@@ -77,10 +65,10 @@ function CatalystStrip({
       return !c.outcome && start && c.when.end && c.when.end >= today && start <= horizon;
     });
   if (!shown.length) return null;
-  const X = (day: string) => (Math.min(SPAN, Math.max(0, daysUntil(today, day))) / SPAN) * W;
+  const X = (day: string) => (Math.min(SPAN, Math.max(0, daysBetween(today, day))) / SPAN) * W;
   const next = shown.find(({ i }) => i === nextIndex) ?? shown[0];
   const nextStart = (next.c.when.start ?? next.c.when.end) as string;
-  const finding = `${next.c.event} ${inDays(daysUntil(today, nextStart))}${
+  const finding = `${next.c.event} ${inDays(daysBetween(today, nextStart))}${
     shown.length > 1 ? `; ${shown.length - 1} more in the next ${SPAN} days` : ''
   }`;
   // Each label takes the first of three rows where it doesn't touch another; the rest are listed below.
@@ -260,7 +248,7 @@ export function CatalystsBlock({ block }: { block: Of<'catalysts'> }) {
             : gone
               ? 'Outcome not recorded'
               : isNext && start
-                ? `Next up · ${inDays(daysUntil(today, start))}`
+                ? `Next up · ${inDays(daysBetween(today, start))}`
                 : c.status === 'confirmed'
                   ? 'Confirmed'
                   : c.status === 'target'
