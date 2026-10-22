@@ -92,6 +92,8 @@ flowchart LR
 - **`apps/dashboard-e2e`**: Playwright journeys, including the demo's zero-network check.
 - Deploys: Cloudflare Pages builds `main` (live) and `staging` (demo); Railway runs the API from `main`.
 - Monorepo: Nx 23.
+- The [repo atlas](docs/atlas/README.md) maps every file, replays startup and five recorded clicks, and
+  shows how it is built and checked; `npm run atlas` regenerates it from a clean export of `HEAD`.
 
 ---
 

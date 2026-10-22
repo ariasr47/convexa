@@ -40,6 +40,8 @@
     "ports:free": "node tools/free-ports.mjs",
     "test:tools": "node tools/test-tools.mjs",
     "verify": "node tools/verify.mjs",
+    "atlas": "node tools/atlas/run.mjs",
+    "atlas:offline": "node tools/atlas/run.mjs --offline",
     "api:contract:baseline:candidate": "node tools/api-contract-baseline.mjs candidate",
     "api:contract:baseline:accept": "node tools/api-contract-baseline.mjs accept",
     "api:router-integration:baseline:candidate": "node tools/api-router-integration-baseline.mjs candidate",

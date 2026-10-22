@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="A map of the Convexa repository: every file, what happens on startup and on a click, and how it is built and checked. Generated from {{short}}.">
+<title>Convexa Repo Atlas</title>
+<!--@FONTS-->
+<!--@CSS-->
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="mark">CONVEXA <span>/</span> REPO ATLAS</div>
+    <div class="snap">generated from <b title="{{sha}}">{{short}}</b> ({{date}}) · every fact cites its file</div>
+    <nav class="chips-nav" aria-label="Chapters">
+      <a href="#map">Map</a><a href="#files">Every file</a><a href="#where">Where to look</a><a href="#stack">Stack</a><a href="#startup">Startup</a><a href="#clicks">Follow a click</a><a href="#visit">On the wire</a><a href="#react">Who owns what</a>
+      <a href="#data">Data</a><a href="#api">API</a><a href="#nx">Nx</a><a href="#env">Environments</a><a href="#tests">Tests</a><a href="#bundle">Bundle</a><a href="#security">Security</a><a href="#drift">Docs vs code</a><a href="#read">Read next</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+<aside class="rail" aria-label="Chapters">
+  <ol>
+    <li class="part">I · Where everything is</li>
+    <li><a href="#map">The map</a></li><li><a href="#files">Every file</a></li><li><a href="#where">Where to look for…</a></li><li><a href="#stack">Tech stack</a></li>
+    <li class="part">II · What happens on startup</li>
+    <li><a href="#startup">Startup, frame by frame</a></li><li><a href="#clicks">Follow a click</a></li><li><a href="#visit">On the wire</a></li><li><a href="#react">Who owns what</a></li><li><a href="#data">Data pipelines</a></li><li><a href="#api">Inside the API</a></li>
+    <li class="part">III · How it is built and checked</li>
+    <li><a href="#nx">Nx workspace</a></li><li><a href="#env">Environments</a></li><li><a href="#tests">Tests &amp; gates</a></li><li><a href="#bundle">Bundle &amp; speed</a></li><li><a href="#security">Security</a></li><li><a href="#drift">Docs vs code</a></li><li><a href="#read">Read next</a></li>
+  </ol>
+</aside>
+
+<main>
+<div class="hero" id="top">
+  <span class="eyebrow">Nx monorepo · Rust API · React site · two builds</span>
+  <h1>Convexa <em>Repo Atlas</em></h1>
+  <p class="lede">Convexa reads a stock's option chain as <b>dealer gamma structure</b>: the call and put walls, the gamma flip, the magnet. It sets that beside public market data. One codebase builds two sites: a <b>live site</b> that reads real public sources through a Rust API, and a <b>demo</b> that runs the whole desk on one authored day inside your browser.</p>
+  <p class="lede">It follows the way you learn a codebase, in three parts. <b>I · Where everything is</b>: the map, a walk through every file from the root, and which files to open for any change. <b>II · What happens on startup</b>: a recorded, step-by-step replay of startup and of five everyday actions (every mount, re-render, request and storage write), then who owns what. <b>III · How it is built and checked</b>. Folders, files and components all link to each other, in the same colours.</p>
+  <div class="stats" role="list">
+    <div class="stat" role="listitem"><b>{{tracked}}</b><span>tracked files</span></div>
+    <div class="stat" role="listitem"><b>{{nxprojects}}</b><span>Nx projects · {{crates}} Rust crates</span></div>
+    <div class="stat" role="listitem"><b>{{ops}}</b><span>API operations</span></div>
+    <div class="stat" role="listitem"><b id="statTests"></b><span>unit &amp; integration cases</span></div>
+    <div class="stat" role="listitem"><b id="statBundle"></b><span id="statBundleSub">all JS, brotli</span></div>
+  </div>
+  <p class="note" id="offlineNote" hidden>This copy was generated with <code>--offline</code>: the live site's recordings (startup, the sign-in click, the live waterfall and production's health) were skipped. The demo recordings and everything read from the code are complete.</p>
+</div>
+
+<div class="partband"><span class="eyebrow">Part I</span><h2>Where everything is</h2><p>Start at the top: what runs and where it lives, then every file, then where to look when you need to change something.</p></div>
+<!-- 01 MAP -->
+<section id="map" aria-labelledby="h-map">
+  <div class="sec-head">
+    <span class="eyebrow">01 · The map</span>
+    <h2 id="h-map">What runs, where it lives, and what it's for</h2>
+    <p>The diagram is the running system; the tree below it is the code on disk. They share a colour per layer and select each other. Filter by layer to see one slice across both.</p>
+  </div>
+  <div class="legend" id="legend" role="group" aria-label="Filter by layer"></div>
+  <div class="panel arch-box">
+    <div class="scroll-x">
+      <svg class="arch" id="arch" viewBox="0 0 860 572" role="group" aria-label="Runtime architecture. Each box is a button that selects its folders.">
+        <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L8,4 L0,8 z"/></marker></defs>
+      </svg>
+    </div>
+    <div class="arch-cap"><span><svg width="26" height="8" aria-hidden="true"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="1.2"/></svg>request or data path</span><span><svg width="26" height="8" aria-hidden="true"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 4"/></svg>off or paused on production today</span><span>dashed box: demo only · dotted box: live only</span></div>
+  </div>
+  <div class="lower">
+    <div class="panel tree-wrap">
+      <div class="tree-head"><span class="eyebrow">Repository · files per folder</span><button class="tab" id="collapse" type="button">Collapse all</button></div>
+      <ul class="tree" id="tree" role="tree" aria-label="Repository folders"></ul>
+    </div>
+    <article class="panel detail" id="detail" aria-live="polite"></article>
+  </div>
+</section>
+
+<!-- 02 EVERY FILE -->
+<section id="files" aria-labelledby="h-files">
+  <div class="sec-head">
+    <span class="eyebrow">02 · Every file</span>
+    <h2 id="h-files">Walk the repository from the root, one file at a time</h2>
+    <p>Each file's description is quoted from the file itself: its header comment, Rust <code>//!</code> doc or first heading. Files without one are marked, with their exports instead. Imports and “imported by” come from the files' own import lines. Bulk folders (generated output, agent adapters, recorded fixtures, <code>.spire</code>) are summarised with a count.</p>
+  </div>
+  <div class="fx">
+    <div class="panel fx-side">
+      <div class="fx-tools">
+        <label class="sr" for="fxq">Search files</label>
+        <input id="fxq" class="search" type="search" placeholder="Search paths, descriptions, exports…" autocomplete="off">
+        <div class="chiprow" id="fxKinds" role="group" aria-label="Filter by kind"></div>
+        <div class="chiprow" id="fxTags" role="group" aria-label="Filter by concern"></div>
+        <div class="fxmeta" id="fxMeta"></div>
+      </div>
+      <ul class="ftree" id="ftree" role="tree" aria-label="Every file"></ul>
+    </div>
+    <article class="panel detail" id="fdetail" aria-live="polite"></article>
+  </div>
+</section>
+
+<!-- 03 WHERE TO LOOK -->
+<section id="where" aria-labelledby="h-where">
+  <div class="sec-head">
+    <span class="eyebrow">03 · Where to look for…</span>
+    <h2 id="h-where">If you're asked to change X, open these files first</h2>
+    <p>Each card lists the files to open in order, with why. The count at the bottom is every file the indexer tagged with that concern; it filters the file walk above.</p>
+  </div>
+  <div class="cards wide" id="whereCards"></div>
+</section>
+
+<!-- 04 STACK -->
+<section id="stack" aria-labelledby="h-stack">
+  <div class="sec-head">
+    <span class="eyebrow">04 · Tech stack</span>
+    <h2 id="h-stack">What each library is for, and where it lives</h2>
+    <p>Versions come from <code>package.json</code>, <code>libs/api/package.json</code>, the Cargo manifests and <code>.nvmrc</code>, read when this page was generated. Grouped by the same layers as the map; each folder chip selects that folder there.</p>
+  </div>
+  <div class="tbl"><table id="stackTable"><thead><tr><th>Tool</th><th>Version</th><th>Used for</th><th>Where</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<div class="partband"><span class="eyebrow">Part II</span><h2>What happens on startup</h2><p>Recorded on the real app: every component as it mounts on startup, what a single click sets off, then who owns which data and how it flows.</p></div>
+
+<!-- 05 STARTUP -->
+<section id="startup" aria-labelledby="h-startup">
+  <div class="sec-head">
+    <span class="eyebrow">05 · Startup, frame by frame</span>
+    <h2 id="h-startup">Every component that mounts, and everything else that happens, in order</h2>
+    <p>Recorded, not reconstructed. An unminified production build of each site, made from this commit, ran locally with a DevTools-style hook installed before the app loaded. It logged every React commit (which of our components mounted, re-rendered or unmounted) and, on the same clock, every file load, request, stream and <code>localStorage</code> write, with the named functions on the call stack. Live runs read production's real <code>/api</code>. Local timings run faster than the internet; the order is what matters.</p>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Recorded run" id="stTabs"></div>
+  <div class="wfsum" id="stSum"></div>
+  <div class="panel" style="padding:10px"><div class="scroll-x"><svg class="lanes" id="stLanes" role="img" aria-label="Startup timeline lanes"></svg></div></div>
+  <div class="ctrl">
+    <button class="tab" type="button" id="stPrev" aria-label="Previous event">◀ prev</button>
+    <button class="tab" type="button" id="stNext" aria-label="Next event">next ▶</button>
+    <label class="sr" for="stRange">Time</label>
+    <input type="range" id="stRange" min="0" max="1000" value="0" step="1">
+    <span class="mono" id="stNow" style="min-width:150px;text-align:right"></span>
+  </div>
+  <div class="pgrid">
+    <div class="panel" style="padding:14px 16px;display:grid;gap:10px;align-content:start;min-width:0">
+      <div class="eyebrow">This moment</div>
+      <div id="stEvent"></div>
+      <div class="eyebrow" style="margin-top:6px">Everything that happened, in order</div>
+      <div class="elog" id="stLog" role="list"></div>
+    </div>
+    <div class="panel" style="padding:14px 16px;display:grid;gap:10px;align-content:start;min-width:0">
+      <div class="eyebrow" id="stTreeHead">Mounted so far</div>
+      <div class="ctree" id="stTree"></div>
+      <div id="stComp"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 FOLLOW A CLICK -->
+<section id="clicks" aria-labelledby="h-clicks">
+  <div class="sec-head">
+    <span class="eyebrow">06 · Follow a click</span>
+    <h2 id="h-clicks">What one action sets off: input, state, re-renders, storage, URL</h2>
+    <p>Recorded the same way as startup, on the unminified builds. For each React commit it notes where the update <b>started</b>: a component that re-rendered while its parent didn't, so a state, store or context change began there. Commits that would have happened anyway are marked as background, such as the demo desk's clock. They're hidden unless you ask for them.</p>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Recorded action" id="ckTabs"></div>
+  <div class="wfsum" id="ckSum"></div>
+  <label class="bgtoggle"><input type="checkbox" id="ckBg"> Show background updates <span class="muted" id="ckBgNote"></span></label>
+  <div class="panel" style="padding:10px"><div class="scroll-x"><svg class="lanes" id="ckLanes" role="img" aria-label="Interaction timeline lanes"></svg></div></div>
+  <div class="ctrl">
+    <button class="tab" type="button" id="ckPrev" aria-label="Previous event">◀ prev</button>
+    <button class="tab" type="button" id="ckNext" aria-label="Next event">next ▶</button>
+    <label class="sr" for="ckRange">Step</label>
+    <input type="range" id="ckRange" min="0" max="10" value="0" step="1">
+    <span class="mono" id="ckNow" style="min-width:150px;text-align:right"></span>
+  </div>
+  <div class="pgrid">
+    <div class="panel" style="padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-content:start;min-width:0">
+      <div class="eyebrow">This moment</div>
+      <div id="ckEvent"></div>
+      <div class="eyebrow" style="margin-top:6px">Everything that happened, in order</div>
+      <div class="elog" id="ckLog" role="list"></div>
+    </div>
+    <div class="panel" style="padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-content:start;min-width:0">
+      <div class="eyebrow">What this action re-rendered, in total</div>
+      <div class="bars" id="ckBars"></div>
+      <div class="note" id="ckNote"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 ON THE WIRE -->
+<section id="visit" aria-labelledby="h-visit">
+  <div class="sec-head">
+    <span class="eyebrow">07 · On the wire</span>
+    <h2 id="h-visit">What happens, in order, when someone opens the site</h2>
+    <p>The steps come from the code. The waterfall is a cold-cache Chromium visit at 1280 px to the production build of this commit, served locally; sizes are the precompressed bytes a host sends. Local timings run faster than the internet; the order is what matters.</p>
+  </div>
+  <ol class="steps" id="visitSteps"></ol>
+  <div class="tabs" role="tablist" aria-label="Page measured" id="wfTabs"></div>
+  <div class="wfsum" id="wfSum"></div>
+  <div class="panel" style="padding:10px"><div class="scroll-x"><svg class="wf" id="wf" role="img" aria-label="Request waterfall for the selected page"></svg></div></div>
+  <div class="keyrow" id="wfKey"></div>
+  <p class="note" id="wfNote"></p>
+</section>
+
+<!-- 08 WHO OWNS WHAT -->
+<section id="react" aria-labelledby="h-react">
+  <div class="sec-head">
+    <span class="eyebrow">08 · Who owns what</span>
+    <h2 id="h-react">What renders first, and what each layer owns</h2>
+    <p>Outermost first, exactly as nested in code. Bold words are the state a node owns or the endpoint it reads. Click a node to fold it.</p>
+  </div>
+  <ul class="rtree" id="rtree"></ul>
+  <div class="two">
+    <div class="card" data-layer="data"><h3><span class="dot"></span>Stores outside React context</h3>
+      <p>Module-level stores read with <code>useSyncExternalStore</code>, so any component can subscribe without a provider: <code>liveTapeStore</code> (pages/ticker/liveTapeStore.ts:126), positions (usePortfolio.ts:124), orders (useOrders.ts:377), alerts (useAlerts.ts:98). <code>useMarketDataMode</code> keeps one shared promise per page load.</p></div>
+    <div class="card" data-layer="client"><h3><span class="dot"></span>No data library</h3>
+      <p>No TanStack Query, SWR, Redux or Zustand. Two home-made patterns: <code>usePollingResource</code> keeps the last data on error, pauses while the tab is hidden, aborts on key change, and <code>haltOn</code> stops it for good; <code>useRead</code> reads once per key. shared/hooks/usePollingResource.ts:21-177.</p></div>
+  </div>
+</section>
+
+<!-- 09 DATA -->
+<section id="data" aria-labelledby="h-data">
+  <div class="sec-head">
+    <span class="eyebrow">09 · Data pipelines</span>
+    <h2 id="h-data">Where every number comes from</h2>
+    <p>Five pipelines. Each stage is coloured by the layer it runs in, so every hop between browser, edge and API shows.</p>
+  </div>
+  <div id="flows" style="display:grid;gap:28px"></div>
+  <div class="two">
+    <div>
+      <h3 style="margin-bottom:10px">Polling and streaming</h3>
+      <div class="tbl fit"><table><thead><tr><th>Data</th><th>How</th><th>Cadence</th></tr></thead><tbody>
+        <tr><td>Ticker bundle</td><td><code>usePollingResource(getTicker)</code></td><td class="n">60 s</td></tr>
+        <tr><td>Structure history</td><td><code>GET /api/scan/{s}/history</code></td><td class="n">120 s</td></tr>
+        <tr><td>Scanner board</td><td><code>useScan</code></td><td class="n">30 s</td></tr>
+        <tr><td>Positions marks</td><td>PositionsPage</td><td class="n">60 s</td></tr>
+        <tr><td>Desk tape</td><td>SSE <code>/api/stream/{SYM}</code>; offline after 15 s of silence</td><td class="n">push</td></tr>
+        <tr><td>Scanner prices</td><td>SSE <code>/api/stream/prices</code>; 45 s watchdog</td><td class="n">push</td></tr>
+        <tr><td>Public data</td><td><code>useRead</code>, once per key</td><td class="n">on mount</td></tr>
+      </tbody></table></div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:10px">What the browser stores</h3>
+      <div class="tbl fit"><table><thead><tr><th>Key</th><th>Holds</th></tr></thead><tbody>
+        <tr><td><code>convexa.theme-paint</code></td><td>first-paint theme (the bootstrap reads it)</td></tr>
+        <tr><td><code>convexa.uiprefs.v1</code></td><td>theme and default ticker when signed out</td></tr>
+        <tr><td><code>convexa.positions.v3</code> · <code>.touch_at</code> · <code>.owner</code></td><td>the paper book and whose it is</td></tr>
+        <tr><td><code>convexa.orders.v1</code> · <code>convexa.alerts.v1</code></td><td>orders; alerts (checked in the browser)</td></tr>
+        <tr><td><code>convexa.personas.v1</code> · <code>convexa.recent-tickers.v1</code></td><td>personas; ⌘K recents</td></tr>
+        <tr><td><code>gf_session</code> (cookie)</td><td>server session, HttpOnly, HMAC-signed</td></tr>
+      </tbody></table></div>
+      <p class="note" style="margin-top:10px">In the demo every key gets the prefix <code>convexa.demo.v1.</code> from <code>demoStorageKey</code> (libs/api/src/lib/demo/mode.ts:49-54), so the two sites never share state. The full user-facing list is on the Privacy page (PrivacyPage.tsx:44-98).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 10 API -->
+<section id="api" aria-labelledby="h-api">
+  <div class="sec-head">
+    <span class="eyebrow">10 · Inside the API</span>
+    <h2 id="h-api">From <code>api-rust serve</code> to a listening socket</h2>
+    <p>The Rust service in <button class="folder-link" data-folder="apps/api" data-layer="api"><span class="dot"></span>apps/api</button> is one binary with 21 top-level subcommands; <code>serve</code> is the web API.</p>
+  </div>
+  <ol class="steps" id="apiSteps"></ol>
+  <div class="two">
+    <div class="card" data-layer="api"><h3><span class="dot"></span>A request's path through the server</h3>
+      <p><code>TraceLayer</code> → <code>CORS</code> (production: exact origins from <code>ALLOWED_BROWSER_ORIGINS</code>, with credentials) → <code>rate_limit_middleware</code> → handler. Auth is not a layer: each protected handler asks for the signed-in user itself, through the <code>AuthUser</code> extractor, or <code>require_user</code> where its body must parse first (routes/auth.rs:1082-1113). The API adds no compression, timeout or security-header layers; the edge supplies the headers. server.rs:284-374; apps/api/Cargo.toml:53.</p></div>
+    <div class="card" data-layer="data" id="healthCard"><h3><span class="dot"></span>Production's health, when this page was generated</h3><p id="healthBody"></p></div>
+  </div>
+  <h3>The {{ops}} operations, by area</h3>
+  <div class="tbl"><table id="routeTable"><thead><tr><th>Area</th><th>Routes</th><th>File</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<div class="partband"><span class="eyebrow">Part III</span><h2>How it is built and checked</h2><p>The workspace, the environments, the gates a change passes, what the browser downloads, and what protects it.</p></div>
+<!-- 11 NX -->
+<section id="nx" aria-labelledby="h-nx">
+  <div class="sec-head">
+    <span class="eyebrow">11 · Nx workspace</span>
+    <h2 id="h-nx">{{nxprojects}} projects, a task graph and the rules between them</h2>
+    <p>Nx {{v:npm:nx}} with a local cache only (<code>.nx/cache</code>): no Nx Cloud, no <code>defaultBase</code>. The Rust crates build through <code>nx:run-commands</code> wrappers around Cargo. nx.json:3-130.</p>
+  </div>
+  <div class="cards" id="nxCards"></div>
+  <div class="two">
+    <div>
+      <h3 style="margin-bottom:10px">Module boundaries: who may import whom</h3>
+      <div class="tbl fit"><table class="matrix"><thead><tr><th>Project tag</th><th>frontend</th><th>shared</th><th>backend</th></tr></thead><tbody>
+        <tr><td><code>scope:frontend</code></td><td class="yes">✓ yes</td><td class="yes">✓ yes</td><td class="no">✕ no</td></tr>
+        <tr><td><code>scope:shared</code></td><td class="no">✕ no</td><td class="yes">✓ yes</td><td class="no">✕ no</td></tr>
+        <tr><td><code>scope:backend</code></td><td class="no">✕ no</td><td class="no">✕ no</td><td class="yes">✓ yes</td></tr>
+      </tbody></table></div>
+      <p class="note" style="margin-top:10px">Also: apps import only libs, libs only libs, e2e may import apps and libs. Public pages (landing, blog, methodology, 404) may not import <code>@convexa/api</code>, the trading domain, <code>AuthContext</code> or WebGL libraries, and nobody may import the MUI barrel. eslint.config.mjs:68-256.</p>
+    </div>
+    <div>
+      <h3 style="margin-bottom:10px"><code>npm run verify</code>, step by step</h3>
+      <ol class="steps" id="verifySteps"></ol>
+    </div>
+  </div>
+</section>
+
+<!-- 12 ENV -->
+<section id="env" aria-labelledby="h-env">
+  <div class="sec-head">
+    <span class="eyebrow">12 · Environments</span>
+    <h2 id="h-env">Five places the app runs, and what each one fakes</h2>
+    <p>The data mode is fixed at build time and baked into the bootstrap script; app code never reads it from <code>import.meta.env</code>. tools/build-dashboard.mjs:9-26; vite.config.mts:17-72.</p>
+  </div>
+  <div class="tbl"><table id="envTable"><thead><tr><th>Where</th><th>How it starts</th><th>Data</th><th>Sign-in</th><th>Mocked</th></tr></thead><tbody></tbody></table></div>
+  <div class="flowcap"><h3>How a push becomes a deploy</h3><span class="muted" style="font-size:13px">each host builds for itself; there is no CI</span></div>
+  <div class="flow" id="deployFlow"></div>
+</section>
+
+<!-- 13 TESTS -->
+<section id="tests" aria-labelledby="h-tests">
+  <div class="sec-head">
+    <span class="eyebrow">13 · Tests &amp; gates</span>
+    <h2 id="h-tests">What is tested, what guards a change, and what isn't measured</h2>
+    <p>The rule (CLAUDE.md:7): a test exists only where a silent failure would cost something: money, auth, data writes, parsers and contracts. Layout, copy and styling are checked by looking.</p>
+  </div>
+  <div class="bars" id="testBars"></div>
+  <div class="keyrow" id="testKey"></div>
+  <div class="cards" id="gateCards"></div>
+</section>
+
+<!-- 14 BUNDLE -->
+<section id="bundle" aria-labelledby="h-bundle">
+  <div class="sec-head">
+    <span class="eyebrow">14 · Bundle &amp; speed</span>
+    <h2 id="h-bundle">How the site is split, cached and kept small</h2>
+    <p id="bundleLede"></p>
+  </div>
+  <div class="bars" id="bundleBars"></div>
+  <div class="keyrow" id="bundleKey"></div>
+  <div class="cards" id="bundleCards"></div>
+</section>
+
+<!-- 15 SECURITY -->
+<section id="security" aria-labelledby="h-sec">
+  <div class="sec-head">
+    <span class="eyebrow">15 · Security &amp; privacy</span>
+    <h2 id="h-sec">What protects users, data and secrets</h2>
+  </div>
+  <div class="cards" id="secCards"></div>
+</section>
+
+<!-- 16 DRIFT -->
+<section id="drift" aria-labelledby="h-drift">
+  <div class="sec-head">
+    <span class="eyebrow">16 · Docs vs code</span>
+    <h2 id="h-drift">Where the docs and comments disagreed with the code, and the fix</h2>
+    <p>Building the first version of this atlas (16 Oct 2026, at a55e0271) turned up seventeen places where a doc or comment said one thing and the code did another. None broke anything; each could mislead the next reader. All seventeen are fixed: 77160d5f rewrote the docs and comments, 31017589 renamed the cookie in the OpenAPI document. The list stays as a record of what to distrust in older copies. Everything else on this page follows the code.</p>
+  </div>
+  <div class="tbl"><table id="driftTable"><thead><tr><th>The doc or comment said</th><th>The code did</th><th>Where, and the fix</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<!-- 17 READ -->
+<section id="read" aria-labelledby="h-read">
+  <div class="sec-head">
+    <span class="eyebrow">17 · Read next</span>
+    <h2 id="h-read">A reading order for the code, and the words you'll meet</h2>
+  </div>
+  <div class="two">
+    <ol class="steps" id="readSteps"></ol>
+    <dl class="gl" id="gloss"></dl>
+  </div>
+  <div class="foot">
+    <span>Generated by <code>npm run atlas</code> (tools/atlas/run.mjs) from a clean export of <span class="mono">{{sha}}</span>, committed {{date}}. File counts, folder sizes, versions, the operation count, the bundle numbers, the filing and token checks and every recording come from that commit when the page was generated. Recordings ran on local builds of it; live runs read production's <code>/api</code>.</span>
+    <span>The prose facts nothing derives (line citations, test-case counts, limits and timeouts) are listed in docs/atlas/README.md under “Hand-maintained facts”, each with the date it was last verified.</span>
+  </div>
+</section>
+</main>
+</div>
+
+<!--@DATA-->
+<!--@SCRIPT-->
+</body>
+</html>
