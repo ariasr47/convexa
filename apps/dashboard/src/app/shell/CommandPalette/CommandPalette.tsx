@@ -15,6 +15,7 @@
  * by name and never calls the scan; staging ranks them by the demo's sample scan.
  */
 import { listRecentVisits } from '@/pages/ticker/recentTickers/store';
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { typographyTokens } from '@/shared/theme/tokens';
 import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
 import Box from '@mui/material/Box';
@@ -91,6 +92,7 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
   const [nowS, setNowS] = useState(() => Date.now() / 1000);
   const [recents, setRecents] = useState<string[]>([]);
   const listboxId = useId();
+  const titleId = useId();
   const listRef = useRef<HTMLDivElement>(null);
 
   // Reset local state on every OPEN.
@@ -382,7 +384,11 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
       fullWidth
       transitionDuration={{ enter: 160, exit: 120 }}
       data-testid="command-palette"
-      aria-label="Jump to a ticker or note"
+      // The dialog's name (spec 2026-10-21/02, (a)). MUI 9.2 puts `role=dialog` on the paper and
+      // always gives it an `aria-labelledby` (`Dialog.js`), generating an id when none is passed.
+      // An `aria-label` here landed on the `role=presentation` root, and the generated id pointed
+      // at nothing, so the dialog had no name. A real id on the hidden heading below fixes both.
+      aria-labelledby={titleId}
       slotProps={{
         paper: {
           // No local `borderRadius`: the theme's DIALOG role (16px, ruling 4) applies.
@@ -396,6 +402,9 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
         },
       }}
     >
+      <Box component="h2" id={titleId} sx={visuallyHidden}>
+        Jump to a ticker or note
+      </Box>
       <Box sx={{ p: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
         <InputBase
           autoFocus

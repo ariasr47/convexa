@@ -89,7 +89,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { FieldLabel } from './FieldLabel';
 import { FillModeToggle } from './FillModeToggle';
 import { LegFields, multiplierFor } from './LegFields';
@@ -172,6 +172,9 @@ export function TradeEntryDialog({
   onConfirm,
 }: Props) {
   const marketDataMode = useMarketDataMode();
+  // The dialog's name is its title text (spec 2026-10-21/02, (a)). The title is a plain Typography,
+  // not a DialogTitle, so MUI's generated `aria-labelledby` pointed at nothing; this id is real.
+  const titleId = useId();
   // Phones get a full-screen sheet (this form has many fields); tablets+ keep the centered dialog.
   const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [mode, setMode] = useState<FillMode>('manual');
@@ -508,6 +511,7 @@ export function TradeEntryDialog({
       fullScreen={fullScreen}
       maxWidth="xs"
       fullWidth
+      aria-labelledby={titleId}
       slotProps={{
         paper: {
           sx: {
@@ -529,7 +533,11 @@ export function TradeEntryDialog({
               spacing={1}
               sx={{ flexGrow: 1, minWidth: 0, alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
             >
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              <Typography
+                id={titleId}
+                variant="subtitle1"
+                sx={{ fontWeight: 700, color: 'text.primary' }}
+              >
                 {isOrder
                   ? ORDER_DIALOG_TITLE
                   : manualContract

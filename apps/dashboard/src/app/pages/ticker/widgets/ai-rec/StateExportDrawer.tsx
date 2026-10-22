@@ -9,6 +9,7 @@
 import { useSettings } from '@/features/auth/useSettings';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { useScrollRegion } from '@/shared/ui/useScrollRegion';
 import { dataMode, fetchRecExport, RecExport, RiskInputs, scenarioProvenance } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
@@ -21,7 +22,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   COPY,
   DRAWER_NOT_SENT,
@@ -118,6 +119,9 @@ export function StateExportDrawer({
   const [data, setData] = useState<RecExport | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [toast, setToast] = useState(false);
+  // The drawer's name is its title (spec 2026-10-21/02, (a)). MUI's Drawer puts `role=dialog` on
+  // the paper but does not forward `aria-labelledby` to it, so the id goes on the paper slot.
+  const titleId = useId();
   // AC-64 — the superseded-inputs detector: compares the pinned as-sent block against the currently
   // stored block via a local signature (SPEC §2.4(a)) — never a raw-value display, never a re-fetch.
   const currentRiskInputs = useSettings().riskInputs;
@@ -180,6 +184,7 @@ export function StateExportDrawer({
       onClose={onClose}
       slotProps={{
         paper: {
+          'aria-labelledby': titleId,
           sx: {
             width: { xs: '100%', sm: 420 },
             p: 2.5,
@@ -191,7 +196,10 @@ export function StateExportDrawer({
     >
       <Stack spacing={2}>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <Typography sx={{ fontWeight: 600, fontSize: 15, color: 'text.primary', flex: 1 }}>
+          <Typography
+            id={titleId}
+            sx={{ fontWeight: 600, fontSize: 15, color: 'text.primary', flex: 1 }}
+          >
             {dataMode === 'demo' ? `Sample analysis export · ${ticker}` : EXPORT_HEADER(ticker)}
           </Typography>
           {dataMode === 'demo' && <DataStateTag state="sample" />}
@@ -368,6 +376,11 @@ function ExportSection({
   text: string;
   onCopy: (t: string) => void;
 }) {
+  // A keyboard user can scroll the 220px box only if it takes focus, so it is a named tab stop
+  // while its text overflows, and none when the text fits (spec 2026-10-21/02, (a) and (d)).
+  // The section titles are distinct, so the region names are too.
+  const preRef = useRef<HTMLPreElement>(null);
+  const region = useScrollRegion(preRef, `${title} export text`);
   return (
     <Box>
       <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
@@ -392,6 +405,8 @@ function ExportSection({
       )}
       <Box
         component="pre"
+        ref={preRef}
+        {...region}
         sx={{
           m: 0,
           mt: caption ? 0 : 0.75,

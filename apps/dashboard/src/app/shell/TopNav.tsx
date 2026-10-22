@@ -48,7 +48,7 @@ import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
 import Toolbar from '@mui/material/Toolbar';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
-import { useState } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { NavLink, Link as RouterLink, useLocation } from 'react-router-dom';
 import { ConvexaMark } from './ConvexaMark';
 import { ResetDemoControl } from './ResetDemoControl';
@@ -115,6 +115,9 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
   const location = useLocation();
   const path = location.pathname;
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Focus returns here when the sign-in dialog opened from the drawer closes (spec 2026-10-21/02,
+  // (d)): the drawer row that opened it has unmounted by then, so focus would land on <body>.
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   // Scroll-aware chrome: flush with the hero at the top (no border/shadow, blends in), then detaches
   // from the scrolling page with a divider border + e2 elevation once any content passes under it.
   const scrolled = useScrollTrigger({ disableHysteresis: true, threshold: 0 });
@@ -338,6 +341,7 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
               device regardless. */}
           <IconButton
             edge="end"
+            ref={menuButtonRef}
             aria-label="Open navigation menu"
             data-testid="nav-menu-button"
             onClick={() => setDrawerOpen(true)}
@@ -355,7 +359,10 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         data-testid="nav-drawer"
-        slotProps={{ paper: { sx: { width: 'min(80vw, 300px)' } } }}
+        // The paper carries `role=dialog`; this is its name (spec 2026-10-21/02, (a)).
+        slotProps={{
+          paper: { 'aria-label': 'Navigation menu', sx: { width: 'min(80vw, 300px)' } },
+        }}
       >
         <Box
           sx={{
@@ -414,7 +421,7 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
           })}
         </List>
         <Divider />
-        <DrawerAccountRows onNavigate={() => setDrawerOpen(false)} />
+        <DrawerAccountRows onNavigate={() => setDrawerOpen(false)} returnFocusRef={menuButtonRef} />
       </Drawer>
     </AppBar>
   );
@@ -430,8 +437,15 @@ const quietRowSx = {
 } as const;
 
 /** The drawer's account rows. `onNavigate` closes the drawer before a link or the sign-in dialog
- *  takes over; the reset confirmation opens over the drawer and keeps it open. */
-function DrawerAccountRows({ onNavigate }: { onNavigate: () => void }) {
+ *  takes over; the reset confirmation opens over the drawer and keeps it open. `returnFocusRef` is
+ *  the hamburger, where focus goes when the sign-in dialog closes. */
+function DrawerAccountRows({
+  onNavigate,
+  returnFocusRef,
+}: {
+  onNavigate: () => void;
+  returnFocusRef: RefObject<HTMLButtonElement | null>;
+}) {
   const auth = useAuth();
   const { openAuth } = useAuthDialog();
   const demo = dataMode === 'demo';
@@ -485,7 +499,7 @@ function DrawerAccountRows({ onNavigate }: { onNavigate: () => void }) {
         <ListItemButton
           onClick={() => {
             onNavigate();
-            openAuth({ mode: 'login' });
+            openAuth({ mode: 'login', returnFocus: returnFocusRef.current });
           }}
           data-testid="nav-drawer-login"
           sx={quietRowSx}
