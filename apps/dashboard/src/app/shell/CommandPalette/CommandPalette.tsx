@@ -12,7 +12,7 @@
  * key the Privacy page lists for this box; the demo's own key family on staging), read from
  * localStorage on each open — never a request.
  * Where the tickers and notes come from differs by build (usePaletteData): production lists tickers
- * by name and never calls the scan; staging ranks them by the demo's sample scan.
+ * A–Z and never calls the scan; staging ranks them by the demo's sample scan.
  */
 import { listRecentVisits } from '@/pages/ticker/recentTickers/store';
 import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
@@ -334,7 +334,9 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
             component="span"
             sx={{ color: 'text.secondary', fontSize: 12, whiteSpace: 'nowrap' }}
           >
-            {ticker.hasNote ? 'note' : 'no note'}
+            {/* A marker only where there is a note; most rows have none, and 'no note' on each
+                of them was noise. */}
+            {ticker.hasNote ? 'note' : null}
           </Box>
         )}
       </>,
@@ -380,9 +382,10 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
       )
     : null;
 
+  // Production rows sort by symbol, A–Z (`tickersByName`), and most carry no name: "by name" misled.
   const footnote = data.ranked
     ? 'Scores come from the demo’s sample scan.'
-    : 'Scores aren’t live on this site, so tickers list by name.';
+    : 'Scores aren’t live on this site, so tickers list A–Z.';
 
   return (
     <Dialog

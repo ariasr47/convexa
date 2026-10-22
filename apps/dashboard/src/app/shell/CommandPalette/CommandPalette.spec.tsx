@@ -43,7 +43,7 @@ function renderPalette(open = true, onClose = vi.fn()) {
   };
 }
 
-describe('production ⌘K lists tickers by name and never calls the scan', () => {
+describe('production ⌘K lists tickers A–Z and never calls the scan', () => {
   it('reads the universe, lists it A→Z, and makes no getScan() call', async () => {
     getScanUniverseMock.mockResolvedValue({ symbols: ['SPY', 'AAPL', 'QQQ'], universe_size: 3 });
     renderPalette(true);
@@ -55,7 +55,7 @@ describe('production ⌘K lists tickers by name and never calls the scan', () =>
     const universe = symbols.filter((s) => /-(AAPL|QQQ|SPY)$/.test(s ?? ''));
     expect(universe).toEqual(['palette-symbol-AAPL', 'palette-symbol-QQQ', 'palette-symbol-SPY']);
     expect(screen.getByTestId('palette-footnote')).toHaveTextContent(
-      'Scores aren’t live on this site, so tickers list by name.',
+      'Scores aren’t live on this site, so tickers list A–Z.',
     );
     expect(getScanMock).not.toHaveBeenCalled();
   });
