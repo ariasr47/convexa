@@ -14,7 +14,7 @@
  *   a check finds them outside it.
  */
 import type { PublicFilings, PublicFutures, PublicResultsWindow, PublicTicker } from '@convexa/api';
-import { GROUP_LABEL, PUBLIC_KIND } from './kinds';
+import { GROUP_LABEL } from './kinds';
 import {
   FIRED_KEYS_MAX,
   type AlertEvent,
@@ -753,11 +753,4 @@ export function sameRule(a: AlertRule, b: AlertRule): boolean {
     default:
       return true;
   }
-}
-
-/** The kind's source chip, for rows and firings. */
-export function kindChip(rule: AlertRule): string {
-  return rule.kind in PUBLIC_KIND
-    ? PUBLIC_KIND[rule.kind as keyof typeof PUBLIC_KIND].chip
-    : 'Options chain';
 }

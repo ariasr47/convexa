@@ -372,61 +372,6 @@ export function noTradeRec(): RecResponse {
   });
 }
 
-/** A trade verdict with an empty risk block: `max_risk`/`position_size` render `not set` with the
- *  `Set your risk inputs` action (AC-71). */
-export function tradeRecNoRiskBlock(): RecResponse {
-  const base = baseResponse();
-  return baseResponse({
-    strategy: baseStrategy({ max_risk: null, position_size: null }),
-    sent: {
-      ...(base.sent as NonNullable<typeof base.sent>),
-      risk_inputs: {
-        state: 'not_set',
-        account_size: null,
-        per_trade_cap: null,
-        effective_dollar_cap: {
-          state: 'not_set',
-          value: null,
-          not_derivable_reason: null,
-          derived_from: { account_size: null, cap_value: null, cap_unit: null },
-        },
-        storage_available: true,
-        updated_at: null,
-      },
-    },
-    cap_check: {
-      verdict: 'no_cap',
-      effective_dollar_cap: null,
-      cap_not_derivable_reason: null,
-      parsed_risk_dollars: null,
-      model_max_risk_text: null,
-      risk_refusal: null,
-    },
-    field_reasons: {
-      max_risk: { reason: 'unavailable', missing_input: 'risk_block' },
-      position_size: { reason: 'unavailable', missing_input: 'risk_block' },
-      exit_target: null,
-      exit_stop: null,
-      invalidation_level: null,
-    },
-  });
-}
-
-/** A trade verdict whose parsed risk figure is strictly greater than the effective cap. */
-export function tradeRecOverCap(): RecResponse {
-  return baseResponse({
-    strategy: baseStrategy({ max_risk: '$900' }),
-    cap_check: {
-      verdict: 'above',
-      effective_dollar_cap: 500,
-      cap_not_derivable_reason: null,
-      parsed_risk_dollars: 900,
-      model_max_risk_text: '$900',
-      risk_refusal: null,
-    },
-  });
-}
-
 /** A trade verdict whose parsed risk figure exactly equals the effective cap — `within` (AC-63). */
 export function tradeRecEqualToCap(): RecResponse {
   return baseResponse({
@@ -438,22 +383,6 @@ export function tradeRecEqualToCap(): RecResponse {
       parsed_risk_dollars: 500,
       model_max_risk_text: '$500',
       risk_refusal: null,
-    },
-  });
-}
-
-/** A trade verdict whose risk text names two different dollar figures — the parser refuses, and the
- *  reason is renderable (AC-38, AC-40). */
-export function tradeRecRiskAmbiguous(): RecResponse {
-  return baseResponse({
-    strategy: baseStrategy({ max_risk: '$300 to $500' }),
-    cap_check: {
-      verdict: 'not_checkable',
-      effective_dollar_cap: 500,
-      cap_not_derivable_reason: null,
-      parsed_risk_dollars: null,
-      model_max_risk_text: '$300 to $500',
-      risk_refusal: 'multiple_different_figures',
     },
   });
 }
@@ -508,53 +437,6 @@ export function recNoneNamed(): RecResponse {
   return r;
 }
 
-/** Three named, three not (AC-2): only the unnamed three may change. */
-export function recHalfNamed(): RecResponse {
-  const r = baseResponse({
-    strategy: baseStrategy({ expiration: null, time_horizon: null, confidence: null }),
-  });
-  r.field_reasons = {
-    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
-    expiration: reason('not_given'),
-    time_horizon: reason('not_given'),
-    confidence: reason('not_given'),
-  };
-  return r;
-}
-
-/** The candidate set was declared and empty — the ONLY source of `unavailable` on these six. */
-export function recCandidateSetEmpty(): RecResponse {
-  const r = baseResponse({ strategy: baseStrategy({ strikes: [], expiration: null }) });
-  r.field_reasons = {
-    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
-    strikes: reason('unavailable', 'candidate_set'),
-    expiration: reason('unavailable', 'candidate_set'),
-  };
-  return r;
-}
-
-/** A conviction stated OFF Convexa's scale. The raw string must never reach the DOM (AC-24). */
-export function recOffScaleConfidence(): RecResponse {
-  const r = baseResponse({
-    strategy: baseStrategy({ confidence: 'quite high' as RecStrategy['confidence'] }),
-  });
-  r.field_reasons = {
-    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
-    confidence: reason('unrecognized_value'),
-  };
-  return r;
-}
-
-/** A reason token this build does not recognise (AC-6). */
-export function recUnknownToken(): RecResponse {
-  const r = recNoneNamed();
-  r.field_reasons = {
-    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
-    structure: { reason: 'wat' as FieldReason['reason'], missing_input: null },
-  };
-  return r;
-}
-
 /** NO per-field reason information at all — a pre-feature or degraded server (AC-5). */
 export function recNoFieldReasonsBlock(): RecResponse {
   const r = recNoneNamed();
@@ -580,35 +462,6 @@ export function recBlankValues(): RecResponse {
     strikes: reason('not_given'),
     expiration: reason('not_given'),
     entry_trigger: reason('not_given'),
-    time_horizon: reason('not_given'),
-    confidence: reason('not_given'),
-  };
-  return r;
-}
-
-/** The local-rules card the standing line is EXEMPT on (AC-10b), matching what the server emits. */
-export function recLocalRulesUnnamed(): RecResponse {
-  const r = recLocalRules();
-  r.strategy = baseStrategy({
-    structure: 'long call',
-    strikes: [],
-    expiration: null,
-    time_horizon: null,
-  });
-  r.field_reasons = {
-    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
-    strikes: reason('not_given'),
-    expiration: reason('not_given'),
-    time_horizon: reason('not_given'),
-  };
-  return r;
-}
-
-/** Only Time horizon and Confidence unnamed — literals, but NO standing line (AC-11). */
-export function recOnlySoftFieldsUnnamed(): RecResponse {
-  const r = baseResponse({ strategy: baseStrategy({ time_horizon: null, confidence: null }) });
-  r.field_reasons = {
-    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
     time_horizon: reason('not_given'),
     confidence: reason('not_given'),
   };

@@ -115,10 +115,3 @@ export interface DecisionRecord {
   // outcome-ledger (additive, optional): the entry-context digest. ABSENT ⇒ pre-capture.
   entry_context?: EntryContextDigest;
 }
-
-/** Edge-detected reassessment alert (FE-owned; fires once per distinct event). */
-export interface TradeAlert {
-  id: string; // stable per event instance (for the armed/fired edge + de-dupe)
-  message: string; // "{event} — consider reassessing."
-  time: string; // ISO
-}

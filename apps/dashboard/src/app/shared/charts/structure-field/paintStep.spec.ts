@@ -67,7 +67,7 @@ function modelWith(overrides: Partial<StructureFieldModel>): StructureFieldModel
 
 const PAD = { l: 56, r: 20, t: 40, b: 48 };
 // Same geometry for every case (samples never change) — only `live`/`liveMid`/`reduced` vary.
-const GEOM = computeGeometry(BASE_MODEL, PAD, 600, 300, false, false);
+const GEOM = computeGeometry(BASE_MODEL, PAD, 600, 300);
 
 /**
  * Structure-step gradients/arcs are `m.live`-INDEPENDENT (vignette, wall blooms, heat columns, area
@@ -158,14 +158,14 @@ describe('paintStep — criterion 20 (S8, SB via the recording context)', () => 
 
 describe('driftAmplitude — criterion 22 (review), the automatable half', () => {
   it('is a STATIC frame under reduced motion: the same value at two different `now`s', () => {
-    const a = driftAmplitude(0, 1000, true, false);
-    const b = driftAmplitude(0, 5000, true, false);
+    const a = driftAmplitude(0, 1000, true);
+    const b = driftAmplitude(0, 5000, true);
     expect(a).toBe(b);
   });
 
   it('ANTI-VACUITY: is genuinely time-varying when NOT reduced (so the row above proves something)', () => {
-    const a = driftAmplitude(0, 1000, false, false);
-    const b = driftAmplitude(0, 5000, false, false);
+    const a = driftAmplitude(0, 1000, false);
+    const b = driftAmplitude(0, 5000, false);
     expect(a).not.toBe(b);
   });
 });
@@ -187,4 +187,8 @@ describe('driftAmplitude — criterion 22 (review), the automatable half', () =>
  *      `(0.55 + 0.45 * Math.sin(now / 1400 + li)) * (reduced ? 0.35 : calm ? 0.55 : 1)` (time-
  *      dependent again). Re-ran: "is a STATIC frame under reduced motion" failed —
  *      `AssertionError: expected 0.29567476880561666 to be 0.12686633984882378`. Reverted.
+ *
+ * Those outputs were captured against the Lab form (`calm`/`embedded` both false, 7 field lines).
+ * Since 2026-10-21 the spec drives the one shipped form (calm, embedded, 5 field lines), so a re-run
+ * of proof 3 would count 5 × 48 `lineTo()` calls, not 336.
  */

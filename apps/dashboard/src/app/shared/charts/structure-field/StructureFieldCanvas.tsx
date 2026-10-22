@@ -5,7 +5,9 @@
  * Every rAF frame: blit structure → dynamic field (warped lines, particles, flip well)
  * → tape mid + trail → 60Hz probe. React only receives a small hover readout string.
  *
- * Used by the ticker GEX strike profile and the /lab comparison page.
+ * Used by the ticker GEX strike profile and the landing sample. One form since the Lab went (owner,
+ * 2026-10-14): the field embedded in a host card, calmer than the Lab's full instrument and without
+ * its own title strip.
  *
  * The canvas paints to Canvas2D and cannot consume MUI `sx` / `useTheme()` — it has no theme input
  * of its own. `palette` and `surfaces` below are the RESOLVED, scheme-aware colours the host resolves
@@ -35,11 +37,6 @@ import {
 } from './paintStep';
 import { structureBufferKey } from './structureBufferKey';
 import type { StructureFieldModel } from './types';
-
-/** One form since the Lab went (owner, 2026-10-14): the field embedded in a host card (the desk, the
- *  landing sample), calmer than the Lab's full instrument and without its own title strip. */
-const EMBEDDED = true;
-const CALM = true;
 
 /** The strike nearest spot: where the keyboard probe starts. */
 function nearestIndex(m: StructureFieldModel): number {
@@ -171,7 +168,7 @@ export function StructureFieldCanvas({
         return;
       }
 
-      const geom = computeGeometry(m, pad, w, h, CALM, EMBEDDED);
+      const geom = computeGeometry(m, pad, w, h);
 
       const key = structureBufferKey(m);
       if (key !== structureKey) {

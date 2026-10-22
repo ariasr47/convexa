@@ -17,9 +17,9 @@
  * `ctx` it is given — in production that is the OFFSCREEN buffer, run only when the structure key
  * changes (`StructureFieldCanvas.tsx`'s own dirty check, which stays in the host: the extraction
  * does not change WHEN it runs, only what it is). `paintFrameStep` paints everything that changes
- * every rAF tick — sweep, drift, particles, the tape mid trail/beam/bead, the hover probe, and (in
- * lab chrome) the title strip and phosphor grain. A recorder wired to the frame path ALONE would see
- * zero level strokes at any liveness, which is exactly why criterion 20 needs both.
+ * every rAF tick — sweep, drift, particles, the tape mid trail/beam/bead and the hover probe. A
+ * recorder wired to the frame path ALONE would see zero level strokes at any liveness, which is
+ * exactly why criterion 20 needs both.
  *
  * THE THREE LIVE GATES (criterion 20). Today's tree gates the sweep and the particle field on
  * `!reduce` alone, and the warped field-line drift on nothing but `reduce`'s damping factor — none
@@ -92,7 +92,7 @@ export interface Pad {
   b: number;
 }
 
-/** Everything derived from `(model.samples, pad, w, h, calm, embedded)` — recomputed per call, same
+/** Everything derived from `(model.samples, pad, w, h)` — recomputed per call, same
  *  as the pre-extraction code recomputed it fresh in both `paintStructure` and `paint`. Cheap, and
  *  keeping it that way means a model update is picked up immediately with no separate cache to bust. */
 export interface Geometry {
@@ -105,8 +105,6 @@ export interface Geometry {
   maxK: number;
   maxAbs: number;
   y0: number;
-  calm: boolean;
-  embedded: boolean;
 }
 
 /** The frame-state object replacing the closure's cross-frame mutable variables (PLAN FE-4). */
@@ -132,8 +130,6 @@ export function computeGeometry(
   pad: Pad,
   w: number,
   h: number,
-  calm: boolean,
-  embedded: boolean,
 ): Geometry {
   const samples = model.samples;
   const plotW = w - pad.l - pad.r;
@@ -143,7 +139,7 @@ export function computeGeometry(
   let maxAbs = 1;
   for (const s of samples) maxAbs = Math.max(maxAbs, Math.abs(s.netGex));
   const y0 = pad.t + plotH / 2; // yOf(0) — the (g / maxAbs) term is zero at g = 0
-  return { w, h, pad, plotW, plotH, minK, maxK, maxAbs, y0, calm, embedded };
+  return { w, h, pad, plotW, plotH, minK, maxK, maxAbs, y0 };
 }
 
 export function xOf(geom: Geometry, k: number): number {
@@ -165,9 +161,9 @@ export function strikeOf(geom: Geometry, u: number): number {
  * context, whose `strokeStyle` bucket for drift does not depend on `amp` at all (only the PATH shape
  * does) and so cannot see this distinction.
  */
-export function driftAmplitude(li: number, now: number, reduced: boolean, calm: boolean): number {
+export function driftAmplitude(li: number, now: number, reduced: boolean): number {
   if (reduced) return 0.55 * 0.35; // static — no time dependency, so it never appears to move
-  return (0.55 + 0.45 * Math.sin(now / 1400 + li)) * (calm ? 0.55 : 1);
+  return (0.55 + 0.45 * Math.sin(now / 1400 + li)) * 0.55;
 }
 
 export function fmtM(v: number): string {
@@ -177,14 +173,6 @@ export function fmtM(v: number): string {
   if (a >= 1e6) return `${s}${(a / 1e6).toFixed(1)}M`;
   if (a >= 1e3) return `${s}${(a / 1e3).toFixed(0)}K`;
   return `${s}${a.toFixed(0)}`;
-}
-
-export function relAge(asOfSec: number | null, nowMs: number): string {
-  if (asOfSec == null) return 'demo as-of';
-  const s = Math.max(0, Math.floor(nowMs / 1000 - asOfSec));
-  if (s < 60) return `Structure as-of ${s}s ago`;
-  if (s < 3600) return `Structure as-of ${Math.floor(s / 60)}m ago`;
-  return `Structure as-of ${Math.floor(s / 3600)}h ago`;
 }
 
 export function probeLabel(best: FieldSample): string {
@@ -295,7 +283,7 @@ export function paintStructureStep(
   surfaces: StructureFieldSurfaces,
 ): MarkerLayoutBox[] {
   const o = ctx;
-  const { pad, plotW, plotH, minK, maxK, y0, calm } = geom;
+  const { pad, plotW, plotH, minK, maxK, y0 } = geom;
   const samples = m.samples;
 
   const pts = samples.map((s) => ({ x: xOf(geom, s.strike), y: yOf(geom, s.netGex) }));
@@ -400,9 +388,9 @@ export function paintStructureStep(
   // Curve glow + core
   o.save();
   o.shadowColor = withAlpha(palette.mid, 0.65);
-  o.shadowBlur = calm ? 8 : 18;
+  o.shadowBlur = 8;
   o.strokeStyle = palette.mid;
-  o.lineWidth = calm ? 2 : 2.6;
+  o.lineWidth = 2;
   o.lineJoin = 'round';
   strokeSmooth(o, pts);
   o.stroke();
@@ -436,7 +424,7 @@ export function paintStructureStep(
   {
     const x = xOf(geom, m.gammaFlip);
     o.strokeStyle = palette.gammaFlip;
-    o.lineWidth = calm ? 2 : 2.75;
+    o.lineWidth = 2;
     o.beginPath();
     o.moveTo(x, pad.t);
     o.lineTo(x, pad.t + plotH);
@@ -552,9 +540,9 @@ export function paintStructureStep(
 
 /**
  * PAINT STEP 2 — everything that changes every rAF tick: the flip-well breath + sweep, the warped
- * field-line drift, particles, the tape mid trail/beam/bead/label, the hover probe and (lab chrome
- * only) the title strip + phosphor grain. See the module doc for the three live gates this task adds
- * (sweep, particles, drift) and why the tape bead/beam/label are deliberately left alone.
+ * field-line drift, particles, the tape mid trail/beam/bead/label and the hover probe. See the module
+ * doc for the three live gates this task adds (sweep, particles, drift) and why the tape
+ * bead/beam/label are deliberately left alone.
  *
  * `hover` is the pointer position in canvas-local pixels, or `null`/omitted when nothing is hovered.
  */
@@ -569,14 +557,14 @@ export function paintFrameStep(
   surfaces: StructureFieldSurfaces,
   hover: { x: number; y: number } | null = null,
 ): void {
-  const { pad, plotW, plotH, minK, maxK, maxAbs, y0, calm, embedded, w } = geom;
+  const { pad, plotW, plotH, minK, maxK, maxAbs, y0 } = geom;
   const samples = m.samples;
 
   // --- Dynamic: flip gravity well breath + scan sweep (CRITERION 20 — both are gradient fills that
   // must stop on a drop; neither has a row-22 "static frame" requirement, so both are fully gated). ---
   if (!reduced && m.live) {
     const x = xOf(geom, m.gammaFlip);
-    const breath = calm ? 0.22 + 0.1 * Math.sin(now / 1100) : 0.28 + 0.22 * Math.sin(now / 900);
+    const breath = 0.22 + 0.1 * Math.sin(now / 1100);
     const band = plotW * 0.045;
     const well = ctx.createLinearGradient(x - band, 0, x + band, 0);
     well.addColorStop(0, withAlpha(palette.gammaFlip, 0));
@@ -600,11 +588,11 @@ export function paintFrameStep(
   // otherwise. This is the one motion that must render SOMETHING under reduce, so it cannot share
   // the sweep/particles' bare `!reduced` gate. ---
   if (m.live) {
-    const lines = calm ? 5 : 7;
+    const lines = 5;
     const strikeOfG = (u: number) => strikeOf(geom, u);
     for (let li = 0; li < lines; li++) {
       const baseY = pad.t + ((li + 0.5) / lines) * plotH;
-      const amp = driftAmplitude(li, now, reduced, calm);
+      const amp = driftAmplitude(li, now, reduced);
       ctx.beginPath();
       const steps = 48;
       for (let si = 0; si <= steps; si++) {
@@ -628,8 +616,8 @@ export function paintFrameStep(
   // --- Particles: gamma pressure flowing toward zero (hedging metaphor). CRITERION 20: stops on a
   // drop, same bare gate as sweep (no static-frame requirement for particles either). ---
   if (!reduced && m.live) {
-    frame.spawnAcc += Math.min(0.05, (now - frame.lastT) / 1000) * (calm ? 10 : 28);
-    const maxP = calm ? 36 : 90;
+    frame.spawnAcc += Math.min(0.05, (now - frame.lastT) / 1000) * 10;
+    const maxP = 36;
     while (frame.spawnAcc >= 1 && frame.particles.length < maxP) {
       frame.spawnAcc -= 1;
       // Bias spawn to high-|GEX| strikes
@@ -833,44 +821,6 @@ export function paintFrameStep(
 
     // The strike's figures are HTML text beside the canvas (StructureFieldCanvas's readout, TD-01),
     // not a canvas label: a drawn label clipped at the plot's edge on a phone and doubled the text.
-  }
-
-  // Title strip + tape pill — lab chrome only (ticker Widget owns honesty copy).
-  if (!embedded) {
-    ctx.fillStyle = surfaces.phosphor;
-    ctx.font = '700 13px "IBM Plex Sans", system-ui, sans-serif';
-    ctx.fillText(`${m.symbol} · dealer field`, pad.l, 22);
-    ctx.fillStyle = surfaces.steel;
-    ctx.font = '500 11px "IBM Plex Sans", system-ui, sans-serif';
-    const age = relAge(m.asOfSec, now);
-    const src =
-      m.source === 'demo'
-        ? 'synthetic demo'
-        : m.source === 'rest'
-          ? 'structure snap'
-          : 'live structure snap';
-    ctx.fillText(`${age}  ·  ${src}  ·  probe strikes`, pad.l + 168, 22);
-
-    const pill = m.live ? 'TAPE LIVE' : 'TAPE OFF';
-    ctx.font = '700 11px "IBM Plex Sans", system-ui, sans-serif';
-    const pw = ctx.measureText(pill).width + 14;
-    ctx.fillStyle = m.live ? withAlpha(palette.mid, 0.28) : withAlpha(surfaces.warning, 0.22);
-    roundRect(ctx, w - pad.r - pw - 8, 8, pw, 18, 9);
-    ctx.fill();
-    ctx.fillStyle = m.live ? palette.mid : surfaces.warning;
-    ctx.fillText(pill, w - pad.r - pw + 0, 21);
-  }
-
-  // Soft phosphor grain — lab only (ticker stays calmer)
-  if (!reduced && !calm) {
-    ctx.globalAlpha = 0.03;
-    for (let i = 0; i < 18; i++) {
-      const gx = pad.l + (Math.sin(now * 0.001 + i * 12.1) * 0.5 + 0.5) * plotW;
-      const gy = pad.t + (Math.cos(now * 0.0007 + i * 7.3) * 0.5 + 0.5) * plotH;
-      ctx.fillStyle = surfaces.phosphor;
-      ctx.fillRect(gx, gy, 1.2, 1.2);
-    }
-    ctx.globalAlpha = 1;
   }
 
   frame.lastT = now;

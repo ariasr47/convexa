@@ -62,7 +62,3 @@ export function catalogForPreference(bootstrap: AiProvidersBootstrap): CatalogMo
   }
   return catalog.providers[0]?.models ?? [];
 }
-
-export function recommendedModelId(models: CatalogModel[]): string | null {
-  return models.find((m) => m.recommended)?.id ?? models[0]?.id ?? null;
-}

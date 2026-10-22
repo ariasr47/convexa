@@ -295,42 +295,6 @@ export const TICKER_FAULTED_NOTICE =
   "Recording paused — Convexa couldn't read your saved data, so new positions won't be saved. " +
   'Open Positions to export an archive of what loaded.';
 
-// ---- FUTURE copy — retained, NOT SHIPPED in v1 (SPEC §4 *Future copy*) --------------------------
-//
-// `position_eval` is suppressed for multi-leg (owner ruling #9) and for a ticker holding more than
-// one open position (2026-07-28 ruling), and `useGhostTrade`'s `alerts` has NO component consumer.
-// These five strings are kept PENDING A CONSUMER and must not be wired to anything in this release:
-// both suppressions are RENDER decisions and are fully observable without them (AC-74, AC-83). The
-// copy is what a future alert surface will say, not what makes the suppression true.
-//
-// `POSITION_EVAL_NONE_SHORT` is unreachable even once a consumer exists (the short-leg fallback in
-// §2.8 means a short-only position still gets a subject); it is retained because the selection rule
-// is owner-revisitable.
-
-export function POSITION_EVAL_LEG_QUALIFIER(legLabel: string, legCount: number): string {
-  return (
-    `Read on the ${legLabel} — one leg of your ${legCount}-leg position. Convexa evaluates one ` +
-    'leg, not the whole structure.'
-  );
-}
-
-export const POSITION_EVAL_TIP =
-  "Convexa's position-context read looks at ONE option leg of your position — the largest long " +
-  "option leg. On a spread or a condor that's a read on part of the position, not the whole thing: " +
-  "offsetting legs and the structure's net exposure aren't in it.";
-
-export const POSITION_EVAL_NONE_EQUITY =
-  'No position-context read — this position holds shares, and Convexa’s position reads are ' +
-  "built on option contracts (strike, expiry, gamma). Silence here doesn't mean nothing changed.";
-
-export const POSITION_EVAL_NONE_SHORT =
-  "No position-context read — Convexa's read is built on a long option leg, and this position " +
-  "doesn't have one. Silence here doesn't mean nothing changed.";
-
-export const POSITION_EVAL_NONE_MULTI_POSITION =
-  "No position-context read — you're holding more than one position on this ticker, and Convexa " +
-  "won't pick one and call it yours. Silence here doesn't mean nothing changed.";
-
 export const DISCLAIMER =
   'Paper trade — no broker, no real money. Filled at the option mid; fees, slippage, taxes and ' +
   'assignment are not modeled.';

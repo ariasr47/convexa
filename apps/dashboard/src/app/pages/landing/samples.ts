@@ -50,11 +50,11 @@ export const LANDING_FIELD_SAMPLES = [
 ] as const;
 
 /**
- * The model the shipped canvas receives. THE FLAGS ARE NECESSARY BUT NOT SUFFICIENT (SPEC §2.4):
- * `paintStep.ts:850-858` drifts a phosphor grain off `now` under `if (!reduced && !calm)` with no
- * `m.live` term in the gate, and `calm` is DERIVED from `variant === 'ticker'`, not a prop. The
- * mount's `variant='ticker'` is the single lever that kills the grain AND suppresses the canvas's
- * own title strip, tape pill, `demo as-of`, `synthetic demo` and `TAPE OFF` copy.
+ * The model the shipped canvas receives. THE FLAGS ARE NECESSARY BUT NOT SUFFICIENT (SPEC §2.4): the
+ * canvas's own form matters too. Since the Lab went (owner, 2026-10-14) the canvas has one form, calm
+ * and embedded, so it paints no phosphor grain (which drifted off `now` with no `m.live` term in its
+ * gate) and none of the Lab's title strip, tape pill, `demo as-of`, `synthetic demo` or `TAPE OFF`
+ * copy. That code is deleted from `paintStep.ts` (2026-10-21).
  */
 export const LANDING_FIELD_MODEL: StructureFieldModel = {
   symbol: LANDING_SAMPLE.symbol,

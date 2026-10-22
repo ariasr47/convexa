@@ -47,11 +47,9 @@ const EMPTY: LiveTapeSnapshot = {
 };
 
 let snapshot: LiveTapeSnapshot = EMPTY;
-let version = 0;
 const listeners = new Set<() => void>();
 
 function emit() {
-  version += 1;
   listeners.forEach((l) => {
     try {
       l();
@@ -68,10 +66,6 @@ export function subscribeLiveTape(listener: () => void): () => void {
 
 export function getLiveTapeSnapshot(): LiveTapeSnapshot {
   return snapshot;
-}
-
-export function getLiveTapeVersion(): number {
-  return version;
 }
 
 function deriveApi(s: LiveTapeSnapshot) {

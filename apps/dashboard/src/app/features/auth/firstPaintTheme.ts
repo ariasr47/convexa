@@ -1,44 +1,19 @@
 /**
- * First-paint theme hint. Two homes, same algorithm:
- *   1. The blocking `convexa-bootstrap-<hash>.js` script that the `convexa-build-bootstrap` Vite
- *      plugin injects into `index.html`'s head (cannot import this module — first paint is
- *      before the bundle). Structural spec pins the script to these keys + canvas tokens.
- *   2. `AppThemeProvider`, after the effective pref resolves (server-wins when signed in).
+ * First-paint theme hint. The first-paint resolve (paint cache, then the uiprefs theme, else dark)
+ * has ONE home: the blocking `convexa-bootstrap-<hash>.js` script that the `convexa-build-bootstrap`
+ * Vite plugin injects into `index.html`'s head (it cannot import this module — first paint is before
+ * the bundle). Structural spec pins the script to these keys + canvas tokens. This module keeps the
+ * shared key and `applyPaintMode`, which `AppThemeProvider` calls after the effective pref resolves
+ * (server-wins when signed in).
  *
  * Anonymous never-touched stays dark (AC-A3). `THEME_PAINT_KEY` is the last *resolved mode*,
  * not a settings store — never written into uiprefs (AC-F2 per-account isolation).
  */
-import { dataMode, demoStorageKey } from '@convexa/api';
-import { UIPREFS_KEY, UIPREFS_LEGACY_KEY } from './localPrefs';
+import { demoStorageKey } from '@convexa/api';
 
 export const THEME_PAINT_KEY = 'convexa.theme-paint';
 
 export type PaintMode = 'light' | 'dark';
-
-export function resolveFirstPaintMode(
-  getItem: (key: string) => string | null,
-  prefersLight: boolean,
-): PaintMode {
-  try {
-    const cached = getItem(demoStorageKey(THEME_PAINT_KEY));
-    if (cached === 'light' || cached === 'dark') return cached;
-  } catch {
-    /* storage unavailable */
-  }
-  try {
-    const raw =
-      getItem(demoStorageKey(UIPREFS_KEY)) ??
-      (dataMode === 'demo' ? null : getItem(demoStorageKey(UIPREFS_LEGACY_KEY)));
-    if (raw) {
-      const theme = (JSON.parse(raw) as { theme?: unknown }).theme;
-      if (theme === 'light') return 'light';
-      if (theme === 'system') return prefersLight ? 'light' : 'dark';
-    }
-  } catch {
-    /* corrupt blob or storage unavailable → anonymous dark */
-  }
-  return 'dark';
-}
 
 /** Apply the resolved mode to the document (html data-theme + theme-color + paint cache). */
 export function applyPaintMode(doc: Document, mode: PaintMode, canvas: string): void {

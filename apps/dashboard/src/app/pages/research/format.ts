@@ -73,14 +73,6 @@ export const STANCE_LABEL: Record<NoteStance, string> = {
   watching: 'Watching',
 };
 
-/** Green and red are reserved for direction (DESIGN_SYSTEM); a stance is a direction. */
-export const STANCE_TONE: Record<NoteStance, 'success' | 'error' | 'neutral'> = {
-  bullish: 'success',
-  bearish: 'error',
-  neutral: 'neutral',
-  watching: 'neutral',
-};
-
 export const UNCERTAINTY_LABEL: Record<Uncertainty, string> = {
   low: 'Low',
   medium: 'Medium',

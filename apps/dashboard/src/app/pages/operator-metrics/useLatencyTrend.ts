@@ -5,7 +5,6 @@
  * from the stored snapshots — NO control ever triggers a fetch, recompute, cache mutation, or any
  * trader-route call. Series clears on unmount/reload (ephemeral, expected); the only save is Export.
  */
-import { chartCategorical } from '@/shared/theme/tokens';
 import { fetchMetrics, MetricsAggregate, MetricsScope } from '@convexa/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -21,11 +20,6 @@ export const STAGES = [
   'persist',
   'serialize_wrap',
 ] as const;
-// Categorical, NON-semantic, colorblind-distinguishable palette (no red-for-bad/green-for-good).
-// Single-sourced from the theme tokens (`[theme-token-discipline]`) — re-exported here so the
-// chart components keep their existing import surface.
-export const STAGE_COLORS: Record<string, string> = chartCategorical.stages;
-export const SINGLE_LINE_COLOR = chartCategorical.singleLine;
 
 const COUNT_CAP = 1000; // hard memory guarantee (bounded regardless of cadence)
 const AGE_MAX_MS = 30 * 60_000; // 30m max retained; horizon controls the visible window

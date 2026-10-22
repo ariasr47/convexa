@@ -36,9 +36,8 @@
  * second focusable-help pattern") — a real focusable `button` with an accessible name of the form
  * `About {label}`, opening on tap/Enter/Space, closing on Escape (Tooltip `describeChild`).
  *
- * Container steps (20 → 17 → 15px under 360/280px of NAMED panel width) land in FE-6, once the
- * emotion-CSS reader (`emotionCssReader.ts`) is hardened first (SPEC §2.5) — this file ships the 20px base only;
- * do not add `@container` rules here ahead of that sequencing.
+ * Container steps (20 → 17 → 15px under 360/280px of NAMED panel width) are declared on the figure
+ * value below (SPEC §4.1), against the named `panel` container only (SPEC §2.5).
  *
  * The live dot is DECORATIVE + static (no pulse): `[single-motion-moment]` pins `liveDotPulse`'s
  * sole declaration to `TickerHeader.tsx` (AC-54 — zero new keyframes this phase), and nothing in

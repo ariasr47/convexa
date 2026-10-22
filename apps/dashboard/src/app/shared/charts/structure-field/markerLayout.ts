@@ -13,13 +13,6 @@ export interface MarkerLayoutBox extends MarkerLayoutInput {
   height: number;
 }
 
-export interface TapeLabelLayout extends MarkerLayoutBox {
-  /** The marker line x-coordinate the label belongs to. */
-  anchorX: number;
-  /** Explicit treatment when clamping moves text away from its marker line. */
-  edgeTreatment: 'none' | 'left' | 'right';
-}
-
 export interface MarkerLayoutOptions {
   bounds: { left: number; right: number; top: number; bottom: number };
   markers: readonly MarkerLayoutInput[];
@@ -81,32 +74,4 @@ export function layoutMarkerLabels({
     placed.push(box);
   }
   return placed;
-}
-
-/** Place a live/mid tape label through the same measured collision solver as structure markers. */
-export function layoutTapeLabel({
-  anchorX,
-  label,
-  bounds,
-  measure,
-  reserved = [],
-}: {
-  anchorX: number;
-  label: string;
-  bounds: MarkerLayoutOptions['bounds'];
-  measure: (label: string) => number;
-  reserved?: MarkerLayoutOptions['reserved'];
-}): TapeLabelLayout {
-  const marker = layoutMarkerLabels({
-    bounds,
-    markers: [{ id: 'live', x: anchorX, label, preferredLane: 0 }],
-    measure,
-    laneHeight: 16,
-    laneGap: 2,
-    reserved,
-  })[0];
-  const idealX = anchorX + 6;
-  const edgeTreatment =
-    marker.x > idealX ? 'left' : marker.x + marker.width < idealX ? 'right' : 'none';
-  return { ...marker, anchorX, edgeTreatment };
 }

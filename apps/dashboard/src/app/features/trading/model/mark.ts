@@ -1,5 +1,5 @@
 /**
- * FE-owned, honest mark + P/L for the ghost trade, plus operator-config thresholds and copy.
+ * FE-owned, honest mark + P/L for the ghost trade, plus the operator-config rate and copy.
  *
  * Mark basis ladder (UX_BLUEPRINT "Mark-basis labels"):
  *  - snapshot     : option NBBO mid from the last chain snapshot (exact/anchor).
@@ -12,11 +12,7 @@
 import type { OptionRight, TrackedContract } from '@convexa/api';
 import type { MarkBasis } from './types';
 
-// Operator-config (tunable) — kept in code in v1; documented as operator knobs.
-export const PL_TARGET_PCT = 25; // P/L target alert
-export const PL_STOP_PCT = -25; // P/L stop alert
-export const DTE_ALERT_THRESHOLD = 7;
-export const ADD_QTY_MAX = 10; // operator cap on total qty after an "Add"
+// Operator-config (tunable) — kept in code in v1; documented as an operator knob.
 export const RISK_FREE_RATE = 0.045;
 
 // ---- Black-Scholes (theoretical mark when no NBBO quote) -------------------------------------

@@ -21,10 +21,6 @@ export const BLOCKS_TOOLTIP =
 export const PROXIMITY_TOOLTIP =
   'How far this print is from current spot. Above spot is +, below is −. Lets you see at a ' +
   'glance whether it overlaps a wall or the gamma flip.';
-export const OFFLINE_CHIP_TOOLTIP =
-  'The live stream dropped. The positioning levels and the GEX chart below are still current ' +
-  'as of the last data load — only live price, the last trade, spread, net flow and the live ' +
-  'gamma flip are paused. Reconnecting automatically; no refresh needed.';
 
 /**
  * index-first-defaults AC-4 — the one-line single-name honesty caption (SPEC §4, copy EXACT).
@@ -247,9 +243,6 @@ export const fmtSigned2 = (v: number): string => `${v < 0 ? '−' : '+'}${Math.a
 /** ATR dollars: 2dp, locale-grouped (`$4.12`, `$1,234.56`). */
 export const fmtAtrUsd = (v: number): string =>
   `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-/** Center of mass: the wire FRACTION rendered as a signed percent, 1dp (`0.012` -> `+1.2% vs spot`). */
-export const mcComLine = (fraction: number): string =>
-  `${fraction < 0 ? '−' : '+'}${Math.abs(fraction * 100).toFixed(1)}% vs spot`;
 
 // The 1:1 enum → display maps (UX_BLUEPRINT §5.2, BINDING — one display string per enum value;
 // never softened/re-bucketed/replaced by numbers; no other label text exists).
@@ -258,37 +251,15 @@ export const MC_DIRECTION_DISPLAY: Record<string, string> = {
   downtrend: 'Downtrend',
   mixed: 'Mixed',
 };
-export const MC_STRENGTH_DISPLAY: Record<string, string> = {
-  weak: 'Weak',
-  moderate: 'Moderate',
-  strong: 'Strong',
-};
-export const MC_MOMENTUM_DISPLAY: Record<string, string> = {
-  overbought: 'Overbought',
-  bullish: 'Bullish',
-  neutral: 'Neutral',
-  bearish: 'Bearish',
-  oversold: 'Oversold',
-};
 export const MC_CONCENTRATION_DISPLAY: Record<string, string> = {
   concentrated: 'Concentrated',
   mixed: 'Mixed',
   dispersed: 'Dispersed',
 };
-export const MC_BALANCE_DISPLAY: Record<string, string> = {
-  above_skewed: 'Skewed above spot',
-  balanced: 'Balanced',
-  below_skewed: 'Skewed below spot',
-};
 export const MC_LOCATION_DISPLAY: Record<string, string> = {
   aligned: 'Aligned',
   rotating: 'Rotating',
   divergent: 'Divergent',
-};
-export const MC_COMPOSITION_DISPLAY: Record<string, string> = {
-  flow_put_tilted: 'Flow put-tilted',
-  consistent: 'Consistent',
-  flow_call_tilted: 'Flow call-tilted',
 };
 
 /** Closed-lookup a wire enum → its pinned display string; unknown/unmapped ⇒ null (that label's
@@ -311,48 +282,19 @@ export const MC_ADVISORY =
   'Advisory context for you and the AI — not a scored signal, not a forecast, not a guarantee.';
 export const MC_WHOLE_EMPTY = 'Market context unavailable this cycle.';
 
-// Sub-card titles + row labels (§5.3).
-export const MC_TI_TITLE = 'Trend & momentum';
-export const MC_SHAPE_TITLE = 'Gamma profile shape';
-export const MC_FLOW_TITLE = 'Flow vs positioning · today';
-export const MC_ATR_TITLE = 'Average true range';
+// Row label (§5.3).
 export const MC_ROW_TREND = 'Trend';
-export const MC_ROW_STRENGTH = 'Strength';
-export const MC_ROW_MOMENTUM = 'Momentum';
-export const MC_ROW_CONCENTRATION = 'Concentration';
-export const MC_ROW_BALANCE = 'Balance';
-export const MC_ROW_COM = 'Center of mass';
-export const MC_ROW_LOCATION = 'Location';
-export const MC_ROW_COMPOSITION = 'Composition';
-export const MC_ROW_ATR_5D = '5-day';
-export const MC_ROW_ATR_14D = '14-day';
-export const MC_ROW_ATR_30D = '30-day';
 
 // Compact-card captions (ticker fidelity repair F2, `design/src/screens/desk.mjs:413`'s `ctx-2`
 // cells: `['Trend', ...]`, `['Profile shape', ...]`, `['Flow vs positioning', ...]`,
-// `['ATR 14d', ...]`) — the short label the 2×2 context-band card shows per cell, distinct from the
-// longer `MC_*_TITLE` family name (still the ⓘ tooltip's accessible-name root). Copied verbatim from
-// the design source, not authored here. `MC_ROW_TREND` above already matches `'Trend'` exactly and is
-// reused rather than duplicated.
+// `['ATR 14d', ...]`) — the short label the 2×2 context-band card shows per cell. Copied verbatim
+// from the design source, not authored here. `MC_ROW_TREND` above already matches `'Trend'` exactly
+// and is reused rather than duplicated.
 export const MC_SHAPE_SHORT = 'Profile shape';
 export const MC_FLOW_SHORT = 'Flow vs positioning';
 export const MC_ATR_SHORT = 'ATR 14d';
 
-// Scalar-line builders (mono, text.secondary — §5.3). Display-only; never threshold math.
-export const mcTrendLine = (d: { close: number; ema20: number; ema50: number }): string =>
-  `close ${fmt2(d.close)} · EMA20 ${fmt2(d.ema20)} · EMA50 ${fmt2(d.ema50)}`;
-export const mcStrengthLine = (s: { adx: number }): string => `ADX(14) ${fmt1(s.adx)}`;
-export const mcMomentumLine = (m: { rsi: number }): string => `RSI(14) ${fmt1(m.rsi)}`;
-export const mcConcentrationLine = (hhi: number): string => `HHI ${fmt2(hhi)}`;
-export const mcBalanceLine = fmtSigned2;
-export const mcLocationLine = (l: { distribution_shift: number }): string =>
-  `shift ${fmt2(l.distribution_shift)}`;
-export const mcCompositionLine = (c: {
-  volume_pcr: number;
-  oi_pcr: number;
-  tilt_ratio: number;
-}): string =>
-  `vol PCR ${fmt2(c.volume_pcr)} · OI PCR ${fmt2(c.oi_pcr)} · tilt ${fmt2(c.tilt_ratio)}`;
+// Scalar-line builder (mono, text.secondary — §5.3). Display-only; never threshold math.
 export const mcAtrLine = (h: { value: number; pct_of_close: number }): string =>
   `${fmtAtrUsd(h.value)} · ${fmt1(h.pct_of_close)}%`;
 
@@ -373,10 +315,7 @@ export const MC_SHAPE_EMPTY = 'Gamma profile shape unavailable this cycle.';
 export const MC_FLOW_EMPTY = 'Flow vs positioning unavailable this cycle.';
 export const MC_ATR_EMPTY = 'Average true range unavailable this cycle.';
 export const MC_TREND_ROW_EMPTY = 'Trend unavailable this cycle.';
-export const MC_STRENGTH_ROW_EMPTY = 'Strength unavailable this cycle.';
-export const MC_MOMENTUM_ROW_EMPTY = 'Momentum unavailable this cycle.';
 export const MC_LOCATION_ROW_EMPTY = 'Location unavailable this cycle.';
-export const MC_COMPOSITION_ROW_EMPTY = 'Composition unavailable this cycle.';
 // Split (curvature-v2-surfaces SPEC §4.6 criterion 56a): this sentence sat in a figure VALUE slot
 // (`MarketContext.tsx` concentration/balance/ATR-horizon rows), so it becomes the closed-nine member
 // `unavailable` in the value slot, with the this-cycle meaning moved to that figure's own caption —
@@ -385,44 +324,6 @@ export const MC_COMPOSITION_ROW_EMPTY = 'Composition unavailable this cycle.';
 // widget-body prose, not values, and are untouched.
 export const MC_CELL_EMPTY = 'unavailable';
 export const MC_CELL_EMPTY_CAPTION = 'this cycle';
-
-// Row-level tooltips (§5.5 — each reveals its window + the exact pinned v1 thresholds).
-export const MC_TIP_TREND =
-  'Trend direction from daily closes: Uptrend = close above EMA20 above EMA50 (strictly); Downtrend ' +
-  '= close below EMA20 below EMA50 (strictly); anything else — including ties — reads Mixed. Needs ' +
-  'about 100 daily bars of history; shows unavailable rather than guessing. Context only, not a ' +
-  'trade call.';
-export const MC_TIP_STRENGTH =
-  'Trend strength from Wilder ADX(14) on daily bars: ADX below 20 = Weak, 20–25 = Moderate, 25 and ' +
-  'above = Strong. ADX measures how strongly price is trending, not which way — read it with the ' +
-  'Trend row. Needs about 43 bars with valid highs/lows; unavailable otherwise.';
-export const MC_TIP_MOMENTUM =
-  'Momentum state from Wilder RSI(14) on daily closes: 70 and above Overbought, 55–70 Bullish, ' +
-  '45–55 Neutral, 30–45 Bearish, 30 and below Oversold. A stretched reading is context about pace, ' +
-  'not a reversal signal or an instruction. Needs about 42 bars; unavailable otherwise.';
-export const MC_TIP_CONCENTRATION =
-  'How concentrated the net-GEX profile is across the strikes in your selected expiration window — ' +
-  'normalized HHI from 0 (evenly spread) to 1 (one strike): 0.35 and above Concentrated, 0.15–0.35 ' +
-  'Mixed, below 0.15 Dispersed. Needs at least 5 strikes with non-zero net GEX. Same window as the ' +
-  'GEX chart.';
-export const MC_TIP_BALANCE =
-  'Where the gamma weight sits versus spot: the share of |net GEX| strictly above the spot basis ' +
-  'minus the share strictly below, from −1 to +1. At +0.20 and above it reads Skewed above spot; at ' +
-  '−0.20 and below, Skewed below spot; between, Balanced. Anchored at the same spot basis as the ' +
-  'GEX levels.';
-export const MC_TIP_COM =
-  'The |net GEX|-weighted average strike, shown as its signed distance from the spot basis (+ = ' +
-  'above spot, − = below). A single locational scalar — no label, no threshold.';
-export const MC_TIP_LOCATION =
-  "Where today's option volume sits versus where standing open interest sits, strike by strike — a " +
-  'share-vs-share distribution shift from 0 (identical) to 1 (entirely elsewhere): below 0.35 ' +
-  'Aligned, 0.35–0.60 Rotating, 0.60 and above Divergent. Volume is unsigned — no buy/sell side, no ' +
-  '"smart money" read; location only.';
-export const MC_TIP_COMPOSITION =
-  "Which right today's volume favors versus the standing book: today's put/call VOLUME ratio " +
-  'against the standing put/call OI ratio (tilt = volume PCR ÷ OI PCR). At 1.25 and above, Flow ' +
-  'put-tilted; at 0.80 and below, Flow call-tilted; between, Consistent. Put/call composition only ' +
-  '— unsigned volume, never a buy/sell claim.';
 
 // Card-level tooltips (§5.5).
 export const MC_TIP_ATR_CARD =
@@ -703,17 +604,6 @@ export function sessionTapeSubtitle(symbol: string, humanDate: string): string {
 /** Not-the-armed-day LiveTape subtitle — names the armed identity. */
 export function sessionTapeNotThisTickerSubtitle(armedSymbol: string, humanDate: string): string {
   return `Session day tape · ${armedSymbol} · ${humanDate} · not this ticker — not a live feed`;
-}
-
-/** GEX chart — spot basis + expiration window + age. */
-export function gexProfileSubtitle(
-  gexSpot: number | null | undefined,
-  expLabel: string,
-  ageSeconds: number | null | undefined,
-): string {
-  const spot =
-    gexSpot != null && Number.isFinite(gexSpot) ? `GEX spot $${gexSpot.toFixed(2)}` : 'GEX spot —';
-  return withStructureAge(`${spot} · ${expLabel} · snapshot (not live)`, ageSeconds);
 }
 
 /** Setups — rule-based, same structure snapshot. */

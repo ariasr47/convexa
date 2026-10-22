@@ -162,34 +162,6 @@ export const FX_SIX_LEG = mkPosition([
   shortCall(500, 0.4),
 ]);
 
-/**
- * Every position fixture, by name — so a guard can sweep all of them and a later suite can iterate
- * the whole named set without re-listing it.
- */
-export const ALL_FIXTURES: Readonly<Record<string, SimPosition>> = {
-  FX_LONG_CALL,
-  FX_LONG_PUT,
-  FX_SHORT_PUT,
-  FX_SHORT_CALL,
-  FX_SHARES_LONG,
-  FX_SHARES_SHORT,
-  FX_CALL_DEBIT_SPREAD,
-  FX_SHORT_VERTICAL,
-  FX_PUT_CREDIT_SPREAD,
-  FX_PUT_DEBIT_SPREAD,
-  FX_COVERED_CALL,
-  FX_PROTECTIVE_PUT,
-  FX_ZERO_COST_COLLAR,
-  FX_LONG_STRADDLE,
-  FX_SHORT_STRANGLE,
-  FX_IRON_CONDOR,
-  FX_IRON_BUTTERFLY,
-  FX_CALENDAR,
-  FX_DIAGONAL,
-  FX_RATIO_1X2,
-  FX_SIX_LEG,
-};
-
 // ---- Render-path helpers ------------------------------------------------------------------------
 //
 // The render path AND the derivation pipeline both consume a `PositionView`. These builders route
@@ -198,8 +170,6 @@ export const ALL_FIXTURES: Readonly<Record<string, SimPosition>> = {
 
 /** A resolved snapshot mark. Every leg gets this unless a spec says otherwise. */
 export const FX_MARK: MarkResult = { mark: 6.2, basis: 'snapshot', frozen: false };
-/** An UNRESOLVED leg — the aggregate is withheld all-or-nothing (SPEC §2.5). */
-export const FX_MARK_NONE: MarkResult | null = null;
 
 /** Build the projection for a `SimPosition`, giving every leg the same mark unless one is mapped. */
 export function viewOf(
@@ -218,34 +188,6 @@ export function viewOf(
     legMarks.set(l.id, opts.marks ? (opts.marks.get(l.id) ?? null) : fallback);
   }
   return buildPositionView({ position: p, legMarks, dte: opts.dte ?? 24 });
-}
-
-/**
- * A v2 `Position` built back out of a `SimPosition`. TRANSITIONAL TEST SHIM for the specs that still
- * need to hand a legacy record to the store / the lift; nothing in the render path or the derivation
- * pipeline reads it any more.
- */
-export function legacyShimOf(p: SimPosition): Position {
-  const [l] = p.legs;
-  return {
-    id: p.id,
-    ticker: l.ticker,
-    expiration: l.expiration ?? '',
-    strike: l.strike ?? 0,
-    right: l.right ?? 'call',
-    side: 'long',
-    qty: l.qty,
-    entry_mark: l.entry_price,
-    entry_basis: l.entry_basis,
-    entry_time: p.opened_time,
-    status: p.status,
-    entry_mode: p.entry_mode,
-    limit_price: p.limit_price,
-    close_time: p.close_time,
-    realized_pl_dollar: p.realized_pl_dollar,
-    realized_pl_pct: p.realized_pl_pct,
-    schema_version: 2,
-  };
 }
 
 /** The projection over a legacy v2 `Position`, lifted exactly as the hook lifts it. */

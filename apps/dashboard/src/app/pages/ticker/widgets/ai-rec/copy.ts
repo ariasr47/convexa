@@ -173,13 +173,6 @@ export const BYO_KEY = {
   ownKey: { chip: 'Using your key', tooltip: POWERING.ownKey.tooltip },
 } as const;
 
-/** Own-key honesty chip (generic floor). Prefer `ownKeyChip(provider)` when provider is named. */
-export const OWN_KEY_CHIP = BYO_KEY.ownKey.chip;
-
-/** `Persona · {name}` provenance chip. */
-export const personaChip = (name: string) => `Persona · ${name}`;
-/** `As of {snapshot}` provenance chip. The pinned snapshot identity is shown verbatim (honest). */
-export const asOfChip = (asOf: string | null) => `As of ${asOf ?? 'unknown snapshot'}`;
 /** `Cooling down · {remaining}s` disabled-action label. */
 export const cooldownLabel = (remaining: number) => `Cooling down · ${remaining}s`;
 /** `Daily AI limit reached — resets {when}` calm cap state. */
@@ -249,8 +242,6 @@ export const SUPERSEDED_STRIP_DRAWER =
 
 export const UNDETERMINED_RIGHT_BOTH_LEGS = "The read doesn't say call or put — both legs shown.";
 export const UNDETERMINED_RIGHT_NO_QUOTE = "The read doesn't say call or put — no quote shown.";
-export const UNDETERMINED_RIGHT_TIP =
-  'Convexa only draws a quote when it can match the exact contract — strike, expiration and call/put.';
 export const OFF_SET_LITERAL = 'Not in the candidate set Convexa sent';
 export const NO_TWO_SIDED_QUOTE_LITERAL = 'no two-sided quote in this snapshot';
 
@@ -430,15 +421,6 @@ export const PLAN_FIELD_LABEL = {
   timeHorizon: 'Time horizon',
   confidence: 'Confidence',
 } as const;
-
-/** The POSITION-DEFINING four, in card order (AC-10a). Time horizon and Confidence are excluded on
- *  purpose: their absence is not what makes a rec unactionable (AC-11). */
-export const POSITION_DEFINING_LABELS = [
-  PLAN_FIELD_LABEL.structure,
-  PLAN_FIELD_LABEL.strikes,
-  PLAN_FIELD_LABEL.expiration,
-  PLAN_FIELD_LABEL.entryTrigger,
-] as const;
 
 /** The six take the SHIPPED words with a PRODUCER-NEUTRAL tip on their own sibling entry. The shipped
  *  `not_given` tip names a producer ("The AI produced a trade read but…") and would contradict the

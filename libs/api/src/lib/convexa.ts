@@ -20,19 +20,6 @@ export type TermStructure = Omit<components['schemas']['TermStructureWire'], 'st
   state: 'contango' | 'backwardation' | 'flat';
 };
 
-/** Projected-dealer-flow charm limb (dealer-flow-projection INTERFACE_CONTRACT §payload). Window-scoped
- *  (moves with the DTE filter, like net_gex/net_dex). All values pre-computed on the wire — the FE never
- *  does its own arithmetic. Independently nullable (null iff net_charm unavailable OR no future monthly
- *  OPEX). Signed $-delta values inherit the dealer-book convention (calls +, puts −). */
-export type CharmLimb = components['schemas']['DealerFlowCharmWire'];
-
-/** Projected-dealer-flow vanna limb. Instantaneous (no time horizon — its "horizon" is the vol-move
- *  magnitude). `illustrative_projected_delta` is PRE-SCALED on the wire (= net_vanna · 5) — the FE
- *  renders it DIRECTLY and never multiplies. `reference_direction` is `"increase"` (a vol drop is the
- *  exact negation; the FE states this, no second figure). Independently nullable (null iff net_vanna
- *  unavailable). */
-export type VannaLimb = components['schemas']['DealerFlowVannaWire'];
-
 /** A forward-looking projection of the delta dealers are expected to hedge, derived from the same
  *  window-scoped net_charm / net_vanna aggregates already in the bundle. STATIC (rides the cached REST
  *  bundle, never the SSE stream). Two independently-nullable limbs; the whole object is null only when
@@ -287,32 +274,9 @@ export type CandidateContract = components['schemas']['CandidateContractWire'];
 
 export type CandidateCaps = components['schemas']['CandidateCapsWire'];
 
-export type CandidateIncluded = components['schemas']['CandidateIncludedWire'];
-
-/** Five closed reasons, fixed evaluation order, each contract counted EXACTLY once. */
-export type CandidateOmittedByReason = components['schemas']['CandidateDropWire'];
-
-export type CandidateOmitted = components['schemas']['CandidateOmittedWire'];
-
 export type CandidateLiquidity = components['schemas']['CandidateLiquidityWire'];
 
 export type CandidateSetEnvelope = components['schemas']['CandidatesWire'];
-
-/** GET /api/candidates/{ticker} — the deliberate pull. Anonymous-ok, STATIC, never a vendor request
- *  on any path. `404` only when the ticker has no chain at all; everything else is `200` with a
- *  stated `state` (empty band / all dropped / assembly failed) — never invented by the FE. */
-export async function getCandidates(
-  symbol: string,
-  opts: { minDte?: number; maxDte?: number; budget?: CandidateBudget } = {},
-): Promise<CandidateSetEnvelope> {
-  const result = await http.GET('/api/candidates/{ticker}', {
-    params: {
-      path: { ticker: symbol.toUpperCase() },
-      query: { min_dte: opts.minDte, max_dte: opts.maxDte, budget: opts.budget },
-    },
-  });
-  return dataOf(result, 'Candidates unavailable');
-}
 
 export type StrikeRow = components['schemas']['MarketStrike'];
 
@@ -449,9 +413,6 @@ function isTickerBundle(value: unknown): value is TickerBundle {
 
 // ---- Ghost-trade tracker: tracked-contract stats + reassessment boundary types --------------
 export type OptionRight = 'call' | 'put';
-export type OptionQuote = components['schemas']['OptionQuoteWire'];
-/** Each greek may be null (unpriced contract). */
-export type OptionGreeks = components['schemas']['ContractGreeksWire'];
 /** Filter-independent stats for one option contract (GET /api/contract). `option_quote` null ⇒
  *  no live NBBO ⇒ the FE falls back to a theoretical (Black-Scholes) mark — not an error. */
 export type TrackedContract = components['schemas']['ContractWire'];
@@ -1230,14 +1191,6 @@ export async function getScanUniverse(): Promise<ScanUniverse> {
   return dataOf(result, 'Universe read failed');
 }
 
-/** GET /api/scan/view — the caller's effective view. Anonymous ALWAYS gets a readable default; a
- *  READ is never gated. (The page reads the view off `getScan()`; this exists for the editor's
- *  reconciliation + parity with the wire.) */
-export async function getScanView(): Promise<ScanView> {
-  const result = await http.GET('/api/scan/view');
-  return dataOf(result, 'View read failed');
-}
-
 /** `not_live`: paused with no vendor key, so no feed exists to resume (canon P-1, 2026-10-13). */
 export type MarketDataMode = 'live' | 'paused' | 'not_live' | 'unknown';
 
@@ -1436,11 +1389,6 @@ export async function fetchTrackedContract(
 }
 
 // ---- Operator metrics readout (observability; read-only, side-effect-free) -------------------
-// NOTE: the endpoint path is the INTERFACE_CONTRACT's *example* (`/api/_metrics`); the Interface
-// left it as "e.g." and the backend lane hasn't pinned it yet. Flagged for confirmation — if the
-// backend finalizes a different path, change only this constant.
-export const METRICS_ENDPOINT = '/api/_metrics';
-
 export type MetricsLatency = components['schemas']['MetricsLatency'];
 export type MetricsStage = components['schemas']['MetricsStage'];
 export type MetricsCache = components['schemas']['MetricsCache'];
@@ -2228,25 +2176,16 @@ export async function fetchPersonas(): Promise<PersonaDefinition[]> {
 // Dates are YYYY-MM-DD; `fetched_at` / `checked_at` are RFC 3339 UTC.
 
 export type PublicDataState = components['schemas']['PublicDataState'];
-export type PublicFilingKind = components['schemas']['FilingKind'];
 export type PublicMarkets = components['schemas']['PublicMarketsWire'];
-export type PublicRates = components['schemas']['RatesWire'];
 export type PublicYieldPoint = components['schemas']['YieldPointWire'];
 export type PublicFutures = components['schemas']['FuturesWire'];
 export type PublicFuturesMarket = components['schemas']['FuturesMarketWire'];
 export type PublicPositionGroup = components['schemas']['PositionGroupWire'];
-export type PublicPositionWeek = components['schemas']['PositionWeekWire'];
-export type PublicLiquidity = components['schemas']['LiquidityWire'];
-export type PublicLiquidityWeek = components['schemas']['LiquidityWeekWire'];
 export type PublicFilings = components['schemas']['PublicFilingsWire'];
 export type PublicFiling = components['schemas']['FilingWire'];
 export type PublicTicker = components['schemas']['PublicTickerWire'];
-export type PublicShortInterest = components['schemas']['ShortInterestWire'];
-export type PublicSettlementPoint = components['schemas']['SettlementPointWire'];
 export type PublicShortVolume = components['schemas']['ShortVolumeWire'];
-export type PublicShortVolumeDay = components['schemas']['ShortVolumeDayWire'];
 export type PublicInsiders = components['schemas']['InsidersWire'];
-export type PublicDatedValue = components['schemas']['DatedValueWire'];
 export type PublicPeriodicFiling = components['schemas']['PeriodicFilingWire'];
 export type PublicFact = components['schemas']['FactWire'];
 /** One upstream source and its P-2 state (`last_good` = a kept copy after a failed fetch). */

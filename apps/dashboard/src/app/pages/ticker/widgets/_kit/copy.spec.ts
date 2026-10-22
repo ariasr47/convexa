@@ -2,7 +2,7 @@
  * copy.ts — RISK-BASED unit tests (qa-verify.md §4, 2026-07-13). Pure logic only, no DOM. We keep the
  * invariants where a silent regression is plausible AND invisible to a reviewer:
  *   - formatter NUMERIC semantics: bucket boundaries, sign-first figure-minus (U+2212), null → honest
- *     em-dash (never a fabricated $0), the ×100 fraction→percent scale;
+ *     em-dash (never a fabricated $0);
  *   - date parsing: UTC calendar semantics (no TZ drift) + raw-string fallback (never blank);
  *   - the closed lookup tables: TOTALITY (every enum member maps) + CLOSURE (unknown / prototype-chain
  *     tokens fall to the honest null), table-driven — one test for ALL maps, not one per label;
@@ -24,14 +24,9 @@ import {
   IVR_BAND_DISPLAY,
   ivrBandDisplay,
   ivrBasisLine,
-  MC_BALANCE_DISPLAY,
-  MC_COMPOSITION_DISPLAY,
   MC_CONCENTRATION_DISPLAY,
   MC_DIRECTION_DISPLAY,
   MC_LOCATION_DISPLAY,
-  MC_MOMENTUM_DISPLAY,
-  MC_STRENGTH_DISPLAY,
-  mcComLine,
   mcDisplay,
   structureAsOfPhrase,
   withStructureAge,
@@ -63,12 +58,6 @@ describe('fmtUsdCompact — numeric semantics', () => {
     expect(fmtSigned2(-0.34)).toBe('−0.34');
     expect(fmtSigned2(-0.34).includes('-')).toBe(false);
   });
-
-  it('mcComLine renders the wire FRACTION ×100 with an explicit sign (the silent ×100 regression)', () => {
-    expect(mcComLine(0.012)).toBe('+1.2% vs spot');
-    expect(mcComLine(-0.0301)).toBe('−3.0% vs spot');
-    expect(mcComLine(0)).toBe('+0.0% vs spot');
-  });
 });
 
 describe('humanOpex / humanSessionDate — UTC calendar parse', () => {
@@ -86,12 +75,8 @@ describe('humanOpex / humanSessionDate — UTC calendar parse', () => {
 describe('closed lookup tables — totality + closure (one table-driven test for ALL maps)', () => {
   const LOOKUPS: Array<[name: string, map: Record<string, string>]> = [
     ['direction', MC_DIRECTION_DISPLAY],
-    ['strength', MC_STRENGTH_DISPLAY],
-    ['momentum', MC_MOMENTUM_DISPLAY],
     ['concentration', MC_CONCENTRATION_DISPLAY],
-    ['balance', MC_BALANCE_DISPLAY],
     ['location', MC_LOCATION_DISPLAY],
-    ['composition', MC_COMPOSITION_DISPLAY],
     ['iv-rank band', IVR_BAND_DISPLAY],
   ];
 

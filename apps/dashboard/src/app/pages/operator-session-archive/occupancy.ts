@@ -12,9 +12,6 @@ export const COVERAGE_CELLS = [
 ] as const;
 export type CoverageCell = (typeof COVERAGE_CELLS)[number];
 
-/** Must never appear inside origin-blocked Alert copy (AC-21). */
-export const ORIGIN_BLOCKED_MUST_NOT_CONTAIN = 'blocked occupancy';
-
 export type ListSourceLookup =
   { kind: 'known'; source: ListSource } | { kind: 'unavailable'; raw: string };
 
