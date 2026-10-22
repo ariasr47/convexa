@@ -164,14 +164,17 @@ export function positionsStates({ minHeight = 0, scheme = 'dark' } = {}) {
 // ---- Alerts (Q-5, ruled) -------------------------------------------------------------------------------
 function ruleRow(r, { demo = false } = {}) {
   const k = KIND[r.kind] || { name: r.kindName, glyph: r.glyph };
-  const tag = demo ? stateTag('sample', r.stateText || 'Sample') : stateTag(r.state, r.stateText);
+  // On staging an enabled rule wears no tag: its panel says Sample once, in its head (owner D1, spec 01
+  // step 5; alertsUi.tsx ruleState 'none'). A switched-off rule still says Off.
+  const tag = demo ? (r.on ? '' : stateTag('off')) : stateTag(r.state, r.stateText);
   return `<div class="rule${r.on ? '' : ' off'}"><span class="k">${icon(k.glyph, 16)}${k.name}</span><span class="s"><b>${r.subject}</b><span>${r.what}</span></span><span class="m">${tag}<span class="last">${r.last}</span>${sw(r.on, `${k.name} for ${r.subject}: ${r.on ? 'on' : 'off'}`)}<button class="btn ghost sm" type="button" aria-label="Edit ${k.name} for ${r.subject}">Edit</button></span></div>`;
 }
 function fireRow(f, chipKind = 'solid') {
   return `<div class="fire"><div class="t"><span class="d">${f.date}</span><b>${f.title}</b></div><div class="r"><span class="dline" style="flex: 1 1 260px;">${f.detail}</span>${provChip(f.chip, chipKind)}<a href="${f.link[1]}">${f.link[0]} →</a></div></div>`;
 }
 function kindRef({ demo = false } = {}) {
-  return `<table class="kref"><thead><tr><th>Kind</th><th>Fires when</th><th>Source · delay</th><th>${demo ? 'In the demo' : 'On this site'}</th></tr></thead><tbody>${ALERT_KINDS.map((k) => `<tr><td>${k.name}</td><td>${k.fires}.</td><td>${demo ? provChip(`Sample · shaped like ${k.chip}`, 'dashed') : provChip(k.chip, 'solid')}<br>${k.delay}.${demo ? '' : ` Checks: ${k.check}.`}</td><td>${demo ? stateTag('sample') : stateTag(k.state, k.stateText)}</td></tr>`).join('')}<tr><td${demo ? '' : ' style="color: var(--steel);"'}>Score, tier, level touch</td><td>Structure moves on a ticker’s options.</td><td>${demo ? `${provChip('Sample · shaped like a Massive options chain', 'dashed')}<br>Checked against the sample tape.` : 'Needs a paid options feed.'}</td><td>${demo ? stateTag('sample') : stateTag('notLive')}</td></tr></tbody></table>`;
+  // On staging the state column goes: each cell would say Sample beside a chip that already does (D1).
+  return `<table class="kref"><thead><tr><th>Kind</th><th>Fires when</th><th>Source · delay</th>${demo ? '' : '<th>On this site</th>'}</tr></thead><tbody>${ALERT_KINDS.map((k) => `<tr><td>${k.name}</td><td>${k.fires}.</td><td>${demo ? provChip(`Sample · shaped like ${k.chip}`, 'dashed') : provChip(k.chip, 'solid')}<br>${k.delay}.${demo ? '' : ` Checks: ${k.check}.`}</td>${demo ? '' : `<td>${stateTag(k.state, k.stateText)}</td>`}</tr>`).join('')}<tr><td${demo ? '' : ' style="color: var(--steel);"'}>Score, tier, level touch</td><td>Structure moves on a ticker’s options.</td><td>${demo ? `${provChip('Sample · shaped like a Massive options chain', 'dashed')}<br>Checked against the sample tape.` : 'Needs a paid options feed.'}</td>${demo ? '' : `<td>${stateTag('notLive')}</td>`}</tr></tbody></table>`;
 }
 const ALERTS_LEAD = 'Alerts on public data: filings, insider clusters, results dates, futures positioning, short interest and your own notes. Each says where it reads from and how late that source is.';
 export const structureNotLive = () => P('Structure alerts', stateTag('notLive'), `<p class="dline" style="margin: 0;"><strong style="color: var(--phosphor);">Would watch</strong> ${STRUCTURE_KINDS.map(([n]) => n.toLowerCase()).join(', ')} on any ticker’s options.</p><p class="dline" style="margin: 0;"><strong style="color: var(--phosphor);">Off because</strong> they read the options chain, a paid feed this site doesn’t run.</p>${demoLink('/alerts')}`, 'Structure alerts, not live');
@@ -188,17 +191,20 @@ export function alertsProduction({ minHeight = 0, scheme = 'dark' } = {}) {
 // Staging: the shipped seed holds one rule (workspace.ts:506-518, level touch on SPY's gamma flip). The
 // design seeds one rule per public kind beside it, on the demo's own symbols (gap recorded in the spec).
 const DEMO_RULES = [
-  { kindName: 'Level touch', glyph: 'target', subject: 'SPY', what: 'Gamma flip · 683.92 · “Watch the authored sample flip”', last: 'Checks the sample tape', stateText: 'Sample · armed', on: true },
-  { kind: 'filing', subject: 'NVDA', what: '8-K items 2.02 and 5.02 · 10-Q · 10-K', last: 'Sample filings · Oct 7 scenario', on: true },
-  { kind: 'cftc', subject: '10-year T-note', what: 'Leveraged funds · 3-year low · or within 5%', last: 'Sample report · as of Tue Oct 6', on: true },
-  { kind: 'si', subject: 'AAPL', what: 'Shares short ±15% between settlements', last: 'Sample settlement · Sep 30', on: true },
-  { kind: 'note', subject: 'SPY', what: 'Review due within 7 days, or a filing after the note’s price date', last: 'Sample note · SPY breadth and balance case', on: false },
+// Rule lines as shipped (alertsUi.tsx SAMPLE_LAST, spec 01 step 5; the flip note from libs/api demo/alerts.ts, step 6).
+  { kindName: 'Level touch', glyph: 'target', subject: 'SPY', what: 'Gamma flip · 683.92 · “Watch the flip”', last: 'Checks while a ticker desk is open', on: true },
+  { kind: 'filing', subject: 'NVDA', what: '8-K items 2.02 and 5.02 · 10-Q · 10-K', last: 'Filings · Oct 7', on: true },
+  { kind: 'cftc', subject: '10-year T-note', what: 'Leveraged funds · 3-year low · or within 5%', last: 'Report · as of Tue Oct 6', on: true },
+  { kind: 'si', subject: 'AAPL', what: 'Shares short ±15% between settlements', last: 'Settlement · Sep 30', on: true },
+  { kind: 'note', subject: 'SPY', what: 'Review due within 7 days, or a filing after the note’s price date', last: 'Switched off: not checked', on: false },
 ];
 export function alertsStaging({ minHeight = 0, scheme = 'dark' } = {}) {
   const right = `<button class="btn primary" type="button">${icon('plus', 16)}New alert</button>`;
-  const rules = P('Your alerts', `<span class="chip">${DEMO_RULES.length}</span>`, `<div>${DEMO_RULES.map((r) => ruleRow(r, { demo: true })).join('')}</div><p class="dline" style="margin: 0;">Saved in this browser’s demo workspace. Reset demo data puts the seed back.</p>`);
-  const fired = P('Fired', stateTag('sample', 'Sample firings'), `<div>${fireRow({ date: 'Oct 7', title: '10-year T-note: leveraged funds within 5% of a 3-year low', detail: 'Sample report, positions as of Tue Oct 6', chip: 'Sample · shaped like CFTC TFF', link: ['Open Markets', '/research/markets'] }, 'dashed')}</div><span class="dline">Alerts never fire in the demo on their own; this firing is part of the scenario. Nothing here was published by a source.</span>`, 'Fired', 'is-sample');
-  const main = `<div class="wrap al5">${H('Alerts', ALERTS_LEAD + ' In the demo every kind, structure included, checks the Oct 7 scenario.', right).replace(/ap-h/g, 'al5-h')}${legend([['demo', 'Demo · sample data', null], ['sample', 'Sample', DEMO_RULES.length]])}<div class="al5-g"><div class="al5-col">${rules}${P('What each kind watches', '', kindRef({ demo: true }))}</div><div class="al5-col">${fired}</div></div></div>`;
+  // The demo bar is the page's one "Demo · sample data", so there is no legend; "Your alerts" is a sample
+  // panel that says Sample once, in its head; Fired's row chip is its one mark (owner D1, spec 01 step 5).
+  const rules = P('Your alerts', `<span class="chip">${DEMO_RULES.length}</span>${stateTag('sample')}`, `<div>${DEMO_RULES.map((r) => ruleRow(r, { demo: true })).join('')}</div><p class="dline" style="margin: 0;">Saved in this browser’s demo workspace. Reset demo data puts the seed back.</p>`, 'Your alerts', 'is-sample');
+  const fired = P('Fired', '', `<div>${fireRow({ date: 'Oct 7', title: '10-year T-note: leveraged funds within 5% of a 3-year low', detail: '+2.70M contracts net, positions as of Tue Oct 6', chip: 'Sample · shaped like CFTC TFF', link: ['Open Markets', '/research/markets'] }, 'dashed')}</div><span class="dline">Each firing here comes from the sample day: one is seeded with it, and structure alerts fire while a ticker desk is open. Nothing here was published by a source.</span>`, 'Fired', 'is-sample');
+  const main = `<div class="wrap al5">${H('Alerts', ALERTS_LEAD + ' Every kind can be set up here, structure included.', right).replace(/ap-h/g, 'al5-h')}<div class="al5-g"><div class="al5-col">${rules}${P('What each kind watches', '', kindRef({ demo: true }))}</div><div class="al5-col">${fired}</div></div></div>`;
   return finalPage({ scheme, minHeight, active: 'alerts', demo: true, label: 'Alerts', main });
 }
 

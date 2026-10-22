@@ -3,7 +3,7 @@
 // sign in is production only (staging has no sign-in anywhere). Production words for each overlay's
 // Not live state live on the states board. Copy reuses the shipped strings (features/trading/orders/
 // copy.ts D8 disclosures, features/trading/positions/labels.ts DISCLAIMER, pages/scanner/labels.ts).
-import { STAGING_DEMO_URL, icon, v4Nav, v4Notice } from '../../lib.mjs';
+import { STAGING_DEMO_URL, icon, v4Nav, finalDemoNotice } from '../../lib.mjs';
 import { dataCell, provChip, stateTag } from '../../components/data-states.mjs';
 import { dlg, fld, overPage, seg, statesBoard } from '../v4/kit.mjs';
 import { signInDlg } from '../v4/docs-dialogs.mjs';
@@ -27,7 +27,7 @@ export const DLG_CSS = `
 
 /** A staging page with an overlay: the demo bar and the demo account behind the scrim (never "Sign in"). */
 export function overDemo({ scheme = 'dark', minHeight = 900, active = '', dialog, right = false }) {
-  const behind = `<div class="v4-behind" aria-hidden="true">${v4Notice('demo')}${v4Nav({ active, demo: true })}<div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 16px;"><span class="skel" style="height: 44px; width: 38%;"></span><span class="skel" style="height: 300px; width: 100%;"></span><span class="skel" style="height: 120px; width: 100%;"></span><span class="skel" style="height: 220px; width: 100%;"></span></div></div>`;
+  const behind = `<div class="v4-behind" aria-hidden="true">${finalDemoNotice()}${v4Nav({ active, demo: true })}<div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 16px;"><span class="skel" style="height: 44px; width: 38%;"></span><span class="skel" style="height: 300px; width: 100%;"></span><span class="skel" style="height: 120px; width: 100%;"></span><span class="skel" style="height: 220px; width: 100%;"></span></div></div>`;
   return `<div class="v4" data-scheme="${scheme}" style="position: relative; width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor); overflow: hidden;">${behind}<div class="v4-over${right ? ' right' : ''}">${dialog}</div></div>`;
 }
 

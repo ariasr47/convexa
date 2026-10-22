@@ -9,9 +9,13 @@ import { barList, chartFrame, dataTable, fmt, legend, plot, rangeBar, smallMulti
 import { spreadPlot, spreadTable, SP_CLAIM } from '../../components/charts.mjs';
 import { BRIER, CALIB, CALIB_N, CFTC, CFTC_CATS, TENORS, curveAgo, latestCurve, rangeStats, y10 } from '../../data/charts.mjs';
 
-/** Environment: production (primary sources, solid) or staging (the demo, dashed + hatch). */
-export const env = (demo) => ({
+/** Environment: production (primary sources, solid) or staging (the demo, dashed + hatch). `frameTag:
+ *  false` is the page opt-in FrameDemoTagProvider (2026-10-22, owner D1, spec 01 step 5): on /research,
+ *  /research/markets and /research/filings the demo bar is the page's one "Demo · sample data", so a
+ *  frame's "Demo · shaped like …" source chip is its one Sample mark and its head carries no demo tag. */
+export const env = (demo, { frameTag = true } = {}) => ({
   demo,
+  frameTag,
   kind: demo ? 'sample' : 'primary',
   sk: demo ? 'dashed' : 'solid',
   // shaped text starting with '!' is literal sample (not shaped like a public source)
@@ -19,14 +23,15 @@ export const env = (demo) => ({
   asof: (real) => (demo ? 'Scenario · Oct 7, 2026' : real),
 });
 
-/** A chart frame in the environment's provenance: production keeps its own state tag, staging says Demo. */
+/** A chart frame in the environment's provenance: production keeps its own state tag, staging says Demo
+ *  unless the page opts out (`frameTag: false`). */
 export function frame(e, { claim, sub, body, real, shaped, asof, tag = ['current', ''], table = '', note = '', legendHtml = '', href = '' }) {
   return chartFrame({
     claim, sub, body, table, note, legendHtml,
     kind: e.kind,
     source: e.src(real, shaped), sourceKind: e.sk, sourceHref: e.demo ? '' : href,
     asof: e.asof(asof),
-    state: e.demo ? 'demo' : tag[0], stateText: e.demo ? '' : tag[1],
+    state: e.demo ? (e.frameTag ? 'demo' : '') : tag[0], stateText: e.demo ? '' : tag[1],
   });
 }
 

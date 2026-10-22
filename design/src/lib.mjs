@@ -623,9 +623,37 @@ export function v4Tabs(active = 'Notes') {
 export function v4Footer() {
   return `<footer class="v4-foot"><div class="wrap v4-foot-in">${wordmark(14)}<nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/settings">Settings</a><a href="/credits">Sources and credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p></div></footer>`;
 }
+// ---- Final chrome on staging (2026-10-22, spec 01 steps 1, 2 and 4) ------------------------------
+// The shipped staging demo bar and footer. The v4 boards keep v4Notice('demo') and v4Footer() as drawn.
+// Bar (shell/AppShell.tsx): MarketDataNotice's 1240 column, a 6px column gap and no row gap, each "·" its
+// own aria-hidden span, the sample glyph at every width, Reset at its line's right end (margin-left: auto).
+// From 600px up it names the product and reads "As of Oct 7, 2026" (owner D2); below 600px it is one
+// line with no vertical padding, "Demo · sample data · Oct 7, 2026" and "Reset" named "Reset demo data".
+const FD_CSS = '<style>.fd-bar { padding-top: 8px; padding-bottom: 8px; } .fd-bar > .wrap { max-width: calc(1240px + 2 * clamp(16px, 3vw, 40px)); display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 0; } .fd-bar .fd-reset { margin-left: auto; height: 44px; } .fd-bar .fd-ph, .fd-bar .fd-br { display: none; } @media (max-width: 599px) { .fd-bar { padding-top: 0; padding-bottom: 0; } .fd-bar .fd-wd { display: none; } .fd-bar .fd-ph { display: inline; } .fd-bar .fd-br { display: block; flex-basis: 100%; height: 0; } }</style>';
+const fdSep = (wide = false) => `<span class="steel${wide ? ' fd-wd' : ''}" aria-hidden="true">·</span>`;
+/** The staging demo bar. `extra` is a playback line (paused or ended), which starts its own line below
+ *  600px and follows a separator from 600px up. `phone: true` draws the under-600px line at any width. */
+export function finalDemoNotice({ extra = '', phone = false } = {}) {
+  const wd = phone ? ' style="display: none;"' : '';
+  const ph = phone ? ' style="display: inline;"' : '';
+  const play = extra ? `<span class="fd-br"${phone ? ' style="display: block; flex-basis: 100%; height: 0;"' : ''}></span>${phone ? '' : fdSep(true)}${extra}` : '';
+  return `<div role="status" aria-label="Demo scenario provenance" class="v4-notice demo fd-bar"${phone ? ' style="padding-top: 0; padding-bottom: 0;"' : ''}>${FD_CSS}<div class="wrap">${icon('sample', 14)}<strong style="font-weight: 700;">Demo · sample data</strong>${fdSep()}<span class="steel fd-ph"${ph}>Oct 7, 2026</span><span class="steel fd-wd"${wd}>Convexa is an options desk: dealer positioning, SEC filings and research notes.</span>${phone ? '' : fdSep(true)}<span class="steel fd-wd"${wd}>As of Oct 7, 2026 · no market feed connected</span>${play}<button class="btn ghost sm fd-reset" type="button" aria-label="Reset demo data"><span class="fd-wd"${wd}>Reset demo data</span><span class="fd-ph"${ph}>Reset</span></button></div></div>`;
+}
+/** The staging footer's author line (Footer.tsx), above the copyright. Its "GitHub ↗" link waits on the
+ *  owner's question S1-Q3 (profile or repository), so it is not drawn. Production has no author line. */
+export const FINAL_AUTHOR = '<p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">Built by Rodrigo Arias · <a href="/blog/how-convexa-is-built" style="color: var(--steel);">How it’s built</a></p>';
+export const FINAL_COPYRIGHT = '<p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p>';
+
 /** A Final-page board (2026-10-16): a v4 page whose production nav carries “Full demo ↗”. The v4 and v5
- *  pages keep the nav they were drawn with. */
-export const finalPage = (o = {}) => v4Page({ fullDemo: true, ...o });
+ *  pages keep the nav they were drawn with. On staging (`demo`) it wears the shipped demo bar and the
+ *  footer's author line above the copyright (2026-10-22, spec 01). */
+export const finalPage = (o = {}) => {
+  const html = v4Page({ fullDemo: true, ...o });
+  if (!o.demo) return html;
+  return html
+    .replace(v4Notice('demo'), finalDemoNotice())
+    .replace('Not investment advice.</p></div></footer>', `Not investment advice.</p>${FINAL_AUTHOR}${FINAL_COPYRIGHT}</div></footer>`);
+};
 /** A v4 page: scheme wrapper + notice + nav (+ research tabs) + main + footer. */
 export function v4Page({ scheme = 'dark', minHeight = 0, notice = 'hybrid', active = '', tabs = '', signedIn = false, demo = false, main = '', footer = true, label = '', fullDemo = false } = {}) {
   return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);">

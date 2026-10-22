@@ -4,7 +4,7 @@
 // Copy reuses shipped strings: features/trading/broker/reassess.tsx, features/trading/outcomes/copy.ts,
 // shared/ui/Widget/Widget.tsx, features/trading/positions/{CustomizationToolbar.tsx,labels.ts},
 // pages/alerts/AlertsPage.tsx (notifyExplain), features/auth/copy.ts.
-import { icon, v4Nav, v4Notice, finalPage } from '../../lib.mjs';
+import { icon, v4Nav, finalDemoNotice, finalPage } from '../../lib.mjs';
 import { chartFrame, plot, ticks } from '../../chart-kit.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
 import { dlg, fld, overPage, statesBoard } from '../v4/kit.mjs';
@@ -45,7 +45,7 @@ const SAMPLE_ASOF = 'Oct 7, 2026 · 2:30 PM ET';
 
 /** A staging page with an overlay: the demo bar and the demo account behind the scrim (never "Sign in"). */
 export function overDemo({ scheme = 'dark', minHeight = 900, active = '', dialog, right = false }) {
-  const behind = `<div class="v4-behind" aria-hidden="true">${v4Notice('demo')}${v4Nav({ active, demo: true })}<div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 16px;"><span class="skel" style="height: 44px; width: 38%;"></span><span class="skel" style="height: 300px; width: 100%;"></span><span class="skel" style="height: 120px; width: 100%;"></span><span class="skel" style="height: 220px; width: 100%;"></span></div></div>`;
+  const behind = `<div class="v4-behind" aria-hidden="true">${finalDemoNotice()}${v4Nav({ active, demo: true })}<div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 16px;"><span class="skel" style="height: 44px; width: 38%;"></span><span class="skel" style="height: 300px; width: 100%;"></span><span class="skel" style="height: 120px; width: 100%;"></span><span class="skel" style="height: 220px; width: 100%;"></span></div></div>`;
   return `<div class="v4" data-scheme="${scheme}" style="position: relative; width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor); overflow: hidden;">${behind}<div class="v4-over${right ? ' right' : ''}">${dialog}</div></div>`;
 }
 

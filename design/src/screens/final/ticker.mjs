@@ -45,7 +45,7 @@ const DESK = {
     { tag: 'locked', when: 'AI read, signed out, on a build with the feed (neither site today).' },
     { tag: ['notConfigured', 'Add a key'], when: 'AI read, signed in without a provider key, same build.' },
     { tag: 'sample', when: 'Staging, every options panel: dashed frame, hatch, Sample tag, Oct 7 scenario.' },
-    { tag: 'demo', when: 'Staging, always: the demo bar, “Signed in as the demo account”, Reset demo data.' },
+    { tag: 'demo', when: 'Staging, always: the demo bar (“Demo · sample data”, as of Oct 7, 2026) and Reset demo data.' },
     { tag: ['empty', 'Not in the demo'], when: 'Staging, a symbol beyond the six: says so and offers the six.' },
   ],
   phone: 'One column at 390. Masthead first: the symbol, then (staging) the price with its change and the verdict chip, then the tabs and the one primary action (44 px). Quick symbols scroll sideways; the legend wraps. TradingView’s frame drops to 420 px tall. The 12 Not live panels fold into one list with one “See them on the demo →”. Charts re-lay themselves out (short labels, minor ticks drop); text ≥ 11 px, targets ≥ 44 px. Staging stacks in reading order: the field, its levels (five-up becomes two-up), the figures that frame it, the slow lane, the read strip (two columns), the read (a sheet under 768 px), tape, book, orders, context, About this sample.',
