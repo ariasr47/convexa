@@ -462,9 +462,15 @@ export function GammaSurfaceHero({ demo }: { demo: boolean }) {
           LANDING_COPY.hero.helpStatic
         ) : (
           <>
-            {LANDING_COPY.hero.helpTurn} · <Kbd>←</Kbd>
-            <Kbd>→</Kbd> strikes · <Kbd>↑</Kbd>
-            <Kbd>↓</Kbd> expiries · <Kbd>Home</Kbd> resets
+            {LANDING_COPY.hero.helpTurn}
+            {/* The key hints are one span, so under a coarse pointer the line is exactly
+                `helpTurn`, with no '·' left behind (spec 2026-10-21/02, (d)). */}
+            <Box component="span" sx={{ '@media (pointer: coarse)': { display: 'none' } }}>
+              {' · '}
+              <Kbd>←</Kbd>
+              <Kbd>→</Kbd> strikes · <Kbd>↑</Kbd>
+              <Kbd>↓</Kbd> expiries · <Kbd>Home</Kbd> resets
+            </Box>
           </>
         )}
       </Box>

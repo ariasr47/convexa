@@ -19,6 +19,7 @@ import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { typographyTokens } from '@/shared/theme/tokens';
 import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import InputBase from '@mui/material/InputBase';
 import Skeleton from '@mui/material/Skeleton';
@@ -43,6 +44,13 @@ export interface CommandPaletteProps {
   /** Opens the keyboard shortcuts sheet (the footer's “?”). */
   onOpenShortcuts?: () => void;
 }
+
+/**
+ * Keyboard hints are for a keyboard: under a coarse pointer (a phone, or a touch tablet at any
+ * width) the palette shows none of them (spec 2026-10-21/02, (d) Palette on a phone). Applied as the
+ * LAST entry of an `sx` array, so it wins over a width rule on the same element.
+ */
+const HIDE_ON_COARSE = { '@media (pointer: coarse)': { display: 'none' } } as const;
 
 const SKELETON_ROWS = 4;
 /** How many recent tickers an empty query lists. */
@@ -216,7 +224,7 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
           <Box
             component="span"
             aria-hidden
-            sx={{ display: { xs: 'none', sm: 'inline-flex' }, gap: 0.5 }}
+            sx={[{ display: { xs: 'none', sm: 'inline-flex' }, gap: 0.5 }, HIDE_ON_COARSE]}
           >
             <Kbd>g</Kbd>
             <Kbd>{KEY_OF[command.to]}</Kbd>
@@ -405,7 +413,19 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
       <Box component="h2" id={titleId} sx={visuallyHidden}>
         Jump to a ticker or note
       </Box>
-      <Box sx={{ p: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+      {/* Below 600px the row is a flex row: the input, then Cancel. A phone has no Escape key and
+          a scrim tap is easy to miss, so the close is a visible, 44px control. At 600px and up
+          the row is the plain block it always was, and Cancel is not displayed. */}
+      <Box
+        sx={{
+          display: { xs: 'flex', sm: 'block' },
+          alignItems: 'center',
+          gap: 1,
+          p: 1.5,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
         <InputBase
           autoFocus
           fullWidth
@@ -424,6 +444,15 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
           }}
           sx={{ fontSize: '1rem', px: 1, py: 0.5 }}
         />
+        {/* Neutral text button (owner ruling A: amber is the one primary action's). */}
+        <Button
+          variant="text"
+          onClick={onClose}
+          data-testid="palette-cancel"
+          sx={{ display: { xs: 'inline-flex', sm: 'none' }, flexShrink: 0, minHeight: 44 }}
+        >
+          Cancel
+        </Button>
       </Box>
 
       <Box
@@ -505,25 +534,29 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
           color: 'text.secondary',
         }}
       >
-        <span>
+        <Box component="span" sx={HIDE_ON_COARSE}>
           <Kbd>↑↓</Kbd> move
-        </span>
-        <span>
+        </Box>
+        <Box component="span" sx={HIDE_ON_COARSE}>
           <Kbd>↵</Kbd> open
-        </span>
+        </Box>
         {onOpenShortcuts && (
           <Box
             component="button"
             type="button"
             onClick={onOpenShortcuts}
-            sx={{
-              all: 'unset',
-              cursor: 'pointer',
-              display: { xs: 'none', sm: 'inline-flex' },
-              alignItems: 'center',
-              gap: 0.5,
-              '&:focus-visible': { outline: '2px solid', outlineOffset: 2 },
-            }}
+            // Width alone left it on a coarse tablet of 600px and up; the coarse rule comes last.
+            sx={[
+              {
+                all: 'unset',
+                cursor: 'pointer',
+                display: { xs: 'none', sm: 'inline-flex' },
+                alignItems: 'center',
+                gap: 0.5,
+                '&:focus-visible': { outline: '2px solid', outlineOffset: 2 },
+              },
+              HIDE_ON_COARSE,
+            ]}
           >
             <Kbd>?</Kbd> all shortcuts
           </Box>
