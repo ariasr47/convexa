@@ -38,6 +38,7 @@ import { ProvenanceChip } from '@/pages/research/publicUi';
 import { chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { typographyTokens } from '@/shared/theme/tokens';
+import { selectCoarseFloorSx } from '@/shared/ui/touch';
 import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import InfoOutlined from '@mui/icons-material/InfoOutlined';
@@ -56,7 +57,6 @@ import {
   SecStrip,
   StateTag,
   kindState,
-  selectCoarseFloorSx,
   waitSentence,
   type SiteContext,
 } from './alertsUi';

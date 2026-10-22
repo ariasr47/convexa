@@ -146,8 +146,16 @@ const COMMON = {
         // rule can win that fight; a `Select` that needs the floor gets it via the SAME
         // doubled-class idiom, LOCALLY, at its own call site (`AlertsPage.tsx`'s Kind/Level
         // selects, `SettingsPage.tsx`'s persona select) — see those files for the pattern.
+        // The shared form of that idiom is `selectCoarseFloorSx` in `shared/ui/touch.ts`.
+        //
+        // `summary` (spec 2026-10-21/02, part (b)): a `<details>` disclosure is a control, so it
+        // takes the floor too. This reaches only summaries with no local `minHeight` — an element
+        // selector is (0,0,1) and every `sx` rule is a class at (0,1,0), so a summary (or any
+        // control) that sets its own `minHeight` below 44 carries its own coarse 44 instead
+        // (`coarseFloor`, `shared/ui/touch.ts`). Raising this rule's specificity was rejected: it
+        // would also pull local floors ABOVE 44 (the drawer's 48px rows) down to 44.
         '@media (pointer: coarse)': {
-          'button, [role="button"], a, input': {
+          'button, [role="button"], a, input, summary': {
             minHeight: 44,
             minWidth: 44,
           },
@@ -230,7 +238,44 @@ const COMMON = {
     MuiOutlinedInput: { styleOverrides: { root: { borderRadius: 8 } } },
     MuiFilledInput: { styleOverrides: { root: { borderRadius: 8 } } },
     MuiInputBase: { styleOverrides: { root: { borderRadius: 8 } } },
-    MuiToggleButton: { styleOverrides: { root: { borderRadius: 8 } } },
+    // The UNSELECTED label is `text.secondary`, not MUI's `palette.action.active` (ToggleButton.js),
+    // which is rgba(0,0,0,0.54) in light: 4.38:1 on the dialog's light `panelRaised` (#ECECE7), under
+    // the 4.5:1 text floor. `text.secondary` measures 5.45:1 light and 5.52:1 dark there (spec
+    // 2026-10-21/02, part (c)). The selected (`&.Mui-selected`, (0,2,0)) and disabled labels are
+    // MUI's own and outrank this root colour, so only the resting label changes.
+    MuiToggleButton: {
+      styleOverrides: {
+        root: ({ theme }: { theme: Theme }) => ({
+          borderRadius: 8,
+          color: theme.palette.text.secondary,
+        }),
+      },
+    },
+    // Coarse-pointer hit area for a medium Switch (spec 2026-10-21/02, part (b)): MUI draws a
+    // 58x38 root with a 38x38 switch base (9px padding round a 20px thumb), under the 44px floor
+    // (the alerts switches measured 38x38). Under `(pointer: coarse)` the root is 44px tall and the
+    // switch base 44x44, while the track (34x14) and thumb (20px) keep their size and place:
+    // - the root's vertical padding goes from 12 to 15, so the track stays 14px tall, now centred
+    //   on y=22;
+    // - the switch base's padding goes from 9 to 12, and it moves 3px left, so the thumb still
+    //   starts at x=9 and its 20px travel (`translateX(20px)` when checked) is unchanged.
+    // The root keeps `overflow: hidden`, so the tappable area is the root's 58x44 box, which the
+    // switch's own `<input>` (300% wide, 100% tall) fills. Scoped to `sizeMedium`, because a small
+    // switch has its own geometry. Desktop with a mouse is unchanged.
+    MuiSwitch: {
+      styleOverrides: {
+        root: {
+          '@media (pointer: coarse)': {
+            '&.MuiSwitch-sizeMedium': {
+              height: 44,
+              paddingTop: 15,
+              paddingBottom: 15,
+              '& .MuiSwitch-switchBase': { padding: 12, left: -3 },
+            },
+          },
+        },
+      },
+    },
     // DIALOG role = 16px (SPEC §2.2, ruling 4) — the single declared dialog radius; component-local
     // paper `sx` overrides (Widget.tsx, AuthDialog.tsx) were de-duplicated onto this in the same
     // change so there is one dialog radius, not several drifting values.

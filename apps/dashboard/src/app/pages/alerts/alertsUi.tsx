@@ -283,15 +283,3 @@ export function SecStrip() {
     </Box>
   );
 }
-
-// GATE Z, finding 3 (criterion 66): MUI `Select` self-duplicates its own class
-// (`&.${selectClasses.select}`, `Select/SelectInput.js`) to "win specificity over the input
-// base" at (0,2,0) — a bare `[role="combobox"]` (0,1,0) or a scoped `sx` descendant selector tied
-// at (0,2,0) both lose that fight (confirmed by measuring computed `min-height` in a real
-// browser). Doubling the SAME class ourselves reaches (0,3,0), which wins unconditionally —
-// `theme.ts`'s own coarse-pointer floor comment points here as the pattern.
-export const selectCoarseFloorSx = {
-  '@media (pointer: coarse)': {
-    '& .MuiSelect-select.MuiSelect-select': { minHeight: 44 },
-  },
-} as const;
