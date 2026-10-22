@@ -6,8 +6,12 @@
  * the shared ArcDivider (redesign-stage-2 §5.2 seam #1), then the
  * ConvexaMark wordmark and the simulated/paper honesty disclaimer (`[no-real-order-path]`). Content
  * constrained to the same `lg` column as the rest of the page.
+ *
+ * On the staging demo only, an author line sits above the copyright: who built it, and the
+ * engineering post (spec 01, Behaviour › Footer (staging)). Production's footer has no such line.
  */
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
+import { isDemoBuild } from '@/shared/lib/demoSite';
 import { ArcDivider } from '@/shared/ui/ArcDivider';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -18,6 +22,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { ConvexaMark } from './ConvexaMark';
 
 export function Footer() {
+  const demo = isDemoBuild();
   return (
     <Box component="footer" data-testid="site-footer">
       <ArcDivider />
@@ -105,6 +110,27 @@ export function Footer() {
           >
             <DisclaimerCopy />
           </Typography>
+          {demo && (
+            // The spec's line ends "· GitHub ↗"; that link waits on owner question S1-Q3 (the
+            // profile or the repository), so it is left out until answered.
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary' }}
+              data-testid="footer-author"
+            >
+              Built by Rodrigo Arias ·{' '}
+              <Link
+                component={RouterLink}
+                to="/blog/how-convexa-is-built"
+                variant="caption"
+                underline="hover"
+                sx={{ color: 'text.secondary' }}
+                data-testid="footer-built-link"
+              >
+                How it’s built
+              </Link>
+            </Typography>
+          )}
           <Typography
             variant="caption"
             sx={{ color: 'text.secondary' }}
