@@ -1,6 +1,6 @@
 /**
  * AiReadSample — a landing-local composition over `shared/figure` + `shared/ui` (SPEC §2.2 item 3,
- * §4 "Landing — score and AI-read samples"). The frame's title is `AI read · SPY`; the verdict row
+ * §4 "Landing — score and AI-read samples"). The frame's title is `AI read`; the verdict row
  * carries the shipped `SIMULATED` chip; the caption is this panel's OWN sample mark
  * (`AI_SAMPLE_MARK`) — a DIFFERENT withdrawal than the hero/field's shared `SAMPLE_MARK`, because
  * the claim it withdraws is different: no model run happened here, as against no live read.
@@ -27,7 +27,8 @@ import { alpha } from '@mui/material/styles';
 import { LANDING_COPY } from './copy';
 import { AI_SAMPLE_MARK } from './samples';
 
-const TITLE = 'AI read · SPY';
+// No symbol: the values are illustrative and are no real ticker's structure (spec 01, Copy › Landing).
+const TITLE = 'AI read';
 
 interface ReadCell {
   label: string;

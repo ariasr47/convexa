@@ -32,7 +32,8 @@ import { LANDING_COPY } from './copy';
 import { LANDING_FIELD_MODEL, SAMPLE_MARK } from './samples';
 
 const CAPTION_ID = 'landing-field-caption';
-const TITLE = 'Net dealer gamma by strike · SPY';
+// No symbol: the values are illustrative and are no real ticker's structure (spec 01, Copy › Landing).
+const TITLE = 'Net dealer gamma by strike';
 
 export function StructureFieldSample({ demo = false }: { demo?: boolean }) {
   const theme = useTheme();

@@ -1,15 +1,20 @@
 /**
- * pages/landing/copy.ts — the landing's pinned strings (SPEC §4; PLAN F7 step 1).
+ * pages/landing/copy.ts — the landing's strings (SPEC §4; PLAN F7 step 1).
  *
- * Two provenances, and both are pins:
- *   - Every string this file exports that SPEC §4 QUOTES is pinned to those exact bytes (AC-C1).
- *     Apostrophes are U+2019 where the design source uses them (never a straight U+0027); the en
- *     dash in `7–45` and the em dashes in the body copy are the source's own glyphs, never
- *     retyped as a hyphen.
+ * Where they come from:
+ *   - SPEC §4 quoted most of these strings, and they keep those bytes (AC-C1). Apostrophes are
+ *     U+2019 where the design source uses them (never a straight U+0027); the en dash in `7–45`
+ *     and the em dashes in the body copy are the source's own glyphs, never retyped as a hyphen.
  *   - The three feature bodies, nine bullets and three trust-card bodies are copied byte-for-byte
- *     from `design/src/screens/landing.mjs:104,107-109,126-128` (AC-C1a; F13's item-16 spec
- *     proves it against the design source on disk) — with ONE deliberate, named exception: the
- *     field section's second bullet, marked AMENDED below (four words added, no new claim).
+ *     from `design/src/screens/landing.mjs:104,107-109,126-128` (AC-C1a) — with ONE deliberate,
+ *     named exception: the field section's second bullet, marked AMENDED below (four words added,
+ *     no new claim).
+ *   - Spec 01 (`docs/product/specs/2026-10-21/01-demo-first-screen.md`, Copy › Landing, step 3)
+ *     supersedes SPEC §4 for four strings. The hero's secondary reads "How it works" on both
+ *     builds (it was "How it’s built"; the page it opens and the footer call it "How Convexa
+ *     works"). The demo build gets its own hero chip, AI-read H2 and third trust-card body
+ *     (`chipDemo`, `h2Demo`, `bodyDemo`), because the production strings promise "no account" and
+ *     "your own key", which the demo does not offer. Production keeps every SPEC §4 string.
  *
  * The CTA band's two auth strings are IMPORTED from `@/features/auth/copy`, never retyped — the
  * deny-list allows that module because it is a pure string table with no transport (SPEC §2.1),
@@ -36,11 +41,15 @@ export const LANDING_COPY = {
 
   hero: {
     chip: 'Dealer-gamma analytics · free ticker, no account',
+    /** The demo build's chip: it says options, and it does not promise "no account" under a bar
+     *  that says the visitor is in the demo account (spec 01, Behaviour › Landing). */
+    chipDemo: 'Options analytics desk · demo account, sample data',
     h1: 'See the dealer positioning behind the price.',
     sub: 'Convexa turns an option chain into dealer gamma structure — the call and put walls, the gamma flip, the magnet — then gives you a risk-first AI read on the setup. Practice the plan on a simulated book before you ever risk a dollar.',
     spine: 'Scan → Ticker → Plan → Track',
     primary: 'Open the Ticker →',
-    secondary: 'How it’s built',
+    /** Both builds. It opens `/methodology`, whose H1 and footer link say "How Convexa works". */
+    secondary: 'How it works',
     footnote:
       'Built for 7–45 DTE swing trades with optional intraday timing. An analysis tool; every trade is simulated.',
     /** Production only: the demo is the primary action; the footnote says what each site shows. */
@@ -98,6 +107,8 @@ export const LANDING_COPY = {
   aiRead: {
     eyebrow: 'What would I risk?',
     h2: 'A risk-first read, on your own key, grounded in the structure.',
+    /** The demo build needs no key: its reads are written for the sample day (`ctaDemo.body`). */
+    h2Demo: 'A risk-first read, grounded in the structure: here, written for the sample day.',
     body: 'Ask for a read and get the verdict first — trade or no trade — then max risk, invalidation, entry and target before a single paragraph of rationale. Figures that trace to Convexa render in mono; the model’s own numbers render in body type so you always know whose number you are looking at.',
     bullets: [
       'Pinned to a snapshot; a newer one is flagged, never silently swapped',
@@ -124,6 +135,10 @@ export const LANDING_COPY = {
       {
         title: 'Advisory, never an order',
         body: 'The AI read runs on your own key, pins to a snapshot, and cites what it used. Figures it could not trace render in body type. You confirm every paper trade.',
+        /** The demo build's body: no key there, and production has no options feed today, so the
+         *  key is conditional on a live feed rather than promised for "the live site". */
+        bodyDemo:
+          'With a live options feed, the read runs on your own key, pins to a snapshot, and cites what it used. Here every read is written for the sample day. Figures it could not trace render in body type. You confirm every paper trade.',
       },
     ] as const,
   },

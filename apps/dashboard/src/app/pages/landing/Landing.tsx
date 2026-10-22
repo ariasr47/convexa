@@ -213,13 +213,38 @@ export function Landing() {
               display: 'grid',
               // GATE Z amendment 7 — two-column at 1100 (`laptop`), not MUI's `lg` (1200).
               gridTemplateColumns: { xs: '1fr', laptop: '1.05fr 1fr' },
-              gap: { xs: 5, laptop: 6 },
+              // Three items: the copy, the panel and the footnote (spec 01, Behaviour › Landing).
+              // One column below 1100, in DOM order, 40px apart, so a phone reaches the panel
+              // before the footnote. From 1100 the copy and the footnote stack in column 1, 20px
+              // apart (the copy Stack's own spacing, as when the footnote sat inside it), and the
+              // panel spans both rows of column 2, centred. Column 1 is then the old Stack's
+              // height, so the panel and the copy line up as they did.
+              gridTemplateRows: { laptop: 'auto auto' },
+              rowGap: { xs: 5, laptop: 2.5 },
+              columnGap: { xs: 5, laptop: 6 },
               alignItems: 'center',
+              // The panel's root is GammaSurfaceHero's figure; it is placed here, beside the
+              // other two items' placement, so the grid's layout reads in one place.
+              '& > [data-testid="landing-hero-panel"]': {
+                gridColumn: { laptop: '2' },
+                gridRow: { laptop: '1 / span 2' },
+                alignSelf: { laptop: 'center' },
+              },
             }}
           >
-            <Stack spacing={2.5} sx={{ alignItems: 'flex-start', maxWidth: 600, minWidth: 0 }}>
+            <Stack
+              spacing={2.5}
+              sx={{
+                alignItems: 'flex-start',
+                maxWidth: 600,
+                minWidth: 0,
+                gridColumn: { laptop: '1' },
+                gridRow: { laptop: '1' },
+                alignSelf: { laptop: 'end' },
+              }}
+            >
               <Chip
-                label={LANDING_COPY.hero.chip}
+                label={demo ? LANDING_COPY.hero.chipDemo : LANDING_COPY.hero.chip}
                 size="small"
                 sx={{
                   alignSelf: 'flex-start',
@@ -358,13 +383,26 @@ export function Landing() {
                   {LANDING_COPY.hero.secondary}
                 </Button>
               </Stack>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                {demo ? LANDING_COPY.hero.footnote : LANDING_COPY.hero.footnoteLive}
-              </Typography>
             </Stack>
 
             {/* The F1 dealer-gamma surface: WebGL2 with its static projection as the fallback (P-15). */}
             <GammaSurfaceHero demo={demo} />
+
+            {/* Shrink-to-fit up to 600px, as it was inside the copy Stack. */}
+            <Typography
+              variant="caption"
+              data-testid="hero-footnote"
+              sx={{
+                color: 'text.secondary',
+                maxWidth: 600,
+                justifySelf: 'start',
+                gridColumn: { laptop: '1' },
+                gridRow: { laptop: '2' },
+                alignSelf: { laptop: 'start' },
+              }}
+            >
+              {demo ? LANDING_COPY.hero.footnote : LANDING_COPY.hero.footnoteLive}
+            </Typography>
           </Box>
         </Container>
       </Box>
@@ -394,7 +432,7 @@ export function Landing() {
       <FeatureSection
         section="ai-read"
         eyebrow={LANDING_COPY.aiRead.eyebrow}
-        heading={LANDING_COPY.aiRead.h2}
+        heading={demo ? LANDING_COPY.aiRead.h2Demo : LANDING_COPY.aiRead.h2}
         body={LANDING_COPY.aiRead.body}
         bullets={LANDING_COPY.aiRead.bullets}
         visual={<AiReadSample demo={demo} />}
@@ -470,7 +508,7 @@ export function Landing() {
                     {card.title}
                   </Typography>
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    {card.body}
+                    {demo && 'bodyDemo' in card ? card.bodyDemo : card.body}
                   </Typography>
                 </Box>
               ))}

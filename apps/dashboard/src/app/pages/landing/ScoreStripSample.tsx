@@ -43,7 +43,8 @@ export function flipDistanceCell(spot: number, flip: number): { value: string; c
 const FLIP_DISTANCE = flipDistanceCell(LANDING_SAMPLE.spot, LANDING_SAMPLE.gammaFlip);
 
 const TIERS = ['Dormant', 'Watch', 'Actionable', 'Prime'] as const;
-const TITLE = 'Triage score · SPY';
+// No symbol: the values are illustrative and are no real ticker's structure (spec 01, Copy › Landing).
+const TITLE = 'Triage score';
 
 interface ScoreCell {
   label: string;
