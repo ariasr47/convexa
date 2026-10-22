@@ -79,6 +79,19 @@ describe('the counted read (AC-7/8/9/11)', () => {
     expect(i.lo).toBeLessThan(60);
     expect(i.hi).toBeGreaterThan(60);
   });
+
+  it('the Wilson interval has the Wilson values, in integer points: a normal approximation reads 39–81 at 12/20 and 100–100 at 20/20', () => {
+    // Computed independently with `node -e` at z = 1.959963984540054. The bounds case above passes
+    // under the normal approximation too; only the values tell the two apart.
+    const table: Array<[hits: number, n: number, expected: { lo: number; hi: number }]> = [
+      [12, 20, { lo: 39, hi: 78 }],
+      [20, 20, { lo: 84, hi: 100 }],
+      [0, 20, { lo: 0, hi: 16 }],
+    ];
+    for (const [hits, n, expected] of table) {
+      expect(wilsonInterval(hits, n), `${hits}/${n}`).toEqual(expected);
+    }
+  });
 });
 
 describe('the floor (AC-E2, AC-E3)', () => {
