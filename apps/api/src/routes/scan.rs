@@ -2,8 +2,8 @@
 #![allow(dead_code)] // OpenAPI DTOs and response enums are exporter-only schema markers.
 
 use crate::openapi::RouteResponse;
-use crate::routes::auth::{cookie_opt, require_user};
-use crate::services::auth::AuthError;
+use crate::routes::auth::{require_user, MaybeUser};
+use crate::services::auth::{AuthError, UserRecord};
 use crate::services::scanner::projection::project_building;
 use crate::services::scanner::store::{
     ScanRow, StructureSample, STRUCTURE_HISTORY_DEFAULT_LIMIT, STRUCTURE_HISTORY_MAX,
@@ -392,9 +392,9 @@ pub struct DetailBody {
 )]
 pub async fn get_scan_contract(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    user: MaybeUser,
 ) -> RouteResponse<ScanJsonResponse> {
-    get_scan(State(state), headers).await.into_response().into()
+    get_scan(State(state), user).await.into_response().into()
 }
 
 #[utoipa::path(get, path = "/api/scan/{symbol}/history", operation_id = "scan_history", params(("symbol" = String, Path), HistoryQuery), responses(StructureHistoryGetResponse))]
@@ -417,9 +417,9 @@ pub async fn get_structure_history_contract(
 )]
 pub async fn get_scan_view_contract(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    user: MaybeUser,
 ) -> RouteResponse<ScanViewGetResponse> {
-    get_scan_view(State(state), headers)
+    get_scan_view(State(state), user)
         .await
         .into_response()
         .into()
@@ -445,9 +445,9 @@ pub async fn get_scan_universe_contract(
 )]
 pub async fn get_scan_all_contract(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    user: MaybeUser,
 ) -> RouteResponse<ScanJsonResponse> {
-    get_scan_all(State(state), headers)
+    get_scan_all(State(state), user)
         .await
         .into_response()
         .into()
@@ -540,10 +540,8 @@ fn view_from_account_json(raw: &str, state: &AppState) -> Option<ScanView> {
     })
 }
 
-async fn effective_view(state: &AppState, headers: &HeaderMap) -> ScanView {
-    let cookie = cookie_opt(headers);
-    let resolved = state.auth.resolve_session(cookie.as_deref());
-    if let Some(user) = resolved.user.as_ref() {
+async fn effective_view(state: &AppState, user: Option<&UserRecord>) -> ScanView {
+    if let Some(user) = user {
         if let Some(raw) = state.auth.get_scan_view_json(user) {
             if let Some(mut v) = view_from_account_json(&raw, state) {
                 v.authenticated = true;
@@ -591,8 +589,11 @@ async fn fill_rows(state: &AppState, symbols: &[String]) -> Vec<ScanRow> {
 }
 
 /// GET /api/scan
-pub async fn get_scan(State(state): State<AppState>, headers: HeaderMap) -> Json<ScanEnvelope> {
-    let view = effective_view(&state, &headers).await;
+pub async fn get_scan(
+    State(state): State<AppState>,
+    MaybeUser(user): MaybeUser,
+) -> Json<ScanEnvelope> {
+    let view = effective_view(&state, user.as_ref()).await;
     let rows = fill_rows(&state, &view.symbols)
         .await
         .into_iter()
@@ -728,8 +729,11 @@ pub async fn get_structure_history(
 }
 
 /// GET /api/scan/view
-pub async fn get_scan_view(State(state): State<AppState>, headers: HeaderMap) -> Json<ScanView> {
-    Json(effective_view(&state, &headers).await)
+pub async fn get_scan_view(
+    State(state): State<AppState>,
+    MaybeUser(user): MaybeUser,
+) -> Json<ScanView> {
+    Json(effective_view(&state, user.as_ref()).await)
 }
 
 /// GET /api/scan/universe
@@ -747,13 +751,16 @@ pub async fn get_scan_universe(State(state): State<AppState>) -> Json<UniverseRe
 }
 
 /// GET /api/scan/all — full universe ranked by score.
-pub async fn get_scan_all(State(state): State<AppState>, headers: HeaderMap) -> Json<ScanEnvelope> {
+pub async fn get_scan_all(
+    State(state): State<AppState>,
+    MaybeUser(user): MaybeUser,
+) -> Json<ScanEnvelope> {
     let symbols = state
         .universe
         .as_ref()
         .map(|u| u.universe.clone())
         .unwrap_or_default();
-    let mut view = effective_view(&state, &headers).await;
+    let mut view = effective_view(&state, user.as_ref()).await;
     view.symbols = symbols.clone();
     view.source = "universe".into();
     view.name = Some("all".into());
@@ -915,22 +922,22 @@ mod response_conversion_tests {
         .await
         .unwrap();
 
-        let Json(live) = get_scan(State(state.clone()), HeaderMap::new()).await;
+        let Json(live) = get_scan(State(state.clone()), MaybeUser(None)).await;
         assert_eq!(live.market_data, "live");
 
         let mut cfg = (*state.config).clone();
         cfg.market_data_mode = crate::config::MarketDataMode::Paused;
         cfg.massive_api_key = "configured-but-paused".into();
         state.config = std::sync::Arc::new(cfg.clone());
-        let Json(paused) = get_scan(State(state.clone()), HeaderMap::new()).await;
+        let Json(paused) = get_scan(State(state.clone()), MaybeUser(None)).await;
         assert_eq!(paused.market_data, "paused");
-        let Json(paused_all) = get_scan_all(State(state.clone()), HeaderMap::new()).await;
+        let Json(paused_all) = get_scan_all(State(state.clone()), MaybeUser(None)).await;
         assert_eq!(paused_all.market_data, "paused");
 
         // P-1: no vendor key at all reads as not live, on the scan envelope as on /api/health.
         cfg.massive_api_key = String::new();
         state.config = std::sync::Arc::new(cfg);
-        let Json(not_live) = get_scan(State(state), HeaderMap::new()).await;
+        let Json(not_live) = get_scan(State(state), MaybeUser(None)).await;
         assert_eq!(not_live.market_data, "not_live");
     }
 }

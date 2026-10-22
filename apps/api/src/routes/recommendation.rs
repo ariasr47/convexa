@@ -3,7 +3,7 @@
 
 use crate::error::AppError;
 use crate::openapi::RouteResponse;
-use crate::routes::auth::{cookie_opt, require_user};
+use crate::routes::auth::{require_user, session_user, AuthUser};
 use crate::routes::market::build_bundle;
 use crate::services::analytics::load_analytics;
 use crate::services::recommendation::{
@@ -585,8 +585,7 @@ pub async fn get_export(
 
     // Risk inputs — optional session resolve; anonymous (or a settings-read fault) ⇒ not_set,
     // present, never omitted.
-    let cookie = cookie_opt(&headers);
-    let user = state.auth.resolve_session(cookie.as_deref()).user;
+    let user = session_user(&state, &headers);
     let risk_inputs = match user.as_ref().and_then(|u| state.auth.get_settings(u).ok()) {
         Some(settings) => {
             serde_json::to_value(settings.risk_inputs).unwrap_or_else(|_| not_set_risk_inputs())
@@ -624,8 +623,7 @@ pub async fn get_status(
         dp,
     )
     .await?;
-    let cookie = cookie_opt(&headers);
-    let user = state.auth.resolve_session(cookie.as_deref()).user;
+    let user = session_user(&state, &headers);
     let resolved = resolve_llm_key(&state, user.as_ref());
     let ai = bundle.get("ai_eval");
     Ok(Json(status_payload(ai, &resolved, user.is_some()))
@@ -640,16 +638,8 @@ pub async fn get_status(
     operation_id = "positions_sim_trade_gate",
     responses(SimTradeGateResponse)
 )]
-pub async fn sim_trade_gate(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-) -> RouteResponse<SimTradeGateResponse> {
-    sim_trade_gate_http(State(state), headers).await.into()
-}
-
-async fn sim_trade_gate_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
-    if let Err(r) = require_user(&state, &headers) {
-        return r;
-    }
-    (StatusCode::OK, Json(SimTradeGateBody { authorized: true })).into_response()
+pub async fn sim_trade_gate(AuthUser(_user): AuthUser) -> RouteResponse<SimTradeGateResponse> {
+    (StatusCode::OK, Json(SimTradeGateBody { authorized: true }))
+        .into_response()
+        .into()
 }

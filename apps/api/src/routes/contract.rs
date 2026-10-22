@@ -121,7 +121,7 @@ pub(crate) fn contract_representative_for(
             AppError::NotFound("contract not in current snapshot".into()).into_response()
         }
         axum::http::StatusCode::UNPROCESSABLE_ENTITY => {
-            AppError::Config("right must be call or put".into()).into_response()
+            AppError::Validation("right must be call or put".into()).into_response()
         }
         axum::http::StatusCode::INTERNAL_SERVER_ERROR => {
             AppError::Config("contract route internal failure".into()).into_response()
@@ -152,10 +152,11 @@ pub async fn get_tracked_contract(
         "c" | "call" => ContractType::Call,
         "p" | "put" => ContractType::Put,
         _ => {
-            return Err(AppError::Config("right must be 'call' or 'put'.".into()));
+            return Err(AppError::Validation(
+                "right must be 'call' or 'put'.".into(),
+            ));
         }
     };
-    // Map config 400-style to 422 for FE contract
     let right_label = if right.is_call() { "call" } else { "put" };
     let exp10 = q
         .expiration

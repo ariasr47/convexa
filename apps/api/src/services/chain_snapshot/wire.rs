@@ -55,7 +55,7 @@ pub fn as_of_string(dt: DateTime<Utc>) -> String {
 pub fn parse_as_of(raw: &str) -> AppResult<DateTime<Utc>> {
     DateTime::parse_from_rfc3339(raw.trim())
         .map(|d| d.with_timezone(&Utc))
-        .map_err(|e| AppError::Config(format!("as_of required and must be RFC3339 UTC: {e}")))
+        .map_err(|e| AppError::Validation(format!("as_of required and must be RFC3339 UTC: {e}")))
 }
 
 pub fn daily_bar_to_wire(b: &DailyBar) -> DailyBarWire {

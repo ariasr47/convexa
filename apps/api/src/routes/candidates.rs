@@ -140,7 +140,7 @@ pub(crate) fn contract_representative_for(
             AppError::NotFound("no option-chain data for candidate ticker".into()).into_response()
         }
         axum::http::StatusCode::UNPROCESSABLE_ENTITY => {
-            AppError::Config("candidate query must be valid".into()).into_response()
+            AppError::Validation("candidate query must be valid".into()).into_response()
         }
         axum::http::StatusCode::INTERNAL_SERVER_ERROR => {
             AppError::Config("candidate selection internal failure".into()).into_response()

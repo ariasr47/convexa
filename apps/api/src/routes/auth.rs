@@ -4,10 +4,11 @@
 use crate::openapi::RouteResponse;
 use crate::services::auth::{
     auth_required, settings_auth_required, AuthError as AuthErr, AuthService, SettingsPatch,
-    COOKIE_NAME,
+    UserRecord, COOKIE_NAME,
 };
 use crate::state::AppState;
-use axum::extract::{Query, State};
+use axum::extract::{FromRequestParts, Query, State};
+use axum::http::request::Parts;
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
@@ -1069,19 +1070,46 @@ async fn put_settings_http(
     }
 }
 
-/// Helper for other routes: require signed-in user.
-#[allow(clippy::result_large_err)]
-pub fn require_user(
-    state: &AppState,
-    headers: &HeaderMap,
-) -> Result<crate::services::auth::UserRecord, Response> {
-    let cookie = cookie_from_headers(headers);
-    let resolved = auth(state).resolve_session(cookie.as_deref());
-    resolved.user.ok_or_else(|| auth_err(auth_required()))
+/// The signed-in user behind this request's session cookie, if any (resolving also slides the
+/// session's idle expiry).
+pub fn session_user(state: &AppState, headers: &HeaderMap) -> Option<UserRecord> {
+    auth(state)
+        .resolve_session(cookie_from_headers(headers).as_deref())
+        .user
 }
 
-pub fn cookie_opt(headers: &HeaderMap) -> Option<String> {
-    cookie_from_headers(headers)
+/// Helper for other routes: require signed-in user.
+#[allow(clippy::result_large_err)]
+pub fn require_user(state: &AppState, headers: &HeaderMap) -> Result<UserRecord, Response> {
+    session_user(state, headers).ok_or_else(|| auth_err(auth_required()))
+}
+
+/// Extractor form of [`require_user`]: the signed-in user, or the same 403 `auth_required` reply.
+/// Extractors run before the handler body and before a trailing `Json` body, so use it only where
+/// the sign-in check is already the first thing that can fail; a route that parses its body (or
+/// validates input) first keeps calling `require_user` inline so its error order is unchanged.
+pub struct AuthUser(pub UserRecord);
+
+impl FromRequestParts<AppState> for AuthUser {
+    type Rejection = Response;
+
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Response> {
+        require_user(state, &parts.headers).map(Self)
+    }
+}
+
+/// Extractor form of [`session_user`]: `None` for anonymous callers; never rejects.
+pub struct MaybeUser(pub Option<UserRecord>);
+
+impl FromRequestParts<AppState> for MaybeUser {
+    type Rejection = std::convert::Infallible;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(Self(session_user(state, &parts.headers)))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1097,17 +1125,12 @@ pub fn cookie_opt(headers: &HeaderMap) -> Option<String> {
 )]
 pub async fn get_ai_key(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
 ) -> RouteResponse<AiProvidersReadResponse> {
-    get_ai_key_http(State(state), headers).await.into()
+    get_ai_key_http(State(state), user).await.into()
 }
 
-async fn get_ai_key_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
-    let cookie = cookie_from_headers(&headers);
-    let resolved = auth(&state).resolve_session(cookie.as_deref());
-    let Some(user) = resolved.user else {
-        return auth_err(auth_required());
-    };
+async fn get_ai_key_http(State(state): State<AppState>, user: UserRecord) -> Response {
     (
         StatusCode::OK,
         Json(auth(&state).ai_providers_bootstrap(&user)),
@@ -1132,10 +1155,9 @@ async fn put_ai_key_http(
     headers: HeaderMap,
     Json(body): Json<AiKeyBody>,
 ) -> Response {
-    let cookie = cookie_from_headers(&headers);
-    let resolved = auth(&state).resolve_session(cookie.as_deref());
-    let Some(user) = resolved.user else {
-        return auth_err(auth_required());
+    let user = match require_user(&state, &headers) {
+        Ok(u) => u,
+        Err(r) => return r,
     };
     let raw = body.key.trim();
     if raw.is_empty() || raw.len() < 8 {
@@ -1164,24 +1186,20 @@ async fn put_ai_key_http(
 )]
 pub async fn delete_ai_key(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    // After `Query`, so a malformed query string is still rejected before the sign-in check.
     Query(q): Query<AiKeyQuery>,
+    AuthUser(user): AuthUser,
 ) -> RouteResponse<AiProvidersWriteResponse> {
-    delete_ai_key_http(State(state), headers, Query(q))
+    delete_ai_key_http(State(state), user, Query(q))
         .await
         .into()
 }
 
 async fn delete_ai_key_http(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    user: UserRecord,
     Query(q): Query<AiKeyQuery>,
 ) -> Response {
-    let cookie = cookie_from_headers(&headers);
-    let resolved = auth(&state).resolve_session(cookie.as_deref());
-    let Some(user) = resolved.user else {
-        return auth_err(auth_required());
-    };
     let provider = match closed_byo_provider(q.provider.as_deref()) {
         Ok(p) => p,
         Err(e) => return auth_err(e),
@@ -1199,15 +1217,12 @@ async fn delete_ai_key_http(
 )]
 pub async fn grok_start(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    AuthUser(_user): AuthUser,
 ) -> RouteResponse<AuthUnavailableResponse> {
-    grok_start_http(State(state), headers).await.into()
+    grok_start_http(State(state)).await.into()
 }
 
-async fn grok_start_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
-    if let Err(r) = require_user(&state, &headers) {
-        return r;
-    }
+async fn grok_start_http(State(state): State<AppState>) -> Response {
     auth_err(auth(&state).grok_start_blocked())
 }
 
@@ -1244,17 +1259,12 @@ async fn grok_callback_http(
 )]
 pub async fn grok_delete(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
 ) -> RouteResponse<AiProvidersReadResponse> {
-    grok_delete_http(State(state), headers).await.into()
+    grok_delete_http(State(state), user).await.into()
 }
 
-async fn grok_delete_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
-    let cookie = cookie_from_headers(&headers);
-    let resolved = auth(&state).resolve_session(cookie.as_deref());
-    let Some(user) = resolved.user else {
-        return auth_err(auth_required());
-    };
+async fn grok_delete_http(State(state): State<AppState>, user: UserRecord) -> Response {
     (StatusCode::OK, Json(auth(&state).grok_disconnect(&user))).into_response()
 }
 

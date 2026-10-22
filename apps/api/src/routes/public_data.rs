@@ -1318,7 +1318,7 @@ pub async fn get_public_filings(
     State(state): State<AppState>,
     Query(query): Query<PublicFilingsQuery>,
 ) -> Result<PublicFilingsResponse, AppError> {
-    let tickers = parse_ticker_list(query.tickers.as_deref()).map_err(AppError::Config)?;
+    let tickers = parse_ticker_list(query.tickers.as_deref()).map_err(AppError::Validation)?;
     Ok(PublicFilingsResponse::Ok(
         state.public_data.filings(&tickers).await.into(),
     ))
@@ -1336,7 +1336,7 @@ pub async fn get_public_ticker(
     Path(ticker): Path<String>,
 ) -> Result<PublicTickerResponse, AppError> {
     let ticker = normalize_ticker(&ticker).ok_or_else(|| {
-        AppError::Config("ticker must be 1-10 characters: A-Z, '.' or '-'".into())
+        AppError::Validation("ticker must be 1-10 characters: A-Z, '.' or '-'".into())
     })?;
     Ok(PublicTickerResponse::Ok(
         state.public_data.ticker(&ticker).await.into(),
@@ -1591,7 +1591,7 @@ fn contract_app_error_response(status: axum::http::StatusCode) -> Option<Respons
     let error = match status {
         axum::http::StatusCode::NOT_FOUND => AppError::NotFound("public data not found".into()),
         axum::http::StatusCode::UNPROCESSABLE_ENTITY => {
-            AppError::Config("ticker must be 1-10 characters: A-Z, '.' or '-'".into())
+            AppError::Validation("ticker must be 1-10 characters: A-Z, '.' or '-'".into())
         }
         axum::http::StatusCode::INTERNAL_SERVER_ERROR => {
             AppError::Config("public data internal failure".into())

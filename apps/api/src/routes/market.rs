@@ -522,7 +522,7 @@ pub(crate) fn contract_representative_for(
             AppError::NotFound("no analytics for ticker".into()).into_response()
         }
         axum::http::StatusCode::UNPROCESSABLE_ENTITY => {
-            AppError::Config("market query must be valid".into()).into_response()
+            AppError::Validation("market query must be valid".into()).into_response()
         }
         axum::http::StatusCode::INTERNAL_SERVER_ERROR => {
             AppError::Config("market bundle internal failure".into()).into_response()

@@ -2,7 +2,8 @@
 #![allow(dead_code)] // OpenAPI DTOs and response enums are exporter-only schema markers.
 
 use crate::openapi::RouteResponse;
-use crate::routes::auth::cookie_opt;
+use crate::routes::auth::{require_user, AuthUser};
+use crate::services::auth::UserRecord;
 use crate::services::broker::{BrokerCredential, CredResolution};
 use crate::state::AppState;
 use axum::extract::State;
@@ -304,15 +305,6 @@ mod schema_tests {
     }
 }
 
-fn auth_err(status: u16, code: &str, message: &str) -> Response {
-    let st = StatusCode::from_u16(status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-    (
-        st,
-        Json(serde_json::json!({ "error": code, "message": message })),
-    )
-        .into_response()
-}
-
 /// GET /api/broker/credential
 #[utoipa::path(
     get,
@@ -322,17 +314,12 @@ fn auth_err(status: u16, code: &str, message: &str) -> Response {
 )]
 pub async fn get_credential(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
 ) -> RouteResponse<BrokerCredentialResponse> {
-    get_credential_http(State(state), headers).await.into()
+    get_credential_http(State(state), user).await.into()
 }
 
-async fn get_credential_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
-    let cookie = cookie_opt(&headers);
-    let resolved = state.auth.resolve_session(cookie.as_deref());
-    let Some(user) = resolved.user else {
-        return auth_err(403, "auth_required", "Sign in to do this.");
-    };
+async fn get_credential_http(State(state): State<AppState>, user: UserRecord) -> Response {
     (
         StatusCode::OK,
         Json(state.auth.broker_credential_hint(&user)),
@@ -357,10 +344,9 @@ async fn put_credential_http(
     headers: HeaderMap,
     Json(body): Json<BrokerCredentialBody>,
 ) -> Response {
-    let cookie = cookie_opt(&headers);
-    let resolved = state.auth.resolve_session(cookie.as_deref());
-    let Some(user) = resolved.user else {
-        return auth_err(403, "auth_required", "Sign in to do this.");
+    let user = match require_user(&state, &headers) {
+        Ok(u) => u,
+        Err(r) => return r,
     };
     match state.auth.set_broker_credential(
         &user,
@@ -384,17 +370,12 @@ async fn put_credential_http(
 )]
 pub async fn delete_credential(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
 ) -> RouteResponse<BrokerCredentialResponse> {
-    delete_credential_http(State(state), headers).await.into()
+    delete_credential_http(State(state), user).await.into()
 }
 
-async fn delete_credential_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
-    let cookie = cookie_opt(&headers);
-    let resolved = state.auth.resolve_session(cookie.as_deref());
-    let Some(user) = resolved.user else {
-        return auth_err(403, "auth_required", "Sign in to do this.");
-    };
+async fn delete_credential_http(State(state): State<AppState>, user: UserRecord) -> Response {
     (
         StatusCode::OK,
         Json(state.auth.delete_broker_credential(&user)),
@@ -402,20 +383,14 @@ async fn delete_credential_http(State(state): State<AppState>, headers: HeaderMa
         .into_response()
 }
 
-async fn serve_book(state: &AppState, headers: &HeaderMap, refresh: bool) -> Response {
-    let cookie = cookie_opt(headers);
-    let resolved = state.auth.resolve_session(cookie.as_deref());
-    let Some(user) = resolved.user else {
-        return auth_err(403, "auth_required", "Sign in to do this.");
-    };
-
+async fn serve_book(state: &AppState, user: &UserRecord, refresh: bool) -> Response {
     let resolution = match state.auth.get_decrypted_broker_credential(&user.id) {
         Some((app_key, app_secret)) => CredResolution::Ok(BrokerCredential {
             app_key,
             app_secret,
         }),
         None => {
-            let hint = state.auth.broker_credential_hint(&user);
+            let hint = state.auth.broker_credential_hint(user);
             if hint.get("set").and_then(|v| v.as_bool()) == Some(true) {
                 CredResolution::Unreadable
             } else {
@@ -441,9 +416,9 @@ async fn serve_book(state: &AppState, headers: &HeaderMap, refresh: bool) -> Res
 )]
 pub async fn get_book(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
 ) -> RouteResponse<BrokerBookResponse> {
-    serve_book(&state, &headers, false).await.into()
+    serve_book(&state, &user, false).await.into()
 }
 
 /// POST /api/broker/book/refresh — force-fetch (server may throttle).
@@ -455,7 +430,7 @@ pub async fn get_book(
 )]
 pub async fn refresh_book(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
 ) -> RouteResponse<BrokerBookResponse> {
-    serve_book(&state, &headers, true).await.into()
+    serve_book(&state, &user, true).await.into()
 }

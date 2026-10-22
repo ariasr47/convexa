@@ -22,7 +22,7 @@ pub async fn export_chain_snapshots(
     batch: i64,
 ) -> AppResult<()> {
     if !(1..=MAX_EXPORT_BATCH).contains(&batch) {
-        return Err(AppError::Config(format!(
+        return Err(AppError::Validation(format!(
             "export batch must be between 1 and {MAX_EXPORT_BATCH}"
         )));
     }

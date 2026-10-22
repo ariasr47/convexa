@@ -10,6 +10,11 @@ pub enum AppError {
     #[error("config: {0}")]
     Config(String),
 
+    /// Rejected request input → 422. Displays with the same `config: ` prefix as `Config`, so the
+    /// `{"detail": ...}` body (and every `strip_config_prefix` reader) is unchanged.
+    #[error("config: {0}")]
+    Validation(String),
+
     #[error("massive: {0}")]
     Massive(String),
 
@@ -49,10 +54,7 @@ impl AppError {
         use axum::http::StatusCode;
         match self {
             Self::NotFound(_) => StatusCode::NOT_FOUND,
-            // Validation-ish config messages (e.g. bad `right`) → 422
-            Self::Config(msg) if msg.contains("must be") || msg.contains("required") => {
-                StatusCode::UNPROCESSABLE_ENTITY
-            }
+            Self::Validation(_) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::Config(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Self::Massive(_) => StatusCode::BAD_GATEWAY,
             Self::Redis(_) | Self::PriceCache(_) => StatusCode::SERVICE_UNAVAILABLE,
@@ -134,7 +136,7 @@ pub(crate) fn representative_error_response(
     let error = match status {
         axum::http::StatusCode::NOT_FOUND => AppError::NotFound("contract representative".into()),
         axum::http::StatusCode::UNPROCESSABLE_ENTITY => {
-            AppError::Config("contract representative must be valid".into())
+            AppError::Validation("contract representative must be valid".into())
         }
         axum::http::StatusCode::BAD_GATEWAY => {
             AppError::Massive("contract representative upstream".into())
@@ -177,7 +179,7 @@ mod market_data_paused_tests {
     async fn non_paused_error_bodies_never_carry_a_code_key() {
         for error in [
             AppError::NotFound("x".into()),
-            AppError::Config("y must be valid".into()),
+            AppError::Validation("y must be valid".into()),
             AppError::Massive("z".into()),
             AppError::Redis("w".into()),
             AppError::PriceCache("v".into()),

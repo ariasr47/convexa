@@ -87,7 +87,7 @@ fn contract_app_error_response(status: axum::http::StatusCode) -> Option<Respons
     let error = match status {
         axum::http::StatusCode::NOT_FOUND => AppError::NotFound("price not found".into()),
         axum::http::StatusCode::UNPROCESSABLE_ENTITY => {
-            AppError::Config("price query must be valid".into())
+            AppError::Validation("price query must be valid".into())
         }
         axum::http::StatusCode::INTERNAL_SERVER_ERROR => {
             AppError::Config("price cache contract failure".into())
@@ -210,7 +210,7 @@ pub async fn get_prices(
         .filter(|s| !s.is_empty())
         .collect();
     if syms.is_empty() {
-        return Err(AppError::Config("symbols query is required".into()));
+        return Err(AppError::Validation("symbols query is required".into()));
     }
 
     let mut prices = serde_json::Map::new();

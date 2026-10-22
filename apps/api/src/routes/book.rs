@@ -3,7 +3,8 @@
 //! Auth outermost. Blob is opaque to the API (v3 FE shape); we store + return latest-wins.
 
 use crate::openapi::RouteResponse;
-use crate::routes::auth::require_user;
+use crate::routes::auth::{require_user, AuthUser};
+use crate::services::auth::UserRecord;
 use crate::state::AppState;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
@@ -321,17 +322,12 @@ fn now_secs() -> f64 {
 )]
 pub async fn get_book(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
 ) -> RouteResponse<BookReadResponse> {
-    get_book_http(State(state), headers).await.into()
+    get_book_http(State(state), user).await.into()
 }
 
-async fn get_book_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
-    let user = match require_user(&state, &headers) {
-        Ok(u) => u,
-        Err(r) => return r,
-    };
-
+async fn get_book_http(State(state): State<AppState>, user: UserRecord) -> Response {
     #[cfg(feature = "postgres")]
     {
         if let Some(pg) = state.pg.as_ref() {
