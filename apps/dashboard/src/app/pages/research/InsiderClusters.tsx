@@ -26,6 +26,10 @@ import { useWidth } from './useWidth';
 const DAY = 86_400_000;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DEMO_DAY = '2026-10-07';
+/** A month label's estimated width a character (11px IBM Plex Mono at 0.6em), and the clearance
+ *  it keeps from the last label drawn (P-13). */
+const MONTH_CH = 6.6;
+const MONTH_GAP = 8;
 const ms = (d: string) => Date.parse(`${d}T00:00:00Z`);
 const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
 const span = (w: PublicInsiderWindow) => Math.round((ms(w.to) - ms(w.from)) / DAY) + 1;
@@ -368,6 +372,7 @@ function Timeline({
   const PR = compact ? 12 : 24;
   const PT = 34;
   const ROW = 30;
+  const roleSize = compact ? 11 : 12;
   const n = Math.max(1, roles.length);
   const H = PT + n * ROW + 26;
   const t1 = ms(end);
@@ -376,24 +381,28 @@ function Timeline({
     LABEL +
     ((Math.min(Math.max(ms(d), t0), t1) - t0) / (t1 - t0 || 1)) * Math.max(0, W - LABEL - PR);
   const y = (i: number) => PT + (i + 0.5) * ROW;
-  // Month starts inside the period; on a phone every other label shows. The first label shown in
-  // each year carries the year ("Nov ’25 … Jan ’26"), so a month eleven months back never reads as
-  // this one.
-  const months: { at: string; label: string; show: boolean }[] = [];
+  // Month starts inside the period. A month is labelled only when its label's left edge clears the
+  // last drawn label's right edge by 8px, the width estimated at 6.6px a character (11px IBM Plex
+  // Mono at 0.6em): a narrow axis drops labels instead of shrinking or overprinting them (P-13).
+  // Every month keeps its grid line. The first label drawn in each year carries the year ("Nov ’25
+  // … Jan ’26"), so a month eleven months back never reads as this one.
+  const months: { at: string; label: string | null }[] = [];
   const first = new Date(t0);
   let labelledYear = -1;
+  let lastRight = -Infinity;
   for (let m = 1; m <= 13; m++) {
     const at = Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + m, 1);
     if (at >= t1) break;
-    const show = !compact || m % 2 === 1;
     const year = new Date(at).getUTCFullYear();
-    const withYear = show && year !== labelledYear;
-    if (withYear) labelledYear = year;
-    months.push({
-      at: iso(at),
-      label: `${MONTHS[new Date(at).getUTCMonth()]}${withYear ? ` ’${String(year).slice(2)}` : ''}`,
-      show,
-    });
+    const label = `${MONTHS[new Date(at).getUTCMonth()]}${year !== labelledYear ? ` ’${String(year).slice(2)}` : ''}`;
+    const cx = x(iso(at));
+    const half = (label.length * MONTH_CH) / 2;
+    const show = cx - half >= lastRight + MONTH_GAP;
+    if (show) {
+      lastRight = cx + half;
+      labelledYear = year;
+    }
+    months.push({ at: iso(at), label: show ? label : null });
   }
   const shaded = [...saleWindows, ...clusters];
   const labelled = clusters.length ? clusters : saleWindows.slice(-1);
@@ -421,7 +430,7 @@ function Timeline({
           {months.map((m) => (
             <g key={m.at}>
               <line x1={x(m.at)} x2={x(m.at)} y1={PT} y2={PT + n * ROW} stroke={c.grid} />
-              {m.show && (
+              {m.label && (
                 <text
                   x={x(m.at)}
                   y={PT + n * ROW + 16}
@@ -438,16 +447,39 @@ function Timeline({
           {roles.map((r, i) => (
             <g key={r}>
               <line x1={LABEL} x2={W - PR} y1={y(i)} y2={y(i)} stroke={c.grid} />
-              <text
-                x={LABEL - 10}
-                y={y(i) + 4}
-                textAnchor="end"
-                fontSize={compact ? 11 : 12}
-                fill={t.palette.text.secondary}
-              >
-                {clip(r, compact ? 15 : 24)}
-                <title>{r}</title>
-              </text>
+              {/* The role wraps to two lines inside the label column (two lines fit the row), so a
+                  title such as "EVP & Chief Financial Officer" reads whole on a phone. SVG text
+                  cannot wrap, so the label is HTML; only a role past two lines ends in "…", and the
+                  hover title has it in full. */}
+              <foreignObject x={0} y={y(i) - ROW / 2} width={LABEL - 10} height={ROW}>
+                <Box
+                  title={r}
+                  sx={{
+                    height: ROW,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                      minWidth: 0,
+                      overflowWrap: 'break-word',
+                      textAlign: 'right',
+                      fontSize: roleSize,
+                      lineHeight: `${roleSize + 2}px`,
+                      color: 'text.secondary',
+                    }}
+                  >
+                    {r}
+                  </Box>
+                </Box>
+              </foreignObject>
             </g>
           ))}
           {labelled.map((w) => {
@@ -505,5 +537,3 @@ function Timeline({
     </Box>
   );
 }
-
-const clip = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
