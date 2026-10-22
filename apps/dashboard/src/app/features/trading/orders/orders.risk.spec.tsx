@@ -223,12 +223,21 @@ interface BackendCfg {
   rec: (body: Record<string, unknown>) => unknown;
 }
 
-const esInstances: { onmessage: ((e: MessageEvent) => void) | null; url: string }[] = [];
-const fetchLog: { url: string; method: string; body?: string }[] = [];
-let cfg: BackendCfg;
+/**
+ * One backend per test, made in the test body and handed to every helper. Vitest moves on when a
+ * test times out, but the timed-out body keeps running (a zombie). With module-level stream and
+ * fetch logs, a zombie's `pushLive({ mid: 253 })` reached the NEXT test's streams and filled its
+ * seeded order (TEST_PLAN.md §6.1, batch 2). Now a zombie can only reach its own streams, and the
+ * helpers stop it at their next step: `signal` is the test's own, which Vitest aborts on timeout.
+ */
+interface Backend {
+  esInstances: { onmessage: ((e: MessageEvent) => void) | null; url: string }[];
+  fetchLog: { url: string; method: string; body?: string }[];
+  signal: AbortSignal;
+}
 
-function installBackend(patch: Partial<BackendCfg> = {}) {
-  cfg = {
+function installBackend(signal: AbortSignal, patch: Partial<BackendCfg> = {}): Backend {
+  const cfg: BackendCfg = {
     authenticated: true,
     gateStatus: 200,
     inAppEnabled: true,
@@ -236,15 +245,14 @@ function installBackend(patch: Partial<BackendCfg> = {}) {
     rec: () => tradeRec(),
     ...patch,
   };
-  esInstances.length = 0;
-  fetchLog.length = 0;
+  const be: Backend = { esInstances: [], fetchLog: [], signal };
   class MockEventSource {
     onmessage: ((e: MessageEvent) => void) | null = null;
     onerror: ((e: Event) => void) | null = null;
     url: string;
     constructor(url: string) {
       this.url = url;
-      esInstances.push(this);
+      be.esInstances.push(this);
     }
     close() {
       /* no-op */
@@ -258,7 +266,11 @@ function installBackend(patch: Partial<BackendCfg> = {}) {
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = init?.method ?? 'GET';
-      fetchLog.push({ url, method, body: typeof init?.body === 'string' ? init.body : undefined });
+      be.fetchLog.push({
+        url,
+        method,
+        body: typeof init?.body === 'string' ? init.body : undefined,
+      });
       if (url.includes('/api/auth/session')) {
         return json(
           cfg.authenticated
@@ -306,10 +318,12 @@ function installBackend(patch: Partial<BackendCfg> = {}) {
       throw new Error(`unexpected fetch ${url}`); // [no-real-order-path] by construction
     }),
   );
+  return be;
 }
 
-/** Push an SSE payload to all live EventSources (act-wrapped). */
-function pushLive(over: Partial<LiveUpdate> = {}) {
+/** Push an SSE payload to this test's EventSources (act-wrapped). */
+function pushLive(be: Backend, over: Partial<LiveUpdate> = {}) {
+  be.signal.throwIfAborted();
   const u: LiveUpdate = {
     ticker: 'TSLA',
     mid: 250,
@@ -331,7 +345,7 @@ function pushLive(over: Partial<LiveUpdate> = {}) {
     ...over,
   };
   act(() => {
-    esInstances.forEach((es) => es.onmessage?.({ data: JSON.stringify(u) } as MessageEvent));
+    be.esInstances.forEach((es) => es.onmessage?.({ data: JSON.stringify(u) } as MessageEvent));
   });
 }
 
@@ -346,7 +360,11 @@ function renderAt(path: string) {
   );
 }
 
-/** Seed an order straight into the durable store. */
+/**
+ * Seed an order straight into the durable store. Seeded orders trigger above 270, clear of the
+ * rec's 252 that the centerpiece and scenario flows cross with `mid: 253`, so no push meant for a
+ * rec-made order can fill a seeded one.
+ */
 let seedN = 0;
 function seedOrder(over: Partial<SimOrder> = {}): SimOrder {
   const o: SimOrder = {
@@ -359,7 +377,7 @@ function seedOrder(over: Partial<SimOrder> = {}): SimOrder {
     right: 'call',
     side: 'long',
     qty: 1,
-    trigger: { kind: 'underlying_above', level: 252 },
+    trigger: { kind: 'underlying_above', level: 270 },
     limit_price: 0.5,
     stop: null,
     target: null,
@@ -369,7 +387,7 @@ function seedOrder(over: Partial<SimOrder> = {}): SimOrder {
       rec_fingerprint: 'fp-A',
       rec_as_of: SNAP_ISO,
       persona: { id: null, name: 'Default (no persona)' },
-      trigger_source_text: 'Enter on a break above 252',
+      trigger_source_text: 'Enter on a break above 270',
     },
     status: 'waiting',
     ...over,
@@ -379,15 +397,25 @@ function seedOrder(over: Partial<SimOrder> = {}): SimOrder {
   return o;
 }
 
-async function settleTicker() {
+async function settleTicker(be: Backend) {
+  be.signal.throwIfAborted();
   await screen.findByTestId('account-avatar'); // who-am-I resolved
-  await screen.findByText('AI read · TSLA', undefined, { timeout: T }); // lazy route + bundle + panel mounted
+  be.signal.throwIfAborted();
+  await screen.findByText('AI read · TSLA'); // bundle + panel mounted (the route is preloaded)
+  be.signal.throwIfAborted();
 }
 
-async function actIntoDialog(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(await screen.findByRole('button', { name: 'Analyze current snapshot' }));
-  await user.click(await screen.findByTestId('ai-rec-act'));
-  return await screen.findByTestId('trade-entry-dialog');
+async function actIntoDialog(be: Backend, user: ReturnType<typeof userEvent.setup>) {
+  be.signal.throwIfAborted();
+  const analyze = await screen.findByRole('button', { name: 'Analyze current snapshot' });
+  be.signal.throwIfAborted();
+  await user.click(analyze);
+  const actButton = await screen.findByTestId('ai-rec-act');
+  be.signal.throwIfAborted();
+  await user.click(actButton);
+  const dialog = await screen.findByTestId('trade-entry-dialog');
+  be.signal.throwIfAborted();
+  return dialog;
 }
 
 // Both pages' first imports run here, at the hook timeout, not inside a `findBy` wait.
@@ -397,7 +425,6 @@ beforeEach(() => {
   __resetOrdersMemory();
   __resetPositionsMemory();
   vi.restoreAllMocks();
-  installBackend();
 });
 afterEach(() => {
   cleanup();
@@ -412,13 +439,14 @@ afterEach(() => {
 describe('orders · the end-to-end flow (rec → order → position provenance)', () => {
   it(
     'act_confirm_live_cross_fill_creates_exactly_one_position_with_provenance',
-    async () => {
+    async ({ signal }) => {
+      const be = installBackend(signal);
       const user = userEvent.setup();
       renderAt('/ticker/TSLA');
-      await settleTicker();
+      await settleTicker(be);
 
       // Mandatory confirm: dismissing the Act dialog creates NOTHING.
-      let dlg = await actIntoDialog(user);
+      let dlg = await actIntoDialog(be, user);
       await user.click(within(dlg).getByRole('button', { name: 'Close' }));
       await waitFor(() => expect(screen.queryByTestId('trade-entry-dialog')).toBeNull());
       expect(allOrders()).toHaveLength(0);
@@ -448,12 +476,12 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
       await screen.findByTestId('order-row');
 
       // A non-satisfying live mid does nothing.
-      pushLive({ mid: 251 });
+      pushLive(be, { mid: 251 });
       expect(getOrder(o.id)?.status).toBe('waiting');
 
       // The live cross triggers AND fills at the first live-resolvable mark (trigger_fill).
       await waitFor(() => {
-        pushLive({ mid: 253 });
+        pushLive(be, { mid: 253 });
         expect(getOrder(o.id)?.status).toBe('filled');
       });
       const filled = getOrder(o.id) as SimOrder;
@@ -468,7 +496,7 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
       expect(pos.legs[0].entry_basis).toBe('trigger_fill');
       expect(pos.legs[0].entry_price).toBeCloseTo(6.545, 3);
       // Carried through from the SAME order's qty (AC-79: dialog default 1, never seeded from the
-      // rec's size text — see the correction at `:437`).
+      // rec's size text — see the AC-79 correction above).
       expect(pos.legs[0].qty).toBe(1);
       expect(pos.stop).toBeNull();
       expect(pos.target).toBeNull();
@@ -490,8 +518,8 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
 
       // Continued live updates: NO double fill, no duplicate position, the log only ever grows.
       const decisionCount = allDecisions().length;
-      pushLive({ mid: 254 });
-      pushLive({ mid: 255 });
+      pushLive(be, { mid: 254 });
+      pushLive(be, { mid: 255 });
       expect(allPositions()).toHaveLength(1);
       expect(getOrder(o.id)?.fill_mark).toBeCloseTo(6.545, 3);
       expect(allDecisions().length).toBe(decisionCount);
@@ -499,8 +527,8 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
       // [no-real-order-path]: beyond the throw-by-construction, sweep the log — NOTHING
       // order-flavored ever rode the wire. The only non-GETs are the recommendation POST,
       // the simulated-trade gate POST, and the durable-book PUT.
-      expect(fetchLog.some((c) => /order|broker/i.test(c.url))).toBe(false);
-      const nonGets = fetchLog.filter((c) => c.method !== 'GET');
+      expect(be.fetchLog.some((c) => /order|broker/i.test(c.url))).toBe(false);
+      const nonGets = be.fetchLog.filter((c) => c.method !== 'GET');
       expect(nonGets.length).toBeGreaterThan(0);
       for (const c of nonGets) {
         expect(
@@ -521,11 +549,12 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
 describe('orders · cancel / expiry terminal paths', () => {
   it(
     'cancel_is_terminal_and_the_order_stops_evaluating',
-    async () => {
+    async ({ signal }) => {
+      const be = installBackend(signal);
       const o = seedOrder({ limit_price: null });
       const user = userEvent.setup();
       renderAt('/ticker/TSLA');
-      await settleTicker();
+      await settleTicker(be);
       await screen.findByTestId('order-row');
       // Two-step inline cancel: first click arms, second cancels.
       await user.click(screen.getByTestId('order-cancel'));
@@ -533,7 +562,7 @@ describe('orders · cancel / expiry terminal paths', () => {
       await waitFor(() => expect(getOrder(o.id)?.status).toBe('cancelled'));
       expect(getOrder(o.id)?.close_time).toBeTruthy();
       // A satisfying cross after cancel transitions NOTHING and creates NO position.
-      pushLive({ mid: 260 });
+      pushLive(be, { mid: 280 });
       expect(getOrder(o.id)?.status).toBe('cancelled');
       expect(allPositions()).toHaveLength(0);
       expect(
@@ -545,7 +574,8 @@ describe('orders · cancel / expiry terminal paths', () => {
 
   it(
     'clock_expiry_applies_off_stream_with_no_live_payload_at_all',
-    async () => {
+    async ({ signal }) => {
+      installBackend(signal);
       // The good-til bound passed while NO stream was up — the ONLY off-stream transition.
       const o = seedOrder({ expires_at: new Date(Date.now() - 60_000).toISOString() });
       renderAt('/positions');
@@ -568,7 +598,8 @@ describe('orders · cancel / expiry terminal paths', () => {
 describe('orders · live-only evaluation and stream degradation', () => {
   it(
     'non_live_payloads_never_transition_stream_drop_degrades_only_live_cells_no_retro_fill',
-    async () => {
+    async ({ signal }) => {
+      const be = installBackend(signal);
       vi.useFakeTimers({ shouldAdvanceTime: true });
       const tsla = seedOrder({ limit_price: 0.5 }); // uncrossable limit ⇒ `triggered` observable
       const msft = seedOrder({ ticker: 'MSFT' }); // NOT covered by the TSLA stream
@@ -576,14 +607,14 @@ describe('orders · live-only evaluation and stream degradation', () => {
       const widget = await screen.findByTestId('widget-orders');
 
       // Frozen/stale/closed payloads that CROSS the level transition nothing (live-mid-only).
-      pushLive({ mid: 300, live: false });
-      pushLive({ mid: 300, live: false, market_session: 'closed', tick_age_s: null });
-      pushLive({ mid: 300, live: false, market_session: 'overnight' });
+      pushLive(be, { mid: 300, live: false });
+      pushLive(be, { mid: 300, live: false, market_session: 'closed', tick_age_s: null });
+      pushLive(be, { mid: 300, live: false, market_session: 'overnight' });
       expect(getOrder(tsla.id)?.status).toBe('waiting');
       expect(allPositions()).toHaveLength(0);
 
       // A live payload below the level: evaluated ("Watching"), no transition.
-      pushLive({ mid: 250 });
+      pushLive(be, { mid: 250 });
       await screen.findByTestId('order-eval-watching');
       expect(getOrder(tsla.id)?.status).toBe('waiting');
 
@@ -602,13 +633,13 @@ describe('orders · live-only evaluation and stream degradation', () => {
 
       // During the outage the level crossed invisibly and came back. The reconnect payload is BELOW
       // the level ⇒ still waiting — NO retro-fill, no catch-up; live cells auto-restore.
-      pushLive({ mid: 251 });
+      pushLive(be, { mid: 251 });
       await screen.findByTestId('order-eval-watching');
       expect(getOrder(tsla.id)?.status).toBe('waiting');
 
       // Evaluation resumes on NEW live data only: the next satisfying payload triggers TSLA —
       // and NEVER the uncovered MSFT order (wrong-ticker isolation).
-      pushLive({ mid: 253 });
+      pushLive(be, { mid: 271 });
       await waitFor(() => expect(getOrder(tsla.id)?.status).toBe('triggered'));
       expect(getOrder(msft.id)?.status).toBe('waiting');
       expect(allPositions()).toHaveLength(0); // the 0.5 limit never crossed — nothing filled
@@ -618,18 +649,19 @@ describe('orders · live-only evaluation and stream degradation', () => {
 
   it(
     'limit_order_rests_above_the_limit_and_fills_only_on_a_live_cross_AT_the_limit',
-    async () => {
+    async ({ signal }) => {
+      const be = installBackend(signal);
       const o = seedOrder({ limit_price: 4 });
       renderAt('/ticker/TSLA');
-      await settleTicker();
+      await settleTicker(be);
       await screen.findByTestId('order-row');
-      pushLive({ mid: 253 }); // triggers; modeled mark ≈6.5 > 4 ⇒ rests
+      pushLive(be, { mid: 271 }); // triggers; modeled mark ≈17.7 > 4 ⇒ rests
       await waitFor(() => expect(getOrder(o.id)?.status).toBe('triggered'));
-      pushLive({ mid: 253 });
+      pushLive(be, { mid: 271 });
       expect(getOrder(o.id)?.status).toBe('triggered'); // still resting — no fill above the limit
       // The LIVE cross at the limit fills AT the limit price, with the limit_fill basis.
       await waitFor(() => {
-        pushLive({ mid: 235 });
+        pushLive(be, { mid: 235 });
         expect(getOrder(o.id)?.status).toBe('filled');
       });
       expect(getOrder(o.id)?.fill_mark).toBe(4);
@@ -649,7 +681,8 @@ describe('orders · live-only evaluation and stream degradation', () => {
 describe('orders · nothing order-flavored rides the wire; SIMULATED labeling', () => {
   it(
     'orders_in_every_state_leave_bundle_and_sse_requests_structurally_unchanged',
-    async () => {
+    async ({ signal }) => {
+      const be = installBackend(signal);
       seedOrder({ status: 'waiting' });
       seedOrder({ status: 'triggered', trigger: null, triggered_time: new Date().toISOString() });
       seedOrder({
@@ -669,9 +702,9 @@ describe('orders · nothing order-flavored rides the wire; SIMULATED labeling', 
         close_reason: 'expired',
       });
       const view = renderAt('/ticker/TSLA');
-      await settleTicker();
+      await settleTicker(be);
       const widget = await screen.findByTestId('widget-orders');
-      pushLive({ mid: 250 });
+      pushLive(be, { mid: 250 });
       // Only the shipped params, nothing order-/scenario-flavored, on EVERY request + stream.
       const ALLOWED = new Set([
         'min_dte',
@@ -683,19 +716,19 @@ describe('orders · nothing order-flavored rides the wire; SIMULATED labeling', 
         'pos_right',
         'pos_pl_pct',
       ]);
-      const bundleCalls = fetchLog.filter((c) => c.url.includes('/api/ticker/'));
+      const bundleCalls = be.fetchLog.filter((c) => c.url.includes('/api/ticker/'));
       expect(bundleCalls.length).toBeGreaterThan(0);
       for (const c of bundleCalls) {
         const u = new URL(c.url, 'http://x');
         for (const key of u.searchParams.keys()) expect(ALLOWED.has(key)).toBe(true);
       }
-      expect(fetchLog.some((c) => /order|scenario|broker/i.test(c.url))).toBe(false);
+      expect(be.fetchLog.some((c) => /order|scenario|broker/i.test(c.url))).toBe(false);
       // The seeded local portfolio may complete its autonomous signed-in book sync while this
       // full-App flow is running. That exact persistence write is sanctioned; no order write is.
-      const nonGets = fetchLog.filter((c) => c.method !== 'GET');
+      const nonGets = be.fetchLog.filter((c) => c.method !== 'GET');
       for (const c of nonGets) expect(c).toMatchObject({ method: 'PUT', url: '/api/book' });
-      expect(esInstances.length).toBeGreaterThan(0);
-      for (const es of esInstances) {
+      expect(be.esInstances.length).toBeGreaterThan(0);
+      for (const es of be.esInstances) {
         const u = new URL(es.url, 'http://x');
         expect(u.pathname).toBe('/api/stream/TSLA');
         for (const key of u.searchParams.keys()) expect(ALLOWED.has(key)).toBe(true);
@@ -723,13 +756,13 @@ describe('orders · nothing order-flavored rides the wire; SIMULATED labeling', 
 describe('orders · gate enforcement and store-fault degradation', () => {
   it(
     'server_gate_403_aborts_the_confirm_with_zero_order_stored',
-    async () => {
+    async ({ signal }) => {
       // FE session says signed-in; the SERVER gate rejects — the server is the boundary of record.
-      installBackend({ gateStatus: 403 });
+      const be = installBackend(signal, { gateStatus: 403 });
       const user = userEvent.setup();
       renderAt('/ticker/TSLA');
-      await settleTicker();
-      const dlg = await actIntoDialog(user);
+      await settleTicker(be);
+      const dlg = await actIntoDialog(be, user);
       await user.click(within(dlg).getByRole('button', { name: 'Place simulated order' }));
       await screen.findByTestId('orders-signin-prompt');
       expect(allOrders()).toHaveLength(0);
@@ -740,15 +773,16 @@ describe('orders · gate enforcement and store-fault degradation', () => {
 
   it(
     'corrupt_orders_store_degrades_to_the_honest_block_page_keeps_working_blob_preserved',
-    async () => {
+    async ({ signal }) => {
+      const be = installBackend(signal);
       localStorage.setItem(ORDERS_KEY, '{mangled-by-hand');
       renderAt('/ticker/TSLA');
-      await settleTicker();
+      await settleTicker(be);
       // The honest fault block — while the rest of the page (bundle, stream) keeps working.
       const fault = await screen.findByTestId('orders-store-fault');
       expect(fault).toHaveTextContent('Orders unavailable');
       expect(screen.getByTestId('widget-live-tape')).toBeInTheDocument();
-      pushLive({ mid: 253 }); // the stream consumer must not crash on a faulted store
+      pushLive(be, { mid: 253 }); // the stream consumer must not crash on a faulted store
       expect(localStorage.getItem(ORDERS_KEY)).toBe('{mangled-by-hand'); // never overwritten
     },
     T,
@@ -762,8 +796,8 @@ describe('orders · gate enforcement and store-fault degradation', () => {
 describe('orders · scenario harness (keyless never blocks; ai_scenario provenance is durable)', () => {
   it(
     'keyless_scenario_run_not_blocked_and_ai_scenario_marker_survives_to_the_ledger_join',
-    async () => {
-      installBackend({
+    async ({ signal }) => {
+      const be = installBackend(signal, {
         // KEYLESS deployment — the SHIPPED 2026-07-02 regression wrongly blocked scenario runs here.
         inAppEnabled: false,
         scenarios: {
@@ -779,7 +813,7 @@ describe('orders · scenario harness (keyless never blocks; ai_scenario provenan
       });
       const user = userEvent.setup();
       renderAt('/ticker/TSLA');
-      await settleTicker();
+      await settleTicker(be);
       // Keyless: the REAL in-app read is unavailable (powering setup, not a disabled Analyze).
       expect(await screen.findByTestId('ai-rec-state-no-key')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Analyze current snapshot' })).toBeNull();
@@ -793,7 +827,7 @@ describe('orders · scenario harness (keyless never blocks; ai_scenario provenan
       );
       await user.click(await screen.findByRole('button', { name: 'Run scenario' }));
       await screen.findByTestId('ai-rec-act'); // a produced, actionable scripted rec
-      const post = fetchLog.find(
+      const post = be.fetchLog.find(
         (c) => c.url.includes('/api/recommendation/') && c.method === 'POST',
       );
       expect(JSON.parse(post?.body ?? '{}').scenario_id).toBe('break_above');
@@ -807,7 +841,7 @@ describe('orders · scenario harness (keyless never blocks; ai_scenario provenan
       expect(o.provenance.source).toBe('ai_scenario');
       expect(o.provenance.scenario_id).toBe('break_above');
       await waitFor(() => {
-        pushLive({ mid: 253 });
+        pushLive(be, { mid: 253 });
         expect(getOrder(o.id)?.status).toBe('filled');
       });
       // The EXACT join the outcomes ledger's scenario_sourced exclusion consumes
