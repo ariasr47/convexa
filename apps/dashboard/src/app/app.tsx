@@ -58,84 +58,110 @@ import { dataMode } from '@convexa/api';
 import { lazy, Suspense, type ReactElement } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 
+/**
+ * One loader per lazy page module. Each `lazy()` below calls its loader and `preloadRoutes` calls the
+ * same one, so a preloaded module is the module the route renders. A spec that mounts <App/> preloads
+ * the pages it opens in `beforeAll`; otherwise a page's first import runs inside the spec's first
+ * `findBy` wait and flakes under load (docs/testing/2026-10-22/TEST_PLAN.md section 6.1, batch 1).
+ */
+export const routeLoaders = {
+  TickerDashboard: () => import('@/pages/ticker/TickerDashboard'),
+  PublicDesk: () => import('@/pages/ticker/public-desk/PublicDesk'),
+  DemoSymbolMissing: () => import('@/pages/ticker/DemoSymbolMissing'),
+  TechnicalAnalysisView: () => import('@/pages/ticker/technical-analysis/TechnicalAnalysisView'),
+  ResearchView: () => import('@/pages/ticker/research/ResearchView'),
+  TechnicalAnalysisLive: () => import('@/pages/ticker/technical-analysis/TechnicalAnalysisLive'),
+  NotesView: () => import('@/pages/research/NotesView'),
+  ResearchIndexPage: () => import('@/pages/research/ResearchIndexPage'),
+  ScorecardPage: () => import('@/pages/research/ScorecardPage'),
+  MarketsPage: () => import('@/pages/research/MarketsPage'),
+  FilingsPage: () => import('@/pages/research/FilingsPage'),
+  PositionsPage: () => import('@/pages/positions/PositionsPage'),
+  Scanner: () => import('@/pages/scanner/Scanner'),
+  ScannerNotLive: () => import('@/pages/scanner/ScannerNotLive'),
+  BlogPage: () => import('@/pages/blog/BlogPage'),
+  BlogPostPage: () => import('@/pages/blog/BlogPostPage'),
+  MethodologyPage: () => import('@/pages/methodology/MethodologyPage'),
+  AlertsPage: () => import('@/pages/alerts/AlertsPage'),
+  SettingsPage: () => import('@/features/auth/SettingsPage'),
+  OperatorMetrics: () => import('@/pages/operator-metrics/operator-metrics'),
+  OperatorSessionArchive: () => import('@/pages/operator-session-archive/OperatorSessionArchive'),
+  CreditsPage: () => import('@/pages/trust/CreditsPage'),
+  PrivacyPage: () => import('@/pages/trust/PrivacyPage'),
+  TermsPage: () => import('@/pages/trust/TermsPage'),
+  NotFound: () => import('@/pages/not-found/NotFound'),
+};
+
+export type RouteModule = keyof typeof routeLoaders;
+
+/** Imports the named page modules ahead of a render and resolves once all are loaded. It resolves to
+ *  nothing, so a `beforeAll(() => preloadRoutes([...]))` is never read as a teardown function. */
+export async function preloadRoutes(names: readonly RouteModule[]): Promise<void> {
+  await Promise.all(names.map((name) => routeLoaders[name]()));
+}
+
 // Lazy page chunks (named exports mapped to lazy's `default` shape).
 const TickerDashboard = lazy(() =>
-  import('@/pages/ticker/TickerDashboard').then((m) => ({ default: m.TickerDashboard })),
+  routeLoaders.TickerDashboard().then((m) => ({ default: m.TickerDashboard })),
 );
-const PublicDesk = lazy(() =>
-  import('@/pages/ticker/public-desk/PublicDesk').then((m) => ({ default: m.PublicDesk })),
-);
+const PublicDesk = lazy(() => routeLoaders.PublicDesk().then((m) => ({ default: m.PublicDesk })));
 const DemoSymbolMissing = lazy(() =>
-  import('@/pages/ticker/DemoSymbolMissing').then((m) => ({ default: m.DemoSymbolMissing })),
+  routeLoaders.DemoSymbolMissing().then((m) => ({ default: m.DemoSymbolMissing })),
 );
 const TechnicalAnalysisView = lazy(() =>
-  import('@/pages/ticker/technical-analysis/TechnicalAnalysisView').then((m) => ({
-    default: m.TechnicalAnalysisView,
-  })),
+  routeLoaders.TechnicalAnalysisView().then((m) => ({ default: m.TechnicalAnalysisView })),
 );
 const ResearchView = lazy(() =>
-  import('@/pages/ticker/research/ResearchView').then((m) => ({ default: m.ResearchView })),
+  routeLoaders.ResearchView().then((m) => ({ default: m.ResearchView })),
 );
 const TechnicalAnalysisLive = lazy(() =>
-  import('@/pages/ticker/technical-analysis/TechnicalAnalysisLive').then((m) => ({
-    default: m.TechnicalAnalysisLive,
-  })),
+  routeLoaders.TechnicalAnalysisLive().then((m) => ({ default: m.TechnicalAnalysisLive })),
 );
-const NotesView = lazy(() =>
-  import('@/pages/research/NotesView').then((m) => ({ default: m.NotesView })),
-);
+const NotesView = lazy(() => routeLoaders.NotesView().then((m) => ({ default: m.NotesView })));
 const ResearchIndexPage = lazy(() =>
-  import('@/pages/research/ResearchIndexPage').then((m) => ({ default: m.ResearchIndexPage })),
+  routeLoaders.ResearchIndexPage().then((m) => ({ default: m.ResearchIndexPage })),
 );
 const ScorecardPage = lazy(() =>
-  import('@/pages/research/ScorecardPage').then((m) => ({ default: m.ScorecardPage })),
+  routeLoaders.ScorecardPage().then((m) => ({ default: m.ScorecardPage })),
 );
 const MarketsPage = lazy(() =>
-  import('@/pages/research/MarketsPage').then((m) => ({ default: m.MarketsPage })),
+  routeLoaders.MarketsPage().then((m) => ({ default: m.MarketsPage })),
 );
 const FilingsPage = lazy(() =>
-  import('@/pages/research/FilingsPage').then((m) => ({ default: m.FilingsPage })),
+  routeLoaders.FilingsPage().then((m) => ({ default: m.FilingsPage })),
 );
 const PositionsPage = lazy(() =>
-  import('@/pages/positions/PositionsPage').then((m) => ({ default: m.PositionsPage })),
+  routeLoaders.PositionsPage().then((m) => ({ default: m.PositionsPage })),
 );
-const Scanner = lazy(() => import('@/pages/scanner/Scanner').then((m) => ({ default: m.Scanner })));
+const Scanner = lazy(() => routeLoaders.Scanner().then((m) => ({ default: m.Scanner })));
 const ScannerNotLive = lazy(() =>
-  import('@/pages/scanner/ScannerNotLive').then((m) => ({ default: m.ScannerNotLive })),
+  routeLoaders.ScannerNotLive().then((m) => ({ default: m.ScannerNotLive })),
 );
-const BlogPage = lazy(() => import('@/pages/blog/BlogPage').then((m) => ({ default: m.BlogPage })));
+const BlogPage = lazy(() => routeLoaders.BlogPage().then((m) => ({ default: m.BlogPage })));
 const BlogPostPage = lazy(() =>
-  import('@/pages/blog/BlogPostPage').then((m) => ({ default: m.BlogPostPage })),
+  routeLoaders.BlogPostPage().then((m) => ({ default: m.BlogPostPage })),
 );
 const MethodologyPage = lazy(() =>
-  import('@/pages/methodology/MethodologyPage').then((m) => ({ default: m.MethodologyPage })),
+  routeLoaders.MethodologyPage().then((m) => ({ default: m.MethodologyPage })),
 );
-const AlertsPage = lazy(() =>
-  import('@/pages/alerts/AlertsPage').then((m) => ({ default: m.AlertsPage })),
-);
+const AlertsPage = lazy(() => routeLoaders.AlertsPage().then((m) => ({ default: m.AlertsPage })));
 const SettingsPage = lazy(() =>
-  import('@/features/auth/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+  routeLoaders.SettingsPage().then((m) => ({ default: m.SettingsPage })),
 );
 const OperatorMetrics = lazy(() =>
-  import('@/pages/operator-metrics/operator-metrics').then((m) => ({ default: m.OperatorMetrics })),
+  routeLoaders.OperatorMetrics().then((m) => ({ default: m.OperatorMetrics })),
 );
 const OperatorSessionArchive = lazy(() =>
-  import('@/pages/operator-session-archive/OperatorSessionArchive').then((m) => ({
-    default: m.OperatorSessionArchive,
-  })),
+  routeLoaders.OperatorSessionArchive().then((m) => ({ default: m.OperatorSessionArchive })),
 );
 const CreditsPage = lazy(() =>
-  import('@/pages/trust/CreditsPage').then((m) => ({ default: m.CreditsPage })),
+  routeLoaders.CreditsPage().then((m) => ({ default: m.CreditsPage })),
 );
 const PrivacyPage = lazy(() =>
-  import('@/pages/trust/PrivacyPage').then((m) => ({ default: m.PrivacyPage })),
+  routeLoaders.PrivacyPage().then((m) => ({ default: m.PrivacyPage })),
 );
-const TermsPage = lazy(() =>
-  import('@/pages/trust/TermsPage').then((m) => ({ default: m.TermsPage })),
-);
-const NotFound = lazy(() =>
-  import('@/pages/not-found/NotFound').then((m) => ({ default: m.NotFound })),
-);
+const TermsPage = lazy(() => routeLoaders.TermsPage().then((m) => ({ default: m.TermsPage })));
+const NotFound = lazy(() => routeLoaders.NotFound().then((m) => ({ default: m.NotFound })));
 
 /** Per-route Suspense + error boundary: loading fill never blanks the shell (AC-Nav-4);
  *  a throw in one page does not unmount nav chrome. */

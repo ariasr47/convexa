@@ -25,13 +25,13 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { __resetLocalPrefs, saveLocalDefaultTicker } from '@/features/auth/localPrefs';
 import { makeBundle } from '@/features/auth/testBackend';
 import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
-import App from './app';
+import App, { preloadRoutes } from './app';
 
 /** The shared fixture pinned to the requested symbol (the walk deep-links non-TSLA tickers). */
 function bundleFor(ticker: string): TickerBundle {
@@ -45,6 +45,18 @@ function bundleFor(ticker: string): TickerBundle {
 }
 
 let fetchMock: ReturnType<typeof vi.fn>;
+
+// Each walked page's first import runs here, at the hook timeout, not inside a 5 s `findBy` wait.
+beforeAll(() =>
+  preloadRoutes([
+    'TickerDashboard',
+    'PositionsPage',
+    'Scanner',
+    'BlogPage',
+    'MethodologyPage',
+    'SettingsPage',
+  ]),
+);
 
 /** URL-only match — `fetch` may also pass `{ signal }` / credentials (AbortController on ticker). */
 function expectFetchUrlContaining(substr: string) {

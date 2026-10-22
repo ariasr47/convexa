@@ -16,9 +16,9 @@ import { ThemeProvider } from '@mui/material/styles';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import App from '@/app';
+import App, { preloadRoutes } from '@/app';
 import { __resetMemory, allPositions } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
 
@@ -240,6 +240,8 @@ function renderAt(path: string) {
   );
 }
 
+// Both pages' first imports run here, at the hook timeout, not inside a 5 s `findBy` wait.
+beforeAll(() => preloadRoutes(['TickerDashboard', 'PositionsPage']));
 beforeEach(() => {
   localStorage.clear();
   __resetMemory();
@@ -271,7 +273,7 @@ describe('sim-entry-unification — one shared dialog across both launch sites',
     const positionsDlg = await screen.findByTestId('trade-entry-dialog');
     expect(within(positionsDlg).getByText('SIMULATED')).toBeInTheDocument();
     // The testid exists ONLY in app/trading/TradeEntryDialog.tsx — both paths mounted that one file.
-  }, 20000);
+  });
 
   it('positions_launched_limit_entry_rests_pending_and_fills_only_on_a_live_cross', async () => {
     const user = userEvent.setup();
@@ -300,7 +302,7 @@ describe('sim-entry-unification — one shared dialog across both launch sites',
       expect(p?.legs[0].entry_price).toBe(4);
       expect(p?.legs[0].entry_basis).toBe('limit_fill');
     });
-  }, 20000);
+  });
 });
 
 // A ticker can hold more than one position (positions-legs SPEC §2.8). The desk's entry dialog was
@@ -324,7 +326,7 @@ describe('desk header CTA with a position already open on the ticker', () => {
 
     await user.click(screen.getByTestId('open-sim-trade'));
     expect(await screen.findByTestId('trade-entry-dialog')).toBeInTheDocument();
-  }, 20000);
+  });
 
   // Opening a position gives the ticker an eval subject, so the bundle is re-queried with the
   // position's leg (`pos_*`). That key change used to clear the bundle, and the already-loaded desk
@@ -355,5 +357,5 @@ describe('desk header CTA with a position already open on the ticker', () => {
     watch.disconnect();
 
     expect(skeletons).toBe(0);
-  }, 20000);
+  });
 });

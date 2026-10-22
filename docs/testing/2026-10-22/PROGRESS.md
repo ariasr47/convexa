@@ -1,0 +1,7 @@
+# Test plan progress (2026-10-22)
+
+One line per executed batch of [TEST_PLAN.md](TEST_PLAN.md) §8, appended in order. Append only: a
+later batch that changes an earlier one adds its own line and never edits this history. Each line
+names the batch, the files, the gates with their exit codes, and the proof that the change bites.
+
+- **Batch 1** (flake, 2026-10-22, lane T): `app.tsx` exports `routeLoaders` (one loader per lazy page, which each `lazy()` now calls) and `preloadRoutes(names)`; `beforeAll(() => preloadRoutes([...]))` at the default hook timeout in `app.risk.spec.tsx` (the 6 pages its walk opens), `shared-entry.flow.spec.tsx` and `orders.risk.spec.tsx` (Ticker and Positions); the 4 per-test 20 s timeouts in shared-entry deleted (orders.risk `T` stays for batches 2 and 64a). Δ cases 0. Repro in a scratch export (`/private/tmp/claude-501/bite-1`, `asyncUtilTimeout` lowered there only), 3 runs each at load 4–5: app.risk at 700 ms, HEAD exit 1 ×3 (`'/ticker'` only), batch exit 0 ×3; shared-entry at 800 ms, HEAD exit 1 ×3 (`positions_and_ticker_pages_render_the_same_trade_entry_dialog` only), batch exit 0 ×3; the budget restored and `cmp` clean against the repo, both exit 0. The preload hook took 870 ms for 6 pages at load 5. Gates: `nx run-many -t lint typecheck test -p @convexa/dashboard,dashboard-e2e` exit 0 (236 files, 2,059 tests); lint and typecheck again with `--skip-nx-cache` exit 0; the 3 specs alone exit 0 (30 tests) at load 17.

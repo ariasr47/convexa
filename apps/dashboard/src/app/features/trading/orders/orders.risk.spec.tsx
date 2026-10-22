@@ -35,9 +35,9 @@ import { ThemeProvider } from '@mui/material/styles';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import App from '@/app';
+import App, { preloadRoutes } from '@/app';
 import {
   __resetMemory as __resetPositionsMemory,
   allDecisions,
@@ -390,6 +390,8 @@ async function actIntoDialog(user: ReturnType<typeof userEvent.setup>) {
   return await screen.findByTestId('trade-entry-dialog');
 }
 
+// Both pages' first imports run here, at the hook timeout, not inside a `findBy` wait.
+beforeAll(() => preloadRoutes(['TickerDashboard', 'PositionsPage']));
 beforeEach(() => {
   localStorage.clear();
   __resetOrdersMemory();
