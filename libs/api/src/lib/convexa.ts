@@ -2039,7 +2039,7 @@ export const GROK_OAUTH_START = '/api/auth/grok/start';
 
 // ---- Durable book (multi-device positions blob) ------------------------------------------------
 
-export type BookEnvelope = components['schemas']['BookEnvelopeSchema'];
+export type BookEnvelope = components['schemas']['BookEnvelope'];
 
 type BookPutBody = components['schemas']['BookPutBody'];
 function toBookPutBody(body: {

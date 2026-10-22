@@ -414,10 +414,11 @@
         "required": ["id", "decision"],
         "type": "object"
       },
-      "BookEnvelopeSchema": {
+      "BookEnvelope": {
         "properties": {
           "blob": {
-            "$ref": "#/components/schemas/BookBlobBody"
+            "$ref": "#/components/schemas/BookBlobBody",
+            "description": "Opaque FE PersistShapeV3 JSON object (or empty object when none stored)."
           },
           "schema_version": {
             "format": "int32",
@@ -9338,7 +9339,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BookEnvelopeSchema"
+                  "$ref": "#/components/schemas/BookEnvelope"
                 }
               }
             },
@@ -9391,7 +9392,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BookEnvelopeSchema"
+                  "$ref": "#/components/schemas/BookEnvelope"
                 }
               }
             },

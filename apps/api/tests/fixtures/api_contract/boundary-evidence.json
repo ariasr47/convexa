@@ -1495,7 +1495,7 @@
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/BookEnvelopeSchema"
+        "$ref": "#/components/schemas/BookEnvelope"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -1552,7 +1552,7 @@
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/BookEnvelopeSchema"
+        "$ref": "#/components/schemas/BookEnvelope"
       },
       "body_valid": true,
       "effect_assertion": {

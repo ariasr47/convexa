@@ -12,6 +12,10 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoResponses, ToSchema};
+
+// The one book envelope: the handlers serialize it and the OpenAPI document derives from it, so a
+// field rename reaches the contract and the TS client (test plan batch 11; there used to be a
+// separate hand-kept schema twin that a rename here silently bypassed).
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct BookEnvelope {
     pub schema_version: i32,
@@ -68,19 +72,10 @@ pub struct BookDecisionBody {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Serialize, ToSchema)]
-pub struct BookEnvelopeSchema {
-    pub schema_version: i32,
-    pub updated_at: f64,
-    pub blob: BookBlobBody,
-    pub source: String,
-}
-
-#[allow(dead_code)]
 #[derive(Debug, IntoResponses)]
 pub enum BookReadResponse {
     #[response(status = 200, content_type = "application/json")]
-    Ok(BookEnvelopeSchema),
+    Ok(BookEnvelope),
     #[response(status = 403, content_type = "application/json")]
     Forbidden(crate::openapi::WireError),
     #[response(status = 503, content_type = "application/json")]
@@ -91,7 +86,7 @@ pub enum BookReadResponse {
 #[derive(Debug, IntoResponses)]
 pub enum BookWriteResponse {
     #[response(status = 200, content_type = "application/json")]
-    Ok(BookEnvelopeSchema),
+    Ok(BookEnvelope),
     #[response(status = 400, content_type = "application/json")]
     BadRequest(crate::openapi::WireError),
     #[response(status = 403, content_type = "application/json")]
@@ -130,17 +125,18 @@ impl IntoResponse for BookWriteResponse {
     }
 }
 
-fn representative_envelope() -> BookEnvelopeSchema {
-    BookEnvelopeSchema {
+fn representative_envelope() -> BookEnvelope {
+    BookEnvelope {
         schema_version: 3,
         updated_at: 1.0,
-        blob: BookBlobBody {
+        blob: serde_json::to_value(BookBlobBody {
             schema_version: 3,
             positions: Vec::new(),
             orders: Vec::new(),
             decisions: Vec::new(),
-        },
-        source: "ephemeral".into(),
+        })
+        .expect("the representative book blob serializes"),
+        source: "ephemeral",
     }
 }
 
@@ -192,7 +188,7 @@ mod schema_tests {
     #[test]
     fn book_schema_is_not_empty() {
         let schema =
-            serde_json::to_value(<BookEnvelopeSchema as utoipa::PartialSchema>::schema()).unwrap();
+            serde_json::to_value(<BookEnvelope as utoipa::PartialSchema>::schema()).unwrap();
         assert!(schema.as_object().is_some_and(|o| !o.is_empty()));
     }
 

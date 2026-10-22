@@ -80,6 +80,11 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // so `schema.ts` and `precutover-operation-baseline.json` keep their hashes and three move.
 // Re-pinned 2026-10-18: the session security scheme names the server's real cookie
 // (`services::auth::COOKIE_NAME`, `gf_session`) instead of `convexa_session`. Same three move.
+// Re-pinned 2026-10-22 (test plan batch 11): the book routes document the envelope they serialize,
+// `BookEnvelope`, and the hand-kept twin `BookEnvelopeSchema` is gone, so the component is renamed
+// and `blob` carries its doc comment. Same shape, zero new operations, so
+// `precutover-operation-baseline.json` keeps its hash and four artifacts move (ledger
+// `route-growth-repins-api-artifact-oracle`).
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -87,19 +92,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "a9dd9038c3c0294d1ef5331defad27a55706b00adc8cd62f67d368e98e6871bd",
+        "19a14434dcdeb6a6b30c4edbc7aaf87d0b34ddc62e22b416e759cd58ab87e105",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "c9dcc245f615a6e828b85f120ffc51ead3163eb3710c8b38560f0d1f3b53eb5b",
+        "3d159243adacdd87b4a2b53079980d39c9e6c3d869595fdc1ee59a0bc7436d81",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "e0eaff2ef4988237942570a41bbc1c9656c7c7de7db31f033dbb2413048d3ee0",
+        "fa4d84ad8f65e15f48a1cce3257ea3f5edecc4572ec46bd43f4e9e66eb2de26f",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "169e7d85271619ae50e10c22c019dd98f8714e64a5b37fdbe9adc903f707b5ce",
+        "c5701f396a7fbec976bf82166300f5c82a54ad535b1db2c30e6b1ccea9e997d0",
     ),
 ];
 

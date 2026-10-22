@@ -14749,7 +14749,7 @@
     {
       "boundaries": [
         {
-          "body_schema_signature": "{\"$ref\":\"#/components/schemas/BookEnvelopeSchema\"}",
+          "body_schema_signature": "{\"$ref\":\"#/components/schemas/BookEnvelope\"}",
           "boundary_id": "GET /api/book 200 application/json session",
           "case_id": "GET /api/book 200 application/json session",
           "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
@@ -14803,7 +14803,7 @@
     {
       "boundaries": [
         {
-          "body_schema_signature": "{\"$ref\":\"#/components/schemas/BookEnvelopeSchema\"}",
+          "body_schema_signature": "{\"$ref\":\"#/components/schemas/BookEnvelope\"}",
           "boundary_id": "PUT /api/book 200 application/json session",
           "case_id": "PUT /api/book 200 application/json session",
           "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
@@ -17183,6 +17183,6 @@
   "schema_version": 2,
   "source": {
     "openapi": "apps/api/openapi/convexa.openapi.json",
-    "sha256": "a9dd9038c3c0294d1ef5331defad27a55706b00adc8cd62f67d368e98e6871bd"
+    "sha256": "19a14434dcdeb6a6b30c4edbc7aaf87d0b34ddc62e22b416e759cd58ab87e105"
   }
 }

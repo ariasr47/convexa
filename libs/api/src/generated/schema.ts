@@ -1037,7 +1037,8 @@ export interface components {
       id: string;
       ticker?: string | null;
     };
-    BookEnvelopeSchema: {
+    BookEnvelope: {
+      /** @description Opaque FE PersistShapeV3 JSON object (or empty object when none stored). */
       blob: components['schemas']['BookBlobBody'];
       /** Format: int32 */
       schema_version: number;
@@ -4496,7 +4497,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['BookEnvelopeSchema'];
+          'application/json': components['schemas']['BookEnvelope'];
         };
       };
       403: {
@@ -4535,7 +4536,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['BookEnvelopeSchema'];
+          'application/json': components['schemas']['BookEnvelope'];
         };
       };
       400: {

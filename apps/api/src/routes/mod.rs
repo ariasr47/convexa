@@ -1775,7 +1775,7 @@ fn register_route_schemas(mut document: OpenApi) -> OpenApi {
     schema!(auth::GrokCallbackQuery);
     schema!(auth::GoogleCallbackQuery);
     schema!(book::BookPutBody);
-    schema!(book::BookEnvelopeSchema);
+    schema!(book::BookEnvelope);
     schema!(book::BookBlobBody);
     schema!(book::BookPositionBody);
     schema!(book::BookOrderBody);
