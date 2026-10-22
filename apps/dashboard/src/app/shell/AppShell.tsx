@@ -20,9 +20,10 @@ import {
   subscribeDemoClock,
   type DemoClock,
 } from '@convexa/api';
+import CropFreeOutlined from '@mui/icons-material/CropFreeOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
+import type { SxProps, Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
@@ -34,6 +35,19 @@ import { GO_TO, GO_TO_WINDOW_MS, isPlainKey, isTypingTarget } from './shortcuts'
 import { ShortcutsSheet } from './ShortcutsSheet';
 import { TopNav } from './TopNav';
 import { useScrollToTopOnPageChange } from './useScrollToTopOnPageChange';
+
+// The demo bar's phone line (below 600px) and its wide row share the glyph, the bold run and Reset.
+const PHONE_ONLY = { display: { xs: 'inline', sm: 'none' } } as const;
+const WIDE_ONLY = { display: { xs: 'none', sm: 'inline' } } as const;
+
+/** The bar's separator: its own `aria-hidden` span holding only "·"; the row's 6px gap spaces it. */
+function BarSeparator({ sx }: { sx?: SxProps<Theme> }) {
+  return (
+    <Typography variant="caption" color="text.secondary" aria-hidden sx={sx}>
+      ·
+    </Typography>
+  );
+}
 
 export function AppShell() {
   // (v2) The ⌘K palette — mounted ONCE in the shell so "one keystroke anywhere" holds on every
@@ -152,29 +166,51 @@ export function AppShell() {
           data-testid="demo-provenance"
           sx={{
             px: { xs: 2, md: 3 },
-            py: 1,
+            // The phone line has no vertical padding: the 44px Reset sets its height (45px with the
+            // border), so the bar costs one line of the first screen, not four (spec 01, step 1).
+            py: { xs: 0, sm: 1 },
             bgcolor: 'background.paper',
             borderBottom: 1,
             borderColor: 'divider',
           }}
         >
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={0.5}
-            sx={{ alignItems: { xs: 'stretch', sm: 'center' }, flexWrap: 'wrap' }}
+          {/* MarketDataNotice's 1240 column, but a 6px column gap and no row gap: its 12/4 gaps
+              wrap the wide row a line early (spec 01, Behaviour › The demo bar). */}
+          <Box
+            sx={{
+              maxWidth: 1240,
+              mx: 'auto',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              columnGap: '6px',
+              rowGap: 0,
+            }}
           >
+            {/* P-2: the state word pairs with its glyph, at every width. */}
+            <CropFreeOutlined
+              aria-hidden
+              sx={{ fontSize: 14, color: 'text.secondary', flex: 'none' }}
+            />
             <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary' }}>
               Demo · sample data
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <BarSeparator />
+            <Typography variant="caption" color="text.secondary" sx={PHONE_ONLY}>
+              Oct 7, 2026
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={WIDE_ONLY}>
               Authored scenario · October 7, 2026 · no market feed connected
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <BarSeparator sx={WIDE_ONLY} />
+            <Typography variant="caption" color="text.secondary" sx={WIDE_ONLY}>
               Signed in as the demo account
             </Typography>
-            <Box sx={{ flexGrow: 1 }} />
+            {/* On a phone the playback line always starts a line of its own, so it takes no
+                separator there; the row may wrap in these states at any width. */}
             {playback.playback === 'paused' && (
               <>
+                <BarSeparator sx={WIDE_ONLY} />
                 <Typography variant="caption" color="text.secondary">
                   Simulated playback paused. Showing the last sample.
                 </Typography>
@@ -184,12 +220,15 @@ export function AppShell() {
               </>
             )}
             {playback.playback === 'ended' && (
-              <Typography variant="caption" color="text.secondary">
-                Sample playback complete. Showing the last sample.
-              </Typography>
+              <>
+                <BarSeparator sx={WIDE_ONLY} />
+                <Typography variant="caption" color="text.secondary">
+                  Sample playback complete. Showing the last sample.
+                </Typography>
+              </>
             )}
-            <ResetDemoControl onReset={resetDemoWorkspace} />
-          </Stack>
+            <ResetDemoControl onReset={resetDemoWorkspace} shortLabel="Reset" />
+          </Box>
         </Box>
       )}
       {dataMode === 'live' && <MarketDataNotice />}
