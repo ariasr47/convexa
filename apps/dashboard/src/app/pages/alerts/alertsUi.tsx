@@ -93,16 +93,18 @@ export function StateTag({ state, detail }: StateWord) {
   return <DataStateTag state={state} detail={detail} />;
 }
 
+/** A demo rule's line. It says no "Sample": the rule's panel says it once, in its head (owner
+ *  decision D1, spec 01 step 5). */
 const SAMPLE_LAST: Record<AlertKind, (r: AlertRule) => string> = {
-  level_touch: () => 'Checks the sample tape',
-  tier_change: () => 'Checks the sample tape',
-  score_gate: () => 'Checks the sample tape',
-  results: (r) => `Sample note · ${r.symbol}`,
-  filing: () => 'Sample filings · Oct 7 scenario',
-  cluster: () => 'Sample Form 4s · Oct 7 scenario',
-  cftc: () => 'Sample report · as of Tue Oct 6',
-  si: () => 'Sample settlement · Sep 30',
-  note: (r) => `Sample note · ${r.symbol}`,
+  level_touch: () => 'Checks while a ticker desk is open',
+  tier_change: () => 'Checks while a ticker desk is open',
+  score_gate: () => 'Checks while a ticker desk is open',
+  results: (r) => `Note · ${r.symbol}`,
+  filing: () => 'Filings · Oct 7',
+  cluster: () => 'Form 4s · Oct 7',
+  cftc: () => 'Report · as of Tue Oct 6',
+  si: () => 'Settlement · Sep 30',
+  note: (r) => `Note · ${r.symbol}`,
 };
 
 const time = (ms: number) =>
@@ -115,14 +117,15 @@ const when = (ms: number) => {
     : `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, ${time(ms)}`;
 };
 
+/** A rule's state: its word, or `'none'` for an enabled rule on the demo, which wears no tag (its
+ *  panel says Sample once, in its head: owner decision D1). `'none'` is not `null`, which reads
+ *  "Checking…". */
+export type RuleState = { state: StateWord['state'] | 'none'; detail?: string; last: string };
+
 /** A rule's state tag and the short line beside it ("Checked 2:30 PM · 33% of its 3-year range"). */
-export function ruleState(
-  rule: AlertRule,
-  ctx: SiteContext,
-  checking: boolean,
-): StateWord & { last: string } {
+export function ruleState(rule: AlertRule, ctx: SiteContext, checking: boolean): RuleState {
   if (!rule.enabled) return { state: 'off', last: 'Switched off: not checked' };
-  if (ctx.demo) return { state: 'sample', last: SAMPLE_LAST[rule.kind](rule) };
+  if (ctx.demo) return { state: 'none', last: SAMPLE_LAST[rule.kind](rule) };
   if (isStructureKind(rule.kind)) {
     return ctx.structureLive
       ? { state: 'updated', last: 'Checks while a ticker desk is open' }

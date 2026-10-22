@@ -7,6 +7,7 @@ import { ChartFrame, chartRoles, type Provenance } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor } from '@/shared/theme/tokens';
+import { FrameDemoTagProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import { dataMode, DEMO_NOTE_PRICED, type PublicMarkets } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha, useTheme, type Theme } from '@mui/material/styles';
@@ -54,7 +55,8 @@ const CFTC = 'CFTC';
 const TSY_URL = 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates';
 
 /** A Treasury chart's source and as-of on this build: the primary source on the live site, the
- *  demo's sample data on staging (its dashed frame and demo tag come from the board, canon P-8).
+ *  demo's sample data on staging (its dashed frame comes from the board, canon P-8, and its source
+ *  chip is its one Sample mark: the page opts out of the frame's demo tag, owner decision D1).
  *  Every chart in the rates section takes its frame from here. */
 function treasuryFrame(
   source: string,
@@ -79,7 +81,17 @@ function treasuryFrame(
 }
 const pct = (n: number | null | undefined) => (n == null ? '—' : `${n.toFixed(2)}%`);
 
+/** The shell's demo bar is this page's one "Demo · sample data", so its frames don't repeat it
+ *  (FrameDemoTagProvider; owner decision D1, spec 01 step 5). No effect on the live build. */
 export function MarketsPage() {
+  return (
+    <FrameDemoTagProvider value={false}>
+      <MarketsBody />
+    </FrameDemoTagProvider>
+  );
+}
+
+function MarketsBody() {
   const read = usePublicMarkets();
   const data = read.data;
   return (
@@ -116,12 +128,17 @@ export function MarketsPage() {
               textWrap: 'pretty',
             }}
           >
-            Rates, positioning and the money behind them, from public sources, refreshed each
-            business day. The 10-year on this page is the risk-free rate every note&apos;s valuation
-            starts from.
+            {dataMode === 'demo' ? (
+              'Rates, positioning and the money behind them, shaped like the public sources Convexa reads each business day. The 10-year on this page is the risk-free rate every note’s valuation starts from.'
+            ) : (
+              <>
+                Rates, positioning and the money behind them, from public sources, refreshed each
+                business day. The 10-year on this page is the risk-free rate every note&apos;s
+                valuation starts from.
+              </>
+            )}
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {dataMode === 'demo' && <ProvenanceChip text="Demo · sample data" kind="sample" />}
             {data?.rates && (
               <ProvenanceChip
                 text={`${data.rates.source} · through ${formatNoteDate(data.rates.as_of)}`}
@@ -132,7 +149,7 @@ export function MarketsPage() {
                 text={`${data.futures.source} · as of ${formatShortDate(data.futures.report_date)}`}
               />
             )}
-            {/* One state word per source (canon P-2); demo builds say it once, in the chip above. */}
+            {/* One state word per source (canon P-2); demo builds say it once, in the shell's bar. */}
             {data &&
               dataMode !== 'demo' &&
               (data.state === 'off' ? (
@@ -376,8 +393,9 @@ function RatesSection({ rates, stale = false }: { rates: Rates; stale?: boolean 
           <Caps
             sx={{ color: 'text.primary' }}
           >{`Rates today · ${formatNoteDate(latest.date)}`}</Caps>
+          {/* The strip has no source line, so on the demo its head says Sample (owner decision D1). */}
           {demo ? (
-            <DataStateTag state="demo" />
+            <DataStateTag state="sample" />
           ) : (
             <DataStateTag
               state={stale ? 'lastGood' : 'updated'}
@@ -385,8 +403,30 @@ function RatesSection({ rates, stale = false }: { rates: Rates; stale?: boolean 
             />
           )}
         </Box>
-        {/* Sample data is dashed (P-8), as every frame below it is. */}
-        <Box sx={demo ? { '& > section': { borderStyle: 'dashed' } } : undefined}>
+        {/* Sample data is dashed with the hatch stripe (P-3, P-8), as every frame below it is. */}
+        <Box
+          sx={
+            demo
+              ? (t: Theme) => ({
+                  '& > section': {
+                    borderStyle: 'dashed',
+                    position: 'relative',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: 8,
+                      borderRadius: '11px 11px 0 0',
+                      pointerEvents: 'none',
+                      background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`,
+                    },
+                  },
+                })
+              : undefined
+          }
+        >
           <ReadStrip
             label="Rates today"
             cells={[
@@ -1444,7 +1484,8 @@ const fmtK = (n: number) =>
 const CFTC_URL = 'https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm';
 
 /** What every CFTC frame shares: state tag, source and the as-of (positions are as of a Tuesday
- *  and published the Friday after). Its provenance, and the demo's tag, come from the board. */
+ *  and published the Friday after). Its provenance comes from the board; on the demo its source
+ *  chip is its one Sample mark (owner decision D1). */
 function cftcFrame(futures: Futures, stale = false) {
   const published = new Date(`${futures.report_date}T12:00:00Z`);
   published.setUTCDate(published.getUTCDate() + 3);

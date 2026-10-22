@@ -11,6 +11,7 @@ import { chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { STAGING_DEMO_NAMES, STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
+import { FrameDemoTagProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import {
   dataMode,
   DEMO_CALENDAR,
@@ -37,7 +38,6 @@ import { filedSince } from './filings';
 import { formatNoteDate, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
 import { RESEARCH_DISCLAIMER, ResearchColumn } from './NotesView';
 import { usePublicFilings } from './publicData';
-import { ProvenanceChip } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
 import {
   calendarTriggers,
@@ -156,7 +156,7 @@ function useSampleCards(): SampleCard[] | null | undefined {
           chart: changes.length
             ? {
                 type: 'chart',
-                caption: 'Daily close change, % · last 10 sample sessions',
+                caption: 'Daily close change, % · last 10 sessions',
                 bars: changes.map((c) => ({
                   label: formatNoteDate(c.date),
                   value: c.value,
@@ -538,6 +538,8 @@ function TickerCard({ row, today }: { row: Row; today: string }) {
  * Coming up on /research: the next six catalysts across notes, each the day its note comes due for
  * review. Production lists the notes' own catalysts and the calendar's triggers; staging lists the
  * sample notes' review triggers from the scenario's calendar (owner ruling 7, the Calendar board).
+ * On staging the section says Sample once, in its head, for all its tiles; each tile is dashed with
+ * the hatch stripe (canon P-3, P-8; owner decision D1, spec 01 step 5).
  */
 function ComingUpList({
   items,
@@ -559,14 +561,14 @@ function ComingUpList({
             Coming up · next 10 weeks
           </Box>
           {demo ? (
-            <DataStateTag state="demo" />
+            <DataStateTag state="sample" />
           ) : (
             <DataStateTag state="computed" detail="from every note" />
           )}
         </Box>
         <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
           {demo
-            ? 'In the sample: each sample note’s results date, the scenario calendar’s FOMC decision for every sample note, and results windows estimated from sample filing history. Each date is when its note comes due for review. Scenario of Oct 7, 2026.'
+            ? 'Each note’s results date, the FOMC decision for every note, and results windows estimated from filing history. Each date is when its note comes due for review. As of Oct 7, 2026.'
             : 'Catalysts from every note, and the calendar’s: the FOMC for every note with a valuation, and results windows estimated from filing history. Each date is when its note comes due for review; an estimated window, once the results are filed.'}
         </Box>
       </Box>
@@ -587,7 +589,22 @@ function ComingUpList({
             key={`${u.ticker}-${u.label}-${u.date}`}
             sx={(t) => ({
               ...PANEL_SX,
-              ...(demo && { borderStyle: 'dashed' }),
+              // Sample data: dashed, with the hatch band the alerts Panel and ChartFrame draw.
+              ...(demo && {
+                borderStyle: 'dashed',
+                position: 'relative',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  height: 8,
+                  borderRadius: '11px 11px 0 0',
+                  pointerEvents: 'none',
+                  background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`,
+                },
+              }),
               px: 1.75,
               py: 1.5,
               display: 'grid',
@@ -673,7 +690,17 @@ const FILTER_SX =
 type StanceFilter = 'all' | NoteStance | 'unset';
 type FreshFilter = 'any' | Freshness['state'];
 
+/** The shell's demo bar is this page's one "Demo · sample data", so its frames don't repeat it
+ *  (FrameDemoTagProvider; owner decision D1, spec 01 step 5). No effect on the live build. */
 export function ResearchIndexPage() {
+  return (
+    <FrameDemoTagProvider value={false}>
+      <ResearchIndexBody />
+    </FrameDemoTagProvider>
+  );
+}
+
+function ResearchIndexBody() {
   const today = useMemo(() => localToday(), []);
   const [query, setQuery] = useState('');
   const [stance, setStance] = useState<StanceFilter>('all');
@@ -748,7 +775,7 @@ export function ResearchIndexPage() {
   );
   const live = rows.filter((r) => r.f.state !== 'archived');
   const soon = comingUp(live, today, 'every valued note');
-  const sampleSoon = DEMO ? comingUp(SAMPLE_AGING, DEMO_CALENDAR_TODAY, 'every sample note') : [];
+  const sampleSoon = DEMO ? comingUp(SAMPLE_AGING, DEMO_CALENDAR_TODAY, 'every note') : [];
   const count = (pred: (r: Row) => boolean) => rows.filter(pred).length;
   const stances: { key: StanceFilter; label: string; dashed?: boolean }[] = [
     { key: 'all', label: `All · ${rows.length}` },
@@ -796,17 +823,9 @@ export function ResearchIndexPage() {
               sx={{ m: 0, maxWidth: '62ch', color: 'text.secondary', fontSize: 16 }}
             >
               {DEMO
-                ? 'Sample research notes authored for the demo scenario, one per sample symbol. Each opens with its thesis, evidence and what would change it.'
+                ? 'Research notes on the tickers Convexa follows. Each opens with its thesis, the evidence and what would change it.'
                 : 'Notes on the tickers being followed: what the price implies, the evidence, the debate, a valuation with its assumptions shown, and what comes next. Each opens with a 30-second summary.'}
             </Box>
-            {DEMO && (
-              <Box>
-                <ProvenanceChip
-                  text="Demo · sample notes · scenario of Oct 7, 2026"
-                  kind="sample"
-                />
-              </Box>
-            )}
           </Box>
         </Box>
 

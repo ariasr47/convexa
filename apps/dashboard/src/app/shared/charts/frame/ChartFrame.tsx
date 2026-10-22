@@ -5,7 +5,10 @@
  * - The border is the provenance (P-8): solid for Convexa's own figures or a primary source, dotted
  *   for a third party's, dashed with a hatch stripe for sample data. A frame given no provenance
  *   takes the board's (WidgetProvenanceContext: the shell sets it from the build, `sample` on the
- *   demo and `primary` on the live site), and on a sample board it wears the demo's state tag.
+ *   demo and `primary` on the live site). On a sample board it wears the demo's state tag, unless
+ *   its page has opted out (FrameDemoTagProvider, the Research pages): the shell's demo bar is then
+ *   the page's one "Demo · sample data", and the frame names the sample once, by its own source
+ *   chip, or by a Sample tag in its head when it has no source line (owner decision D1).
  * - The title states the finding only when the chart has data; every other state names the metric
  *   (P-10, frameTitle.ts). The subtitle holds the metric, the unit and the period.
  * - A state tag sits beside the title (Updated Oct 13, Computed, Demo · sample data…).
@@ -21,9 +24,9 @@
 import { creditsAnchor } from '@/shared/credits/anchor';
 import { CreditsLink } from '@/shared/credits/CreditsLink';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import type { DataStateKey } from '@/shared/dataState/vocabulary';
+import { DATA_STATES, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
-import { useWidgetProvenance } from '@/shared/ui/Widget/WidgetProvenanceContext';
+import { useFrameDemoTag, useWidgetProvenance } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
@@ -71,7 +74,10 @@ export function ChartFrame({
   metric: string;
   sub?: ReactNode;
   /** Omitted: the board's provenance. On a sample board (the demo build) the frame then shows the
-   *  demo tag in every state, whatever `tag` says, so a call site passes only its live tag. */
+   *  demo tag in every state, whatever `tag` says, so a call site passes only its live tag. On a
+   *  page that opts out of that tag (FrameDemoTagProvider) a passed failure or absence tag (warn or
+   *  quiet: Couldn’t load, Last good copy, Off…) still shows; a current-data one (Updated,
+   *  Computed…) never does, and a frame with no source line says Sample instead. */
   provenance?: Provenance;
   status?: ChartStatus;
   tag?: { state: DataStateKey; detail?: string; word?: string };
@@ -89,9 +95,18 @@ export function ChartFrame({
   testId?: string;
 }) {
   const board = useWidgetProvenance();
+  const demoTag = useFrameDemoTag();
   const provenance = given ?? board;
-  const tag =
-    given === undefined && provenance === 'sample' ? { state: 'demo' as const } : givenTag;
+  const boardSample = given === undefined && provenance === 'sample';
+  const tag = !boardSample
+    ? givenTag
+    : demoTag
+      ? { state: 'demo' as const }
+      : givenTag && ['warn', 'quiet'].includes(DATA_STATES[givenTag.state].kind)
+        ? givenTag
+        : source
+          ? undefined
+          : { state: 'sample' as const };
   const title = frameTitle(status, finding, metric);
   const ready = status.kind === 'ready';
   return (

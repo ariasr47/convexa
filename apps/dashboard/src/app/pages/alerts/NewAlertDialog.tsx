@@ -440,7 +440,8 @@ function ChooseStep({
                   text={ctx.demo ? `Sample · shaped like ${k.chip}` : k.chip}
                   link={false}
                 />
-                <StateTag {...st} />
+                {/* On the demo the chip says Sample; a Sample tag beside it would repeat it. */}
+                {!ctx.demo && <StateTag {...st} />}
               </Box>
             </Tile>
           );
@@ -1255,7 +1256,7 @@ function ReviewStep({
           }
           link={false}
         />
-        <StateTag {...st} />
+        {!ctx.demo && <StateTag {...st} />}
       </Box>
       <Box
         component="dl"

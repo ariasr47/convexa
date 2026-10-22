@@ -6,8 +6,10 @@
  * kinds save but say Not set up until SEC_USER_AGENT is set (Q-4); structure kinds are Not live with a
  * link to the demo. This browser checks the public kinds when the page opens (usePublicChecks), and the
  * page says so: no server checks them yet.
- * Staging: the demo account's seed (libs/api/src/lib/demo/alerts.ts), every rule and firing a Sample;
- * the demo never checks on its own.
+ * Staging: the demo account's seed (libs/api/src/lib/demo/alerts.ts), every rule and firing a sample;
+ * the demo never checks on its own. The shell's demo bar is the page's one "Demo · sample data", so
+ * there is no legend, and each sample panel says Sample once: by a source chip in a row, or in its
+ * head when no row carries one (owner decision D1, spec 01 step 5).
  *
  * The read-fault latch's faulted posture (N-5) is unchanged: identical in shape to
  * `PositionRow.tsx`'s `Refused`/`FaultedBanner`, mirrored locally rather than importing the trading
@@ -66,8 +68,8 @@ import {
   kindState,
   ruleState,
   waitSentence,
+  type RuleState,
   type SiteContext,
-  type StateWord,
 } from './alertsUi';
 import { NewAlertDialog, type Draft } from './NewAlertDialog';
 
@@ -400,11 +402,9 @@ export function AlertsPage() {
   );
   const structureCount = a.rules.filter((r) => isStructureKind(r.kind)).length;
 
+  // No legend on the demo: the shell's demo bar is the page's one "Demo · sample data" (D1).
   const legend = demo
-    ? [
-        { state: 'demo' as DataStateKey, n: null as number | null },
-        { state: 'sample' as DataStateKey, n: a.rules.length },
-      ]
+    ? null
     : [
         ...LEGEND_ORDER.filter((k) => k !== 'notLive' || ctx.structureLive)
           .map((k) => ({ state: k, n: states.filter((s) => s.state === k).length }))
@@ -496,7 +496,7 @@ export function AlertsPage() {
           >
             {ALERTS_LEAD}{' '}
             {demo
-              ? 'In the demo every kind, structure included, is a sample on the Oct 7 scenario.'
+              ? 'Every kind can be set up here, structure included.'
               : ctx.structureLive
                 ? 'Structure alerts check while a ticker desk is open.'
                 : 'Structure alerts need the options feed, which isn’t live on this site.'}
@@ -517,54 +517,54 @@ export function AlertsPage() {
 
       {faulted && <AlertsFaultedBanner />}
 
-      <Box
-        role="group"
-        aria-label="On this page"
-        data-testid="alerts-legend"
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: '8px 12px',
-          p: '10px 14px',
-          borderRadius: '10px',
-          border: 1,
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
-        }}
-      >
+      {legend && (
         <Box
-          component="span"
+          role="group"
+          aria-label="On this page"
+          data-testid="alerts-legend"
           sx={{
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: 'text.secondary',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: '8px 12px',
+            p: '10px 14px',
+            borderRadius: '10px',
+            border: 1,
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
           }}
         >
-          On this page
-        </Box>
-        {legend.map((l) => (
           <Box
-            key={l.state}
             component="span"
-            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
+            sx={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+            }}
           >
-            <DataStateTag state={l.state} detail={l.state === 'notLive' ? null : undefined} />
-            {l.state === 'notLive' && (
-              <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-                structure alerts
-              </Box>
-            )}
-            {l.n !== null && (
+            On this page
+          </Box>
+          {legend.map((l) => (
+            <Box
+              key={l.state}
+              component="span"
+              sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
+            >
+              <DataStateTag state={l.state} detail={l.state === 'notLive' ? null : undefined} />
+              {l.state === 'notLive' && (
+                <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                  structure alerts
+                </Box>
+              )}
               <Box component="span" sx={{ ...MONO, fontSize: 12 }}>
                 {l.n}
               </Box>
-            )}
-          </Box>
-        ))}
-      </Box>
+            </Box>
+          ))}
+        </Box>
+      )}
 
       {!demo && ctx.sec === 'notSetUp' && <SecStrip />}
 
@@ -589,13 +589,19 @@ export function AlertsPage() {
           <Panel
             sx={{ order: { xs: 1, md: 0 } }}
             title="Your alerts"
+            sample={demo}
             tag={
-              <Box
-                component="span"
-                sx={{ ...MONO, fontSize: 12, px: 1, borderRadius: 1, bgcolor: 'action.hover' }}
-              >
-                {a.rules.length}
-              </Box>
+              <>
+                {/* Its rows carry no tag and no source chip, so its head says Sample (D1). With no
+                    rule left, the suggestions' "Sample · shaped like …" chips say it instead. */}
+                {demo && a.rules.length > 0 && <DataStateTag state="sample" />}
+                <Box
+                  component="span"
+                  sx={{ ...MONO, fontSize: 12, px: 1, borderRadius: 1, bgcolor: 'action.hover' }}
+                >
+                  {a.rules.length}
+                </Box>
+              </>
             }
           >
             <Box data-testid="alerts-rules">
@@ -642,7 +648,11 @@ export function AlertsPage() {
             sample={demo}
             tag={
               demo ? (
-                <DataStateTag state="sample" />
+                // A row's "Sample · shaped like …" chip is the frame's one Sample mark (D1); the
+                // head says it only when no row shown carries one.
+                a.events.slice(0, 20).some((e) => e.source) ? null : (
+                  <DataStateTag state="sample" />
+                )
               ) : checks.phase === 'done' ? (
                 <DataStateTag {...firedTag(checks)} />
               ) : (
@@ -666,7 +676,7 @@ export function AlertsPage() {
             </Box>
             <Typography sx={{ m: 0, fontSize: 12.5, color: 'text.secondary', lineHeight: 1.5 }}>
               {demo
-                ? 'Alerts never fire in the demo on their own; this firing is part of the scenario. Nothing here was published by a source.'
+                ? 'Each firing here comes from the sample day: one is seeded with it, and structure alerts fire while a ticker desk is open. Nothing here was published by a source.'
                 : 'Convexa checks your public-data alerts when you open this page, in this browser. Nothing checks them while no Alerts page is open.'}
             </Typography>
             {/* Browser notifications: Convexa's own ask before the browser's prompt, Turn off once on,
@@ -750,7 +760,7 @@ function RuleRow({
   onEdit,
 }: {
   rule: AlertRule;
-  state: StateWord['state'];
+  state: RuleState['state'];
   detail?: string;
   last: string;
   /** A level-touch rule's level, when the page can read it (the demo's sample scan). */
@@ -828,7 +838,7 @@ function RuleRow({
           gap: '8px 12px',
         }}
       >
-        <StateTag state={state} detail={detail} />
+        {state !== 'none' && <StateTag state={state} detail={detail} />}
         <Box
           component="span"
           sx={{
@@ -1012,7 +1022,8 @@ function Suggestions({
                   text={demo ? `Sample · shaped like ${info.chip}` : info.chip}
                   link={false}
                 />
-                <StateTag {...st} />
+                {/* On the demo the chip says Sample; a Sample tag beside it would repeat it. */}
+                {!demo && <StateTag {...st} />}
               </Box>
             </Box>
           </AlertsRefused>
@@ -1075,9 +1086,13 @@ function KindReference({ ctx }: { ctx: SiteContext }) {
           <Box component="th" sx={head}>
             Source · delay
           </Box>
-          <Box component="th" sx={head}>
-            {ctx.demo ? 'In the demo' : 'On this site'}
-          </Box>
+          {/* The state column: on the demo every cell would read Sample beside a chip that
+              already says it, so the column goes (owner decision D1). */}
+          {!ctx.demo && (
+            <Box component="th" sx={head}>
+              On this site
+            </Box>
+          )}
         </tr>
       </thead>
       <tbody>
@@ -1104,12 +1119,14 @@ function KindReference({ ctx }: { ctx: SiteContext }) {
                   {!ctx.demo && ` ${checksLine(k.key)}`}
                 </Box>
               </Box>
-              <Box
-                component="td"
-                sx={{ ...cell, '& [data-state]': { whiteSpace: { md: 'nowrap' } } }}
-              >
-                <StateTag {...st} />
-              </Box>
+              {!ctx.demo && (
+                <Box
+                  component="td"
+                  sx={{ ...cell, '& [data-state]': { whiteSpace: { md: 'nowrap' } } }}
+                >
+                  <StateTag {...st} />
+                </Box>
+              )}
             </tr>
           );
         })}
@@ -1141,9 +1158,14 @@ function KindReference({ ctx }: { ctx: SiteContext }) {
               'Needs a paid options feed.'
             )}
           </Box>
-          <Box component="td" sx={{ ...cell, '& [data-state]': { whiteSpace: { md: 'nowrap' } } }}>
-            <StateTag state={kindState('level_touch', ctx).state} />
-          </Box>
+          {!ctx.demo && (
+            <Box
+              component="td"
+              sx={{ ...cell, '& [data-state]': { whiteSpace: { md: 'nowrap' } } }}
+            >
+              <StateTag state={kindState('level_touch', ctx).state} />
+            </Box>
+          )}
         </tr>
       </tbody>
     </Box>

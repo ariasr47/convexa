@@ -9,6 +9,7 @@ import { ChartFrame, type ChartStatus } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { STAGING_DEMO_SYMBOLS, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
+import { FrameDemoTagProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import {
   dataMode,
   demoNoteFilings,
@@ -81,7 +82,17 @@ const DEMO_EDGE = (t: Theme) =>
       }
     : {};
 
+/** The shell's demo bar is this page's one "Demo · sample data", so its frames don't repeat it
+ *  (FrameDemoTagProvider; owner decision D1, spec 01 step 5). No effect on the live build. */
 export function FilingsPage() {
+  return (
+    <FrameDemoTagProvider value={false}>
+      <FilingsBody />
+    </FrameDemoTagProvider>
+  );
+}
+
+function FilingsBody() {
   const today = useMemo(() => localToday(), []);
   const read = usePublicFilings(TICKERS);
   const [params, setParams] = useSearchParams();
@@ -217,7 +228,7 @@ export function FilingsPage() {
               }}
             >
               {DEMO
-                ? "What the demo's sample companies filed, newest first. A results or quarterly filing the note hasn't read makes it due."
+                ? 'How Convexa lists each followed company’s SEC filings, newest first. A results or quarterly filing the note hasn’t read makes it due.'
                 : `What the ${TICKERS.length} followed companies filed with the SEC, newest first. A results or quarterly filing the note hasn't read makes it due.`}
             </Box>
           </Box>
@@ -230,12 +241,11 @@ export function FilingsPage() {
               gap: 1,
             }}
           >
-            {dataMode === 'demo' && <ProvenanceChip text="Demo · sample data" kind="sample" />}
             {read.data?.checked_at && (
               <ProvenanceChip
                 text={
                   dataMode === 'demo'
-                    ? `Sample filings, shaped like SEC EDGAR · ${formatShortDate(read.data.checked_at.slice(0, 10))}`
+                    ? `Demo · shaped like SEC EDGAR · ${formatShortDate(read.data.checked_at.slice(0, 10))}`
                     : `SEC EDGAR · checked ${formatShortDate(read.data.checked_at.slice(0, 10))}, ${read.data.checked_at.slice(11, 16)} UTC`
                 }
               />
@@ -342,11 +352,12 @@ export function FilingsPage() {
                     filings={shown}
                     current={current}
                     onSelect={setSelected}
-                    // Sample filings say so on their own frame (D-19, P-3); live ones carry the
-                    // answer's word and when EDGAR was checked (design: Filings feedSection).
+                    // Sample filings say Sample once, in the frame's head: it has no source line
+                    // (owner decision D1). Live ones carry the answer's word and when EDGAR was
+                    // checked (design: Filings feedSection).
                     tag={
                       DEMO
-                        ? { state: 'demo' }
+                        ? { state: 'sample' }
                         : word
                           ? {
                               state: word,
@@ -618,9 +629,9 @@ function Detail({ filing }: { filing: PublicFiling }) {
           <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
             {`${filing.form}${filing.items.length ? ` · Item ${filing.items.filter((it) => it !== '9.01').join(', ')}` : ''} · ${formatNoteDate(filing.filed)}`}
           </Box>
-          {/* A sample filing's frame says so (D-19, P-3; design: Filings filingDetail). A live
-              one already shows its filing date in this row. */}
-          {DEMO && <DataStateTag state="demo" />}
+          {/* A sample filing's frame says Sample once, in its head: it has no source line (owner
+              decision D1). A live one already shows its filing date in this row. */}
+          {DEMO && <DataStateTag state="sample" />}
         </Box>
         <Box
           component="h2"
@@ -973,14 +984,13 @@ function ReportedFigures({
       height={160}
       status={status}
       provenance={DEMO ? 'sample' : 'primary'}
+      // On the demo the source chip is the frame's one Sample mark (owner decision D1).
       tag={
         failed
           ? { state: 'couldntLoad' }
-          : status.kind !== 'ready'
+          : status.kind !== 'ready' || DEMO
             ? undefined
-            : DEMO
-              ? { state: 'demo' }
-              : { state: 'updated', detail: `filed ${formatShortDate(filing.filed)}` }
+            : { state: 'updated', detail: `filed ${formatShortDate(filing.filed)}` }
       }
       source={
         DEMO

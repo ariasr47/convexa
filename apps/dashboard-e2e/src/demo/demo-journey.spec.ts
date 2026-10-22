@@ -413,12 +413,12 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   await page.getByRole('link', { name: 'Alerts' }).click();
   await expect(page.getByRole('heading', { name: 'Alerts', exact: true })).toBeVisible();
   // The Alerts page since Wave 1 (2026-10-15): seven seeded sample rules, one per kind, under
-  // "Your alerts". The seeded structure rule is on, names its level and reads the sample tape.
+  // "Your alerts". The seeded structure rule is on, names its level and checks while a desk is open.
   await expect(page.getByRole('heading', { name: 'Your alerts', exact: true })).toBeVisible();
   await expect(page.getByRole('switch')).toHaveCount(7);
   await expect(page.getByRole('switch', { name: /^Level touch for SPY/ })).toBeChecked();
   await expect(page.getByText('Gamma flip · 683.92', { exact: false }).first()).toBeVisible();
-  await expect(page.getByText('Checks the sample tape')).toBeVisible();
+  await expect(page.getByText('Checks while a ticker desk is open')).toBeVisible();
   await screenshot(page, 'alerts-desktop-light');
   // The demo is signed in to its seed account: Settings opens from the account avatar.
   await page.getByRole('link', { name: 'Account settings', exact: true }).click();
