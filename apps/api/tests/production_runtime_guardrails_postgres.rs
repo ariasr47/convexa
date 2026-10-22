@@ -4,7 +4,7 @@ use api_rust::db::migrations::compiled_migrations;
 use api_rust::db::postgres::Pg;
 use api_rust::routes;
 use api_rust::runtime_guardrails::preflight::PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT;
-use api_rust::services::auth::{AiSlot, SettingsPatch};
+use api_rust::services::auth::{AiSlot, AuthConfig, AuthService, AuthStore, SettingsPatch};
 use api_rust::services::chain_snapshot::{
     fixture_probe_bundle, serialize_capture, to_wire, ChainSnapshotStore,
 };
@@ -346,6 +346,56 @@ async fn book_put_with_older_updated_at_does_not_overwrite_newer_book() {
         "stale write moved the clock back"
     );
     assert_eq!(read["blob"], newer, "stale write overwrote the newer book");
+}
+
+/// Logout must revoke the session in Postgres, the production auth store. The memory/SQLite
+/// store's revocation is pinned elsewhere (`api_contract_parity.rs`); nothing ran the Postgres
+/// `revoke_session` until this case, so a no-op there left a logged-out cookie live. The service
+/// is built straight on a migrated database: no router, no `AppState`, no env writes. Multi-thread
+/// because `PgAuthStore` bridges to async with `block_in_place`.
+#[tokio::test(flavor = "multi_thread")]
+async fn logout_on_postgres_revokes_the_session() {
+    let base = std::env::var("TEST_DATABASE_URL").expect(
+        "TEST_DATABASE_URL must be configured; Postgres revocation coverage cannot skip or simulate Postgres",
+    );
+    let admin = PgPoolOptions::new()
+        .max_connections(1)
+        .connect(&base)
+        .await
+        .expect("connect TEST_DATABASE_URL admin database");
+    let name = owned_name("logout");
+    create_database(&admin, &name).await;
+    let url = database_url(&base, &name);
+    run_release_migrations(&url, "logout_revokes");
+
+    let pg = Pg::connect_strict(&url)
+        .await
+        .expect("migrated database reaches current schema");
+    let auth = AuthService::new(
+        AuthStore::open_postgres(pg),
+        AuthConfig {
+            signing_key: "logout-revokes-signing-key".into(),
+            registration_open: true,
+            ..Default::default()
+        },
+    );
+    let (_, session_id) = auth
+        .signup("logout-revokes@example.com", "password1", Some("Logout"))
+        .expect("signup on Postgres");
+    let cookie = auth.signed_cookie_value(&session_id);
+    let before = auth.resolve_session(Some(&cookie)).user;
+    auth.logout(Some(&cookie));
+    let after = auth.resolve_session(Some(&cookie)).user;
+
+    // Release the pool before dropping the database, then assert.
+    drop(auth);
+    drop_database(&admin, &name).await;
+
+    assert!(
+        before.is_some(),
+        "the session must resolve before logout, or this test proves nothing"
+    );
+    assert!(after.is_none(), "logout on Postgres left the session live");
 }
 
 #[tokio::test(flavor = "multi_thread")]
