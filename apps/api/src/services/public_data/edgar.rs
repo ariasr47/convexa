@@ -151,14 +151,26 @@ pub(crate) fn date(raw: Option<&str>) -> Option<NaiveDate> {
 /// The one row this rule misses is an SEC-generated EFFECT notice at 00:15 ET
 /// (`9999999995-23-001582`). The rule also puts NVIDIA's results 8-Ks (Item 2.02) after the close,
 /// summer and winter alike: `…-26-000073` at 16:21:19 EDT, `…-26-000019` at 16:31:25 EST on
-/// 2026-02-25. Every wrong reading lands later than this one, so a wrong rule would drop real
-/// filings near an event but never leak the future.
+/// 2026-02-25.
+///
+/// **If this rule is wrong, it leaks the future.** The other two readings both land later than
+/// this one: by New York's offset when the value is read as a true UTC instant, and by twice it
+/// when it is read as Eastern wall time. If the truth is either of them, this rule dates every
+/// filing 4 to 10 hours before EDGAR accepted it. A package cut inside that gap would then hold a
+/// filing nobody could read yet. The comforting direction applies only the other way round: a
+/// later reading used in place of a correct one drops real filings near an event but never leaks.
 ///
 /// **Still to confirm:** the spec checks the rule against EDGAR's own filing headers
 /// (`<accession>.hdr.sgml`, `ACCEPTANCE-DATETIME`, Eastern) for `0001045810-26-000073`,
 /// `0001045810-26-000019` and `0001197647-26-000011`. Those three GETs need the owner's
 /// `SEC_USER_AGENT`, which this build lane didn't have; if the headers disagree, the headers win.
-/// Until then the live CLI's guard ([`acceptance_fit`]) is the standing check.
+/// Until then the live CLI's guard ([`acceptance_fit`]) is the only check. It would catch an
+/// index written in Eastern wall time on NVDA: rewriting the real index that way puts 55 of
+/// 1,000 rows outside, above the 1% limit. But it counts one issuer at a time, so an issuer whose
+/// filings cluster between 14:00 and 22:00 Eastern could pass it, and a replay never runs it. The
+/// hand-built index (`sec_submissions_nvda.json`, also the Q1 fixture's) fits the Eastern
+/// wall-time reading: 0 of 16 rows fall outside read that way, against 1 of 16 under this rule.
+/// Its times are illustrative, so this is a hint, not evidence.
 ///
 /// Sub-seconds are dropped (EDGAR writes `.000`). A value with another offset than `Z`, or one that
 /// isn't RFC 3339, is `None`: the rule is only known for EDGAR's `Z` form.

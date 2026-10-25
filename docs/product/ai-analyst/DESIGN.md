@@ -623,3 +623,22 @@ Source: [spec 06](../specs/2026-10-21/06-analyst-phase0a-q1-package.md) and the 
 9. **Live SEC requests (S6-Q5).** A build lane may make only step 0's three header GETs, with the
    production `SEC_USER_AGENT`, and commit their slices as fixtures. The owner makes the live run
    of about 80 requests; no lane runs the package CLI live.
+
+### 2026-10-25: the direction of a wrong timezone rule (spec 06 review, adds to item 3)
+
+Item 3's facts stand. This corrects an inference in spec 06 ("Every wrong reading lands later than
+the third one. A wrong rule therefore never leaks the future"), which the doc comment on
+`accepted_at` repeated until this review. The inference holds only when a later reading replaces a
+correct `accepted_at`. **The chosen rule is the earliest of the three readings, so if the headers
+show it is wrong, it leaks the future.** It would date every filing 4 to 10 hours before EDGAR
+accepted it, and a package cut in that gap would hold a filing nobody could read yet.
+
+- **What stands in the meantime:** only the live guard. If EDGAR wrote its index as Eastern wall
+  time, the guard would reject NVDA (55 of 1,000 rows outside, above 1%). But it counts one issuer
+  at a time, so an issuer whose filings cluster between 14:00 and 22:00 Eastern could pass it, and
+  a replay never runs it.
+- **The hand-built index fits the Eastern wall-time reading** (0 of 16 rows outside, against 1 of
+  16 under the rule). Its times are illustrative, so this is a hint, not evidence.
+- **Consequence:** step 0's three header GETs should come before the owner's live run (criterion
+  14) and before any eval item is cut near an event. If the headers disagree with `accepted_at`,
+  the rule changes, the fixture ids are re-baselined, and a further amendment records the outcome.
