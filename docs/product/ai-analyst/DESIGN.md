@@ -562,3 +562,64 @@ It found 28 issues: 2 critical, 14 major and 12 minor. All were accepted. The ch
 The research notes' late start (2026-10-13) and TSM's filing type now shape the golden set (§5.1).
 
 _Sources and the full licence evidence: [SOURCES.md](SOURCES.md)._
+
+---
+
+## Amendments
+
+Appended; the sections above stay as written. Where an amendment changes §3's types or rules, it
+supersedes them from its date.
+
+### 2026-10-25: Phase 0 slice 0a (spec 06)
+
+Source: [spec 06](../specs/2026-10-21/06-analyst-phase0a-q1-package.md) and the owner's answers of
+2026-10-25 ([README](../specs/2026-10-21/README.md), "Owner answers": every recommended answer).
+
+1. **§8.1, Phase 0.** Slice 0a alone is approved (S6-Q1). It brings Phase 1's Q1 package builder
+   forward, without the seven tools, the model or truncation, so Phase 0's exit gate "the builder,
+   re-run on stored inputs and cutoff, reproduces the same `package_id`" has a builder to re-run.
+   Slices 0b to 0f stay gated: the owner role and gate, the `context_packages` and
+   `analyst_answers` tables, the persona config sent in full, the per-user AI cap, the notes read
+   API at a commit, and the scorer's price key.
+2. **What was built.** `api-rust package q1 <TICKER> --cutoff <RFC3339> [--save-inputs D | --inputs
+   D] [--out F]` (`apps/api/src/services/analyst/`). A pure builder reads saved SEC responses by
+   URL; a live run and a replay run the same function on the same bytes. No model call, route,
+   table or UI.
+3. **The timezone rule (§3, "Point in time").** EDGAR writes `acceptanceDateTime` with a `Z`, but
+   the value is the true instant moved later by New York's UTC offset. The true instant is the UTC
+   instant with the same digits as the value's New York wall time (`accepted_at` in
+   `public_data/edgar.rs`): `2026-08-27T00:21:19Z` is 16:21:19 EDT on Aug 26.
+   - **Evidence:** on the 1,000-row real NVDA index this reading puts 999 rows inside 06:00 to
+     22:00 Eastern and 999 on or before their filing date. Reading the value as a true UTC instant
+     leaves 326 rows outside; reading it as Eastern wall time leaves 954.
+   - **Not yet confirmed against EDGAR's own headers.** Step 0's three header GETs
+     (`0001045810-26-000073`, `0001045810-26-000019`, `0001197647-26-000011`) need the owner's
+     `SEC_USER_AGENT`, which the build lane didn't have. If the headers disagree, they win.
+   - **The standing check:** a live run aborts when more than 1% of the issuer's rows fall
+     outside EDGAR's hours or after their filing date.
+4. **`persona`** is `PersonaConfig | null`: `null` until slice 0c sends the persona in full
+   (S6-Q3). Ids change once it is filled in, which is correct, because a persona changes retrieval.
+5. **`omitted.reason`** gains `not_built`, for a section the server can't build yet (S6-Q2):
+   `'not_licensed' | 'stale' | 'off' | 'budget' | 'not_built'`. The research note is
+   `{ section: 'research_note', reason: 'not_built' }` until slice 0e. `off` stays "deliberately
+   switched off".
+6. **`coverage`** (S6-Q6). A section is `{ facts, coverage, tokens, truncated? }`. `coverage`
+   records what the section couldn't read or place: a Form 4 that returned 404, a manager index
+   or 13F table that couldn't be read, a company-facts point no filing in the index can place, a
+   row without an acceptance time. A gap is part of the package, never only a log line, so it
+   enters `package_id`.
+7. **Three deviations from the point-in-time table (§3), accepted for 0a (S6-Q4):**
+   - (a) 13F-HR/A and Form 4/A amendments aren't read, as on the site. Revisit only if a Phase 1
+     eval item hits an amended 13F.
+   - (b) The 13F change is in basis points of shares outstanding (`unit: 'bp'`), because the unit
+     set has no "points".
+   - (c) **Zero priors (README D3).** A manager whose prior-quarter 13F was read without the
+     security gets a `13f.prior_absent` fact and no change fact: a zero prior may be a missed
+     read, so it is not counted as buying. Totals sum only the facts emitted, so the package's
+     total change can differ from the site's `total_change_pts`.
+8. **Citation check (§5.2, point 3).** The allowlist gains the rule name `10b5-1`: it names a rule
+   and carries no value. Fact labels hold digits only in dates, form names, item numbers and
+   `10b5-1`. Counts are spelled out, and role ordinals are letters ("Director C").
+9. **Live SEC requests (S6-Q5).** A build lane may make only step 0's three header GETs, with the
+   production `SEC_USER_AGENT`, and commit their slices as fixtures. The owner makes the live run
+   of about 80 requests; no lane runs the package CLI live.
