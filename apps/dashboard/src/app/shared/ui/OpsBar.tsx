@@ -12,7 +12,9 @@ import type { ReactNode } from 'react';
 
 const MONO = typographyTokens.monoFontFamily;
 
-/** A plain, neutral tag: a fact about the page, not a data state. */
+/** A plain, neutral tag: a fact about the page, not a data state. 22 tall at a fine pointer and 24
+ *  under a coarse one, as the board's `.stag` (design/src/lib.mjs; fidelity L13 outside item). It is
+ *  text, not a control, so the 44px touch floor does not apply. */
 export function OpsTag({ children, testId }: { children: ReactNode; testId?: string }) {
   return (
     <Box
@@ -21,7 +23,8 @@ export function OpsTag({ children, testId }: { children: ReactNode; testId?: str
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
-        minHeight: 24,
+        minHeight: 22,
+        '@media (pointer: coarse)': { minHeight: 24 },
         px: 1,
         borderRadius: '12px',
         border: 1,
