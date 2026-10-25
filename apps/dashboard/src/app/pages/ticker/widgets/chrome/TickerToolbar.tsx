@@ -39,7 +39,8 @@ import { dteLabel } from '../_kit/copy';
  * 288px wrapped the CTA onto a third line). Re-skin only: the SAME `Select`/`PersonaPicker` children,
  * ids, testids and accessible names; the chip is the field, so the control inside drops its own
  * outline, padding and 190px minimum. Below `tablet` each chip takes a full row at 44px, as the
- * board's phone does. When `htmlFor` is given the caption is a real `<label>`.
+ * board's phone does; under a coarse pointer the chip is 46px at every width, so the combobox
+ * inside it is 44 (canon rule 7). When `htmlFor` is given the caption is a real `<label>`.
  */
 function Segment({
   label,
@@ -80,6 +81,15 @@ function Segment({
         '& .MuiSelect-icon': { right: -4, fontSize: 18, color: 'text.secondary' },
         // The standalone fallback's ticker entry sits in a chip too.
         '& input.MuiInputBase-input': { py: 0.75, px: 0.5 },
+        // Canon rule 7 (`shared/ui/touch.ts`): the select's `minHeight: 0` above sits at (0,4,0) and
+        // beats `selectCoarseFloorSx`'s (0,3,0), so the chip carries its own coarse floor at the SAME
+        // selector: a 44px combobox inside a 46px chip (two 1px borders). Measured before this block
+        // on a touch screen: 38x34 and 156x34 at 834-1366, 42px at 390 (fidelity L3-TOUCH-01). A fine
+        // pointer keeps the board's 36px chip.
+        '@media (pointer: coarse)': {
+          minHeight: 46,
+          '& .MuiSelect-select.MuiSelect-select.MuiSelect-select': { lineHeight: '44px' },
+        },
       })}
     >
       <Typography

@@ -316,10 +316,11 @@ export function TickerHeader({
   return (
     <Box>
       {/* Stage 0 item 1 (the measured 580px offender): the hero row STACKS vertically below `sm` —
-          the anchor first, then the tabs and the CTA on their own rows. Nothing is removed. */}
+          the anchor first, then the tabs and the CTA on their own rows. Nothing is removed. The
+          stacked gap is the board's `.tk-mast` row gap, 14px (fidelity DESK-06). */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
+        spacing={{ xs: 1.75, sm: 2 }}
         sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'flex-start' } }}
       >
         <Stack spacing={1} sx={{ minWidth: 0, flex: '1 1 auto' }}>
@@ -353,9 +354,11 @@ export function TickerHeader({
                 {
                   m: 0,
                   fontFamily: typographyTokens.monoFontFamily,
-                  fontSize: { xs: 28, sm: 32 },
+                  // The phone takes the board's `.tk-px .p` floor, 26px on a 1.0 line (fidelity
+                  // DESK-06: 28px on 1.05 made the price row 5px taller than the board's at 390).
+                  fontSize: { xs: 26, sm: 32 },
                   fontWeight: 500,
-                  lineHeight: 1.05,
+                  lineHeight: { xs: 1, sm: 1.05 },
                   letterSpacing: '-0.01em',
                   fontVariantNumeric: 'tabular-nums',
                 },
@@ -372,6 +375,9 @@ export function TickerHeader({
                   fontFamily: typographyTokens.monoFontFamily,
                   fontSize: 14,
                   fontWeight: 500,
+                  // The board's `.tk-px .c` sets `font`, so its line height is `normal`; the body's
+                  // 1.65 hung 2.5px below the price row on the phone (fidelity DESK-06).
+                  lineHeight: { xs: 'normal', sm: 'inherit' },
                   whiteSpace: 'nowrap',
                   // P-5: a price change stays green/red as TEXT (textUp/textDown); P-11: the sign
                   // also rides on ▲/▼ and +/−, never on hue alone.
@@ -419,12 +425,13 @@ export function TickerHeader({
               trade. The chip slot is UNCONDITIONAL (ruling 1 / AC-9): before the first stream fact
               it renders the wordless placeholder, never nothing. */}
           {/* `useFlexGap`: a wrapped chip starts at the column edge, not 8px in (the margin
-              spacing indented the second line and squeezed the source chip onto two lines at 390). */}
+              spacing indented the second line and squeezed the source chip onto two lines at 390).
+              Gaps are the board's `.tk-chips`, 6px between wrapped lines. */}
           <Stack
             direction="row"
             spacing={1}
             useFlexGap
-            sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
+            sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.75 }}
           >
             {DESK_IS_SAMPLE ? (
               <DataStateTag state="demo" />
@@ -449,11 +456,20 @@ export function TickerHeader({
 
           {/* Second line (design: `Levels @ · Structure as-of · refreshes · All expirations`) —
               levels anchor, the REST-bundle freshness (STRUCTURE, spine #4, never the live stream),
-              the documented ~60s bundle poll, then the expirations count. */}
+              the documented ~60s bundle poll, then the expirations count. In the board's `.dline`
+              type, 12px on 1.45, with no gap between wrapped lines (fidelity DESK-06: 13px body and
+              the 12px caption's 1.66 made this line 5.7px taller than the board's at 390). The
+              selector reaches FreshnessLine's caption too, at (0,2,0) over its own class. */}
           <Stack
             direction="row"
             data-testid="deck-meta"
-            sx={{ alignItems: 'center', flexWrap: 'wrap', columnGap: 1, rowGap: 0.25 }}
+            sx={{
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              columnGap: 1,
+              rowGap: 0,
+              '& .MuiTypography-root': { fontSize: 12, lineHeight: 1.45 },
+            }}
           >
             {m.gex_spot != null && (
               <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
@@ -499,13 +515,17 @@ export function TickerHeader({
         </Stack>
 
         {/* Right region — the ticker's tabs on top (board: the masthead's right column), then at
-            ≥ laptop (1100) the toolbar's fields and the one amber action. */}
+            ≥ laptop (1100) the toolbar's fields and the one amber action. From `laptop`, where the
+            chips join this column, it does not shrink (the board's `.act` keeps its 600px basis):
+            shrunk to 551px at 1280 it dropped the CTA under the chips, so the anchor column on the
+            left gives up the width instead (fidelity DESK-05). Up to 600px, as before. Below
+            `laptop` it holds only the tabs and the CTA and shrinks as it always has. */}
         {(tabs || inlineControls || onOpenTrade) && (
           <Stack
             spacing={1.25}
             sx={{
               alignItems: { xs: 'stretch', sm: 'flex-end' },
-              flex: '0 1 auto',
+              flex: { xs: '0 1 auto', laptop: '0 0 auto' },
               maxWidth: { sm: 600 },
               minWidth: 0,
             }}

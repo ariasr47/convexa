@@ -785,7 +785,8 @@ export function TickerDashboard() {
   return (
     // The one page column, the boards' `.wrap` (fidelity COL): 1280px of content at x80 on a 1440
     // screen, so the work grid's 7fr/5fr and the context band's three tracks take the board's widths.
-    <Box sx={{ ...pageColumnSx, py: 3 }}>
+    // Its top is the board's `.tkd`: 24px, and 16px below 768 (fidelity DESK-06).
+    <Box sx={{ ...pageColumnSx, pt: { xs: 2, tablet: 3 }, pb: 3 }}>
       {/* Whenever the full deck is NOT shown (cold-load / cold-start error / none-selected) the deck
           hero has no market state to anchor, so only the control strip renders standalone — the trader
           can still change ticker/expirations. Once `m` is present AND some expirations are selected,
