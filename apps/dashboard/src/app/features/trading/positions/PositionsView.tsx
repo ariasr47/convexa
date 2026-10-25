@@ -318,8 +318,9 @@ export const bookFrameSx = (sample: boolean) => (t: Theme) => ({
   }),
 });
 
-/** The sample frame's head row: the source chip and where the marks come from. */
-function SampleMarksHead({ framed }: { framed: boolean }) {
+/** The sample frame's head row: the source chip and where the marks come from. The table and the
+ *  cards both carry it inside their frame. */
+function SampleMarksHead() {
   return (
     <Box
       data-testid="positions-sample-head"
@@ -328,9 +329,9 @@ function SampleMarksHead({ framed }: { framed: boolean }) {
         flexWrap: 'wrap',
         alignItems: 'center',
         gap: '8px 12px',
-        ...(framed
-          ? { p: '12px 14px', borderBottom: '1px solid', borderColor: 'divider' }
-          : { mb: '12px' }),
+        p: '12px 14px',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
       }}
     >
       <SampleMarksChip />
@@ -355,7 +356,7 @@ function TableLayout(props: ViewProps & { visibleColumns: ColumnKey[] }) {
       data-provenance={sample ? 'sample' : 'primary'}
       sx={bookFrameSx(sample)}
     >
-      {sample && <SampleMarksHead framed />}
+      {sample && <SampleMarksHead />}
       <Box sx={{ overflowX: 'auto', overflowY: 'hidden' }}>
         <Box
           component="table"
@@ -468,50 +469,95 @@ function GroupRows({
 
 // ---- Cards layout ------------------------------------------------------------------------------
 
+/**
+ * The cards inside the sample frame: the frame is their one panel, so they stand flush and its
+ * hairlines part them, one column below `sm` and two from `sm` up (a rule above every card but the
+ * first row, and one between the columns).
+ */
+const framedCardGridSx = (t: Theme) => ({
+  gap: 0,
+  '& > * + *': { borderTop: `1px solid ${t.palette.divider}` },
+  [t.breakpoints.up('sm')]: {
+    '& > :nth-of-type(2)': { borderTop: 0 },
+    '& > :nth-of-type(2n)': { borderLeft: `1px solid ${t.palette.divider}` },
+  },
+});
+
 function CardLayout(props: ViewProps) {
   const { density } = props;
   const sample = useMarkFeed() === 'sample';
   const isGrouped = props.groups.length > 1 || props.groups[0]?.key !== '__all__';
+  const groups = props.groups.map((g) => (
+    <Box
+      key={g.key}
+      // In the frame, a hairline parts one group from the next instead of a gap.
+      sx={
+        sample ? (t) => ({ '& + &': { borderTop: `1px solid ${t.palette.divider}` } }) : undefined
+      }
+    >
+      {isGrouped && (
+        <Box
+          sx={{
+            mb: '8px',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+            ...(sample && { mb: 0, px: '15px', pt: '12px' }),
+          }}
+          data-testid="group-header"
+          data-group={g.key}
+        >
+          {g.label} ({g.views.length}) · {subtotalNode(g)}
+        </Box>
+      )}
+      {/* 1 column below `sm` (a 2-up card at 393px crushes the footer facts row and can force
+          horizontal overflow — Stage 0 item 1); the Figma 2-col grid holds at sm+. */}
+      <Box
+        sx={[
+          {
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
+            gap: '12px',
+          },
+          sample && framedCardGridSx,
+        ]}
+      >
+        {g.views.map((view) => (
+          <PositionCard
+            key={view.position.id}
+            view={view}
+            ctx={ctxFor(props, view)}
+            streamOffline={props.streamOffline}
+            onClose={props.onClose}
+            inFrame={sample}
+          />
+        ))}
+      </Box>
+    </Box>
+  ));
+  // On the demo the cards sit in the book's sample frame, as the table does and as the Final phone
+  // board draws its card (`account-pages.mjs` positionsStaging `.ap-cards .hd-p.is-sample`): dashed,
+  // the hatch band, and the frame's one "Sample" in its head (canon P-3, P-8; owner D1; fidelity
+  // ACC-09). Elsewhere each card is its own panel.
+  if (sample) {
+    return (
+      <Box
+        data-testid="positions-cards"
+        data-density={density}
+        data-provenance="sample"
+        sx={bookFrameSx(true)}
+      >
+        <SampleMarksHead />
+        {groups}
+      </Box>
+    );
+  }
   return (
     <Box
       sx={{ display: 'flex', flexDirection: 'column', gap: isGrouped ? '18px' : '12px' }}
       data-testid="positions-cards"
       data-density={density}
     >
-      {/* The cards name the sample once, above them, as the table's frame does in its head. */}
-      {sample && <SampleMarksHead framed={false} />}
-      {props.groups.map((g) => (
-        <Box key={g.key}>
-          {isGrouped && (
-            <Box
-              sx={{ mb: '8px', fontSize: '0.82rem', fontWeight: 600 }}
-              data-testid="group-header"
-              data-group={g.key}
-            >
-              {g.label} ({g.views.length}) · {subtotalNode(g)}
-            </Box>
-          )}
-          {/* 1 column below `sm` (a 2-up card at 393px crushes the footer facts row and can force
-              horizontal overflow — Stage 0 item 1); the Figma 2-col grid holds at sm+. */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-              gap: '12px',
-            }}
-          >
-            {g.views.map((view) => (
-              <PositionCard
-                key={view.position.id}
-                view={view}
-                ctx={ctxFor(props, view)}
-                streamOffline={props.streamOffline}
-                onClose={props.onClose}
-              />
-            ))}
-          </Box>
-        </Box>
-      ))}
+      {groups}
     </Box>
   );
 }

@@ -26,7 +26,7 @@ import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Snackbar from '@mui/material/Snackbar';
-import { useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { PositionsPanel } from './PositionsPanel';
 import { revealFocusedControl } from './revealFocusedControl';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';
@@ -63,6 +63,26 @@ export function PortfolioPanel({
 }: Props) {
   const [tab, setTab] = useState<'simulated' | 'live'>('simulated');
   const [toast, setToast] = useState<string | null>(null);
+
+  // The book switch stands in a different place on each tab (it leads the toolbar's row on
+  // Simulated and stands on its own row on Broker), so a tab change unmounts the very button that
+  // was pressed and the browser drops focus to <body>. When the switch held focus, hand it to the
+  // same control in its new place, so Enter on Broker and then Tab moves on from the switch, not
+  // from the top of the page (WCAG 2.4.3; fidelity review L9-A11Y-BOOK-SWITCH-FOCUS). A click that
+  // never focused the button (Safari's mouse) is left alone.
+  const simulatedTabRef = useRef<HTMLButtonElement>(null);
+  const brokerTabRef = useRef<HTMLButtonElement>(null);
+  const refocusSwitch = useRef(false);
+  const pickTab = (next: 'simulated' | 'live') => (e: MouseEvent<HTMLButtonElement>) => {
+    if (next === tab) return;
+    refocusSwitch.current = e.currentTarget === document.activeElement;
+    setTab(next);
+  };
+  useLayoutEffect(() => {
+    if (!refocusSwitch.current) return;
+    refocusSwitch.current = false;
+    (tab === 'live' ? brokerTabRef : simulatedTabRef).current?.focus();
+  }, [tab]);
 
   // Gated WRITE actions (UX_BLUEPRINT §2.6, AC-E1/E2/E3/E7). The route stays viewable anonymously;
   // ONLY the write actions gate. Logged-out ⇒ an in-context sign-in prompt, no execute.
@@ -146,7 +166,8 @@ export function PortfolioPanel({
       <Box
         component="button"
         type="button"
-        onClick={() => setTab('simulated')}
+        ref={simulatedTabRef}
+        onClick={pickTab('simulated')}
         data-testid="tab-simulated"
         sx={segTabSx(tab === 'simulated')}
       >
@@ -171,7 +192,8 @@ export function PortfolioPanel({
       <Box
         component="button"
         type="button"
-        onClick={() => setTab('live')}
+        ref={brokerTabRef}
+        onClick={pickTab('live')}
         data-testid="tab-live"
         onFocus={revealFocusedControl}
         sx={segTabSx(tab === 'live')}

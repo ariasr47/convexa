@@ -4,9 +4,14 @@
  *
  * SIX SLOTS, and a card's COLLAPSED height is identical for a 1-leg and a 4-leg position — leg count
  * changes ONE label and nothing else:
- *   1 header    — `TSLA` (mono 700, 1rem) + the structure line · the structure chip, right-aligned.
- *                 The structure line gets `minWidth: 0` + ellipsis; THE CHIP NEVER SHRINKS. (A flex
- *                 child without `minWidth: 0` is the classic 393px offender.)
+ *   1 header    — `TSLA` (mono 700, 1rem) + the structure line, then a second line naming the
+ *                 structure and when it opened (`Long call · opened 2:25 PM`), as the row's contract
+ *                 cell reads (fidelity ACC-09). A single option leg's line is its contract,
+ *                 `690 C · Oct 16`, the Final board's words; any other shape keeps its structure
+ *                 line. Both lines get `minWidth: 0` + ellipsis and never wrap. (A flex child without
+ *                 `minWidth: 0` is the classic 393px offender.) The structure name was a chip at the
+ *                 header's right; the board has no chip, and the name now leads the second line, so
+ *                 it is said once, as the row's dropped Structure column is.
  *   2 live block— big mono P/L + P/L% (left) · sparkline (right); dims to 0.5 offline.
  *   3 footer    — EXACTLY FIVE items: Qty · Net debit/credit · Mark · expiry · THE RISK SLOT. The
  *                 risk slot carries EITHER the max-loss figure OR its one stated reason, never both,
@@ -39,8 +44,10 @@ import { MarkNotLiveTag, SampleMarkTag, useMarkFeed } from './markFeed';
 import {
   cellContent,
   ClosedSummary,
+  contractWords,
   formatExpiry,
   markFigure,
+  openedText,
   PendingAffordance,
   plFigure,
   plPctFigure,
@@ -59,9 +66,26 @@ export interface PositionCardProps {
   ctx: RowContext;
   streamOffline: boolean;
   onClose: (id: string) => void;
+  /** Inside the book's sample frame (the demo; `PositionsView`): the frame is the panel and its
+   *  hairlines part the cards, so the card draws no border, radius or fill of its own. */
+  inFrame?: boolean;
 }
 
-export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCardProps) {
+/** One line that never wraps: the collapse is authored in the string, this is the last clamp. */
+const oneLineSx = {
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const;
+
+export function PositionCard({
+  view,
+  ctx,
+  streamOffline,
+  onClose,
+  inFrame = false,
+}: PositionCardProps) {
   const p = view.position;
   const [expanded, setExpanded] = useState(false); // EPHEMERAL — never persisted, gone after reload
   const panelId = useId();
@@ -69,6 +93,7 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
   const isOpen = p.status === 'open';
   const plColor = view.pl_dollar == null ? 'text.primary' : view.pl_dollar >= 0 ? upText : downText;
   const singleLeg = singleOptionLeg(view);
+  const opened = openedText(p.opened_time);
 
   // The BIG P/L block and the Mark footer value read the SAME text/state the row's `cell-pl` and
   // `cell-mark` render, from the shared helpers `PositionRow` exports — the table and this card can
@@ -124,60 +149,55 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
       data-id={p.id}
       data-status={p.status}
       sx={{
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'divider',
-        // The panel role, 12 (`shape.borderRadius`), not a raw '10px' (fidelity ACC-24).
-        borderRadius: 1,
         padding: '15px',
+        // The panel role, 12 (`shape.borderRadius`), not a raw '10px' (fidelity ACC-24). Inside the
+        // sample frame the frame is the panel (see `inFrame`).
+        ...(!inFrame && {
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+        }),
       }}
     >
-      {/* 1 — header: symbol + structure line / structure chip. */}
-      <Box
-        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '12px' }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+      {/* 1 — header: the contract, then the structure and when it opened (fidelity ACC-09). */}
+      <Box sx={{ mb: '12px', minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '8px', minWidth: 0 }}>
           <Box
             component="span"
             sx={{ ...faceFor(true), fontWeight: 700, fontSize: '1rem', flexShrink: 0 }}
           >
             {p.legs[0]?.ticker}
           </Box>
+          {/* THE 393px OFFENDER: a flex child without `minWidth: 0` refuses to shrink and pushes
+              the card wide. The collapse itself is authored in the string; this is only the
+              last-resort clamp. */}
           <Box
             component="span"
             title={view.structure_line_full}
             data-testid="card-structure-line"
-            sx={{
-              color: 'text.secondary',
-              fontSize: '0.85rem',
-              // THE 393px OFFENDER: a flex child without `minWidth: 0` refuses to shrink and pushes
-              // the chip off the card. The collapse itself is authored in the string; this is only
-              // the last-resort clamp.
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
+            sx={[
+              oneLineSx,
+              singleLeg
+                ? { color: 'text.primary', fontSize: '0.9375rem', fontWeight: 600 }
+                : { color: 'text.secondary', fontSize: '0.85rem' },
+            ]}
           >
-            {view.structure_line_collapsed}
+            {singleLeg ? contractWords(view, singleLeg) : view.structure_line_collapsed}
           </Box>
         </Box>
+        {/* The structure's name keeps the `card-structure-chip` testid it had as a chip: the same
+            name, now said once at the head of this line. Neutral and STATIC: it never tints and
+            never dims (AC-15, AC-78). */}
         <Box
           component="span"
-          data-testid="card-structure-chip"
-          sx={{
-            fontSize: '0.7rem',
-            color: 'text.secondary',
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: '5px',
-            padding: '2px 7px',
-            flexShrink: 0, // the chip NEVER shrinks
-            whiteSpace: 'nowrap',
-            ml: '8px',
-          }}
+          data-testid="card-subline"
+          sx={[oneLineSx, { display: 'block', fontSize: '0.75rem', color: 'text.secondary' }]}
         >
-          {STRUCTURE_LABELS[view.structure]}
+          <Box component="span" data-testid="card-structure-chip">
+            {STRUCTURE_LABELS[view.structure]}
+          </Box>
+          {opened ? ` · ${opened}` : ''}
         </Box>
       </Box>
 

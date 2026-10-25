@@ -665,8 +665,11 @@ export function CustomizationToolbar({
           </Box>
         </Box>
 
-        {/* Spacer + the primary CTA. */}
-        <Box sx={{ flex: 1 }} />
+        {/* The primary CTA, at the row's right edge on whichever line it wraps to: its own
+            `ml: auto`, not a spacer. A spacer stays on the line it starts on, so once the status
+            chips joined the first line (the book switch leads it, from 1600px up) the CTA wrapped
+            alone to the next line's left edge. `Refused` returns its child unwrapped, so the button
+            is the flex item either way. */}
         <Refused when={faulted}>
           <Box
             component="button"
@@ -690,6 +693,7 @@ export function CustomizationToolbar({
               whiteSpace: 'nowrap',
               cursor: canOpenEntry && !faulted ? 'pointer' : 'not-allowed',
               opacity: canOpenEntry ? 1 : 0.5,
+              ml: 'auto',
               ...coarseFloor,
             }}
           >

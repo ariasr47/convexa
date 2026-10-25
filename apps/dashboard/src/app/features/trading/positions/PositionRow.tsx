@@ -108,14 +108,16 @@ export function singleOptionLeg(view: PositionView): Leg | null {
   return l;
 }
 
-/** `690 C · Oct 16`: strike, the right's letter and the projected expiry, as the board writes it. */
-function contractWords(view: PositionView, leg: Leg): string {
+/** `690 C · Oct 16`: strike, the right's letter and the projected expiry, as the board writes it.
+ *  The card's header reads the same words (`PositionCard`), so row and card name a contract alike. */
+export function contractWords(view: PositionView, leg: Leg): string {
   const expiry = view.legs[0]?.expiry_text ?? '';
   return `${leg.strike} ${leg.right === 'call' ? 'C' : 'P'}${expiry ? ` · ${expiry}` : ''}`;
 }
 
-/** `opened 2:25 PM` on the scenario's own day, `opened Oct 6` before it (New York time). */
-function openedText(iso: string): string | null {
+/** `opened 2:25 PM` on the scenario's own day, `opened Oct 6` before it (New York time). The
+ *  card's second line carries it too (`PositionCard`). */
+export function openedText(iso: string): string | null {
   const ms = Date.parse(iso);
   if (!iso || !Number.isFinite(ms)) return null;
   const day = scenarioDay(ms);
