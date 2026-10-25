@@ -4,10 +4,13 @@
 //! wrong side of the cutoff, a trade counted before anyone could see it, a gap left unrecorded.
 
 use super::inputs::{self, Body, Inputs};
-use super::package::{build, ContextPackage, Need, Request, Unread, UnreadWhy};
-use crate::services::public_data::edgar;
+use super::package::{
+    build, fact_id, stamp, ContextPackage, Fact, Need, Request, Unread, UnreadWhy,
+};
+use crate::services::public_data::{edgar, edgar_13f};
 use chrono::{DateTime, NaiveDate, Utc};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -35,18 +38,88 @@ fn q1(ticker: &str, cutoff: DateTime<Utc>, inputs: &Inputs) -> Result<ContextPac
     )
 }
 
-fn ids(package: &ContextPackage) -> Vec<String> {
+fn facts(package: &ContextPackage) -> Vec<&Fact> {
     let sections = [
         &package.filings.facts,
         &package.insider_trades.facts,
         &package.holders.facts,
         &package.fundamentals.facts,
     ];
-    sections
+    sections.into_iter().flatten().collect()
+}
+
+fn ids(package: &ContextPackage) -> Vec<String> {
+    facts(package).into_iter().map(|f| f.id.clone()).collect()
+}
+
+/// The acceptance instant of every row of a submissions index that has one, by accession.
+fn accepted_by_accession(inputs: &Inputs, url: &str) -> HashMap<String, DateTime<Utc>> {
+    edgar::parse_submissions(&body(inputs, url))
+        .unwrap()
         .into_iter()
-        .flatten()
-        .map(|f| f.id.clone())
+        .filter_map(|r| Some((r.accession, r.accepted?)))
         .collect()
+}
+
+/// Every fact in the package is dated by when it became public, checked against the parsed
+/// indexes rather than against the ids (which a wrong date would rewrite in step):
+/// - an id's last segment is its own `as_of`;
+/// - a raw fact keyed by an accession (`filing`, `form4*`, `xbrl.*`) has that accession's
+///   acceptance in the issuer's index;
+/// - a raw 13F fact (key `cik.period`) has the acceptance of the manager's one 13F-HR for that
+///   period accepted by the cutoff;
+/// - a computed fact has the latest `as_of` among the facts it cites, or the cutoff when it cites
+///   none.
+///
+/// Any other raw fact fails: it has no acceptance to be dated by.
+fn assert_dated_by_acceptance(package: &ContextPackage, inputs: &Inputs, index_url: &str) {
+    let issuer = accepted_by_accession(inputs, index_url);
+    let all = facts(package);
+    let as_of: HashMap<&str, DateTime<Utc>> =
+        all.iter().map(|f| (f.id.as_str(), f.as_of)).collect();
+    for f in &all {
+        let parts: Vec<&str> = f.id.splitn(4, ':').collect();
+        assert_eq!(parts.len(), 4, "{}", f.id);
+        assert_eq!(
+            parts[3],
+            stamp(f.as_of),
+            "{}: the id's stamp is not its as_of",
+            f.id
+        );
+        let (series, key) = (parts[1], parts[2]);
+        let want = match &f.derived_from {
+            Some(cited) => cited
+                .iter()
+                .map(|id| as_of[id.as_str()])
+                .max()
+                .unwrap_or(package.cutoff),
+            None if series.starts_with("13f.") => {
+                let (cik, period) = key.split_once('.').unwrap();
+                let period = NaiveDate::parse_from_str(period, "%Y-%m-%d").unwrap();
+                let url = format!("https://data.sec.gov/submissions/CIK{cik:0>10}.json");
+                let index = edgar_13f::parse_manager_index(&body(inputs, &url)).unwrap();
+                let reports: Vec<DateTime<Utc>> = index
+                    .filings
+                    .iter()
+                    .filter(|r| r.form == "13F-HR" && r.period == period)
+                    .map(|r| r.accepted.expect("a 13F-HR row with no acceptance time"))
+                    .filter(|a| *a <= package.cutoff)
+                    .collect();
+                assert_eq!(reports.len(), 1, "{}: {reports:?}", f.id);
+                reports[0]
+            }
+            None => {
+                let accession = key
+                    .get(..20)
+                    .filter(|a| a.as_bytes()[10] == b'-' && a.as_bytes()[13] == b'-')
+                    .unwrap_or_else(|| panic!("{}: a raw fact with no acceptance", f.id));
+                *issuer
+                    .get(accession)
+                    .unwrap_or_else(|| panic!("{}: {accession} isn't in the index", f.id))
+            }
+        };
+        assert_eq!(f.as_of, want, "{}", f.id);
+    }
 }
 
 fn body(inputs: &Inputs, url: &str) -> Vec<u8> {
@@ -157,36 +230,41 @@ fn the_same_inputs_give_one_id_and_checked_at_does_not_move_it() {
 }
 
 /// Spec 06 test (ii): with A the parsed acceptance instant of `0001045810-26-000084`, a cutoff of A
-/// keeps the filing and A − 1 s leaves it out (stated in parsed instants, whatever step 0's rule).
+/// keeps the filing, dated A, and A − 1 s leaves it out (stated in parsed instants, whatever step
+/// 0's rule). Both packages pass the dating check ([`assert_dated_by_acceptance`]).
 #[test]
 fn the_cutoff_is_inclusive_to_the_second() {
     let inputs = fixture();
-    let rows = edgar::parse_submissions(&body(&inputs, NVDA_INDEX)).unwrap();
-    let accepted = rows
-        .iter()
-        .find(|r| r.accession == "0001045810-26-000084")
-        .and_then(|r| r.accepted)
-        .unwrap();
-    let has = |cutoff: DateTime<Utc>| {
-        q1("NVDA", cutoff, &inputs)
-            .unwrap()
+    let accepted = accepted_by_accession(&inputs, NVDA_INDEX)["0001045810-26-000084"];
+    let filing = |package: &ContextPackage| -> Option<Fact> {
+        package
             .filings
             .facts
             .iter()
-            .any(|f| f.id.starts_with("sec_edgar:filing:0001045810-26-000084:"))
+            .find(|f| f.id.starts_with("sec_edgar:filing:0001045810-26-000084:"))
+            .cloned()
     };
-    assert!(has(accepted), "accepted exactly at the cutoff: kept");
+    let at_a = q1("NVDA", accepted, &inputs).unwrap();
+    let kept = filing(&at_a).expect("accepted exactly at the cutoff: kept");
+    assert_eq!(kept.as_of, accepted, "dated by its acceptance");
+    assert_eq!(kept.id, fact_id("filing", "0001045810-26-000084", accepted));
+    assert_dated_by_acceptance(&at_a, &inputs, NVDA_INDEX);
+
+    let before = q1("NVDA", accepted - chrono::Duration::seconds(1), &inputs).unwrap();
     assert!(
-        !has(accepted - chrono::Duration::seconds(1)),
+        filing(&before).is_none(),
         "accepted one second after the cutoff: left out"
     );
+    assert_dated_by_acceptance(&before, &inputs, NVDA_INDEX);
 }
 
 /// Spec 06 test (iii): Form 4 `0001045810-26-000089` (trades dated 2026-10-03, accepted Oct 7) is
-/// out of a package cut at Oct 5 and in one cut at Oct 8, with its two sales.
+/// out of a package cut at Oct 5 and in one cut at Oct 8, with its two sales, every one of its
+/// facts dated by the acceptance and none by the trade date. Both packages pass the dating check.
 #[test]
 fn form4s_are_placed_by_acceptance_not_by_trade_date() {
     let inputs = fixture();
+    let accepted = accepted_by_accession(&inputs, NVDA_INDEX)["0001045810-26-000089"];
     let early = q1("NVDA", at("2026-10-05T00:00:00Z"), &inputs).unwrap();
     assert!(
         ids(&early)
@@ -194,6 +272,8 @@ fn form4s_are_placed_by_acceptance_not_by_trade_date() {
             .all(|id| !id.contains("0001045810-26-000089")),
         "traded Oct 3 but not yet disclosed on Oct 5"
     );
+    assert_dated_by_acceptance(&early, &inputs, NVDA_INDEX);
+
     let late = q1("NVDA", at("2026-10-08T00:00:00Z"), &inputs).unwrap();
     let late_ids = ids(&late);
     let count = |series: &str| {
@@ -205,11 +285,21 @@ fn form4s_are_placed_by_acceptance_not_by_trade_date() {
     assert_eq!(count("form4"), 1);
     assert_eq!(count("form4.shares"), 2);
     assert_eq!(count("form4.price"), 2);
+    let stamped = format!(":{}", stamp(accepted));
+    for f in facts(&late)
+        .into_iter()
+        .filter(|f| f.id.contains("0001045810-26-000089"))
+    {
+        assert_eq!(f.as_of, accepted, "{}: dated by the acceptance", f.id);
+        assert!(f.id.ends_with(&stamped), "{}: id stamped {stamped}", f.id);
+    }
+    assert_dated_by_acceptance(&late, &inputs, NVDA_INDEX);
 }
 
-/// Spec 06 test (ix): the package records what it couldn't read. A 404 Form 4 is `unread`; a
-/// manager index that lists older pages and starts after the quarter is `index_short`; the same
-/// edit to the issuer's index fails the build.
+/// Spec 06 test (ix): the package records what it couldn't read. A 404 Form 4 is `unread`; State
+/// Street, whose 13F-HR for the quarter the fixture holds, is neither `unread` nor `not_filed` and
+/// has its shares at the quarter; a manager index that lists older pages and starts after the
+/// quarter is `index_short`; the same edit to the issuer's index fails the build.
 #[test]
 fn coverage_records_what_could_not_be_read() {
     let inputs = fixture();
@@ -226,6 +316,19 @@ fn coverage_records_what_could_not_be_read() {
         .unread
         .iter()
         .any(|u| u.cik == 93_751));
+    assert!(
+        package.holders.coverage.not_filed.is_empty(),
+        "State Street filed: {:?}",
+        package.holders.coverage.not_filed
+    );
+    assert!(
+        package
+            .holders
+            .facts
+            .iter()
+            .any(|f| f.id.starts_with("sec_edgar:13f.shares:93751.2026-06-30:")),
+        "State Street's shares at the quarter"
+    );
 
     let mut short = inputs.clone();
     shorten_index(&mut short, STATE_STREET_INDEX, |d| d > "2026-06-30");
