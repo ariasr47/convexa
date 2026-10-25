@@ -35,9 +35,10 @@ import {
   upcoming,
 } from 'virtual:convexa-research';
 import { filedSince } from './filings';
-import { formatNoteDate, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
+import { formatNoteDate, formatShortDate, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
 import { RESEARCH_DISCLAIMER, ResearchColumn } from './NotesView';
 import { usePublicFilings } from './publicData';
+import { PAGE_BODY_SX, PageHead, ProvenanceChip } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
 import {
   calendarTriggers,
@@ -54,19 +55,14 @@ import type {
   ResearchTickerSummary,
   Upcoming,
 } from './types';
-import {
-  DISPLAY,
-  Eyebrow,
-  FreshnessLine,
-  MONO,
-  Panel,
-  PANEL_SX,
-  Pill,
-  StateDot,
-  YourCall,
-} from './ui';
+import { DISPLAY, FreshnessLine, MONO, Panel, PANEL_SX, Pill, StateDot, YourCall } from './ui';
 
 const TICKERS = researchIndex.map((r) => r.ticker);
+/** The newest note in the build: the date the production chip names. */
+const NEWEST_NOTE = researchIndex.reduce<string | null>(
+  (max, r) => (max === null || r.latest.date > max ? r.latest.date : max),
+  null,
+);
 
 const DEMO = dataMode === 'demo';
 
@@ -183,6 +179,149 @@ function useSampleCards(): SampleCard[] | null | undefined {
   return cards;
 }
 
+/**
+ * A note card's anatomy (design: research.mjs noteCard / demoCard, `.fr-card`): the ticker inline in
+ * mono with the company beside it, the title, the mini chart, one 12px meta line (uncertainty and the
+ * next catalyst), and a ruled footer of freshness, when it was written and the link. Compact, so a row
+ * of cards reads at a glance (fidelity audit 2026-10-25, R-01).
+ */
+const CARD_SX = (t: Theme) => ({
+  ...PANEL_SX,
+  p: '18px 20px',
+  display: 'flex',
+  flexDirection: 'column' as const,
+  gap: 1.25,
+  minWidth: 0,
+  boxShadow:
+    t.palette.mode === 'dark'
+      ? `0 1px 2px ${alpha(t.palette.common.black, 0.24)}, 0 2px 6px ${alpha(t.palette.common.black, 0.16)}`
+      : 'none',
+});
+
+const CARD_TITLE_SX = {
+  ...DISPLAY,
+  m: 0,
+  fontWeight: 600,
+  fontSize: 16.5,
+  lineHeight: 1.3,
+  textWrap: 'balance',
+} as const;
+
+/** The card's head: the ticker inline in 16px mono, its company in 13px beside it, and the card's
+ *  one chip (stance, or the sample tag) at the right. */
+function CardHead({
+  ticker,
+  href,
+  company,
+  chip,
+}: {
+  ticker: string;
+  href: string;
+  company: string | null;
+  chip: React.ReactNode;
+}) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '6px 8px',
+      }}
+    >
+      {/* One line: a long legal name ("Space Exploration Technologies Corp. (SpaceX)") ends in an
+          ellipsis rather than pushing the chip to a line of its own. */}
+      <Box
+        component="span"
+        title={company ?? undefined}
+        sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+      >
+        <Link
+          component={RouterLink}
+          to={href}
+          id={`card-${ticker}`}
+          underline="hover"
+          sx={{ ...MONO, fontWeight: 600, fontSize: 16, color: 'text.primary' }}
+        >
+          {ticker}
+        </Link>
+        {company && (
+          <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
+            {' '}
+            {company}
+          </Box>
+        )}
+      </Box>
+      <Box sx={{ flexShrink: 0 }}>{chip}</Box>
+    </Box>
+  );
+}
+
+/** When a catalyst falls, from the reader's today: "open now", "today", "tomorrow", "in 6 days". */
+const relativeDay = (u: Upcoming, weeks = false) =>
+  u.start < u.at
+    ? 'open now'
+    : u.inDays <= 0
+      ? 'today'
+      : u.inDays === 1
+        ? 'tomorrow'
+        : weeks && u.inDays >= 14
+          ? `~${Math.round(u.inDays / 7)} weeks`
+          : `in ${u.inDays} days`;
+
+/** A catalyst's when-label without the year when it falls in the year it is read in: "Oct 27–30". */
+const shortWhen = (u: Upcoming) =>
+  u.whenLabel.replace(/, (\d{4})\b/, (m, y: string) => (y === u.at.slice(0, 4) ? '' : m));
+
+/** The card's one meta line: uncertainty, then the next catalyst with its date and how far off. */
+function CardMeta({ uncertainty, next }: { uncertainty: string | null; next: Upcoming | null }) {
+  if (!uncertainty && !next) return null;
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '4px 12px',
+        fontSize: 12,
+        color: 'text.secondary',
+      }}
+    >
+      {uncertainty && <span>Uncertainty · {uncertainty}</span>}
+      {next && <span>{`Next · ${next.label} · ${shortWhen(next)} · ${relativeDay(next)}`}</span>}
+    </Box>
+  );
+}
+
+/** The card's ruled footer: freshness, then the rest, then the link at the right edge. */
+function CardFoot({ children, href }: { children: React.ReactNode; href: string }) {
+  return (
+    <Box
+      sx={(t) => ({
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '6px 12px',
+        pt: 1.25,
+        mt: 'auto',
+        borderTop: `1px solid ${t.palette.divider}`,
+        fontSize: 12,
+        color: 'text.secondary',
+      })}
+    >
+      {children}
+      <Link
+        component={RouterLink}
+        to={href}
+        underline="hover"
+        sx={{ fontWeight: 500, fontSize: 13 }}
+      >
+        Open note →
+      </Link>
+    </Box>
+  );
+}
+
 /** A sample note's card: the same card as production's, dashed with the hatch stripe (canon P-3). */
 function SampleNoteCard({ card }: { card: SampleCard }) {
   const href = `/ticker/${encodeURIComponent(card.ticker)}/research`;
@@ -193,16 +332,10 @@ function SampleNoteCard({ card }: { card: SampleCard }) {
       component="article"
       aria-labelledby={`card-${card.ticker}`}
       sx={(t) => ({
-        ...PANEL_SX,
+        ...CARD_SX(t),
         position: 'relative',
-        borderRadius: '16px',
         border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}`,
-        p: 2.5,
-        pt: 3,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 1.75,
-        minWidth: 0,
+        boxShadow: 'none',
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -210,60 +343,30 @@ function SampleNoteCard({ card }: { card: SampleCard }) {
           right: 0,
           top: 0,
           height: 8,
-          borderRadius: '15px 15px 0 0',
+          borderRadius: '11px 11px 0 0',
           pointerEvents: 'none',
           background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`,
         },
       })}
     >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-        <Box sx={{ display: 'grid', gap: 0.25, minWidth: 0 }}>
-          <Link
-            component={RouterLink}
-            to={href}
-            id={`card-${card.ticker}`}
-            underline="hover"
-            sx={{ ...DISPLAY, fontWeight: 800, fontSize: 32, lineHeight: 1, color: 'text.primary' }}
-          >
-            {card.ticker}
-          </Link>
-          <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
-            {SAMPLE_NAMES[card.ticker] ?? card.ticker}
-          </Box>
-        </Box>
-        <Box sx={{ ml: 'auto', flexShrink: 0 }}>
-          <DataStateTag state="sample" />
-        </Box>
+      {/* Clear of the hatch band (design: demoCard `.t` margin-top 4px). */}
+      <Box sx={{ mt: 0.5 }}>
+        <CardHead
+          ticker={card.ticker}
+          href={href}
+          company={SAMPLE_NAMES[card.ticker] ?? null}
+          chip={<DataStateTag state="sample" word="Sample note" />}
+        />
       </Box>
-      <Box
-        component="h2"
-        sx={{
-          ...DISPLAY,
-          m: 0,
-          fontWeight: 600,
-          fontSize: 19,
-          lineHeight: 1.25,
-          textWrap: 'balance',
-        }}
-      >
+      <Box component="h2" sx={CARD_TITLE_SX}>
         {card.title}
       </Box>
       <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
         {card.thesis}
       </Box>
       {card.chart && <MiniChart chart={card.chart} />}
-      {next && <NextCatalyst next={next} />}
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: '6px 14px',
-          fontSize: 12,
-          color: 'text.secondary',
-          mt: 'auto',
-        }}
-      >
+      <CardMeta uncertainty={null} next={next} />
+      <CardFoot href={href}>
         <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
           <StateDot state={SAMPLE_FRESHNESS} />
           <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>
@@ -271,10 +374,7 @@ function SampleNoteCard({ card }: { card: SampleCard }) {
           </Box>
           <span>· scenario of Oct 7</span>
         </Box>
-        <Link component={RouterLink} to={href} sx={{ ml: 'auto', fontWeight: 500 }}>
-          Open note →
-        </Link>
-      </Box>
+      </CardFoot>
     </Box>
   );
 }
@@ -401,135 +501,34 @@ function MiniChart({ chart }: { chart: Omit<ChartBlock, 'type'> }) {
   );
 }
 
-/** A card's next catalyst: the note's own, or one of the calendar's review triggers. */
-function NextCatalyst({ next }: { next: Upcoming }) {
-  return (
-    <Box
-      sx={(t) => ({
-        display: 'grid',
-        gap: 0.25,
-        px: 1.5,
-        py: 1.25,
-        borderRadius: '10px',
-        bgcolor:
-          t.palette.mode === 'dark'
-            ? alpha(t.palette.common.black, 0.2)
-            : alpha(t.palette.text.primary, 0.04),
-        border: 1,
-        borderColor: 'divider',
-      })}
-    >
-      <Eyebrow sx={{ fontSize: 11 }}>
-        Next ·{' '}
-        {next.start < next.at
-          ? 'open now'
-          : next.inDays <= 0
-            ? 'today'
-            : next.inDays === 1
-              ? 'tomorrow'
-              : `in ${next.inDays} days`}
-      </Eyebrow>
-      <Box component="span" sx={{ fontSize: 14, fontWeight: 500 }}>
-        {next.label}, {next.whenLabel}
-      </Box>
-    </Box>
-  );
-}
-
 function TickerCard({ row, today }: { row: Row; today: string }) {
   const n = row.latest;
   const href = `/ticker/${encodeURIComponent(row.ticker)}/research`;
   const next =
     row.f.state === 'archived' ? null : (upcoming(row.aging.events, today, 3650)[0] ?? null);
   return (
-    <Box
-      component="article"
-      aria-labelledby={`card-${row.ticker}`}
-      sx={(t) => ({
-        ...PANEL_SX,
-        borderRadius: '16px',
-        p: 2.5,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        minWidth: 0,
-        boxShadow:
-          t.palette.mode === 'dark'
-            ? `0 1px 2px ${alpha(t.palette.common.black, 0.24)}, 0 2px 6px ${alpha(t.palette.common.black, 0.16)}`
-            : 'none',
-      })}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-        <Box sx={{ display: 'grid', gap: 0.25, minWidth: 0 }}>
-          <Link
-            component={RouterLink}
-            to={href}
-            id={`card-${row.ticker}`}
-            underline="hover"
-            sx={{ ...DISPLAY, fontWeight: 800, fontSize: 32, lineHeight: 1, color: 'text.primary' }}
-          >
-            {row.ticker}
-          </Link>
-          {(n.company || n.about) && (
-            <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
-              {[n.company, n.about?.split('·')[0]?.trim()].filter(Boolean).join(' · ')}
-            </Box>
-          )}
-        </Box>
-        <Box sx={{ ml: 'auto', display: 'grid', justifyItems: 'end', gap: 0.5, flexShrink: 0 }}>
-          {n.stance ? (
+    <Box component="article" aria-labelledby={`card-${row.ticker}`} sx={CARD_SX}>
+      <CardHead
+        ticker={row.ticker}
+        href={href}
+        company={n.company ?? n.about?.split('·')[0]?.trim() ?? null}
+        chip={
+          n.stance ? (
             <Pill variant="strong">{STANCE_LABEL[n.stance]}</Pill>
           ) : (
             <YourCall label="Stance · your call" />
-          )}
-          {n.uncertainty && (
-            <Box
-              component="span"
-              sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}
-            >
-              Uncertainty ·{' '}
-              <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                {UNCERTAINTY_LABEL[n.uncertainty]}
-              </Box>
-            </Box>
-          )}
-        </Box>
-      </Box>
-      <Box
-        component="h2"
-        sx={{
-          ...DISPLAY,
-          m: 0,
-          fontWeight: 600,
-          fontSize: 19,
-          lineHeight: 1.25,
-          textWrap: 'balance',
-        }}
-      >
+          )
+        }
+      />
+      <Box component="h2" sx={CARD_TITLE_SX}>
         {n.title}
       </Box>
       {n.chart && <MiniChart chart={n.chart} />}
-      {next && <NextCatalyst next={next} />}
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '6px 14px',
-          fontSize: 12,
-          color: 'text.secondary',
-          mt: 'auto',
-        }}
-      >
+      <CardMeta uncertainty={n.uncertainty ? UNCERTAINTY_LABEL[n.uncertainty] : null} next={next} />
+      <CardFoot href={href}>
         <FreshnessLine freshness={row.f} notFollowingSince={n.notFollowingSince} />
-        <span>Written {formatNoteDate(n.date)}</span>
-        <span>{n.readMinutes} min read</span>
-        {n.sourceCount > 0 && (
-          <span>{n.sourceCount === 1 ? '1 source' : `${n.sourceCount} sources`}</span>
-        )}
-        <Link component={RouterLink} to={href} sx={{ ml: 'auto', fontWeight: 500 }}>
-          Open note →
-        </Link>
-      </Box>
+        <span>Written {formatShortDate(n.date)}</span>
+      </CardFoot>
     </Box>
   );
 }
@@ -538,8 +537,9 @@ function TickerCard({ row, today }: { row: Row; today: string }) {
  * Coming up on /research: the next six catalysts across notes, each the day its note comes due for
  * review. Production lists the notes' own catalysts and the calendar's triggers; staging lists the
  * sample notes' review triggers from the scenario's calendar (owner ruling 7, the Calendar board).
- * On staging the section says Sample once, in its head, for all its tiles; each tile is dashed with
- * the hatch stripe (canon P-3, P-8; owner decision D1, spec 01 step 5).
+ * One panel with a ruled list (design: research.mjs indexBody `coming`, `.drows`; fidelity audit
+ * 2026-10-25, R-06): date, what, and how far off. On staging the panel is dashed with the hatch
+ * stripe and says Sample once, in its head (canon P-3, P-8; owner decision D1, spec 01 step 5).
  */
 function ComingUpList({
   items,
@@ -550,117 +550,109 @@ function ComingUpList({
 }) {
   if (items.length === 0) return null;
   return (
-    <Box component="section" aria-labelledby="coming-up" sx={{ display: 'grid', gap: 1.5 }}>
-      <Box sx={{ display: 'grid', gap: 0.5 }}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 12px' }}>
-          <Box
-            component="h2"
-            id="coming-up"
-            sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 20 }}
-          >
-            Coming up · next 10 weeks
-          </Box>
-          {demo ? (
-            <DataStateTag state="sample" />
-          ) : (
-            <DataStateTag state="computed" detail="from every note" />
-          )}
+    <Box
+      component="section"
+      aria-labelledby="coming-up"
+      sx={(t) => ({
+        ...PANEL_SX,
+        p: '18px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.5,
+        minWidth: 0,
+        // Sample data: dashed, with the hatch band the alerts Panel and ChartFrame draw.
+        ...(demo && {
+          position: 'relative',
+          border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}`,
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            height: 8,
+            borderRadius: '11px 11px 0 0',
+            pointerEvents: 'none',
+            background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`,
+          },
+        }),
+      })}
+    >
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 10px' }}>
+        <Box
+          component="h2"
+          id="coming-up"
+          sx={{ m: 0, flex: '1 1 auto', minWidth: 0, fontSize: 14, fontWeight: 600 }}
+        >
+          Coming up · next 10 weeks
         </Box>
-        <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
-          {demo
-            ? 'Each note’s results date, the FOMC decision for every note, and results windows estimated from filing history. Each date is when its note comes due for review. As of Oct 7, 2026.'
-            : 'Catalysts from every note, and the calendar’s: the FOMC for every note with a valuation, and results windows estimated from filing history. Each date is when its note comes due for review; an estimated window, once the results are filed.'}
-        </Box>
+        {demo ? (
+          <DataStateTag state="sample" />
+        ) : (
+          <DataStateTag state="computed" detail="from every note" />
+        )}
       </Box>
       <Box
-        component="ol"
-        sx={{
-          listStyle: 'none',
-          m: 0,
-          p: 0,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
-          gap: 1.25,
-        }}
+        component="p"
+        sx={{ m: 0, fontSize: 12, lineHeight: 1.45, color: 'text.secondary', textWrap: 'pretty' }}
       >
-        {items.map((u, i) => (
-          <Box
-            component="li"
-            key={`${u.ticker}-${u.label}-${u.date}`}
-            sx={(t) => ({
-              ...PANEL_SX,
-              // Sample data: dashed, with the hatch band the alerts Panel and ChartFrame draw.
-              ...(demo && {
-                borderStyle: 'dashed',
-                position: 'relative',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                  height: 8,
-                  borderRadius: '11px 11px 0 0',
-                  pointerEvents: 'none',
-                  background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`,
-                },
-              }),
-              px: 1.75,
-              py: 1.5,
-              display: 'grid',
-              gap: 0.75,
-              ...(i === 0 ? { borderColor: alpha(t.palette.text.primary, 0.35) } : {}),
-            })}
-          >
+        {demo
+          ? 'Each note’s results date, the FOMC decision for every note, and results windows estimated from filing history. Each date is when its note comes due for review. As of Oct 7, 2026.'
+          : 'Catalysts from every note, and the calendar’s: the FOMC for every note with a valuation, and results windows estimated from filing history. Each date is when its note comes due for review; an estimated window, once the results are filed.'}
+      </Box>
+      <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid' }}>
+        {items.map((u, i) => {
+          const day = formatShortDate(u.at);
+          // What the when-label says beyond the date column: a window's span ("Oct 27–30"), or the
+          // FOMC row's "every valued note". A single day is the date column's already.
+          const short = shortWhen(u);
+          const when =
+            short === day
+              ? ''
+              : short.startsWith(`${day} · `)
+                ? short.slice(day.length + 3)
+                : short;
+          return (
             <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
+              component="li"
+              key={`${u.ticker}-${u.label}-${u.date}`}
+              sx={(t) => ({
+                display: 'grid',
+                gridTemplateColumns: '64px minmax(0, 1fr) auto',
                 alignItems: 'center',
                 gap: 1,
-              }}
+                py: 0.75,
+                borderTop: `1px solid ${t.palette.divider}`,
+                fontSize: 13,
+                lineHeight: 1.5,
+              })}
             >
-              <Box
-                component="span"
-                sx={(t) => ({
-                  ...MONO,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  px: 0.875,
-                  py: '2px',
-                  borderRadius: '5px',
-                  bgcolor: alpha(t.palette.text.secondary, 0.16),
-                })}
-              >
-                {u.ticker}
+              <Box component="span" sx={{ ...MONO, color: 'text.secondary' }}>
+                {day}
+              </Box>
+              <Box component="span" sx={{ minWidth: 0, textWrap: 'pretty' }}>
+                <Box component="span" sx={{ fontWeight: 600 }}>
+                  {`${u.ticker} · ${u.label}`}
+                </Box>
+                {when && (
+                  <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                    {` · ${when}`}
+                  </Box>
+                )}
               </Box>
               <Box
                 component="span"
                 sx={{
-                  ...MONO,
-                  fontSize: 11,
+                  fontSize: 12,
+                  whiteSpace: 'nowrap',
                   color: i === 0 ? 'text.primary' : 'text.secondary',
                 }}
               >
-                {u.start < u.at
-                  ? 'open now'
-                  : u.inDays <= 0
-                    ? 'today'
-                    : u.inDays === 1
-                      ? 'tomorrow'
-                      : u.inDays < 14
-                        ? `in ${u.inDays} days`
-                        : `~${Math.round(u.inDays / 7)} weeks`}
+                {relativeDay(u, true)}
               </Box>
             </Box>
-            <Box component="span" sx={{ fontWeight: 600, fontSize: 14, lineHeight: 1.35 }}>
-              {u.label}
-            </Box>
-            <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
-              {u.whenLabel}
-            </Box>
-          </Box>
-        ))}
+          );
+        })}
       </Box>
     </Box>
   );
@@ -794,133 +786,65 @@ function ResearchIndexBody() {
   const freshStates: Freshness['state'][] = ['current', 'due', 'archived'];
 
   return (
-    <ResearchColumn>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr)',
-          gap: 4,
-          pt: { xs: 1, md: 2 },
-        }}
-      >
-        <ResearchTabs />
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '16px 32px' }}>
-          <Box sx={{ flex: '999 1 480px', display: 'grid', gap: 1.25 }}>
-            <Box
-              component="h1"
-              sx={{
-                ...DISPLAY,
-                m: 0,
-                fontWeight: 800,
-                fontSize: { xs: 36, md: 48 },
-                lineHeight: 1.05,
-              }}
-            >
-              Research
-            </Box>
-            <Box
-              component="p"
-              sx={{ m: 0, maxWidth: '62ch', color: 'text.secondary', fontSize: 16 }}
-            >
-              {DEMO
+    <>
+      <ResearchTabs />
+      <ResearchColumn>
+        <Box sx={PAGE_BODY_SX}>
+          <PageHead
+            title="Research"
+            lead={
+              DEMO
                 ? 'Research notes on the tickers Convexa follows. Each opens with its thesis, the evidence and what would change it.'
-                : 'Notes on the tickers being followed: what the price implies, the evidence, the debate, a valuation with its assumptions shown, and what comes next. Each opens with a 30-second summary.'}
-            </Box>
-          </Box>
-        </Box>
-
-        {(DEMO || rows.length > 0) && (
-          // The board's filter bar (design research.mjs indexBody): the search, then the chips, on
-          // one wrapping row. Staging filters its sample notes by freshness; production by stance
-          // and freshness, each chip with its count.
-          <Box sx={{ display: 'grid', gap: 1.25 }}>
-            <Box
-              role="group"
-              aria-label="Filter notes"
-              sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 10px' }}
-            >
-              <Box sx={{ flex: '1 1 260px', maxWidth: { sm: 340 }, minWidth: 0 }}>
-                <Box component="label" htmlFor="research-find" sx={visuallyHidden}>
-                  Find a ticker
-                </Box>
-                <Box
-                  component="input"
-                  id="research-find"
-                  type="search"
-                  placeholder="Find a ticker"
-                  value={query}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-                  sx={(t) => ({
-                    width: '100%',
-                    height: 44,
-                    boxSizing: 'border-box',
-                    px: 1.75,
-                    borderRadius: '8px',
-                    border: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
-                    bgcolor: 'background.paper',
-                    color: 'text.primary',
-                    font: 'inherit',
-                    fontSize: 14,
-                  })}
+                : 'Notes on the tickers being followed: what the price implies, the evidence, the debate, a valuation with its assumptions shown, and what comes next. Each opens with a 30-second summary.'
+            }
+            // Production names where the cards come from: the notes in the build (design: indexBody
+            // head chip; fidelity audit R-10). On the demo the bar says it (owner decision D1).
+            chips={
+              !DEMO && NEWEST_NOTE ? (
+                <ProvenanceChip
+                  text={`Research notes · written through ${formatNoteDate(NEWEST_NOTE)}`}
+                  kind="primary"
                 />
-              </Box>
-              {DEMO ? (
-                <Box
-                  role="group"
-                  aria-label="Filter by freshness"
-                  sx={{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.75 }}
-                >
-                  <Box
-                    component="button"
-                    type="button"
-                    aria-pressed={fresh === 'any'}
-                    onClick={() => setFresh('any')}
-                    sx={FILTER_SX(fresh === 'any')}
-                  >
-                    All · {samples?.length ?? 0}
+              ) : undefined
+            }
+          />
+
+          {(DEMO || rows.length > 0) && (
+            // The board's filter bar (design research.mjs indexBody): the search, then the chips, on
+            // one wrapping row. Staging filters its sample notes by freshness; production by stance
+            // and freshness, each chip with its count.
+            <Box sx={{ display: 'grid', gap: 1.25 }}>
+              <Box
+                role="group"
+                aria-label="Filter notes"
+                sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 10px' }}
+              >
+                <Box sx={{ flex: '1 1 260px', maxWidth: { sm: 340 }, minWidth: 0 }}>
+                  <Box component="label" htmlFor="research-find" sx={visuallyHidden}>
+                    Find a ticker
                   </Box>
                   <Box
-                    component="button"
-                    type="button"
-                    aria-pressed={fresh === SAMPLE_FRESHNESS}
-                    onClick={() => setFresh(fresh === SAMPLE_FRESHNESS ? 'any' : SAMPLE_FRESHNESS)}
-                    sx={FILTER_SX(fresh === SAMPLE_FRESHNESS)}
-                  >
-                    Current · {samples?.length ?? 0}
-                  </Box>
+                    component="input"
+                    id="research-find"
+                    type="search"
+                    placeholder="Find a ticker"
+                    value={query}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                    sx={(t) => ({
+                      width: '100%',
+                      height: 44,
+                      boxSizing: 'border-box',
+                      px: 1.75,
+                      borderRadius: '8px',
+                      border: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
+                      bgcolor: 'background.paper',
+                      color: 'text.primary',
+                      font: 'inherit',
+                      fontSize: 14,
+                    })}
+                  />
                 </Box>
-              ) : (
-                <>
-                  <Box
-                    role="group"
-                    aria-label="Filter by stance"
-                    sx={{
-                      display: 'inline-flex',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: 0.75,
-                    }}
-                  >
-                    <Box
-                      component="span"
-                      aria-hidden
-                      sx={{ fontSize: 12, color: 'text.secondary' }}
-                    >
-                      Stance
-                    </Box>
-                    {stances.map((s) => (
-                      <Box
-                        component="button"
-                        type="button"
-                        key={s.key}
-                        aria-pressed={stance === s.key}
-                        onClick={() => setStance(s.key)}
-                        sx={FILTER_SX(stance === s.key, s.dashed)}
-                      >
-                        {s.label}
-                      </Box>
-                    ))}
-                  </Box>
+                {DEMO ? (
                   <Box
                     role="group"
                     aria-label="Filter by freshness"
@@ -932,105 +856,179 @@ function ResearchIndexBody() {
                     }}
                   >
                     <Box
-                      component="span"
-                      aria-hidden
-                      sx={{ fontSize: 12, color: 'text.secondary' }}
+                      component="button"
+                      type="button"
+                      aria-pressed={fresh === 'any'}
+                      onClick={() => setFresh('any')}
+                      sx={FILTER_SX(fresh === 'any')}
                     >
-                      Freshness
+                      All · {samples?.length ?? 0}
                     </Box>
-                    {freshStates
-                      // A state no note is in has no chip (the board's), unless it is the one chosen.
-                      .filter((s) => fresh === s || count((r) => r.f.state === s) > 0)
-                      .map((s) => (
+                    <Box
+                      component="button"
+                      type="button"
+                      aria-pressed={fresh === SAMPLE_FRESHNESS}
+                      onClick={() =>
+                        setFresh(fresh === SAMPLE_FRESHNESS ? 'any' : SAMPLE_FRESHNESS)
+                      }
+                      sx={FILTER_SX(fresh === SAMPLE_FRESHNESS)}
+                    >
+                      Current · {samples?.length ?? 0}
+                    </Box>
+                  </Box>
+                ) : (
+                  <>
+                    <Box
+                      role="group"
+                      aria-label="Filter by stance"
+                      sx={{
+                        display: 'inline-flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 0.75,
+                      }}
+                    >
+                      <Box
+                        component="span"
+                        aria-hidden
+                        sx={{ fontSize: 12, color: 'text.secondary' }}
+                      >
+                        Stance
+                      </Box>
+                      {stances.map((s) => (
                         <Box
                           component="button"
                           type="button"
-                          key={s}
-                          aria-pressed={fresh === s}
-                          onClick={() => setFresh(fresh === s ? 'any' : s)}
-                          sx={FILTER_SX(fresh === s)}
+                          key={s.key}
+                          aria-pressed={stance === s.key}
+                          onClick={() => setStance(s.key)}
+                          sx={FILTER_SX(stance === s.key, s.dashed)}
                         >
-                          {s === 'current' ? 'Current' : s === 'due' ? 'Review due' : 'Archived'} ·{' '}
-                          {count((r) => r.f.state === s)}
+                          {s.label}
                         </Box>
                       ))}
+                    </Box>
+                    <Box
+                      role="group"
+                      aria-label="Filter by freshness"
+                      sx={{
+                        display: 'inline-flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 0.75,
+                      }}
+                    >
+                      <Box
+                        component="span"
+                        aria-hidden
+                        sx={{ fontSize: 12, color: 'text.secondary' }}
+                      >
+                        Freshness
+                      </Box>
+                      {freshStates
+                        // A state no note is in has no chip (the board's), unless it is the one chosen.
+                        .filter((s) => fresh === s || count((r) => r.f.state === s) > 0)
+                        .map((s) => (
+                          <Box
+                            component="button"
+                            type="button"
+                            key={s}
+                            aria-pressed={fresh === s}
+                            onClick={() => setFresh(fresh === s ? 'any' : s)}
+                            sx={FILTER_SX(fresh === s)}
+                          >
+                            {s === 'current' ? 'Current' : s === 'due' ? 'Review due' : 'Archived'}{' '}
+                            · {count((r) => r.f.state === s)}
+                          </Box>
+                        ))}
+                    </Box>
+                  </>
+                )}
+              </Box>
+              {!DEMO && filingsFallback && <FilingsFallback state={filingsFallback} />}
+            </Box>
+          )}
+
+          {DEMO ? (
+            <>
+              <ComingUpList items={sampleSoon} demo />
+              <Box
+                component="section"
+                aria-label="Sample notes"
+                aria-busy={samples === undefined}
+                sx={{
+                  display: 'grid',
+                  // Three cards a row from 1100px, two from 900px, one below (design: `.fr-cards`).
+                  gridTemplateColumns: {
+                    xs: 'minmax(0, 1fr)',
+                    md: 'repeat(2, minmax(0, 1fr))',
+                    laptop: 'repeat(3, minmax(0, 1fr))',
+                  },
+                  gap: 2,
+                }}
+              >
+                {sampleShown.map((card) => (
+                  <SampleNoteCard key={card.ticker} card={card} />
+                ))}
+                {samples === null && (
+                  <Box component="p" role="status" sx={{ m: 0, color: 'text.secondary' }}>
+                    The sample notes didn&apos;t load. Reload the page to try again.
                   </Box>
-                </>
-              )}
-            </Box>
-            {!DEMO && filingsFallback && <FilingsFallback state={filingsFallback} />}
+                )}
+                {samples && sampleShown.length === 0 && (
+                  <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+                    No ticker matches this search.
+                  </Box>
+                )}
+              </Box>
+            </>
+          ) : rows.length === 0 ? (
+            <Panel sx={{ p: 3, display: 'grid', gap: 0.5 }}>
+              <Box component="h2" sx={{ m: 0, fontSize: 17, fontWeight: 600 }}>
+                No research published yet.
+              </Box>
+              <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+                Notes will be listed here as they're written.
+              </Box>
+            </Panel>
+          ) : (
+            <>
+              <ComingUpList items={soon} />
+
+              <Box
+                component="section"
+                aria-label="Tickers"
+                sx={{
+                  display: 'grid',
+                  // Three cards a row from 1100px, two from 900px, one below (design: `.fr-cards`).
+                  gridTemplateColumns: {
+                    xs: 'minmax(0, 1fr)',
+                    md: 'repeat(2, minmax(0, 1fr))',
+                    laptop: 'repeat(3, minmax(0, 1fr))',
+                  },
+                  gap: 2,
+                }}
+              >
+                {shown.map((row) => (
+                  <TickerCard key={row.ticker} row={row} today={today} />
+                ))}
+                {shown.length === 0 && (
+                  <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+                    No ticker matches these filters.
+                  </Box>
+                )}
+              </Box>
+            </>
+          )}
+
+          <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
+            {DEMO
+              ? 'Sample notes written for the demo; no news, filings or AI read is cited. Not investment advice.'
+              : RESEARCH_DISCLAIMER}
           </Box>
-        )}
-
-        {DEMO ? (
-          <>
-            <ComingUpList items={sampleSoon} demo />
-            <Box
-              component="section"
-              aria-label="Sample notes"
-              aria-busy={samples === undefined}
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
-                gap: 2,
-              }}
-            >
-              {sampleShown.map((card) => (
-                <SampleNoteCard key={card.ticker} card={card} />
-              ))}
-              {samples === null && (
-                <Box component="p" role="status" sx={{ m: 0, color: 'text.secondary' }}>
-                  The sample notes didn&apos;t load. Reload the page to try again.
-                </Box>
-              )}
-              {samples && sampleShown.length === 0 && (
-                <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
-                  No ticker matches this search.
-                </Box>
-              )}
-            </Box>
-          </>
-        ) : rows.length === 0 ? (
-          <Panel sx={{ p: 3, display: 'grid', gap: 0.5 }}>
-            <Box component="h2" sx={{ m: 0, fontSize: 17, fontWeight: 600 }}>
-              No research published yet.
-            </Box>
-            <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
-              Notes will be listed here as they're written.
-            </Box>
-          </Panel>
-        ) : (
-          <>
-            <ComingUpList items={soon} />
-
-            <Box
-              component="section"
-              aria-label="Tickers"
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
-                gap: 2,
-              }}
-            >
-              {shown.map((row) => (
-                <TickerCard key={row.ticker} row={row} today={today} />
-              ))}
-              {shown.length === 0 && (
-                <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
-                  No ticker matches these filters.
-                </Box>
-              )}
-            </Box>
-          </>
-        )}
-
-        <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
-          {DEMO
-            ? 'Sample notes written for the demo; no news, filings or AI read is cited. Not financial advice.'
-            : RESEARCH_DISCLAIMER}
         </Box>
-      </Box>
-    </ResearchColumn>
+      </ResearchColumn>
+    </>
   );
 }
 

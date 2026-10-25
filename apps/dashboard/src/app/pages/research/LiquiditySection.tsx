@@ -8,7 +8,7 @@
 import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import { dataMode, type PublicMarkets } from '@convexa/api';
 import Box from '@mui/material/Box';
-import { useTheme } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import { FOMC_CHECKED, FOMC_SOURCE } from './fomc';
 import { formatNoteDate, formatShortDate } from './format';
 import {
@@ -115,142 +115,201 @@ export function LiquiditySection({
     ],
   ];
   return (
-    <ChartFrame
-      finding={liquidityFinding(weeks)}
-      metric="Net liquidity"
-      sub={`Fed total assets less the Treasury General Account less overnight reverse repo · $ trillions · weekly, on the H.4.1 Wednesday · the axis starts at $${lo.toFixed(1)}T, not zero: it shows change, not size`}
-      headingLevel="h3"
-      height={320}
-      tag={
-        stale
-          ? { state: 'lastGood', detail: `week to ${formatShortDate(liquidity.as_of)}` }
-          : schedule.state === 'delayed'
-            ? { state: 'delayed', detail: 'H.4.1' }
-            : { state: 'computed', detail: 'weekly' }
-      }
-      source={
-        demo
-          ? { text: 'Demo · shaped like Fed H.4.1, Treasury DTS and NY Fed reverse repo' }
-          : { text: 'Fed H.4.1 · Treasury DTS · NY Fed reverse repo', href: H41_URL }
-      }
-      asOf={
-        demo
-          ? `Scenario · ${formatNoteDate(liquidity.as_of)}`
-          : `Week to Wed ${formatNoteDate(liquidity.as_of)} · published ${dayDate(published)}`
-      }
-      note={
-        <>
-          Each Wednesday’s Fed figure is netted against the Treasury’s cash and reverse repo on that
-          same day (or the business day before it), so a daily swing in the Treasury’s cash never
-          shows as a weekly move. Marks under the line, each on the first Wednesday on or after it:
-          quarter ends (■), FOMC decisions (●, ◆ with projections; from the{' '}
+    <>
+      <LiquidityStrip cells={strip} demo={demo} />
+      <ChartFrame
+        finding={liquidityFinding(weeks)}
+        metric="Net liquidity"
+        sub={`Fed total assets less the Treasury General Account less overnight reverse repo · $ trillions · weekly, on the H.4.1 Wednesday · the axis starts at $${lo.toFixed(1)}T, not zero: it shows change, not size`}
+        headingLevel="h3"
+        height={320}
+        tag={
+          stale
+            ? { state: 'lastGood', detail: `week to ${formatShortDate(liquidity.as_of)}` }
+            : schedule.state === 'delayed'
+              ? { state: 'delayed', detail: 'H.4.1' }
+              : { state: 'computed', detail: 'weekly' }
+        }
+        source={
+          demo
+            ? { text: 'Demo · shaped like Fed H.4.1, Treasury DTS and NY Fed reverse repo' }
+            : { text: 'Fed H.4.1 · Treasury DTS · NY Fed reverse repo', href: H41_URL }
+        }
+        asOf={
+          demo
+            ? `Scenario · ${formatNoteDate(liquidity.as_of)}`
+            : `Week to Wed ${formatNoteDate(liquidity.as_of)} · published ${dayDate(published)}`
+        }
+        note={
+          <>
+            Each Wednesday’s Fed figure is netted against the Treasury’s cash and reverse repo on
+            that same day (or the business day before it), so a daily swing in the Treasury’s cash
+            never shows as a weekly move. Marks under the line, each on the first Wednesday on or
+            after it: quarter ends (■), FOMC decisions (●, ◆ with projections; from the{' '}
+            <Box
+              component="a"
+              href={FOMC_SOURCE}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ color: 'inherit' }}
+            >
+              Fed’s calendar
+            </Box>
+            , checked {formatNoteDate(FOMC_CHECKED)}) and corporate estimated-tax days (○; from the{' '}
+            <Box
+              component="a"
+              href={TAX_SOURCE}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ color: 'inherit' }}
+            >
+              IRS tax calendar
+            </Box>
+            ), when the Treasury’s cash account tends to jump.
+          </>
+        }
+        table={{
+          caption: 'Net liquidity and its inputs, $ billions, every third week and the latest',
+          cols: ['Week to', 'Fed assets', 'TGA', 'Reverse repo', 'Net'],
+          rows: [
+            ...weeks
+              .filter((_, i) => (weeks.length - 1 - i) % 3 === 0)
+              .map((w) => [
+                formatNoteDate(w.date),
+                bil(w.fed_assets),
+                bil(w.tga),
+                bil(w.reverse_repo),
+                bil(w.net),
+              ]),
+            // Each marked event with the week it falls in.
+            ...marks.map((m) => {
+              const w = byDate.get(weeks[m.index].date) as Week;
+              return [
+                `${m.label} · ${formatNoteDate(m.date)} (week to ${formatShortDate(w.date)})`,
+                bil(w.fed_assets),
+                bil(w.tga),
+                bil(w.reverse_repo),
+                bil(w.net),
+              ];
+            }),
+          ],
+        }}
+        testId="chart-liquidity"
+      >
+        {schedule.state === 'delayed' && !stale && (
           <Box
-            component="a"
-            href={FOMC_SOURCE}
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ color: 'inherit' }}
+            component="p"
+            role="status"
+            sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}
           >
-            Fed’s calendar
+            {`The H.4.1 for Wed ${formatShortDate(schedule.week)} is published ${dayDate(schedule.releases)} this week (${schedule.holiday}). Showing the week to ${formatShortDate(liquidity.as_of)}.`}
           </Box>
-          , checked {formatNoteDate(FOMC_CHECKED)}) and corporate estimated-tax days (○; from the{' '}
-          <Box
-            component="a"
-            href={TAX_SOURCE}
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ color: 'inherit' }}
-          >
-            IRS tax calendar
-          </Box>
-          ), when the Treasury’s cash account tends to jump.
-        </>
-      }
-      table={{
-        caption: 'Net liquidity and its inputs, $ billions, every third week and the latest',
-        cols: ['Week to', 'Fed assets', 'TGA', 'Reverse repo', 'Net'],
-        rows: [
-          ...weeks
-            .filter((_, i) => (weeks.length - 1 - i) % 3 === 0)
-            .map((w) => [
-              formatNoteDate(w.date),
-              bil(w.fed_assets),
-              bil(w.tga),
-              bil(w.reverse_repo),
-              bil(w.net),
-            ]),
-          // Each marked event with the week it falls in.
-          ...marks.map((m) => {
-            const w = byDate.get(weeks[m.index].date) as Week;
-            return [
-              `${m.label} · ${formatNoteDate(m.date)} (week to ${formatShortDate(w.date)})`,
-              bil(w.fed_assets),
-              bil(w.tga),
-              bil(w.reverse_repo),
-              bil(w.net),
-            ];
-          }),
-        ],
-      }}
-      testId="chart-liquidity"
-    >
-      {schedule.state === 'delayed' && !stale && (
+        )}
+        <NetLine weeks={weeks} lo={lo} hi={hi} marks={marks} />
         <Box
-          component="p"
-          role="status"
-          sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))',
+            gap: 1.25,
+          }}
         >
-          {`The H.4.1 for Wed ${formatShortDate(schedule.week)} is published ${dayDate(schedule.releases)} this week (${schedule.holiday}). Showing the week to ${formatShortDate(liquidity.as_of)}.`}
+          <Spark
+            name="Fed total assets"
+            values={weeks.map((w) => w.fed_assets)}
+            end={tril(last.fed_assets)}
+          />
+          <Spark
+            name="Treasury cash (TGA) · subtracted"
+            values={weeks.map((w) => w.tga)}
+            end={bil(last.tga)}
+          />
+          <Spark
+            name="Reverse repo · subtracted"
+            values={weeks.map((w) => w.reverse_repo)}
+            end={bil(last.reverse_repo)}
+          />
         </Box>
-      )}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))',
-          gap: 1.5,
-        }}
-      >
-        {strip.map(([label, value, change]) => (
-          <Box key={label} sx={{ display: 'grid', gap: 0.25, minWidth: 0 }}>
-            <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-              {label}
-            </Box>
-            <Box component="span" sx={{ ...MONO, fontSize: 20, lineHeight: 1.2 }}>
-              {value}
-            </Box>
-            {change && (
-              <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
-                {change}
-              </Box>
-            )}
+      </ChartFrame>
+    </>
+  );
+}
+
+/**
+ * The four latest figures as one ruled strip above the frame (design: planned-charts.mjs
+ * liquidityStrip, `.pl-strip`; fidelity audit 2026-10-25, R-26): cells divided by 1px rules, each a
+ * caps label, the figure and its four-week change. Sample data is dashed with the hatch stripe
+ * (canon P-3, P-8); the frame below names the sample once, by its source chip (owner decision D1).
+ */
+function LiquidityStrip({
+  cells,
+  demo,
+}: {
+  cells: [string, string, string | null][];
+  demo: boolean;
+}) {
+  return (
+    <Box
+      component="section"
+      aria-label="Liquidity, latest week"
+      sx={(t) => ({
+        position: 'relative',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(190px, 100%), 1fr))',
+        gap: '1px',
+        overflow: 'hidden',
+        borderRadius: '12px',
+        border: `1px ${demo ? 'dashed' : 'solid'} ${demo ? alpha(t.palette.text.secondary, 0.55) : t.palette.divider}`,
+        bgcolor: t.palette.divider,
+        ...(demo && {
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            height: 8,
+            zIndex: 1,
+            pointerEvents: 'none',
+            background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`,
+          },
+        }),
+      })}
+    >
+      {cells.map(([label, value, change]) => (
+        <Box
+          key={label}
+          sx={{
+            bgcolor: 'background.paper',
+            p: '12px 16px',
+            display: 'grid',
+            gap: 0.5,
+            alignContent: 'start',
+            minWidth: 0,
+          }}
+        >
+          <Box
+            component="span"
+            sx={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+            }}
+          >
+            {label}
           </Box>
-        ))}
-      </Box>
-      <NetLine weeks={weeks} lo={lo} hi={hi} marks={marks} />
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))',
-          gap: 1.25,
-        }}
-      >
-        <Spark
-          name="Fed total assets"
-          values={weeks.map((w) => w.fed_assets)}
-          end={tril(last.fed_assets)}
-        />
-        <Spark
-          name="Treasury cash (TGA) · subtracted"
-          values={weeks.map((w) => w.tga)}
-          end={bil(last.tga)}
-        />
-        <Spark
-          name="Reverse repo · subtracted"
-          values={weeks.map((w) => w.reverse_repo)}
-          end={bil(last.reverse_repo)}
-        />
-      </Box>
-    </ChartFrame>
+          <Box component="span" sx={{ ...MONO, fontSize: 22, fontWeight: 500, lineHeight: 1.2 }}>
+            {value}
+          </Box>
+          {change && (
+            <Box component="span" sx={{ fontSize: 12, lineHeight: 1.4, color: 'text.secondary' }}>
+              {change}
+            </Box>
+          )}
+        </Box>
+      ))}
+    </Box>
   );
 }
 

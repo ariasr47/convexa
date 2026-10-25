@@ -2,8 +2,13 @@
  * The Research section's own tabs: the notes, the public-data views beside them, and the scorecard.
  * The top bar's amber already marks the section, so the current tab here is underlined in text colour
  * and amber stays spent. On a phone the row scrolls sideways as a rail rather than wrapping.
+ *
+ * A full-bleed band directly under the top bar, its rule edge to edge and its tabs on the page column
+ * (design: lib.mjs v4Tabs, `.v4-tabs > .wrap`; fidelity audit 2026-10-25, R-12). Each research page
+ * renders it above its column, not inside it.
  */
 import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
@@ -43,14 +48,19 @@ export function ResearchTabs() {
     <Box
       component="nav"
       aria-label="Research"
-      sx={(t) => ({
-        mx: { xs: -2, sm: 0 },
-        overflowX: 'auto',
-        borderBottom: `1px solid ${t.palette.divider}`,
-        scrollbarWidth: 'none',
-      })}
+      sx={(t) => ({ borderBottom: `1px solid ${t.palette.divider}` })}
     >
-      <Box sx={{ display: 'flex', gap: 0.5, px: { xs: 1, sm: 0 }, width: 'max-content' }}>
+      <Box
+        sx={{
+          ...pageColumnSx,
+          display: 'flex',
+          gap: 0.5,
+          height: 48,
+          alignItems: 'stretch',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+        }}
+      >
         {TABS.map((tab) => {
           const on = current(tab.to);
           return (
@@ -61,9 +71,9 @@ export function ResearchTabs() {
               aria-current={on ? 'page' : undefined}
               sx={(t) => ({
                 display: 'flex',
+                flex: 'none',
                 alignItems: 'center',
                 gap: 1,
-                minHeight: 48,
                 px: 1.5,
                 fontSize: 14,
                 fontWeight: on ? 600 : 500,

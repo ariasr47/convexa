@@ -5,6 +5,7 @@
  * (Demo mode keeps the authored sample note in `ticker/research/ResearchView.tsx`, whose figures match
  * the demo scenario.)
  */
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -29,15 +30,14 @@ export { RESEARCH_DISCLAIMER } from './NoteView';
 /** FOMC decision days for the review triggers: the Fed's schedule (fomc.ts). */
 const FOMC_DAYS = fomcDays(null);
 
-/** The research column: wider than the standard page column, for the rail, the note and the sidebar. */
+/** The research column: the one page column (`pageColumnSx`, the boards' `.wrap`), with the research
+ *  pages' own top and bottom padding (fidelity audit 2026-10-25, COL). */
 export function ResearchColumn({ children }: { children: React.ReactNode }) {
   return (
     <Box
       sx={{
+        ...pageColumnSx,
         minWidth: 0,
-        maxWidth: 1240,
-        mx: 'auto',
-        px: { xs: 2, sm: 3 },
         pt: { xs: 1, md: 1.5 },
         pb: 'max(4rem, env(safe-area-inset-bottom))',
       }}

@@ -10,7 +10,9 @@
 import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { DATA_STATES, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { STAGING_DEMO_SYMBOLS, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
+import { FrameDemoTagProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import { dataMode, type SampleSignalGrade } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha, useTheme } from '@mui/material/styles';
@@ -18,11 +20,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { localToday, researchIndex, scoreForecasts } from 'virtual:convexa-research';
 import { addDays, formatNoteDate, formatShortDate } from './format';
 import { ResearchColumn } from './NotesView';
-import { ProvenanceChip } from './publicUi';
+import { PAGE_BODY_SX, PageHead, ProvenanceChip } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
 import { useSampleLedger } from './sampleLedger';
 import type { LedgerForecast } from './types';
-import { DISPLAY, MONO, PANEL_SX } from './ui';
+import { MONO, PANEL_SX } from './ui';
 import { useWidth } from './useWidth';
 import { wilson } from './wilson';
 
@@ -59,7 +61,105 @@ const LIVE_ROWS: Row[] = researchIndex.flatMap((r) =>
   r.latest.forecasts.map((f, i) => ({ ...f, ticker: r.ticker, id: `${r.ticker}-${i}` })),
 );
 
+/** The newest note in the build: the date production's source chip names. */
+const NEWEST_NOTE = researchIndex.reduce<string | null>(
+  (max, r) => (max === null || r.latest.date > max ? r.latest.date : max),
+  null,
+);
+
+/** Counts every data-state tag inside `ref` and recounts when the panels change, so the legend can't
+ *  disagree with the page (the pattern of the production desk's legend, PublicDesk.tsx). */
+function useStateCounts(
+  ref: React.RefObject<HTMLElement | null>,
+  enabled: boolean,
+): [DataStateKey, number][] {
+  const [counts, setCounts] = useState<[DataStateKey, number][]>([]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!enabled || !el) return;
+    const recount = () => {
+      const tally = new Map<DataStateKey, number>();
+      el.querySelectorAll<HTMLElement>('[data-state]').forEach((n) => {
+        const k = n.dataset.state as DataStateKey;
+        if (k in DATA_STATES) tally.set(k, (tally.get(k) ?? 0) + 1);
+      });
+      const order = Object.keys(DATA_STATES) as DataStateKey[];
+      const next = order.filter((k) => tally.has(k)).map((k) => [k, tally.get(k) as number]);
+      setCounts((prev) =>
+        JSON.stringify(prev) === JSON.stringify(next) ? prev : (next as [DataStateKey, number][]),
+      );
+    };
+    recount();
+    const mo = new MutationObserver(recount);
+    mo.observe(el, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-state'],
+    });
+    return () => mo.disconnect();
+  }, [ref, enabled]);
+  return counts;
+}
+
+/** "On this page": each state word the panels below show, with how many (design: research.mjs
+ *  `legendBar`; fidelity audit R-10). Production only: on the demo the bar says it once (D1). */
+function Legend({ counts }: { counts: [DataStateKey, number][] }) {
+  return (
+    <Box
+      component="section"
+      aria-label="Data on this page"
+      sx={{
+        ...PANEL_SX,
+        px: 2,
+        py: 1.5,
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: '10px 16px',
+      }}
+    >
+      <Box component="span" sx={{ ...caps, color: 'text.primary' }}>
+        On this page
+      </Box>
+      <Box
+        component="ul"
+        sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', gap: '10px 16px' }}
+      >
+        {counts.map(([k, n]) => (
+          <Box
+            component="li"
+            key={k}
+            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
+          >
+            {/* The legend sits outside the counted panels, so its own tags aren't counted. */}
+            <DataStateTag state={k} />
+            <Box
+              component="span"
+              sx={{ ...MONO, fontSize: 12, fontWeight: 500, color: 'text.secondary' }}
+              aria-label={`${n} ${DATA_STATES[k].word}`}
+            >
+              {n}
+            </Box>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
+/** The shell's demo bar is this page's one "Demo · sample data", so its frames don't repeat it: each
+ *  names the sample once, by its own "Demo · …" source chip (FrameDemoTagProvider; owner decision
+ *  D1; fidelity audit 2026-10-25, FND-06a). No effect on the live build. */
 export function ScorecardPage() {
+  return (
+    <FrameDemoTagProvider value={false}>
+      <ScorecardBody />
+    </FrameDemoTagProvider>
+  );
+}
+
+function ScorecardBody() {
   const ledger = useSampleLedger();
   const liveToday = useMemo(() => localToday(), []);
   // The demo is read on its scenario's day, so its past-due and next-two-weeks rows stay put.
@@ -82,126 +182,130 @@ export function ScorecardPage() {
     .sort((a, b) => (a.resolveBy.end ?? '').localeCompare(b.resolveBy.end ?? ''));
   const soonUnset = soon.filter((f) => f.p === null).length;
   const waiting = DEMO && ledger === undefined;
+  // Production's "On this page" legend counts the state tags the panels below actually show.
+  const zones = useRef<HTMLDivElement>(null);
+  const counts = useStateCounts(zones, !DEMO);
 
   return (
-    <ResearchColumn>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr)',
-          gap: 4,
-          pt: { xs: 1, md: 2 },
-        }}
-      >
-        <ResearchTabs />
-        <Box sx={{ display: 'grid', gap: 1.5 }}>
-          <Box
-            component="h1"
-            sx={{
-              ...DISPLAY,
-              m: 0,
-              fontWeight: 800,
-              fontSize: { xs: 36, md: 48 },
-              lineHeight: 1.05,
-            }}
-          >
-            Scorecard
-          </Box>
-          <Box
-            component="p"
-            sx={{
-              m: 0,
-              maxWidth: '66ch',
-              color: 'text.secondary',
-              fontSize: 16,
-              textWrap: 'pretty',
-            }}
-          >
-            How the calls in the notes turn out. A forecast is scored when its date passes, but only
-            if it carried your probability before then. Scoring a call after the answer is known
-            would be fiction.
-          </Box>
-          {DEMO && (
-            <Box>
-              <ProvenanceChip
-                text="Demo · the sample notes’ forecasts · scenario of Oct 7, 2026"
-                kind="sample"
-              />
-            </Box>
-          )}
-        </Box>
-
-        {waiting ? (
-          <Box
-            aria-busy="true"
-            aria-label="Loading the sample forecasts"
-            sx={(t) => ({
-              ...PANEL_SX,
-              height: 120,
-              bgcolor: alpha(t.palette.text.secondary, 0.06),
-            })}
-          />
-        ) : DEMO && ledger === null ? (
-          <Box component="p" role="status" sx={{ m: 0, color: 'text.secondary' }}>
-            The sample forecasts didn&apos;t load. Reload the page to try again.
-          </Box>
-        ) : (
-          <>
-            <Ledger score={score} open={open} firstDate={soon[0]?.resolveBy.end ?? null} />
-
-            {pastDue.length > 0 && (
-              <ForecastList
-                title={`${pastDue.length} past ${pastDue.length === 1 ? 'its date' : 'their dates'} and waiting for an outcome.`}
-                hint="Add yes, no or void as the fifth cell of each row, set updated: in the front matter, and log it in the change log."
-                rows={pastDue}
-              />
-            )}
-
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'stretch' }}>
-              <Box sx={{ flex: '999 1 560px', minWidth: 0 }}>
-                <ForecastList
-                  title={
-                    soon.length === 0
-                      ? 'Nothing resolves in the next two weeks.'
-                      : `${countWord(soon.length)} ${soon.length === 1 ? 'forecast resolves' : 'forecasts resolve'} in the next two weeks${
-                          soonUnset === soon.length
-                            ? ', all still without a probability.'
-                            : soonUnset > 0
-                              ? `; ${soonUnset} without a probability.`
-                              : `; ${soon.length === 1 ? 'it carries' : 'all carry'} a probability.`
-                        }`
-                  }
-                  hint={
-                    DEMO
-                      ? 'Sample forecasts on the demo’s authored price paths.'
-                      : "Copy a row, paste it over the same row in the note's forecasts block, replace ___ with your probability, and push. The check refuses the row until you do."
-                  }
-                  rows={soon}
+    <>
+      <ResearchTabs />
+      <ResearchColumn>
+        <Box sx={PAGE_BODY_SX}>
+          <PageHead
+            title="Scorecard"
+            lead="How the calls in the notes turn out. A forecast is scored when its date passes, but only if it carried your probability before then. Scoring a call after the answer is known would be fiction."
+            chips={
+              DEMO ? (
+                <ProvenanceChip
+                  text="Demo · the sample notes’ forecasts · scenario of Oct 7, 2026"
+                  kind="sample"
                 />
-              </Box>
-              <Box sx={{ flex: '1 1 360px', minWidth: 0 }}>
-                <ByMonth open={open} today={today} />
-              </Box>
-            </Box>
+              ) : NEWEST_NOTE ? (
+                <ProvenanceChip
+                  text={`The notes’ forecasts blocks · written through ${formatNoteDate(NEWEST_NOTE)}`}
+                  kind="primary"
+                />
+              ) : undefined
+            }
+          />
+          {/* On the demo the bar is the page's one legend of what is sample (owner decision D1). */}
+          {!DEMO && counts.length > 0 && <Legend counts={counts} />}
 
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'stretch' }}>
-              <Box sx={{ flex: '1 1 480px', minWidth: 0 }}>
-                <Calibration score={score} today={today} />
+          {/* `display: contents`: the panels stay rows of the page grid; the box only scopes the count. */}
+          <Box ref={zones} sx={{ display: 'contents' }}>
+            {waiting ? (
+              <Box
+                aria-busy="true"
+                aria-label="Loading the sample forecasts"
+                sx={(t) => ({
+                  ...PANEL_SX,
+                  height: 120,
+                  bgcolor: alpha(t.palette.text.secondary, 0.06),
+                })}
+              />
+            ) : DEMO && ledger === null ? (
+              <Box component="p" role="status" sx={{ m: 0, color: 'text.secondary' }}>
+                The sample forecasts didn&apos;t load. Reload the page to try again.
               </Box>
-              <Box sx={{ flex: '1 1 480px', minWidth: 0 }}>
-                {DEMO && ledger ? <SignalsSample grades={ledger.signals} /> : <SignalsOff />}
-              </Box>
-            </Box>
-          </>
-        )}
+            ) : (
+              <>
+                <Ledger score={score} open={open} firstDate={soon[0]?.resolveBy.end ?? null} />
 
-        <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
-          {DEMO
-            ? 'Sample forecasts and outcomes authored for the demo. Not financial advice.'
-            : "Forecasts come from each note's forecasts block. Personal research notes. Not financial advice."}
+                {pastDue.length > 0 && (
+                  <ForecastList
+                    title={`${pastDue.length} past ${pastDue.length === 1 ? 'its date' : 'their dates'} and waiting for an outcome.`}
+                    hint="Add yes, no or void as the fifth cell of each row, set updated: in the front matter, and log it in the change log."
+                    rows={pastDue}
+                  />
+                )}
+
+                {/* The list beside the month chart, 7fr/5fr and aligned to the start (design: `.fr-2`):
+                the chart keeps its own height, with no blank band inside it (fidelity audit R-03). */}
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: 'minmax(0, 1fr)',
+                      md: 'minmax(0, 7fr) minmax(0, 5fr)',
+                    },
+                    gap: 2,
+                    alignItems: 'start',
+                  }}
+                >
+                  <Box sx={{ minWidth: 0 }}>
+                    <ForecastList
+                      title={
+                        soon.length === 0
+                          ? 'Nothing resolves in the next two weeks.'
+                          : `${countWord(soon.length)} ${soon.length === 1 ? 'forecast resolves' : 'forecasts resolve'} in the next two weeks${
+                              soonUnset === soon.length
+                                ? ', all still without a probability.'
+                                : soonUnset > 0
+                                  ? `; ${soonUnset} without a probability.`
+                                  : `; ${soon.length === 1 ? 'it carries' : 'all carry'} a probability.`
+                            }`
+                      }
+                      hint={
+                        DEMO
+                          ? 'Sample forecasts on the demo’s authored price paths.'
+                          : "Copy a row, paste it over the same row in the note's forecasts block, replace ___ with your probability, and push. The check refuses the row until you do."
+                      }
+                      rows={soon}
+                    />
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <ByMonth open={open} today={today} />
+                  </Box>
+                </Box>
+
+                {/* Two halves, each at its own height (design: `.fr-2.half`). */}
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' },
+                    gap: 2,
+                    alignItems: 'start',
+                  }}
+                >
+                  <Box sx={{ minWidth: 0 }}>
+                    <Calibration score={score} today={today} />
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    {DEMO && ledger ? <SignalsSample grades={ledger.signals} /> : <SignalsOff />}
+                  </Box>
+                </Box>
+              </>
+            )}
+          </Box>
+
+          <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
+            {DEMO
+              ? 'Sample forecasts and outcomes authored for the demo. Not investment advice.'
+              : "Forecasts come from each note's forecasts block. Personal research notes. Not investment advice."}
+          </Box>
         </Box>
-      </Box>
-    </ResearchColumn>
+      </ResearchColumn>
+    </>
   );
 }
 
@@ -256,7 +360,7 @@ function Ledger({
     </Box>
   );
   const figure = (v: string) => (
-    <Box component="span" sx={{ ...MONO, fontSize: 26, fontWeight: 500, lineHeight: 1.2 }}>
+    <Box component="span" sx={{ ...MONO, fontSize: 24, fontWeight: 500, lineHeight: 1.2 }}>
       {v}
     </Box>
   );
@@ -339,22 +443,29 @@ function ForecastList({ title, hint, rows }: { title: string; hint: string; rows
       })}
     >
       <Box sx={{ display: 'grid', gap: 0.5 }}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: '6px 10px' }}>
+        {/* A panel title is 15px Plex 600 with its tag at the right (design: `.hd-p .ph`; fidelity
+            audit R-09). On the demo the panel names the sample once, in its head (owner decision
+            D1): the bar already says "Demo · sample data". */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 10px' }}>
           <Box
             component="h2"
             sx={{
-              ...DISPLAY,
               m: 0,
               flex: '1 1 260px',
+              minWidth: 0,
               fontWeight: 600,
-              fontSize: 20,
-              lineHeight: 1.25,
+              fontSize: 15,
+              lineHeight: 1.4,
               textWrap: 'balance',
             }}
           >
             {title}
           </Box>
-          {DEMO && <DataStateTag state="demo" />}
+          {DEMO ? (
+            <DataStateTag state="sample" />
+          ) : (
+            <DataStateTag state="computed" detail="from the notes" />
+          )}
         </Box>
         <Box component="span" sx={{ fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
           {hint}
@@ -473,8 +584,10 @@ function ForecastList({ title, hint, rows }: { title: string; hint: string; rows
 const notesFrame = (today: string) =>
   DEMO
     ? {
-        provenance: 'sample' as const,
-        tag: { state: 'demo' as const },
+        // The board's provenance (sample on the demo) and no tag of its own: on this page the
+        // source chip is the frame's one Sample mark (owner decision D1; fidelity audit FND-06a).
+        provenance: undefined,
+        tag: undefined,
         source: { text: 'Demo · the sample notes’ forecasts' },
         asOf: 'Scenario · Oct 7, 2026',
       }
@@ -800,11 +913,12 @@ function SignalsOff() {
         alignContent: 'start',
       })}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
+      {/* Panel title 15px Plex 600, tag at the right (design: `.hd-p .ph`; fidelity audit R-09). */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px 10px', flexWrap: 'wrap' }}>
         <Box
           component="h2"
           id="signals-off"
-          sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 20 }}
+          sx={{ m: 0, flex: '1 1 auto', minWidth: 0, fontWeight: 600, fontSize: 15 }}
         >
           Signal track record
         </Box>
@@ -873,8 +987,8 @@ function SignalsSample({ grades }: { grades: SampleSignalGrade[] }) {
       metric="Signal track record"
       sub="Share of scanner setups that reached their named level within 5 sessions, after a 0.10% cost · by setup · n = setups graded · dashed line = half the time"
       height={200}
-      provenance="sample"
-      tag={{ state: 'demo' }}
+      // Staging only: the board's sample provenance, and its source chip is the frame's one Sample
+      // mark (owner decision D1; fidelity audit FND-06a).
       source={{ text: 'Demo · setups graded on sample prices' }}
       asOf="Scenario · Oct 7, 2026"
       table={{

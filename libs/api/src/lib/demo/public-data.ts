@@ -384,6 +384,8 @@ function demoFilingsFor(ticker: string): PublicFiling[] {
     kind: PublicFiling['kind'],
     items: string[],
     reportDate: string | null,
+    /** What the filing is, as the Filings staging board qualifies each sample ("· results"). */
+    what: string,
   ): PublicFiling => ({
     ticker,
     cik: '0000000000',
@@ -392,14 +394,14 @@ function demoFilingsFor(ticker: string): PublicFiling[] {
     items,
     filed,
     report_date: reportDate,
-    description: 'Demo sample filing',
+    description: `Demo sample filing · ${what}`,
     url: secBrowse(ticker),
     kind,
   });
   return [
-    filing(3, '8-K', '2026-09-24', 'other', ['5.07'], '2026-09-22'),
-    filing(2, '10-Q', '2026-08-27', 'periodic', [], '2026-07-26'),
-    filing(1, '8-K', '2026-08-27', 'results', ['2.02', '9.01'], '2026-08-27'),
+    filing(3, '8-K', '2026-09-24', 'other', ['5.07'], '2026-09-22', 'shareholder vote'),
+    filing(2, '10-Q', '2026-08-27', 'periodic', [], '2026-07-26', 'quarter to Jul 26'),
+    filing(1, '8-K', '2026-08-27', 'results', ['2.02', '9.01'], '2026-08-27', 'results'),
   ];
 }
 

@@ -27,7 +27,15 @@ import { formatNoteDate, formatShortDate } from './format';
 import { formatFiled } from './money';
 import { ResearchColumn } from './NotesView';
 import { usePublicFilings, usePublicTicker } from './publicData';
-import { Caps, Disclaimer, ProvenanceChip, SourceProblem, StaleNote } from './publicUi';
+import {
+  Caps,
+  Disclaimer,
+  PAGE_BODY_SX,
+  PageHead,
+  ProvenanceChip,
+  SourceProblem,
+  StaleNote,
+} from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
 import { quietTickers, secStale } from './secState';
 import { DISPLAY, MONO, PANEL_SX } from './ui';
@@ -100,7 +108,13 @@ function FilingsBody() {
   const filings = read.data?.filings ?? [];
   const shown = kind === 'all' ? filings : filings.filter((f) => f.kind === kind);
   const [selected, setSelected] = useState<string | null>(null);
-  const current = shown.find((f) => f.accession === selected) ?? shown[0] ?? null;
+  // With nothing chosen, the list opens on the newest 10-Q or 10-K, whose figures the detail shows,
+  // else on the newest filing (owner, NO-7 A, 2026-10-25). The feed is newest first.
+  const current =
+    shown.find((f) => f.accession === selected) ??
+    shown.find((f) => /^10-[QK]\b/.test(f.form)) ??
+    shown[0] ??
+    null;
   const expected = useMemo(
     () =>
       // The demo's sample notes carry no dated results.
@@ -193,206 +207,188 @@ function FilingsBody() {
   };
 
   return (
-    <ResearchColumn>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr)',
-          gap: 3.5,
-          pt: { xs: 1, md: 2 },
-        }}
-      >
-        <ResearchTabs />
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '16px 32px' }}>
-          <Box sx={{ flex: '999 1 520px', display: 'grid', gap: 1.5 }}>
-            <Box
-              component="h1"
-              sx={{
-                ...DISPLAY,
-                m: 0,
-                fontWeight: 800,
-                fontSize: { xs: 36, md: 48 },
-                lineHeight: 1.05,
-              }}
-            >
-              Filings
-            </Box>
-            <Box
-              component="p"
-              sx={{
-                m: 0,
-                maxWidth: '66ch',
-                color: 'text.secondary',
-                fontSize: 16,
-                textWrap: 'pretty',
-              }}
-            >
-              {DEMO
+    <>
+      <ResearchTabs />
+      <ResearchColumn>
+        <Box sx={PAGE_BODY_SX}>
+          {/* The head is one column: the lead, then the source chip and the keys under it (design:
+            filingsBody head, `.rs-chips`; fidelity audit R-07). */}
+          <PageHead
+            title="Filings"
+            lead={
+              DEMO
                 ? 'How Convexa lists each followed company’s SEC filings, newest first. A results or quarterly filing the note hasn’t read makes it due.'
-                : `What the ${TICKERS.length} followed companies filed with the SEC, newest first. A results or quarterly filing the note hasn't read makes it due.`}
-            </Box>
-          </Box>
-          <Box
-            sx={{
-              flex: '1 1 260px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: { xs: 'flex-start', md: 'flex-end' },
-              gap: 1,
-            }}
-          >
-            {read.data?.checked_at && (
-              <ProvenanceChip
-                text={
-                  dataMode === 'demo'
-                    ? `Demo · shaped like SEC EDGAR · ${formatShortDate(read.data.checked_at.slice(0, 10))}`
-                    : `SEC EDGAR · checked ${formatShortDate(read.data.checked_at.slice(0, 10))}, ${read.data.checked_at.slice(11, 16)} UTC`
-                }
-              />
-            )}
-            {notSetUp && (
-              <ProvenanceChip text="SEC EDGAR · not set up on this site" kind="primary" />
-            )}
-            {word && dataMode !== 'demo' && <DataStateTag state={word} />}
-            <Box
-              component="span"
-              sx={{
-                display: { xs: 'none', md: notSetUp ? 'none' : 'inline-flex' },
-                alignItems: 'center',
-                gap: 0.75,
-                fontSize: 12,
-                color: 'text.secondary',
-              }}
-            >
-              <Kbd>j</Kbd>
-              <Kbd>k</Kbd>
-              move
-              <Kbd sx={{ ml: 1 }}>o</Kbd>
-              open the filing
-            </Box>
-          </Box>
-        </Box>
-
-        {!notSetUp && expectedSection}
-
-        {read.loading && !read.data ? (
-          <FeedSkeleton />
-        ) : read.error || !read.data ? (
-          <SourceProblem
-            title="Filings didn't load."
-            body="Convexa's server didn't answer. The notes keep their own dates, so nothing comes due late because of it."
-            onRetry={read.retry}
-          />
-        ) : read.data.state === 'off' ? (
-          <SourceProblem
-            title="Public data is switched off on this server."
-            body="Filings come from SEC EDGAR through Convexa's API, which has them turned off."
-          />
-        ) : read.data.state === 'not_configured' ? (
-          <>
-            <NotSetUp />
-            {expectedSection}
-          </>
-        ) : (
-          <>
-            {read.data.detail && dataMode !== 'demo' && <StaleNote text={read.data.detail} />}
-            <Box
-              role="group"
-              aria-label="Filter filings"
-              sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}
-            >
-              {KINDS.map((k) => {
-                const n =
-                  k.key === 'all' ? filings.length : filings.filter((f) => f.kind === k.key).length;
-                if (n === 0 && k.key !== 'all') return null;
-                const on = kind === k.key;
-                return (
-                  <Box
-                    component="button"
-                    type="button"
-                    key={k.key}
-                    aria-pressed={on}
-                    onClick={() => setKind(k.key)}
-                    sx={(t) => ({
-                      minHeight: 36,
-                      px: 1.75,
-                      borderRadius: '999px',
-                      border: on ? 0 : `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
-                      bgcolor: on ? 'text.primary' : 'transparent',
-                      color: on ? 'background.default' : 'text.secondary',
-                      font: 'inherit',
-                      fontSize: 13,
-                      fontWeight: on ? 600 : 500,
-                      cursor: 'pointer',
-                      '@media (pointer: coarse)': { minHeight: 44 },
-                    })}
-                  >
-                    {`${k.label} · ${n}`}
-                  </Box>
-                );
-              })}
-            </Box>
-            {shown.length === 0 ? (
-              read.data.state === 'unavailable' ? (
-                <SourceProblem
-                  title="Source down: unknown, not empty."
-                  body={`${read.data.detail ?? 'SEC EDGAR didn’t answer.'} Filings for the followed companies are unknown this cycle, not missing; the notes keep their own dates.`}
-                  onRetry={read.retry}
-                />
-              ) : (
-                <SourceProblem
-                  title="Nothing filed in the last 90 days."
-                  body="When a followed company files with the SEC it appears here within the hour."
-                />
-              )
-            ) : (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start' }}>
-                <Box sx={{ flex: '999 1 560px', minWidth: 0 }}>
-                  <Feed
-                    filings={shown}
-                    current={current}
-                    onSelect={setSelected}
-                    // Sample filings say Sample once, in the frame's head: it has no source line
-                    // (owner decision D1). Live ones carry the answer's word and when EDGAR was
-                    // checked (design: Filings feedSection).
-                    tag={
-                      DEMO
-                        ? { state: 'sample' }
-                        : word
-                          ? {
-                              state: word,
-                              detail: read.data?.checked_at
-                                ? `checked ${read.data.checked_at.slice(11, 16)} UTC`
-                                : undefined,
-                            }
-                          : null
+                : `What the ${TICKERS.length} followed companies filed with the SEC, newest first. A results or quarterly filing the note hasn't read makes it due.`
+            }
+            chips={
+              <>
+                {read.data?.checked_at && (
+                  <ProvenanceChip
+                    text={
+                      dataMode === 'demo'
+                        ? `Demo · shaped like SEC EDGAR · ${formatShortDate(read.data.checked_at.slice(0, 10))}`
+                        : `SEC EDGAR · checked ${formatShortDate(read.data.checked_at.slice(0, 10))}, ${read.data.checked_at.slice(11, 16)} UTC`
                     }
                   />
-                </Box>
+                )}
+                {notSetUp && (
+                  <ProvenanceChip text="SEC EDGAR · not set up on this site" kind="primary" />
+                )}
+                {word && dataMode !== 'demo' && <DataStateTag state={word} />}
                 <Box
+                  component="span"
                   sx={{
-                    flex: '1 1 400px',
-                    minWidth: 0,
-                    position: { md: 'sticky' },
-                    top: { md: 88 },
+                    display: { xs: 'none', md: notSetUp ? 'none' : 'inline-flex' },
+                    alignItems: 'center',
+                    gap: 0.75,
+                    fontSize: 12,
+                    color: 'text.secondary',
                   }}
                 >
-                  {current && <Detail filing={current} />}
+                  <Kbd>j</Kbd>
+                  <Kbd>k</Kbd>
+                  move
+                  <Kbd sx={{ ml: 1 }}>o</Kbd>
+                  open the filing
                 </Box>
-              </Box>
-            )}
-            <Unlisted data={read.data} />
-          </>
-        )}
+              </>
+            }
+          />
 
-        <Disclaimer>
-          {DEMO
-            ? // The demo cites no real source (D-19): its filings are samples (design: Filings staging).
-              'Sample filings shaped like SEC EDGAR; each links to the SEC’s browse page. Not financial advice.'
-            : 'Filings from SEC EDGAR, the public record. Personal research notes. Not financial advice.'}
-        </Disclaimer>
-      </Box>
-    </ResearchColumn>
+          {!notSetUp && expectedSection}
+
+          {read.loading && !read.data ? (
+            <FeedSkeleton />
+          ) : read.error || !read.data ? (
+            <SourceProblem
+              title="Filings didn't load."
+              body="Convexa's server didn't answer. The notes keep their own dates, so nothing comes due late because of it."
+              onRetry={read.retry}
+            />
+          ) : read.data.state === 'off' ? (
+            <SourceProblem
+              title="Public data is switched off on this server."
+              body="Filings come from SEC EDGAR through Convexa's API, which has them turned off."
+            />
+          ) : read.data.state === 'not_configured' ? (
+            <>
+              <NotSetUp />
+              {expectedSection}
+            </>
+          ) : (
+            <>
+              {read.data.detail && dataMode !== 'demo' && <StaleNote text={read.data.detail} />}
+              <Box
+                role="group"
+                aria-label="Filter filings"
+                sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}
+              >
+                {KINDS.map((k) => {
+                  const n =
+                    k.key === 'all'
+                      ? filings.length
+                      : filings.filter((f) => f.kind === k.key).length;
+                  if (n === 0 && k.key !== 'all') return null;
+                  const on = kind === k.key;
+                  return (
+                    <Box
+                      component="button"
+                      type="button"
+                      key={k.key}
+                      aria-pressed={on}
+                      onClick={() => setKind(k.key)}
+                      sx={(t) => ({
+                        minHeight: 36,
+                        px: 1.75,
+                        borderRadius: '999px',
+                        border: on ? 0 : `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
+                        bgcolor: on ? 'text.primary' : 'transparent',
+                        color: on ? 'background.default' : 'text.secondary',
+                        font: 'inherit',
+                        fontSize: 13,
+                        fontWeight: on ? 600 : 500,
+                        cursor: 'pointer',
+                        '@media (pointer: coarse)': { minHeight: 44 },
+                      })}
+                    >
+                      {`${k.label} · ${n}`}
+                    </Box>
+                  );
+                })}
+              </Box>
+              {shown.length === 0 ? (
+                read.data.state === 'unavailable' ? (
+                  <SourceProblem
+                    title="Source down: unknown, not empty."
+                    body={`${read.data.detail ?? 'SEC EDGAR didn’t answer.'} Filings for the followed companies are unknown this cycle, not missing; the notes keep their own dates.`}
+                    onRetry={read.retry}
+                  />
+                ) : (
+                  <SourceProblem
+                    title="Nothing filed in the last 90 days."
+                    body="When a followed company files with the SEC it appears here within the hour."
+                  />
+                )
+              ) : (
+                // The feed beside the selected filing, 7fr/5fr and aligned to the start; the detail
+                // stays in view while the feed scrolls (design: filingsBody `.fr-2`; audit R-07).
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: 'minmax(0, 1fr)',
+                      md: 'minmax(0, 7fr) minmax(0, 5fr)',
+                    },
+                    gap: 2,
+                    alignItems: 'start',
+                  }}
+                >
+                  <Box sx={{ minWidth: 0 }}>
+                    <Feed
+                      filings={shown}
+                      current={current}
+                      onSelect={setSelected}
+                      // Sample filings say Sample once, in the frame's head: it has no source line
+                      // (owner decision D1). Live ones carry the answer's word and when EDGAR was
+                      // checked (design: Filings feedSection).
+                      tag={
+                        DEMO
+                          ? { state: 'sample' }
+                          : word
+                            ? {
+                                state: word,
+                                detail: read.data?.checked_at
+                                  ? `checked ${read.data.checked_at.slice(11, 16)} UTC`
+                                  : undefined,
+                              }
+                            : null
+                      }
+                    />
+                  </Box>
+                  <Box
+                    sx={{
+                      minWidth: 0,
+                      position: { md: 'sticky' },
+                      top: { md: 88 },
+                    }}
+                  >
+                    {current && <Detail filing={current} />}
+                  </Box>
+                </Box>
+              )}
+              <Unlisted data={read.data} />
+            </>
+          )}
+
+          <Disclaimer>
+            {DEMO
+              ? // The demo cites no real source (D-19): its filings are samples (design: Filings staging).
+                'Sample filings shaped like SEC EDGAR; each links to the SEC’s browse page. Not investment advice.'
+              : 'Filings from SEC EDGAR, the public record. Research and tools, not investment advice.'}
+          </Disclaimer>
+        </Box>
+      </ResearchColumn>
+    </>
   );
 }
 
@@ -425,6 +421,7 @@ function TickerChip({ ticker }: { ticker: string }) {
         justifySelf: 'start',
         fontSize: 11,
         fontWeight: 600,
+        lineHeight: 1.35,
         px: 0.75,
         py: '2px',
         borderRadius: '5px',
@@ -510,14 +507,16 @@ function Feed({
                 sx={(t) => ({
                   width: '100%',
                   display: 'grid',
+                  // One line a filing from 600px (design: `.fr-feed`, rows 41px; audit R-05). On a
+                  // phone: date and ticker, then the description, then its standing (R-08).
                   gridTemplateColumns: {
-                    xs: '56px minmax(0, 1fr)',
-                    sm: '64px 56px 72px minmax(0, 1fr) auto',
+                    xs: '52px minmax(0, 1fr)',
+                    sm: '56px 56px 84px minmax(0, 1fr) 128px',
                   },
-                  gap: { xs: '4px 12px', sm: 1.5 },
+                  gap: { xs: '4px 10px', sm: 1.5 },
                   alignItems: 'center',
                   textAlign: 'left',
-                  p: '12px 16px',
+                  p: { xs: '12px 14px', sm: '10px 16px' },
                   border: 0,
                   borderTop: i === 0 ? 0 : `1px solid ${t.palette.divider}`,
                   bgcolor: on ? alpha(t.palette.text.primary, 0.06) : 'transparent',
@@ -525,6 +524,7 @@ function Feed({
                   color: 'text.primary',
                   font: 'inherit',
                   fontSize: 13,
+                  lineHeight: 1.5,
                   cursor: 'pointer',
                   '&:hover': { bgcolor: alpha(t.palette.text.primary, on ? 0.06 : 0.03) },
                 })}
@@ -549,35 +549,26 @@ function Feed({
                 <Box
                   component="span"
                   sx={{
-                    display: 'grid',
-                    gap: 0.25,
                     minWidth: 0,
-                    gridColumn: { xs: '1 / -1', sm: 'auto' },
+                    gridColumn: { xs: '2', sm: 'auto' },
+                    overflow: { sm: 'hidden' },
+                    textOverflow: { sm: 'ellipsis' },
+                    whiteSpace: { sm: 'nowrap' },
                   }}
                 >
-                  <Box
-                    component="span"
-                    sx={{
-                      fontWeight: 500,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {f.description || f.form}
-                  </Box>
+                  {f.description || f.form}
                   <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-                    {KIND_WORD[f.kind]}
+                    {` · ${KIND_WORD[f.kind]}`}
                   </Box>
                 </Box>
                 <Box
                   component="span"
                   sx={{
+                    gridColumn: { xs: '2', sm: 'auto' },
                     fontSize: 12,
                     whiteSpace: 'nowrap',
                     color: stand === 'new' ? 'text.primary' : 'text.secondary',
                     fontWeight: stand === 'new' ? 600 : 400,
-                    display: { xs: 'none', sm: 'inline' },
                   }}
                 >
                   {stand === 'cited'
@@ -607,6 +598,8 @@ function Detail({ filing }: { filing: PublicFiling }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
   const command = `npm run research:new ${filing.ticker}`;
+  // A results or periodic filing the note hasn't read: the draft command is the page's primary.
+  const draft = stand === 'new' && (filing.kind === 'results' || filing.kind === 'periodic');
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(command);
@@ -624,28 +617,32 @@ function Detail({ filing }: { filing: PublicFiling }) {
       sx={[{ ...PANEL_SX, p: { xs: 2, sm: 3 }, display: 'grid', gap: 2 }, DEMO_EDGE]}
     >
       <Box sx={{ display: 'grid', gap: 0.75 }}>
+        {/* The panel title is 15px Plex 600 with its tag at the right (design: filingDetail `.ph`;
+            fidelity audit R-09). A sample filing's frame says Sample once, there: it has no source
+            line (owner decision D1). A live one shows its filing date in the row under it. */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 10px' }}>
+          <Box
+            component="h2"
+            id="filing-detail"
+            sx={{
+              m: 0,
+              flex: '1 1 auto',
+              minWidth: 0,
+              fontWeight: 600,
+              fontSize: 15,
+              lineHeight: 1.4,
+              textWrap: 'balance',
+            }}
+          >
+            {filing.description || `${filing.form} filed ${formatNoteDate(filing.filed)}`}
+          </Box>
+          {DEMO && <DataStateTag state="sample" />}
+        </Box>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
           <TickerChip ticker={filing.ticker} />
           <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
             {`${filing.form}${filing.items.length ? ` · Item ${filing.items.filter((it) => it !== '9.01').join(', ')}` : ''} · ${formatNoteDate(filing.filed)}`}
           </Box>
-          {/* A sample filing's frame says Sample once, in its head: it has no source line (owner
-              decision D1). A live one already shows its filing date in this row. */}
-          {DEMO && <DataStateTag state="sample" />}
-        </Box>
-        <Box
-          component="h2"
-          id="filing-detail"
-          sx={{
-            ...DISPLAY,
-            m: 0,
-            fontWeight: 600,
-            fontSize: 20,
-            lineHeight: 1.25,
-            textWrap: 'balance',
-          }}
-        >
-          {filing.description || `${filing.form} filed ${formatNoteDate(filing.filed)}`}
         </Box>
         <Box component="span" sx={{ fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
           {stand === 'cited'
@@ -666,7 +663,7 @@ function Detail({ filing }: { filing: PublicFiling }) {
       ) : null}
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25, alignItems: 'center' }}>
-        {stand === 'new' && (filing.kind === 'results' || filing.kind === 'periodic') && (
+        {draft && (
           <Box
             component="button"
             type="button"
@@ -689,6 +686,8 @@ function Detail({ filing }: { filing: PublicFiling }) {
             {copied ? 'Copied' : 'Copy the draft command'}
           </Box>
         )}
+        {/* The one amber primary when it is the only action (design: filingDetail `.btn.primary`;
+            audit R-18); beside "Copy the draft command" it steps back to outlined. */}
         <Box
           component="a"
           href={filing.url}
@@ -697,20 +696,33 @@ function Detail({ filing }: { filing: PublicFiling }) {
           sx={(t) => ({
             display: 'inline-flex',
             alignItems: 'center',
+            gap: 0.75,
             minHeight: 44,
             px: 2,
             borderRadius: '8px',
-            border: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
-            color: 'text.primary',
             textDecoration: 'none',
             fontSize: 14,
-            fontWeight: 500,
+            ...(draft
+              ? {
+                  border: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
+                  color: 'text.primary',
+                  fontWeight: 500,
+                }
+              : {
+                  border: 0,
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  fontWeight: 600,
+                }),
           })}
         >
           Open the filing
+          <Box component="span" aria-hidden sx={{ fontSize: 13 }}>
+            ↗
+          </Box>
         </Box>
       </Box>
-      {stand === 'new' && (filing.kind === 'results' || filing.kind === 'periodic') && (
+      {draft && (
         <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary', textWrap: 'pretty' }}>
           {`Run ${command} in the repo: it writes a dated update note from the latest one, with every figure blanked to re-read against this filing. Nothing published changes until you push it.`}
         </Box>

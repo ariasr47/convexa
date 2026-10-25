@@ -38,9 +38,18 @@ import {
 } from './marketsMath';
 import { ResearchColumn } from './NotesView';
 import { usePublicMarkets } from './publicData';
-import { Caps, Disclaimer, ProvenanceChip, ReadStrip, SourceProblem, StaleNote } from './publicUi';
+import {
+  Caps,
+  Disclaimer,
+  PAGE_BODY_SX,
+  PageHead,
+  ProvenanceChip,
+  ReadStrip,
+  SourceProblem,
+  StaleNote,
+} from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
-import { DISPLAY, MONO, PANEL_SX } from './ui';
+import { MONO, PANEL_SX } from './ui';
 import { useWidth } from './useWidth';
 
 type Rates = NonNullable<PublicMarkets['rates']>;
@@ -95,181 +104,168 @@ function MarketsBody() {
   const read = usePublicMarkets();
   const data = read.data;
   return (
-    <ResearchColumn>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr)',
-          gap: 4,
-          pt: { xs: 1, md: 2 },
-        }}
-      >
-        <ResearchTabs />
-        <Box sx={{ display: 'grid', gap: 1.5 }}>
-          <Box
-            component="h1"
-            sx={{
-              ...DISPLAY,
-              m: 0,
-              fontWeight: 800,
-              fontSize: { xs: 36, md: 48 },
-              lineHeight: 1.05,
-            }}
-          >
-            Markets
-          </Box>
-          <Box
-            component="p"
-            sx={{
-              m: 0,
-              maxWidth: '64ch',
-              color: 'text.secondary',
-              fontSize: 16,
-              textWrap: 'pretty',
-            }}
-          >
-            {dataMode === 'demo' ? (
-              'Rates, positioning and the money behind them, shaped like the public sources Convexa reads each business day. The 10-year on this page is the risk-free rate every note’s valuation starts from.'
-            ) : (
-              <>
-                Rates, positioning and the money behind them, from public sources, refreshed each
-                business day. The 10-year on this page is the risk-free rate every note&apos;s
-                valuation starts from.
-              </>
-            )}
-          </Box>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {data?.rates && (
-              <ProvenanceChip
-                text={`${data.rates.source} · through ${formatNoteDate(data.rates.as_of)}`}
-              />
-            )}
-            {data?.futures && (
-              <ProvenanceChip
-                text={`${data.futures.source} · as of ${formatShortDate(data.futures.report_date)}`}
-              />
-            )}
-            {/* One state word per source (canon P-2); demo builds say it once, in the shell's bar. */}
-            {data &&
-              dataMode !== 'demo' &&
-              (data.state === 'off' ? (
-                <DataStateTag state="off" />
+    <>
+      <ResearchTabs />
+      <ResearchColumn>
+        <Box sx={PAGE_BODY_SX}>
+          <PageHead
+            title="Markets"
+            lead={
+              dataMode === 'demo' ? (
+                'Rates, positioning and the money behind them, shaped like the public sources Convexa reads each business day. The 10-year on this page is the risk-free rate every note’s valuation starts from.'
               ) : (
                 <>
-                  {/* A source that failed this cycle shows its last good copy, never "Updated". */}
-                  {data.rates ? (
-                    <DataStateTag
-                      state={publicDataWord(data.state, {
-                        stale: servingLastGood(data.rates?.source_state, data.detail, TREASURY),
-                      })}
-                      detail={`rates ${formatShortDate(data.rates.as_of)}`}
-                    />
-                  ) : (
-                    <DataStateTag state="sourceDown" detail="rates" />
-                  )}
-                  {data.futures ? (
-                    <DataStateTag
-                      state={publicDataWord(data.state, {
-                        stale: servingLastGood(data.futures?.source_state, data.detail, CFTC),
-                        delayed: true,
-                      })}
-                      detail={`positioning as of ${formatShortDate(data.futures.report_date)}`}
-                    />
-                  ) : (
-                    <DataStateTag state="sourceDown" detail="positioning" />
-                  )}
+                  Rates, positioning and the money behind them, from public sources, refreshed each
+                  business day. The 10-year on this page is the risk-free rate every note&apos;s
+                  valuation starts from.
                 </>
-              ))}
-          </Box>
-        </Box>
-
-        {(read.loading || (data && data.state !== 'off')) && (
-          <JumpRail
-            liquidity={!data || data.liquidity !== undefined}
-            comingUp={!data || data.calendar !== undefined}
-          />
-        )}
-
-        {read.loading && !data ? (
-          <MarketsLoading />
-        ) : read.error || !data ? (
-          <SourceProblem
-            title="Rates and positioning didn't load."
-            body="Convexa's server didn't answer, so there is nothing to show yet. The notes and the Scorecard don't depend on it."
-            onRetry={read.retry}
-          />
-        ) : data.state === 'off' ? (
-          <SourceProblem
-            title="Public data is switched off on this server."
-            body="Rates and positioning come from the U.S. Treasury and the CFTC through Convexa's API, which has them turned off."
-          />
-        ) : (
-          <>
-            {data.detail && dataMode !== 'demo' && <StaleNote text={data.detail} />}
-            <MarketsSection id="rates" title="Rates">
-              {data.rates ? (
-                <RatesSection
-                  rates={data.rates}
-                  stale={servingLastGood(data.rates?.source_state, data.detail, TREASURY)}
-                />
-              ) : (
-                <SourceProblem
-                  title="Rates are unavailable right now."
-                  body="The Treasury's rate files didn't answer and there is no earlier copy to show."
-                  onRetry={read.retry}
-                />
-              )}
-            </MarketsSection>
-            <MarketsSection id="positioning" title="Positioning">
-              {data.futures ? (
+              )
+            }
+            chips={
+              data ? (
                 <>
-                  <FuturesSection
-                    futures={data.futures}
-                    stale={servingLastGood(data.futures?.source_state, data.detail, CFTC)}
-                  />
-                  <PositioningGroups
-                    futures={data.futures}
-                    stale={servingLastGood(data.futures?.source_state, data.detail, CFTC)}
-                  />
+                  {data?.rates && (
+                    <ProvenanceChip
+                      text={`${data.rates.source} · through ${formatNoteDate(data.rates.as_of)}`}
+                    />
+                  )}
+                  {data?.futures && (
+                    <ProvenanceChip
+                      text={`${data.futures.source} · as of ${formatShortDate(data.futures.report_date)}`}
+                    />
+                  )}
+                  {/* One state word per source (canon P-2); demo builds say it once, in the shell's bar. */}
+                  {data &&
+                    dataMode !== 'demo' &&
+                    (data.state === 'off' ? (
+                      <DataStateTag state="off" />
+                    ) : (
+                      <>
+                        {/* A source that failed this cycle shows its last good copy, never "Updated". */}
+                        {data.rates ? (
+                          <DataStateTag
+                            state={publicDataWord(data.state, {
+                              stale: servingLastGood(
+                                data.rates?.source_state,
+                                data.detail,
+                                TREASURY,
+                              ),
+                            })}
+                            detail={`rates ${formatShortDate(data.rates.as_of)}`}
+                          />
+                        ) : (
+                          <DataStateTag state="sourceDown" detail="rates" />
+                        )}
+                        {data.futures ? (
+                          <DataStateTag
+                            state={publicDataWord(data.state, {
+                              stale: servingLastGood(data.futures?.source_state, data.detail, CFTC),
+                              delayed: true,
+                            })}
+                            detail={`positioning as of ${formatShortDate(data.futures.report_date)}`}
+                          />
+                        ) : (
+                          <DataStateTag state="sourceDown" detail="positioning" />
+                        )}
+                      </>
+                    ))}
                 </>
-              ) : (
-                <SourceProblem
-                  title="Futures positioning is unavailable right now."
-                  body="The CFTC didn't answer and there is no earlier copy to show."
-                  onRetry={read.retry}
-                />
-              )}
-            </MarketsSection>
-            {/* `null`: the sources failed with nothing cached. Absent (an API from before
-                liquidity existed): nothing to say, so nothing drawn. */}
-            {data.liquidity !== undefined && (
-              <MarketsSection id="liquidity" title="Liquidity" lead={LIQUIDITY_LEAD}>
-                {data.liquidity ? (
-                  <LiquiditySection
-                    liquidity={data.liquidity}
-                    stale={servingLastGood(data.liquidity?.source_state, data.detail, 'Liquidity')}
+              ) : undefined
+            }
+          />
+
+          {(read.loading || (data && data.state !== 'off')) && (
+            <JumpRail
+              liquidity={!data || data.liquidity !== undefined}
+              comingUp={!data || data.calendar !== undefined}
+            />
+          )}
+
+          {read.loading && !data ? (
+            <MarketsLoading />
+          ) : read.error || !data ? (
+            <SourceProblem
+              title="Rates and positioning didn't load."
+              body="Convexa's server didn't answer, so there is nothing to show yet. The notes and the Scorecard don't depend on it."
+              onRetry={read.retry}
+            />
+          ) : data.state === 'off' ? (
+            <SourceProblem
+              title="Public data is switched off on this server."
+              body="Rates and positioning come from the U.S. Treasury and the CFTC through Convexa's API, which has them turned off."
+            />
+          ) : (
+            <>
+              {data.detail && dataMode !== 'demo' && <StaleNote text={data.detail} />}
+              <MarketsSection id="rates" title="Rates">
+                {data.rates ? (
+                  <RatesSection
+                    rates={data.rates}
+                    stale={servingLastGood(data.rates?.source_state, data.detail, TREASURY)}
                   />
                 ) : (
                   <SourceProblem
-                    title="Liquidity is unavailable right now."
-                    body="The Fed, the Treasury or the NY Fed didn't answer and there is no earlier copy to show."
+                    title="Rates are unavailable right now."
+                    body="The Treasury's rate files didn't answer and there is no earlier copy to show."
                     onRetry={read.retry}
                   />
                 )}
               </MarketsSection>
-            )}
-          </>
-        )}
+              <MarketsSection id="positioning" title="Positioning">
+                {data.futures ? (
+                  <>
+                    <FuturesSection
+                      futures={data.futures}
+                      stale={servingLastGood(data.futures?.source_state, data.detail, CFTC)}
+                    />
+                    <PositioningGroups
+                      futures={data.futures}
+                      stale={servingLastGood(data.futures?.source_state, data.detail, CFTC)}
+                    />
+                  </>
+                ) : (
+                  <SourceProblem
+                    title="Futures positioning is unavailable right now."
+                    body="The CFTC didn't answer and there is no earlier copy to show."
+                    onRetry={read.retry}
+                  />
+                )}
+              </MarketsSection>
+              {/* `null`: the sources failed with nothing cached. Absent (an API from before
+                liquidity existed): nothing to say, so nothing drawn. */}
+              {data.liquidity !== undefined && (
+                <MarketsSection id="liquidity" title="Liquidity" lead={LIQUIDITY_LEAD}>
+                  {data.liquidity ? (
+                    <LiquiditySection
+                      liquidity={data.liquidity}
+                      stale={servingLastGood(
+                        data.liquidity?.source_state,
+                        data.detail,
+                        'Liquidity',
+                      )}
+                    />
+                  ) : (
+                    <SourceProblem
+                      title="Liquidity is unavailable right now."
+                      body="The Fed, the Treasury or the NY Fed didn't answer and there is no earlier copy to show."
+                      onRetry={read.retry}
+                    />
+                  )}
+                </MarketsSection>
+              )}
+            </>
+          )}
 
-        <ComingUpSection read={read} />
+          <ComingUpSection read={read} />
 
-        <Disclaimer>
-          {dataMode === 'demo'
-            ? 'Demo · sample data shaped like the Federal Reserve’s, the Treasury’s, the CFTC’s, the BLS’s and the BEA’s files; nothing on this page is a real observation. Research and tools, not investment advice.'
-            : 'Rates: U.S. Department of the Treasury, Daily Treasury Par Yield Curve and Par Real Yield Curve Rates. Positioning: CFTC Commitments of Traders, Traders in Financial Futures. Liquidity: Federal Reserve H.4.1, Treasury Daily Treasury Statement and NY Fed reverse repo operations. Personal research. Not financial advice.'}
-        </Disclaimer>
-      </Box>
-    </ResearchColumn>
+          <Disclaimer>
+            {dataMode === 'demo'
+              ? 'Demo · sample data shaped like the Federal Reserve’s, the Treasury’s, the CFTC’s, the BLS’s and the BEA’s files; nothing on this page is a real observation. Research and tools, not investment advice.'
+              : 'Rates: U.S. Department of the Treasury, Daily Treasury Par Yield Curve and Par Real Yield Curve Rates. Positioning: CFTC Commitments of Traders, Traders in Financial Futures. Liquidity: Federal Reserve H.4.1, Treasury Daily Treasury Statement and NY Fed reverse repo operations. Research and tools, not investment advice.'}
+          </Disclaimer>
+        </Box>
+      </ResearchColumn>
+    </>
   );
 }
 
@@ -358,6 +354,15 @@ function MarketsSection({
     </Box>
   );
 }
+
+/** Two frames side by side from 900px, 7fr/5fr, each at its own height (design: research.mjs `.fr-2`,
+ *  `align-items: start`); one column below. */
+const PAIR_SX = {
+  display: 'grid',
+  gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 7fr) minmax(0, 5fr)' },
+  gap: 2,
+  alignItems: 'start',
+} as const;
 
 function RatesSection({ rates, stale = false }: { rates: Rates; stale?: boolean }) {
   const latest = rates.latest as YieldPoint;
@@ -470,21 +475,26 @@ function RatesSection({ rates, stale = false }: { rates: Rates; stale?: boolean 
           />
         </Box>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'stretch' }}>
-        <Box sx={{ flex: '999 1 600px', minWidth: 0 }}>
+      {/* The curve beside its decomposition, 7fr/5fr and aligned to the start (design: `.fr-2`): each
+          frame keeps its own height, so neither carries a blank band (fidelity audit R-02). */}
+      <Box sx={PAIR_SX}>
+        <Box sx={{ minWidth: 0 }}>
           <CurvePanel latest={latest} month={month} ago={ago} stale={stale} />
         </Box>
-        <Box sx={{ flex: '1 1 340px', minWidth: 0 }}>
+        <Box sx={{ minWidth: 0 }}>
           <Decomposition latest={latest} ago={ago} />
         </Box>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'stretch' }}>
-        <Box sx={{ flex: '999 1 600px', minWidth: 0 }}>
-          {last && <SpreadPanel series={spread} lo={lo} hi={hi} last={last} asOf={rates.as_of} />}
+      {/* 2s10s on a row of its own, then note-rate drift on its own (owner, NO-5 B, 2026-10-25):
+          drift's height follows the note count, so no pairing balances on both builds, and 2s10s's
+          year of FOMC marks gets the page's full width (fidelity audit R-02, FND-04). */}
+      {last && (
+        <Box sx={{ minWidth: 0 }}>
+          <SpreadPanel series={spread} lo={lo} hi={hi} last={last} asOf={rates.as_of} />
         </Box>
-        <Box sx={{ flex: '1 1 340px', minWidth: 0 }}>
-          <FeedsNotes daily={daily} latest={latest} />
-        </Box>
+      )}
+      <Box sx={{ minWidth: 0 }}>
+        <FeedsNotes daily={daily} latest={latest} />
       </Box>
     </>
   );
@@ -673,9 +683,10 @@ function CurvePanel({
                   x2={W - R}
                   y1={y(g)}
                   y2={y(g)}
+                  // Solid hairline gridlines, the baseline one step stronger (design: chart-kit
+                  // `--c-grid`; fidelity audit FND-17).
                   sx={(t) => ({
-                    stroke: alpha(t.palette.text.secondary, g === yMin ? 0.3 : 0.14),
-                    strokeDasharray: g === yMin ? undefined : '3 4',
+                    stroke: g === yMin ? alpha(t.palette.text.secondary, 0.3) : chartRoles(t).grid,
                   })}
                 />
                 <text x={L - 8} y={y(g) + 4} textAnchor="end">{`${g}%`}</text>
@@ -1096,9 +1107,9 @@ function SpreadPanel({
                     x2={W - R}
                     y1={y(v)}
                     y2={y(v)}
+                    // Solid hairline gridlines, the bottom one step stronger (FND-17).
                     sx={(t) => ({
-                      stroke: alpha(t.palette.text.secondary, i === 0 ? 0.3 : 0.14),
-                      strokeDasharray: i === 0 ? undefined : '3 4',
+                      stroke: i === 0 ? alpha(t.palette.text.secondary, 0.3) : chartRoles(t).grid,
                     })}
                   />
                 )}
@@ -1975,30 +1986,20 @@ function MarketsLoading() {
             Loading the Treasury’s latest curve…
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ flex: '999 1 600px', minWidth: 0 }}>
+        <Box sx={PAIR_SX}>
+          <Box sx={{ minWidth: 0 }}>
             {frame('Treasury yield curve', 'U.S. Treasury par yields by maturity · percent', 280)}
           </Box>
-          <Box sx={{ flex: '1 1 340px', minWidth: 0 }}>
+          <Box sx={{ minWidth: 0 }}>
             {frame('The 10-year’s move, split', 'Change over the year · percentage points', 170)}
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ flex: '999 1 600px', minWidth: 0 }}>
-            {frame(
-              '2s10s spread',
-              '10-year less 2-year Treasury par yield · percentage points',
-              262,
-            )}
-          </Box>
-          <Box sx={{ flex: '1 1 340px', minWidth: 0 }}>
-            {frame(
-              'Note discount rates against the 10-year',
-              'The 10-year rate each note’s discount rate started from · percent',
-              200,
-            )}
-          </Box>
-        </Box>
+        {frame('2s10s spread', '10-year less 2-year Treasury par yield · percentage points', 262)}
+        {frame(
+          'Note discount rates against the 10-year',
+          'The 10-year rate each note’s discount rate started from · percent',
+          200,
+        )}
       </MarketsSection>
       <MarketsSection id="positioning" title="Positioning">
         {frame(

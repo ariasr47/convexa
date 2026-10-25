@@ -79,6 +79,64 @@ function ChipBody({ text, kind }: { text: string; kind: 'primary' | 'third-party
   );
 }
 
+/**
+ * A research page's head (design: research.mjs `head`, v4/research.mjs `.rs-h`): the H1, the lead,
+ * and the page's chips under it. H1 700 at −0.02em, `clamp(32px, 3.4vw, 48px)` from 900px and 34px
+ * below (fidelity audit 2026-10-25, R-19).
+ */
+export function PageHead({
+  title,
+  lead,
+  chips,
+}: {
+  title: string;
+  lead: ReactNode;
+  chips?: ReactNode;
+}) {
+  return (
+    <Box sx={{ display: 'grid', gap: 1.25, minWidth: 0 }}>
+      <Box
+        component="h1"
+        sx={{
+          ...DISPLAY,
+          m: 0,
+          fontWeight: 700,
+          fontSize: { xs: 34, md: 'clamp(32px, 3.4vw, 48px)' },
+          lineHeight: 1.1,
+          letterSpacing: '-0.02em',
+        }}
+      >
+        {title}
+      </Box>
+      <Box
+        component="p"
+        sx={{
+          m: 0,
+          maxWidth: '64ch',
+          color: 'text.secondary',
+          fontSize: 16,
+          lineHeight: 1.55,
+          textWrap: 'pretty',
+        }}
+      >
+        {lead}
+      </Box>
+      {chips && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>{chips}</Box>
+      )}
+    </Box>
+  );
+}
+
+/** The research pages' column body under the tabs: 32px to the H1, 28px between sections (design:
+ *  `.wrap.rs`, padding-top 32px, gap 28px; ResearchColumn adds its own 8/12px top). */
+export const PAGE_BODY_SX = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  gap: 3.5,
+  pt: { xs: 3, md: 2.5 },
+} as const;
+
 export type ReadCell = { label: string; value: string; sub: string };
 
 /** One row of figure cells, each with a comparison under it: a figure alone means nothing. */
@@ -109,10 +167,7 @@ export function ReadStrip({ label, cells }: { label: string; cells: ReadCell[] }
           }}
         >
           <Caps>{c.label}</Caps>
-          <Box
-            component="span"
-            sx={{ ...MONO, fontSize: { xs: 22, sm: 26 }, fontWeight: 500, lineHeight: 1.2 }}
-          >
+          <Box component="span" sx={{ ...MONO, fontSize: 24, fontWeight: 500, lineHeight: 1.2 }}>
             {c.value}
           </Box>
           <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
