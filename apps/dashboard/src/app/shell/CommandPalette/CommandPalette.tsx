@@ -13,10 +13,17 @@
  * localStorage on each open — never a request.
  * Where the tickers and notes come from differs by build (usePaletteData): production lists tickers
  * A–Z and never calls the scan; staging ranks them by the demo's sample scan.
+ *
+ * Surface: the board's `.ss-pal` (design/src/screens/v4/shell-landing.mjs `.pal`), styled locally —
+ * the one overlay that keeps a raised surface (fidelity audit 2026-10-25, OVL ruling): panelRaised,
+ * a 1px lineStrong border, radius 14, e4, 620 wide, 132px from the top from 600px up. The input row
+ * leads with the search glyph and ends with an `esc` key; rows sit 8px in from the edges with an
+ * 8px radius, and the selected row carries a 1px inset ring on the panel colour (SITE-03b).
  */
 import { listRecentVisits } from '@/pages/ticker/recentTickers/store';
 import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
-import { typographyTokens } from '@/shared/theme/tokens';
+import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import SearchIcon from '@mui/icons-material/Search';
 import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -391,7 +398,8 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      // No MUI width cap: the paper below sets the board's 620.
+      maxWidth={false}
       fullWidth
       transitionDuration={{ enter: 160, exit: 120 }}
       data-testid="command-palette"
@@ -402,33 +410,43 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
       aria-labelledby={titleId}
       slotProps={{
         paper: {
-          // No local `borderRadius`: the theme's DIALOG role (16px, ruling 4) applies.
-          sx: {
+          // The raised surface, set here over the theme's flat dialog panel: the palette floats
+          // above the page rather than standing in for it (OVL ruling). `backgroundImage: 'none'`
+          // keeps MUI's dark-mode elevation wash off it.
+          sx: (t) => ({
             position: 'fixed',
-            top: { xs: 16, sm: '12vh' },
+            top: { xs: 16, sm: 132 },
             m: 0,
-            width: { xs: 'calc(100% - 32px)', sm: undefined },
-            maxHeight: { xs: 'calc(100dvh - 32px)', sm: '76vh' },
-          },
+            width: { xs: 'calc(100% - 32px)', sm: 'calc(100% - 48px)' },
+            maxWidth: 620,
+            maxHeight: { xs: 'calc(100dvh - 32px)', sm: 'calc(100dvh - 156px)' },
+            bgcolor: extrasFor(t).panelRaised,
+            backgroundImage: 'none',
+            border: `1px solid ${extrasFor(t).lineStrong}`,
+            borderRadius: '14px',
+            boxShadow: elevationFor(t).e4,
+          }),
         },
       }}
     >
       <Box component="h2" id={titleId} sx={visuallyHidden}>
         Jump to a ticker or note
       </Box>
-      {/* Below 600px the row is a flex row: the input, then Cancel. A phone has no Escape key and
-          a scrim tap is easy to miss, so the close is a visible, 44px control. At 600px and up
-          the row is the plain block it always was, and Cancel is not displayed. */}
+      {/* The input row: the search glyph, the input, then the `esc` key from 600px up. Below 600px
+          the key gives way to Cancel: a phone has no Escape key and a scrim tap is easy to miss, so
+          the close is a visible, 44px control. */}
       <Box
         sx={{
-          display: { xs: 'flex', sm: 'block' },
+          display: 'flex',
           alignItems: 'center',
-          gap: 1,
-          p: 1.5,
+          gap: 1.25,
+          px: 2,
+          py: 1.25,
           borderBottom: '1px solid',
           borderColor: 'divider',
         }}
       >
+        <SearchIcon aria-hidden sx={{ fontSize: 16, color: 'text.secondary', flex: 'none' }} />
         <InputBase
           autoFocus
           fullWidth
@@ -445,8 +463,16 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
             'aria-autocomplete': 'list',
             'aria-label': 'Jump to a ticker or note',
           }}
-          sx={{ fontSize: '1rem', px: 1, py: 0.5 }}
+          sx={{ fontSize: '1rem', p: 0 }}
         />
+        {/* Escape closes through the Dialog's own `onClose`, so the key it names performs it. */}
+        <Box
+          component="span"
+          aria-hidden
+          sx={[{ display: { xs: 'none', sm: 'inline-flex' }, flex: 'none' }, HIDE_ON_COARSE]}
+        >
+          <Kbd>esc</Kbd>
+        </Box>
         {/* Neutral text button (owner ruling A: amber is the one primary action's). */}
         <Button
           variant="text"
@@ -622,12 +648,22 @@ function PaletteRow({
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
-        px: 2,
+        // Inset 8px from the palette's edges with 8px of its own, so the text keeps the group
+        // label's 16px line; rounded, as the board's `.opt`.
+        mx: 1,
+        px: 1,
         py: 1,
         minHeight: 40,
+        // The CONTROL role (8px); `1` would be `shape.borderRadius`, the 12px panel role.
+        borderRadius: '8px',
         cursor: 'pointer',
         fontSize: 14,
-        bgcolor: selected ? 'action.selected' : 'transparent',
+        // The selected row is the panel colour inside the ring, so its steel labels (name, tier,
+        // date) clear AA on it: measured 6.19:1 dark, 5.42:1 light. `action.selected`'s wash over
+        // the raised paper measured 3.31:1 dark and 3.83:1 light. The board's dark row is raised2
+        // (#223041, steel 4.74:1); it waits on token-contrast.spec.ts's raised2 consumer list.
+        bgcolor: selected ? 'background.paper' : 'transparent',
+        boxShadow: selected ? `inset 0 0 0 1px ${extrasFor(t).lineStrong}` : 'none',
         color: t.palette.text.primary,
         // Ruling 5 (AC-34): `role="option"` sits outside the theme's coarse-pointer floor.
         '@media (pointer: coarse)': { minHeight: 44 },
