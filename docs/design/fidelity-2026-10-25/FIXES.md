@@ -519,3 +519,284 @@ Most important first. Every item was measured at HEAD on these builds.
 - Contact sheets: `tmp/fidelity/integ/sheet-{1440,390,1440full,390full}-NN.png`.
 - Scripts: `build.mjs`, `fake-api.mjs`, `sweep.mjs`, `analyze.py`, `accept.mjs`, `board-probe.mjs`,
   `probe-edge.mjs`, `sheet.mjs`, all in `tmp/fidelity/integ/`.
+
+## Round 2 · integration gate at `d19812da`
+
+Round 2 ran three lanes and landed 10 commits on `main`, `51b0ae57`..`d19812da`. This section is the gate run at `HEAD`
+`d19812da`. It is appended: where it gives a newer state than a row above, it supersedes that row, and nothing above
+was edited.
+
+### The answer
+
+1. **Every gate exits 0 at `d19812da`, but `npm run verify` needed a second run.** The first run exited 1: 10 dashboard
+   tests hit their 15 s and 20 s timeouts. My Playwright measurements were running at the same time, so the tests were
+   competing for the CPU. All 10 failures were "Test timed out", in 6 files. I re-ran `verify` alone and it exited 0:
+   2063 tests passed, Rust `api` included, and gitleaks found no leaks in 56 commits. The standalone
+   `nx test @convexa/dashboard` gate passed too (2063 tests). The design build regenerates `design/canvas` and
+   `design/site` byte-identical to the commit.
+2. **All 29 round-2 fixes measure as done on these builds.** That is 7 from R2-A, 9 from R2-B and 13 from R2-C. Five
+   items that round 1 blocked are now done: NO-11 A, SITE-03b, FND-15, the light LTXT tint chip and DESK-06. Four
+   stay blocked: L5 NO-1-A, L6 R-06 phone, L7 NO-4 A 1500px and L10 ACC-11. Two wait on the owner: the footer height
+   from round 1, and a new one, the dark info TintChip.
+3. **The sweep matches round 1 cell for cell.** It loaded 230 pages: 21 routes × 2 builds × 5 viewports, plus the
+   demo's `/ticker/SPY/research` at 5 viewports, plus a signed-in pass of 3 routes. Results:
+   - every column is on the formula;
+   - 0 pages overflow;
+   - 0 computed font sizes are under 11px;
+   - the same 23 ink-past-the-column notes as round 1.
+
+   Diffing round 1's table against this one gives 0 changed cells.
+4. **The footer is on every shell page.** 210 pages have it; the 20 operator pages are off-shell by design. "GitHub ↗"
+   is on all 100 demo footers and on none of the 110 live ones.
+5. **The sweep found 3 differences that no lane filed:**
+   - On `/_ops/metrics`, five select labels draw at 9.7–9.9px on screen. A second pass that applies CSS transforms
+     caught them; the computed-size sweep cannot see them. They were already there before round 2.
+   - Unselected desk tabs are weight 600. The boards draw 500.
+   - The note's "Filed since this note" head is an 11px caps eyebrow. The boards draw a 14/600 sentence-case h3.
+
+### How this was checked
+
+- **Builds:** `git archive d19812da` was exported to `/private/tmp/claude-501/integ2-src`, with `node_modules` linked as
+  in round 1. `vite build --mode production` ran twice from the export: demo into `integ2-demo` (exit 0) and live into
+  `integ2-live` (exit 0).
+- **Servers:** `serve-dist.mjs` on `localhost` served four origins:
+  - demo on :4900;
+  - live on :4901;
+  - the export's `design/site` on :4902;
+  - round 2's before-boards (`e17906b4`'s `design/site`) on :4903.
+
+  The gate started all four and stopped them afterwards.
+- **The live build's `/api`** is round 1's local fake, unchanged (`tmp/fidelity/integ/fixtures`). The sweep logged:
+  - 0 blocked hosts;
+  - 0 `/api` calls from the demo build;
+  - 0 uncaught page errors.
+
+  The console 404s come from the fake's gaps, as in round 1: 10 on signed-in settings, 5 on signed-in scanner and 5 on
+  live credits.
+- **Sweep:** round 1's `sweep.mjs`, `analyze.py` and `sheet.mjs`, plus two additions: the demo's SPY Research tab, and
+  each page's footer (its height and its links, with href, target and rel).
+- **Scaled text:** `scaled-text.mjs` covers 98 pages (every route, both builds, 1440 and 390, plus signed-in). For
+  each text run it multiplies the font size by the element's on-screen scale. Only a scale under 0.9 counts, because
+  integer `offsetWidth` rounding makes 11px runs read as 10.4–10.9.
+- **Lane acceptance:** I re-pointed each round 2 reviewer's harness (`tmp/fidelity/r2rev/<lane>`) at these builds and
+  boards and ran it unchanged otherwise:
+  - R2-A `m.mjs`;
+  - R2-B `desk`, `research`, `strikes`, `markets`, `credits` and `landing`;
+  - R2-C `m.mjs` and `prod-desk-h1.mjs`.
+
+  I also re-ran round 1's `accept.mjs` for the headline values.
+- **Looked at:**
+  - every 1440 contact sheet (8) and 390 sheet (4);
+  - full-resolution shots of the desk at 390 (demo and live), the live landing at 1440 and the light demo desk at
+    1440;
+  - crops of the note's side column, app against `final-note-production`.
+- **NUL bytes:** 0 in all 480 files that round 2 changed (`1d6e74b2..d19812da`), by byte scan.
+- **Evidence** is gitignored scratch in `tmp/fidelity/integ2/`:
+  - `gates/`, with `exit-codes.tsv` and one log per command;
+  - `sweep.json`, `analysis.json` and `table.md`;
+  - `scaled-text.json` and `accept.json`;
+  - the harness re-runs in `r2a/`, `r2b/` and `r2c/`;
+  - 322 PNGs in `shots/`, plus `sheet-*.png` and `crops/`.
+
+### Gates
+
+Each command ran from the repository root with `NX_SKIP_NX_CACHE=true`. `git status --porcelain` was empty at five
+points: before the gates, after the design build, after the gates, and before and after the verify re-run.
+
+| Command | Exit | Time | What it covered |
+| --- | --- | --- | --- |
+| `npm run typecheck` | 0 | 13 s | 3 projects and the 2 tasks they depend on |
+| `npm run lint` | 0 | 9 s | 3 projects, 0 errors, 40 warnings (3 + 34 + 3) |
+| `npm exec nx test @convexa/dashboard` | 0 | 65 s | 236 files, 2063 tests |
+| `npm exec nx test @convexa/api` | 0 | 12 s | 12 files, 87 tests |
+| `node design/src/build.mjs` | 0 | <1 s | 207 artboards, 308 pages; `git status` empty afterwards |
+| `node design/src/verify-tokens.mjs` | 0 | <1 s | "All shared tokens match tokens.ts." |
+| `npm run verify` (first run) | **1** | 654 s | 10 dashboard tests timed out (15 s / 20 s) while my Playwright measurements ran beside it. Files: `ticker.risk`, `shared-entry.flow`, `palette.flow`, `orders.risk`, `positions.risk`, `ai-rec.risk` |
+| `npm run verify` (re-run alone) | 0 | 578 s | gitleaks over `7ee6e4a1..HEAD` (56 commits, no leaks); `nx affected` lint, typecheck and test on 4 projects including Rust `api`, 2063 dashboard tests |
+| Integration builds (`vite build`, demo / live) | 0 / 0 | 0.6 s / 0.6 s | exported `d19812da` |
+
+### Per lane
+
+The "Was" column is round 1's value at `52ba8a22`, or the reviewer's before value where round 1 has none.
+
+#### R2-A · shell and shared
+
+| Fix | Commit | Status | At HEAD | Was | Board |
+| --- | --- | --- | --- | --- | --- |
+| NO-11 A ⌘K order | `51b0ae57` | done | Go to reads Scanner · Ticker · Research · Positions · Alerts on both builds at 390, 1440 and 1920, dark and light. The keyboard walk reaches Research third, and Enter opens `/research`. | Research last | `final-shell-states` and `v4-shell-states`: same order |
+| SITE-03b selected row | `46972f63` | done | dark rgb(34,48,65) (raised-2), steel 4.74:1; light rgb(255,255,255), 5.42:1 | rgb(19,26,36) | same on the final and v4 shell boards, both schemes |
+| L2 contrast note | `46972f63` | done | `token-contrast.spec.ts:27` gives 5.42:1; `RAISED2_CONSUMERS` is at `:197` | 5.74:1 | — |
+| SITE-09 residual, "Log in" | `c81c0a29` | done, 2.0px left | "Log in" x1315.3, 44.7×44, 13.5/600, equal to the board. The search box sits at x944.2 at 1440, x825.8 at 1280 and x1284.2 at 1920. | search 22.8px left of the board | search x942.2 / 823.8 / 1282.2 |
+| S1-Q3 "GitHub ↗" | `1ded978b` | done | The staging footer reads "Built by Rodrigo Arias · How it’s built · GitHub ↗". The link has href `https://github.com/ariasr47/convexa`, target `_blank` and rel `noopener noreferrer`, and the opened page has no `opener`. It is 44 tall on a coarse pointer. It is on 100/100 demo footers and 0/110 live ones. | no link | `final-shell-staging`, `final-shell-states` and `final-desk-staging` draw the same line |
+| LTXT tint chip | `eb07b0f5` | done (light) | light "−0.4% vs spot" 13.30:1; scanner statuses 13.18–13.30:1. Dark is unchanged: neutral 4.80, warning 4.69, info "MEDIUM" 4.01. | 4.38:1 | `library.html` light: 1 chip under 4.5 (was 12) |
+| OpsTag height | `2a4e7141` | done | 22 at a fine pointer (1440, 1920), 24 on a coarse one | 24 | 22 / 24 |
+
+#### R2-B · ticker, research and landing
+
+| Fix | Commit | Status | At HEAD | Was | Board |
+| --- | --- | --- | --- | --- | --- |
+| DESK-06 phone masthead | `b6659599` | done | At 390: Structure label y642.4 (Δ5.2, limit 8); h1 y118; order tabs → Expirations → Persona → CTA | y684; h1 y138; CTA second | `final-desk-staging`: 637.2, h1 118, same order |
+| L3 SampleSourceChip | `b6659599` | done | 356.6×24, one line, 11/500 | 358×39.7, two lines | 358.6×24 |
+| L5-FRESH-COUNT | `b6659599` | done | With 14 qualifying strikes, the ⓘ says "14 strike(s)", the strip says "14 unusual strikes" and the card says "the top of 14 strikes". With 9, 8, 7 and 1, the card says "nine", "eight", "seven" and "the one strike". | "8 strike(s)", "eight or more" | — |
+| DESK-22 card heads | `9de328f8` | done | h3 14/600/21, no transform, live desk and note | span 11px caps, 0.88px tracking | h3 14/600/21 |
+| FND-03 note tabs | `9de328f8` | done | live note tabs 13/500 (600 current), sentence case, 44 tall, one row at 390 and 1440 | UPPERCASE, 0.52px tracking, 49.4 tall | equal |
+| FND-15 curve loading | `9de328f8` | done | Treasury curve frame grows 0 from loading to ready at 1440, 1280, 1920 and 390 | +69.5 / 69.5 / 52.1 / 94.3 (≤24 asked) | — |
+| NO-4 A SEC copy | `9de328f8` | done | `/credits`, both builds at 390, 1280, 1440 and 1920: "Research → Filings, the insider card and “Filed since this note” in the side column of each ticker’s newest note." | "… under each ticker’s note." | equal (`final-credits-*`) |
+| REV-L2-FND07-1 hero chip | `e17906b4` | done | 12.5/600, 303.9×26 live, 325.1×26 demo | 11px | 303.9×26 / 325.1×26 |
+| Landing curve legibility | `e17906b4` | done | Curve samples crossing the footnote: 0 at 1280, 1440 and 1920 on both builds. Minimum clearance 27.8px. | live 360 / 320 / 40 | boards 0 (were up to 521) |
+
+#### R2-C · boards and canon
+
+Commit: `d19812da`. All measured on the boards regenerated at HEAD.
+
+| Fix | Status | At HEAD |
+| --- | --- | --- |
+| CANON NO-2 B | done | Amendments row at `DESIGN_SYSTEM.md:291` |
+| CANON NO-11 A | done | Amendments row at `DESIGN_SYSTEM.md:292`; it supersedes the "Research last" sentence of rule 19 |
+| SITE-03b board, light row | done | `v4/shell-landing.mjs:15`: white, 5.42:1 on all 4 palette boards in light (`final-shell-light`, `final-shell-states`, `v4-shell`, `v4-shell-states`; was rgb(227,227,221), 4.20:1) |
+| NO-11 A palette board | done | Go to order on `final-shell-states` and `v4-shell-states` equals the app |
+| ACC-10 + ACC-21 export drawer | done | Board and app are equal at 1280, 1440, 1920, 390 and 1440 light. The drawer is 520 wide (full width at 390), with six cards (324.8, 83.2 ×3, 107.8, 200.7) and a bottom gap of 12 (37.4 at 390). "Copy all" is 102.1×36 on the board against the app's 100.1×36. |
+| COL 404 and ops boards | done | h1 x220 at 1920 (was x320), equal to the app at 390, 1280, 1440, 1599, 1600 and 1920 |
+| Landing curve under the footnote | done | 0 footnote hits on `final-landing-production`, `-staging` and `-light` at 1100, 1280, 1440 and 1920 |
+| S1-Q3 footer board | done | the staging boards carry the GitHub link with the app's href, target and rel |
+| Tracker Q-GITHUB-HREF | done | answered 2026-10-25; open questions 3 → 2 |
+| FND-03 note tabs board | done | `final-note-production` tabs equal the live note's |
+| NO-4 A credits copy | done | equal on production, staging, light and phone-2 |
+| LTXT tint chip board | done | `library.html` and `components-sheet.html` light: 1 chip under 4.5 each (were 12 and 7). The one left is `chip.emph`, 3.96:1. |
+| REGEN | done | this gate re-ran `build.mjs`: exit 0, no diff |
+
+### Round 1 rows this supersedes
+
+- **Blocked:**
+  - **Now done:** L1 NO-11 A (`51b0ae57`), L1 SITE-03b (`46972f63`), L2 FND-15 (`9de328f8`), L2 LTXT tint chip
+    (`eb07b0f5`, light) and L3 DESK-06 (`b6659599`).
+  - **Still blocked, unchanged:** L5 NO-1-A, L6 R-06 phone, L7 NO-4 A 1500px and L10 ACC-11.
+- **Outside-lane requests, now done:**
+  - `palette.flow.spec.tsx` + `commandTable.ts` (`51b0ae57`);
+  - `RAISED2_CONSUMERS` + PaletteRow and the `token-contrast.spec.ts:27` comment (`46972f63`);
+  - `AccountControl.tsx` "Log in" (`c81c0a29`);
+  - the NO-2 B and NO-11 A Amendments rows, the v4 light row, `shell-site-docs.mjs` and `deep-read.mjs` (`d19812da`);
+  - MarketsLoading, the `NotePublicPanels.tsx` CardHead and `sources.ts:197` (`9de328f8`);
+  - `CommandDeck.tsx`, `SampleSourceChip.tsx` and `TickerDashboard.tsx` `unusualCount` (`b6659599`);
+  - `OpsBar.tsx` (`2a4e7141`);
+  - the `Landing.tsx` hero chip (`e17906b4`).
+
+  The three optional items (DESK-10 cents, R-10 built date, neutral COPY buttons) are still not done.
+- **Still different:**
+  - **Done:** items 1 (note tabs), 2 (⌘K), 5 (light tint chip), 8 (note card heads), 12 (SEC copy, Fresh positioning
+    count), 13 (canon rows), 14 (boards behind) and 15 (ops tag, contrast comment, FND-15).
+  - **Partly done:**
+    - item 4: the phone desk masthead is done on the demo, but the live h1 is still lower than the board;
+    - item 9: the hero chip and the curve are done, but the H1 wrap is not;
+    - item 11: the search box now sits 2.0px left of the board's, down from 22.8px.
+  - **Still open:** items 3, 6, 7 and 10. They are restated below with today's numbers.
+
+### Round 2's outside-lane requests: state at HEAD
+
+| Request (from lane) | State at HEAD |
+| --- | --- |
+| Small outlined button side padding 9 → 10px, in `theme.ts` or `TopNav.tsx:357-362` (R2-A) | **not done**: the search box sits 2.0px left of the board's at 1280, 1440 and 1920 |
+| `DESIGN_SYSTEM.md` rule 19 Amendments row for NO-11 A (R2-A) | done in `d19812da` (`:292`) |
+| Footer GitHub link on the boards: `design/src/lib.mjs` FINAL_AUTHOR, `shell-site-front.mjs`, `shell-site.mjs`, `tracker-data.mjs` (R2-A) | done in `d19812da` (`lib.mjs:656`, `shell-site-front.mjs:56`, `shell-site.mjs:24` and `:71`, `tracker-data.mjs:66-68`). `tracker-data.mjs:70` keeps the question's original `why` line, "The footer ships without the link until you choose." |
+| `v4/shell-landing.mjs:14`: white light selected row (R2-A) | done in `d19812da` (`:15`) |
+| Dark TintChip info tone, 4.01:1 (R2-A) | **waiting on the owner**: the fix changes dark (`extrasFor(t).textInfo` in `TintChip.tsx`) |
+| FIXES.md round-2 note (R2-A) | this section |
+| `PublicDesk.tsx:75` `py: 3` → `pt: { xs: 2, tablet: 3 }, pb: 3` (R2-B) | **not done**: the live h1 is at y122 at 390, against `final-desk-production`'s 114 |
+| `PublicDesk.tsx:517` NoteCard title h3 → p (R2-B) | **not done**: the card still has two consecutive h3s |
+| `trust-pages.mjs:175` SEC "where" (R2-B) | done in `d19812da` |
+| `shell-site-kit.mjs:25` `.ss-curve` height (R2-B) | done in `d19812da` (`:28`) |
+| Optional: `charts/frame/index.ts` re-exports `FrameHeight`, `FrameReserve` (R2-B) | not done (optional) |
+
+### Waiting on the owner
+
+| Item | Question | Measured at HEAD |
+| --- | --- | --- |
+| L1 COL-3 + SITE-08 footer height | Unchanged from round 1: keep the arc seam and let the board draw it, or adopt the board's 1px border | 196 (demo) / 170 (live) at 1440 and 1280; 164 / 138 at 1920; 386 / 334 at 390. The demo footer at 390 grew from 360 because its two author links are 44 tall on a coarse pointer, as the board draws them. |
+| Dark info TintChip (R2-A) | Raise dark info chips to `textInfo`? This changes dark, which the brief kept fixed. | Setups "MEDIUM" 4.01:1 on its tint over the panel. The library board's dark `chip.live` is also 4.01:1. |
+
+### Sweep
+
+Every cell of round 1's table above is unchanged at `d19812da`. That covers the columns, `scrollWidth` and the ink
+notes, on all 225 pages. The one new row:
+
+| Route | Build | Path | 1440 | 1920 | 1280 | 390 | 1440 light |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| desk-research | demo | `/ticker/SPY/research` | 80–1360 · sw 1440 | 220–1700 · sw 1920 | 38.4–1241.6 · sw 1280 | 16–374 · sw 390 | 80–1360 · sw 1440 |
+
+Sweep results:
+
+- **Footer:**
+  - heights in the table above (waiting on the owner);
+  - on the page column on every shell page;
+  - GitHub link only on demo.
+- **Small text:**
+  - **Computed sizes:** 0 runs under 11px on all 230 pages.
+  - **On-screen sizes:** the scaled pass found one real miss, on live `/_ops/metrics` at 1440 and 390. Its five select
+    labels (Metric, Pctl, Scope, Horizon, Cadence) are MUI shrunk `InputLabel`s: 13px at scale 0.75, which draws
+    9.69–9.87px.
+  - **History:** the labels were there before round 2, since R2-A's reviewer found them on the before build too.
+    Round 1's sweep could not see them because it read computed `font-size`.
+  - **Board:** the board draws none of these controls.
+- **Pass on the sweep:** 0 failures on columns, overflow and footer. 1 failure on the 11px floor (`/_ops/metrics`,
+  above).
+
+### Still different from the boards
+
+Most important first. Every number is from these builds at `HEAD`.
+
+1. **Desk context band** (L5, blocked): 735 tall against the board's 710. Row 1 spreads 88 against the board's 53:
+   straddle-move is 266.5 tall and term-structure 354.3. Unchanged from round 1.
+2. **`/_ops/metrics` select labels at 9.7–9.9px.** This is under the 11px floor, and new to this ledger (see Sweep).
+3. **The note's "Filed since this note" card:**
+   - Its head is an 11px caps eyebrow `h2` (`NotePublicPanels.tsx:340`). `final-note-production` draws a 14/600
+     sentence-case head.
+   - "This note comes due" has no row rules; the board draws them.
+   - The card sits at y1810.8, against the plan's 1500 (L7 NO-4 A, blocked).
+4. **Desk masthead at widths other than 390 and 1440.** The Structure label against `final-desk-staging`:
+
+   | Width | 390 | 768 | 1280 | 1440 | 1920 |
+   | --- | --- | --- | --- | --- | --- |
+   | Difference | +5.2 | +48.5 | +26.1 | −1.4 | +22.0 |
+
+   The 768, 1280 and 1920 values were the same before round 2. The live public desk's h1 is at y122 against the
+   production board's 114 at 390, and against 130.3 at 1440.
+5. **Footer height:** 196 / 170 against the acceptance's 177. Waiting on the owner.
+6. **Desk tab weight.** Unselected tabs on the demo desk and the ticker Research tab are 13/600: `TickerTabs.tsx:60`
+   sets no weight, so they inherit `typography.button`'s 600. The boards draw unselected tabs at 500 (600 when
+   current). The live note's own tab row matches the board.
+7. **Contrast still under AA:**
+   - the dark info TintChip, 4.01:1 (waiting on the owner);
+   - the boards' light `chip.emph`, 3.96:1 (`library.html`, `components-sheet.html`). That one is on the boards only.
+8. **Production search box:** 2.0px left of the board's, from the small outlined button's 9px sides against the
+   board's 10px.
+9. **Research density** (unchanged; the cards and the page were re-measured, the phone panel was not):
+   - production note cards are 295.5–329 tall (board 301–323), and the page is 2673 (board 2616);
+   - demo cards are 317.1–338.5;
+   - the phone Coming up panel is 384.1 against 331.3 (R-06, blocked).
+10. **Landing H1 wrap:** "See the dealer / positioning behind / the price." against the board's "… / positioning /
+    behind the price." It shows in both 1440 shots; round 2 did not address it.
+11. **Smaller:**
+    - The export drawer's "Copy all" is 100.1 wide against the board's 102.1.
+    - The live NoteCard has two consecutive h3s (`PublicDesk.tsx:517`), which affects the outline, not the look.
+    - `tracker-data.mjs:70` keeps the answered question's "ships without the link" line.
+    - The three optional round-1 items are still open.
+
+### Evidence
+
+- **Gate logs:** `tmp/fidelity/integ2/gates/`:
+  - `exit-codes.tsv` (the first verify run, exit 1, and the re-run, exit 0);
+  - `verify.log` and `verify-rerun.log`;
+  - `status-*.txt`.
+- **Sweep:**
+  - `tmp/fidelity/integ2/sweep.json` (230 pages);
+  - `analysis.json` (0 flags, 23 ink notes) and `table.md`;
+  - `scaled-text.json` (98 pages).
+- **Acceptance:**
+  - `accept.json`;
+  - `r2a/m*.log`;
+  - `r2b/{desk,research,strikes,markets,credits,landing}.log`;
+  - `r2c/m.log` and `r2c/prod-desk-h1.json`.
+- **Screenshots:**
+  - `shots/<route>-<build>[-signedin]-<width>[-light].png`;
+  - `sheet-{1440,390,1440full,390full}-NN.png`;
+  - `crops/note-{live,board}-side.png`.
