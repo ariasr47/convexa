@@ -9,6 +9,7 @@
 import { useSettings } from '@/features/auth/useSettings';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { coarseFloor } from '@/shared/ui/touch';
 import { useScrollRegion } from '@/shared/ui/useScrollRegion';
 import { dataMode, fetchRecExport, RecExport, RiskInputs, scenarioProvenance } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
@@ -370,18 +371,24 @@ export function StateExportDrawer({
             variant="outlined"
             startIcon={<ContentCopyIcon />}
             onClick={() => copy(allText)}
-            sx={(t) => ({
-              flex: { xs: '1 1 100%', sm: '0 0 auto' },
-              minHeight: { xs: 44, sm: 36 },
-              px: '14px',
-              fontSize: 13,
-              fontWeight: 600,
-              color: 'text.primary',
-              borderColor: extrasFor(t).lineStrong,
-              // The board's 14px glyph with an 8px gap (MUI's start icon defaults to 20px).
-              '& .MuiButton-startIcon': { ml: 0, mr: 1 },
-              '& .MuiButton-startIcon > svg': { fontSize: 14 },
-            })}
+            // The board's 36px from 600px up is a fine-pointer height. The local minHeight beats the
+            // theme's touch floor, so `coarseFloor` puts 44 back under a coarse pointer (canon rule
+            // 7: a tablet, or a phone in landscape). It stays last so its rule follows the sm 36.
+            sx={[
+              (t) => ({
+                flex: { xs: '1 1 100%', sm: '0 0 auto' },
+                minHeight: { xs: 44, sm: 36 },
+                px: '14px',
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'text.primary',
+                borderColor: extrasFor(t).lineStrong,
+                // The board's 14px glyph with an 8px gap (MUI's start icon defaults to 20px).
+                '& .MuiButton-startIcon': { ml: 0, mr: 1 },
+                '& .MuiButton-startIcon > svg': { fontSize: 14 },
+              }),
+              coarseFloor,
+            ]}
           >
             {COPY.export.copyAll}
           </Button>
@@ -498,7 +505,10 @@ function ExportSection({
           {caption}
         </Typography>
       )}
-      {/* The card is the frame, so the text sits in it unboxed (the board's `pre`, 11.5px steel). */}
+      {/* The card is the frame, so text that fits sits in it unboxed (the board's `pre`, 11.5px
+          steel). Text that overflows the 220px cap scrolls, and scrollbars overlay here, so an
+          unboxed scroller just stops mid-line at an edge nobody can see. `useScrollRegion` marks
+          exactly that case with role="region", so the bordered well comes back only then. */}
       <Box
         component="pre"
         ref={preRef}
@@ -515,6 +525,14 @@ function ExportSection({
           wordBreak: 'break-word',
           maxHeight: 220,
           overflow: 'auto',
+          '&[role="region"]': {
+            px: 1.5,
+            py: 1.25,
+            borderRadius: '8px',
+            bgcolor: 'background.default',
+            border: '1px solid',
+            borderColor: 'divider',
+          },
         }}
       >
         {text || '—'}
