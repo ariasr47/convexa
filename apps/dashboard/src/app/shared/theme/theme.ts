@@ -183,15 +183,53 @@ const COMMON = {
     // screen's single primary action is the one amber spend. Set through MUI's own `--variant-*`
     // custom properties (Button.js reads color/border/background from them), so no rule fights
     // the component's own hover arm.
+    //
+    // THE CONTROL SCALE (fidelity audit 2026-10-25, FND-07): the library's `.btn` is 36px at 13px,
+    // `.btn.sm` 30px at 12px and `.btn.lg` 44px at 14px with radius 10 (`design/src/lib.mjs`). MUI's
+    // own sizes ran one step large (31 at 13px, 37 at 14px, 42 at 15px; line height 1.75). Each size
+    // sets its font and a pixel line height, and MUI's vertical padding makes up the rest: 22 + 2×4,
+    // 24 + 2×6, 28 + 2×8 (an outlined button's 1px border replaces 1px of padding). Contained and
+    // outlined take the board's side padding (10 / 14 / 20, border included); a text button keeps
+    // MUI's tighter sides, because most of them sit inline beside other content. No `minHeight` here:
+    // it would outrank the coarse-pointer 44px floor above, which reaches buttons by element.
     MuiButton: {
       styleOverrides: {
         root: ({ theme }: { theme: Theme }) => {
           const neutral = theme.palette.text.primary;
           const tint = alpha(neutral, theme.palette.action.hoverOpacity);
+          const px = theme.typography.pxToRem;
           return {
             textTransform: 'none' as const,
             borderRadius: 8,
             variants: [
+              {
+                props: { size: 'small' } as const,
+                style: { fontSize: px(12), lineHeight: '22px' },
+              },
+              {
+                props: { size: 'medium' } as const,
+                style: { fontSize: px(13), lineHeight: '24px' },
+              },
+              {
+                props: { size: 'large' } as const,
+                style: { fontSize: px(14), lineHeight: '28px', borderRadius: 10 },
+              },
+              {
+                props: { size: 'medium', variant: 'contained' } as const,
+                style: { padding: '6px 14px' },
+              },
+              {
+                props: { size: 'medium', variant: 'outlined' } as const,
+                style: { padding: '5px 13px' },
+              },
+              {
+                props: { size: 'large', variant: 'contained' } as const,
+                style: { padding: '8px 20px' },
+              },
+              {
+                props: { size: 'large', variant: 'outlined' } as const,
+                style: { padding: '7px 19px' },
+              },
               {
                 props: { variant: 'outlined', color: 'primary' } as const,
                 style: {
@@ -217,10 +255,28 @@ const COMMON = {
     },
     // The same rule for an outlined primary Chip: neutral label and border (the trade-entry seed
     // chip, the Positions filter chips), so an outlined chip never reads as a second primary.
+    //
+    // A small chip is the library's `.chip` (FND-07): 22px tall, 11px at weight 500, 9px sides (8 plus
+    // the border when outlined). MUI drew it 24px at 13px/400 with 8px sides (7 outlined). A medium
+    // chip is not on the board and keeps MUI's 32px. Variants, not `&.MuiChip-sizeSmall`, so a call
+    // site's own `sx` still wins at equal specificity.
     MuiChip: {
       styleOverrides: {
+        label: () => ({
+          variants: [
+            { props: { size: 'small' } as const, style: { paddingLeft: 9, paddingRight: 9 } },
+            {
+              props: { size: 'small', variant: 'outlined' } as const,
+              style: { paddingLeft: 8, paddingRight: 8 },
+            },
+          ],
+        }),
         root: ({ theme }: { theme: Theme }) => ({
           variants: [
+            {
+              props: { size: 'small' } as const,
+              style: { height: 22, fontSize: theme.typography.pxToRem(11), fontWeight: 500 },
+            },
             {
               props: { variant: 'outlined', color: 'primary' } as const,
               style: {
@@ -238,9 +294,68 @@ const COMMON = {
         }),
       },
     },
-    MuiOutlinedInput: { styleOverrides: { root: { borderRadius: 8 } } },
+    // A small field is the library's `.field` (FND-07): 36px at 13px. MUI drew 39px at 15px (body1):
+    // the input is 1.4375em tall plus 8.5px above and below. At 13px the input is 18.6875px, so the
+    // padding becomes 8.65625px each side, giving 36. A Select's text box uses the same em height and
+    // the same padding, so it lands on 36 too. Only the top and bottom padding are set, so MUI's
+    // zeroed sides beside an adornment stay, and a multiline field keeps its own padding. The label
+    // follows the field to 13px: the outline's notch is cut at 0.75em of the field's font, so a 15px
+    // label would overrun a 13px notch. Medium fields are not on the board and keep MUI's geometry.
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: { borderRadius: 8 },
+        input: () => ({
+          variants: [
+            {
+              props: ({ ownerState }: { ownerState: { size?: string; multiline?: boolean } }) =>
+                ownerState.size === 'small' && !ownerState.multiline,
+              style: { paddingTop: '8.65625px', paddingBottom: '8.65625px' },
+            },
+          ],
+        }),
+      },
+    },
     MuiFilledInput: { styleOverrides: { root: { borderRadius: 8 } } },
-    MuiInputBase: { styleOverrides: { root: { borderRadius: 8 } } },
+    MuiInputBase: {
+      styleOverrides: {
+        root: ({ theme }: { theme: Theme }) => ({
+          borderRadius: 8,
+          variants: [
+            {
+              props: ({ ownerState }: { ownerState: { size?: string } }) =>
+                ownerState.size === 'small',
+              style: { fontSize: theme.typography.pxToRem(13) },
+            },
+          ],
+        }),
+      },
+    },
+    // The shrunk label sits 1px lower than MUI's -9px at the smaller font, which keeps its centre
+    // where MUI puts a 15px label's: about 1px above the outline.
+    MuiInputLabel: {
+      styleOverrides: {
+        root: ({ theme }: { theme: Theme }) => ({
+          variants: [
+            {
+              props: ({ ownerState }: { ownerState: { size?: string } }) =>
+                ownerState.size === 'small',
+              style: { fontSize: theme.typography.pxToRem(13) },
+            },
+            {
+              props: ({
+                ownerState,
+              }: {
+                ownerState: { size?: string; variant?: string; shrink?: boolean };
+              }) =>
+                ownerState.size === 'small' &&
+                ownerState.variant === 'outlined' &&
+                !!ownerState.shrink,
+              style: { transform: 'translate(14px, -8px) scale(0.75)' },
+            },
+          ],
+        }),
+      },
+    },
     // The UNSELECTED label is `text.secondary`, not MUI's `palette.action.active` (ToggleButton.js),
     // which is rgba(0,0,0,0.54) in light: 4.38:1 on the dialog's light `panelRaised` (#ECECE7), under
     // the 4.5:1 text floor. `text.secondary` measures 4.57:1 light (steel `#5A6B85` since LTXT,
