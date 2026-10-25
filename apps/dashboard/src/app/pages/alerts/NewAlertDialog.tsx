@@ -38,6 +38,7 @@ import { ProvenanceChip } from '@/pages/research/publicUi';
 import { chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { typographyTokens } from '@/shared/theme/tokens';
+import { bottomSheetDialogSx, grabHandleSx } from '@/shared/ui/bottomSheet';
 import { selectCoarseFloorSx } from '@/shared/ui/touch';
 import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
@@ -181,32 +182,12 @@ export function NewAlertDialog(props: NewAlertDialogProps) {
       aria-labelledby="new-alert-title"
       fullWidth
       maxWidth={step === 1 ? 'md' : 'sm'}
-      sx={{
-        // Under 600px the dialog is a bottom sheet: full width, a grab handle, actions at 44px.
-        '@media (max-width: 599px)': {
-          '& .MuiDialog-container': { alignItems: 'flex-end' },
-          '& .MuiDialog-paper': {
-            m: 0,
-            width: '100%',
-            maxWidth: '100%',
-            maxHeight: '92dvh',
-            borderRadius: '16px 16px 0 0',
-          },
-        },
-      }}
+      // Under 600px the dialog is a bottom sheet: full width, a grab handle, actions at 44px. The
+      // sheet and its handle are the shared ones (`shared/ui/bottomSheet.ts`), hoisted from here
+      // unchanged (fidelity audit 2026-10-25, ACC-15); the footer below keeps its own 44px row.
+      sx={bottomSheetDialogSx}
     >
-      <Box
-        aria-hidden
-        sx={{
-          display: { xs: 'block', sm: 'none' },
-          width: 40,
-          height: 4,
-          borderRadius: 2,
-          bgcolor: 'divider',
-          mx: 'auto',
-          mt: 1,
-        }}
-      />
+      <Box aria-hidden sx={grabHandleSx} />
       <Box
         sx={{
           display: 'flex',

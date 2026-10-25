@@ -10,7 +10,7 @@
  * accessibility tree — plus the sign-in line. Nothing is written to any durable client store.
  */
 import { faceFor } from '@/shared/figure';
-import { downText, extrasFor } from '@/shared/theme/tokens';
+import { downText } from '@/shared/theme/tokens';
 import type { CapUnit } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -27,24 +27,65 @@ import { RISK_INPUTS_COPY as C, SETTINGS_DEFAULTS } from './copy';
 import { formatAccountSize, formatAmount, validateAccountSize, validateCap } from './riskInputs';
 import { useSettings } from './useSettings';
 
-/** Field label — matches the auth-modal / Settings uppercase idiom. */
+/** Field label, the Settings `.fld` label: 13px, 600, sentence case, primary text (fidelity audit
+ *  2026-10-25, ACC-22; same as `SettingsPage.tsx`'s). */
 function FieldLabel({ children }: { children: ReactNode }) {
   return (
     <Typography
       component="div"
-      sx={{
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
-        color: 'text.secondary',
-        mb: 0.75,
-      }}
+      sx={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'text.primary', mb: 0.75 }}
     >
       {children}
     </Typography>
   );
 }
+
+/** One cell of the cap strip (the board's `.hd-fig`): an 11px caps label over its figure. */
+function StripCell({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Box
+      sx={{
+        bgcolor: 'background.default',
+        p: '10px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+        minWidth: 0,
+      }}
+    >
+      <Typography
+        component="span"
+        sx={{
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          lineHeight: 1.3,
+          color: 'text.secondary',
+        }}
+      >
+        {label}
+      </Typography>
+      {children}
+    </Box>
+  );
+}
+
+/** The shared look of the two figure inputs: the board's `.fld .in`, full width of its cell. */
+const INPUT_SX = {
+  ...faceFor(true),
+  fontSize: 15,
+  px: 1.25,
+  py: 1,
+  borderRadius: 1,
+  border: '1px solid',
+  borderColor: 'divider',
+  bgcolor: 'background.default',
+  color: 'text.primary',
+  width: '100%',
+  minWidth: 0,
+  boxSizing: 'border-box',
+} as const;
 
 export function RiskInputsSection() {
   const auth = useAuth();
@@ -109,7 +150,11 @@ export function RiskInputsSection() {
   return (
     <Box data-testid="settings-risk-inputs-section">
       {/* Section helper — egress sentence FIRST, above BOTH fields, never a tooltip (AC-16). */}
-      <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="risk-inputs-helper">
+      <Typography
+        variant="body2"
+        sx={{ color: 'text.secondary', mb: 1.5 }}
+        data-testid="risk-inputs-helper"
+      >
         {C.helper}{' '}
         <Button
           size="small"
@@ -119,12 +164,6 @@ export function RiskInputsSection() {
         >
           {C.viewWhatsSent} →
         </Button>
-      </Typography>
-      <Typography
-        variant="caption"
-        sx={{ color: 'text.secondary', display: 'block', mt: 0.5, mb: 2 }}
-      >
-        {C.openPositionsIncluded}
       </Typography>
 
       {anonymous && (
@@ -138,18 +177,19 @@ export function RiskInputsSection() {
         </Alert>
       )}
 
-      <Stack spacing={2.5} aria-disabled={anonymous} data-testid="risk-inputs-form">
-        {/* The two fields side by side ≥ tablet (design/src/screens/settings.mjs:45-48, `.set-2b`,
-            `1fr 1.3fr` — the cap field carries its unit toggle too, so it gets the wider share). */}
+      <Stack spacing={1.5} aria-disabled={anonymous} data-testid="risk-inputs-form">
+        {/* The two fields share the row equally and wrap under 220px each (the Final Settings
+            board's risk grid, `repeat(auto-fit, minmax(min(220px, 100%), 1fr))`, 12px gap; fidelity
+            audit 2026-10-25, SET): each field fills its cell. */}
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', tablet: '1fr 1.3fr' },
-            gap: '16px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',
+            gap: '12px',
             alignItems: 'start',
           }}
         >
-          <Box>
+          <Box sx={{ minWidth: 0 }} data-testid="risk-inputs-account-field">
             <FieldLabel>{C.accountSizeLabel}</FieldLabel>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
               <Box
@@ -164,18 +204,7 @@ export function RiskInputsSection() {
                 value={accountDraft}
                 placeholder="not set"
                 onChange={(e) => !anonymous && setAccountDraft(e.currentTarget.value)}
-                sx={{
-                  ...faceFor(true),
-                  fontSize: 15,
-                  px: 1.25,
-                  py: 1,
-                  borderRadius: 1,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  bgcolor: 'background.default',
-                  color: 'text.primary',
-                  width: 160,
-                }}
+                sx={INPUT_SX}
               />
             </Stack>
             <Typography
@@ -195,7 +224,7 @@ export function RiskInputsSection() {
             )}
           </Box>
 
-          <Box>
+          <Box sx={{ minWidth: 0 }} data-testid="risk-inputs-cap-field">
             <FieldLabel>{C.maxRiskLabel}</FieldLabel>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <Box
@@ -210,18 +239,7 @@ export function RiskInputsSection() {
                 value={capDraft}
                 placeholder="not set"
                 onChange={(e) => !anonymous && setCapDraft(e.currentTarget.value)}
-                sx={{
-                  ...faceFor(true),
-                  fontSize: 15,
-                  px: 1.25,
-                  py: 1,
-                  borderRadius: 1,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  bgcolor: 'background.default',
-                  color: 'text.primary',
-                  width: 120,
-                }}
+                sx={{ ...INPUT_SX, flex: '1 1 auto' }}
               />
               {/* Unit-bearing numeric input (DESIGN_SYSTEM Amendment 2026-08-12) — an explicit unit
                 control; a bare number with an inferred unit never renders anywhere (AC-31). Fuller
@@ -235,6 +253,7 @@ export function RiskInputsSection() {
                 aria-disabled={anonymous}
                 data-testid="risk-inputs-cap-unit"
                 onChange={(_e, v) => !anonymous && v && setCapUnit(v as CapUnit)}
+                sx={{ flex: 'none' }}
               >
                 <ToggleButton
                   value="percent"
@@ -272,41 +291,69 @@ export function RiskInputsSection() {
           </Box>
         </Box>
 
-        {/* The effective-cap row (design/src/screens/settings.mjs:49, `.cap-row`) — a standalone
-            frame below both fields, spanning the full width. The derived figure is rendered
-            VERBATIM from the server, labelled "derived from your inputs", never "validated",
-            "checked" or "enforced" — no client arithmetic here; same testids/copy as before. */}
-        {!anonymous && stored?.effective_dollar_cap.state === 'derived' && (
+        {/* The cap strip (the Final Settings board's `.hd-fig`, two cells; fidelity audit 2026-10-25,
+            ACC-22): the effective cap per trade, and what the request includes from the book. The
+            derived figure is rendered VERBATIM from the server and labelled "derived from your
+            inputs", never "validated", "checked" or "enforced" (tradeable-rec-inputs SPEC §4) — no
+            client arithmetic here. Not derivable reads the field-scoped reason, never $0. */}
+        {!anonymous && stored != null && (
           <Box
             data-testid="cap-row"
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              p: '10px 14px',
-              borderRadius: 1.5,
-              bgcolor: (t) => extrasFor(t).panelRaised,
-              flexWrap: 'wrap',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: '1px',
+              bgcolor: 'divider',
+              borderRadius: '10px',
+              overflow: 'hidden',
             }}
           >
-            <FieldLabel>Effective cap</FieldLabel>
-            <Typography
-              variant="caption"
-              sx={{ color: 'text.secondary', display: 'block' }}
-              data-testid="risk-inputs-effective-cap"
-            >
-              {`Effective dollar cap (derived from your inputs): $${stored.effective_dollar_cap.value}`}
-            </Typography>
+            <StripCell label="Effective cap per trade">
+              {stored.effective_dollar_cap.state === 'derived' ? (
+                <Box data-testid="risk-inputs-effective-cap">
+                  <Typography
+                    component="span"
+                    data-figure-register="mono"
+                    sx={{ ...faceFor(true), display: 'block', fontSize: 18, lineHeight: 1.2 }}
+                  >
+                    {`$${stored.effective_dollar_cap.value}`}
+                  </Typography>
+                  <Typography
+                    component="span"
+                    sx={{ display: 'block', fontSize: 12, color: 'text.secondary' }}
+                  >
+                    Derived from your inputs
+                  </Typography>
+                </Box>
+              ) : stored.effective_dollar_cap.state === 'not_derivable' ? (
+                <Typography
+                  component="span"
+                  sx={{ fontSize: 14, lineHeight: 1.3, color: 'text.secondary' }}
+                  data-testid="risk-inputs-not-derivable"
+                >
+                  {C.accountSizeNotSetReason}
+                </Typography>
+              ) : (
+                <Typography
+                  component="span"
+                  sx={{ fontSize: 14, lineHeight: 1.3, color: 'text.secondary' }}
+                >
+                  not set
+                </Typography>
+              )}
+            </StripCell>
+            <StripCell label="Open positions included">
+              <Typography
+                component="span"
+                sx={{ fontSize: 14, lineHeight: 1.3 }}
+                data-testid="risk-inputs-open-positions"
+              >
+                {/* `C.openPositionsIncluded` without its "Open positions included:" lead-in,
+                    which is now the cell's label. */}
+                Your simulated positions in this browser.
+              </Typography>
+            </StripCell>
           </Box>
-        )}
-        {!anonymous && stored?.effective_dollar_cap.state === 'not_derivable' && (
-          <Typography
-            variant="caption"
-            sx={{ color: 'text.secondary', display: 'block' }}
-            data-testid="risk-inputs-not-derivable"
-          >
-            {C.accountSizeNotSetReason}
-          </Typography>
         )}
 
         {notSet && (
@@ -322,13 +369,12 @@ export function RiskInputsSection() {
         <Box>
           <Button
             variant="contained"
-            size="small"
             disabled={saving}
             aria-disabled={anonymous}
             data-testid="risk-inputs-save"
             onClick={() => !anonymous && void save()}
           >
-            Save
+            Save risk inputs
           </Button>
         </Box>
       </Stack>

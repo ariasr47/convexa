@@ -3,9 +3,12 @@
  * redesign Figma `4:2572`). Reachable from the nav gradient avatar when signed in (and viewable
  * anonymously — it just falls back to client-local).
  *
- * Layout (re-skin): a centered max-width ~640 column — "Settings" heading + "Tuned to your account."
- * subtitle, then three stacked `background.paper` panel cards (Account / AI key / Preferences) with
- * uppercase field labels, and the Landing disclaimer caption in the footer.
+ * Layout (Final Settings board, `design/src/screens/final/account-pages.mjs` settingsStaging /
+ * settingsProduction): the page column (`pageColumnSx`), the Archivo "Settings" title and its
+ * subtitle, then the stacked `background.paper` panels (Account / Preferences / Risk inputs /
+ * AI providers / Brokerage) in a 760px column left-aligned under the title, with sentence-case field
+ * labels, and the disclaimer caption last. No section rail: owner ruling D-B (fidelity audit
+ * 2026-10-25, SET, ACC-16, ACC-22).
  *
  *  - signed in (server-wins): each control is pre-set to the SERVER value (null ⇒ app default); a
  *    change writes through to the server (the carried settings update; AC-F1). Save shows a quiet
@@ -23,7 +26,8 @@ import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import { dataMode, resetDemoWorkspace, type ThemePref } from '@convexa/api';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
@@ -32,7 +36,6 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
-import Container from '@mui/material/Container';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -136,7 +139,8 @@ function DemoResetInPlace() {
   );
 }
 
-/** A `background.paper` panel card — rounded `card` radius, 1px `divider` border, ~24 padding. */
+/** A `background.paper` panel card: rounded `card` radius, 1px `divider` border, the board's
+ *  `.hd-p` padding (18px 20px) and its 12px gap under the head. */
 function PanelCard({
   heading,
   children,
@@ -160,7 +164,7 @@ function PanelCard({
         bgcolor: 'background.paper',
         borderColor: 'divider',
         borderRadius: 1,
-        p: 3,
+        p: '18px 20px',
         ...(sample && {
           position: 'relative',
           borderStyle: 'dashed',
@@ -185,7 +189,7 @@ function PanelCard({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 1,
-          mb: 2,
+          mb: 1.5,
         }}
       >
         <Typography sx={{ fontWeight: 700, fontSize: '1.0625rem' }}>{heading}</Typography>
@@ -226,17 +230,17 @@ function panelTags(mode: 'demo' | 'signedIn' | 'signedOut'): Partial<Record<Pane
   return { preferences: stored, risk: stored };
 }
 
-/** Uppercase field label (11px, 700, letter-spacing, secondary) — matches the auth modal. */
+/** Field label, the board's `.fld` label: 13px, 600, sentence case, primary text (fidelity audit
+ *  2026-10-25, ACC-22). */
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
     <Typography
       component="div"
       sx={{
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
-        color: 'text.secondary',
+        fontSize: 13,
+        fontWeight: 600,
+        lineHeight: 1.4,
+        color: 'text.primary',
         mb: 0.75,
       }}
     >
@@ -332,25 +336,45 @@ export function SettingsPage() {
   const feedOff = marketDataOff(useMarketDataMode());
 
   return (
-    // design/src/screens/settings.mjs:5 — `minmax(0, 760px)` content column; the section rail
-    // (`:28`) is DEFERRED by owner ruling D-B (council/decisions.md) and stays out of scope here.
-    <Container maxWidth="sm" sx={{ py: 4, maxWidth: 760 }} data-testid="settings-page">
-      <Stack spacing={0.5} sx={{ mb: 3 }}>
-        <Typography variant="h1" sx={{ fontSize: '1.9rem', fontWeight: 700 }}>
+    // The one page column (`pageColumnSx`, the boards' `.wrap`); the panels keep the board's 760px
+    // column, left-aligned under the title. MUI `Container sm` capped this page at 552 (its 600px
+    // max width beat the sx 760). The section rail (`.st-grid`) is DEFERRED by owner ruling D-B
+    // (council/decisions.md; fidelity audit 2026-10-25, SET, ACC-31) and stays out of scope here.
+    <Box
+      sx={{ ...pageColumnSx, py: 4, pb: 'max(2rem, env(safe-area-inset-bottom))' }}
+      data-testid="settings-page"
+    >
+      <Box sx={{ mb: '22px' }}>
+        {/* The account pages' one title (Alerts, Positions, Scanner): Archivo, clamp(30px, 3vw,
+            40px), 700, -0.02em (owner NO-12 A; fidelity audit 2026-10-25, ACC-16). */}
+        <Typography
+          variant="h1"
+          sx={{
+            m: 0,
+            fontFamily: typographyTokens.displayFontFamily,
+            fontStretch: typographyTokens.displayFontStretch,
+            fontSize: 'clamp(30px, 3vw, 40px)',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            lineHeight: 1.1,
+          }}
+        >
           {C.title}
         </Typography>
         {/* Honest, mode-aware subtitle (redesign-stage-0 §4.1): anonymous prefs are client-local —
             never claim account persistence for a signed-out user. */}
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+        <Typography
+          sx={{ m: '6px 0 0', color: 'text.secondary', fontSize: 14.5, lineHeight: 1.55 }}
+        >
           {dataMode === 'demo'
             ? "Saved in this browser's demo workspace."
             : auth.authenticated
               ? C.subtitleSignedIn
               : C.subtitleAnonymous}
         </Typography>
-      </Stack>
+      </Box>
 
-      <Stack spacing={3}>
+      <Stack spacing={2} sx={{ maxWidth: 760 }}>
         {/* ===== 1. Account panel — display + Sign out (log out now lives here) ===== */}
         <PanelCard heading={C.accountHeading} tag={tags.account} testId="settings-account-panel">
           {dataMode === 'demo' ? (
@@ -448,10 +472,6 @@ export function SettingsPage() {
           tag={tags.preferences}
           testId="settings-preferences-panel"
         >
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-            {C.themeHelper}
-          </Typography>
-
           {/* U-19: one line while the session is still resolving, removed the instant it resolves —
               `auth.ready === false` otherwise freezes these three controls with no explanation. */}
           {!auth.ready && (
@@ -464,75 +484,30 @@ export function SettingsPage() {
             </Typography>
           )}
 
-          <Stack spacing={2.5}>
-            {/* Active persona + Default ticker side by side ≥ tablet (768px, theme.ts:91 — the
-                design's own breakpoint, design/src/screens/settings.mjs:37-40, `.set-2`). Stacked
-                below, exactly as shipped. */}
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', tablet: '1fr 1fr' },
-                gap: '16px',
-              }}
-            >
-              {/* Active persona */}
-              <Box>
-                <FieldLabel>{C.activePersona}</FieldLabel>
-                <FormControl fullWidth size="small">
-                  <InputLabel id="settings-persona-label" sx={{ display: 'none' }}>
-                    {C.activePersona}
-                  </InputLabel>
-                  <Select
-                    labelId="settings-persona-label"
-                    aria-label={C.activePersona}
-                    value={settings.effective.personaId}
-                    onChange={(e) => onPersona(String(e.target.value))}
-                    disabled={!auth.ready}
-                    inputProps={{ 'data-testid': 'settings-persona' }}
-                    // GATE Z, finding 3 (criterion 66): MUI `Select` self-duplicates its own class
-                    // (`&.${selectClasses.select}`, `Select/SelectInput.js`) to "win specificity
-                    // over the input base" at (0,2,0) — `theme.ts`'s coarse-pointer floor (a bare
-                    // `[role="combobox"]`, (0,1,0)) cannot reach it; a scoped `sx` descendant
-                    // selector tied at (0,2,0) loses too (confirmed by measuring computed
-                    // `min-height` in a real browser). Doubling the same class here reaches
-                    // (0,3,0), which wins unconditionally.
-                    sx={{
-                      '@media (pointer: coarse)': {
-                        '& .MuiSelect-select.MuiSelect-select': { minHeight: 44 },
-                      },
-                    }}
-                  >
-                    {personaOptions.map((p) => (
-                      <MenuItem key={p.id} value={p.id}>
-                        {p.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-
-              {/* Default ticker */}
-              <Box>
-                <FieldLabel>{C.defaultTicker}</FieldLabel>
-                <TextField
-                  fullWidth
-                  size="small"
-                  helperText={C.defaultTickerHelper}
-                  value={tickerDraft}
-                  onChange={(e) => setTickerDraft(e.target.value)}
-                  onBlur={commitTicker}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      void commitTicker();
-                    }
-                  }}
-                  disabled={!auth.ready}
-                  slotProps={{
-                    htmlInput: { 'aria-label': C.defaultTicker, 'data-testid': 'settings-ticker' },
-                  }}
-                />
-              </Box>
+          {/* Field order per the Final Settings board: Default ticker, Theme (its help under it),
+              Active persona, one per row (fidelity audit 2026-10-25, ACC-22). */}
+          <Stack spacing={1.5}>
+            {/* Default ticker */}
+            <Box>
+              <FieldLabel>{C.defaultTicker}</FieldLabel>
+              <TextField
+                fullWidth
+                size="small"
+                helperText={C.defaultTickerHelper}
+                value={tickerDraft}
+                onChange={(e) => setTickerDraft(e.target.value)}
+                onBlur={commitTicker}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void commitTicker();
+                  }
+                }}
+                disabled={!auth.ready}
+                slotProps={{
+                  htmlInput: { 'aria-label': C.defaultTicker, 'data-testid': 'settings-ticker' },
+                }}
+              />
             </Box>
 
             {/* Theme — segmented control (Dark / Light / System) */}
@@ -599,6 +574,49 @@ export function SettingsPage() {
                   {C.themeSystem}
                 </ToggleButton>
               </ToggleButtonGroup>
+              {/* The board's `.fld .help` under the tiles: what Theme changes (score-neutral, AC-F4). */}
+              <Typography
+                data-testid="settings-theme-help"
+                sx={{ mt: 0.75, fontSize: 12, lineHeight: 1.45, color: 'text.secondary' }}
+              >
+                {C.themeHelper}
+              </Typography>
+            </Box>
+
+            {/* Active persona */}
+            <Box>
+              <FieldLabel>{C.activePersona}</FieldLabel>
+              <FormControl fullWidth size="small">
+                <InputLabel id="settings-persona-label" sx={{ display: 'none' }}>
+                  {C.activePersona}
+                </InputLabel>
+                <Select
+                  labelId="settings-persona-label"
+                  aria-label={C.activePersona}
+                  value={settings.effective.personaId}
+                  onChange={(e) => onPersona(String(e.target.value))}
+                  disabled={!auth.ready}
+                  inputProps={{ 'data-testid': 'settings-persona' }}
+                  // GATE Z, finding 3 (criterion 66): MUI `Select` self-duplicates its own class
+                  // (`&.${selectClasses.select}`, `Select/SelectInput.js`) to "win specificity
+                  // over the input base" at (0,2,0) — `theme.ts`'s coarse-pointer floor (a bare
+                  // `[role="combobox"]`, (0,1,0)) cannot reach it; a scoped `sx` descendant
+                  // selector tied at (0,2,0) loses too (confirmed by measuring computed
+                  // `min-height` in a real browser). Doubling the same class here reaches
+                  // (0,3,0), which wins unconditionally.
+                  sx={{
+                    '@media (pointer: coarse)': {
+                      '& .MuiSelect-select.MuiSelect-select': { minHeight: 44 },
+                    },
+                  }}
+                >
+                  {personaOptions.map((p) => (
+                    <MenuItem key={p.id} value={p.id}>
+                      {p.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Box>
           </Stack>
 
@@ -685,7 +703,7 @@ export function SettingsPage() {
           {C.saved}
         </Alert>
       </Snackbar>
-    </Container>
+    </Box>
   );
 }
 

@@ -206,11 +206,46 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
   );
 
   if (dataMode === 'demo') {
+    // The demo sentence first, as the Final Settings board's AI panel says it (settingsStaging):
+    // why no key is needed, which providers exist, and the key field drawn empty and dashed. The
+    // connect-a-provider helper doesn't apply here, so it is left out (fidelity audit 2026-10-25,
+    // ACC-22).
     return (
-      <Section embedded={embedded}>
-        <Alert severity="info" sx={{ mt: 1 }} data-testid="settings-ai-key-demo-unavailable">
-          AI connections are unavailable in this demo. No key is needed.
-        </Alert>
+      <Section embedded={embedded} helper={false}>
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.secondary' }}
+          data-testid="settings-ai-key-demo-unavailable"
+        >
+          AI connections are unavailable in this demo. No key is needed: reads on the demo are
+          authored sample analyses, labelled as samples.
+        </Typography>
+        <Typography sx={{ mt: 1.5, fontSize: 12.5, color: 'text.secondary' }}>
+          Anthropic · OpenAI · Gemini · Grok — none connected in the demo.
+        </Typography>
+        <Box sx={{ mt: 1.5 }}>
+          <Typography
+            component="div"
+            sx={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, mb: 0.75 }}
+          >
+            API key
+          </Typography>
+          <Box
+            sx={{
+              minHeight: 40,
+              px: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              borderRadius: 1,
+              border: '1px dashed',
+              borderColor: 'divider',
+              fontSize: 14,
+              color: 'text.secondary',
+            }}
+          >
+            No key in the demo
+          </Box>
+        </Box>
       </Section>
     );
   }
@@ -838,15 +873,26 @@ function ProviderRow({
   );
 }
 
-function Section({ children, embedded = false }: { children: ReactNode; embedded?: boolean }) {
+function Section({
+  children,
+  embedded = false,
+  helper = true,
+}: {
+  children: ReactNode;
+  embedded?: boolean;
+  /** The connect-a-provider helper; the demo leaves it out (its sentence says why). */
+  helper?: boolean;
+}) {
   return (
     <Box id="ai-key" data-testid="settings-ai-key-section">
       <Box id="ai-providers" />
       {!embedded && <Divider sx={{ mb: 2 }} />}
       {!embedded && <Typography variant="h6">{C.heading}</Typography>}
-      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-        {C.helper}
-      </Typography>
+      {helper && (
+        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+          {C.helper}
+        </Typography>
+      )}
       {children}
     </Box>
   );

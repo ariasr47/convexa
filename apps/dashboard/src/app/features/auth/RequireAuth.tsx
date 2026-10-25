@@ -15,7 +15,7 @@
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -106,9 +106,19 @@ export function RequireAuth({ children, surface, demoPath }: Props) {
         }}
       >
         <DataStateTag state="signIn" label="Private testing" />
+        {/* The board's wall title (`.ac-wall h1`, a `.display` face): Archivo 28px at line height
+            1.1 at every width, phone included (fidelity audit 2026-10-25, ACC-16). */}
         <Typography
           component="h1"
-          sx={{ m: 0, fontSize: { xs: 24, md: 28 }, fontWeight: 700, letterSpacing: '-0.01em' }}
+          sx={{
+            m: 0,
+            fontFamily: typographyTokens.displayFontFamily,
+            fontStretch: typographyTokens.displayFontStretch,
+            fontSize: 28,
+            lineHeight: 1.1,
+            fontWeight: 700,
+            letterSpacing: '-0.01em',
+          }}
         >
           {subsystemDegraded ? AUTH_COPY.gate.sessionUnknown : `Sign in to open ${surface}`}
         </Typography>

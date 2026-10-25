@@ -12,6 +12,7 @@
  */
 import { TEST_ACCOUNT_PASSWORD } from '@/features/trading/positions/testSeed';
 import { extrasFor } from '@/shared/theme/tokens';
+import { bottomSheetDialogSx, grabHandleSx } from '@/shared/ui/bottomSheet';
 import { AuthError } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
@@ -23,10 +24,8 @@ import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
-import { useTheme } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { AUTH_COPY } from './copy';
@@ -64,8 +63,6 @@ export function AuthDialog({
   onExited,
 }: Props) {
   const auth = useAuth();
-  // Full-screen sheet on phones; centered dialog at sm+.
-  const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -172,12 +169,16 @@ export function AuthDialog({
   };
 
   return (
+    // The board's sign-in dialog (`signInDlg`, `design/src/screens/v4/docs-dialogs.mjs`): 560 wide on
+    // the theme's flat panel surface, and under 600px the shared bottom sheet (full width at the foot
+    // of the screen with a grab handle) instead of a full-screen page (fidelity audit 2026-10-25,
+    // OVL, ACC-10, ACC-15).
     <Dialog
       open={open}
       onClose={submitting ? undefined : onClose}
-      fullScreen={fullScreen}
-      maxWidth="xs"
+      maxWidth={false}
       fullWidth
+      sx={bottomSheetDialogSx}
       disableRestoreFocus
       onKeyDown={(event) => {
         if (event.key === 'Escape' && !submitting) {
@@ -196,21 +197,16 @@ export function AuthDialog({
       slotProps={{
         root: { onTransitionExited: onExited },
         transition: { onExited },
-        // Elevated slate card (raised above the page) + crisp border + dialog shadow, per the Figma.
-        paper: {
-          sx: {
-            // DIALOG role = 16px (SPEC §2.2, ruling 4), declared ONCE via `theme.components
-            // .MuiDialog.styleOverrides.paper` — no local literal here (was `2.5`, i.e. 25px pre-flip),
-            // so this paper inherits the single declared dialog radius instead of drifting from it.
-            border: 1,
-            borderColor: 'divider',
-            backgroundImage: 'none',
-            bgcolor: (theme) => extrasFor(theme).panelRaised, // panel-raised — above the page surface
-          },
-        },
+        // The surface (panel colour, no wash, 1px line border, radius 16) is the theme's
+        // `MuiDialog.styleOverrides.paper`, declared once for every dialog (OVL); only the width is
+        // this dialog's own.
+        paper: { sx: { maxWidth: 560 } },
         backdrop: { sx: { backdropFilter: 'blur(4px)', backgroundColor: 'rgba(8, 11, 16, 0.66)' } },
       }}
     >
+      {/* `flexShrink: 0`: the paper is a flex column, and a sheet that fills its 92dvh would
+          otherwise squeeze the 4px handle. */}
+      <Box aria-hidden sx={[grabHandleSx, { flexShrink: 0 }]} />
       <DialogContent sx={{ p: 3 }}>
         <Box component="form" onSubmit={submit} noValidate>
           <Stack spacing={2}>

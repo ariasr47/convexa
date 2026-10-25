@@ -544,6 +544,9 @@ export function initializeDemoWorkspace(): void {
             reassessment_lean: 'Recheck the sample thesis when its stated invalidation is reached.',
             emphasis_note: 'Authored educational scenario.',
             dte_pref: { min_dte: 2, max_dte: 44 },
+            // The preset it customizes, so Customize persona reads "Based on: Balanced Swinger"
+            // as the persona board draws it (fidelity audit 2026-10-25, ACC-14).
+            based_on: 'balanced_swinger',
           },
         ],
         active_persona_id: 'demo-careful-reader',

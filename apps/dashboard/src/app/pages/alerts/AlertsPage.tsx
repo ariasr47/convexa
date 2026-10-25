@@ -38,6 +38,7 @@ import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { faceFor } from '@/shared/figure';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import { dataMode, getScan } from '@convexa/api';
 import AddIcon from '@mui/icons-material/Add';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -461,9 +462,9 @@ export function AlertsPage() {
     <Box
       data-testid="alerts-page"
       sx={{
-        maxWidth: 1240,
-        mx: 'auto',
-        px: { xs: 2, sm: 3 },
+        // The one page column, the boards' `.wrap` (fidelity audit 2026-10-25, COL): 1280 of content
+        // at 1440, so the 7fr/5fr columns run 737/527 as on the Alerts board.
+        ...pageColumnSx,
         py: { xs: 3, md: 4 },
         pb: 'max(2rem, env(safe-area-inset-bottom))',
         display: 'flex',
@@ -481,6 +482,8 @@ export function AlertsPage() {
               fontSize: 'clamp(30px, 3vw, 40px)',
               fontWeight: 700,
               letterSpacing: '-0.02em',
+              // The board's `.display` line height (44px at 1440), not body1's 1.65 (66px).
+              lineHeight: 1.1,
             }}
           >
             Alerts
