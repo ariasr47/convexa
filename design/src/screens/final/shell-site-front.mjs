@@ -2,7 +2,7 @@
 import { FINAL_AUTHOR, FINAL_COPYRIGHT, finalDemoNotice, icon, v4Footer, v4Nav, v4Notice } from '../../lib.mjs';
 import { statesBoard } from '../v4/kit.mjs';
 import { signInDlg } from '../v4/docs-dialogs.mjs';
-import { aiIll, drawerF, fieldIll, heroPanel, paletteF, scoreIll, sitePage } from './shell-site-kit.mjs';
+import { HERO_CURVE, aiIll, drawerF, fieldIll, heroPanel, paletteF, scoreIll, sitePage } from './shell-site-kit.mjs';
 
 // ================================================================================================
 // Global shell
@@ -44,7 +44,7 @@ export function shellStates({ minHeight = 0, scheme = 'dark' } = {}) {
     { name: 'Nav · production, a private tester', tag: null, wide: true, when: 'Signed in: email (hidden under 600px) and a neutral avatar linking to Settings; sign-out lives in Settings.', html: v4Nav({ active: 'positions', signedIn: true }).replace('aria-label="Account settings"', 'aria-label="Account settings" title="r…@…"') },
     { name: 'Nav · staging', tag: ['demo'], wide: true, when: 'Always the seed account: “Demo account” and its avatar. Never “Log in” or “Sign up”.', html: v4Nav({ active: 'scanner', demo: true }) },
     { name: 'Nav · account loading', tag: null, wide: true, when: 'Production, while who-am-I answers: an 88 × 32 placeholder; the page renders around it.', html: v4Nav({ active: 'ticker', fullDemo: true }).replace(/<a href="\/settings#account" class="v4n-signin">Sign in<\/a>/, '<span class="skel" style="width: 88px; height: 32px;"></span>') },
-    { name: '⌘K · production', tag: null, when: 'Tickers by name (no scan call: scores need the options feed), then research notes.', html: paletteF({ env: 'production' }) },
+    { name: '⌘K · production', tag: null, when: 'Tickers A–Z (no scan call: scores need the options feed), then research notes.', html: paletteF({ env: 'production' }) },
     { name: '⌘K · staging', tag: ['demo'], when: 'Tickers ranked by the demo’s sample scan.', html: paletteF({ env: 'staging' }) },
     { name: '⌘K · empty query', tag: null, when: 'Go-to commands with their keys, then recents.', html: paletteF({ state: 'empty' }) },
     { name: '⌘K · loading', tag: null, when: 'Rows at their final height while the ticker list loads; never re-entered.', html: paletteF({ state: 'loading' }) },
@@ -96,7 +96,8 @@ export function landingBoard(env) {
     const hero = `${HERO_GRID}<section class="ss-hero fd-grid" aria-labelledby="ld-h1"><div class="fd-copy" style="display: flex; flex-direction: column; gap: 18px; min-width: 0;"><span class="ss-chip">${env === 'staging' ? C.chipDemo : C.chip}</span><h1 id="ld-h1" class="display">${C.h1}</h1><p class="sub">${C.sub}</p><span class="ss-spine">Scan → Ticker → Plan → Track</span><div class="ss-ctas">${env === 'staging' ? '<a href="/ticker" class="btn primary lg" aria-label="Open the Ticker">Open the Ticker →</a>' : '<a href="https://staging.convexa.pages.dev" class="btn primary lg" aria-label="See the full demo">See the full demo →</a>'}<a href="/methodology" class="btn secondary lg">How it works</a></div></div>${heroPanel({ env })}<span class="dline fd-foot">${env === 'staging' ? C.footnote : C.footnoteLive}</span></section>`;
     const feats = FEATS.map((f) => `<section class="ss-feat${f.flip ? ' flip' : ''}" id="landing-sample-${f.k}" aria-labelledby="ld-${f.k}"><div><span class="ss-eyebrow">${f.eyebrow}</span><h2 id="ld-${f.k}" class="display">${env === 'staging' && f.h2Demo ? f.h2Demo : f.h2}</h2><p>${f.body}</p><ul>${f.bullets.map((b) => `<li>${icon('check', 15)}<span>${b}</span></li>`).join('')}</ul></div><div class="vis">${f.vis(env)}</div></section>`).join('');
     const trust = `<section class="ss-trust" aria-labelledby="ld-trust"><div><span class="ss-eyebrow">Honest by design</span><h2 id="ld-trust" class="display" style="margin: 8px 0 0; font-size: clamp(26px, 2.6vw, 34px); line-height: 1.12;">Numbers say where they came from.</h2><p class="steel" style="margin: 14px 0 0; font-size: 15.5px; line-height: 1.6;">Every surface carries its basis. If you can’t tell whether a figure is live, a snapshot, or the model’s own guess, we have failed — so the type itself tells you.</p><a href="/methodology" class="ss-demo" style="margin-top: 14px; color: var(--amber-text) !important;">Read the methodology →</a></div><div class="cards">${TRUST.map(([t, b], i) => `<div class="card"><h3>${t}</h3><p>${env === 'staging' && i === 2 ? TRUST_DEMO_2 : b}</p></div>`).join('')}</div></section>`;
-    return sitePage({ env, scheme, minHeight, label: 'Convexa', main: `<div class="wrap">${hero}${feats}${trust}${ctaBand(env)}</div>` });
+    // The hero sits in a full-width band that carries the hero curve behind it (HeroCurve.tsx, SITE-19).
+    return sitePage({ env, scheme, minHeight, label: 'Convexa', main: `<div class="ss-heroband">${HERO_CURVE}<div class="wrap">${hero}</div></div><div class="wrap">${feats}${trust}${ctaBand(env)}</div>` });
   };
 }
 

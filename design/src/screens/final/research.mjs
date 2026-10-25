@@ -9,6 +9,8 @@ import { chartFrame } from '../../chart-kit.mjs';
 import { statesBoard } from '../v4/kit.mjs';
 import { DATES, byMonthChart, calibChart, cftcChart, cftcMultiples, curveChart, decompChart, driftChart, env, figuresChart, figuresTable, frameState, miniBars, ratesToday, signalsChart, spreadChart } from './research-charts.mjs';
 import { FILINGS_SPEC, INDEX_SPEC, MARKETS_SPEC, SCORECARD_SPEC } from './research-spec.mjs';
+import { PL_CSS, boardNote, env as plEnv, section } from './planned-kit.mjs';
+import { calSection, liqSection } from './planned.mjs';
 
 export const FR_CSS = `
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -33,7 +35,7 @@ export const FR_CSS = `
   .v4 .rs-chipbar a:not([aria-current="true"]) { color: var(--steel); }
   .v4 .rs-chipbar a[aria-current="true"] { color: var(--ink); }
   .fr-card.demo { border-style: dashed; border-color: var(--steel-2); position: relative; }
-  .fr-card.demo::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--hatch) 6px 12px); }
+  .fr-card.demo::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); }
   .fr-card .t { display: flex; justify-content: space-between; align-items: baseline; gap: 6px 8px; flex-wrap: wrap; }
   .fr-card h2 { margin: 0; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 112.5%; font-weight: 600; font-size: 16.5px; line-height: 1.3; text-wrap: balance; }
   .fr-card .meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--steel); }
@@ -106,15 +108,21 @@ const NOTES = [
   ['TSLA', 'Tesla', 'Car margins near 1%, and a price set by robotaxis and robots.', 'very high', 'full', 'Current · review by Oct 21', 'Q3 2026 results · Oct 21 · in 7 days', 'Quarterly revenue, $M', [25707, 19335, 22496, 28095, 24901, 22387, 28236, 27890], [7], '$28,236M'],
   ['TSM', 'TSMC', 'Indispensable to AI. The price assumes the boom keeps compounding for years.', 'high', 'full', 'Current · review by Oct 15', '3Q26 results and 4Q26 guide · Oct 15 · tomorrow', 'Quarterly revenue, NT$ billions', [868.46, 839.25, 933.79, 989.92, 1046.09, 1134.1, 1270.38, 1494.25, 1610], [8], 'NT$1,494B'],
 ];
-// the demo's six authored sample notes (libs/api/src/lib/demo/catalog/shared.ts researchNarratives)
+// the demo's six authored sample notes (libs/api/src/lib/demo/catalog/shared.ts researchNarratives). The bars
+// are the seed's last ten daily close changes, % to two places (makeScenario over each catalog/*.seed.json
+// base, step and phase; ResearchIndexPage.tsx useSampleCards), and Next is each note's first sample trigger
+// (fidelity R-15, 2026-10-25; ruling 2026-10-14 (3): bar values follow the seed).
+const FOMC_NEXT = 'FOMC decision · Oct 28 · in 21 days';
 const DEMO_NOTES = [
-  ['AAPL', 'Apple', 'AAPL single-name range case', 'The AAPL case uses a compact single-name path to discuss how a close can sit inside a wider authored daily range.', [0.4, -0.6, 0.9, -0.2, 0.3, -0.8, 0.5, 0.2, -0.3, 0.6]],
-  ['MSFT', 'Microsoft', 'MSFT steady-trend case', 'The MSFT scenario emphasizes a steadier sequence of daily closes for a trend-versus-pause discussion.', [0.3, 0.2, 0.4, -0.1, 0.3, 0.2, 0.1, 0.3, -0.2, 0.4]],
-  ['NVDA', 'NVIDIA', 'NVDA higher-variation case', 'The NVDA example pairs a rising close path with visibly larger authored bars to frame a higher-variation scenario.', [1.8, -1.2, 2.4, 0.6, -2.1, 1.5, 2.2, -0.9, 1.1, 1.9]],
-  ['QQQ', 'Invesco QQQ Trust', 'QQQ growth-duration case', 'The QQQ example gives growth-duration exposure a distinct rising path with a wider daily range than its neighboring close changes.', [0.5, 0.3, -0.4, 0.7, 0.2, 0.4, -0.3, 0.6, 0.3, 0.5]],
-  ['SPY', 'SPDR S&amp;P 500 ETF', 'SPY breadth and balance case', 'The synthetic SPY path rises gradually while alternating closes keep the example focused on broad-market balance.', [0.2, -0.1, 0.3, -0.1, 0.2, -0.1, 0.3, -0.2, 0.2, 0.1]],
-  ['TSLA', 'Tesla', 'TSLA reversal and range case', 'The TSLA case uses a more oscillating authored path to discuss range and reversal risk without implying direction.', [2.1, -2.6, 1.4, -1.8, 2.3, -1.1, -2.0, 1.7, -1.4, 0.8]],
+  ['AAPL', 'Apple', 'AAPL single-name range case', 'The AAPL case uses a compact single-name path to discuss how a close can sit inside a wider authored daily range.', [0.13, 0.11, 0.09, 0.07, 0.05, 0.02, 0, -0.02, -0.04, -0.05], FOMC_NEXT],
+  ['MSFT', 'Microsoft', 'MSFT steady-trend case', 'The MSFT scenario emphasizes a steadier sequence of daily closes for a trend-versus-pause discussion.', [0.12, 0.1, 0.07, 0.05, 0.02, 0, -0.02, -0.03, -0.05, -0.05], FOMC_NEXT],
+  ['NVDA', 'NVIDIA', 'NVDA higher-variation case', 'The NVDA example pairs a rising close path with visibly larger authored bars to frame a higher-variation scenario.', [0.13, 0.1, 0.08, 0.05, 0.03, 0.02, -0.01, -0.02, -0.02, -0.02], FOMC_NEXT],
+  ['QQQ', 'Invesco QQQ Trust', 'QQQ growth-duration case', 'The QQQ example gives growth-duration exposure a distinct rising path with a wider daily range than its neighboring close changes.', [0.15, 0.14, 0.13, 0.11, 0.08, 0.06, 0.04, 0.01, -0.01, -0.02], FOMC_NEXT],
+  ['SPY', 'SPDR S&amp;P 500 ETF', 'SPY breadth and balance case', 'The synthetic SPY path rises gradually while alternating closes keep the example focused on broad-market balance.', [0.14, 0.14, 0.13, 0.11, 0.09, 0.07, 0.05, 0.02, 0, -0.02], FOMC_NEXT],
+  ['TSLA', 'Tesla', 'TSLA reversal and range case', 'The TSLA case uses a more oscillating authored path to discuss range and reversal risk without implying direction.', [0.1, 0.07, 0.05, 0.03, 0.01, -0.01, -0.02, -0.03, -0.02, -0.01], 'Q3 results · Oct 22 · in 15 days'],
 ];
+// The demo's Coming up: the five sample triggers in date order (the app's demo calendar of Oct 7).
+const DEMO_COMING = [['Oct 22', 'TSLA · Q3 results', '', '~2 weeks'], ['Oct 28', 'Fed · FOMC decision', 'every note', '~3 weeks'], ['Oct 29', 'MSFT · Q1 FY27 results', '', '~3 weeks'], ['Oct 29', 'AAPL · Results, estimated from filing history', 'Oct 29–Nov 2', '~3 weeks'], ['Nov 18', 'NVDA · Results, estimated from filing history', 'Nov 18–20', '~6 weeks']];
 const fresh = (k, w) => `<span class="fr-fresh"><i class="${k}" aria-hidden="true"></i><strong style="font-weight: 600;">${w.split(' · ')[0]}</strong><span class="steel">· ${w.split(' · ').slice(1).join(' · ')}</span></span>`;
 
 function noteCard([t, co, title, unc, fk, fw, next, cap, vals, guide, last]) {
@@ -124,10 +132,11 @@ function noteCard([t, co, title, unc, fk, fw, next, cap, vals, guide, last]) {
     <div class="meta"><span>Uncertainty · ${unc}</span><span>Next · ${next}</span></div>
     <div class="ft">${fresh(fk, fw)}<span class="steel" style="font-size: 12px;">Written Oct 13</span><span class="t-info" style="display: inline-flex; gap: 4px; align-items: center; font-weight: 500; font-size: 13px;">Open note ${icon('arrow', 13)}</span></div></a>`;
 }
-function demoCard([t, co, title, thesis, vals]) {
+function demoCard([t, co, title, thesis, vals, next]) {
   return `<a href="/ticker/${t}/research" class="hd-p fr-card demo" aria-label="${t} · ${title} · sample note"><div class="t" style="margin-top: 4px;"><span><span class="mono" style="font-weight: 600; font-size: 16px;">${t}</span> <span class="steel" style="font-size: 13px;">${co}</span></span>${stateTag('sample', 'Sample note')}</div>
     <h2>${title}</h2><p class="dline" style="margin: 0; font-size: 13px;">${thesis}</p>
-    <div class="fr-mini"><div class="cap"><span>Daily close change, % · last 10 sessions</span><b class="${vals[vals.length - 1] > 0 ? 't-up' : 't-down'}">${vals[vals.length - 1] > 0 ? '▲ +' : '▼ −'}${Math.abs(vals[vals.length - 1]).toFixed(1)}%</b></div>${miniBars(vals, { aria: `${t} sample daily change over 10 sessions: ${vals.join(', ')}` })}</div>
+    <div class="fr-mini"><div class="cap"><span>Daily close change, % · last 10 sessions</span><b class="${vals[vals.length - 1] > 0 ? 't-up' : vals[vals.length - 1] < 0 ? 't-down' : ''}">${vals[vals.length - 1] > 0 ? '▲ +' : vals[vals.length - 1] < 0 ? '▼ −' : '± '}${Math.abs(vals[vals.length - 1]).toFixed(2)}%</b></div>${miniBars(vals, { aria: `${t} sample daily change over 10 sessions: ${vals.join(', ')}` })}</div>
+    <div class="meta"><span>Next · ${next}</span></div>
     <div class="ft">${fresh('full', 'Current · scenario of Oct 7')}<span class="t-info" style="display: inline-flex; gap: 4px; align-items: center; font-weight: 500; font-size: 13px;">Open note ${icon('arrow', 13)}</span></div></a>`;
 }
 
@@ -136,7 +145,7 @@ export function indexBody({ demo = false, scheme = 'dark', minHeight = 0 } = {})
     ? `<div class="fr-bar" role="group" aria-label="Filter notes"><div class="fld" style="flex: 1 1 260px; max-width: 340px;"><span class="in">${icon('search', 15)}<span class="steel">Find a ticker</span></span></div><span class="pill-on">All · 6</span><span class="pill">Current · 6</span></div>`
     : `<div class="fr-bar" role="group" aria-label="Filter notes"><div class="fld" style="flex: 1 1 260px; max-width: 340px;"><span class="in">${icon('search', 15)}<span class="steel">Find a ticker</span></span></div><span class="grp"><span class="lbl">Stance</span><span class="pill-on">All · 14</span><span class="pill" style="border-style: dashed;">Stance not set · 14</span></span><span class="grp"><span class="lbl">Freshness</span><span class="pill">Current · 13</span><span class="pill">Review due · 1</span></span></div>`;
   const coming = demo
-    ? P('Coming up · next 10 weeks', stateTag('empty', 'Nothing yet'), `<p class="dline" style="margin: 0; font-size: 13px;">The demo’s sample notes carry no dated catalysts, so nothing comes due in this scenario. In production this lists the next six events across every note.</p>`, { demo: true })
+    ? `<section class="hd-p is-sample" aria-label="Coming up · next 10 weeks"><div class="ph"><h3>Coming up · next 10 weeks</h3>${stateTag('sample')}</div><p class="dline" style="margin: 0;">Each note’s results date, the FOMC decision for every note, and results windows estimated from filing history. Each date is when its note comes due for review. As of Oct 7, 2026.</p><div class="drows">${DEMO_COMING.map(([d, w, x, m]) => `<div style="grid-template-columns: 64px minmax(0, 1fr) auto; font-size: 13px;"><span class="mono steel">${d}</span><span><span style="font-weight: 600;">${w}</span>${x ? `<span class="steel"> · ${x}</span>` : ''}</span><span class="dline">${m}</span></div>`).join('')}</div></section>`
     : P('Coming up · next 10 weeks', stateTag('computed', 'From every note'), `<p class="dline" style="margin: 0;">Catalysts from every note. Each date is also when its note comes due for review.</p><div class="drows">${[['Oct 14', 'CBRS · Lock-up tranche', 'today'], ['Oct 15', 'TSM · 3Q26 results and 4Q26 guide', 'tomorrow'], ['Oct 20', 'NVDA · GTC Berlin', 'in 6 days'], ['Oct 21', 'META · Q3 2026 results', 'in 7 days'], ['Oct 21', 'TSLA · Q3 2026 results', 'in 7 days'], ['Oct 24', 'SPCX · Lock-up tranche', 'in 10 days']].map(([d, w, m]) => `<div style="grid-template-columns: 64px minmax(0, 1fr) auto; font-size: 13px;"><span class="mono steel">${d}</span><span style="font-weight: 600;">${w}</span><span class="dline">${m}</span></div>`).join('')}</div>`);
   const cards = demo ? DEMO_NOTES.map(demoCard).join('') : NOTES.map(noteCard).join('');
   const main = `<div class="wrap rs">
@@ -153,21 +162,35 @@ export function indexBody({ demo = false, scheme = 'dark', minHeight = 0 } = {})
 // =================================================================================================
 // Staging's Rates today strip has no source line, so its head says Sample and the strip gains the 8px hatch
 // stripe beside its dashed border (2026-10-22, owner D1, spec 01 step 5; the alerts Panel's ::before band).
-const STRIP_HATCH = '<style>.fr-strip.fd-hatch { position: relative; } .fr-strip.fd-hatch::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; pointer-events: none; z-index: 1; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--hatch) 6px 12px); }</style>';
-export function marketsBody({ demo = false, scheme = 'dark', minHeight = 0 } = {}) {
-  const e = env(demo, { frameTag: false }); const l = DATES(demo);
+const STRIP_HATCH = '<style>.fr-strip.fd-hatch { position: relative; } .fr-strip.fd-hatch::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; pointer-events: none; z-index: 1; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); }</style>';
+// The page as shipped since the MARKETS_SPEC fix round (2026-10-15, D-18; fidelity R-13, 2026-10-25): an On this
+// page rail, then four sections. Rates: the strip, curve 7fr beside decomposition 5fr, then 2s10s and note-rate
+// drift each on a full-width row (owner NO-5 B: drift's height follows the note count, so no pairing balances).
+// Positioning: the three contracts' ranges, then the four trader groups. Liquidity and Coming up are the
+// Planned boards' sections (planned.mjs), drawn here in place.
+const MK_JUMP = (on = '') => `<nav class="pl-jump" aria-label="On this page"><span class="lbl">On this page</span>${[['rates', 'Rates'], ['positioning', 'Positioning'], ['liquidity', 'Liquidity'], ['coming-up', 'Coming up']].map(([id, n]) => `<a href="#${id}"${id === on ? ' aria-current="true"' : ''}>${n}</a>`).join('')}</nav>`;
+export function marketsBody({ demo = false, scheme = 'dark', minHeight = 0, phone = false } = {}) {
+  const e = env(demo, { frameTag: false }); const l = DATES(demo); const pe = plEnv(demo ? 'demo' : 'prod');
   const cells = ratesToday();
-  const main = `<div class="wrap rs">
-    ${head('Markets', demo ? 'Rates, positioning and the money behind them, shaped like the public sources Convexa reads each business day. The 10-year on this page is the risk-free rate every note’s valuation starts from.' : 'Rates and futures positioning from public sources, refreshed each business day. The 10-year on this page is the risk-free rate every note’s valuation starts from.', `${chip(e, 'U.S. Treasury · par and real curves · through Oct 13', 'U.S. Treasury daily par and real yield curves')}${chip(e, 'CFTC · Traders in Financial Futures · as of Oct 6', 'CFTC Traders in Financial Futures')}`)}
-    ${demo ? '' : legendBar([['current', 'Updated', 2], ['computed', 'Computed', 3], ['delayed', 'Delayed by source', 2]])}
+  const rates = section({ id: 'rates', title: 'Rates', body: `
     <section aria-label="Rates today" style="display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;"><h2 class="caps" style="margin: 0; color: var(--phosphor);">Rates today · ${l.nowL}</h2>${demo ? stateTag('sample') : stateTag('current', 'Updated · rates Oct 13')}</div>${demo ? STRIP_HATCH : ''}<div class="fr-strip${demo ? ' demo fd-hatch' : ''}">${cells.map(([lb, v, s, st]) => `<div><span class="caps" style="display: flex; gap: 6px; align-items: center;">${lb}${st === 'computed' ? icon('sigma', 11) : ''}</span><span class="v">${v}</span><span class="dline" style="font-size: 12px;">${s}</span></div>`).join('')}</div></section>
     <div class="fr-2">${curveChart(e)}${decompChart(e)}</div>
     ${spreadChart(e)}
-    <div class="fr-2 half">${driftChart(e)}${cftcMultiples(e, { cols: 2 })}</div>
-    ${cftcChart(e)}
-    ${foot(demo ? 'Demo · sample data shaped like the Treasury’s and the CFTC’s files; nothing on this page is a real observation. Research and tools, not investment advice.' : 'U.S. Treasury and CFTC data are public record; Convexa’s arithmetic is marked Computed. Research and tools, not investment advice.')}
+    ${driftChart(e)}` });
+  const positioning = section({ id: 'positioning', title: 'Positioning', body: `${cftcChart(e)}${cftcMultiples(e, { cols: 4 })}` });
+  const main = `<div class="wrap rs">
+    ${head('Markets', demo ? 'Rates, positioning and the money behind them, shaped like the public sources Convexa reads each business day. The 10-year on this page is the risk-free rate every note’s valuation starts from.' : 'Rates and futures positioning from public sources, refreshed each business day. The 10-year on this page is the risk-free rate every note’s valuation starts from.', `${chip(e, 'U.S. Treasury · par and real curves · through Oct 13', 'U.S. Treasury daily par and real yield curves')}${chip(e, 'CFTC · Traders in Financial Futures · as of Oct 6', 'CFTC Traders in Financial Futures')}`)}
+    ${demo ? '' : legendBar([['current', 'Updated', 2], ['computed', 'Computed', 3], ['delayed', 'Delayed by source', 2]])}
+    ${MK_JUMP()}
+    ${rates}
+    ${positioning}
+    ${phone ? '' : liqSection(pe)}
+    ${phone ? '' : calSection(pe)}
+    ${foot(demo ? 'Demo · sample data shaped like the Federal Reserve’s, the Treasury’s, the CFTC’s, the BLS’s and the BEA’s files; nothing on this page is a real observation. Research and tools, not investment advice.' : 'Federal Reserve, U.S. Treasury, CFTC, BLS, BEA and SEC data are public record; Convexa’s arithmetic is marked Computed. Research and tools, not investment advice.')}
   </div>`;
-  return page({ scheme, minHeight, active: 'research', tabs: 'Markets', demo, label: 'Markets', main });
+  // At 390 Liquidity and Coming up would take the board past the canvas's 8,000px frame; both are drawn at 390 on
+  // the Planned · Liquidity and Planned · Calendar phone boards, so this board stops after Positioning.
+  return (phone ? boardNote(scheme, '<b>Phone board:</b> after Positioning the page continues with Liquidity and Coming up, drawn at 390 on the Planned · Liquidity and Planned · Calendar rows.') : '') + page({ scheme, minHeight, active: 'research', tabs: 'Markets', demo, label: 'Markets', main });
 }
 
 // =================================================================================================
@@ -370,10 +393,10 @@ export const ROWS = [
     B('light', 'Light · production', 1440, 2597, (o) => indexBody(o), { scheme: 'light' }),
     B('states', 'States', 1440, 1407, (o) => indexStates(o)),
   ] },
-  { key: 'research-markets', label: 'Research · Markets', css: FR_CSS, specH: 2210, spec: MARKETS_SPEC, boards: [
+  { key: 'research-markets', label: 'Research · Markets', css: FR_CSS + PL_CSS, specH: 2210, spec: MARKETS_SPEC, boards: [
     B('staging', 'Staging · demo account', 1440, 2657, (o) => marketsBody({ ...o, demo: true })),
     B('production', 'Production', 1440, 2843, (o) => marketsBody(o)),
-    B('phone', 'Phone · production', 390, 5659, (o) => marketsBody(o)),
+    B('phone', 'Phone · production', 390, 5659, (o) => marketsBody({ ...o, phone: true })),
     B('light', 'Light · production', 1440, 2843, (o) => marketsBody(o), { scheme: 'light' }),
     B('states', 'States', 1440, 2146, (o) => marketsStates(o)),
   ] },

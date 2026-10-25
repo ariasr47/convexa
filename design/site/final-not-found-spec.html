@@ -13,13 +13,16 @@
   .hd-mast { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: flex-end; }
   .hd-mast .who { flex: 999 1 520px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
   .hd-mast .act { flex: 1 1 300px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
-  .hd-tabs { display: flex; gap: 4px; }
-  .hd-tabs a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: var(--steel); text-decoration: none; font-size: 13px; font-weight: 500; }
-  .hd-tabs a[aria-current="page"] { background: var(--phosphor); color: var(--ink); font-weight: 600; }
+  /* Owner NO-3 B (2026-10-25): the ticker tabs are the shipped text-colour underline (TickerTabs.tsx; the
+     2026-10-13 section-tab pattern), not phosphor pills: 44px tabs, 13px, the current one phosphor at 600 over a
+     2px phosphor indicator. Supersedes the pill drawn here since v4. */
+  .hd-tabs { display: flex; gap: 0; }
+  .hd-tabs a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 96px; padding: 0 16px; box-sizing: border-box; color: var(--steel); text-decoration: none; font-size: 13px; font-weight: 500; }
+  .hd-tabs a[aria-current="page"] { color: var(--phosphor); font-weight: 600; box-shadow: inset 0 -2px 0 var(--phosphor); }
   /* v5 fix (2026-10-13): the generic .v4 link rule (specificity 0,4,2) repainted both tab states textInfo — the
      current tab measured 1.76:1 on its phosphor pill. Same selector chain plus the tab, so the tab wins. */
   .v4 .hd-tabs a:not(.btn):not(.prov):not(.v4n a) { color: var(--steel); }
-  .v4 .hd-tabs a[aria-current="page"]:not(.btn):not(.prov):not(.v4n a) { color: var(--ink); }
+  .v4 .hd-tabs a[aria-current="page"]:not(.btn):not(.prov):not(.v4n a) { color: var(--phosphor); }
   .hd-syms { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
   .hd-syms a { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--phosphor); text-decoration: none; flex: 0 0 auto; }
   .hd-syms a[aria-current="true"] { border-color: var(--phosphor); box-shadow: inset 0 0 0 1px var(--phosphor); }
@@ -114,7 +117,7 @@
   .cf { position: relative; display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 18px 20px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; container-type: inline-size; }
   .cf.k-third { border: 1px dotted var(--steel-2); }
   .cf.k-sample { border: 1px dashed var(--steel-2); }
-  .cf.k-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--hatch) 6px 12px); pointer-events: none; }
+  .cf.k-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; }
   .cf-h { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .cf-top { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 10px; }
   .cf-claim { margin: 0; flex: 1 1 260px; min-width: 0; font: 600 15px/1.35 'IBM Plex Sans', sans-serif; color: var(--phosphor); text-wrap: balance; }
@@ -296,7 +299,8 @@
   .ap-table td.n, .ap-table th.n { text-align: right; font-family: 'IBM Plex Mono', monospace; }
   .ap-cards { display: none; flex-direction: column; gap: 12px; }
   .ap-tbl { overflow-x: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); }
-  .ap-tbl.is-sample { border-style: dashed; border-color: var(--steel-2); background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
+  .ap-tbl.is-sample { position: relative; border-style: dashed; border-color: var(--steel-2); }
+  .ap-tbl.is-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; z-index: 1; }
   .score { display: inline-flex; align-items: center; gap: 8px; } .score > span:first-child { width: 56px; height: 6px; border-radius: 3px; background: rgba(138,155,180,0.18); position: relative; overflow: hidden; } .score i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--steel); }
   .kind { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 8px; }
   .kind button { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 64px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: transparent; color: var(--phosphor); font: 600 13px 'IBM Plex Sans', sans-serif; text-align: left; }
@@ -510,7 +514,7 @@
     <section><h2>Widgets and their data</h2><table><thead><tr><th>Widget</th><th>Source · delay</th><th>Production</th><th>Staging</th></tr></thead><tbody><tr><td>404</td><td class="steel">static (not-found/copy.ts)</td><td><span>Static</span></td><td><span>Static</span></td></tr><tr><td>Route fallback</td><td class="steel">React.lazy + Suspense per route</td><td><span class="stag k-none">Loading</span></td><td><span class="stag k-none">Loading</span></td></tr><tr><td>Route error boundary</td><td class="steel">ErrorBoundary variant="route"</td><td><span class="stag k-warn"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 3l10 18H2L12 3z"></path><path d="M12 10v4M12 17.5h.01"></path></svg>Couldn't load</span></td><td><span class="stag k-warn"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 3l10 18H2L12 3z"></path><path d="M12 10v4M12 17.5h.01"></path></svg>Couldn't load</span></td></tr></tbody></table></section><section><h2>States</h2><div class="states"><span class="w"><span class="stag k-none">404</span></span><span>Any unknown path, a mistyped /_ops/ address, an old bookmark. Not a redirect.</span><span class="w"><span class="stag k-none">Loading</span></span><span>A route’s code is loading: page-shaped skeleton under the nav.</span><span class="w"><span class="stag k-warn"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 3l10 18H2L12 3z"></path><path d="M12 10v4M12 17.5h.01"></path></svg>Couldn't load</span></span><span>A page threw: “This page could not load” with Retry; nav and footer stay. A widget throw keeps the rest of the page.</span></div></section>
     <section><h2>Phone (390)</h2><p style="margin: 0;">The headline wraps at 34px; the two actions stack full width at 44px; the ⌘K hint hides on touch.</p></section>
     <section><h2>Acceptance</h2><ul class="ac"><li>An unknown path renders the 404 inside the shell (bar, nav, footer) with Open the Ticker → (/ticker) and Home (/).</li><li>A mistyped /_ops/ path renders the same 404 and links nothing operator-shaped.</li><li>While a route loads, the nav stays mounted and a page-shaped skeleton shows; the page arrives without layout shift.</li><li>A throw inside a page shows “This page could not load” with Retry; the nav and footer stay.</li><li>The 404 copy is true in both environments: no “behind a sign-in” on staging.</li></ul></section>
-    <section><h2>Built so far</h2><div class="built"><span class="bs shipped">Shipped</span><span>NotFound as the shell’s last child route; per-route ErrorBoundary and Suspense.</span><span class="bs shipped">Shipped</span><span>404 copy is the same in both environments: “The address may be old or mistyped. The desk is one symbol away.” (no sign-in claim).</span><span class="bs shipped">Shipped</span><span>RouteFallback is a page-shaped skeleton (title, lead line, body block) in the page column under the nav.</span><span class="bs shipped">Shipped</span><span>The ⌘K hint on the 404 (Ctrl K off a Mac), hidden on touch screens.</span><span class="bs shipped">Shipped</span><span>The ⌘K hint is spoken “Command K” (hidden word, icon aria-hidden), here and in the shortcuts sheet (W1-66, 2026-10-15).</span></div></section>
+    <section><h2>Built so far</h2><div class="built"><span class="bs shipped">Shipped</span><span>NotFound as the shell’s last child route; per-route ErrorBoundary and Suspense.</span><span class="bs shipped">Shipped</span><span>404 copy is the same in both environments: “The address may be old or mistyped. The desk is one symbol away.” (no sign-in claim).</span><span class="bs shipped">Shipped</span><span>RouteFallback is a page-shaped skeleton (title, lead line, body block) in the page column under the nav.</span><span class="bs shipped">Shipped</span><span>The ⌘K hint on the 404 (Ctrl K off a Mac), hidden on touch screens.</span><span class="bs shipped">Shipped</span><span>The ⌘K hint is spoken “Command K” (hidden word, icon aria-hidden), here and in the shortcuts sheet (W1-66, 2026-10-15).</span><span class="bs shipped">Shipped</span><span>Fidelity round (2026-10-25, d3c0bc7e): the 404 on the page column with the board’s anatomy (SITE-10).</span></div></section>
     <section><h2>Rulings it carries</h2><div class="chips"><span class="rule">P-2</span><span class="rule">P-13</span><span class="rule">Env 2026-10-14</span></div></section>
     <section><h2>Code</h2><div class="code">apps/dashboard/src/app/pages/not-found/NotFound.tsx<br>apps/dashboard/src/app/pages/not-found/copy.ts<br>apps/dashboard/src/app/shared/ui/RouteFallback.tsx<br>apps/dashboard/src/app/shared/ui/ErrorBoundary.tsx<br>apps/dashboard/src/app/app.tsx (route table)</div></section>
   </article></div>
@@ -518,9 +522,11 @@
 <script>
 (function () {
   var KEY = 'convexa-design-scheme';
-  function current() { try { return localStorage.getItem(KEY) || 'dark'; } catch (e) { return 'dark'; } }
-  function apply(s) { document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
-  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, n); } catch (e) {} apply(n); };
+  var PAGE = document.documentElement.getAttribute('data-scheme') || 'dark';
+  var shown = null;
+  function current() { if (shown) return shown; if (PAGE !== 'dark') return PAGE; try { return localStorage.getItem(KEY) || PAGE; } catch (e) { return PAGE; } }
+  function apply(s) { shown = s; document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
+  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; if (PAGE === 'dark') { try { localStorage.setItem(KEY, n); } catch (e) {} } apply(n); };
   apply(current());
 })();
 </script>

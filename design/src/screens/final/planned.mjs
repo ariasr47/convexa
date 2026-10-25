@@ -24,7 +24,7 @@ const B = (id, title, w, h, body, opts) => ({ id, title, w, h, body, ...(opts ? 
 // =================================================================================================
 // 1 · Liquidity — /research/markets
 // =================================================================================================
-const liqSection = (e) => section({ id: 'liquidity', title: 'Liquidity', lead: 'How much money the Fed’s balance sheet leaves in the system after the Treasury’s cash account and overnight reverse repo. When the Treasury rebuilds its cash, it drains reserves the same way the Fed shrinking would.', tag: e.demo ? stateTag('demo') : stateTag('computed', 'Computed · week to Oct 7'), body: `${liquidityStrip(e)}${liquidityChart(e)}` });
+export const liqSection = (e) => section({ id: 'liquidity', title: 'Liquidity', lead: 'How much money the Fed’s balance sheet leaves in the system after the Treasury’s cash account and overnight reverse repo. When the Treasury rebuilds its cash, it drains reserves the same way the Fed shrinking would.', tag: e.demo ? '' : stateTag('computed', 'Computed · week to Oct 7'), body: `${liquidityStrip(e)}${liquidityChart(e)}` });
 const liqBody = (e) => (o) => marketsHost(e, { ...o, on: 'liquidity', body: liqSection(e), note: e.demo ? DEMO_NOTE : `<b>New section on /research/markets</b>, under Positioning (Rates and Positioning are on the Research · Markets row). ${PLAUSIBLE}` });
 function liqStates(o) {
   const M = 'Net liquidity, weekly';
@@ -45,7 +45,7 @@ function liqStates(o) {
 // =================================================================================================
 // 2 · Calendar — /research/markets
 // =================================================================================================
-const calSection = (e) => section({ id: 'coming-up', title: 'Coming up', lead: 'Macro releases and the followed companies’ results, next six weeks. A results date makes its note due; the FOMC makes every note with a valuation due, because it moves the discount rate.', tag: e.demo ? stateTag('demo') : stateTag('current', 'Scheduled · read Oct 14'), body: calendarChart(e) });
+export const calSection = (e) => section({ id: 'coming-up', title: 'Coming up', lead: 'Macro releases and the followed companies’ results, next six weeks. A results date makes its note due; the FOMC makes every note with a valuation due, because it moves the discount rate.', tag: e.demo ? '' : stateTag('current', 'Scheduled · read Oct 14'), body: calendarChart(e) });
 const calBody = (e) => (o) => marketsHost(e, { ...o, on: 'coming-up', body: calSection(e), note: e.demo ? DEMO_NOTE : `<b>New section on /research/markets</b>, last on the page. Results dates come from the 14 notes (research/); windows are estimated from EDGAR filing history. ${PLAUSIBLE}` });
 function calStates(o) {
   const M = 'Releases and results, next six weeks';
@@ -66,7 +66,7 @@ function calStates(o) {
 // =================================================================================================
 // 3 · Off-exchange volume — /ticker/:symbol/research
 // =================================================================================================
-const otcSection = (e) => section({ id: 'off-exchange', title: 'Where it traded', lead: 'Shares that changed hands away from the exchanges each week: in alternative trading systems, and with wholesalers and dealers. A free, late stand-in for block-trade data.', tag: e.demo ? stateTag('demo') : stateTag('delayed', 'Delayed by source · 2 weeks'), body: `${otcChart(e)}<p class="pl-foot">FINRA owns and is the source of this data. Shown free for non-commercial personal use; please don’t redistribute it.</p>` });
+const otcSection = (e) => section({ id: 'off-exchange', title: 'Where it traded', lead: 'Shares that changed hands away from the exchanges each week: in alternative trading systems, and with wholesalers and dealers. A free, late stand-in for block-trade data.', tag: e.demo ? '' : stateTag('delayed', 'Delayed by source · 2 weeks'), body: `${otcChart(e)}<p class="pl-foot">FINRA owns and is the source of this data. Shown free for non-commercial personal use; please don’t redistribute it.</p>` });
 const otcBody = (e) => (o) => noteHost(e, { ...o, body: otcSection(e), note: e.demo ? DEMO_NOTE : `<b>New section in the public-record band under the NVDA note</b> (the note is on the Ticker · Note row). Ships once FINRA’s display terms are confirmed. ${PLAUSIBLE}` });
 function otcStates(o) {
   const M = 'NVDA off-exchange volume, weekly'; const L = otcData(PROD).slice(-1)[0];
@@ -87,7 +87,8 @@ function otcStates(o) {
 // =================================================================================================
 // 4 · Insider clusters — /ticker/:symbol/research
 // =================================================================================================
-const clBody = (e, compact = false) => (o) => noteHost(e, { ...o, body: section({ id: 'insiders', title: 'Insider trades · 12 months', lead: 'Every Form 4 by insider and date. A cluster is three or more insiders buying on the open market within ten days; sales under pre-set 10b5-1 plans never count.', tag: e.demo ? stateTag('demo') : stateTag('computed', 'Computed from Form 4'), body: clustersChart(e, { compact }) }), note: e.demo ? DEMO_NOTE : `<b>The Insider trades card, expanded into the public-record band</b>, live now that SEC_USER_AGENT is set on production. Roles, not names. ${PLAUSIBLE}` });
+const clSection = (e, compact = false) => section({ id: 'insiders', title: `Insider trades · ${e.demo ? '6' : '12'} months`, lead: 'Every Form 4 by insider and date. A cluster is three or more insiders buying on the open market within ten days; sales under pre-set 10b5-1 plans never count.', tag: e.demo ? '' : stateTag('computed', 'Computed from Form 4'), body: clustersChart(e, { compact }) });
+const clBody = (e, compact = false) => (o) => noteHost(e, { ...o, body: clSection(e, compact), note: e.demo ? DEMO_NOTE : `<b>The Insider trades card, expanded into the public-record band</b>, live now that SEC_USER_AGENT is set on production. Roles, not names. ${PLAUSIBLE}` });
 function clStates(o) {
   const M = 'NVDA insider trades, 12 months'; const s = clusterStats(PROD);
   const items = [
@@ -108,7 +109,7 @@ function clStates(o) {
 // 5 · Fund holdings (13F) — /ticker/:symbol/research
 // =================================================================================================
 const hStrip = (e) => `<div class="pl-strip${e.demo ? ' demo' : ''}">${(e.demo ? [['All 13F filers', '61.2%', 'of sample shares · ▲ 0.3 pts'], ['Filers reporting', '3,140', 'sample quarter'], ['Next quarter', 'Window open', 'sample deadline']] : [['All 13F filers', '67.8%', 'of shares outstanding · ▲ 0.4 pts on the quarter'], ['Filers reporting NVDA', '5,212', 'quarter to Jun 30'], ['Quarter to Sep 30', '312 filed', 'of about 5,400 · due Mon Nov 16']]).map(([l, v, s]) => `<div><span class="caps">${l}</span><span class="v">${v}</span><span class="s">${s}</span></div>`).join('')}</div>`;
-const hSection = (e) => section({ id: 'holders', title: 'Who holds it', lead: 'The largest institutional holders at the last complete quarter, from their 13F filings, and what each added or cut. 13F arrives up to 45 days after the quarter, by law.', tag: e.demo ? stateTag('demo') : stateTag('delayed', 'Delayed by law · 45 days'), body: `${hStrip(e)}${holdersChart(e)}` });
+const hSection = (e) => section({ id: 'holders', title: 'Who holds it', lead: 'The largest institutional holders at the last complete quarter, from their 13F filings, and what each added or cut. 13F arrives up to 45 days after the quarter, by law.', tag: e.demo ? '' : stateTag('delayed', 'Delayed by law · 45 days'), body: `${hStrip(e)}${holdersChart(e)}` });
 const hBody = (e, labelW) => (o) => noteHost(e, { ...o, body: labelW ? section({ id: 'holders', title: 'Who holds it', lead: 'The largest institutional holders at the last complete quarter, from their 13F filings. 13F arrives up to 45 days after the quarter, by law.', tag: stateTag('delayed', 'Delayed by law · 45 days'), body: `${hStrip(e)}${holdersChart(e, { labelW })}` }) : hSection(e), note: e.demo ? DEMO_NOTE : `<b>New section in the public-record band under the NVDA note</b>. Holder names are placeholders on this board; the build shows each filer’s name as filed. ${PLAUSIBLE}` });
 function hStates(o) {
   const M = 'NVDA largest 13F holders';
@@ -129,7 +130,7 @@ function hStates(o) {
 // =================================================================================================
 // 6 · Figures against the filing (XBRL) — /ticker/:symbol/research
 // =================================================================================================
-const xSection = (e) => section({ id: 'checked', title: 'Checked against the filing', lead: 'Every figure this note states, beside the value the company tagged in its filing for the same period. The note keeps its own figure; where they differ, both are shown.', tag: e.demo ? stateTag('demo') : stateTag('computed', 'Checked Oct 14'), body: `${xbrlCheck(e)}${xbrlHistory(e)}` });
+const xSection = (e) => section({ id: 'checked', title: 'Checked against the filing', lead: 'Every figure this note states, beside the value the company tagged in its filing for the same period. The note keeps its own figure; where they differ, both are shown.', tag: e.demo ? '' : stateTag('computed', 'Checked Oct 14'), body: `${xbrlCheck(e)}${xbrlHistory(e)}` });
 const xBody = (e) => (o) => noteHost(e, { ...o, body: xSection(e), note: e.demo ? DEMO_NOTE : `<b>New section in the public-record band under the NVDA note</b>, once SEC_USER_AGENT is set. Figures are the note’s and the 10-Q’s (quarter to Jul 26, 2026), as on the Note and Filings rows. ${PLAUSIBLE}` });
 function xStates(o) {
   const M = 'NVDA note figures against the 10-Q';
@@ -149,7 +150,7 @@ function xStates(o) {
 // =================================================================================================
 // 7 · Peers — /ticker/:symbol/research
 // =================================================================================================
-const pSection = (e, compact = false) => section({ id: 'peers', title: 'Against its peers', lead: 'One reported figure across the note’s peer list for the same calendar quarter, from each company’s tagged filing.', tag: e.demo ? stateTag('demo') : stateTag('computed', 'Computed · CY2026 Q2'), body: peersChart(e, { compact }) });
+const pSection = (e, compact = false) => section({ id: 'peers', title: 'Against its peers', lead: 'One reported figure across the note’s peer list for the same calendar quarter, from each company’s tagged filing.', tag: e.demo ? '' : stateTag('computed', 'Computed · CY2026 Q2'), body: peersChart(e, { compact }) });
 const pBody = (e, compact = false) => (o) => noteHost(e, { ...o, body: pSection(e, compact), note: e.demo ? DEMO_NOTE : `<b>New section in the public-record band under the NVDA note</b>, once SEC_USER_AGENT is set; the peer list comes from the note. NVDA’s figures match its 10-Q; the peers’ are plausible values drawn for the design; the build fetches them.` });
 function pStates(o) {
   const M = 'NVDA against its peers, CY2026 Q2';
@@ -169,8 +170,7 @@ function pStates(o) {
 // =================================================================================================
 // 8 · Signal track record — /research/scorecard (blocked)
 // =================================================================================================
-const sigSection = (e) => section({ id: 'signals', title: 'Signal track record', lead: 'How often each kind of scanner setup reached the level it named within five sessions, after trading costs, with how sure each rate is.', tag: e.demo ? stateTag('demo') : stateTag('sample', 'Design target · illustrative'), body: signalsChart(e) });
-const sigBody = (e) => (o) => scorecardHost(e, { ...o, body: sigSection(e), note: e.demo ? DEMO_NOTE : '<b>Design target, not data.</b> Production shows this section as Not live · price source today (Research · Scorecard row) and until Convexa holds a licensed daily price history and the scanner’s setups. Every value here is illustrative.' });
+const sigBody = (e) => (o) => scorecardHost(e, { ...o, body: signalsChart(e), note: e.demo ? DEMO_NOTE : '<b>Design target, not data.</b> Production shows this section as Not live · price source today (Research · Scorecard row) and until Convexa holds a licensed daily price history and the scanner’s setups. Every value here is illustrative.' });
 function sigStates(o) {
   const M = 'Signal track record';
   const items = [
@@ -264,3 +264,9 @@ export const ROWS = [
   ] },
 ];
 void boardNote;
+
+/** The SEC record of a note's public-record band, in the order NotePublicPanels mounts it (SecRecordSections.tsx):
+ *  insider trades, the figures against the filing, fund holdings and peers. The Note boards draw it under the
+ *  note (fidelity DESK-15 and owner NO-4 A, 2026-10-25); each section's own row draws its states. */
+export const publicRecordSections = (e) => `${clSection(e)}${xSection(e)}${hSection(e)}${pSection(e)}`;
+export { env as plannedEnv } from './planned-kit.mjs';

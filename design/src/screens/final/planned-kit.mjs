@@ -9,6 +9,7 @@ import { icon, finalPage, STAGING_DEMO_URL } from '../../lib.mjs';
 import { chartFrame } from '../../chart-kit.mjs';
 import { stateTag } from '../../components/data-states.mjs';
 import { TT_CSS } from './ticker-tech.mjs';
+import { calibChart, env as rcEnv } from './research-charts.mjs';
 
 export const PL_CSS = `${TT_CSS}
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -22,6 +23,15 @@ export const PL_CSS = `${TT_CSS}
   .pl-jump .lbl { font-size: 12px; color: var(--steel); margin-right: 6px; }
   .pl-jump a { display: inline-flex; align-items: center; min-height: 32px; padding: 0 10px; border-radius: 999px; font-size: 13px; color: var(--steel); text-decoration: none; }
   .pl-jump a[aria-current="true"] { color: var(--phosphor); font-weight: 600; box-shadow: inset 0 0 0 1px var(--phosphor); }
+  .pl-lanes { display: flex; flex-direction: column; gap: 2px; margin-top: -6px; }
+  .pl-lanes .ln { position: relative; height: 16px; }
+  .pl-lanes .lb { position: absolute; left: 0; width: calc(var(--pl) - 10px); top: 0; text-align: right; font: 500 11px/16px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .pl-lanes .tr { position: absolute; left: var(--pl); right: var(--pr); top: 0; bottom: 0; }
+  .pl-lanes .mk { position: absolute; top: 4px; width: 8px; height: 8px; transform: translateX(-50%); background: var(--steel); }
+  .pl-lanes .mk.k-dot { border-radius: 50%; }
+  .pl-lanes .mk.k-dia { transform: translateX(-50%) rotate(45deg); }
+  .pl-lanes .mk.k-ring { border-radius: 50%; background: transparent; border: 1.5px solid var(--steel); box-sizing: border-box; }
+  @container (max-width: 480px) { .pl-lanes .tr { right: var(--prn); } }
   .pl-sec { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 80px; }
   .pl-sec > header { display: flex; flex-direction: column; gap: 6px; }
   .pl-sec > header .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
@@ -110,7 +120,9 @@ export function frame(e, { claim, sub, body, real, shaped, asof, tag = ['current
     kind: e.kind,
     source: e.src(real, shaped), sourceKind: e.sk, sourceHref: e.mode === 'prod' ? href : '',
     asof: e.asof(asof),
-    state: e.demo ? 'demo' : e.target ? 'sample' : tag[0], stateText: e.demo ? '' : e.target ? 'Design target · illustrative' : tag[1],
+    // D1 (owner, 2026-10-22; fidelity R-22): on the demo the source chip ("Demo · shaped like …") is the frame's
+    // one Sample mark, so the head carries no Demo tag and the section head none either.
+    state: e.demo ? '' : e.target ? 'sample' : tag[0], stateText: e.demo ? '' : e.target ? 'Design target · illustrative' : tag[1],
   });
 }
 
@@ -120,7 +132,8 @@ export function frameState(state, { metric, sub = '', height = 160, text = '', c
   const body = state === 'loading'
     ? `<div class="cx" role="img" aria-label="Loading ${metric}" aria-busy="true" style="height: ${height}px;"><div class="cskel" aria-hidden="true"></div></div>`
     : `<div class="cx" style="height: ${height}px;"><div class="cstate${warn ? ' warn' : ''}" role="${warn && state !== 'stale' ? 'alert' : 'status'}"><div class="msg"><p>${text}</p>${cause ? `<p class="q">${cause}</p>` : ''}${action}</div></div></div>`;
-  return chartFrame({ claim: state === 'loading' ? `<span class="skel" style="display: inline-block; width: 55%; height: 14px;" aria-hidden="true"></span><span class="sr-only">${metric}</span>` : metric, sub, body, source, asof, state, stateText });
+  // P-10: a loading frame names its metric; P-2: loading and empty carry no tag (fidelity FND-11, ChartFrame.tsx).
+  return chartFrame({ claim: metric, sub, body, source, asof, state: state === 'loading' || state === 'empty' ? '' : state, stateText });
 }
 export const retry = '<button class="btn secondary sm" type="button">Try again</button>';
 export const demoLink = (path, text = 'See it on the demo →') => `<a href="${STAGING_DEMO_URL}${path}" class="t-info" style="display: inline-flex; gap: 6px; align-items: center; min-height: 24px; font-weight: 500;">${text}</a>`;
@@ -152,9 +165,10 @@ export function noteHost(e, { scheme = 'dark', minHeight = 0, t = 'NVDA', body, 
   return boardNote(scheme, note) + finalPage({ scheme, minHeight, active: 'research', demo: e.demo, label: `${t} research note`, main });
 }
 
-/** /research/scorecard with the signal track record section. */
+/** /research/scorecard with the signal track record (owner NO-8 A, 2026-10-25): the Scorecard as built
+ *  (ScorecardPage.tsx), with no jump rail; the track record is the half-width card beside Calibration. */
 export function scorecardHost(e, { scheme = 'dark', minHeight = 0, body, note }) {
-  const main = `<div class="wrap pl-page"><div class="pl-h"><h1 class="display">Scorecard</h1><p class="lead">How the notes’ forecasts and the scanner’s setups held up, scored only once their dates pass. A record of calls, not a recommendation.</p></div>${jump([['forecasts', 'Forecasts'], ['calibration', 'Calibration'], ['signals', 'Signal track record']], 'signals')}${body}<p class="pl-foot">${e.demo ? 'Sample setups and outcomes authored for the demo. Not investment advice.' : 'Forecasts come from each note’s forecasts block; setups from the scanner’s log. Personal research notes. Not investment advice.'}</p></div>`;
+  const main = `<div class="wrap pl-page"><div class="pl-h"><h1 class="display">Scorecard</h1><p class="lead">How the calls in the notes turn out. A forecast is scored when its date passes, but only if it carried your probability before then. Scoring a call after the answer is known would be fiction.</p></div><div class="pl-2 even" id="signals">${calibChart(rcEnv(e.demo, { frameTag: false }))}${body}</div><p class="pl-foot">${e.demo ? 'Sample forecasts and outcomes authored for the demo. Not investment advice.' : 'Forecasts come from each note’s forecasts block; setups from the scanner’s log. Personal research notes. Not investment advice.'}</p></div>`;
   return boardNote(scheme, note) + tabCounts(finalPage({ scheme, minHeight, active: 'research', tabs: 'Scorecard', demo: e.demo, label: 'Scorecard', main }), e.demo);
 }
 

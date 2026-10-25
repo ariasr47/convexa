@@ -22,7 +22,7 @@ export const ROWS = [
         { name: 'Account control', source: 'who-am-I (/api/auth/session; demo transport on staging)', production: ['locked', 'Log in'], staging: 'Demo account' },
         { name: 'Public data (rates, CFTC, FINRA, SEC)', source: '/api/public-data/* · each source’s own delay', production: [['current', 'Updated'], ['delayed', 'Delayed by source'], ['off', 'Off (FINRA)']], staging: 'demo' },
         { name: 'Dealer structure, flow, scores, AI reads', source: 'Massive options feed (not subscribed)', production: 'notLive', staging: 'sample' },
-        { name: 'Daily price chart', source: 'TradingView widget (live build); sample bars (demo)', production: 'thirdParty', staging: ['computed', 'Computed · sample bars'] },
+        { name: 'Daily price chart', source: 'TradingView widget (live build); sample bars (demo)', production: 'thirdParty', staging: ['sample', 'Sample · not recorded market history'] },
       ],
       states: [
         { tag: 'current', when: 'Public data current to its source: the word and the date, never a live dot.' },

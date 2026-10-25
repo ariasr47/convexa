@@ -18,6 +18,9 @@
   .lrow .dist { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--steel); min-width: 52px; text-align: right; }
 
   .desk { width: 100%; background: var(--ink); color: var(--phosphor); }
+  .superseded { background: var(--raised); border-bottom: 1px solid var(--line-2); padding: 10px 0; font-size: 13px; color: var(--phosphor); }
+  .superseded-row { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
+  .superseded a { color: var(--signal); font-weight: 600; text-decoration: none; }
   .mast { padding-top: 20px; padding-bottom: 12px; }
   .mast-row { display: flex; align-items: flex-start; gap: 16px 28px; flex-wrap: wrap; }
   .mast-title { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
@@ -98,6 +101,14 @@
 </head>
 <body>
 <div data-scheme="dark" data-tpl-data-scheme="&#123;&#123;scheme&#125;&#125;" class="desk is-live " data-tpl-class="desk &#123;&#123;liveClass&#125;&#125; &#123;&#123;sheetClass&#125;&#125;" style="min-height: 0px;">
+    
+  <div class="superseded" role="note">
+    <div class="wrap superseded-row">
+      <span class="caps" style="color: var(--amber-text);">Superseded</span>
+      <span>Superseded by Final · Ticker desk (2026-10-16). This September desk is kept as history; the desk’s hierarchy was approved as built on 2026-10-16.</span>
+      <a href="final-desk-staging.html">Open Final · Ticker desk →</a>
+    </div>
+  </div>
     <header class="nav-bar">
     <div class="wrap nav-in">
       <a href="#" class="nav-burger" aria-label="Open navigation menu"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M4 12h16M4 17h16"></path></svg></a>
@@ -676,9 +687,11 @@
 <script>
 (function () {
   var KEY = 'convexa-design-scheme';
-  function current() { try { return localStorage.getItem(KEY) || 'dark'; } catch (e) { return 'dark'; } }
-  function apply(s) { document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
-  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, n); } catch (e) {} apply(n); };
+  var PAGE = document.documentElement.getAttribute('data-scheme') || 'dark';
+  var shown = null;
+  function current() { if (shown) return shown; if (PAGE !== 'dark') return PAGE; try { return localStorage.getItem(KEY) || PAGE; } catch (e) { return PAGE; } }
+  function apply(s) { shown = s; document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
+  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; if (PAGE === 'dark') { try { localStorage.setItem(KEY, n); } catch (e) {} } apply(n); };
   apply(current());
 })();
 </script>

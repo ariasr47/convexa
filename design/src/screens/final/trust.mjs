@@ -55,7 +55,7 @@ export const ROWS = [
       ],
       phone: `${SHELL_PHONE} Each card’s label column moves above its text; the state tag wraps under the source’s name; links stack.`,
       acceptance: [
-        'Production: seven source cards in the order Treasury, CFTC, FINRA short interest, FINRA short-sale volume, SEC EDGAR, TradingView, Massive; each names its owner, what Convexa reads, cadence and delay, terms, where it shows, and links to the source.',
+        'Production: eleven source cards in the order Treasury, CFTC, Fed H.4.1, Treasury DTS, NY Fed reverse repo, release schedules, FINRA short interest, FINRA short-sale volume, SEC EDGAR, TradingView, Massive; each names its owner, what Convexa reads, cadence and delay, terms, where it shows, and links to the source.',
         'Both FINRA cards carry “Data owned and provided by FINRA” and the notice “FINRA owns and is the source of … please don’t redistribute it”, word for word as NotePublicPanels ships it.',
         'The TradingView card says Convexa reads nothing from the chart, that the visitor’s IP address and page address go to TradingView, and keeps the attribution “Chart by TradingView”.',
         'The legend’s counts equal the cards’ states; no card says Updated without a source date; TradingView never says Updated.',
@@ -82,7 +82,9 @@ export const ROWS = [
     boards: [
       { id: 'staging', title: 'Staging · demo account', w: 1440, h: 4815, body: creditsBoard('staging') },
       { id: 'production', title: 'Production', w: 1440, h: 4611, body: creditsBoard('production') },
-      { id: 'phone', title: 'Phone · production', w: 390, h: 6278, body: creditsBoard('production') },
+      // Eleven cards at 390 pass the canvas's 8,000px frame limit, so the phone page is drawn in two boards.
+      { id: 'phone', title: 'Phone · production · 1 of 2 (head and the first six cards)', w: 390, h: 6278, body: creditsBoard('production', 1) },
+      { id: 'phone-2', title: 'Phone · production · 2 of 2 (the last five cards, typefaces, what Convexa makes)', w: 390, h: 4000, body: creditsBoard('production', 2) },
       { id: 'light', title: 'Light · production', w: 1440, h: 4611, body: creditsBoard('production'), opts: light },
       { id: 'states', title: 'States', w: 1440, h: 2016, body: creditsStates },
     ],

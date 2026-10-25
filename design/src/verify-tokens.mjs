@@ -27,6 +27,10 @@ const [textInfoDark, textInfoLight] = seq('textInfo');
 const [textUpDark, textUpLight] = seq('textUp');
 const [textDownDark, textDownLight] = seq('textDown');
 const [hatchDark, hatchLight] = seq('hatchAlt');
+// Secondary text in each palette (fidelity FND-12 / LTXT, 2026-10-25): light text.secondary was MUI's
+// rgba(0,0,0,0.6) while the boards drew steel; tokens.ts now names lightSecondary there. Check the palette
+// entry itself, not only the constant, so a palette that stops using steel fails here.
+const textSecondary = [...ts.matchAll(/text: \{ primary: (\w+), secondary: (\w+)/g)].map((m) => consts[m[2]] ?? (m[2] === 'steel' ? consts.steel : undefined));
 
 // [design key, mode, expected from tokens.ts, label]
 const checks = [
@@ -41,6 +45,7 @@ const checks = [
   ['textUp', 'dark', textUpDark, 'extras.textUp'], ['textUp', 'light', textUpLight, 'extrasLight.textUp'],
   ['textDown', 'dark', textDownDark, 'extras.textDown'], ['textDown', 'light', textDownLight, 'extrasLight.textDown'],
   ['hatch', 'dark', hatchDark, 'extras.hatchAlt'], ['hatch', 'light', hatchLight, 'extrasLight.hatchAlt'],
+  ['steel', 'dark', textSecondary[0], 'palette.dark.text.secondary'], ['steel', 'light', textSecondary[1], 'palette.light.text.secondary'],
 ];
 
 // ---------------------------------------------------------------------------------------------
@@ -100,17 +105,17 @@ for (const [key, mode, expected, label] of additionChecks) {
   console.log(`${ok ? '✓' : '✗'} ${mode.padEnd(5)} ${key.padEnd(10)} design ${String(got).padEnd(28)} tokens.ts ${label} = ${expected ?? '(not found)'}`);
 }
 // ---------------------------------------------------------------------------------------------
-// v5 (2026-10-13): roles PROPOSED for tokens.ts (`additions.proposed`). Not in the app yet, so there is
-// nothing to mirror; instead each one must (a) carry a value for both schemes, (b) clear its stated
-// contrast floor on its stated surfaces, measured here (WCAG 2 relative luminance), and (c) either be
-// absent from tokens.ts or, once it lands, carry the same value there (then it moves into the mirror).
+// v5 (2026-10-13): chart roles proposed for tokens.ts (`additions.proposed`). Each must (a) carry a value for
+// both schemes and (b) clear its stated contrast floor on its stated surfaces, measured here (WCAG 2 relative
+// luminance). Since the 2026-10-18 Amendments row, chartContext2 and chartBand are in tokens.ts, so (c) a role
+// that names a tokens.ts home must be there with the same values: a mirror now (fidelity FND-12, 2026-10-25).
 // ---------------------------------------------------------------------------------------------
 const proposed = Object.entries(design.additions.proposed || {}).filter(([k]) => k !== '$comment');
 const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
 const rgbOf = (s) => { const h = /^#([0-9a-f]{6})$/i.exec(s); if (h) return [0, 2, 4].map((i) => parseInt(h[1].slice(i, i + 2), 16)); const m = /^rgba?\(([^)]+)\)$/i.exec(s); if (m) return m[1].split(',').map(Number).slice(0, 3); return null; };
 const lum = (rgb) => 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]);
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
-if (proposed.length) console.log('\nv5 proposed chart roles (not in tokens.ts yet; checked for shape and contrast):');
+if (proposed.length) console.log('\nv5 chart roles (checked for shape and contrast, and mirrored where tokens.ts carries them):');
 for (const [name, r] of proposed) {
   for (const mode of ['dark', 'light']) {
     const v = r[mode]; const rgb = v && rgbOf(v);
@@ -130,7 +135,10 @@ for (const [name, r] of proposed) {
   if (landed.length) {
     const same = landed[0]?.toLowerCase() === r.dark.toLowerCase() && landed[1]?.toLowerCase() === r.light.toLowerCase();
     if (!same) bad++;
-    console.log(`${same ? '✓' : '✗'} ${name} has landed in tokens.ts as ${r.home} (${landed.join(' / ')}): ${same ? 'same values, move it into the mirror' : 'VALUES DIFFER from the proposal'}`);
+    console.log(`${same ? '✓' : '✗'} ${name} mirrors tokens.ts ${r.home} (${landed.join(' / ')})${same ? '' : ': VALUES DIFFER'}`);
+  } else if (r.home) {
+    bad++;
+    console.log(`✗ ${name} names ${r.home} but tokens.ts has no such key`);
   }
 }
 console.log(bad ? `\n${bad} mismatch(es) — design and app tokens have drifted.` : '\nAll shared tokens match tokens.ts.');

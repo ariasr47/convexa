@@ -18,9 +18,16 @@ export const SS_CSS = `
   .ss-nl .dash { font: 500 22px/1 'IBM Plex Mono', monospace; color: var(--steel); }
   .ss-demo { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; font-size: 13px; font-weight: 600; text-decoration: none; }
   .ss-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; padding: 72px 0 56px; }
-  .ss-hero h1 { margin: 0; font-size: clamp(38px, 4.2vw, 58px); line-height: 1.06; letter-spacing: -0.02em; text-wrap: balance; }
+  .ss-hero h1 { margin: 0; font-size: clamp(44px, 38px + 1.5vw, 56px); line-height: 1.06; letter-spacing: -0.02em; text-wrap: balance; }
   .ss-hero .sub { margin: 0; font-size: 16.5px; line-height: 1.6; color: var(--steel); max-width: 56ch; text-wrap: pretty; }
   .ss-chip { display: inline-flex; align-items: center; min-height: 26px; padding: 0 12px; border-radius: 999px; background: var(--amber-tint); color: var(--amber-text); font-size: 12.5px; font-weight: 600; align-self: flex-start; }
+  .ss-heroband { position: relative; overflow: hidden; }
+  .ss-curve { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+  .ss-curve .base { stroke: var(--steel); opacity: 0.35; }
+  .ss-curve .path { stroke: var(--amber); opacity: 0.9; }
+  @media (max-width: 1099px) { .ss-curve { display: none; } }
+  .ss-heroband > .wrap { position: relative; }
+  .ss-fieldp { background: var(--ink-2); border-radius: 8px; padding: 4px 6px 0; }
   .ss-spine { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--steel); }
   .ss-ctas { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .ss-eyebrow { font: 600 11.5px/1.4 'IBM Plex Sans', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber-text); }
@@ -130,7 +137,7 @@ export function notLiveBody({ would, why = 'it needs the paid options feed, whic
 // ---- ⌘K palette ----------------------------------------------------------------------------------
 const opt = (glyph, main, right, sel = false) => `<div class="opt" role="option" aria-selected="${sel}"><span style="display: inline-flex; color: var(--steel);">${icon(glyph, 16)}</span><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${main}</span><span class="steel" style="font-size: 12px;">${right}</span></div>`;
 const sym = (s, n) => `<span class="mono" style="font-weight: 600;">${s}</span> · ${n}`;
-/** env: production lists tickers by name (no scan call: scores need the options feed); staging ranks
+/** env: production lists tickers A–Z (no scan call: scores need the options feed); staging ranks
  *  them by the sample scan. state: results | empty | loading | nomatch | failed. */
 export function paletteF({ env = 'production', state = 'results' } = {}) {
   const stg = env === 'staging';
@@ -144,16 +151,17 @@ export function paletteF({ env = 'production', state = 'results' } = {}) {
   if (state === 'nomatch') body = `<div class="grp"><p class="dline" style="margin: 6px 8px 10px; font-size: 13px;">No ticker or note matches “qxtr”.</p>${opt('arrow', `Open <span class="mono" style="font-weight: 600;">QXTR</span> anyway`, '↵', true)}</div>`;
   if (state === 'failed') body = `<div class="grp"><div class="dwarn" style="margin: 4px 8px 8px;">${icon('warn', 14)}<div><strong style="font-size: 12.5px;">Couldn’t search tickers right now.</strong><span class="dline" style="display: block; font-size: 12px;">Go-to commands and notes still work; the ticker list comes back on the next open.</span></div></div>${opt('book', 'Research', '<span class="kbd">g</span> <span class="kbd">r</span>', true)}</div>`;
   const query = state === 'nomatch' ? 'qxtr' : state === 'empty' ? '' : 'nv';
-  const foot = stg ? 'Scores come from the demo’s sample scan.' : 'Scores aren’t live on this site, so tickers list by name.';
+  const foot = stg ? 'Scores come from the demo’s sample scan.' : 'Scores aren’t live on this site, so tickers list A–Z.';
   return `<div class="pal ss-pal" role="dialog" aria-modal="true" aria-label="Jump to a ticker or note"><div class="pin">${icon('search', 16)}<span class="mono" style="font-size: 15px; flex: 1;">${query || '<span class="steel" style="font-family: IBM Plex Sans;">Jump to a ticker or note</span>'}<span aria-hidden="true" style="display: inline-block; width: 1px; height: 18px; vertical-align: middle; background: var(--amber-text); margin-left: 2px;"></span></span><span class="kbd">esc</span></div><div role="listbox">${body}</div><div class="pf"><span><span class="kbd">↑↓</span> move</span><span><span class="kbd">↵</span> open</span><span><span class="kbd">?</span> all shortcuts</span><span style="flex: 1;"></span><span>${foot}</span></div></div>`;
 }
 
-/** The mobile drawer: the five links, then Settings, the account line and "What’s live". */
+/** The mobile drawer: the five links, then Settings, the account line, "See the full demo ↗" (production,
+ *  shipped 2026-10-16; fidelity SITE-25) and "What’s live". */
 export function drawerF({ env = 'production', active = 'research' } = {}) {
   const links = [['Scanner', '/scanner', 'scanner'], ['Ticker', '/ticker', 'ticker'], ['Research', '/research', 'research'], ['Positions', '/positions', 'positions'], ['Alerts', '/alerts', 'alerts']];
   const acct = env === 'staging'
     ? `<div class="acct"><span class="ss-av">D</span><span>Demo account</span></div><a class="q" href="/settings">Settings</a><button class="btn secondary" type="button" style="margin: 4px 10px; min-height: 44px;">Reset demo data</button>`
-    : `<a class="q" href="/settings">Settings</a><a class="q" href="#login">Log in</a><a class="q" href="/methodology#data">What’s live on this site</a>`;
+    : `<a class="q" href="/settings">Settings</a><a class="q" href="#login">Log in</a><a class="q" href="${STAGING_DEMO_URL}">See the full demo ↗</a><a class="q" href="/methodology#data">What’s live on this site</a>`;
   return `<nav class="ss-drawer" aria-label="Menu"><div style="display: flex; justify-content: space-between; align-items: center; min-height: 48px;">${wordmark(15)}<button class="btn ghost" type="button" aria-label="Close menu" style="min-height: 44px; min-width: 44px;">${icon('close', 20)}</button></div>${links.map(([n, h, k]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ''}>${n}</a>`).join('')}<div style="height: 1px; background: var(--line); margin: 8px 0;"></div>${acct}</nav>`;
 }
 
@@ -223,9 +231,40 @@ const illFrame = (env, inner, mark = SAMPLE_MARK) => env === 'staging'
   : `<div class="hd-p is-sample ss-ill">${inner}<p class="cap">${mark}</p></div>`;
 const illHead = (env, title) => `<div class="ph"><h3>${title}</h3>${env === 'staging' ? '' : stateTag('sample', 'Illustrative sample')}</div>`;
 
+/** The landing's hero curve (HeroCurve.tsx): the payoff silhouette in a 1200×400 box, two tangent quadratics
+ *  from the baseline-hugging left end to the top-right exit, over a quiet baseline; behind the hero copy,
+ *  from 1100px only (fidelity SITE-19). Decorative, aria-hidden. */
+export const HERO_CURVE = '<svg class="ss-curve" viewBox="0 0 1200 400" preserveAspectRatio="none" aria-hidden="true"><line class="base" x1="0" y1="360" x2="1200" y2="360" stroke-width="1" vector-effect="non-scaling-stroke"></line><path class="path" d="M 0 360 Q 350 359.5 700 352 Q 1015 345.25 1200 25" fill="none" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"></path></svg>';
+
+/** Catmull-Rom through the strike values, so the field reads as a field, not a polyline. */
+function smooth(pts, n = 6) {
+  const out = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    for (let k = 0; k < n; k++) {
+      const t = k / n, t2 = t * t, t3 = t2 * t;
+      out.push([0, 1].map((j) => 0.5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3)));
+    }
+  }
+  out.push(pts[pts.length - 1]);
+  return out.map(([x, y]) => [+x.toFixed(3), +y.toFixed(2)]);
+}
+/** The landing's field (owner NO-9 A, 2026-10-25: the board follows the shipped StructureFieldSample, the
+ *  desk's field form): net gamma as a curve over faint strike bars, the put wall, the flip, the mid and the
+ *  call wall as labelled verticals, ±$500 on a dark plot well, with its one-line encoding subtitle. */
 export function fieldIll(env = 'production') {
-  const body = plot({ height: 230, pl: 48, pr: 16, prn: 12, pt: 26, pb: 30, ends: false, keyboard: false, x: { min: 548.75, max: 601.25, ticks: [550, 560, 570, 580, 590, 600].map((v, i) => ({ v, label: String(v), minor: i % 2 === 1 })) }, y: { min: -520, max: 560, ticks: [{ v: -400, label: '−400' }, { v: 400, label: '+400' }] }, hlines: [{ v: 0, kind: 'zero' }], bars: FIELD.map(([k, v]) => ({ x: k, v, role: v > 0 ? 'up' : 'down' })), barW: 14, segs: [{ x0: 568.5, y0: -520, x1: 568.5, y1: 560, role: 'emph', width: 1.5, dash: '4 4' }, { x0: 573.12, y0: -520, x1: 573.12, y1: 560, role: 'ctx', width: 1.5 }], pointLabels: [{ x: 580, y: 500, text: 'Call wall 580 · +γ' }, { x: 560, y: 60, text: 'Put wall 560 · −γ' }, { x: 568.5, y: 560, text: 'Flip 568.5', minor: true }], aria: 'Net dealer gamma by strike, illustrative sample: most positive at the 580 call wall, most negative at the 560 put wall, crossing zero near 568.5; mid 573.12.' });
-  return illFrame(env, `${illHead(env, 'Net dealer gamma by strike')}<p class="cf-sub" style="margin: 0;">$M per 1% move · bars above the zero line, dealers long gamma (+γ); below, short (−γ) · dashed line the flip, solid the mid 573.12</p>${body}`);
+  const PUT = 560, FLIPX = 568.5, MIDX = 573.12, CALL = 580, YM = 560;
+  const faint = (r) => `color-mix(in srgb, var(--${r}) 32%, transparent)`;
+  const body = plot({ height: 240, pl: 48, pr: 16, prn: 12, pt: 30, pb: 30, ends: false, keyboard: false,
+    x: { min: 548.75, max: 601.25, ticks: [550, 560, 570, 580, 590, 600].map((v) => ({ v, label: String(v) })) },
+    y: { min: -YM, max: YM, ticks: [{ v: 500, label: '+$500' }, { v: 0, label: '0' }, { v: -500, label: '−$500' }] },
+    hlines: [{ v: 0, kind: 'ref' }],
+    bars: FIELD.map(([k, v]) => ({ x: k, v, role: faint(v > 0 ? 'up' : 'down') })), barW: 18,
+    series: [{ points: smooth(FIELD), role: 'ctx', width: 2 }],
+    segs: [{ x0: PUT, y0: -YM, x1: PUT, y1: YM, role: 'down', width: 1.5 }, { x0: FLIPX, y0: -YM, x1: FLIPX, y1: YM, role: 'emph', width: 2 }, { x0: MIDX, y0: -YM, x1: MIDX, y1: YM, role: 'ctx', width: 1 }, { x0: CALL, y0: -YM, x1: CALL, y1: YM, role: 'up', width: 1.5 }],
+    pointLabels: [{ x: PUT + 0.6, y: YM, text: 'put wall 560 · −γ', color: 'var(--text-down)', pos: 'pl-r' }, { x: FLIPX + 0.6, y: YM * 0.84, text: 'flip 568.50', pos: 'pl-r' }, { x: CALL + 0.6, y: YM, text: 'call wall 580 · +γ', color: 'var(--text-up)', pos: 'pl-r' }],
+    aria: 'Net dealer gamma by strike, illustrative sample: most negative at the 560 put wall, crossing zero at the 568.50 flip, most positive at the 580 call wall; mid 573.12.' });
+  return illFrame(env, `${illHead(env, 'Net dealer gamma by strike')}<p class="cf-sub" style="margin: 0;">$M per 1% move · above the zero line, dealers long gamma (+γ); below, short (−γ) · the walls and the flip are labelled, the thin line is the mid 573.12</p><div class="ss-fieldp">${body}</div><p class="cap" style="margin: 0;">Point at the field, or focus it and use ← →, to read a strike.</p>`);
 }
 export function scoreIll(env = 'production') {
   const cells = [['Opportunity', '72', 'Actionable · near wall · IV cheap'], ['IV / HV', '0.82', 'options look cheap'], ['Flip dist', '+0.8%', 'mid above the flip'], ['Vol / OI', '0.61×', '3 unusual strikes']];

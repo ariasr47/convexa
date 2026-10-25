@@ -82,8 +82,8 @@ const PROP = tokens.additions.proposed;
 const ROLES = [
   ['Emphasis', 'the series the claim is about', 'phosphor', 'phosphor', 'emphasis form (dv:form); not part of the ramp: hue spread 167° vs steel'],
   ['Context', 'every other series', 'steel', 'steel', 'ordinal ramp step 1 · validator PASS'],
-  ['Context 2 (proposed)', 'the older comparison', PROP.chartContext2.dark, PROP.chartContext2.light, 'ordinal step 2 · validator PASS both schemes · ≥ 3:1 on panel, well, ink'],
-  ['Band (proposed)', 'an interval or a range', PROP.chartBand.dark, PROP.chartBand.light, 'a wash, never the only carrier: edges are steel2, bounds labelled'],
+  ['Context 2 (chartContext2)', 'the older comparison', PROP.chartContext2.dark, PROP.chartContext2.light, 'ordinal step 2 · validator PASS both schemes · ≥ 3:1 on panel, well, ink'],
+  ['Band (chartBand)', 'an interval or a range', PROP.chartBand.dark, PROP.chartBand.light, 'a wash, never the only carrier: edges are steel2, bounds labelled'],
   ['Edge', 'band edges, reference lines', 'steel2', 'steel2', '≥ 4.5:1 (canon ruling 7)'],
   ['Grid', 'gridlines', 'line', 'line', 'recessive by design; never carries a value'],
   ['Zero / axis', 'the baseline that means something', 'line2', 'line2', 'one step stronger than the grid, and named'],
@@ -108,21 +108,18 @@ const PRINCIPLES = [
   ['The border is the provenance', 'Solid: ours or a primary source. Dotted: a third party. Dashed with a hatch stripe: sample. The chart frame speaks the provenance chip’s grammar at the size of the whole figure.'],
 ];
 
+// Where the chart system lives in the app as built (fidelity FND-12, 2026-10-25): shared/charts holds the frame
+// and the roles; each page draws its own marks inside the frame. The fourteen modules this board once proposed
+// (Plot, EventLane, SmallMultiples, Crosshair, useChartKeyboard…) were never made; the table says what exists.
 const MODULES = [
-  ['ChartFrame.tsx', 'figure, claim, subtitle, legend, body, foot (chip + as-of), table twin; the seven data states at final size', 'ChartTitle + FIGURE_SX + per-page captions (publicUi.tsx, Charts.tsx, MarketsPage.tsx)', 'none (visual)'],
-  ['Plot.tsx + scales.ts', 'measured width (ResizeObserver), SVG strokes with non-scaling width, HTML text layer, bars, bands, gaps, zero line', 'hand-rolled divs and per-chart SVG in Charts.tsx, MarketsPage.tsx, ScorecardPage.tsx', 'scales.ts: tick values; gap splitting (no interpolation across null)'],
-  ['format.ts', 'Intl.NumberFormat en-US: num, pct, signed (true minus), bp, compact, usd', 'fmtK, ad-hoc toFixed and `$${v}`', 'format.ts: signed and compact strings under a pinned locale (a wrong sign is silent and costs trust)'],
-  ['DirectLabels.tsx + labelLayout.ts', 'end labels, selective point labels, collision → leader → legend fallback', 'thinning in ChartBlock; colliding curve date labels', 'labelLayout.ts: no two labels within 30px'],
-  ['EventLane.tsx + events.ts', 'FOMC, CPI, filings and results as labelled chips on hairlines; two lanes; priority drop under 480px', 'nothing (no chart marks events today)', 'none'],
-  ['RangeBand.tsx · RangeBar.tsx', 'interval wash with edges; track, band, median, now, base diamond, zero', 'PriceValueStrip band, FootballField rows, CFTC RangeRow', 'none'],
-  ['SmallMultiples.tsx', 'facets on shared scales; 3 → 2 → 1 columns by container', 'nothing', 'none'],
-  ['Sparkline.tsx', 'line or bars, scaling stated, end value, zero line when it crosses', 'historyMath.sparkPoints, PlSparkline, MiniChart, TapePulseStrip', 'none'],
-  ['Crosshair.tsx + useScrub.ts', 'snap to nearest x, ring every series, one readout; hover state in a ref (CH7)', 'canvas probe in StructureFieldCanvas', 'none'],
-  ['useChartKeyboard.ts', 'one tab stop; arrows, Shift+arrows, Home/End, PgUp/PgDn, Enter pins, Esc clears; polite live region', 'nothing', 'none'],
-  ['ChartTable.tsx', '&lt;details&gt; twin: caption, th scope, words for gaps', 'aria-label lists', 'none'],
-  ['ChartState.tsx', 'loading at final size, empty that teaches, error with cause, stale, not live, sample, demo', 'silent nulls; page-level skeletons', 'none'],
-  ['chartTokens.ts', 'resolves chart roles for canvas charts via extrasFor (CH4: a canvas fillStyle ignores var())', 'SF / LAB literals, paintStep colour parsing per frame', 'none'],
-  ['../embeds/ThirdPartyFrame.tsx', 'a third party’s frame: name, dotted chip, inset fence, attribution, privacy line, timeout → blocked', 'TradingViewEmbed host box', 'none'],
+  ['frame/ChartFrame.tsx', 'figure, claim or metric title, tag, subtitle, legend, body, foot (chip + as-of), TableTwin; loading at final size with its ghost foot, message states', 'ChartTitle + FIGURE_SX + per-page captions', 'none (visual)'],
+  ['frame/frameTitle.ts', 'P-10: the finding with data, the metric without', 'titles computed over missing data', 'frameTitle.spec.ts'],
+  ['frame/roles.ts', 'the chart roles (emph, ctx, ctx2, band, edge, grid, axis, up, down) from extrasFor, chartContext2 and chartBand included', 'SF / LAB literals', 'none'],
+  ['structure-field/*', 'the desk’s structure field on canvas: strokes, markers, paint step, the recording context', 'the Lab’s canvas demos', 'StructureFieldCanvas, paintStep, levelSign, fieldFormat specs'],
+  ['pages/research/blocks/Charts.tsx · chartText.ts', 'the note’s column, bar, bridge and timeline charts inside the frame; label text and thinning', 'ChartBlock', 'chartText.spec.ts'],
+  ['pages/research/MarketsPage.tsx, ScorecardPage.tsx, LiquiditySection.tsx', 'each page’s own marks (curve, 2s10s with events, drift, positioning ranges, calibration, liquidity lanes) in the frame', 'hand-rolled divs per chart', 'per-page math specs'],
+  ['features/trading/positions/PlSparkline.tsx', 'the positions P/L trend line, with its gap while the feed is offline', 'historyMath.sparkPoints', 'none'],
+  ['pages/ticker/technical-analysis/TradingViewEmbed.tsx', 'a third party’s frame: name, dotted chip, “Live · TradingView”, inset fence, attribution, privacy line, blocked state', 'TradingViewEmbed host box', 'none'],
 ];
 
 export function chartSystemBody({ scheme = 'dark', minHeight = 0 } = {}) {
@@ -137,33 +134,33 @@ export function chartSystemBody({ scheme = 'dark', minHeight = 0 } = {}) {
     ['Text', 'HTML at true size, 11px floor, mono ticks; under 480px of container short labels, fewer ticks and a narrower gutter: re-laid out, never scaled.'],
   ].map(([t, d]) => `<div class="v5card"><h3>${t}</h3><p>${d}</p></div>`).join('')}</div>`;
   const gallery = `<div class="v5g2">${chartEntries.map((e) => { const s0 = e.states[0]; return `<div class="pitem"><div class="ph"><b>${e.spec.name}</b><span class="chip outline mono">${e.spec.react}</span></div><p class="pc">${e.spec.change}</p><div class="stage">${e.render(s0.props)}</div><p class="pc"><code>${e.spec.path.replace(SHARED + '/', 'shared/charts/')}</code> · ${e.states.length} states on the states board and in the site library</p></div>`; }).join('')}</div>`;
-  const mods = `<div class="v5tw"><table class="v5tbl"><thead><tr><th>Module (apps/dashboard/src/app/shared/charts/)</th><th>Does</th><th>Replaces</th><th>Test (CH8: data layer only)</th></tr></thead><tbody>${MODULES.map(([m, d, r, t]) => `<tr><td class="p mono" style="font-weight: 500;">${m}</td><td>${d}</td><td>${r}</td><td>${t}</td></tr>`).join('')}</tbody></table></div><p class="cf-note">Two spec files are owed, both on the data layer (repo rule: test only what can fail silently and cost something): <span class="mono">format.spec.ts</span> (signed, compact and percent strings under a pinned en-US locale) and <span class="mono">scales.spec.ts</span> (tick values; a null splits the line rather than joining it). No pixel snapshots. Library: none added; Recharts stays only in the operator chart (CH1).</p>`;
+  const mods = `<div class="v5tw"><table class="v5tbl"><thead><tr><th>Module (apps/dashboard/src/app/, shared/charts/ for the first four)</th><th>Does</th><th>Replaced</th><th>Test (CH8: data layer only)</th></tr></thead><tbody>${MODULES.map(([m, d, r, t]) => `<tr><td class="p mono" style="font-weight: 500;">${m}</td><td>${d}</td><td>${r}</td><td>${t}</td></tr>`).join('')}</tbody></table></div><p class="cf-note">Tests stay on the data layer (repo rule: test only what can fail silently and cost something); no pixel snapshots. Library: none added; Recharts stays only in the operator chart (CH1).</p>`;
   return v5Wrap(`${v5Head('One chart system', 'Every Convexa chart is built from the same parts: a frame that makes a claim and says where the numbers come from, a plot whose text is drawn at true size, labels that sit on the data, a table twin, one tab stop, and the seven data states at final size. Below: the rules from the canon, the colour roles with their measured contrast and validator verdicts, the mark specs, each primitive in its ready state, and the React module each becomes.', 'SYS-01 and the 23 symptoms marked ⟵SYS in design/CHARTS-2026-10-13.md')}
     ${sec('Six rules, from the canon', '', princ)}
-    ${sec('Colour roles, measured', 'Contrast is WCAG 2 against the panel each chart sits on (composited for translucent roles). Values come from tokens.json; the two proposed roles are additions, not in tokens.ts yet.', roles)}
+    ${sec('Colour roles, measured', 'Contrast is WCAG 2 against the panel each chart sits on (composited for translucent roles). Values come from tokens.json; chartContext2 and chartBand are in tokens.ts since 2026-10-18, and verify-tokens checks them as mirrors.', roles)}
     ${sec('Mark specs', '', marks)}
     ${sec('The primitives', 'Each shown in its ready state; every state of every primitive is on the next board and in the site library.', gallery)}
-    ${sec('Where each lands in the app', '', mods)}`, { scheme, minHeight });
+    ${sec('Where it lives in the app', '', mods)}`, { scheme, minHeight });
 }
 
 export function chartStatesBody({ scheme = 'dark', minHeight = 0 } = {}) {
   const LABEL = { loading: 'Loading · final size', empty: 'Empty · teaches', error: 'Error · cause + retry', stale: 'Stale · last good copy', notLive: 'Not live', sample: 'Sample', demo: 'Demo' };
   const WHEN = {
-    loading: 'Before the first byte. The skeleton is the chart’s final height, so nothing moves when it lands (CLS 0). The title is a skeleton too: the claim is computed from data.',
-    empty: 'The source answered and has nothing yet. Say what would appear and when, never “No data”.',
+    loading: 'Before the first byte. The skeleton is the chart’s final height, so nothing moves when it lands (CLS 0). The title names the metric (P-10); the claim waits for data. No tag: P-2 has no word for loading.',
+    empty: 'The source answered and has nothing yet. Say what would appear and when, never “No data”. No tag: the sentence says it.',
     error: 'Our request failed. Name the cause and the time, offer Try again; draw nothing rather than a guess.',
     stale: 'This cycle failed; the last good copy shows with its marks in textDim and the warning tag says when it was fetched. Never 50% opacity (canon 2026-09-09).',
     notLive: 'The data needs a paid feed this site doesn’t run. No value slot, no ghost marks; one link to a labelled sample.',
-    sample: 'Inside the live site: dashed frame, hatch stripe, Sample tag, scenario date, a dashed chip that says “shaped like”. Marks draw normally.',
-    demo: 'The whole site is the demo: the same treatment, every chip dashed, “Demo · sample data” in place of the connection chip.',
+    sample: 'Inside the live site: dashed frame, hatch stripe, scenario date, and the sample named once (D1), here by the dashed chip that says “shaped like”. Marks draw normally.',
+    demo: 'The whole site is the demo: the same treatment, every chip dashed; the demo bar is the page’s one “Demo · sample data”, and a frame names the sample once, by its chip.',
   };
   const ready = `<div class="pitem"><div class="ph"><b>Ready</b>${stateTag('current', 'Updated Oct 9')}</div><p class="pc">The claim, the subtitle, the plot with its event lane and its gap, source and as-of, the table twin.</p>${chartFrame({ claim: SP_CLAIM, sub: SP_SUB, body: spreadPlot(), source: SP_SRC, asof: 'As of Oct 9, 2026 · 6:00 PM ET', table: spreadTable() })}</div>`;
   const states = DATA_STATE_KEYS.map((k) => `<div class="pitem"><div class="ph"><b>${LABEL[k]}</b></div><p class="pc">${WHEN[k]}</p>${inState(k, { claim: SP_CLAIM, sub: SP_SUB, source: SP_SRC, ready: (o) => ({ body: spreadPlot({ dim: o.dim }), table: spreadTable() }) })}</div>`).join('');
-  const inter = `<div class="v5g2"><div class="pitem"><div class="ph"><b>Scrubbed</b></div><p class="pc">Pointer, touch-drag or keyboard: one hairline, every series ringed, one readout (value first).</p>${chartEntries.find((e) => e.spec.id === 'crosshair').render('scrub')}</div><div class="pitem"><div class="ph"><b>Keyboard focus</b></div><p class="pc">One tab stop; the authored amber ring on the chart and on the focused point.</p>${chartEntries.find((e) => e.spec.id === 'chart-keyboard').render('kbd')}</div></div>`;
+  const inter = `<div class="v5g2"><div class="pitem"><div class="ph"><b>Scrubbed · not adopted</b>${stateTag('off', 'Not adopted')}</div><p class="pc">Pointer, touch-drag or keyboard: one hairline, every series ringed, one readout (value first). Not built: no shipped chart scrubs.</p>${chartEntries.find((e) => e.spec.id === 'crosshair').render('scrub')}</div><div class="pitem"><div class="ph"><b>Keyboard focus · not adopted</b>${stateTag('off', 'Not adopted')}</div><p class="pc">One tab stop; the authored amber ring on the chart and on the focused point. Not built: the table twin is the keyboard path (spec 02).</p>${chartEntries.find((e) => e.spec.id === 'chart-keyboard').render('kbd')}</div></div>`;
   const matrix = `<div class="v5tw"><table class="v5tbl"><thead><tr><th>Primitive</th>${['Ready', ...DATA_STATE_KEYS.map((k) => LABEL[k].split(' · ')[0])].map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${chartEntries.map((e) => `<tr><td class="p">${e.spec.name}</td>${['ready', ...DATA_STATE_KEYS].map((k) => `<td class="m">${e.spec.id === 'third-party-frame' ? (k === 'ready' ? 'live' : k === 'loading' ? 'own' : k === 'error' ? 'blocked' : '—') : k === 'ready' ? e.states.length - DATA_STATE_KEYS.length + ' variants' : 'frame'}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="cf-note">“frame” = the state is drawn by ChartFrame around the primitive, with the same words for every chart (the data-state vocabulary, proposal P-2: no new word). A third party’s frame has its own two states only (loading, blocked): Convexa never puts its state words inside someone else’s frame.</p>`;
   return v5Wrap(`${v5Head('Every chart, in every state', 'The frame owns the states, so no chart can forget one: a loading skeleton at final size, an empty state that teaches, an error with its cause, the last good copy, not live, sample and demo. Shown here on the 2s10s; every primitive renders through the same frame.', 'CH2 (states and catalog), DE6, X-01, X-02, X-10, the silent nulls RM-03, RM-04, TD-02, RP-03')}
     ${sec('Ready and the seven data states', '', `<div class="v5g2">${ready}${states}</div>`)}
-    ${sec('Interaction states', '', inter)}
+    ${sec('Interaction states · not adopted', 'Owner NO-13 B (2026-10-25): no shared crosshair and no chart keyboard path. Spec 02 made each chart’s table twin the keyboard path, so these two states stay here as a record, not as a spec. Revisit if scrubbing becomes a goal.', inter)}
     ${sec('Primitive × state', '', matrix)}`, { scheme, minHeight });
 }
 

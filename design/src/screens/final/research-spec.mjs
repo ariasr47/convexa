@@ -9,12 +9,12 @@ export const INDEX_SPEC = {
   job: 'Find a followed ticker’s note fast, and see at a glance which notes are current, which are due for review and why.',
   env: {
     production: 'The owner’s 14 real notes (research/<TICKER>/*.md, all written Oct 13, 2026), built into the site. Freshness is worked out in the browser from each note’s dates and, when filings are set up, from SEC EDGAR. Nothing here needs Massive.',
-    staging: 'The demo account’s six authored sample notes (AAPL, MSFT, NVDA, QQQ, SPY, TSLA) drawn as cards in the same grid, dashed with the hatch stripe and a Sample note tag. The Notes tab counts 6. No catalysts, so “Coming up” teaches its empty state.',
+    staging: 'The demo account’s six authored sample notes (AAPL, MSFT, NVDA, QQQ, SPY, TSLA) drawn as cards in the same grid, dashed with the hatch stripe and a Sample note tag. The Notes tab counts 6. “Coming up” lists the five sample triggers (Q-COMING-UP, 2026-10-15), and each card’s Next names its first one.',
   },
   widgets: [
     { name: 'Research tabs', source: 'build-time note index; forecasts count', production: 'Notes 14 · Scorecard 77 open', staging: 'Notes 6 · Scorecard 34 open' },
     { name: 'Find a ticker + filters', source: 'the note index (ticker, company, stance, freshness)', production: ['local', 'In the page'], staging: ['local', 'In the page'] },
-    { name: 'Coming up · next 10 weeks', source: 'every note’s catalysts block · up to 6 within 70 days', production: ['computed', 'From every note'], staging: ['empty', 'Nothing yet'] },
+    { name: 'Coming up · next 10 weeks', source: 'every note’s catalysts block · up to 6 within 70 days', production: ['computed', 'From every note'], staging: ['sample', 'Sample'] },
     { name: 'Note card', source: 'note front matter + first chart block', production: ['current', 'Written Oct 13'], staging: ['sample', 'Sample note'] },
     { name: 'Mini chart', source: 'the note’s first ```chart block (12 revenue, HOOD op. margin, MU gross margin)', production: ['current', 'From the note'], staging: 'sample' },
     { name: 'Freshness word', source: 'tools/research-notes/freshness.mjs + /api/public-data/filings (SEC EDGAR, 1 h cache)', production: [['computed', 'Computed'], ['notConfigured', 'dates only until set up']], staging: 'demo' },
@@ -25,7 +25,7 @@ export const INDEX_SPEC = {
     { tag: ['computed', 'Archived'], when: 'The note sets not_following_since. Square mark. No note does today.' },
     { tag: 'empty', when: '“No ticker matches these filters.” with Clear filters; “No research published yet.” for an empty research/ folder.' },
     { tag: 'notConfigured', when: 'Production while SEC_USER_AGENT is unset: freshness says it comes from the notes’ dates alone.' },
-    { tag: 'demo', when: 'Staging: the six sample notes as dashed cards; Coming up is empty.' },
+    { tag: 'demo', when: 'Staging: the six sample notes as dashed cards; Coming up lists the sample triggers.' },
   ],
   phone: 'One column of cards under 900px; filter chips wrap and grow to 44px targets; the mini chart keeps its 64px height and re-lays itself out (bars ≤ 18px, never scaled down); the caption wraps instead of ellipsizing; tabs scroll sideways as a rail.',
   acceptance: [
@@ -68,6 +68,8 @@ export const MARKETS_SPEC = {
     { name: 'Note-rate drift', source: 'each note’s valuation price date × the Treasury 10-year', production: 'computed', staging: 'demo' },
     { name: 'Positioning by group (small multiples)', source: 'CFTC TFF · 10-year T-note · weekly, 3 years', production: ['delayed', 'Delayed by source · 3 days'], staging: 'demo' },
     { name: 'Positioning range bars', source: 'CFTC TFF · 10-year T-note, E-mini S&amp;P 500, E-mini Nasdaq-100', production: ['delayed', 'Delayed by source · 3 days'], staging: 'demo' },
+    { name: 'Liquidity (strip and weekly net)', source: 'Fed H.4.1 · Treasury DTS · NY Fed reverse repo · weekly', production: 'computed', staging: 'demo' },
+    { name: 'Coming up (six-week calendar)', source: 'Fed, BLS, BEA and Treasury schedules · note dates · EDGAR filing history', production: ['current', 'Scheduled'], staging: 'demo' },
   ],
   states: [
     { tag: 'loading', when: 'First paint: skeleton frames at final size, “Loading rates and positioning”.' },

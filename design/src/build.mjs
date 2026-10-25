@@ -49,18 +49,23 @@ const SITE_CSS = `
   .site-bar .lbl { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding-left: 6px; }
   @media (max-width: 767px) { .site-bar { bottom: auto; top: 64px; right: 8px; left: 8px; max-width: none; } }
 `;
+// The page's own scheme is the <html data-scheme> the build wrote: 'light' for a light board (its artboard's
+// opts.scheme), else 'dark'. A dark page follows the viewer's stored choice; a light board always opens light
+// (fidelity LIGHT, 2026-10-25: every -light page opened dark), and its toggle flips the view without storing.
 const schemeScript = `<script>
 (function () {
   var KEY = 'convexa-design-scheme';
-  function current() { try { return localStorage.getItem(KEY) || 'dark'; } catch (e) { return 'dark'; } }
-  function apply(s) { document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
-  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, n); } catch (e) {} apply(n); };
+  var PAGE = document.documentElement.getAttribute('data-scheme') || 'dark';
+  var shown = null;
+  function current() { if (shown) return shown; if (PAGE !== 'dark') return PAGE; try { return localStorage.getItem(KEY) || PAGE; } catch (e) { return PAGE; } }
+  function apply(s) { shown = s; document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
+  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; if (PAGE === 'dark') { try { localStorage.setItem(KEY, n); } catch (e) {} } apply(n); };
   apply(current());
 })();
 </script>`;
 const siteBar = (title, extra = '') => `<div class="site-bar" role="toolbar" aria-label="Design site controls"><a href="index.html">← All screens</a><span class="lbl">${title}</span>${extra}<button id="scheme-btn" type="button" onclick="toggleScheme()">Light scheme</button></div>`;
-const page = ({ title, inner, css = '', script = '', desc = '', bar = '' }) => `<!doctype html>
-<html lang="en" data-scheme="dark">
+const page = ({ title, inner, css = '', script = '', desc = '', bar = '', scheme = 'dark' }) => `<!doctype html>
+<html lang="en" data-scheme="${scheme}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -121,16 +126,21 @@ ${script}
 const deskBar = siteBar('Ticker desk', `<span class="lbl">Read</span><select id="desk-read" onchange="deskSetProps({ readState: this.value })">${['trade', 'no_trade', 'idle', 'loading', 'stale', 'cooldown', 'signed_out', 'no_key'].map((s) => `<option value="${s}">${s.replace('_', ' ')}</option>`).join('')}</select><button type="button" onclick="window.__live = window.__live === false ? true : false; deskSetProps({ live: window.__live })">Live on/off</button><button type="button" onclick="window.__sheet = window.__sheet === 'peek' ? 'open' : 'peek'; deskSetProps({ sheet: window.__sheet })">Phone sheet</button>`);
 const deskVals = { scheme: 'dark', liveClass: 'is-live', sheetClass: '', peekVerdict: 'Trade · Bullish', peekChevron: 'rotate(0deg)', fieldSegClass: 'on', magnetSegClass: '', refreshClass: 'btn ghost', refreshLabel: 'Refresh analysis', footerNote: 'Reads pin to a snapshot and never refresh themselves · 3 of 10 reads left today' };
 
+// A board's scheme comes from its artboard (`opts.scheme`, e.g. every Final `-light` board); the site page
+// renders the body in that scheme and declares it on <html>, so the page opens in it.
+const boardScheme = Object.fromEntries(artboards.filter((a) => a.opts?.scheme).map((a) => [a.screen, a.opts.scheme]));
 const pages = [];
 for (const [slug, scr] of Object.entries(screens)) {
-  let inner = scr.body({ minHeight: 0, standalone: true }).replace(/ data-scheme="dark"/g, '');
+  const scheme = boardScheme[slug] || 'dark';
+  let inner = scr.body({ minHeight: 0, standalone: true, ...(scheme !== 'dark' ? { scheme } : {}) }).replace(/ data-scheme="dark"/g, '');
+  if (scheme !== 'dark') inner = inner.replace(new RegExp(` data-scheme="${scheme}"`, 'g'), '');
   let script = '', bar = siteBar(scr.title);
   if (scr.interactive) { inner = staticize(inner, deskVals); script = runtime(scr.interactive.script); bar = deskBar; }
   // v5 frontier prototypes: the body is the designed fallback (what the canvas board shows); the site page
   // adds the script that turns it into the working prototype (progressive enhancement).
   if (scr.siteScript) script += `<script>\n${scr.siteScript}\n</script>`;
   else if (/\{\{/.test(inner)) throw new Error(`static page ${slug} still contains template holes`);
-  writeFileSync(join(SITE, `${slug}.html`), page({ title: scr.title, inner, css: scr.css, desc: scr.desc, script, bar }));
+  writeFileSync(join(SITE, `${slug}.html`), page({ title: scr.title, inner, css: scr.css, desc: scr.desc, script, bar, scheme }));
   pages.push([slug, scr.title, scr.group, scr.desc]);
 }
 
@@ -139,7 +149,7 @@ const indexInner = `<div style="min-height: 100vh; padding: 40px clamp(16px, 4vw
   <div class="caps" style="color: var(--amber-text);">Convexa · design</div>
   <h1 class="display" style="margin: 8px 0 0; font-size: clamp(28px, 3vw, 40px); letter-spacing: -0.02em;">Curvature Terminal v2</h1>
   <p style="margin: 10px 0 0; max-width: 720px; font-size: 14.5px; color: var(--steel); line-height: 1.6;">Static renders of every screen in the redesign, generated from <span class="mono">design/src</span>. Each page is fluid — resize the window — and the corner toggle flips the scheme. The editable canvas lives in Claude Design, one file per board; the v4 single-file viewer is kept beside this site as history.</p>
-  <div style="display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap;"><a href="library.html" class="btn primary">Tokens, components &amp; library</a><a href="desk.html" class="btn secondary">Open the ticker desk</a><a href="${CANVAS_URL}" class="btn ghost">Editable canvas ↗</a><a href="../canvas/convexa-desk-redesign.html" class="btn ghost">v4 canvas file (frozen)</a></div>
+  <div style="display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap;"><a href="library.html" class="btn primary">Tokens, components &amp; library</a><a href="final-desk-staging.html" class="btn secondary">Open the ticker desk</a><a href="${CANVAS_URL}" class="btn ghost">Editable canvas ↗</a><a href="../canvas/convexa-desk-redesign.html" class="btn ghost">v4 canvas file (frozen)</a></div>
   ${groups.map((g) => `<section style="margin-top: 36px;"><div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;"><span class="caps" style="color: var(--phosphor);">${g}</span><span style="flex: 1; height: 1px; background: var(--line);"></span></div><div class="grid-3">${pages.filter((p) => p[2] === g).map(([slug, title, , desc]) => `<a href="${slug}.html" class="panel" style="display: flex; flex-direction: column; gap: 6px; padding: 16px; text-decoration: none; color: inherit;"><span style="font-size: 14px; font-weight: 700;">${title}</span><span style="font-size: 12px; color: var(--steel); line-height: 1.5;">${desc}</span><span style="margin-top: auto; font-size: 12px; color: var(--signal); font-weight: 600;">Open →</span></a>`).join('')}</div></section>`).join('')}
   <p style="margin: 40px 0 0; font-size: 12px; color: var(--steel-2);">Sample values throughout. Regenerate with <span class="mono">node design/src/build.mjs</span>; verify tokens against the app with <span class="mono">node design/src/verify-tokens.mjs</span>.</p>
 </div>`;

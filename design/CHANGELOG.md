@@ -281,3 +281,40 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   tracker (now Q-GITHUB-HREF). Open questions: Q-FINRA-TERMS, Q-HOOD-NI, Q-GITHUB-HREF.
 - The old single-page canvas (82be651e, "Convexa Desk Redesign", frozen at v4) now points to this one; its last
   full version is `canvas/convexa-desk-redesign.html`.
+
+## 2026-10-25 · Fidelity audit, lane L14: the boards follow the shipped app
+
+- **Source:** `docs/design/fidelity-2026-10-25/AUDIT.md` (BOARD-STALE rows and the owner's 14 answers, all as
+  recommended). Every edit is in `design/src`; `design/canvas` and `design/site` are regenerated. 207 artboards
+  (one added: the credits phone page in two boards), 308 site pages.
+- **DESK-04:** the index's "Open the ticker desk" opens `final-desk-staging.html`; `desk.html` carries a
+  "Superseded by Final · Ticker desk (2026-10-16)" banner. DESIGN_SYSTEM.md Amendments row of 2026-10-25.
+- **LIGHT:** a site page renders in its artboard's scheme and declares it on `<html>`; a light board opens light
+  with empty storage and ignores a stored dark choice (all 20 `-light` pages measured light).
+- **Medium boards:** the staging note draws its side panels and the "Public record · NVDA" band (DESK-15); Markets
+  has its On this page rail and four sections, with 2s10s and note-rate drift on full-width rows (R-13, NO-5 B);
+  the Notes index draws the five sample triggers, the Next lines and the seed's last ten changes (R-15); Alerts
+  staging has the seed's seven rules (ACC-18) and no board names a server schedule (ACC-19); Credits has eleven
+  cards (SITE-16); the production bar drops "short data" (SITE-17).
+- **Owner answers drawn:** the demo bar on the page column (NO-2 B), ticker tabs as an underline (NO-3 B), the
+  production note's shipped anatomy with "Filed since this note" in the side column (NO-4 A), Positions' five
+  family cards under orders and the track record (NO-6 A), the planned signal track record as the Scorecard's
+  half-width card (NO-8 A), the landing's shipped field (NO-9 A), one 41px phone bar line (NO-10 A), the Scanner
+  title at `clamp(30px, 3vw, 40px)` (NO-12 A), chart interaction states marked not adopted (NO-13 B), and an
+  8px top hatch band in steel at 28% on every sample frame (NO-14 B, ACC-29).
+- **Low boards:** AiReadNotLive and "Live · TradingView" (DESK-20, FND-18); the expand overlay reuses the desk's
+  term chart (DESK-21); the read strip's score ring and 106px cells (DESK-24); demo pins first (DESK-28); one
+  sample mark per planned section (R-22); research tabs and rails keep their colours (R-23); the liquidity
+  chart's three shape lanes (R-25); NVDA sample bars from the seed (R-28); one mark on the scan head (ACC-26);
+  the signed change after its arrow (ACC-27); a cluster is Computed (ACC-28); the canon's 44–56px landing title
+  and the hero curve (SITE-19); two blog posts (SITE-20); the privacy key, contact and date (SITE-21); the five
+  site cards record the fidelity round (SITE-22); "A–Z" (SITE-23); a solid demo-bar divider (SITE-24); the
+  drawer's "See the full demo ↗" (SITE-25); no "None stored" (SITE-26); loading names the metric and carries no
+  Loading or Nothing yet tag (FND-11); the chart system lists what exists and verify-tokens checks chartContext2,
+  chartBand and both `text.secondary` pairs as mirrors (FND-12); state word, then detail (FND-13);
+  "Sample · not recorded market history" (FND-19); no clock or bell in the responsive spec (FND-20).
+- **Phone boards and the 8,000px frame:** the production note and Markets phone boards stop where their Planned
+  rows' phone boards take over, each with a board note saying so; the credits phone page is two boards.
+- **Heights:** re-measured from the built boards (natural height + 20); 106 changed, none overflows, none above
+  8,000, no text under 11px. Checked: `node design/src/build.mjs` 0, `node design/src/verify-tokens.mjs` 0 (and
+  1 against a copy of tokens.ts whose light `text.secondary` is MUI grey). Not published to the canvas artifact.

@@ -16,12 +16,13 @@ export function respSpecBody({ minHeight = 1300 } = {}) {
   const bps = [['≥ 1600', 'wide'], ['1300–1599', 'desktop'], ['1100–1299', 'laptop'], ['1000–1099', 'small laptop'], ['768–999', 'tablet'], ['< 768', 'phone']];
   const rows = [
     ['Content column', '1560 max · 40px gutters', '1360 max · 40px gutters', 'fluid · 3vw gutters', 'fluid · 3vw gutters', 'fluid · 3vw gutters', 'fluid · 16px gutters'],
-    ['Nav', 'links · 280px search · clock · bell · avatar', 'search 200px', 'search → icon; clock keeps the state, drops the time', 'same', 'links → burger', 'burger · mark · search icon · avatar (clock and bell hide under 700)'],
+    // As shipped (fidelity FND-20, 2026-10-25): no clock and no bell on any Final board or route, one 260 × 34 search.
+    ['Nav', 'links · 260px search · Full demo ↗ (production) · account', 'same', 'same', 'search → 44px icon', 'links → menu button under 900px', 'menu button · wordmark · search icon · account'],
     ['Desk masthead', 'title, meta and controls on one row', 'same', 'controls wrap under the title when needed', 'same', 'controls take their own row', 'controls full width; CTA full width at 44px'],
     ['Structure field', 'field + 340px ladder', 'field + 300px ladder', 'same', 'ladder becomes a 5-cell row under the field', 'same; field scales with width', 'compact field (no axis labels); ladder as 2×2 cells; tape row wraps'],
     ['Read strip', '8 figure cells in one row', 'same', 'same', 'horizontal scroll · 170px cells · dots hint', 'same', 'same'],
     ['Work row', 'AI brief 8/12 · side column 4/12', 'same', 'AI brief full width; tape · position · orders as a 3-column row', 'same', 'AI brief single column; side cards stack', 'AI read docks as a bottom sheet with a peek row and a scrim when open; side cards stack in flow'],
-    ['Context band', '4 columns', '3 columns', '3 columns', '2 columns', '2 columns', '1 column; the filter control scrolls instead of hiding'],
+    ['Context band', '3 columns (the 4-up track went: fidelity DESK-02)', '3 columns', '3 columns', '2 columns', '2 columns', '1 column; the filter control scrolls instead of hiding'],
     ['Scanner', 'table + hover preview', 'table + hover preview', 'table drops Put wall and Vol/OI; preview hidden', 'table also drops Regime and Call wall', 'cards 2-up; chips wrap; density hidden', 'cards 1-up'],
     ['Positions', 'table', 'table', 'table drops Max loss', 'same', 'cards 2-up', 'cards 1-up; net P/L stays at the top'],
     ['Settings', 'rail 220px + 760px column', 'same', 'same', 'same', 'rail → horizontal tabs', 'tabs; two-column field rows collapse under 640'],

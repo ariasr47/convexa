@@ -100,6 +100,50 @@ export const SOURCES = [
     prod: ['delayed', 'Delayed by source · as of Oct 6'], prodNote: 'Positions as of Tuesday, Oct 6, published Friday, Oct 9. The next report is due Friday, Oct 16.',
     shaped: 'the CFTC’s weekly report',
   },
+  // The three liquidity inputs and the four release schedules, shipped 2026-10-15 (pages/trust/sources.ts;
+  // fidelity SITE-16, 2026-10-25): eleven cards in the app's order. Their dates follow cardState.ts: the
+  // liquidity inputs are dated by the Wednesday they are netted for.
+  {
+    id: 'fed-h41', toc: 'Fed H.4.1', name: 'Factors Affecting Reserve Balances (H.4.1)', owner: 'Board of Governors of the Federal Reserve System',
+    reads: 'The Fed’s total assets (less eliminations from consolidation), Wednesday level, through the Fed’s Data Download Program.',
+    cadence: 'Weekly. Wednesday’s level, published Thursday at 4:30 PM ET. Convexa checks every 6 hours.',
+    terms: 'U.S. government data, free to show on a public site, credited to the Federal Reserve.',
+    where: 'Research → Markets, net liquidity.',
+    link: ['The H.4.1 release', 'https://www.federalreserve.gov/releases/h41/'],
+    prod: ['current', 'Updated · week to Oct 7'], prodNote: 'Netted for the week to Wednesday, Oct 7, 2026 · checked 14:00 UTC. The Fed publishes each week’s H.4.1 on Thursday.',
+    shaped: 'the Fed’s H.4.1 release',
+  },
+  {
+    id: 'treasury-dts', toc: 'Treasury DTS', name: 'Daily Treasury Statement', owner: 'U.S. Department of the Treasury, Bureau of the Fiscal Service',
+    reads: 'The Treasury General Account’s closing balance on each business day, through the Fiscal Data API.',
+    cadence: 'Every business day, published the following business day. Convexa checks every 6 hours.',
+    terms: 'U.S. government data, free to show on a public site, credited to the Treasury.',
+    where: 'Research → Markets, net liquidity.',
+    link: ['Daily Treasury Statement', 'https://fiscaldata.treasury.gov/datasets/daily-treasury-statement/'],
+    prod: ['current', 'Updated · Oct 7 figure'], prodNote: 'The figure for Wednesday, Oct 7, 2026, netted with the Fed’s H.4.1 for that week · checked 14:00 UTC. Convexa uses each Wednesday’s figure, so this date moves on when the next H.4.1 is out on Thursday.',
+    shaped: 'the Daily Treasury Statement',
+  },
+  {
+    id: 'nyfed-rrp', toc: 'NY Fed reverse repo', name: 'Overnight reverse repo operations', owner: 'Federal Reserve Bank of New York',
+    reads: 'The amount accepted in each day’s overnight reverse repo operation, through the New York Fed’s Markets Data API.',
+    cadence: 'Every operation day, the same afternoon. Convexa checks every 6 hours.',
+    terms: 'Published by the New York Fed for public use; Convexa credits it on every card that uses it.',
+    where: 'Research → Markets, net liquidity.',
+    link: ['NY Fed reverse repo operations', 'https://www.newyorkfed.org/markets/desk-operations/reverse-repo'],
+    prod: ['current', 'Updated · Oct 7 figure'], prodNote: 'The figure for Wednesday, Oct 7, 2026, netted with the Fed’s H.4.1 for that week · checked 14:00 UTC. Convexa uses each Wednesday’s figure, so this date moves on when the next H.4.1 is out on Thursday.',
+    shaped: 'the New York Fed’s operation results',
+  },
+  {
+    id: 'schedules', toc: 'Release schedules', name: 'Release schedules: Fed, BLS, BEA, Treasury', owner: 'Federal Reserve Board · Bureau of Labor Statistics · Bureau of Economic Analysis · U.S. Treasury',
+    reads: 'The dates, and times where stated, of FOMC statements (the Fed’s meeting calendar); CPI, PPI and the jobs report (BLS’s release calendar); GDP and personal income and outlays (BEA’s release dates); and the next quarterly refunding statement (Treasury’s refunding page).',
+    cadence: 'Set months ahead and moved rarely. Convexa reads each schedule twice a day and says when a release moves.',
+    terms: 'U.S. government publications, free to show on a public site, credited to each agency.',
+    where: 'Research → Markets, Coming up.',
+    link: ['FOMC meeting calendar', 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm'],
+    more: [['BLS release calendar', 'https://www.bls.gov/schedule/news_release/'], ['BEA release schedule', 'https://www.bea.gov/news/schedule'], ['Treasury quarterly refunding', 'https://home.treasury.gov/policy-issues/financing-the-government/quarterly-refunding']],
+    prod: ['current', 'Updated · read Oct 13'], prodNote: 'Answered · checked 14:00 UTC.',
+    shaped: 'the agencies’ published schedules',
+  },
   {
     id: 'finra-si', toc: 'FINRA short interest', name: 'Consolidated short interest', owner: 'FINRA (Financial Industry Regulatory Authority)',
     reads: 'Shares sold short and days to cover for each followed ticker, at each settlement date.',
@@ -136,7 +180,7 @@ export const SOURCES = [
     id: 'tradingview', toc: 'TradingView', name: 'Advanced chart widget', owner: 'TradingView', third: true,
     reads: 'Nothing. TradingView draws daily candles, the 20- and 50-day EMAs and RSI 14 from its own prices, inside a frame on the Technical tab and the desk’s daily price panel.',
     cadence: 'TradingView’s own. US prices are delayed (Cboe One).',
-    terms: 'Display only: Convexa reads, stores and computes nothing from the frame (TradingView policies §3). TradingView’s attribution, “Chart by TradingView”, stays exactly as it publishes it (§4).',
+    terms: 'Display only: Convexa reads, stores and computes nothing from the frame (TradingView policies §3). TradingView’s attribution stays exactly as it publishes it (§4).',
     privacy: 'Loading the chart sends your browser’s IP address and the page’s address to TradingView.',
     where: 'Ticker → Technical; the ticker desk’s daily price panel.',
     link: ['TradingView', 'https://www.tradingview.com'],
@@ -175,23 +219,25 @@ export function sourceCard(s, { env = 'production', state = null, note = null, c
   const op = !stg && (state || s.prod)[0] === 'notConfigured' && s.operator ? `<details><summary>For the site’s operator</summary><span class="dline">${s.operator}</span></details>` : '';
   const rows = [['What Convexa reads', s.reads], ['How often, how late', s.cadence], ['Terms', s.terms + (s.finra && !compact ? FINRA_NOTICE.replace('<p class="tr-notice">', '<p class="tr-notice" style="margin-top: 8px;">') : '')], ...(s.privacy ? [['Your privacy', s.privacy]] : []), ['Where it shows', s.where]];
   const body = compact ? '' : `<dl>${rows.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join('')}</dl>`;
-  const links = compact ? '' : `<div class="links">${ext(s.link[0], s.link[1])}${!stg && (s.id === 'massive') ? demoLink('/ticker/SPY', 'See them on the demo') : ''}${stg && s.id === 'tradingview' ? `<a href="https://convexa.pages.dev/ticker/SPY/technical-analysis">TradingView’s chart on the live site ${icon('external', 13)}</a>` : ''}</div>`;
+  const links = compact ? '' : `<div class="links">${[s.link, ...(s.more || [])].map(([t, h]) => ext(t, h)).join('')}${!stg && (s.id === 'massive') ? demoLink('/ticker/SPY', 'See them on the demo') : ''}${stg && s.id === 'tradingview' ? `<a href="https://convexa.pages.dev/ticker/SPY/technical-analysis">TradingView’s chart on the live site ${icon('external', 13)}</a>` : ''}</div>`;
   return `<section class="tr-src${stg ? ' k-demo' : ''}" id="${s.id}" aria-labelledby="${s.id}-h"><header><div><h3 id="${s.id}-h">${s.name}</h3><span class="own">${s.owner}</span></div>${tag}</header><div class="now"><span class="dline">${now}</span>${chip}${op}</div>${body}${links}</section>`;
 }
 
 const CREDITS_TOC = [['sources', 'On this page'], ...SOURCES.map((s) => [s.id, s.toc]), ['typefaces', 'Typefaces'], ['ours', 'What Convexa makes']];
 function legend(env) {
   const items = env === 'staging'
-    ? [['demo', 'Demo · sample data', 6], ['off', 'Off on the demo', 1]]
-    : [['current', 'Updated', 2], ['delayed', 'Delayed by source', 1], ['off', 'Off', 2], ['thirdParty', 'Live · TradingView', 1], ['notLive', 'Not live', 1]];
+    ? [['demo', 'Demo · sample data', 10], ['off', 'Off on the demo', 1]]
+    : [['current', 'Updated', 6], ['delayed', 'Delayed by source', 1], ['off', 'Off', 2], ['thirdParty', 'Live · TradingView', 1], ['notLive', 'Not live', 1]];
   return `<div class="tr-legend" id="sources" role="group" aria-label="Sources by state"><span class="caps">On this page</span>${items.map(([k, w, n]) => stateTag(k, `${w} · ${n}`)).join('')}</div>`;
 }
 const TYPE_ROWS = [
   ['IBM Plex Sans', 'Copyright 2019 IBM Corp.', 'SIL OFL 1.1', '/fonts/ibm-plex-sans/OFL.txt'],
   ['IBM Plex Mono', 'Copyright 2017 IBM Corp.', 'SIL OFL 1.1', '/fonts/ibm-plex-mono/OFL.txt'],
-  ['Archivo', 'Copyright 2020 The Archivo Project Authors (Omnibus-Type)', 'SIL OFL 1.1', '/fonts/archivo/OFL.txt'],
+  ['Archivo', 'Copyright 2020 The Archivo Project Authors', 'SIL OFL 1.1', '/fonts/archivo/OFL.txt'],
 ];
-function creditsArticle(env) {
+/** part: 0 the whole page; 1 and 2 split it for the phone board, which would pass the canvas's 8,000px frame
+ *  limit with eleven cards (2026-10-25): 1 is the head and the first six cards, 2 the last five and the rest. */
+function creditsArticle(env, part = 0) {
   const stg = env === 'staging';
   const intro = stg
     ? `<p class="lead"><strong>This is the demo: every figure on it is sample data shaped like the sources below.</strong> The demo calls none of them, and none of its numbers describes a real market. The live site reads them as listed here.</p>`
@@ -199,17 +245,20 @@ function creditsArticle(env) {
   const after = stg
     ? `<p>On the live site, FINRA’s figures carry the notice FINRA’s terms require:</p>${FINRA_NOTICE}<div style="display: flex;"><a class="ss-demo" href="https://convexa.pages.dev/credits">The live site’s sources and credits ${icon('external', 13)}</a></div>`
     : `<p class="dline" style="font-size: 13px; margin: 0;">States are checked when you open this page. What each card says about its source never depends on that check.</p>`;
-  return `<div style="display: flex; flex-direction: column; gap: 10px;"><span class="caps">Sources and credits</span><h1 class="display">Data sources and credits</h1>${intro}</div>
+  const head = `<div style="display: flex; flex-direction: column; gap: 10px;"><span class="caps">Sources and credits</span><h1 class="display">Data sources and credits</h1>${intro}</div>
     ${legend(env)}
-    ${after}
-    ${SOURCES.map((s) => sourceCard(s, { env })).join('')}
+    ${after}`;
+  const cards = (list) => list.map((s) => sourceCard(s, { env })).join('');
+  if (part === 1) return `${head}${cards(SOURCES.slice(0, 6))}`;
+  return `${part === 2 ? '' : head}
+    ${cards(part === 2 ? SOURCES.slice(6) : SOURCES)}
     ${h2('typefaces', 'Typefaces')}${P('Three open-source typefaces, served from this site. Loading a page contacts no font service.')}
     ${tbl(['Typeface', 'Copyright', 'Licence'], TYPE_ROWS.map(([a, b, c, href]) => [a, b, `<a href="${href}">${c}</a>`]))}
     ${h2('ours', 'What Convexa makes')}${P('<strong>Research notes</strong> are written for Convexa, each with its price date and its review date. <strong>Computed</strong> figures — a yield spread, a short share, an average — are worked out by Convexa from the inputs named on their card. The landing page’s three illustrations are <strong>illustrative samples</strong>, labelled as such, and never market data.')}
     <p style="font-size: 13px; padding-top: 16px; border-top: 1px solid var(--line);">A source missing from this page, or a credit that’s wrong? The <a href="/methodology#data">Methodology page</a> says how each state is decided; the <a href="/privacy">Privacy page</a> says what each third party learns about you.</p>`;
 }
-export function creditsBoard(env) {
-  return ({ minHeight = 0, scheme = 'dark' } = {}) => docPage({ env, scheme, minHeight, label: 'Data sources and credits', path: '/credits', toc: CREDITS_TOC, article: creditsArticle(env) });
+export function creditsBoard(env, part = 0) {
+  return ({ minHeight = 0, scheme = 'dark' } = {}) => docPage({ env, scheme, minHeight, label: 'Data sources and credits', path: '/credits', toc: CREDITS_TOC, article: creditsArticle(env, part) });
 }
 
 /** Every live state a source card can show, with when it happens. */
@@ -238,10 +287,11 @@ export function creditsStates({ minHeight = 0, scheme = 'dark' } = {}) {
 // ================================================================================================
 const PRIVACY_TOC = [['short', 'The short version'], ['browser', 'In this browser'], ['account', 'If you have an account'], ['leaves', 'What leaves your browser'], ['never', 'What Convexa doesn’t do'], ['clear', 'How to clear it'], ['changes', 'Changes']];
 const KEYS = [
-  ['convexa.uiprefs.v1', 'Your theme and default ticker, while you’re signed out.', 'When you change either in Settings'],
+  ['convexa.uiprefs.v1', 'Your theme and default ticker, while you’re signed out.', 'When you change either'],
   ['convexa.theme-paint', 'The theme to paint before the page loads, so it doesn’t flash.', 'When the theme changes'],
   ['convexa.positions.v3', 'Your simulated (paper) positions and their history.', 'When you add, change or close one'],
   ['convexa.positions.touch_at', 'When the simulated book last changed.', 'With every change to the book'],
+  ['convexa.positions.owner', 'Which account the simulated book in this browser belongs to (its account number, not your email), so another account signing in here never sees it.', 'When you sign in'],
   ['convexa.orders.v1', 'Your simulated orders.', 'When you place, change or cancel one'],
   ['convexa.alerts.v1', 'Your alerts.', 'When you add or remove one'],
   ['convexa.personas.v1', 'The AI personas you made, and which one is active.', 'When you edit a persona'],
@@ -280,8 +330,8 @@ function privacyArticle(env) {
   const clear = stg
     ? `<div class="tr-box k-demo"><h3>${stateTag('demo')}Reset demo data</h3><p>The button in the demo bar removes every key under convexa.demo.v1. and sets the sample book up again. Nothing else in your browser is touched.</p></div>`
     : `<div class="tr-box"><h3>Signed out</h3><p>Clear this site’s data in your browser (site settings → clear data). That removes every key above. Export your positions first if you want to keep them.</p></div>
-      <div class="tr-box"><h3>Signed in</h3><p>Signing out ends the session. In Settings you can remove your AI key and your Webull keys, which deletes them from the server. To delete the account itself, ask the site’s owner; there is no delete button yet.</p></div>`;
-  return `<div style="display: flex; flex-direction: column; gap: 10px;"><span class="caps">Privacy</span><h1 class="display">Privacy</h1><span class="upd">Last updated Oct 14, 2026</span></div>
+      <div class="tr-box"><h3>Signed in</h3><p>Signing out ends the session. In Settings you can remove your AI key and your Webull keys, which deletes them from the server. To delete the account itself, ask the site’s owner through <a href="https://github.com/ariasr47" rel="noopener">github.com/ariasr47 ↗</a>; there is no delete button yet.</p></div>`;
+  return `<div style="display: flex; flex-direction: column; gap: 10px;"><span class="caps">Privacy</span><h1 class="display">Privacy</h1><span class="upd">Last updated Oct 15, 2026</span></div>
     ${h2('short', 'The short version')}${short}
     ${h2('browser', 'In this browser')}${browser}
     ${h2('account', stg ? 'The demo account' : 'If you have an account')}${account}

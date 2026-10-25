@@ -33,9 +33,10 @@ const V4_CSS = `
   .bstat.s-live { background: rgba(138,155,180,0.16); border-color: transparent; }
   .hatch { background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
   .t-dim { color: var(--text-dim) !important; } .t-info { color: var(--text-info); } .t-up { color: var(--text-up); } .t-down { color: var(--text-down); }
-  .v4 a:not(.btn):not(.prov):not(.v4n a) { color: var(--text-info); }
+  .v4 a:not(.btn):not(.prov):not(.v4n a):not(.v4-tabs a):not(.hd-tabs a):not(.nv-rail a):not(.pl-jump a) { color: var(--text-info); } /* tabs and rails keep their own colours (fidelity R-23) */
   .dcell { box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; overflow: hidden; color: var(--phosphor); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
-  .dcell.is-sample { border-style: dashed; border-color: var(--steel-2); background-color: var(--panel); background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
+  .dcell.is-sample { position: relative; border-style: dashed; border-color: var(--steel-2); background-color: var(--panel); }
+  .dcell.is-sample::before, .hd-p.is-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; }
   .dcell.sheet { border-radius: 16px 16px 0 0; padding-top: 8px; }
   .dcell .handle { align-self: center; width: 36px; height: 4px; border-radius: 2px; background: var(--line-2); margin-bottom: 2px; }
   .dcell .dhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 22px; }
@@ -86,7 +87,7 @@ const V4_CSS = `
   .sub { font-size: 12.5px; color: var(--steel); margin: 2px 0 0; line-height: 1.45; }
   .srcline { font-size: 11.5px; color: var(--steel); margin: 0; }
   .hd-p { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; container-type: inline-size; }
-  .hd-p.is-sample { border-style: dashed; border-color: var(--steel-2); background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
+  .hd-p.is-sample { position: relative; border-style: dashed; border-color: var(--steel-2); }
   .hd-p .ph { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
   .hd-p .ph h3 { margin: 0; font-size: 14px; font-weight: 600; flex: 1 1 auto; min-width: 0; }
   .hd-fig { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border-radius: 10px; overflow: hidden; }
@@ -595,7 +596,7 @@ export function v4Notice(mode = 'hybrid') {
   if (mode === 'none') return '';
   if (mode === 'demo') return `<div role="status" aria-label="Demo status" class="v4-notice demo"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('sample', 14)}<strong style="font-weight: 600;">Demo · sample data</strong><span class="steel">Authored scenario · October 7, 2026 · no market feed connected</span><span style="flex: 1;"></span><span class="steel">Signed in as the demo account</span><button class="btn secondary sm" type="button">Reset demo data</button></div></div>`;
   if (mode === 'paused') return `<div role="status" aria-label="Market data status" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('pause', 14)}<strong style="font-weight: 600;">Live market data is off.</strong><span class="steel">Prices, dealer structure and AI reads are paused. Daily charts come from TradingView, and research notes are current.</span><span style="flex: 1;"></span><a href="/research" class="t-info">Read research</a><a href="${STAGING_DEMO_URL}" class="t-info">Try the full demo →</a></div></div>`;
-  return `<div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('notlive', 14)}<strong style="font-weight: 600;">Options data isn't live on this site.</strong><span class="steel only-wide">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, short data, filings, research and TradingView’s daily charts are live.</span><span class="steel only-phone">Public data is.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">What's live</a><a href="${STAGING_DEMO_URL}" class="t-info only-wide">See the full demo →</a></div></div>`;
+  return `<div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('notlive', 14)}<strong style="font-weight: 600;">Options data isn’t live on this site.</strong><span class="steel only-wide">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, filings, research and TradingView’s daily charts are live.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">What’s live</a><a href="${STAGING_DEMO_URL}" class="t-info only-wide">See the full demo →</a></div></div>`;
 }
 export function v4Nav({ active = '', signedIn = false, demo = false, fullDemo = false } = {}) {
   const items = [['scanner', 'Scanner', '/scanner'], ['ticker', 'Ticker', '/ticker/SPY'], ['research', 'Research', '/research'], ['positions', 'Positions', '/positions'], ['alerts', 'Alerts', '/alerts']];
@@ -625,11 +626,12 @@ export function v4Footer() {
 }
 // ---- Final chrome on staging (2026-10-22, spec 01 steps 1, 2 and 4) ------------------------------
 // The shipped staging demo bar and footer. The v4 boards keep v4Notice('demo') and v4Footer() as drawn.
-// Bar (shell/AppShell.tsx): MarketDataNotice's 1240 column, a 6px column gap and no row gap, each "·" its
+// Bar (shell/AppShell.tsx): the page column (.wrap; owner NO-2 B, 2026-10-25, superseding spec 01's 1240) with a
+// solid 1px divider (spec 01), a 6px column gap and no row gap, each "·" its
 // own aria-hidden span, the sample glyph at every width, Reset at its line's right end (margin-left: auto).
 // From 600px up it names the product and reads "As of Oct 7, 2026" (owner D2); below 600px it is one
 // line with no vertical padding, "Demo · sample data · Oct 7, 2026" and "Reset" named "Reset demo data".
-const FD_CSS = '<style>.fd-bar { padding-top: 8px; padding-bottom: 8px; } .fd-bar > .wrap { max-width: calc(1240px + 2 * clamp(16px, 3vw, 40px)); display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 0; } .fd-bar .fd-reset { margin-left: auto; height: 44px; } .fd-bar .fd-ph, .fd-bar .fd-br { display: none; } @media (max-width: 599px) { .fd-bar { padding-top: 0; padding-bottom: 0; } .fd-bar .fd-wd { display: none; } .fd-bar .fd-ph { display: inline; } .fd-bar .fd-br { display: block; flex-basis: 100%; height: 0; } }</style>';
+const FD_CSS = '<style>.fd-bar { padding-top: 8px; padding-bottom: 8px; } .v4-notice.demo.fd-bar { border-bottom: 1px solid var(--line); } .fd-bar > .wrap { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 0; } .fd-bar .fd-reset { margin-left: auto; height: 44px; } .fd-bar .fd-ph, .fd-bar .fd-br { display: none; } @media (max-width: 599px) { .fd-bar { padding-top: 0; padding-bottom: 0; } .fd-bar .fd-wd { display: none; } .fd-bar .fd-ph { display: inline; } .fd-bar .fd-br { display: block; flex-basis: 100%; height: 0; } }</style>';
 const fdSep = (wide = false) => `<span class="steel${wide ? ' fd-wd' : ''}" aria-hidden="true">·</span>`;
 /** The staging demo bar. `extra` is a playback line (paused or ended), which starts its own line below
  *  600px and follows a separator from 600px up. `phone: true` draws the under-600px line at any width. */

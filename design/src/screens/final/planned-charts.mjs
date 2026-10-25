@@ -34,8 +34,16 @@ export function liquidityChart(e, { height = 220 } = {}) {
   const { W, t, fed, tga, rrp, net } = liquidityData(e);
   const ch4 = net[W - 1] - net[W - 5];
   const lo = Math.floor(Math.min(...net) * 10) / 10, hi = Math.ceil(Math.max(...net) * 10) / 10;
-  const ev = [['Quarter end', U(2026, 7, 1)], ['FOMC', U(2026, 7, 29)], ['FOMC · tax date', U(2026, 9, 16)]].map(([label, at]) => ({ x: t.findIndex((d) => Math.abs(d - at) < 4 * DAY), label, minor: label === 'Quarter end' })).filter((x) => x.x >= 0);
-  const body = `${plot({ height, pt: 34, pl: 56, pr: 96, prn: 60, x: { min: 0, max: W - 1, ticks: [0, 8, 16, W - 1].map((i) => ({ v: i, label: dl(t[i]), align: i === 0 ? 0 : i === W - 1 ? 1 : undefined, minor: i === 8 })) }, y: { min: lo, max: hi, ticks: ticks(lo, hi, 0.1, (v) => (Math.abs(v - hi) < 1e-6 ? `$${fmt.num(v, 1)}T` : fmt.num(v, 1))) }, series: [{ points: net.map((v, i) => [i, v]), role: 'emph', end: 'Net', endValue: `$${fmt.num(net[W - 1], 2)}T` }], events: ev, eventLane: { long: 'Events', short: '' }, aria: `Net liquidity, weekly, ${dl(t[0])} to ${dl(t[W - 1])}: from $${fmt.num(net[0], 2)}T to $${fmt.num(net[W - 1], 2)}T` })}
+  // LIQUIDITY_SPEC as built (fidelity R-25): three shape lanes under the line, each mark on the first Wednesday
+  // on or after its date: quarter ends (■), FOMC decisions (●, ◆ with projections) and corporate estimated-tax
+  // days (○), with a dotted hairline up through the plot. Shape carries the kind, never hue (P-11).
+  const at = (y, m, d) => t.findIndex((w) => w >= U(y, m, d));
+  const MARKS = [['Quarter', 'sq', [[2026, 6, 30], [2026, 9, 30]]], ['FOMC', 'dot', [[2026, 4, 29], [2026, 7, 29]]], ['FOMC', 'dia', [[2026, 6, 17], [2026, 9, 16]]], ['Tax', 'ring', [[2026, 4, 15], [2026, 6, 15], [2026, 9, 15]]]]
+    .flatMap(([lane, shape, ds]) => ds.map(([y, m, d]) => ({ lane, shape, x: at(y, m, d) }))).filter((k) => k.x >= 0);
+  const LANES = ['Quarter', 'FOMC', 'Tax'];
+  const X = (i) => ((i / (W - 1)) * 100).toFixed(2);
+  const lanes = `<div class="pl-lanes" aria-hidden="true" style="--pl: 56px; --pr: 96px; --prn: 60px;">${LANES.map((ln) => `<div class="ln"><span class="lb">${ln}</span><span class="tr">${MARKS.filter((k) => k.lane === ln).map((k) => `<i class="mk k-${k.shape}" style="left: ${X(k.x)}%;"></i>`).join('')}</span></div>`).join('')}</div>`;
+  const body = `${plot({ height, pt: 34, pl: 56, pr: 96, prn: 60, x: { min: 0, max: W - 1, ticks: [0, 8, 16, W - 1].map((i) => ({ v: i, label: dl(t[i]), align: i === 0 ? 0 : i === W - 1 ? 1 : undefined, minor: i === 8 })) }, y: { min: lo, max: hi, ticks: ticks(lo, hi, 0.1, (v) => (Math.abs(v - hi) < 1e-6 ? `$${fmt.num(v, 1)}T` : fmt.num(v, 1))) }, series: [{ points: net.map((v, i) => [i, v]), role: 'emph', end: 'Net', endValue: `$${fmt.num(net[W - 1], 2)}T` }], segs: [...new Set(MARKS.map((k) => k.x))].map((x) => ({ x0: x, y0: lo, x1: x, y1: hi, role: 'axis', width: 1, dash: '2 3', essential: false })), aria: `Net liquidity, weekly, ${dl(t[0])} to ${dl(t[W - 1])}: from $${fmt.num(net[0], 2)}T to $${fmt.num(net[W - 1], 2)}T` })}${lanes}
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 10px;">${[['Fed total assets', fed, `$${fmt.num(fed[W - 1], 2)}T`], ['Treasury cash, TGA · subtracted', tga, `$${fmt.num(tga[W - 1] * 1000, 0)}B`], ['Reverse repo · subtracted', rrp, `$${fmt.num(rrp[W - 1] * 1000, 0)}B`]].map(([n, s, v]) => `<div class="hd-p" style="gap: 6px; padding: 12px 14px;"><span class="caps">${n}</span>${sparkline(s, { width: 120, height: 24, value: v, scale: 'own range', aria: `${n}, 26 weeks, ending ${v}` })}</div>`).join('')}</div>`;
   return frame(e, {
     claim: `Net liquidity ${ch4 < 0 ? 'fell' : 'rose'} $${fmt.num(Math.abs(ch4) * 1000, 0)}B in four weeks as the Treasury’s cash account grew`,
@@ -44,7 +52,7 @@ export function liquidityChart(e, { height = 220 } = {}) {
     real: 'Federal Reserve H.4.1 · Treasury DTS · NY Fed', shaped: 'H.4.1 · DTS · NY Fed reverse repo',
     asof: e.demo ? '' : 'Week to Wed Oct 7 · published Thu Oct 8', tag: ['computed', 'Computed · weekly'],
     href: 'https://www.federalreserve.gov/releases/h41/',
-    note: 'All three inputs are read for the same Wednesday, so a daily TGA swing never shows as a weekly move. The next H.4.1 is Thu Oct 15.',
+    note: 'Each Wednesday’s Fed figure is netted against the Treasury’s cash and reverse repo on that same day (or the business day before it), so a daily swing in the Treasury’s cash never shows as a weekly move. Marks under the line, each on the first Wednesday on or after it: quarter ends (■), FOMC decisions (●, ◆ with projections; from the Fed’s calendar, checked Oct 14, 2026) and corporate estimated-tax days (○; from the IRS tax calendar), when the Treasury’s cash account tends to jump.',
     table: dataTable({ caption: 'Net liquidity and its inputs, $ trillions', cols: ['Week to', 'Fed assets', 'TGA', 'Reverse repo', 'Net'], rows: net.map((v, i) => [dl(t[i]), fmt.num(fed[i], 3), fmt.num(tga[i], 3), fmt.num(rrp[i], 3), fmt.num(v, 3)]).filter((_, i) => i % 3 === 1 || i === W - 1) }),
   });
 }
@@ -310,7 +318,8 @@ function demoBars(base, step, phase) {
   return dates.map((date, i) => { const close = +(base + i * step + Math.sin((i + phase) / 4) * base * 0.004).toFixed(2); const spread = +(base * 0.009 + (i % 4) * base * 0.0004).toFixed(2); return { date, close, high: +(close + spread).toFixed(2), low: +(close - spread).toFixed(2) }; });
 }
 function demoValues() {
-  const b = demoBars(187, 0.21, 5), spy = demoBars(670, 0.32, 1); const n = b.length;
+  // The NVDA and SPY seeds as the demo ships them (catalog/nvda.seed.json, spy.seed.json; R-28).
+  const b = demoBars(190.54, 0.15, 5), spy = demoBars(670, 0.32, 1); const n = b.length;
   const ema = (w) => { const a = 2 / (w + 1); let v = b.slice(0, w).reduce((x, y) => x + y.close, 0) / w; for (let i = w; i < n; i++) v = a * b[i].close + (1 - a) * v; return v; };
   let ag = 0, al = 0; for (let i = 1; i < n; i++) { const ch = b[i].close - b[i - 1].close, g = Math.max(ch, 0), l = Math.max(-ch, 0); if (i <= 14) { ag += g / 14; al += l / 14; } else { ag = (ag * 13 + g) / 14; al = (al * 13 + l) / 14; } }
   const tr = b.map((x, i) => (i ? Math.max(x.high - x.low, Math.abs(x.high - b[i - 1].close), Math.abs(x.low - b[i - 1].close)) : x.high - x.low));

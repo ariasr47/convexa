@@ -6,7 +6,7 @@
 import { chartFrame, dataTable, fmt, legend, plot, rangeBar, smallMultiples, sparkline, stateBody, ticks } from '../chart-kit.mjs';
 import { CFTC, CFTC_CATS, CURVES, DAYS, EVENTS, SI, SI_GAP, TENORS, curveAgo, dLabel, dLong, dayIndex, latestCurve, monthStarts, rangeStats, spread2s10s } from '../data/charts.mjs';
 import { tvFrame, TV_CHIP } from './tradingview.mjs';
-import { provChip } from './data-states.mjs';
+import { provChip, stateTag } from './data-states.mjs';
 
 export const SHARED = 'apps/dashboard/src/app/shared/charts';
 
@@ -60,19 +60,20 @@ const STATE_COPY = {
   loading: { text: '' },
   empty: { text: 'No par yields in this range.', cause: 'Oct 10–13, 2026 is a weekend and Columbus Day; the Treasury publishes on business days after 3:30 PM ET. Widen the range, or the next curve lands Oct 14.' },
   error: { text: 'Couldn’t load the Treasury’s curve.', cause: 'Our request to /api/public-data/rates timed out after 10 s at 06:10 ET. Nothing is shown rather than a guess.', action: '<button class="btn secondary sm" type="button">Try again</button>' },
-  notLive: { text: 'Not live on this site: dealer gamma needs a paid options feed this site doesn’t run.', cause: 'Rates, positioning, short data and filings on this page are live.', action: '<a class="t-info" href="#sample">See a labelled sample →</a>' },
+  notLive: { text: 'Not live on this site: dealer gamma needs a paid options feed this site doesn’t run.', cause: 'Rates, positioning and filings on this page are live; FINRA’s short data is off until its terms are confirmed.', action: '<a class="t-info" href="#sample">See a labelled sample →</a>' },
 };
 export const DATA_STATE_KEYS = ['loading', 'empty', 'error', 'stale', 'notLive', 'sample', 'demo'];
 /** Draw a chart frame in one of the seven data states. ready(o) returns { body, table } for the ready mark. */
 export function inState(state, { claim, sub, source, asof, ready, height = 230, name = '2s10s spread, past year' }) {
   if (state === 'stale') { const r = ready({ dim: true }); return chartFrame({ claim, sub, body: r.body, source, asof: 'Last good copy · fetched Oct 8, 06:10 ET · the Treasury hasn’t published since', state: 'stale', table: r.table }); }
-  if (state === 'sample') { const r = ready({}); return chartFrame({ claim, sub, body: r.body, source: 'Sample · shaped like the Treasury’s daily curve', sourceKind: 'dashed', asof: 'Scenario · Oct 7, 2026', state: 'sample', kind: 'sample', table: r.table }); }
-  if (state === 'demo') { const r = ready({}); return chartFrame({ claim, sub, body: r.body, source: 'Demo · shaped like U.S. Treasury data', sourceKind: 'dashed', asof: 'Scenario · Oct 7, 2026', state: 'demo', kind: 'sample', table: r.table }); }
+  // D1 (owner, 2026-10-22): a sample frame names the sample once, here by its dashed source chip, so no head tag.
+  if (state === 'sample') { const r = ready({}); return chartFrame({ claim, sub, body: r.body, source: 'Sample · shaped like the Treasury’s daily curve', sourceKind: 'dashed', asof: 'Scenario · Oct 7, 2026', kind: 'sample', table: r.table }); }
+  if (state === 'demo') { const r = ready({}); return chartFrame({ claim, sub, body: r.body, source: 'Demo · shaped like U.S. Treasury data', sourceKind: 'dashed', asof: 'Scenario · Oct 7, 2026', kind: 'sample', table: r.table }); }
   const c = STATE_COPY[state];
-  // A claim needs data: without it the title names the metric, never a finding computed from nothing.
-  const titles = { loading: '&nbsp;', empty: name, error: name, notLive: 'Dealer gamma by strike' };
+  // A claim needs data: without it the title names the metric (P-10, loading included), never a finding computed from nothing.
+  const titles = { loading: name, empty: name, error: name, notLive: 'Dealer gamma by strike' };
   const subs = { notLive: 'Net dealer gamma by strike · $ per 1% move · all expirations', loading: '' };
-  return chartFrame({ claim: state === 'loading' ? '<span class="skel" style="display: inline-block; width: 60%; height: 14px;" aria-hidden="true"></span>' : titles[state], sub: subs[state] ?? sub, body: stateBody(state, { height, ...c }), source: state === 'loading' || state === 'notLive' ? '' : source, asof: state === 'error' ? 'Last attempt · Oct 9, 06:10 ET' : state === 'empty' ? 'Checked · Oct 9' : '', state: state === 'loading' ? 'loading' : state === 'empty' ? 'empty' : state === 'error' ? 'error' : 'notLive' });
+  return chartFrame({ claim: titles[state], sub: subs[state] ?? sub, body: stateBody(state, { height, ...c }), source: state === 'loading' || state === 'notLive' ? '' : source, asof: state === 'error' ? 'Last attempt · Oct 9, 06:10 ET' : state === 'empty' ? 'Checked · Oct 9' : '', state: state === 'loading' || state === 'empty' ? '' : state === 'error' ? 'error' : 'notLive' }); // FND-11: no Loading or Nothing yet tag (P-2)
 }
 const spreadReady = (o) => ({ body: spreadPlot({ dim: o.dim }), table: spreadTable() });
 const SP_CLAIM = `The 2s10s spread stayed positive all year: ${fmt.num(spLo)} to ${fmt.num(spHi)} points, ${fmt.num(lastSp)} now`;
@@ -213,7 +214,7 @@ export function thirdPartyFrame({ ticker = 'NVDA', state = 'live', height = 620,
   const inner = state === 'loading'
     ? `<div class="tvf" role="status" aria-busy="true" style="--tvh: ${height}px; --tvph: ${phoneHeight}px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 10px; background: var(--panel);"><span style="font-size: 13px; color: var(--steel);">Loading TradingView’s chart…</span></div>`
     : tvFrame({ ticker, state, height, phoneHeight, mini });
-  return `<section class="tpf" aria-label="${ticker} daily chart by TradingView"><div class="tpf-h"><h3 class="tpf-name">${ticker} daily chart</h3>${provChip(TV_CHIP, 'dotted', `https://www.tradingview.com/symbols/NASDAQ-${ticker}/`)}</div><div class="tpf-fence">${inner}</div><p class="tpf-note">TradingView draws this from its own prices; your browser sends it your IP address and this page’s address. Convexa reads, stores and computes nothing from it.</p></section>`;
+  return `<section class="tpf" aria-label="${ticker} daily chart by TradingView"><div class="tpf-h"><h3 class="tpf-name">${ticker} daily chart</h3>${provChip(TV_CHIP, 'dotted', `https://www.tradingview.com/symbols/NASDAQ-${ticker}/`)}${stateTag('thirdParty')}</div><div class="tpf-fence">${inner}</div><p class="tpf-note">TradingView draws this from its own prices; your browser sends it your IP address and this page’s address. Convexa reads, stores and computes nothing from it.</p></section>`;
 }
 export const TPF_CSS = `
   .tpf { display: flex; flex-direction: column; gap: 10px; min-width: 0; }

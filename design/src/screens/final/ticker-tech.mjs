@@ -28,7 +28,7 @@ export const TT_CSS = `
 `;
 
 // ---- the demo's NVDA sample bars (catalog/shared.ts makeScenario, nvda.seed.json: base 187, step 0.21, phase 5)
-function demoBars(base = 187, step = 0.21, phase = 5) {
+function demoBars(base = 190.54, step = 0.15, phase = 5) {
   const dates = []; const d = new Date('2026-10-07T12:00:00Z');
   while (dates.length < 60) { const w = d.getUTCDay(); if (w !== 0 && w !== 6) dates.unshift(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() - 1); }
   return dates.map((date, i) => { const close = +(base + i * step + Math.sin((i + phase) / 4) * base * 0.004).toFixed(2); const spread = +(base * 0.009 + (i % 4) * base * 0.0004).toFixed(2); return { date, close, high: +(close + spread).toFixed(2), low: +(close - spread).toFixed(2) }; });
@@ -61,7 +61,9 @@ function indicators(b) {
   }
   return { e20: ema(20), e50: ema(50), rsi, atr, adx };
 }
-const SEEDS = { SPY: [670, 0.32, 1, 'SPDR S&P 500 ETF · NYSE Arca'], NVDA: [187, 0.21, 5, 'NVIDIA · Nasdaq'] };
+// Each symbol's seed as the demo ships it (libs/api/src/lib/demo/catalog/<sym>.seed.json: base, step, phase;
+// ruling 2026-10-14 (3): bar values follow the seed; fidelity R-28, 2026-10-25: NVDA was 187 / 0.21).
+const SEEDS = { SPY: [670, 0.32, 1, 'SPDR S&P 500 ETF · NYSE Arca'], NVDA: [190.54, 0.15, 5, 'NVIDIA · Nasdaq'] };
 const CACHE = {};
 const series = (sym) => (CACHE[sym] ||= (() => { const [b, st, ph] = SEEDS[sym]; const bars = demoBars(b, st, ph); return { BARS: bars, IND: indicators(bars) }; })());
 const last = (a) => a[a.length - 1];
@@ -100,7 +102,7 @@ export function sampleTaChart({ height = 300, sym = 'SPY', rsi = true, focus = t
     legendHtml: `<div class="cf-legend"><span class="k" style="color: var(--c-emph);"><i></i><span style="color: var(--steel);">Close</span></span><span class="k" style="color: var(--c-ctx);"><i></i><span style="color: var(--steel);">EMA 20</span></span><span class="k" style="color: var(--c-ctx2);"><i></i><span style="color: var(--steel);">EMA 50 (from bar 50)</span></span></div>`,
     body: rsi ? `${price}<span class="caps" style="margin-top: 6px;">RSI 14 · dashed at 30 and 70</span>${rsiPlot}` : price,
     note: 'Indicators are descriptive context, not a forecast or a scored signal.',
-    source: 'Sample series · shaped like daily bars', sourceKind: 'dashed', asof: 'Scenario · Oct 7, 2026', kind: 'sample', state: 'sample', stateText: 'Sample series · not recorded market history',
+    source: 'Sample series · shaped like daily bars', sourceKind: 'dashed', asof: 'Scenario · Oct 7, 2026', kind: 'sample', state: 'sample', stateText: 'Sample · not recorded market history',
     table: dataTable({ caption: `${sym} sample bars, last 10, with indicators`, cols: ['Date', 'Close', 'EMA 20', 'EMA 50', 'RSI 14'], rows: BARS.slice(-10).map((b, j) => { const i = n - 10 + j; return [dl(b.date), fmt.num(b.close, 2), fmt.num(IND.e20[i], 2), fmt.num(IND.e50[i], 2), fmt.num(IND.rsi[i], 1)]; }) }),
   });
 }
@@ -131,7 +133,7 @@ export function techStatesBody({ minHeight = 0, scheme = 'dark' } = {}) {
     { name: 'Live · TradingView', tag: ['thirdParty'], when: 'Production, on view (P-14): the dotted frame, TradingView’s candles and colours, its attribution, and the privacy line. Convexa reads nothing from it.', html: thirdPartyFrame({ ticker: 'NVDA', height: 260, phoneHeight: 260, mini: true }) },
     { name: 'A symbol TradingView may not list', tag: ['empty', 'Unknown listing'], when: 'A ticker outside Convexa’s exchange map and without a note is passed bare; if TradingView can’t place it the empty chart is inside its frame, where Convexa can’t see. So the page says so under the frame.', html: `<div class="hd-p"><span class="dline" style="font-size: 13px; color: var(--phosphor);">Convexa couldn’t match RKLB to an exchange, so TradingView picks the listing. If the chart above is empty, TradingView doesn’t list it under that name.</span><a href="https://www.tradingview.com/symbols/RKLB/" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">Search RKLB on TradingView →</a></div>` },
     { name: 'Not live · readings', tag: ['notLive'], when: 'Production: Convexa’s own readings need daily bars from the paid feed; the panel says what they would be and links to the demo.', html: readingsNotLive('NVDA') },
-    { name: 'Sample', tag: ['sample'], when: 'Staging: Convexa’s chart from the 60 sample bars, dashed and hatched, “Sample series · not recorded market history”.', html: sampleReadings() },
+    { name: 'Sample', tag: ['sample'], when: 'Staging: Convexa’s chart from the 60 sample bars, dashed and hatched, “Sample · not recorded market history”.', html: sampleReadings() },
     { name: 'Warming up', tag: ['empty', 'Insufficient history'], when: 'Staging, a reading with fewer bars than its window (ADX needs 28): the reason and the count, never a zero.', html: `<div class="tch-fig" style="grid-template-columns: repeat(2, minmax(0, 1fr));"><div><span class="caps">ADX 14</span><span class="dnan" style="font-size: 14px;">Insufficient history</span><span class="s">12 of 28 bars</span></div><div><span class="caps">EMA 50</span><span class="dnan" style="font-size: 14px;">Insufficient history</span><span class="s">12 of 50 bars</span></div></div>` },
     { name: 'Not in the demo', tag: ['empty', 'No sample'], when: 'Staging, a symbol beyond the six: “No sample data for this symbol.” and the six to pick from.', html: `<div class="hd-p"><strong style="font-size: 13px;">No sample data for RKLB.</strong><span class="dline">The demo runs on SPY, QQQ, AAPL, MSFT, NVDA and TSLA.</span></div>` },
     { name: 'Couldn’t load', tag: ['error'], when: 'Staging, the sample bars failed to load: the cause and Retry demo.', html: chartFrame({ claim: 'SPY daily close with EMA 20 and EMA 50', sub: 'Sample bars', state: 'error', body: stateBody('error', { height: 140, text: 'The sample bars didn’t load.', cause: 'The demo’s scenario file for SPY didn’t arrive.', action: '<button class="btn secondary sm" type="button">Retry demo</button>' }) }) },

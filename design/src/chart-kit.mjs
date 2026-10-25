@@ -28,7 +28,7 @@ export const CHART_CSS = `
   .cf { position: relative; display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 18px 20px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; container-type: inline-size; }
   .cf.k-third { border: 1px dotted var(--steel-2); }
   .cf.k-sample { border: 1px dashed var(--steel-2); }
-  .cf.k-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--hatch) 6px 12px); pointer-events: none; }
+  .cf.k-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; }
   .cf-h { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .cf-top { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 10px; }
   .cf-claim { margin: 0; flex: 1 1 260px; min-width: 0; font: 600 15px/1.35 'IBM Plex Sans', sans-serif; color: var(--phosphor); text-wrap: balance; }

@@ -41,7 +41,8 @@ export function frameState(state, { metric, sub = '', height = 220, text = '', c
   const msg = body || (state === 'loading'
     ? `<div class="cx" role="img" aria-label="Loading ${metric}" aria-busy="true" style="height: ${height}px;"><div class="cskel" aria-hidden="true"></div></div>`
     : `<div class="cx" style="height: ${height}px;"><div class="cstate${warn ? ' warn' : ''}" role="${warn && state !== 'stale' ? 'alert' : 'status'}"><div class="msg"><p>${text}</p>${cause ? `<p class="q">${cause}</p>` : ''}${action}</div></div></div>`);
-  return chartFrame({ claim: state === 'loading' ? `<span class="skel" style="display: inline-block; width: 55%; height: 14px;" aria-hidden="true"></span><span class="sr-only">${metric}</span>` : metric, sub, body: msg, source, asof, state, stateText });
+  // P-10: a loading frame names its metric; P-2: loading and empty carry no tag (fidelity FND-11, ChartFrame.tsx).
+  return chartFrame({ claim: metric, sub, body: msg, source, asof, state: state === 'loading' || state === 'empty' ? '' : state, stateText });
 }
 
 const ix = (n) => TENORS.findIndex(([k]) => k === n);

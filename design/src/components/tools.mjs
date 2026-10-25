@@ -114,7 +114,7 @@ function taRecord(state) {
     case 'off': return na('Live builds always load it; the CSP allows exactly TradingView’s hosts.');
     case 'paused': return na('It doesn’t depend on Convexa’s market-data mode.');
     case 'notLive': return { title: 'Readings Convexa would compute', tag: ['notLive', 'Not live · price source'], blocks: [['would', 'RSI, ATR, realized vol, relative strength vs SPY and SMH, support and resistance, computed by Convexa.'], ['off', 'Convexa has no daily prices licensed to it; TradingView’s chart is display-only.']], foot: [] };
-    case 'sample': return { title: 'Technical analysis · sample', tag: ['sample', 'Sample bars'], blocks: [['line', 'The demo’s sample-bar view: 60 synthetic daily bars with EMA 20 and 50, RSI 14, ADX 14 and ATR 14.']], foot: [['prov', 'Sample series · not recorded market history', 'dashed']], frame: 'sample' };
+    case 'sample': return { title: 'Technical analysis · sample', tag: ['sample', 'Sample bars'], blocks: [['line', 'The demo’s sample-bar view: 60 synthetic daily bars with EMA 20 and 50, RSI 14, ADX 14 and ATR 14.']], foot: [['prov', 'Sample · not recorded market history', 'dashed']], frame: 'sample' };
     case 'demo': return { title: 'Technical analysis · NVDA', tag: null, blocks: [['line', 'Demo builds keep the sample-bar view; TradingView’s widget appears only in live builds.']], foot: [['prov', 'Demo · sample data', 'dashed']] };
     case 'locked': return na('Public on every ticker; nothing sits behind a sign-in.');
     default: return na('');

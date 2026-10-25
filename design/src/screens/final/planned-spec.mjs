@@ -319,7 +319,7 @@ export const TA_SPEC = {
     staging: STAGING('Computed in the browser from the demo’s 60 sample bars (EMA, RSI, ADX, ATR ship today; realized vol, support and resistance, relative strength are new).'),
   },
   widgets: [
-    { name: 'TradingView chart', source: 'TradingView widget, its own licensed delayed prices', production: 'thirdParty', staging: ['computed', 'Computed · sample bars'] },
+    { name: 'TradingView chart', source: 'TradingView widget, its own licensed delayed prices', production: 'thirdParty', staging: ['sample', 'Sample · not recorded market history'] },
     { name: 'Readings grid', source: 'Daily bars licensed to Convexa (none yet)', production: ['notLive', 'Not live · price source'], staging: 'demo' },
     { name: 'Relative strength vs SPY and SMH (small multiples)', source: 'Same bars, rebased to 100', production: ['notLive', 'Not live · price source'], staging: 'demo' },
   ],

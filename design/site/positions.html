@@ -173,9 +173,11 @@
 <script>
 (function () {
   var KEY = 'convexa-design-scheme';
-  function current() { try { return localStorage.getItem(KEY) || 'dark'; } catch (e) { return 'dark'; } }
-  function apply(s) { document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
-  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, n); } catch (e) {} apply(n); };
+  var PAGE = document.documentElement.getAttribute('data-scheme') || 'dark';
+  var shown = null;
+  function current() { if (shown) return shown; if (PAGE !== 'dark') return PAGE; try { return localStorage.getItem(KEY) || PAGE; } catch (e) { return PAGE; } }
+  function apply(s) { shown = s; document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
+  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; if (PAGE === 'dark') { try { localStorage.setItem(KEY, n); } catch (e) {} } apply(n); };
   apply(current());
 })();
 </script>

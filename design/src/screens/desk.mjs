@@ -7,6 +7,9 @@ import { riskField } from '../components/risk-field.mjs';
 
 export const DESK_CSS = `${LADDER_CSS}
   .desk { width: 100%; background: var(--ink); color: var(--phosphor); }
+  .superseded { background: var(--raised); border-bottom: 1px solid var(--line-2); padding: 10px 0; font-size: 13px; color: var(--phosphor); }
+  .superseded-row { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
+  .superseded a { color: var(--signal); font-weight: 600; text-decoration: none; }
   .mast { padding-top: 20px; padding-bottom: 12px; }
   .mast-row { display: flex; align-items: flex-start; gap: 16px 28px; flex-wrap: wrap; }
   .mast-title { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
@@ -428,7 +431,19 @@ export function deskBody({ minHeight = 2300 } = {}) {
     </div>
   </section>`;
 
+  // Superseded (fidelity audit 2026-10-25, DESK-04): the September desk is history. The desk's rendered intent
+  // is the Final · Ticker desk row (final-desk-*.html), approved as built 2026-10-16.
+  const superseded = `
+  <div class="superseded" role="note">
+    <div class="wrap superseded-row">
+      <span class="caps" style="color: var(--amber-text);">Superseded</span>
+      <span>Superseded by Final · Ticker desk (2026-10-16). This September desk is kept as history; the desk’s hierarchy was approved as built on 2026-10-16.</span>
+      <a href="final-desk-staging.html">Open Final · Ticker desk →</a>
+    </div>
+  </div>`;
+
   return `<div data-scheme="{{scheme}}" class="desk {{liveClass}} {{sheetClass}}" style="min-height: ${minHeight}px;">
+    ${superseded}
     ${nav({ active: 'ticker', signedIn: true, live: true })}
     ${masthead}
     ${fieldPanel}

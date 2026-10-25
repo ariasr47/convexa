@@ -5,9 +5,9 @@
 // shared/ui/Widget/Widget.tsx, features/trading/positions/{CustomizationToolbar.tsx,labels.ts},
 // pages/alerts/AlertsPage.tsx (notifyExplain), features/auth/copy.ts.
 import { icon, v4Nav, finalDemoNotice, finalPage } from '../../lib.mjs';
-import { chartFrame, plot, ticks } from '../../chart-kit.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
 import { dlg, fld, overPage, statesBoard } from '../v4/kit.mjs';
+import { termChart } from './ticker-desk.mjs';
 
 export const OV_CSS = `
   .ov-pre { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--ink); border: 1px solid var(--line); font: 11.5px/1.6 'IBM Plex Mono', monospace; color: var(--steel); white-space: pre-wrap; word-break: break-word; }
@@ -80,10 +80,8 @@ export function archiveDlg() {
 export const archiveBody = ({ minHeight = 0, scheme = 'dark' } = {}) => overDemo({ scheme, minHeight: Math.max(minHeight, 900), active: 'positions', dialog: archiveDlg() });
 
 // ---- 3 · Expanded widget (staging: Term structure, the example Widget.tsx names) -----------------
-function termBig(height = 420) {
-  const T = [[7, 14.2], [14, 15.1], [30, 16.4], [60, 17.3], [90, 18.0]];
-  return chartFrame({ claim: 'Contango: 90-day implied vol at 18.0% sits 3.8 points above 7-day', sub: 'SPY at-the-money implied volatility by days to expiry · %', body: plot({ height, pr: 90, prn: 50, pl: 44, x: { min: 0, max: 95, ticks: T.map(([d]) => ({ v: d, label: `${d}d` })) }, y: { min: 12, max: 20, ticks: ticks(12, 20, 2, (v) => (v === 20 ? '20%' : String(v))) }, series: [{ points: T, role: 'emph', dots: true, end: 'Contango', endValue: '+3.8 pts' }], keyboard: false, aria: T.map(([d, v]) => `${d} days ${v}%`).join(', ') }), source: 'Sample · shaped like SPY options structure', sourceKind: 'dashed', asof: `Scenario · ${SAMPLE_ASOF}`, kind: 'sample', state: 'sample' });
-}
+// The desk's own term structure (2d / 9d / 44d on the demo), taller: one body, two frames (fidelity DESK-21).
+const termBig = (height = 420) => termChart({ height });
 export function expandDlg({ height = 420 } = {}) {
   return `<div class="ov-exp" role="dialog" aria-modal="true" aria-label="Term structure, expanded"><div class="eh"><h2>Term structure</h2>${stateTag('sample')}<button class="btn ghost sm" type="button" aria-label="Close expanded widget">${icon('close', 16)}</button></div><div class="eb">${termBig(height)}<p class="dline" style="margin: 12px 0 0;">The same widget, larger: one body, two frames. It morphs from its card where the browser supports view transitions and fades otherwise; with reduced motion it opens instantly. Escape or the close button returns focus to the expand control.</p></div></div>`;
 }

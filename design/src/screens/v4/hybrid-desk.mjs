@@ -12,13 +12,16 @@ export const HYBRID_CSS = `
   .hd-mast { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: flex-end; }
   .hd-mast .who { flex: 999 1 520px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
   .hd-mast .act { flex: 1 1 300px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
-  .hd-tabs { display: flex; gap: 4px; }
-  .hd-tabs a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: var(--steel); text-decoration: none; font-size: 13px; font-weight: 500; }
-  .hd-tabs a[aria-current="page"] { background: var(--phosphor); color: var(--ink); font-weight: 600; }
+  /* Owner NO-3 B (2026-10-25): the ticker tabs are the shipped text-colour underline (TickerTabs.tsx; the
+     2026-10-13 section-tab pattern), not phosphor pills: 44px tabs, 13px, the current one phosphor at 600 over a
+     2px phosphor indicator. Supersedes the pill drawn here since v4. */
+  .hd-tabs { display: flex; gap: 0; }
+  .hd-tabs a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 96px; padding: 0 16px; box-sizing: border-box; color: var(--steel); text-decoration: none; font-size: 13px; font-weight: 500; }
+  .hd-tabs a[aria-current="page"] { color: var(--phosphor); font-weight: 600; box-shadow: inset 0 -2px 0 var(--phosphor); }
   /* v5 fix (2026-10-13): the generic .v4 link rule (specificity 0,4,2) repainted both tab states textInfo — the
      current tab measured 1.76:1 on its phosphor pill. Same selector chain plus the tab, so the tab wins. */
   .v4 .hd-tabs a:not(.btn):not(.prov):not(.v4n a) { color: var(--steel); }
-  .v4 .hd-tabs a[aria-current="page"]:not(.btn):not(.prov):not(.v4n a) { color: var(--ink); }
+  .v4 .hd-tabs a[aria-current="page"]:not(.btn):not(.prov):not(.v4n a) { color: var(--phosphor); }
   .hd-syms { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
   .hd-syms a { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--phosphor); text-decoration: none; flex: 0 0 auto; }
   .hd-syms a[aria-current="true"] { border-color: var(--phosphor); box-shadow: inset 0 0 0 1px var(--phosphor); }

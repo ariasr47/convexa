@@ -127,9 +127,10 @@
   .bstat.s-live { background: rgba(138,155,180,0.16); border-color: transparent; }
   .hatch { background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
   .t-dim { color: var(--text-dim) !important; } .t-info { color: var(--text-info); } .t-up { color: var(--text-up); } .t-down { color: var(--text-down); }
-  .v4 a:not(.btn):not(.prov):not(.v4n a) { color: var(--text-info); }
+  .v4 a:not(.btn):not(.prov):not(.v4n a):not(.v4-tabs a):not(.hd-tabs a):not(.nv-rail a):not(.pl-jump a) { color: var(--text-info); } /* tabs and rails keep their own colours (fidelity R-23) */
   .dcell { box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; overflow: hidden; color: var(--phosphor); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
-  .dcell.is-sample { border-style: dashed; border-color: var(--steel-2); background-color: var(--panel); background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
+  .dcell.is-sample { position: relative; border-style: dashed; border-color: var(--steel-2); background-color: var(--panel); }
+  .dcell.is-sample::before, .hd-p.is-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; }
   .dcell.sheet { border-radius: 16px 16px 0 0; padding-top: 8px; }
   .dcell .handle { align-self: center; width: 36px; height: 4px; border-radius: 2px; background: var(--line-2); margin-bottom: 2px; }
   .dcell .dhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 22px; }
@@ -180,7 +181,7 @@
   .sub { font-size: 12.5px; color: var(--steel); margin: 2px 0 0; line-height: 1.45; }
   .srcline { font-size: 11.5px; color: var(--steel); margin: 0; }
   .hd-p { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; container-type: inline-size; }
-  .hd-p.is-sample { border-style: dashed; border-color: var(--steel-2); background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
+  .hd-p.is-sample { position: relative; border-style: dashed; border-color: var(--steel-2); }
   .hd-p .ph { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
   .hd-p .ph h3 { margin: 0; font-size: 14px; font-weight: 600; flex: 1 1 auto; min-width: 0; }
   .hd-fig { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border-radius: 10px; overflow: hidden; }
@@ -222,13 +223,16 @@
   .hd-mast { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: flex-end; }
   .hd-mast .who { flex: 999 1 520px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
   .hd-mast .act { flex: 1 1 300px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
-  .hd-tabs { display: flex; gap: 4px; }
-  .hd-tabs a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: var(--steel); text-decoration: none; font-size: 13px; font-weight: 500; }
-  .hd-tabs a[aria-current="page"] { background: var(--phosphor); color: var(--ink); font-weight: 600; }
+  /* Owner NO-3 B (2026-10-25): the ticker tabs are the shipped text-colour underline (TickerTabs.tsx; the
+     2026-10-13 section-tab pattern), not phosphor pills: 44px tabs, 13px, the current one phosphor at 600 over a
+     2px phosphor indicator. Supersedes the pill drawn here since v4. */
+  .hd-tabs { display: flex; gap: 0; }
+  .hd-tabs a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 96px; padding: 0 16px; box-sizing: border-box; color: var(--steel); text-decoration: none; font-size: 13px; font-weight: 500; }
+  .hd-tabs a[aria-current="page"] { color: var(--phosphor); font-weight: 600; box-shadow: inset 0 -2px 0 var(--phosphor); }
   /* v5 fix (2026-10-13): the generic .v4 link rule (specificity 0,4,2) repainted both tab states textInfo — the
      current tab measured 1.76:1 on its phosphor pill. Same selector chain plus the tab, so the tab wins. */
   .v4 .hd-tabs a:not(.btn):not(.prov):not(.v4n a) { color: var(--steel); }
-  .v4 .hd-tabs a[aria-current="page"]:not(.btn):not(.prov):not(.v4n a) { color: var(--ink); }
+  .v4 .hd-tabs a[aria-current="page"]:not(.btn):not(.prov):not(.v4n a) { color: var(--phosphor); }
   .hd-syms { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
   .hd-syms a { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--phosphor); text-decoration: none; flex: 0 0 auto; }
   .hd-syms a[aria-current="true"] { border-color: var(--phosphor); box-shadow: inset 0 0 0 1px var(--phosphor); }
@@ -323,7 +327,7 @@
   .cf { position: relative; display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 18px 20px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; container-type: inline-size; }
   .cf.k-third { border: 1px dotted var(--steel-2); }
   .cf.k-sample { border: 1px dashed var(--steel-2); }
-  .cf.k-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--hatch) 6px 12px); pointer-events: none; }
+  .cf.k-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; }
   .cf-h { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .cf-top { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 10px; }
   .cf-claim { margin: 0; flex: 1 1 260px; min-width: 0; font: 600 15px/1.35 'IBM Plex Sans', sans-serif; color: var(--phosphor); text-wrap: balance; }
@@ -505,7 +509,8 @@
   .ap-table td.n, .ap-table th.n { text-align: right; font-family: 'IBM Plex Mono', monospace; }
   .ap-cards { display: none; flex-direction: column; gap: 12px; }
   .ap-tbl { overflow-x: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); }
-  .ap-tbl.is-sample { border-style: dashed; border-color: var(--steel-2); background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
+  .ap-tbl.is-sample { position: relative; border-style: dashed; border-color: var(--steel-2); }
+  .ap-tbl.is-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; z-index: 1; }
   .score { display: inline-flex; align-items: center; gap: 8px; } .score > span:first-child { width: 56px; height: 6px; border-radius: 3px; background: rgba(138,155,180,0.18); position: relative; overflow: hidden; } .score i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--steel); }
   .kind { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 8px; }
   .kind button { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 64px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: transparent; color: var(--phosphor); font: 600 13px 'IBM Plex Sans', sans-serif; text-align: left; }
@@ -700,6 +705,15 @@
   .pl-jump .lbl { font-size: 12px; color: var(--steel); margin-right: 6px; }
   .pl-jump a { display: inline-flex; align-items: center; min-height: 32px; padding: 0 10px; border-radius: 999px; font-size: 13px; color: var(--steel); text-decoration: none; }
   .pl-jump a[aria-current="true"] { color: var(--phosphor); font-weight: 600; box-shadow: inset 0 0 0 1px var(--phosphor); }
+  .pl-lanes { display: flex; flex-direction: column; gap: 2px; margin-top: -6px; }
+  .pl-lanes .ln { position: relative; height: 16px; }
+  .pl-lanes .lb { position: absolute; left: 0; width: calc(var(--pl) - 10px); top: 0; text-align: right; font: 500 11px/16px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .pl-lanes .tr { position: absolute; left: var(--pl); right: var(--pr); top: 0; bottom: 0; }
+  .pl-lanes .mk { position: absolute; top: 4px; width: 8px; height: 8px; transform: translateX(-50%); background: var(--steel); }
+  .pl-lanes .mk.k-dot { border-radius: 50%; }
+  .pl-lanes .mk.k-dia { transform: translateX(-50%) rotate(45deg); }
+  .pl-lanes .mk.k-ring { border-radius: 50%; background: transparent; border: 1.5px solid var(--steel); box-sizing: border-box; }
+  @container (max-width: 480px) { .pl-lanes .tr { right: var(--prn); } }
   .pl-sec { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 80px; }
   .pl-sec > header { display: flex; flex-direction: column; gap: 6px; }
   .pl-sec > header .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
@@ -767,9 +781,9 @@
   }
 </style>
 </helmet>
-<div class="v4" data-scheme="dark" style="background: var(--ink); color: var(--phosphor);"><div class="pl-cap" role="note" aria-label="Board note"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span><b>New section in the public-record band under the NVDA note</b>. Holder names are placeholders on this board; the build shows each filer’s name as filed. Values are plausible public-record figures drawn for the design; the build fetches them.</span></div></div><div class="v4" data-scheme="dark" style="width: 100%; min-height: 2026px; background: var(--ink); color: var(--phosphor);">
+<div class="v4" data-scheme="dark" style="background: var(--ink); color: var(--phosphor);"><div class="pl-cap" role="note" aria-label="Board note"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span><b>New section in the public-record band under the NVDA note</b>. Holder names are placeholders on this board; the build shows each filer’s name as filed. Values are plausible public-record figures drawn for the design; the build fetches them.</span></div></div><div class="v4" data-scheme="dark" style="width: 100%; min-height: 2004px; background: var(--ink); color: var(--phosphor);">
     <a href="#main" class="btn secondary sm" style="position: absolute; left: -9999px;">Skip to main content</a>
-    <div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="8"></circle><path d="M6.6 6.6l10.8 10.8"></path></svg><strong style="font-weight: 600;">Options data isn't live on this site.</strong><span class="steel only-wide">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, short data, filings, research and TradingView’s daily charts are live.</span><span class="steel only-phone">Public data is.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">What's live</a><a href="https://staging.convexa.pages.dev" class="t-info only-wide">See the full demo →</a></div></div>
+    <div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="8"></circle><path d="M6.6 6.6l10.8 10.8"></path></svg><strong style="font-weight: 600;">Options data isn’t live on this site.</strong><span class="steel only-wide">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, filings, research and TradingView’s daily charts are live.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">What’s live</a><a href="https://staging.convexa.pages.dev" class="t-info only-wide">See the full demo →</a></div></div>
     <header class="v4n"><div class="wrap v4n-in">
     <a href="/" aria-label="Convexa home" style="display: inline-flex; text-decoration: none;"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 17px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 12.6px; height: 12.2px; margin: 0 0.8px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span></a>
     <nav aria-label="Primary" class="v4n-links"><a href="/scanner">Scanner</a><a href="/ticker/SPY">Ticker</a><a href="/research" aria-current="page">Research</a><a href="/positions">Positions</a><a href="/alerts">Alerts</a></nav>
@@ -786,7 +800,7 @@
     <footer class="v4-foot"><div class="wrap v4-foot-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 14px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 10.4px; height: 10.1px; margin: 0 0.6px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/settings">Settings</a><a href="/credits">Sources and credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p></div></footer>
   </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2026}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2004}}'>
 class Component extends DCLogic {}
 </script>
 </body>
