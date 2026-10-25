@@ -36,6 +36,9 @@ export function AccountControl() {
     // both opening the shared AuthDialog (login vs signup mode). Stage-3 §5.1: the gradient fill
     // retired with `brandGradient` — flat `primary.main` + `primary.contrastText` fixes the
     // measured-broken white-on-amber label; radius/hover lift/glow stay, reduced-motion safe.
+    // "Log in" is the Final boards' `.v4n-signin` (design/src/lib.mjs): 13.5px/600 steel, 4px side
+    // padding, 44 tall at every pointer, and no 64px MUI button minimum, so the search box beside it
+    // sits where the board draws it (fidelity SITE-09 residual).
     return (
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Button
@@ -44,6 +47,11 @@ export function AccountControl() {
           onClick={() => openAuth({ mode: 'login' })}
           data-testid="account-signin"
           sx={{
+            minWidth: 0,
+            minHeight: 44,
+            px: 0.5,
+            fontSize: 13.5,
+            fontWeight: 600,
             color: 'text.secondary',
             whiteSpace: 'nowrap',
             '&:hover': { color: 'text.primary' },
