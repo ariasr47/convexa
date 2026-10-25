@@ -18,6 +18,7 @@ import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { isDemoBuild } from '@/shared/lib/demoSite';
 import { ArcDivider } from '@/shared/ui/ArcDivider';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
+import { coarseFloor } from '@/shared/ui/touch';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
@@ -25,7 +26,12 @@ import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 import { ConvexaMark } from './ConvexaMark';
 
-/** The footer's links: 13px steel, each a 24px-tall target (the board's `.v4-foot-in nav a`). */
+/**
+ * The footer's links: 13px steel, each a 24px-tall target at a fine pointer (the board's
+ * `.v4-foot-in nav a`). The local `minHeight: 24` is a class rule, so it beats the theme's
+ * element-selector touch floor; `coarseFloor` puts the 44px back under a coarse pointer (canon
+ * rule 7; `shared/ui/touch.ts`).
+ */
 const linkSx = {
   color: 'text.secondary',
   width: 'fit-content',
@@ -34,6 +40,7 @@ const linkSx = {
   minHeight: 24,
   display: 'inline-flex',
   alignItems: 'center',
+  ...coarseFloor,
 } as const;
 
 /** The 12px steel lines: the disclaimer, the author line and the copyright. */
