@@ -694,6 +694,17 @@ enum Span {
     Instant,
 }
 
+impl Span {
+    /// The span as a fact key writes it: `q` (quarter), `y` (year) or `i` (instant).
+    fn code(self) -> &'static str {
+        match self {
+            Span::Quarter => "q",
+            Span::Annual => "y",
+            Span::Instant => "i",
+        }
+    }
+}
+
 fn span_of(point: &FactPoint) -> Option<Span> {
     let Some(start) = point.start else {
         return Some(Span::Instant);
@@ -706,7 +717,11 @@ fn span_of(point: &FactPoint) -> Option<Span> {
 }
 
 /// (wire concept, label, candidate XBRL concepts in priority order, is a balance-sheet instant)
-const FACT_GROUPS: [(&str, &str, &[&str], bool); 6] = [
+pub(crate) type FactGroup = (&'static str, &'static str, &'static [&'static str], bool);
+
+/// The groups a periodic filing's facts are read in. pub(crate) so the analyst package reads the
+/// same groups, in the same order, as the public answer.
+pub(crate) const FACT_GROUPS: [FactGroup; 6] = [
     (
         "Revenue",
         "Revenue",
@@ -763,18 +778,33 @@ fn newest(a: &&FactPoint, b: &&FactPoint) -> std::cmp::Ordering {
     a.end.cmp(&b.end).then_with(|| a.filed.cmp(&b.filed))
 }
 
+/// The points [`fact_point_for`] chose for one group in one filing.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct ChosenPoints<'a> {
+    /// The XBRL concept read, `taxonomy:Concept` (`us-gaap:Revenues`).
+    pub concept: &'static str,
+    /// Its unit as tagged (`USD`, `USD/shares`, `TWD`).
+    pub unit: &'a str,
+    /// The span both points share: `q` (quarter), `y` (year) or `i` (instant).
+    pub span: &'static str,
+    /// The value the filing reported; its `accession` is the filing's.
+    pub value: &'a FactPoint,
+    /// Same concept, unit and span, the latest end before the value's (any filing's point).
+    pub prior: Option<&'a FactPoint>,
+}
+
 /// The value one filing reported for one group: the first candidate concept that has a point
 /// in this accession with the filing's span (quarter for a 10-Q, year for annual forms, instant
 /// for balance-sheet items), preferring the filing's own period end. Prior = same concept, unit
-/// and span, the latest end before it.
-fn fact_for(
-    facts: &CompanyFacts,
-    group: &(&str, &str, &[&str], bool),
+/// and span, the latest end before it. Returns the points themselves, with their accessions.
+pub(crate) fn fact_point_for<'a>(
+    facts: &'a CompanyFacts,
+    group: &FactGroup,
     accession: &str,
     form: &str,
     period_end: Option<NaiveDate>,
-) -> Option<Fact> {
-    let (wire_concept, label, candidates, instant) = *group;
+) -> Option<ChosenPoints<'a>> {
+    let (_, _, candidates, instant) = *group;
     let span = if instant {
         Span::Instant
     } else if form == "10-Q" {
@@ -782,7 +812,7 @@ fn fact_for(
     } else {
         Span::Annual
     };
-    for concept in candidates {
+    for &concept in candidates {
         let Some(units) = facts.concepts.get(concept) else {
             continue;
         };
@@ -799,26 +829,41 @@ fn fact_for(
                 .iter()
                 .filter(|p| span_of(p) == Some(span) && p.end < chosen.end)
                 .max_by(newest);
-            return Some(Fact {
-                concept: wire_concept.to_string(),
-                label: label.to_string(),
-                value: chosen.value,
-                unit: unit.clone(),
-                period_end: chosen.end,
-                prior_value: prior.map(|p| p.value),
-                prior_period_end: prior.map(|p| p.end),
+            return Some(ChosenPoints {
+                concept,
+                unit: unit.as_str(),
+                span: span.code(),
+                value: chosen,
+                prior,
             });
         }
     }
     None
 }
 
-/// The latest two 10-Q/10-K/20-F/40-F filings (amendments excluded), newest first, each with the
-/// facts it reported. Without company facts the filings are still listed, with no facts.
-pub(crate) fn periodic_filings(
-    rows: &[SubmissionRow],
-    facts: Option<&CompanyFacts>,
-) -> Vec<PeriodicFiling> {
+/// [`fact_point_for`] as the public answer shows it.
+fn fact_for(
+    facts: &CompanyFacts,
+    group: &FactGroup,
+    accession: &str,
+    form: &str,
+    period_end: Option<NaiveDate>,
+) -> Option<Fact> {
+    let (wire_concept, label, _, _) = *group;
+    let chosen = fact_point_for(facts, group, accession, form, period_end)?;
+    Some(Fact {
+        concept: wire_concept.to_string(),
+        label: label.to_string(),
+        value: chosen.value.value,
+        unit: chosen.unit.to_string(),
+        period_end: chosen.value.end,
+        prior_value: chosen.prior.map(|p| p.value),
+        prior_period_end: chosen.prior.map(|p| p.end),
+    })
+}
+
+/// The latest two 10-Q/10-K/20-F/40-F rows (amendments excluded), newest first.
+pub(crate) fn periodic_rows(rows: &[SubmissionRow]) -> Vec<&SubmissionRow> {
     let mut periodic: Vec<&SubmissionRow> = rows
         .iter()
         .filter(|r| PERIODIC_FORMS.contains(&r.form.as_str()))
@@ -828,9 +873,18 @@ pub(crate) fn periodic_filings(
             .cmp(&a.filed)
             .then_with(|| b.accession.cmp(&a.accession))
     });
+    periodic.truncate(2);
     periodic
+}
+
+/// The latest two 10-Q/10-K/20-F/40-F filings (amendments excluded), newest first, each with the
+/// facts it reported. Without company facts the filings are still listed, with no facts.
+pub(crate) fn periodic_filings(
+    rows: &[SubmissionRow],
+    facts: Option<&CompanyFacts>,
+) -> Vec<PeriodicFiling> {
+    periodic_rows(rows)
         .into_iter()
-        .take(2)
         .map(|row| PeriodicFiling {
             accession: row.accession.clone(),
             form: row.form.clone(),
@@ -853,18 +907,23 @@ pub(crate) fn periodic_filings(
         .collect()
 }
 
-/// dei:EntityCommonStockSharesOutstanding, latest by period end (then filing date).
-pub(crate) fn shares_outstanding(facts: &CompanyFacts) -> Option<DatedValue> {
+/// dei:EntityCommonStockSharesOutstanding, latest by period end (then filing date): the point
+/// itself, with its unit.
+pub(crate) fn shares_outstanding_point(facts: &CompanyFacts) -> Option<(&str, &FactPoint)> {
     facts
         .concepts
         .get(SHARES_OUTSTANDING)?
         .iter()
-        .flat_map(|(_, points)| points.iter())
-        .max_by(newest)
-        .map(|p| DatedValue {
-            value: p.value,
-            as_of: p.end,
-        })
+        .flat_map(|(unit, points)| points.iter().map(move |p| (unit.as_str(), p)))
+        .max_by(|a, b| newest(&a.1, &b.1))
+}
+
+/// dei:EntityCommonStockSharesOutstanding, latest by period end (then filing date).
+pub(crate) fn shares_outstanding(facts: &CompanyFacts) -> Option<DatedValue> {
+    shares_outstanding_point(facts).map(|(_, p)| DatedValue {
+        value: p.value,
+        as_of: p.end,
+    })
 }
 
 #[cfg(test)]
@@ -1124,6 +1183,88 @@ mod tests {
 
     fn instant(s: &str) -> DateTime<Utc> {
         DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
+    }
+
+    /// Spec 06 test (viii), first half: on the hand-built and real NVDA company facts and the real
+    /// TSM ones, for both periodic filings, the source-aware readers choose the very points the
+    /// public answer shows (value, prior value, both period ends, the unit), and the value point
+    /// belongs to the filing. The shares-outstanding readers agree the same way.
+    #[test]
+    fn source_aware_readers_agree_with_the_public_ones() {
+        let tsm_rows: Vec<SubmissionRow> = [
+            ("0001628280-26-025362", "2026-04-16", "2025-12-31"),
+            ("0001193125-25-083423", "2025-04-17", "2024-12-31"),
+        ]
+        .iter()
+        .map(|(accession, filed, period)| SubmissionRow {
+            accession: (*accession).into(),
+            filed: day(filed),
+            accepted: None,
+            report_date: Some(day(period)),
+            form: "20-F".into(),
+            items: vec![],
+            primary_document: "tsm.htm".into(),
+            description: None,
+        })
+        .collect();
+        let cases: [(&str, &[u8], Vec<SubmissionRow>); 3] = [
+            (
+                "hand-built NVDA",
+                include_bytes!("../../../tests/fixtures/public_data/sec_companyfacts_nvda.json"),
+                submissions(),
+            ),
+            (
+                "real NVDA",
+                include_bytes!(
+                    "../../../tests/fixtures/public_data/sec_real_companyfacts_nvda.json"
+                ),
+                parse_submissions(REAL_SUBMISSIONS).unwrap(),
+            ),
+            (
+                "real TSM",
+                include_bytes!(
+                    "../../../tests/fixtures/public_data/sec_real_companyfacts_tsm.json"
+                ),
+                tsm_rows,
+            ),
+        ];
+        for (name, json, rows) in cases {
+            let facts = parse_company_facts(json).unwrap();
+            let periodic = periodic_rows(&rows);
+            assert_eq!(periodic.len(), 2, "{name}");
+            let mut compared = 0;
+            for row in periodic {
+                for group in &FACT_GROUPS {
+                    let public =
+                        fact_for(&facts, group, &row.accession, &row.form, row.report_date);
+                    let chosen =
+                        fact_point_for(&facts, group, &row.accession, &row.form, row.report_date);
+                    let (Some(public), Some(chosen)) = (public.clone(), chosen) else {
+                        assert_eq!(public.is_some(), chosen.is_some(), "{name} {}", group.0);
+                        continue;
+                    };
+                    compared += 1;
+                    let at = format!("{name} {} {}", row.accession, group.0);
+                    assert_eq!(chosen.value.accession, row.accession, "{at}");
+                    assert_eq!(chosen.value.value, public.value, "{at}");
+                    assert_eq!(chosen.value.end, public.period_end, "{at}");
+                    assert_eq!(chosen.unit, public.unit, "{at}");
+                    assert_eq!(chosen.prior.map(|p| p.value), public.prior_value, "{at}");
+                    assert_eq!(chosen.prior.map(|p| p.end), public.prior_period_end, "{at}");
+                }
+            }
+            assert!(compared >= 4, "{name}: only {compared} groups compared");
+            let latest = shares_outstanding(&facts);
+            let point = shares_outstanding_point(&facts).map(|(_, p)| (p.value, p.end));
+            assert_eq!(latest.map(|d| (d.value, d.as_of)), point, "{name}");
+            for day in [day("2026-06-30"), day("2026-03-31"), day("2025-12-31")] {
+                let near = super::super::edgar_13f::shares_outstanding_near(&facts, day);
+                let near_point =
+                    super::super::edgar_13f::shares_outstanding_near_point(&facts, day)
+                        .map(|(_, p)| (p.value, p.end));
+                assert_eq!(near.map(|d| (d.value, d.as_of)), near_point, "{name} {day}");
+            }
+        }
     }
 
     /// Spec 06 test (iv): every row of both checked-in indexes carries its acceptance time.

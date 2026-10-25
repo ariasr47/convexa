@@ -20,7 +20,7 @@
 //!   the filing.
 
 use super::cache::Lookup;
-use super::edgar::{self, date, elements, first_text, CompanyFacts};
+use super::edgar::{self, date, elements, first_text, CompanyFacts, FactPoint};
 use super::fetch::{FetchError, Http};
 use super::types::{DataState, DatedValue};
 use super::PublicDataService;
@@ -650,77 +650,60 @@ impl Holders {
 }
 
 /// Shares outstanding nearest `day` (cover-page values are dated weeks after a period ends), within
-/// 200 days.
-pub(crate) fn shares_outstanding_near(facts: &CompanyFacts, day: NaiveDate) -> Option<DatedValue> {
+/// 200 days: the point itself, with its unit.
+pub(crate) fn shares_outstanding_near_point(
+    facts: &CompanyFacts,
+    day: NaiveDate,
+) -> Option<(&str, &FactPoint)> {
     facts
         .concepts
         .get("dei:EntityCommonStockSharesOutstanding")?
         .iter()
-        .flat_map(|(_, points)| points.iter())
-        .filter(|p| (p.end - day).num_days().abs() <= 200)
-        .min_by_key(|p| ((p.end - day).num_days().abs(), std::cmp::Reverse(p.filed)))
-        .map(|p| DatedValue {
-            value: p.value,
-            as_of: p.end,
-        })
+        .flat_map(|(unit, points)| points.iter().map(move |p| (unit.as_str(), p)))
+        .filter(|(_, p)| (p.end - day).num_days().abs() <= 200)
+        .min_by_key(|(_, p)| ((p.end - day).num_days().abs(), std::cmp::Reverse(p.filed)))
 }
 
-/// Fund holdings for one company from the quarter's read.
-pub(crate) fn holders_for(
+/// Shares outstanding nearest `day` (cover-page values are dated weeks after a period ends), within
+/// 200 days.
+pub(crate) fn shares_outstanding_near(facts: &CompanyFacts, day: NaiveDate) -> Option<DatedValue> {
+    shares_outstanding_near_point(facts, day).map(|(_, p)| DatedValue {
+        value: p.value,
+        as_of: p.end,
+    })
+}
+
+/// The security the quarter's read names, and every manager holding it (before any cut to
+/// `SHOWN`), largest first. When the security isn't found, `security` says why and `rows` is empty.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct HolderRows {
+    pub security: Security,
+    pub rows: Vec<Holder>,
+}
+
+/// Every holding manager from the quarter's read, with its % of shares outstanding and its change
+/// in points, as `holders_for` computes them, before the list is cut to `SHOWN`.
+pub(crate) fn holder_rows(
     data: &Dataset,
     company: &str,
     ticker: &str,
     so_now: Option<DatedValue>,
     so_prior: Option<DatedValue>,
-) -> Holders {
-    let mut out = Holders::without_data(
-        DataState::Live,
-        if data.stale {
-            super::types::SourceState::LastGood
-        } else {
-            super::types::SourceState::Delayed
-        },
-        String::new(),
-    );
-    out.detail = None;
-    out.quarter_end = Some(data.quarter);
-    out.prior_quarter_end = Some(data.prior);
-    out.managers_listed = data.listed;
-    out.managers_read = data.now.len() as u32;
-    out.window = data.window;
-    let quarter = data.quarter.format("%b %-d, %Y");
-    let (cusip, receipt) = match find_security(
+) -> HolderRows {
+    let security = find_security(
         data.now.iter().map(|m| m.holdings.as_ref()),
         company,
         ticker,
-    ) {
-        Security::Found {
-            cusip,
-            issuer,
-            title,
-            receipt,
-        } => {
-            out.issuer = Some(issuer);
-            out.title = Some(title);
-            (cusip, receipt)
-        }
-        Security::Ambiguous(titles) => {
-            out.detail = Some(format!(
-                "13F filings list {company} in more than one share class ({}); Convexa can't tell which one {ticker} is, so it shows none.",
-                titles.join(", ")
-            ));
-            return out;
-        }
-        Security::NotHeld => {
-            out.detail = Some(format!(
-                "None of the {} managers read reports {company} in its 13F for the quarter to {quarter}.",
-                data.now.len()
-            ));
-            return out;
+    );
+    let (cusip, receipt) = match &security {
+        Security::Found { cusip, receipt, .. } => (cusip.clone(), *receipt),
+        Security::Ambiguous(_) | Security::NotHeld => {
+            return HolderRows {
+                security,
+                rows: Vec::new(),
+            }
         }
     };
-    out.cusip = Some(cusip.clone());
-    out.units = if receipt { "receipts" } else { "shares" };
     let pct_of = |shares: f64, so: &Option<DatedValue>| -> Option<f64> {
         (!receipt)
             .then_some(())
@@ -763,6 +746,62 @@ pub(crate) fn holders_for(
             .total_cmp(&a.shares)
             .then_with(|| a.cik.cmp(&b.cik))
     });
+    HolderRows { security, rows }
+}
+
+/// Fund holdings for one company from the quarter's read.
+pub(crate) fn holders_for(
+    data: &Dataset,
+    company: &str,
+    ticker: &str,
+    so_now: Option<DatedValue>,
+    so_prior: Option<DatedValue>,
+) -> Holders {
+    let mut out = Holders::without_data(
+        DataState::Live,
+        if data.stale {
+            super::types::SourceState::LastGood
+        } else {
+            super::types::SourceState::Delayed
+        },
+        String::new(),
+    );
+    out.detail = None;
+    out.quarter_end = Some(data.quarter);
+    out.prior_quarter_end = Some(data.prior);
+    out.managers_listed = data.listed;
+    out.managers_read = data.now.len() as u32;
+    out.window = data.window;
+    let quarter = data.quarter.format("%b %-d, %Y");
+    let HolderRows { security, mut rows } = holder_rows(data, company, ticker, so_now, so_prior);
+    let (cusip, receipt) = match security {
+        Security::Found {
+            cusip,
+            issuer,
+            title,
+            receipt,
+        } => {
+            out.issuer = Some(issuer);
+            out.title = Some(title);
+            (cusip, receipt)
+        }
+        Security::Ambiguous(titles) => {
+            out.detail = Some(format!(
+                "13F filings list {company} in more than one share class ({}); Convexa can't tell which one {ticker} is, so it shows none.",
+                titles.join(", ")
+            ));
+            return out;
+        }
+        Security::NotHeld => {
+            out.detail = Some(format!(
+                "None of the {} managers read reports {company} in its 13F for the quarter to {quarter}.",
+                data.now.len()
+            ));
+            return out;
+        }
+    };
+    out.cusip = Some(cusip);
+    out.units = if receipt { "receipts" } else { "shares" };
     out.managers_holding = rows.len() as u32;
     if !receipt {
         out.total_pct = rows.iter().map(|r| r.pct).sum::<Option<f64>>();
