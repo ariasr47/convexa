@@ -11,8 +11,9 @@
  * at most 560 wide), pushed right while the row has room; the author and copyright lines each take
  * a line of their own below (fidelity audit 2026-10-25, COL and SITE-08).
  *
- * On the staging demo only, an author line sits above the copyright: who built it, and the
- * engineering post (spec 01, Behaviour › Footer (staging)). Production's footer has no such line.
+ * On the staging demo only, an author line sits above the copyright: who built it, the engineering
+ * post and the public repository (spec 01, Behaviour › Footer (staging); owner answer S1-Q3,
+ * 2026-10-25: the repository, not the profile). Production's footer has no such line.
  */
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { isDemoBuild } from '@/shared/lib/demoSite';
@@ -45,6 +46,20 @@ const linkSx = {
 
 /** The 12px steel lines: the disclaimer, the author line and the copyright. */
 const lineSx = { m: 0, fontSize: 12, lineHeight: 1.5, color: 'text.secondary' } as const;
+
+/** The repository the staging footer's "GitHub ↗" opens (owner answer S1-Q3, 2026-10-25). */
+const REPOSITORY_URL = 'https://github.com/ariasr47/convexa';
+
+/**
+ * The author line's links: steel, inline in the 12px line at a fine pointer, as the board's
+ * `FINAL_AUTHOR` draws them (design/src/lib.mjs). An inline anchor ignores `min-height`, so under a
+ * coarse pointer each one becomes a 44px-tall inline box (canon rule 7; `shared/ui/touch.ts`).
+ */
+const authorLinkSx = {
+  color: 'text.secondary',
+  fontSize: 'inherit',
+  '@media (pointer: coarse)': { display: 'inline-flex', alignItems: 'center', minHeight: 44 },
+} as const;
 
 export function Footer() {
   const demo = isDemoBuild();
@@ -138,8 +153,6 @@ export function Footer() {
           <DisclaimerCopy />
         </Typography>
         {demo && (
-          // The spec's line ends "· GitHub ↗"; that link waits on owner question S1-Q3 (the
-          // profile or the repository), so it is left out until answered.
           <Typography
             component="p"
             sx={{ ...lineSx, flex: '1 1 100%' }}
@@ -150,10 +163,21 @@ export function Footer() {
               component={RouterLink}
               to="/blog/how-convexa-is-built"
               underline="hover"
-              sx={{ color: 'text.secondary', fontSize: 'inherit' }}
+              sx={authorLinkSx}
               data-testid="footer-built-link"
             >
               How it’s built
+            </Link>{' '}
+            · {/* A new tab with the ↗ mark, as PrivacyPage's external link (spec 01 step 4). */}
+            <Link
+              href={REPOSITORY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              underline="hover"
+              sx={authorLinkSx}
+              data-testid="footer-github-link"
+            >
+              GitHub ↗
             </Link>
           </Typography>
         )}
