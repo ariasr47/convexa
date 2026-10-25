@@ -780,3 +780,7 @@ does not touch the header; it starts after that workflow commits.
   signed-in Scanner and Positions, every operator page with data, the AI read states, and most error and
   loading states.
 - `tmp/fidelity/` is scratch: gitignored (`.gitignore:5`), and gone on a clean.
+
+## Owner answers (2026-10-25)
+
+The owner took every recommendation (asked in chat: "Take all 14 recommended"): NO-1 A, NO-2 B, NO-3 B, NO-4 A, NO-5 B, NO-6 A, NO-7 A, NO-8 A, NO-9 A, NO-10 A, NO-11 A, NO-12 A, NO-13 B, NO-14 B. NO-12 A covers the Scanner h1 too, so it moves from 28px to `clamp(30px, 3vw, 40px)` with the other account pages. The fix lanes read these from `tmp/fidelity/plan/owner-answers.json`.
