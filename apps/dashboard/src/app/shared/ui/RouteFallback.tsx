@@ -2,7 +2,7 @@
  * RouteFallback — the page-chunk loading fill: a page-shaped skeleton under the real nav, which
  * never blanks (design/src/screens/final/shell-site-docs.mjs, “Route loading”: a title bar, a lead
  * line and a body block, no centred spinner). It sits in the page column so the page arrives in
- * the same place, without a jump.
+ * the same place, without a jump: it spreads the one page column, `pageColumnSx`.
  *
  * It asserts NOTHING about the session — its only words are `aria-label="Loading page"` — which is
  * exactly why `RequireAuth` may render it while the who-am-I read is in flight (SPEC §4). Moved
@@ -10,6 +10,7 @@
  */
 import Box from '@mui/material/Box';
 import Skeleton from '@mui/material/Skeleton';
+import { pageColumnSx } from './PageColumn';
 
 /** Shown inside the shell's <Outlet/> region; the nav chrome stays interactive. */
 export function RouteFallback() {
@@ -19,9 +20,7 @@ export function RouteFallback() {
       role="progressbar"
       aria-label="Loading page"
       sx={{
-        maxWidth: 1240,
-        mx: 'auto',
-        px: { xs: 2, md: 3 },
+        ...pageColumnSx,
         py: { xs: 3, md: 4 },
         display: 'flex',
         flexDirection: 'column',

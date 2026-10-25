@@ -12,6 +12,8 @@
  * (rule 18's connection chip is untouched).
  *
  * Design: design/src/lib.mjs v4Notice, design/src/screens/final/shell-site-front.mjs (unknownBar).
+ * The bar's row sits on the one page column (`pageColumnSx`), as the board's `.wrap` does, so its
+ * glyph lines up with the nav's wordmark (fidelity audit 2026-10-25, COL).
  */
 import {
   marketDataOff,
@@ -22,6 +24,7 @@ import {
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import PauseCircleOutlineOutlined from '@mui/icons-material/PauseCircleOutlineOutlined';
 import SensorsOffOutlined from '@mui/icons-material/SensorsOffOutlined';
 import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
@@ -87,7 +90,6 @@ export function MarketDataNotice() {
       data-testid="market-data-notice"
       data-mode={unknown ? 'unknown' : mode}
       sx={{
-        px: { xs: 2, md: 3 },
         py: 1,
         bgcolor: 'background.paper',
         borderBottom: 1,
@@ -96,8 +98,7 @@ export function MarketDataNotice() {
     >
       <Box
         sx={{
-          maxWidth: 1240,
-          mx: 'auto',
+          ...pageColumnSx,
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',

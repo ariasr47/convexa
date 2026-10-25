@@ -4,7 +4,10 @@
  * shell is just the route layout.
  *
  * Chrome ONLY: owns no feature data, makes no fetch, opens no SSE. Frosted/translucent sticky bar,
- * content constrained to the 1240 column. Active-route highlight per `NAV`.
+ * content on the one page column (`pageColumnSx`, the boards' `.wrap`). Active-route highlight per
+ * `NAV`. Geometry is the Final boards' `v4Nav` (design/src/lib.mjs `.v4n-*`): a 56px row, 13.5px links
+ * 4px apart with 10px side padding and an underline inset to the label, a 260×34 jump-to field and a
+ * 17px wordmark (fidelity audit 2026-10-25, SITE-09).
  *
  * Responsive: at `md+` the primary nav is an inline row. Below `md` it collapses to a hamburger that
  * opens a temporary Drawer (the drawer's links unmount when closed, so they don't duplicate the inline
@@ -30,6 +33,7 @@ import {
   prefetchTickerRoute,
 } from '@/shared/lib/prefetchRoutes';
 import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import { dataMode, resetDemoWorkspace } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
@@ -143,15 +147,14 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
         transition: 'background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease',
       }}
     >
-      {/* Full-bleed bar; content constrained to the 1240 content column with responsive gutters. */}
-      <Toolbar disableGutters sx={{ px: 0 }}>
+      {/* Full-bleed bar; content on the one page column. `dense` drops MUI's 64px Toolbar floor
+          (it applies from 600px up), so the 56px row below sets the bar's height at every width:
+          57px with the border, as on the board. */}
+      <Toolbar disableGutters variant="dense" sx={{ px: 0 }}>
         <Box
           sx={{
-            width: '100%',
-            maxWidth: 1240,
-            mx: 'auto',
-            px: { xs: 2, md: 3 },
-            minHeight: { xs: 56, md: 60 },
+            ...pageColumnSx,
+            minHeight: 56,
             display: 'flex',
             alignItems: 'center',
             // `xs` tightened from 1.5→1 (curvature-v2-foundations AC-40, measured): signed-OUT at
@@ -180,16 +183,17 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
               '&:hover': { opacity: 1 },
             }}
           >
-            <ConvexaMark size={18} fontSize="1.15rem" />
+            <ConvexaMark fontSize="17px" />
           </Box>
 
-          {/* Inline primary nav — md and up only. */}
+          {/* Inline primary nav — md and up only. Each link fills the 56px row, so the underline
+              sits on the bar's bottom edge. */}
           <Stack
             direction="row"
-            spacing={2}
+            spacing={0.5}
             component="nav"
             aria-label="primary"
-            sx={{ display: { xs: 'none', md: 'flex' } }}
+            sx={{ display: { xs: 'none', md: 'flex' }, alignSelf: 'stretch' }}
           >
             {NAV.map((e) => {
               const isActive = e.active(path);
@@ -202,24 +206,39 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
                   aria-current={isActive ? 'page' : undefined}
                   onMouseEnter={() => warmNav(e.to)}
                   onFocus={() => warmNav(e.to)}
-                  sx={{
+                  sx={(t) => ({
+                    position: 'relative',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    px: 1.25,
                     textDecoration: 'none',
-                    fontSize: '0.95rem',
+                    fontSize: '13.5px',
                     // The active item is carried by WEIGHT and the amber UNDERLINE (P-6; owner
                     // ruling A, 2026-10-15): its label is `text.primary`, never amber text — the
                     // Final shell board's `.nav-links a.on`. Inactive labels are steel at 500.
                     fontWeight: isActive ? 600 : 500,
-                    py: 2,
                     color: isActive ? 'text.primary' : 'text.secondary',
-                    borderBottom: 2,
-                    borderColor: isActive ? 'primary.main' : 'transparent',
-                    transition: 'color 160ms ease, border-color 160ms ease',
-                    // Subtle primary glow under the active item — cohesive with the card polish.
-                    // A border/glow is a UI component (≥3:1 floor), never TEXT.
-                    boxShadow: (t) =>
-                      isActive ? `0 2px 12px -6px ${alpha(t.palette.primary.main, 0.8)}` : 'none',
+                    transition: 'color 160ms ease',
+                    // The underline spans the label, not its padding: the board's `::after`, 10px in
+                    // from each side, 2px tall with rounded top corners, on the bar's bottom edge.
+                    // Subtle primary glow under it — cohesive with the card polish. A rule/glow is a
+                    // UI component (≥3:1 floor), never TEXT.
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      left: 10,
+                      right: 10,
+                      bottom: 0,
+                      height: 2,
+                      borderRadius: '2px 2px 0 0',
+                      bgcolor: isActive ? t.palette.primary.main : 'transparent',
+                      boxShadow: isActive
+                        ? `0 2px 12px -6px ${alpha(t.palette.primary.main, 0.8)}`
+                        : 'none',
+                      transition: 'background-color 160ms ease',
+                    },
                     '&:hover': { color: 'text.primary' },
-                  }}
+                  })}
                 >
                   {e.label}
                 </Box>
@@ -227,71 +246,86 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
             })}
           </Stack>
 
-          <Box sx={{ flexGrow: 1 }} />
-
-          {/* (v2) The ⌘K palette affordance (SPEC §2.6/§4.4 P1 · N5) — laptop (1100px, FE-2's
+          {/* The right-hand cluster (the board's `.v4n-right`): pushed to the row's end, its items
+              12px apart from 900px up, inside the row's 24px gaps. Below 900px it keeps the row's
+              8px (the AC-40 phone width budget, noted on the row above). */}
+          <Box
+            sx={{
+              ml: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              gap: { xs: 1, md: 1.5 },
+            }}
+          >
+            {/* (v2) The ⌘K palette affordance (SPEC §2.6/§4.4 P1 · N5) — laptop (1100px, FE-2's
               additive key) and up: the full field + kbd hint. Below that: an icon button only, and
               "the ⌘K hint drops with the field and the shortcut still works" (the global listener
               lives in AppShell, unaffected by this element's width). */}
-          <Box
-            component="button"
-            type="button"
-            onClick={onOpenPalette}
-            data-testid="nav-search-trigger"
-            aria-label="Jump to a ticker or note"
-            sx={(t) => ({
-              display: { xs: 'none', laptop: 'flex' },
-              alignItems: 'center',
-              gap: 1,
-              height: 36,
-              minWidth: 200,
-              px: 1.5,
-              // CONTROL role = 8px (SPEC §2.2, ruling 4) — theme-derived multiplier, not a literal.
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'divider',
-              bgcolor: extrasFor(t).well,
-              color: 'text.secondary',
-              font: 'inherit',
-              fontSize: '0.8125rem',
-              cursor: 'pointer',
-              transition: 'border-color 160ms ease, color 160ms ease',
-              '&:hover': { color: 'text.primary', borderColor: 'text.disabled' },
-            })}
-          >
-            <SearchIcon sx={{ fontSize: 16 }} aria-hidden />
-            <Box component="span" sx={{ flexGrow: 1, textAlign: 'left' }}>
-              Jump to a ticker or note
-            </Box>
             <Box
-              component="span"
-              aria-hidden
-              sx={{
-                fontSize: 11,
-                // PR #46 CI repair, §B — was the bare CSS keyword `monospace` (never a declared
-                // face): resolved to whatever the HOST calls its default monospace font, which is
-                // exactly why the "⌘" glyph rendered differently per platform. Bound to the design
-                // token instead, matching every other data/figure face in the app.
-                fontFamily: typographyTokens.monoFontFamily,
-                lineHeight: 1,
-                display: 'inline-flex',
+              component="button"
+              type="button"
+              onClick={onOpenPalette}
+              data-testid="nav-search-trigger"
+              aria-label="Jump to a ticker or note"
+              sx={(t) => ({
+                display: { xs: 'none', laptop: 'flex' },
                 alignItems: 'center',
-                gap: '1px',
-                // On the declared 4-pt ladder from birth (SPEC §2.2): 1 × 8px, not the off-ladder 6px.
-                px: 1,
-                py: 0.5,
-                borderRadius: 1,
+                // The board's `.v4n-search`: 260×34, 12px in on the left and 10px on the right, the
+                // glyph, label and key 10px apart.
+                gap: 1.25,
+                height: 34,
+                width: 260,
+                flexShrink: 0,
+                pl: 1.5,
+                pr: 1.25,
+                // CONTROL role = 8px (SPEC §2.2, ruling 4). Not the `1` multiplier: `shape.borderRadius`
+                // is the PANEL role (12), so `1` rendered this field at 12px.
+                borderRadius: '8px',
                 border: '1px solid',
                 borderColor: 'divider',
-                // PR #46 CI repair, §A — `text.disabled` measured 2.56:1 (dark) / 2.65:1 (light),
-                // under WCAG AA 4.5:1: `text.disabled` means a disabled CONTROL, and this is
-                // informative text (a live keyboard hint), not a disabled affordance. Bound to
-                // `text.secondary` instead (steel ≈5.7–6.8:1 on every real dark surface it sits on)
-                // — the bordered kbd chrome, not colour, is what marks it "quiet".
+                bgcolor: extrasFor(t).well,
                 color: 'text.secondary',
-              }}
+                font: 'inherit',
+                fontSize: '0.8125rem',
+                cursor: 'pointer',
+                transition: 'border-color 160ms ease, color 160ms ease',
+                '&:hover': { color: 'text.primary', borderColor: 'text.disabled' },
+              })}
             >
-              {/* PR #46 CI repair, §B — U+2318 (⌘) is not in IBM Plex Sans/Mono at all (verified: no
+              <SearchIcon sx={{ fontSize: 16 }} aria-hidden />
+              <Box component="span" sx={{ flexGrow: 1, textAlign: 'left' }}>
+                Jump to a ticker or note
+              </Box>
+              <Box
+                component="span"
+                aria-hidden
+                sx={{
+                  fontSize: 11,
+                  // PR #46 CI repair, §B — was the bare CSS keyword `monospace` (never a declared
+                  // face): resolved to whatever the HOST calls its default monospace font, which is
+                  // exactly why the "⌘" glyph rendered differently per platform. Bound to the design
+                  // token instead, matching every other data/figure face in the app.
+                  fontFamily: typographyTokens.monoFontFamily,
+                  lineHeight: 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '1px',
+                  // On the declared 4-pt ladder from birth (SPEC §2.2): 1 × 8px, not the off-ladder 6px.
+                  px: 1,
+                  py: 0.5,
+                  // The palette's own key chip radius (CommandPalette `Kbd`); `1` was the 12px panel role.
+                  borderRadius: '4px',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  // PR #46 CI repair, §A — `text.disabled` measured 2.56:1 (dark) / 2.65:1 (light),
+                  // under WCAG AA 4.5:1: `text.disabled` means a disabled CONTROL, and this is
+                  // informative text (a live keyboard hint), not a disabled affordance. Bound to
+                  // `text.secondary` instead (steel ≈5.7–6.8:1 on every real dark surface it sits on)
+                  // — the bordered kbd chrome, not colour, is what marks it "quiet".
+                  color: 'text.secondary',
+                }}
+              >
+                {/* PR #46 CI repair, §B — U+2318 (⌘) is not in IBM Plex Sans/Mono at all (verified: no
                   fontsource subset, no full upstream Plex source, carries this glyph), so no bundled
                   font can render it; it fell back to the HOST's symbol font, a second host-dependent
                   surface beside the `fontFamily: 'monospace'` fix above. Replaced with the app's
@@ -299,57 +333,58 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
                   host-independence a stroke SVG would give, and the pattern this file already uses
                   for Search/Menu/Close) rather than a literal character. "K" stays real bundled text
                   (plain ASCII, covered by every Plex Mono subset already shipped). */}
-              <KeyboardCommandKeyOutlined sx={{ fontSize: 12 }} />K
+                <KeyboardCommandKeyOutlined sx={{ fontSize: 12 }} />K
+              </Box>
             </Box>
-          </Box>
-          <IconButton
-            onClick={onOpenPalette}
-            aria-label="Jump to a ticker or note"
-            data-testid="nav-search-icon"
-            // `size="small"` (AC-40 overflow fix): trims the CSS-default hit box a few px on a mouse
-            // — real touch devices are unaffected, since `theme.ts`'s `@media (pointer: coarse)`
-            // floor targets the bare `button` element unconditionally (independent of MUI's `size`).
-            size="small"
-            sx={{ display: { xs: 'inline-flex', laptop: 'none' }, color: 'text.primary' }}
-          >
-            <SearchIcon fontSize="small" />
-          </IconButton>
+            <IconButton
+              onClick={onOpenPalette}
+              aria-label="Jump to a ticker or note"
+              data-testid="nav-search-icon"
+              // `size="small"` (AC-40 overflow fix): trims the CSS-default hit box a few px on a mouse
+              // — real touch devices are unaffected, since `theme.ts`'s `@media (pointer: coarse)`
+              // floor targets the bare `button` element unconditionally (independent of MUI's `size`).
+              size="small"
+              sx={{ display: { xs: 'inline-flex', laptop: 'none' }, color: 'text.primary' }}
+            >
+              <SearchIcon fontSize="small" />
+            </IconButton>
 
-          {/* Production's front door (owner, 2026-10-16): the full demo, one neutral click away on
+            {/* Production's front door (owner, 2026-10-16): the full demo, one neutral click away on
               every page. Most of the desk needs a paid options feed this site doesn't have; the
               demo runs all of it on a sample day. Not on the demo build itself. */}
-          {dataMode !== 'demo' && (
-            <Button
-              href={STAGING_DEMO_URL}
-              variant="outlined"
-              size="small"
-              data-testid="nav-full-demo"
-              sx={{ display: { xs: 'none', md: 'inline-flex' }, whiteSpace: 'nowrap' }}
-            >
-              Full demo ↗
-            </Button>
-          )}
+            {dataMode !== 'demo' && (
+              <Button
+                href={STAGING_DEMO_URL}
+                variant="outlined"
+                size="small"
+                data-testid="nav-full-demo"
+                sx={{ display: { xs: 'none', md: 'inline-flex' }, whiteSpace: 'nowrap' }}
+              >
+                Full demo ↗
+              </Button>
+            )}
 
-          {/* Account control (UX_BLUEPRINT §2.1) — top-right. Loading / login·signup / account menu.
+            {/* Account control (UX_BLUEPRINT §2.1) — top-right. Loading / login·signup / account menu.
               Non-blocking: the rest of the app renders regardless of who-am-I. */}
-          {/* The demo is always signed in to its seed account (owner, 2026-10-14), so it shows
+            {/* The demo is always signed in to its seed account (owner, 2026-10-14), so it shows
               the same signed-in control as a live account. */}
-          <AccountControl />
+            <AccountControl />
 
-          {/* Hamburger — below md only. Opens the nav drawer. `size="small"` — same AC-40 note as
+            {/* Hamburger — below md only. Opens the nav drawer. `size="small"` — same AC-40 note as
               the search icon above; the coarse-pointer floor still guarantees ≥44px on a real touch
               device regardless. */}
-          <IconButton
-            edge="end"
-            ref={menuButtonRef}
-            aria-label="Open navigation menu"
-            data-testid="nav-menu-button"
-            onClick={() => setDrawerOpen(true)}
-            size="small"
-            sx={{ display: { xs: 'inline-flex', md: 'none' }, color: 'text.primary' }}
-          >
-            <MenuIcon />
-          </IconButton>
+            <IconButton
+              edge="end"
+              ref={menuButtonRef}
+              aria-label="Open navigation menu"
+              data-testid="nav-menu-button"
+              onClick={() => setDrawerOpen(true)}
+              size="small"
+              sx={{ display: { xs: 'inline-flex', md: 'none' }, color: 'text.primary' }}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Box>
         </Box>
       </Toolbar>
 
@@ -360,8 +395,13 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
         onClose={() => setDrawerOpen(false)}
         data-testid="nav-drawer"
         // The paper carries `role=dialog`; this is its name (spec 2026-10-21/02, (a)).
+        // The Final drawer board (`.ss-drawer`, shell-site-kit.mjs): min(320px, 84%) wide, padded
+        // 12px 16px, so every row below sits inset with its own 8px radius (SITE-29).
         slotProps={{
-          paper: { 'aria-label': 'Navigation menu', sx: { width: 'min(80vw, 300px)' } },
+          paper: {
+            'aria-label': 'Navigation menu',
+            sx: { width: 'min(84vw, 320px)', px: 2, py: 1.5 },
+          },
         }}
       >
         <Box
@@ -369,11 +409,10 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            px: 2,
-            py: 1.5,
+            minHeight: 48,
           }}
         >
-          <ConvexaMark size={18} fontSize="1.15rem" />
+          <ConvexaMark fontSize="15px" />
           <IconButton
             aria-label="Close navigation menu"
             data-testid="nav-drawer-close"
@@ -383,8 +422,11 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
             <CloseIcon />
           </IconButton>
         </Box>
-        <Divider />
-        <List component="nav" aria-label="primary-mobile" sx={{ py: 1 }}>
+        <List
+          component="nav"
+          aria-label="primary-mobile"
+          sx={{ py: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}
+        >
           {NAV.map((e) => {
             const isActive = e.active(path);
             return (
@@ -400,6 +442,11 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
                 selected={isActive}
                 sx={{
                   minHeight: 48, // comfortable touch target
+                  // 48 tall exactly: the label's own margins fit inside, so no vertical padding.
+                  py: 0,
+                  px: 1.25,
+                  // The CONTROL role (8px), not `1` — `shape.borderRadius` is the 12px panel role.
+                  borderRadius: '8px',
                   // The Final drawer board (`.ss-drawer a[aria-current]`): a raised row with a 3px
                   // amber edge carries the active item; the label stays `text.primary` (ruling A).
                   '&.Mui-selected, &.Mui-selected:hover': {
@@ -412,7 +459,7 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
                   primary={e.label}
                   slotProps={{
                     primary: {
-                      sx: { fontWeight: 600, color: 'text.primary' },
+                      sx: { fontSize: 16, fontWeight: 600, color: 'text.primary' },
                     },
                   }}
                 />
@@ -420,16 +467,18 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
             );
           })}
         </List>
-        <Divider />
+        <Divider sx={{ my: 1 }} />
         <DrawerAccountRows onNavigate={() => setDrawerOpen(false)} returnFocusRef={menuButtonRef} />
       </Drawer>
     </AppBar>
   );
 }
 
-/** The quieter 48px rows under the five links (drawerF's `a.q`). */
+/** The quieter 48px rows under the five links (drawerF's `a.q`): inset, 8px radius, 14px. */
 const quietRowSx = {
   minHeight: 48,
+  px: 1.25,
+  borderRadius: '8px',
   fontSize: 14,
   fontWeight: 500,
   color: 'text.secondary',
@@ -450,7 +499,12 @@ function DrawerAccountRows({
   const { openAuth } = useAuthDialog();
   const demo = dataMode === 'demo';
   return (
-    <List component="div" aria-label="Account" sx={{ py: 1 }} data-testid="nav-drawer-account">
+    <List
+      component="div"
+      aria-label="Account"
+      sx={{ py: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}
+      data-testid="nav-drawer-account"
+    >
       {demo && (
         <Box
           data-testid="nav-drawer-demo-account"
@@ -459,7 +513,7 @@ function DrawerAccountRows({
             alignItems: 'center',
             gap: 1.25,
             minHeight: 48,
-            px: 2,
+            px: 1.25,
             fontSize: 14,
             color: 'text.secondary',
           }}

@@ -11,6 +11,7 @@
  * Product spine #6 — keyboard: a skip link is the first tab stop, targeting the ONE `<main>` landmark.
  */
 import { extrasFor } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import { WidgetProvenanceProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import {
   dataMode,
@@ -175,7 +176,6 @@ export function AppShell() {
           aria-label="Demo scenario provenance"
           data-testid="demo-provenance"
           sx={{
-            px: { xs: 2, md: 3 },
             // The phone line has no vertical padding: the 44px Reset sets its height (45px with the
             // border), so the bar costs one line of the first screen, not four (spec 01, step 1).
             py: { xs: 0, sm: 1 },
@@ -184,12 +184,13 @@ export function AppShell() {
             borderColor: 'divider',
           }}
         >
-          {/* MarketDataNotice's 1240 column, but a 6px column gap and no row gap: its 12/4 gaps
-              wrap the wide row a line early (spec 01, Behaviour › The demo bar). */}
+          {/* The one page column, as the nav and the production bar (owner, NO-2 B, 2026-10-25:
+              bar, nav and page share one edge; this supersedes spec 01's 1240 column). It keeps
+              spec 01's 6px column gap and no row gap: MarketDataNotice's 12/4 gaps wrap the wide
+              row a line early (spec 01, Behaviour › The demo bar). */}
           <Box
             sx={{
-              maxWidth: 1240,
-              mx: 'auto',
+              ...pageColumnSx,
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
