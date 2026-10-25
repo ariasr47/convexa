@@ -135,6 +135,12 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// AI analyst Phase 0 (slice 0a): build a cutoff-bound context package from SEC EDGAR data.
+    /// No model is called; nothing is served or stored.
+    Package {
+        #[command(subcommand)]
+        q: PackageQuestion,
+    },
     /// P2 research: baseline score lab report (score ranking vs joined outcomes).
     ///
     /// Needs a join-outcomes artifact plus structure samples (scan store or --samples JSON).
@@ -268,6 +274,33 @@ enum Commands {
         #[arg(long = "et-date", global = true)]
         et_date: Option<String>,
     },
+}
+
+#[derive(Subcommand, Debug)]
+enum PackageQuestion {
+    /// Q1, "What changed for X, and does it matter?": filings, Form 4s, 13F holders and reported
+    /// figures accepted by the cutoff. Prints the package_id on stdout.
+    Q1 {
+        /// The ticker, e.g. NVDA.
+        ticker: String,
+        /// No fact accepted after this instant: RFC 3339 in whole seconds, e.g. 2026-10-16T20:00:00Z.
+        #[arg(long, value_parser = parse_package_cutoff)]
+        cutoff: DateTime<Utc>,
+        /// Live: save every SEC response to this new directory as it arrives.
+        #[arg(long, conflicts_with = "inputs")]
+        save_inputs: Option<PathBuf>,
+        /// Replay: build only from the responses saved in this directory (no network, no
+        /// SEC_USER_AGENT).
+        #[arg(long)]
+        inputs: Option<PathBuf>,
+        /// Output file (default data/research/analyst/q1_<TICKER>_<cutoff>.json).
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
+}
+
+fn parse_package_cutoff(raw: &str) -> Result<DateTime<Utc>, String> {
+    api_rust::services::analyst::cli::parse_cutoff(raw)
 }
 
 #[derive(Subcommand, Debug)]
@@ -737,6 +770,26 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
             json,
         } => {
             cmd_join_outcomes(&symbols, &horizons, store, out, json).await?;
+        }
+        Commands::Package {
+            q:
+                PackageQuestion::Q1 {
+                    ticker,
+                    cutoff,
+                    save_inputs,
+                    inputs,
+                    out,
+                },
+        } => {
+            api_rust::services::analyst::cli::run_q1(api_rust::services::analyst::cli::Q1Args {
+                ticker,
+                cutoff,
+                save_inputs,
+                inputs,
+                out,
+            })
+            .await
+            .map_err(anyhow::Error::msg)?;
         }
         Commands::ScoreLab {
             outcomes,

@@ -50,7 +50,9 @@ const HOUR: Duration = Duration::from_secs(3600);
 /// asks it the full 20 s timeout (observed live), so retries stay rare; the cached copies
 /// live for hours, so serving them a little longer costs nothing.
 const RETRY_AFTER_FAILURE: Duration = Duration::from_secs(600);
-const SEC_SPACING: Duration = Duration::from_millis(200);
+/// One SEC request per this long, process-wide (half of SEC's 10 a second). pub(crate) so the
+/// analyst package's live read keeps the same spacing.
+pub(crate) const SEC_SPACING: Duration = Duration::from_millis(200);
 /// The longest a ticker answer waits on SEC EDGAR. The core reads (the cold 90-day card and the
 /// company facts) fit inside it at one request per 200 ms; the secondary sections get what is left.
 const SEC_PART_BUDGET: Duration = Duration::from_secs(10);

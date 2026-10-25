@@ -4,8 +4,10 @@
 //!
 //! - `canonical`: the canonical JSON form and `package_id`.
 //! - `package`: the package's types and the pure `build`.
-//! - `inputs`: the responses a package is built from.
+//! - `inputs`: the responses a package is built from: saved inputs and the live fetch loop.
+//! - `cli`: `api-rust package q1`.
 
 pub mod canonical;
+pub mod cli;
 pub mod inputs;
 pub mod package;
