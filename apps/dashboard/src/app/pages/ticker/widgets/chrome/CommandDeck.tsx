@@ -214,6 +214,13 @@ export function CommandDeck(props: CommandDeckProps) {
   // CommandDeck/TickerHeader test keeps exercising the below-1100 (today's) arrangement unless it
   // explicitly stubs `matchMedia`.
   const controlsJoinHeadline = useMediaQuery(theme.breakpoints.up('laptop'));
+  // A phone (below `sm`, where `TickerHeader` stacks its hero row) takes the board's phone masthead
+  // order: tabs, Expirations, Persona, then the CTA (`final/ticker-desk.mjs`'s `.act`: the tabs, then
+  // `.tk-ctl` with the two `.tk-sel` chips before the button; fidelity DESK-06). So the SAME toolbar
+  // element goes into `TickerHeader`'s controls slot, ahead of the CTA, as it does from `laptop`, but
+  // as a full-width block (`inline` false), its chips one per row. Never both slots: from `laptop`
+  // `controlsJoinHeadline` wins. jsdom has no `matchMedia`, so unit tests keep the tier-2 order.
+  const phoneOrder = useMediaQuery(theme.breakpoints.down('sm')) && !controlsJoinHeadline;
   // Reveal the condensed bar only once the full deck has scrolled out of view. IntersectionObserver is
   // the progressive toggle; when unavailable (older/jsdom) OR reduced-motion, the bar simply never
   // fades — it just pins when present. We keep it MOUNTED-but-hidden vs unmounted to avoid layout jump.
@@ -325,14 +332,19 @@ export function CommandDeck(props: CommandDeckProps) {
           `FIDELITY_AUDIT.md` F3). Vertical padding only (matches `.mast`'s own 20px/12px); the
           outer page `Container` already supplies the horizontal gutter every other section on this
           page shares, so this deck adds no horizontal padding of its own. `StickyCondensed` above
-          keeps its OWN raised-panel treatment on purpose — it is a pinned overlay, not the masthead. */}
+          keeps its OWN raised-panel treatment on purpose — it is a pinned overlay, not the masthead.
+          A phone takes the board's `.tkd` rhythm (fidelity DESK-06): the page column's 16px top
+          (`TickerDashboard.tsx`) is the whole gap above the h1, as the board's `.tk-mast` has no
+          padding of its own (20px more put the h1 at y138 against the board's 118 at 390), and the
+          quick symbols sit 16px under the CTA and 16px over the first zone label (`.tkd` gap 16;
+          they were 12 and 24). From `sm` the deck keeps its 20px/12px padding and 12px gaps. */}
       <Box
         data-testid="command-deck"
         sx={{
           position: 'relative',
-          mb: 1.5,
-          pt: 2.5,
-          pb: 1.5,
+          mb: { xs: 2, sm: 1.5 },
+          pt: { xs: 0, sm: 2.5 },
+          pb: { xs: 0, sm: 1.5 },
         }}
       >
         {/* Ticker fidelity repair, change 3 (F3) close-out: `spacing={2}` (16px) between all three
@@ -340,7 +352,7 @@ export function CommandDeck(props: CommandDeckProps) {
             design's (`.mast-row` merges tier 1+2 into one row, `desk.mjs:256-274`, so the design has
             only ONE such gap, before `.quick`). Tightened, not removed — the tiers stay three
             visually distinct groups. */}
-        <Stack spacing={1.5}>
+        <Stack spacing={{ xs: 2, sm: 1.5 }}>
           {/* Tier 1 — hero identity row (regime + connection chips, anchor, meta line, controls +
               CTA at ≥ laptop — PASS 2 change 9 — CTA alone below it). */}
           <TickerHeader
@@ -358,14 +370,14 @@ export function CommandDeck(props: CommandDeckProps) {
             onSignIn={onSignIn}
             freshness={freshness}
             singleNameCaveat={singleNameCaveat}
-            inlineControls={controlsJoinHeadline ? toolbar : null}
+            inlineControls={controlsJoinHeadline || phoneOrder ? toolbar : null}
             tabs={tabs}
           />
 
-          {/* Tier 2 — the segmented control strip (one instrument panel), below 1100 only; at
-              ≥ laptop the SAME `toolbar` element (see above `const`) renders inside `TickerHeader`
-              instead — never both, `controlsJoinHeadline` gates each slot exclusively. */}
-          {!controlsJoinHeadline && toolbar}
+          {/* Tier 2 — the segmented control strip (one instrument panel), from `sm` to 1100 only; at
+              ≥ laptop and on a phone the SAME `toolbar` element (see above `const`) renders inside
+              `TickerHeader` instead — never both, the two flags gate each slot exclusively. */}
+          {!controlsJoinHeadline && !phoneOrder && toolbar}
 
           {/* Tier 3 — Quick symbols row (pins + durable recents). Not on sticky bar. */}
           <QuickSymbols

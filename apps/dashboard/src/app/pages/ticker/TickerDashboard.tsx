@@ -78,6 +78,7 @@ import { useTickerPageModel } from './useTickerPageModel';
 import { useTickerTradeFlows } from './useTickerTradeFlows';
 import {
   DealerFlowProjection,
+  FRESH_TOP_N,
   FreshPositioning,
   LiveTape,
   MarketContext,
@@ -178,9 +179,18 @@ function MastheadSkeleton({ tabs }: { tabs?: ReactNode }) {
     // minHeight 215 — the widget's own measured final height (review: `command-deck` 215px at
     // 1280), the same "pin to the final height" pattern the hero (483) and strip (131) skeletons
     // below use, verified against a real browser capture (measured 189px unpinned — ~12% short,
-    // outside the task's ±10% band).
-    <Box data-testid="cold-load-masthead" sx={{ pt: 2.5, pb: 1.5, mb: 1.5, minHeight: 215 }}>
-      <Stack spacing={1.5}>
+    // outside the task's ±10% band). Padding and gaps follow `CommandDeck`'s, the phone's too
+    // (fidelity DESK-06: no top padding under the page column's 16px, 16px gaps).
+    <Box
+      data-testid="cold-load-masthead"
+      sx={{
+        pt: { xs: 0, sm: 2.5 },
+        pb: { xs: 0, sm: 1.5 },
+        mb: { xs: 2, sm: 1.5 },
+        minHeight: 215,
+      }}
+    >
+      <Stack spacing={{ xs: 2, sm: 1.5 }}>
         {/* Lane 4: the loaded masthead leads with the symbol, then the price with its change and
             the verdict, then the provenance chips; the tabs head its right column. Same order. */}
         <Stack
@@ -660,15 +670,19 @@ export function TickerDashboard() {
   // Vol/OI "Fresh positioning": strikes at/above the cutoff, ranked desc, short top-N (full-chain).
   const volOiThreshold = m?.vol_oi_unusual_threshold ?? 1;
   // Memoized on the bundle so a live tick (this root re-renders on every tape publish) hands
-  // FreshPositioning the same array and its memo holds.
-  const unusualStrikes = useMemo(
-    () =>
-      (data?.strike_profile.strikes ?? [])
-        .filter((s) => s.vol_oi_ratio != null && s.vol_oi_ratio >= volOiThreshold)
-        .toSorted((a, b) => (b.vol_oi_ratio as number) - (a.vol_oi_ratio as number))
-        .slice(0, 8),
-    [data?.strike_profile.strikes, volOiThreshold],
-  );
+  // FreshPositioning the same array and its memo holds. The card lists the top `FRESH_TOP_N` (8);
+  // `unusualCount` is every qualifying strike, counted before that cut, so the read strip's Vol/OI
+  // cell, its ⓘ and Fresh positioning's line and ⓘ state the true number. They read "8" when 14
+  // qualified, since the count came from the cut list.
+  const { unusualStrikes, unusualCount } = useMemo(() => {
+    const qualifying = (data?.strike_profile.strikes ?? [])
+      .filter((s) => s.vol_oi_ratio != null && s.vol_oi_ratio >= volOiThreshold)
+      .toSorted((a, b) => (b.vol_oi_ratio as number) - (a.vol_oi_ratio as number));
+    return {
+      unusualStrikes: qualifying.slice(0, FRESH_TOP_N),
+      unusualCount: qualifying.length,
+    };
+  }, [data?.strike_profile.strikes, volOiThreshold]);
 
   const allDates = data?.expirations.map((e) => e.date) ?? [];
   const selectableExpirations =
@@ -736,7 +750,7 @@ export function TickerDashboard() {
             m,
             offExchange: data?.off_exchange,
             volOiThreshold,
-            unusualCount: unusualStrikes.length,
+            unusualCount,
             tierWord: tm.word,
             opportunityScore: sig?.opportunity_score ?? null,
             ivRank: m.iv_rank ?? null,
@@ -747,7 +761,7 @@ export function TickerDashboard() {
       m,
       data?.off_exchange,
       volOiThreshold,
-      unusualStrikes.length,
+      unusualCount,
       tm.word,
       sig?.opportunity_score,
       sig?.setups?.length,
@@ -1277,6 +1291,7 @@ export function TickerDashboard() {
                           chainVolOiRatio={m.chain_vol_oi_ratio}
                           volOiThreshold={volOiThreshold}
                           unusualStrikes={unusualStrikes}
+                          unusualCount={unusualCount}
                           structureAgeSeconds={structureAgeSeconds}
                         />
                         <OffExchangeBlocks
