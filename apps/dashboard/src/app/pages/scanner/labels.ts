@@ -17,9 +17,11 @@ import type { ScanSortKey, ScanStatus } from '@convexa/api';
 
 export const SCAN_COPY = {
   heading: 'Scanner',
+  /** The Final board's lead (`design/src/screens/final/account-pages.mjs` scannerStaging), shorter
+   *  than the 2-sentence original, so the mast holds title, lead and session cluster on one row. The
+   *  snapshot caveat it dropped is still said twice beside it: the cadence line and its gloss. */
   subhead:
-    'One dense read of the tracked universe — which ticker deserves the deep-dive right now. ' +
-    'Structure is a snapshot; see methodology for how it is built.',
+    'One dense read of the tracked universe, ranked by dealer structure. Open any row for its desk.',
   methodologyLink: 'How structure is computed',
   /** The two-speed basis, always above the table (UX §2.1). Reworded under curvature-v2-surfaces
    *  OWNER ruling D-A (`council/decisions.md` §4): neither this header nor its gloss below may

@@ -10,8 +10,18 @@ import { fld, seg, statesBoard, sw } from '../v4/kit.mjs';
 import { ALERT_KINDS, FIRED, KIND, RULES, STRUCTURE_KINDS } from '../../data/alerts.mjs';
 
 export const ACCT_CSS = `
-  .ac-sess { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-  .ac-badge { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--raised); font: 700 11px 'IBM Plex Sans', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; }
+  .ap-h.ac-scanh { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 32px; row-gap: 12px; align-items: start; }
+  .ap-h.ac-scanh h1 { font-size: 28px; line-height: 1.1; letter-spacing: -0.01em; }
+  .ap-h.ac-scanh p { margin: 6px 0 0; max-width: 62ch; font-size: 15.2px; line-height: 1.5; text-wrap: balance; }
+  .ac-sess { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; margin-top: 4px; min-width: 0; }
+  .ac-sess .dline { font-size: 12px; text-align: right; }
+  .ac-sess .dline.mono { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ac-sess a { font-weight: 500; white-space: nowrap; text-underline-offset: 3px; }
+  .ac-sess a:hover, .ac-sess a:focus-visible { text-decoration: underline; }
+  .ac-badge { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--raised); font: 700 11px 'IBM Plex Sans', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+  .ac-mark { flex: none; width: 6px; height: 6px; border-radius: 50%; box-sizing: border-box; background: var(--phosphor); }
+  .ac-mark.is-side { background: var(--steel); }
+  .ac-mark.is-ring { background: transparent; border: 1.5px solid var(--steel); }
   .ac-tblhead { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); }
   .ac-prev td { background: var(--ink-2); white-space: normal !important; }
   .ac-prev .g { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 12px 20px; align-items: end; padding: 4px 0; }
@@ -43,13 +53,20 @@ export const ACCT_CSS = `
   .ac-av { width: 40px; height: 40px; border-radius: 50%; background: var(--raised-2); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; flex: 0 0 auto; }
   .ac-hold { display: grid; grid-template-columns: 70px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13px; }
   @media (max-width: 1099px) { .ac-live { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 899px) { .ac-sess { align-items: flex-start; } .ac-strip { grid-template-columns: 1fr; } .ac-ghost .hdr, .ac-ghost .r { grid-template-columns: 1.2fr repeat(3, 1fr); } .ac-ghost .hdr span:nth-child(n+5), .ac-ghost .r i:nth-child(n+5) { display: none; } .ac-prev .g { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 899px) { .ap-h.ac-scanh { grid-template-columns: minmax(0, 1fr); } .ac-sess { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 0; } .ac-sess .dline { text-align: left; } .ac-strip { grid-template-columns: 1fr; } .ac-ghost .hdr, .ac-ghost .r { grid-template-columns: 1.2fr repeat(3, 1fr); } .ac-ghost .hdr span:nth-child(n+5), .ac-ghost .r i:nth-child(n+5) { display: none; } .ac-prev .g { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 599px) { .ac-live { grid-template-columns: 1fr; } .ac-wall { margin: 24px 0; padding: 22px; } .ac-wall .btn { flex: 1 1 100%; min-height: 44px; } .ac-hold { grid-template-columns: 56px minmax(0, 1fr) auto; } .ac-hold > :nth-child(3) { display: none; } }
 `;
 
 export const DEMO = STAGING_DEMO_URL;
 export const demoLink = (path, text = 'See it on the demo →') => `<a href="${DEMO}${path}" class="t-info" style="display: inline-flex; align-items: center; min-height: 24px; font-weight: 600;">${text}</a>`;
 export const H = (title, lead, right = '') => `<div class="ap-h"><div><h1 class="display">${title}</h1><p>${lead}</p></div>${right}</div>`;
+// The Scanner's mast (2026-10-25, owner: "the closed ui element is just floating there"): a grid, so the
+// session cluster owns a right column from 900px and drops under the lead as one left-aligned wrapping row
+// below it, chip first; never a right-aligned narrow column on a row of its own. Scanner.tsx draws the same.
+const scanH = (lead, sess) => H('Scanner', lead, sess).replace('class="ap-h"', 'class="ap-h ac-scanh"');
+// The session chip's mark: a neutral shape, not a liveness claim (no signal, no pulse). RTH a phosphor dot,
+// pre/after a steel dot, closed the canon's closed-chip ring.
+const sessMark = (phase) => `<i class="ac-mark${phase === 'closed' ? ' is-ring' : phase === 'rth' ? '' : ' is-side'}" aria-hidden="true"></i>`;
 export const P = (title, tag, inner, label = '', cls = '') => `<section class="hd-p${cls ? ' ' + cls : ''}" aria-label="${label || title.replace(/<[^>]+>/g, '')}"><div class="ph"><h3>${title}</h3>${tag}</div>${inner}</section>`;
 // P-5 rejected (owner, 2026-10-13): a price change stays green/red text with ▲/▼, so sign never rests on hue.
 export const dirChg = (c) => `<span class="mono ${c.startsWith('−') ? 't-down' : 't-up'}">${c.startsWith('−') ? '▼' : '▲'} ${c.replace(/^[+−]/, '')}</span>`;
@@ -83,8 +100,8 @@ function demoScanTable({ preview = 'SPY' } = {}) {
 }
 const scanTools = (n) => `<div class="ap-bar"><span style="font-weight: 600;">Your view</span><span class="steel">${n} names</span><button class="btn secondary sm" type="button">${icon('filter', 14)}Edit view</button><span style="flex: 1;"></span><span class="ac-pills" role="group" aria-label="Scan desk filters"><span class="pill">Prime</span><span class="pill-on">${icon('check', 14)}Actionable</span><span class="pill">Watch</span><span class="pill">Score ≥ 70</span><span class="pill">|Flip| ≤ 1%</span><span class="pill">IV cheap</span><span class="pill">IV rich</span></span>${seg(['Compact', 'Comfortable'], 'Comfortable')}</div>`;
 export function scannerStaging({ minHeight = 0, scheme = 'dark' } = {}) {
-  const sess = `<div class="ac-sess" aria-label="US equity session"><span class="ac-badge">RTH · scenario</span><span class="dline">Sample tape · structure ~3 min · <a href="/methodology#structure">How structure is computed</a></span><span class="dline mono">Structure as-of 2:30 PM ET, Oct 7</span></div>`;
-  const main = `<div class="wrap ap">${H('Scanner', 'One dense read of the tracked universe, ranked by dealer structure. Open any row for its desk.', sess)}${legend([['demo', 'Demo · sample data', null]])}<span class="dline" style="margin-top: -12px;">Every figure on this page comes from the authored Oct 7 scenario. Nothing is fetched; prices don’t flash.</span>${scanTools(6)}${demoScanTable()}<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px;">${P('How a score is built', '', '<span class="dline">Four parts: distance to a wall, IV stretch, setups and the flip. <a href="/methodology#score">Methodology</a></span>')}${P('Your view', stateTag('local', 'Stored here'), '<span class="dline">Six names in the demo’s tracked universe. Edits and filters stay in this browser until you reset the demo.</span>')}</div></div>`;
+  const sess = `<div class="ac-sess" aria-label="US equity session"><span class="ac-badge">${sessMark('rth')}RTH · scenario</span><span class="dline">Sample tape · structure ~3 min · <a href="/methodology#structure">How structure is computed</a></span><span class="dline mono">Structure as-of 2:30 PM ET, Oct 7</span></div>`;
+  const main = `<div class="wrap ap">${scanH('One dense read of the tracked universe, ranked by dealer structure. Open any row for its desk.', sess)}${legend([['demo', 'Demo · sample data', null]])}<span class="dline" style="margin-top: -12px;">Every figure on this page comes from the authored Oct 7 scenario. Nothing is fetched; prices don’t flash.</span>${scanTools(6)}${demoScanTable()}<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px;">${P('How a score is built', '', '<span class="dline">Four parts: distance to a wall, IV stretch, setups and the flip. <a href="/methodology#score">Methodology</a></span>')}${P('Your view', stateTag('local', 'Stored here'), '<span class="dline">Six names in the demo’s tracked universe. Edits and filters stay in this browser until you reset the demo.</span>')}</div></div>`;
   return finalPage({ scheme, minHeight, active: 'scanner', demo: true, label: 'Scanner', main });
 }
 const ghostTable = () => `<div class="ac-ghost" aria-hidden="true"><div class="hdr">${['Symbol', 'Price', 'Chg', 'Score', 'Tier', 'Regime', 'Flip dist', 'Walls'].map((h) => `<span>${h}</span>`).join('')}</div>${[0, 1, 2].map(() => `<div class="r">${Array.from({ length: 8 }, (_, i) => `<i style="width: ${[54, 70, 48, 80, 62, 66, 50, 74][i]}%;"></i>`).join('')}</div>`).join('')}</div>`;

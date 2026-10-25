@@ -17,7 +17,7 @@
  * is the one gated write and the SERVER refuses it, not this file (`[server-side-gate-enforcement]`).
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { Jargon } from '@/shared/ui/Jargon';
 import { dataMode } from '@convexa/api';
 import Alert from '@mui/material/Alert';
@@ -68,6 +68,33 @@ function ScanSkeleton() {
         <Skeleton key={i} variant="rectangular" height={26} />
       ))}
     </Box>
+  );
+}
+
+/**
+ * The session chip's 6px mark: a neutral SHAPE, never a liveness claim. It is the clock's session
+ * (`sessionBadge`, wall-clock derived), not a stream, so it is never green, never `signal`, never
+ * pulsing (canon Banned: a live dot on a snapshot surface). Closed wears the canon's closed-chip
+ * RING (DESIGN_SYSTEM Icons row, `chip.mjs` CONNECTION.closed); the trading phases a filled dot,
+ * primary text in RTH and secondary text either side of it.
+ */
+function SessionMark({ phase }: { phase: string }) {
+  return (
+    <Box
+      component="span"
+      aria-hidden="true"
+      data-mark={phase === 'closed' ? 'ring' : 'dot'}
+      sx={{
+        width: '6px',
+        height: '6px',
+        flex: '0 0 auto',
+        borderRadius: '50%',
+        boxSizing: 'border-box',
+        ...(phase === 'closed'
+          ? { border: '1.5px solid', borderColor: 'text.secondary' }
+          : { bgcolor: phase === 'rth' ? 'text.primary' : 'text.secondary' }),
+      }}
+    />
   );
 }
 
@@ -250,24 +277,49 @@ export function Scanner() {
 
   return (
     <Box data-testid="scanner-page" sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
-      {/* Header (design/src/screens/scanner.mjs:65-72, `.scan-head`): title + subtitle left, the
-          right cluster (session chip · cadence line · Structure as-of) right — moved up from the
-          toolbar row below so the mast reads as one unit, as the design draws it. */}
+      {/* Header: the Final board's mast (`design/src/screens/final/account-pages.mjs` scannerStaging,
+          `.ac-scanh`). A grid, not a wrapping flex row: from md (900) the session cluster owns a
+          right column, top-aligned with the title; below md it drops under the lead as ONE
+          left-aligned wrapping row, chip first. The flex row it replaces wrapped the cluster onto
+          a row of its own at ~1000px, where each line sat right-aligned in a narrow column and
+          read as floating (owner screenshot, production /scanner). */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px 24px',
-          mb: '14px',
+          display: 'grid',
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) auto' },
+          columnGap: '32px',
+          rowGap: '12px',
+          alignItems: 'start',
+          mb: '16px',
         }}
       >
-        <Box>
-          <Typography component="h1" sx={{ fontSize: '1.7rem', fontWeight: 700, m: '0 0 4px' }}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            component="h1"
+            sx={{
+              fontFamily: typographyTokens.displayFontFamily,
+              fontStretch: typographyTokens.displayFontStretch,
+              fontSize: '1.75rem',
+              fontWeight: 700,
+              lineHeight: 1.1,
+              letterSpacing: '-0.01em',
+              m: '0 0 6px',
+            }}
+          >
             {SCAN_COPY.heading}
           </Typography>
-          <Typography component="p" sx={{ fontSize: '0.88rem', color: 'text.secondary', m: 0 }}>
+          <Typography
+            component="p"
+            sx={{
+              fontSize: '0.95rem',
+              lineHeight: 1.5,
+              color: 'text.secondary',
+              maxWidth: '62ch',
+              // A two-line lead: `balance` evens the lines; `pretty` left "for its desk." alone.
+              textWrap: 'balance',
+              m: 0,
+            }}
+          >
             {SCAN_COPY.subhead}
           </Typography>
         </Box>
@@ -276,9 +328,14 @@ export function Scanner() {
           data-testid="scan-session-strip"
           sx={{
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: '6px',
+            flexDirection: { xs: 'row', md: 'column' },
+            flexWrap: { xs: 'wrap', md: 'nowrap' },
+            alignItems: { xs: 'center', md: 'flex-end' },
+            alignSelf: 'start',
+            gap: { xs: '6px 12px', md: '6px' },
+            // Centres the 24px chip on the title's first line (1.75rem × 1.1 ≈ 31px), on the 4-pt ladder.
+            mt: { md: '4px' },
+            minWidth: 0,
           }}
         >
           <Box
@@ -290,18 +347,25 @@ export function Scanner() {
             sx={(theme) => ({
               display: 'inline-flex',
               alignItems: 'center',
-              fontSize: '0.72rem',
+              gap: '6px',
+              flex: '0 0 auto',
+              height: '24px',
+              padding: '0 9px',
+              boxSizing: 'border-box',
+              fontSize: '0.6875rem',
               fontWeight: 700,
+              lineHeight: 1,
               letterSpacing: '.04em',
               textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
               color: 'text.primary',
               bgcolor: extrasFor(theme).panelRaised,
               border: '1px solid',
-              borderColor: 'divider',
+              borderColor: extrasFor(theme).lineStrong,
               borderRadius: '6px',
-              padding: '4px 9px',
             })}
           >
+            <SessionMark phase={scan.session.phase} />
             {scan.session.label}
             {DEMO && DEMO_COPY.sessionSuffix}
           </Box>
@@ -309,7 +373,14 @@ export function Scanner() {
           <Typography
             component="p"
             data-testid="scan-cadence-header"
-            sx={{ fontSize: '0.78rem', color: 'text.secondary', m: 0, textAlign: 'right' }}
+            sx={{
+              fontSize: '0.75rem',
+              lineHeight: 1.45,
+              color: 'text.secondary',
+              m: 0,
+              textAlign: { xs: 'left', md: 'right' },
+              textWrap: 'pretty',
+            }}
           >
             <Jargon
               term={
@@ -326,8 +397,17 @@ export function Scanner() {
               component={RouterLink}
               to="/methodology"
               data-testid="scan-methodology-link"
-              underline="hover"
-              sx={{ color: 'text.secondary', fontSize: 'inherit' }}
+              underline="none"
+              sx={(theme) => ({
+                // The board's link colour (`.v4 a` → `--text-info`): the one actionable piece of
+                // the line reads as a link at rest, not only on hover.
+                color: extrasFor(theme).textInfo,
+                fontSize: 'inherit',
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                textUnderlineOffset: '3px',
+                '&:hover, &:focus-visible': { textDecoration: 'underline' },
+              })}
             >
               {SCAN_COPY.methodologyLink}
             </Link>
@@ -336,9 +416,12 @@ export function Scanner() {
             component="span"
             data-testid="scan-structure-asof"
             sx={{
-              fontSize: '0.78rem',
+              fontFamily: typographyTokens.monoFontFamily,
+              fontSize: '0.75rem',
+              lineHeight: 1.45,
               color: 'text.secondary',
               fontVariantNumeric: 'tabular-nums',
+              whiteSpace: 'nowrap',
             }}
           >
             {scan.structureAsOf != null

@@ -674,8 +674,18 @@
   .ts-states .st { display: flex; flex-direction: column; gap: 6px; }
   .rm-table td.unl { color: var(--phosphor); }
 
-  .ac-sess { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-  .ac-badge { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--raised); font: 700 11px 'IBM Plex Sans', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; }
+  .ap-h.ac-scanh { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 32px; row-gap: 12px; align-items: start; }
+  .ap-h.ac-scanh h1 { font-size: 28px; line-height: 1.1; letter-spacing: -0.01em; }
+  .ap-h.ac-scanh p { margin: 6px 0 0; max-width: 62ch; font-size: 15.2px; line-height: 1.5; text-wrap: balance; }
+  .ac-sess { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; margin-top: 4px; min-width: 0; }
+  .ac-sess .dline { font-size: 12px; text-align: right; }
+  .ac-sess .dline.mono { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ac-sess a { font-weight: 500; white-space: nowrap; text-underline-offset: 3px; }
+  .ac-sess a:hover, .ac-sess a:focus-visible { text-decoration: underline; }
+  .ac-badge { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--raised); font: 700 11px 'IBM Plex Sans', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+  .ac-mark { flex: none; width: 6px; height: 6px; border-radius: 50%; box-sizing: border-box; background: var(--phosphor); }
+  .ac-mark.is-side { background: var(--steel); }
+  .ac-mark.is-ring { background: transparent; border: 1.5px solid var(--steel); }
   .ac-tblhead { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); }
   .ac-prev td { background: var(--ink-2); white-space: normal !important; }
   .ac-prev .g { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 12px 20px; align-items: end; padding: 4px 0; }
@@ -707,7 +717,7 @@
   .ac-av { width: 40px; height: 40px; border-radius: 50%; background: var(--raised-2); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; flex: 0 0 auto; }
   .ac-hold { display: grid; grid-template-columns: 70px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13px; }
   @media (max-width: 1099px) { .ac-live { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 899px) { .ac-sess { align-items: flex-start; } .ac-strip { grid-template-columns: 1fr; } .ac-ghost .hdr, .ac-ghost .r { grid-template-columns: 1.2fr repeat(3, 1fr); } .ac-ghost .hdr span:nth-child(n+5), .ac-ghost .r i:nth-child(n+5) { display: none; } .ac-prev .g { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 899px) { .ap-h.ac-scanh { grid-template-columns: minmax(0, 1fr); } .ac-sess { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 0; } .ac-sess .dline { text-align: left; } .ac-strip { grid-template-columns: 1fr; } .ac-ghost .hdr, .ac-ghost .r { grid-template-columns: 1.2fr repeat(3, 1fr); } .ac-ghost .hdr span:nth-child(n+5), .ac-ghost .r i:nth-child(n+5) { display: none; } .ac-prev .g { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 599px) { .ac-live { grid-template-columns: 1fr; } .ac-wall { margin: 24px 0; padding: 22px; } .ac-wall .btn { flex: 1 1 100%; min-height: 44px; } .ac-hold { grid-template-columns: 56px minmax(0, 1fr) auto; } .ac-hold > :nth-child(3) { display: none; } }
 
   .ac-sheets { padding: 24px 0 40px; display: flex; flex-direction: column; gap: 28px; }

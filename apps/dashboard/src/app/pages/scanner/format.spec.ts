@@ -66,12 +66,15 @@ function row(over: Partial<ScanRow> = {}): ScanRow {
 }
 
 describe('relative ages', () => {
-  it('relAge buckets seconds / minutes / hours', () => {
+  it('relAge buckets seconds / minutes / hours, then whole days from 48h', () => {
     expect(relAge(0)).toBe('0s');
     expect(relAge(42)).toBe('42s');
     expect(relAge(59.4)).toBe('59s');
     expect(relAge(120)).toBe('2m');
     expect(relAge(3600)).toBe('1h');
+    expect(relAge(48 * 3600 - 1)).toBe('47h');
+    expect(relAge(48 * 3600)).toBe('2d');
+    expect(relAge(424 * 3600)).toBe('17d'); // the owner's production "424h"
     expect(relAge(-5)).toBe('0s'); // clock skew never renders a negative age
   });
 
@@ -362,6 +365,19 @@ describe('structureAsOfRel', () => {
     ).toBe('2m');
     expect(structureAsOfRel(null, [row({ status: 'building', as_of: NOW - 3 })], NOW)).toBeNull();
     expect(structureAsOfRel(null, [], NOW)).toBeNull();
+  });
+  it('a day-old snapshot on a non-demo build names its date and time beside the age', () => {
+    const STAMP = Date.parse('2026-10-07T18:30:00Z') / 1000; // 2:30 PM EDT
+    const sweep = (at: number) => ({ updated_at: at, sweep_last_completed: at, universe_size: 2 });
+    expect(structureAsOfRel(sweep(STAMP), [], STAMP + 424 * 3600, false)).toBe(
+      'Oct 7, 2:30 PM ET · 17d',
+    );
+    expect(structureAsOfRel(sweep(STAMP), [], STAMP + 30 * 3600, false)).toBe(
+      'Oct 7, 2:30 PM ET · 30h',
+    );
+    // Under a day the bare age stands; the demo keeps its scenario stamp at any age.
+    expect(structureAsOfRel(sweep(STAMP), [], STAMP + 86_399, false)).toBe('23h');
+    expect(structureAsOfRel(sweep(STAMP), [], STAMP + 424 * 3600, true)).toBe('2:30 PM ET, Oct 7');
   });
 });
 

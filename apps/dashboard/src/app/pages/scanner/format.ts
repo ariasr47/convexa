@@ -167,9 +167,15 @@ export function sessionBadge(nowMs: number): { phase: MarketSessionPhase; label:
   return { phase, label: SESSION_LABEL[phase] };
 }
 
+const DAY_S = 86_400;
+
 /**
  * Structure as-of age for the desk strip. Prefers the sweep's last completed pass; falls back to
  * the newest non-building row `as_of`. Never invents a stamp when neither source exists.
+ *
+ * A day-old snapshot on a non-demo build says WHEN as well as how long ago ("Oct 7, 2:30 PM ET ·
+ * 17d"): an age alone that large ("424h", the owner's production screenshot) gives the reader
+ * nothing to place it by. Under a day the bare age stands; the demo keeps its scenario stamp.
  */
 export function structureAsOfRel(
   sweep: SweepHeartbeat | null,
@@ -190,15 +196,13 @@ export function structureAsOfRel(
     }
   }
   if (epoch == null) return null;
-  return demo ? scenarioStamp(epoch) : relAge(nowS - epoch);
+  if (demo) return scenarioStamp(epoch);
+  const age = nowS - epoch;
+  return age >= DAY_S ? `${clockStamp(epoch)} · ${relAge(age)}` : relAge(age);
 }
 
-/**
- * "2:30 PM ET, Oct 7": a sample scan's stamp is the scenario's own clock time, America/New_York.
- * The demo stamps its rows at the scenario's now, so an age against that clock always read "0s",
- * a freshness claim the sample can't make (site check D-03).
- */
-export function scenarioStamp(epochSeconds: number): string {
+/** The New York wall-clock parts both stamps below are built from: "2:30 PM" and "Oct 7". */
+function nyClock(epochSeconds: number): { time: string; day: string } {
   const d = new Date(epochSeconds * 1000);
   const time = d.toLocaleTimeString('en-US', {
     timeZone: 'America/New_York',
@@ -210,18 +214,36 @@ export function scenarioStamp(epochSeconds: number): string {
     month: 'short',
     day: 'numeric',
   });
+  return { time, day };
+}
+
+/**
+ * "2:30 PM ET, Oct 7": a sample scan's stamp is the scenario's own clock time, America/New_York.
+ * The demo stamps its rows at the scenario's now, so an age against that clock always read "0s",
+ * a freshness claim the sample can't make (site check D-03).
+ */
+export function scenarioStamp(epochSeconds: number): string {
+  const { time, day } = nyClock(epochSeconds);
   return `${time} ET, ${day}`;
+}
+
+/** "Oct 7, 2:30 PM ET": a real snapshot's date first, for a stamp read beside its age. */
+function clockStamp(epochSeconds: number): string {
+  const { time, day } = nyClock(epochSeconds);
+  return `${day}, ${time} ET`;
 }
 
 /** Honestly-missing. Every nullable numeric renders THIS, never `0`, never a fabricated value. */
 export const EM_DASH = '—';
 
-/** Per-row relative age: "42s" · "2m" · "3h" (UX §2.2). */
+/** Per-row relative age: "42s" · "2m" · "3h" · "17d" (UX §2.2). Hours run to 47h, then whole
+ *  days: "424h" made the reader divide by 24. */
 export function relAge(seconds: number): string {
   const s = Math.max(0, Math.round(seconds));
   if (s < 60) return `${s}s`;
   if (s < 3600) return `${Math.floor(s / 60)}m`;
-  return `${Math.floor(s / 3600)}h`;
+  if (s < 2 * DAY_S) return `${Math.floor(s / 3600)}h`;
+  return `${Math.floor(s / DAY_S)}d`;
 }
 
 /** Coarse banner age: "3 min" · "12 min" · "1 hr" · "2 d" (UX §2.3). Floors at "1 min". */
