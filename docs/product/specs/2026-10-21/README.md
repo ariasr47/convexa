@@ -381,3 +381,24 @@ These were weighed for this set and held back.
   - a "Stress band changed" alert kind;
   - a VIX card in Positioning (S7-Q1);
   - moving the sample CFTC report to Sep 29 (S7-Q3).
+
+## Owner answers (2026-10-25)
+
+Appended; the tables above stay as written. The owner took every recommended answer (asked in chat:
+"Take all recommended"), so each question below is answered with its row's **Recommended** cell:
+D3, S1-Q3, S1-Q4, S2-Q1, S2-Q2, S2-Q3, S3-Q1, S3-Q3, S4-Q1, S4-Q2, S4-Q3, S4-Q4, S4-Q5, S4-Q6, S5-Q2, S5-Q3, S5-Q4, S5-Q5, S5-Q6, S7-Q4, S7-Q1, S7-Q2, S7-Q3, S6-Q1, S6-Q5, S6-Q2, S6-Q3, S6-Q4, S6-Q6.
+
+D1 and D2 were answered on 2026-10-22 (`DESIGN_SYSTEM.md` Amendments). Consequences worth naming:
+
+- **S1-Q3:** the staging footer's "Built by" GitHub link goes to the repository,
+  `https://github.com/ariasr47/convexa` (tracker question Q-GITHUB-HREF, answered).
+- **S6-Q1:** Phase 0 slice 0a alone is approved; slices 0b to 0f stay gated. **S6-Q5:** a lane may make
+  step 0's three EDGAR header GETs with the production `SEC_USER_AGENT` and commit them as sliced
+  fixtures; the owner makes the live run of about 80 requests (criterion 14), and no lane runs the CLI
+  live.
+- **S7-Q4:** spec 7 may build ahead of analyst Phase 2.
+- **S2-Q1:** only the labels change (ink on the fills, white on light Put); Call and Put keep their
+  fills.
+
+Every spec is now cleared to build once the files it touches are free.
+
