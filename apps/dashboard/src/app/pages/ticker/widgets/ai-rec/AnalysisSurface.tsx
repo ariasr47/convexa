@@ -1,10 +1,13 @@
 import { fmtAsOfEt, fmtExpiry } from '@/pages/ticker/widgets/_kit/copy';
-import type {
-  Grounding,
-  OpenPositionsDigest,
-  RecResponse,
-  RiskInputs,
-  TickerBundle,
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import {
+  dataMode,
+  type Grounding,
+  type OpenPositionsDigest,
+  type RecResponse,
+  type RiskInputs,
+  type TickerBundle,
 } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Box from '@mui/material/Box';
@@ -21,10 +24,52 @@ import { GroundingNote } from './GroundingNote';
 import { NumbersSaidStrip } from './NumbersSaidStrip';
 import { COPY, PLAN_FIELD_LABEL, literalCopy } from './copy';
 import { fieldLiteral, planFieldLiteral, registerSx } from './literals';
-import { LevelsStrip, ReasoningSection } from './reasoning';
+import { CapsLabel, LevelsStrip, ReasoningSection } from './reasoning';
 
 export function analysisTitle(ticker: string): string {
   return `${COPY.action.analysis} · ${ticker}`;
+}
+
+/** One cell of the summary's 4-up figure grid (the Final drawer's `.hd-fig`, `lib.mjs:92-94`): a caps
+ *  label over a 15px value, mono for the plan's figures and Plex Sans for Confidence (a word). */
+function FigureCell({
+  label,
+  value,
+  sans = false,
+  testId,
+}: {
+  label: string;
+  value: string;
+  sans?: boolean;
+  testId?: string;
+}) {
+  return (
+    <Box
+      sx={(t) => ({
+        bgcolor: extrasFor(t).well,
+        px: '12px',
+        py: '10px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+        minWidth: 0,
+      })}
+    >
+      <CapsLabel>{label}</CapsLabel>
+      <Typography
+        data-testid={testId}
+        sx={{
+          m: 0,
+          fontFamily: sans ? undefined : typographyTokens.monoFontFamily,
+          fontSize: 15,
+          fontWeight: 500,
+          lineHeight: 1.2,
+        }}
+      >
+        {value}
+      </Typography>
+    </Box>
+  );
 }
 
 function AnalysisSummary({ rec }: { rec: RecResponse }) {
@@ -32,10 +77,22 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
   if (!strategy) return null;
   return (
     <Stack spacing={1} data-testid="analysis-summary">
-      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-        Read summary
-      </Typography>
-      <Typography variant="h6">
+      <CapsLabel component="h3">Read summary</CapsLabel>
+      {/* Fidelity DESK-08: the verdict in the display register (Archivo 700, SemiExpanded), as the
+          desk card draws it. Neutral colour: the desk card's verdict word is the only amber text. */}
+      <Typography
+        component="p"
+        data-testid="analysis-verdict"
+        sx={{
+          m: 0,
+          fontFamily: typographyTokens.displayFontFamily,
+          fontStretch: typographyTokens.displayFontStretch,
+          fontWeight: 700,
+          fontSize: { xs: 26, sm: 28 },
+          lineHeight: 1.15,
+          letterSpacing: '-0.01em',
+        }}
+      >
         {strategy.decision === 'no_trade'
           ? COPY.noTrade.title
           : `${strategy.decision} · ${strategy.bias}`}
@@ -48,68 +105,70 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
       {rec.scenario && (
         <Typography variant="caption">{`SCRIPTED SCENARIO · ${rec.scenario.name} · ${COPY.provenance.sim}`}</Typography>
       )}
-      <Stack
-        direction="row"
-        spacing={2}
-        sx={{ flexWrap: 'wrap' }}
-        data-testid="analysis-structured-summary"
+      {/* The four plan fields in one 4-up grid (fidelity DESK-08): 1px divider lines between the
+          cells, radius 10. The two lists keep their test ids as `display: contents` groups. */}
+      <Box
+        data-testid="analysis-plan-grid"
+        sx={{
+          display: 'grid',
+          // Two by two below 600px, as the Final boards' phone figure grids (`.ac-g4`), so no label
+          // breaks mid-word in an 87px cell.
+          gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' },
+          gap: '1px',
+          bgcolor: 'divider',
+          borderRadius: '10px',
+          overflow: 'hidden',
+        }}
       >
-        {(
-          [
-            [PLAN_FIELD_LABEL.structure, strategy.structure, rec.field_reasons?.structure],
-            [PLAN_FIELD_LABEL.expiration, strategy.expiration, rec.field_reasons?.expiration],
-            // Fidelity repair 2, N6 — Time horizon dropped HERE (kept once, in `analysis-plan-fields`
-            // below, beside Confidence — the design's `MANAGE THE TRADE` grouping). It used to render
-            // in BOTH lists (`Structure · Expiration · Time horizon` then `Time horizon ·
-            // Confidence`), visible in the accepted `ai-recommendation` baseline.
-          ] as const
-        ).map(([label, value, reason]) => {
-          const literal = planFieldLiteral({ decision: strategy.decision, value, reason });
-          // Fidelity repair 2, N5 — the closed literal selector decides value/dash/not-set/… on the
-          // RAW wire token first; only a resolved `value` literal's TEXT is reformatted, and only
-          // for the expiration field (design: `Sep 18 (15 DTE)`) — structure is a plain string,
-          // untouched.
-          const text =
-            literal.kind === 'value'
-              ? label === PLAN_FIELD_LABEL.expiration
-                ? fmtExpiry(literal.text)
-                : literal.text
-              : literalCopy(literal.kind).text;
-          return (
-            <Box key={label}>
-              <Typography variant="caption" color="text.secondary">
-                {label}
-              </Typography>
-              <Typography variant="body2">{text}</Typography>
-            </Box>
-          );
-        })}
-      </Stack>
-      <Stack
-        direction="row"
-        spacing={2}
-        sx={{ flexWrap: 'wrap' }}
-        data-testid="analysis-plan-fields"
-      >
-        {(
-          [
-            [PLAN_FIELD_LABEL.timeHorizon, strategy.time_horizon, rec.field_reasons?.time_horizon],
-            [PLAN_FIELD_LABEL.confidence, strategy.confidence, rec.field_reasons?.confidence],
-          ] as const
-        ).map(([label, value, reason]) => {
-          const literal = planFieldLiteral({ decision: strategy.decision, value, reason });
-          return (
-            <Box key={label}>
-              <Typography variant="caption" color="text.secondary">
-                {label}
-              </Typography>
-              <Typography data-testid={`analysis-field-${label}`} variant="body2">
-                {literal.kind === 'value' ? literal.text : literalCopy(literal.kind).text}
-              </Typography>
-            </Box>
-          );
-        })}
-      </Stack>
+        <Box data-testid="analysis-structured-summary" sx={{ display: 'contents' }}>
+          {(
+            [
+              [PLAN_FIELD_LABEL.structure, strategy.structure, rec.field_reasons?.structure],
+              [PLAN_FIELD_LABEL.expiration, strategy.expiration, rec.field_reasons?.expiration],
+              // Fidelity repair 2, N6 — Time horizon dropped HERE (kept once, in `analysis-plan-fields`
+              // below, beside Confidence — the design's `MANAGE THE TRADE` grouping). It used to render
+              // in BOTH lists (`Structure · Expiration · Time horizon` then `Time horizon ·
+              // Confidence`), visible in the accepted `ai-recommendation` baseline.
+            ] as const
+          ).map(([label, value, reason]) => {
+            const literal = planFieldLiteral({ decision: strategy.decision, value, reason });
+            // Fidelity repair 2, N5 — the closed literal selector decides value/dash/not-set/… on the
+            // RAW wire token first; only a resolved `value` literal's TEXT is reformatted, and only
+            // for the expiration field (design: `Sep 18 (15 DTE)`) — structure is a plain string,
+            // untouched.
+            const text =
+              literal.kind === 'value'
+                ? label === PLAN_FIELD_LABEL.expiration
+                  ? fmtExpiry(literal.text)
+                  : literal.text
+                : literalCopy(literal.kind).text;
+            return <FigureCell key={label} label={label} value={text} />;
+          })}
+        </Box>
+        <Box data-testid="analysis-plan-fields" sx={{ display: 'contents' }}>
+          {(
+            [
+              [
+                PLAN_FIELD_LABEL.timeHorizon,
+                strategy.time_horizon,
+                rec.field_reasons?.time_horizon,
+              ],
+              [PLAN_FIELD_LABEL.confidence, strategy.confidence, rec.field_reasons?.confidence],
+            ] as const
+          ).map(([label, value, reason]) => {
+            const literal = planFieldLiteral({ decision: strategy.decision, value, reason });
+            return (
+              <FigureCell
+                key={label}
+                label={label}
+                value={literal.kind === 'value' ? literal.text : literalCopy(literal.kind).text}
+                sans={label === PLAN_FIELD_LABEL.confidence}
+                testId={`analysis-field-${label}`}
+              />
+            );
+          })}
+        </Box>
+      </Box>
     </Stack>
   );
 }
@@ -334,6 +393,7 @@ export function AnalysisSurface({
             zIndex: 1,
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: 1.25,
             px: 2.5,
             py: 2,
             bgcolor: 'background.paper',
@@ -341,9 +401,21 @@ export function AnalysisSurface({
             borderColor: 'divider',
           }}
         >
-          <Typography id="ai-rec-analysis-title" component="h2" variant="subtitle1">
+          <Typography
+            id="ai-rec-analysis-title"
+            component="h2"
+            variant="subtitle1"
+            sx={{ flex: '1 1 auto', minWidth: 0, fontSize: 16, fontWeight: 700 }}
+          >
             {analysisTitle(ticker)}
           </Typography>
+          {/* Fidelity DESK-08: the demo's read is authored, so the drawer names it once in its head,
+              as the desk card does ("Sample read", D1). A live read carries no tag. */}
+          {dataMode === 'demo' && (
+            <Box component="span" sx={{ flex: 'none', display: 'inline-flex' }}>
+              <DataStateTag state="sample" word="Sample read" />
+            </Box>
+          )}
           <IconButton autoFocus aria-label="Close analysis" onClick={handleClose}>
             <CloseIcon />
           </IconButton>

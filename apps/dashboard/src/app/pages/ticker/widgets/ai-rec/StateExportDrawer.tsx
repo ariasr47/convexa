@@ -12,6 +12,7 @@ import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { useScrollRegion } from '@/shared/ui/useScrollRegion';
 import { dataMode, fetchRecExport, RecExport, RiskInputs, scenarioProvenance } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -21,7 +22,7 @@ import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { alpha } from '@mui/material/styles';
+import { alpha, type Theme } from '@mui/material/styles';
 import { useEffect, useId, useRef, useState } from 'react';
 import {
   COPY,
@@ -38,6 +39,10 @@ import { riskInputsSuperseded } from './literals';
 
 /** The scenario's clock, as the read panel prints it (demo/catalog/shared.ts AS_OF, 18:30 UTC). */
 const SCENARIO_AS_OF = 'Oct 7, 2026 · 2:30 PM ET';
+
+/** The footer note beside Copy all on the demo (`final-dialogs-whats-sent`, `account-dialogs.mjs:66`):
+ *  the copied text starts with its "# Sample analysis export" label. */
+const COPY_ALL_NOTE_DEMO = 'Copies the sample, labelled as one.';
 
 function sectionText(value: unknown): string {
   if (value == null) return '';
@@ -185,49 +190,61 @@ export function StateExportDrawer({
       slotProps={{
         paper: {
           'aria-labelledby': titleId,
+          // Fidelity ACC-10 and ACC-21: the Final what's-sent drawer (`final-dialogs-whats-sent`,
+          // `v4/kit.mjs:23`) is 520 wide, with a fixed head, a scrolling body and a footer.
           sx: {
-            width: { xs: '100%', sm: 420 },
-            p: 2.5,
+            width: { xs: '100%', sm: 520 },
+            maxWidth: '100vw',
+            overflow: 'hidden',
             borderLeft: '1px solid',
             borderColor: 'divider',
           },
         },
       }}
     >
-      <Stack spacing={2}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <Typography
-            id={titleId}
-            sx={{ fontWeight: 600, fontSize: 15, color: 'text.primary', flex: 1 }}
-          >
-            {dataMode === 'demo' ? `Sample analysis export · ${ticker}` : EXPORT_HEADER(ticker)}
-          </Typography>
-          {dataMode === 'demo' && <DataStateTag state="sample" />}
-          <IconButton
-            size="small"
-            onClick={onClose}
-            aria-label="Close export"
-            sx={{ color: 'text.secondary' }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Stack>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          flex: 'none',
+          alignItems: 'center',
+          px: '18px',
+          py: '14px',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Typography
+          id={titleId}
+          component="h2"
+          sx={{ fontWeight: 700, fontSize: 16, color: 'text.primary', flex: 1, minWidth: 0 }}
+        >
+          {dataMode === 'demo' ? `Sample analysis export · ${ticker}` : EXPORT_HEADER(ticker)}
+        </Typography>
+        {dataMode === 'demo' && <DataStateTag state="sample" />}
+        <IconButton
+          size="small"
+          onClick={onClose}
+          aria-label="Close export"
+          sx={{ color: 'text.secondary' }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Stack>
 
-        {/* Egress-honesty banner (binding copy) — the complete, reviewable list of what leaves. */}
-        <Box
+      <Stack
+        data-testid="export-body"
+        spacing={1.75}
+        sx={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', px: '18px', py: 2 }}
+      >
+        {/* Egress-honesty statement (binding copy): the complete, reviewable list of what leaves.
+            Fidelity ACC-21: the drawer's lead sentence, not a tinted banner. */}
+        <Typography
           role="status"
-          sx={{
-            bgcolor: (theme) => alpha(theme.palette.info.main, 0.14),
-            color: (theme) => theme.palette.info.light ?? theme.palette.info.main,
-            borderRadius: '8px',
-            px: 1.5,
-            py: 1.25,
-            fontSize: 12,
-            lineHeight: 1.45,
-          }}
+          sx={{ m: 0, fontSize: 12, lineHeight: 1.45, color: 'text.secondary' }}
         >
           {data?.egress_note ?? EXPORT_EGRESS_FALLBACK(ticker)}
-        </Box>
+        </Typography>
         {provenance && (
           <Typography
             sx={{
@@ -254,15 +271,6 @@ export function StateExportDrawer({
 
         {data && state === 'idle' && (
           <>
-            <Button
-              variant="contained"
-              size="small"
-              sx={{ alignSelf: 'flex-start' }}
-              onClick={() => copy(allText)}
-            >
-              {COPY.export.copyAll}
-            </Button>
-
             <ExportSection
               title="Computed snapshot (context)"
               caption="A serialization of what Convexa already computed — no recompute, no new fetch. Null stays null."
@@ -341,6 +349,50 @@ export function StateExportDrawer({
         )}
       </Stack>
 
+      {/* Fidelity ACC-21: Copy all is the footer's outlined action (`v4/kit.mjs:22`, the board's
+          `.btn.secondary`), with its note; the drawer spends no amber fill. */}
+      {data && state === 'idle' && (
+        <Stack
+          direction="row"
+          data-testid="export-footer"
+          sx={{
+            flex: 'none',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 1,
+            px: '18px',
+            py: 1.5,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Button
+            variant="outlined"
+            startIcon={<ContentCopyIcon />}
+            onClick={() => copy(allText)}
+            sx={(t) => ({
+              flex: { xs: '1 1 100%', sm: '0 0 auto' },
+              minHeight: { xs: 44, sm: 36 },
+              px: '14px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'text.primary',
+              borderColor: extrasFor(t).lineStrong,
+              // The board's 14px glyph with an 8px gap (MUI's start icon defaults to 20px).
+              '& .MuiButton-startIcon': { ml: 0, mr: 1 },
+              '& .MuiButton-startIcon > svg': { fontSize: 14 },
+            })}
+          >
+            {COPY.export.copyAll}
+          </Button>
+          {dataMode === 'demo' && (
+            <Typography sx={{ m: 0, fontSize: 12, lineHeight: 1.45, color: 'text.secondary' }}>
+              {COPY_ALL_NOTE_DEMO}
+            </Typography>
+          )}
+        </Stack>
+      )}
+
       <Snackbar
         open={toast}
         autoHideDuration={2000}
@@ -356,7 +408,7 @@ export function StateExportDrawer({
  *  On the demo nothing is sent because no model is called, so the line says that instead. */
 function NotSentSection({ title }: { title: string }) {
   return (
-    <Box data-testid="export-not-sent">
+    <Box data-testid="export-not-sent" sx={sectionCardSx}>
       <Typography sx={{ fontWeight: 600, fontSize: 13, color: 'text.primary' }}>{title}</Typography>
       <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
         {dataMode === 'demo' ? DRAWER_NOT_SENT_DEMO : DRAWER_NOT_SENT}
@@ -364,6 +416,39 @@ function NotSentSection({ title }: { title: string }) {
     </Box>
   );
 }
+
+/** Fidelity ACC-21: each section is a card (`final-dialogs-whats-sent`: `.hd-p`, radius 12, padding
+ *  18px 20px). On the demo it is a sample frame (P-3, P-8): a dashed steel2 border and the 8px top
+ *  hatch band the app's sample frames draw (`ChartFrame.tsx:136-154`; ACC-29, NO-14: steel at 28%).
+ *  The drawer's head names the sample once (D1), so the cards carry no tag of their own. */
+const sectionCardSx = (t: Theme) => {
+  const sample = dataMode === 'demo';
+  return {
+    position: 'relative',
+    minWidth: 0,
+    px: '20px',
+    py: '18px',
+    borderRadius: '12px',
+    bgcolor: 'background.paper',
+    border: `1px ${sample ? 'dashed' : 'solid'} ${sample ? extrasFor(t).textTertiary : t.palette.divider}`,
+    ...(sample && {
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        height: 8,
+        borderRadius: '11px 11px 0 0',
+        pointerEvents: 'none',
+        background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(
+          t.palette.text.secondary,
+          0.28,
+        )} 6px 12px)`,
+      },
+    }),
+  } as const;
+};
 
 function ExportSection({
   title,
@@ -382,8 +467,12 @@ function ExportSection({
   const preRef = useRef<HTMLPreElement>(null);
   const region = useScrollRegion(preRef, `${title} export text`);
   return (
-    <Box>
-      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+    <Box sx={sectionCardSx}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+      >
         <Typography sx={{ fontWeight: 600, fontSize: 13, color: 'text.primary' }}>
           {title}
         </Typography>
@@ -398,27 +487,29 @@ function ExportSection({
       </Stack>
       {caption && (
         <Typography
-          sx={{ fontSize: 11, color: 'text.disabled', lineHeight: 1.4, display: 'block', mb: 0.75 }}
+          sx={{
+            fontSize: 11,
+            color: 'text.secondary',
+            lineHeight: 1.4,
+            display: 'block',
+            mt: 0.25,
+          }}
         >
           {caption}
         </Typography>
       )}
+      {/* The card is the frame, so the text sits in it unboxed (the board's `pre`, 11.5px steel). */}
       <Box
         component="pre"
         ref={preRef}
         {...region}
         sx={{
           m: 0,
-          mt: caption ? 0 : 0.75,
-          px: 1.5,
-          py: 1.25,
-          borderRadius: '8px',
-          bgcolor: 'background.default',
-          border: '1px solid',
-          borderColor: 'divider',
+          mt: 0.75,
+          borderRadius: '4px',
           color: 'text.secondary',
           fontFamily: typographyTokens.monoFontFamily,
-          fontSize: 11,
+          fontSize: 11.5,
           lineHeight: 1.6,
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',

@@ -1,7 +1,8 @@
 /**
  * Structured reasoning presentation for AI-rec (pure helpers + UI sections).
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { gammaSignWord, gexAt } from '@/shared/charts/structure-field/paintStep';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { AccessibleHelp } from '@/shared/ui';
 import type { RecStrategy, TickerBundle } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -11,6 +12,7 @@ import Stack from '@mui/material/Stack';
 import type { SxProps, Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
+import { distancePercentOnly, levelSpot } from '../_kit/distanceToLevel';
 import { COPY, REASONING_PROSE_NOT_CHECKED } from './copy';
 
 const MONO = typographyTokens.monoFontFamily;
@@ -99,54 +101,198 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** "Levels in play" — chips sourced straight from the cached bundle (no recompute, no new fetch).
+/** The Final boards' `.caps` label (`design/src/lib.mjs:139`): 11px, 600, 0.06em, uppercase, steel.
+ *  The Full analysis drawer's section and figure labels (fidelity DESK-08). */
+export function CapsLabel({
+  children,
+  component = 'span',
+}: {
+  children: React.ReactNode;
+  component?: React.ElementType;
+}) {
+  return (
+    <Typography
+      component={component}
+      sx={{
+        display: 'block',
+        m: 0,
+        color: 'text.secondary',
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        fontSize: 11,
+        fontWeight: 600,
+        lineHeight: 1.3,
+      }}
+    >
+      {children}
+    </Typography>
+  );
+}
+
+/** A wall's gamma side, read off the bundle's own strike profile at the wall's price (the structure
+ *  field's `wallLabel` rule, `paintStep.ts:261`): `+γ` / `−γ`, or `—` when the profile is absent or
+ *  flat there. Never assumed from the wall's name, because a call wall can sit in negative gamma. */
+function wallSide(strikes: { strike: number; net_gex: number }[] | undefined, price: number) {
+  if (!strikes?.length) return ABSENT;
+  const samples = strikes
+    .filter((s) => Number.isFinite(s.strike) && Number.isFinite(s.net_gex))
+    .map((s) => ({ strike: s.strike, netGex: s.net_gex }))
+    .sort((a, b) => a.strike - b.strike);
+  if (!samples.length) return ABSENT;
+  return gammaSignWord(gexAt(samples, price)) ?? ABSENT;
+}
+
+const ABSENT = '—';
+
+interface LevelRow {
+  /** The level's name, in the chips' lowercase vocabulary; the cell capitalises its first letter. */
+  level: string;
+  price: number;
+  fromSpot: string;
+  side: string;
+  anchor?: boolean;
+}
+
+/** "Levels in play" — a Level / Price / From spot / Side table (the Final drawer's `.dr-lv`,
+ *  `design/src/screens/final/deep-read.mjs:104`), sourced straight from the cached bundle: no
+ *  recompute, no new fetch. Rows run by price, high to low, because levels can cross; the distance
+ *  is measured from the levels anchor (`levelSpot`: `gex_spot`, else the price), never the live mid.
+ *  The two figures that are not price levels (net GEX, IV/HV) follow the table on one line.
  *  Context, not a signal; omitted when the bundle isn't present. */
 export function LevelsStrip({ bundle }: { bundle: TickerBundle | null }) {
   const m = bundle?.market_state;
   if (!m) return null;
-  const items: { k: string; v: string }[] = [];
-  const add = (
-    k: string,
-    v: number | null | undefined,
-    fmt: (n: number) => string = (n) => String(n),
-  ) => {
-    if (v != null) items.push({ k, v: fmt(v) });
+  const spot = levelSpot(m);
+  const strikes = bundle?.strike_profile?.strikes;
+  const rows: LevelRow[] = [];
+  if (spot != null) {
+    rows.push({
+      level: 'Spot · levels anchor',
+      price: spot,
+      fromSpot: ABSENT,
+      side: ABSENT,
+      anchor: true,
+    });
+  }
+  const add = (level: string, price: number | null | undefined, side: (p: number) => string) => {
+    if (price == null || !Number.isFinite(price)) return;
+    rows.push({
+      level,
+      price,
+      fromSpot: distancePercentOnly(price, spot) ?? ABSENT,
+      side: side(price),
+    });
   };
-  add('call wall', m.call_wall);
-  add('gamma flip', m.gamma_flip);
-  add('put wall', m.put_wall);
-  add('max pain', m.max_pain);
-  add('net GEX', m.net_gex, fmtCompact);
-  add('IV/HV', m.iv_hv_ratio, (n) => n.toFixed(2));
-  add('VWAP', m.vwap);
-  if (!items.length) return null;
+  add('call wall', m.call_wall, (p) => wallSide(strikes, p));
+  add('max pain', m.max_pain, () => ABSENT);
+  add('VWAP', m.vwap, () => ABSENT);
+  add('gamma flip', m.gamma_flip, () => '±');
+  add('put wall', m.put_wall, (p) => wallSide(strikes, p));
+  // A stable sort keeps the anchor above a level that sits exactly at it.
+  rows.sort((a, b) => b.price - a.price);
+
+  const figures: { k: string; v: string }[] = [];
+  if (m.net_gex != null && Number.isFinite(m.net_gex)) {
+    figures.push({ k: 'net GEX', v: fmtCompact(m.net_gex) });
+  }
+  if (m.iv_hv_ratio != null && Number.isFinite(m.iv_hv_ratio)) {
+    figures.push({ k: 'IV/HV', v: m.iv_hv_ratio.toFixed(2) });
+  }
+  if (!rows.some((r) => !r.anchor) && !figures.length) return null;
+
+  const cell = {
+    px: '6px',
+    py: '6px',
+    borderBottom: '1px solid',
+    borderColor: 'divider',
+    fontFamily: MONO,
+    fontSize: 12.5,
+    lineHeight: 1.5,
+    color: 'text.primary',
+    textAlign: 'left',
+    fontVariantNumeric: 'tabular-nums',
+  } as const;
   return (
-    <Box sx={{ mb: 1.5 }}>
-      <SectionLabel>{COPY.reasoning.levels}</SectionLabel>
-      <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
-        {items.map(({ k, v }) => (
-          <Box
-            key={k}
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'baseline',
-              gap: 0.75,
-              px: 1,
-              py: 0.5,
-              borderRadius: 2,
-              bgcolor: 'action.hover',
-            }}
-          >
-            <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: 11 }}>
-              {k}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.primary', fontFamily: MONO }}>
-              {v}
-            </Typography>
+    <Stack spacing={1}>
+      <CapsLabel component="h3">{COPY.reasoning.levels}</CapsLabel>
+      {rows.some((r) => !r.anchor) && (
+        <Box
+          component="table"
+          data-testid="analysis-levels-table"
+          sx={{ width: '100%', borderCollapse: 'collapse' }}
+        >
+          <Box component="thead">
+            <Box component="tr">
+              {['Level', 'Price', 'From spot', 'Side'].map((h) => (
+                <Box
+                  key={h}
+                  component="th"
+                  scope="col"
+                  sx={(t) => ({
+                    px: '6px',
+                    py: '4px',
+                    textAlign: 'left',
+                    fontFamily: MONO,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    borderBottom: `1px solid ${extrasFor(t).lineStrong}`,
+                  })}
+                >
+                  {h}
+                </Box>
+              ))}
+            </Box>
           </Box>
-        ))}
-      </Stack>
-    </Box>
+          <Box component="tbody">
+            {rows.map((r) => (
+              <Box component="tr" key={r.level}>
+                <Box
+                  component="th"
+                  scope="row"
+                  sx={{
+                    ...cell,
+                    fontFamily: 'inherit',
+                    fontWeight: 400,
+                    '&::first-letter': { textTransform: 'uppercase' },
+                  }}
+                >
+                  {r.level}
+                </Box>
+                <Box component="td" sx={cell}>
+                  {String(r.price)}
+                </Box>
+                <Box component="td" sx={cell}>
+                  {r.fromSpot}
+                </Box>
+                <Box component="td" sx={cell}>
+                  {r.side}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+      {figures.length > 0 && (
+        <Stack direction="row" sx={{ flexWrap: 'wrap', columnGap: 2, rowGap: 0.5 }}>
+          {figures.map(({ k, v }) => (
+            <Stack key={k} direction="row" spacing={0.75} sx={{ alignItems: 'baseline' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: 12 }}>
+                {k}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: 'text.primary', fontFamily: MONO, fontSize: 12.5 }}
+              >
+                {v}
+              </Typography>
+            </Stack>
+          ))}
+        </Stack>
+      )}
+    </Stack>
   );
 }
 
