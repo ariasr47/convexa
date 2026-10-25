@@ -5,9 +5,15 @@
  * The headline is the page <h1>: it is an <h2> in the artboard only because it is nested under the
  * artboard's own <h1>, and shipping that verbatim gives a document whose outline starts at level 2 —
  * an accessibility-gate regression on a feature that requires zero waivers (SPEC §4).
+ *
+ * As the Final board draws it (`design/src/screens/final/shell-site-docs.mjs` `notFoundBoard`;
+ * fidelity COL, SITE-10): on the page column, left-aligned at the column's edge (x80 at 1440), 112px
+ * under the nav, in a 640px measure (the board's 720px `.wrap` less its two 40px gutters). "404" in
+ * mono 16px, the headline in display type at clamp(34px, 4vw, 52px), the lead 17/1.6 at 52ch.
  */
 import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { typographyTokens } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -70,29 +76,49 @@ export function NotFound() {
   }, []);
 
   return (
-    <Box
-      data-testid="not-found-page"
-      sx={{ maxWidth: 640, mx: 'auto', px: 3, py: { xs: 6, md: 10 } }}
-    >
-      <Stack spacing={2} sx={{ alignItems: 'flex-start' }}>
+    <Box data-testid="not-found-page" sx={pageColumnSx}>
+      <Stack
+        spacing={2.25}
+        sx={{
+          alignItems: 'flex-start',
+          maxWidth: 640,
+          pt: { xs: 6, md: 14 },
+          pb: { xs: 6, md: 10 },
+        }}
+      >
         <Typography
-          variant="overline"
           component="p"
-          sx={{ color: 'text.secondary', letterSpacing: '0.12em', m: 0 }}
+          sx={{
+            m: 0,
+            fontFamily: typographyTokens.monoFontFamily,
+            fontSize: 16,
+            lineHeight: 1.5,
+            color: 'text.secondary',
+          }}
         >
           {NOT_FOUND_COPY.code}
         </Typography>
         <Typography
           component="h1"
-          variant="h4"
-          sx={{ fontWeight: 700, letterSpacing: '-0.01em', m: 0 }}
+          sx={{
+            m: 0,
+            fontFamily: typographyTokens.displayFontFamily,
+            fontStretch: typographyTokens.displayFontStretch,
+            fontWeight: 700,
+            fontSize: 'clamp(34px, 4vw, 52px)',
+            lineHeight: 1.1,
+            letterSpacing: '-0.01em',
+          }}
         >
           {NOT_FOUND_COPY.headline}
         </Typography>
-        <Typography component="p" variant="body1" sx={{ color: 'text.secondary', m: 0 }}>
+        <Typography
+          component="p"
+          sx={{ m: 0, fontSize: 17, lineHeight: 1.6, maxWidth: '52ch', color: 'text.secondary' }}
+        >
           {NOT_FOUND_COPY.body}
         </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 1, width: '100%' }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ width: '100%' }}>
           <Button
             component={RouterLink}
             to="/ticker"

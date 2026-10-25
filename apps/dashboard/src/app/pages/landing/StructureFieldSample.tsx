@@ -6,6 +6,10 @@
  * used to select that form is gone, so nothing here can drift back into the Lab's.
  *
  * The panel header and the sample footnote are DOM copy OWNED BY THE LANDING, not canvas pixels.
+ * Under the title, one line says how the field encodes (owner NO-9 A, 2026-10-25: the board is
+ * redrawn as this shipped field and keeps its one-line encoding subtitle, which lands here). It
+ * describes what the canvas draws: the walls and the flip carry their own labels on the plot, and the
+ * thin unlabelled steel line is the spot the levels sit on (`paintStep.ts`, `level(m.spot, …)`).
  * The frame is the shared ChartFrame in its sample provenance (P-3, P-8): dashed, with the hatch
  * stripe. Production tags it "Illustrative sample" and keeps the caption; staging carries the demo's
  * dashed chip in its place (Env 2026-10-14).
@@ -29,11 +33,13 @@ import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { LANDING_COPY } from './copy';
-import { LANDING_FIELD_MODEL, SAMPLE_MARK } from './samples';
+import { LANDING_FIELD_MODEL, LANDING_SAMPLE, SAMPLE_MARK } from './samples';
 
 const CAPTION_ID = 'landing-field-caption';
 // No symbol: the values are illustrative and are no real ticker's structure (spec 01, Copy › Landing).
 const TITLE = 'Net dealer gamma by strike';
+/** The encoding, in the board's voice (`shell-site-kit.mjs` `fieldIll`'s `.cf-sub`), for the field. */
+const SUB = `$M per 1% move · above the zero line, dealers long gamma (+γ); below, short (−γ) · the walls and the flip are labelled, the thin line is the mid ${LANDING_SAMPLE.spot.toFixed(2)}`;
 
 export function StructureFieldSample({ demo = false }: { demo?: boolean }) {
   const theme = useTheme();
@@ -54,6 +60,7 @@ export function StructureFieldSample({ demo = false }: { demo?: boolean }) {
       testId="landing-field-panel"
       finding={TITLE}
       metric={TITLE}
+      sub={SUB}
       provenance="sample"
       height={240}
       tag={demo ? undefined : { state: 'sample', word: LANDING_COPY.sample.tag }}

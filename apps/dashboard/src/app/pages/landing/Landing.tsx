@@ -33,11 +33,11 @@
 import { isDemoBuild, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { prefetchTickerRoute, scheduleLandingPrefetch } from '@/shared/lib/prefetchRoutes';
 import { displayScale, extrasFor } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import CheckIcon from '@mui/icons-material/Check';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
@@ -71,14 +71,25 @@ function Eyebrow({ children }: { children: ReactNode }) {
   );
 }
 
-/** Shared H2 treatment for the four feature-shaped sections + the CTA band. No theme-dependent
- *  colour here (inherits `text.primary`), so a plain object is safe to hoist. */
+/** Shared H2 treatment for the four feature-shaped sections + the CTA band, as the boards set it
+ *  (`.display` tracking -0.01em, `.ss-feat h2` line height 1.12 and balanced lines; fidelity
+ *  SITE-05). No theme-dependent colour here (inherits `text.primary`), so a plain object is safe
+ *  to hoist. */
 const sectionHeadingSx = {
   m: 0,
   fontWeight: 700,
-  letterSpacing: '-0.02em',
+  letterSpacing: '-0.01em',
   fontSize: 'clamp(26px, 2.6vw, 34px)',
-  lineHeight: 1.15,
+  lineHeight: 1.12,
+  textWrap: 'balance',
+} as const;
+
+/** A landing row on the page column, as the boards draw `.ss-feat` / `.ss-trust`: a hairline rule
+ *  across the column (not the viewport) and 64px above and below the content (fidelity SITE-05). */
+const rowSx = {
+  borderTop: 1,
+  borderColor: 'divider',
+  py: { xs: 7, md: 8 },
 } as const;
 
 interface FeatureSectionProps {
@@ -116,11 +127,12 @@ function FeatureSection({
       // "See an illustrative sample" link (`TickerDashboard.tsx`) — an ID only, never a copy change.
       id={`landing-sample-${section}`}
       tabIndex={-1}
-      sx={{ py: { xs: 7, md: 10 }, outline: 'none' }}
+      sx={{ outline: 'none' }}
     >
-      <Container maxWidth="lg">
+      <Box sx={pageColumnSx}>
         <Box
           sx={{
+            ...rowSx,
             display: 'grid',
             // GATE Z amendment 7 — the design's two-column switch is 1100, not the MUI `lg`
             // breakpoint (1200). `laptop` (1100) is an ADDITIVE breakpoint theme.ts already
@@ -131,15 +143,27 @@ function FeatureSection({
             alignItems: 'center',
           }}
         >
-          <Stack spacing={1.75} sx={{ maxWidth: 480, minWidth: 0 }}>
+          {/* The copy fills its track, as on the board (fidelity SITE-05): no cap of its own, the
+              board's `.ss-feat` rhythm (eyebrow, 8, H2, 14, body at 52ch, 16, bullets 14/1.5). */}
+          <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <Eyebrow>{eyebrow}</Eyebrow>
-            <Typography component="h2" variant="h2" sx={sectionHeadingSx}>
+            <Typography component="h2" variant="h2" sx={{ ...sectionHeadingSx, mt: 1 }}>
               {heading}
             </Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            <Typography
+              variant="body1"
+              sx={{
+                mt: 1.75,
+                fontSize: 15.5,
+                lineHeight: 1.6,
+                maxWidth: '52ch',
+                color: 'text.secondary',
+                textWrap: 'pretty',
+              }}
+            >
               {body}
             </Typography>
-            <Stack component="ul" spacing={1} sx={{ listStyle: 'none', p: 0, m: 0 }}>
+            <Stack component="ul" spacing={1} sx={{ listStyle: 'none', p: 0, m: 0, mt: 2 }}>
               {bullets.map((bullet) => (
                 <Stack
                   component="li"
@@ -156,17 +180,19 @@ function FeatureSection({
                       color: (theme) => extrasFor(theme).textAmber,
                     }}
                   />
-                  <Typography variant="body2">{bullet}</Typography>
+                  <Typography variant="body2" sx={{ fontSize: 14, lineHeight: 1.5 }}>
+                    {bullet}
+                  </Typography>
                 </Stack>
               ))}
             </Stack>
-          </Stack>
+          </Box>
           {/* `order` moves with the SAME 1100 threshold as the grid above — a "flip" section's
               visual column only makes sense to lead once the grid has actually gone two-column;
               a mismatched breakpoint here would flip the reading order a beat early/late. */}
           <Box sx={{ minWidth: 0, order: { xs: 0, laptop: flip ? -1 : 0 } }}>{visual}</Box>
         </Box>
-      </Container>
+      </Box>
     </Box>
   );
 }
@@ -207,7 +233,10 @@ export function Landing() {
         sx={{ position: 'relative', overflow: 'hidden' }}
       >
         <HeroCurve />
-        <Container maxWidth="lg" sx={{ position: 'relative', py: { xs: 7, md: 10 } }}>
+        {/* The board's `.ss-hero` padding: 72px over and 56px under (40 and 32 on a phone). */}
+        <Box
+          sx={{ ...pageColumnSx, position: 'relative', pt: { xs: 5, md: 9 }, pb: { xs: 4, md: 7 } }}
+        >
           <Box
             sx={{
               display: 'grid',
@@ -404,7 +433,7 @@ export function Landing() {
               {demo ? LANDING_COPY.hero.footnote : LANDING_COPY.hero.footnoteLive}
             </Typography>
           </Box>
-        </Container>
+        </Box>
       </Box>
 
       {/* ===== 2. Structure field ===== */}
@@ -440,15 +469,11 @@ export function Landing() {
 
       {/* ===== 5. "Numbers say where they came from" — the three trust promises live INSIDE
                   this section, not as a section of their own (AC-L1). ===== */}
-      <Box
-        component="section"
-        data-testid="landing-section"
-        data-section="register"
-        sx={{ py: { xs: 7, md: 10 } }}
-      >
-        <Container maxWidth="lg">
+      <Box component="section" data-testid="landing-section" data-section="register">
+        <Box sx={pageColumnSx}>
           <Box
             sx={{
+              ...rowSx,
               display: 'grid',
               // GATE Z amendment 7 — two-column at 1100 (`laptop`), not MUI's `lg` (1200).
               gridTemplateColumns: { xs: '1fr', laptop: '1fr 2fr' },
@@ -514,7 +539,7 @@ export function Landing() {
               ))}
             </Box>
           </Box>
-        </Container>
+        </Box>
       </Box>
 
       {/* ===== 6. CTA band — the closure sentence sits directly under the secondary action,
@@ -523,9 +548,10 @@ export function Landing() {
         component="section"
         data-testid="landing-section"
         data-section="cta"
-        sx={{ py: { xs: 7, md: 10 } }}
+        // The board's band sits 24px under the last row and 8px over the footer (`.ss-cta` margin).
+        sx={{ pt: 3, pb: 1 }}
       >
-        <Container maxWidth="lg">
+        <Box sx={pageColumnSx}>
           <Box
             sx={{
               bgcolor: 'background.paper',
@@ -543,7 +569,7 @@ export function Landing() {
               <Typography
                 component="h2"
                 variant="h2"
-                sx={{ ...sectionHeadingSx, fontSize: 'clamp(24px, 2.4vw, 32px)' }}
+                sx={{ ...sectionHeadingSx, fontSize: 'clamp(24px, 2.4vw, 32px)', lineHeight: 1.15 }}
               >
                 {demo ? LANDING_COPY.ctaDemo.heading : LANDING_COPY.cta.heading}
               </Typography>
@@ -592,7 +618,7 @@ export function Landing() {
               </Typography>
             </Stack>
           </Box>
-        </Container>
+        </Box>
       </Box>
     </Box>
   );

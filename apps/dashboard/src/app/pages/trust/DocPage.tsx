@@ -13,9 +13,14 @@
  * (filled, bold), the first one until a section scrolls under the nav. On a phone the rail scrolls
  * itself to keep that chip in view.
  *
+ * On the page column (`pageColumnSx`, the boards' `.wrap`), with the board's `.doc` tracks: a 240px
+ * index, a 48px gap, and a 608px reading column (`.tr .doc article`'s 78ch), so at 1440 the index
+ * sits at x80 and the article at x368; body copy 15.5px (fidelity COL, SITE-13).
+ *
  * Design: design/src/screens/final/trust-pages.mjs (docPage, TR_CSS), v4/docs-dialogs.mjs (.doc).
  */
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
@@ -29,6 +34,16 @@ const DISPLAY = {
   fontStretch: typographyTokens.displayFontStretch,
   fontWeight: 700,
   lineHeight: 1.1,
+} as const;
+
+/** Body copy, the boards' `.doc article p`: 15.5/1.65 steel, its bold runs in `text.primary`. */
+const DOC_BODY = {
+  m: 0,
+  fontSize: 15.5,
+  lineHeight: 1.65,
+  color: 'text.secondary',
+  textWrap: 'pretty',
+  '& strong': { color: 'text.primary', fontWeight: 600 },
 } as const;
 
 export const linkSx = { color: (t: Theme) => extrasFor(t).textInfo } as const;
@@ -120,12 +135,13 @@ export function DocPage({
   return (
     <Box
       data-testid={testId}
-      sx={{ maxWidth: 1120, mx: 'auto', px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}
+      // The board's `.doc` starts 32px under the nav (`padding-top: 32px`).
+      sx={{ ...pageColumnSx, pt: { xs: 3, md: 4 }, pb: { xs: 3, md: 5 } }}
     >
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: '200px minmax(0, 1fr)' },
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: '240px minmax(0, 1fr)' },
           gap: { xs: 2.5, md: 6 },
         }}
       >
@@ -143,8 +159,9 @@ export function DocPage({
             top: { md: SCROLL_CLEAR.md },
             alignSelf: 'start',
             order: { xs: 0, md: 0 },
-            mx: { xs: -2, md: 0 },
-            px: { xs: 2, md: 0 },
+            // On a phone the rail bleeds to the screen edges, through the column's own gutter.
+            mx: { xs: `calc(${pageColumnSx.px} * -1)`, md: 0 },
+            px: { xs: pageColumnSx.px, md: 0 },
             pb: { xs: 0.5, md: 0 },
           }}
         >
@@ -183,7 +200,7 @@ export function DocPage({
 
         <Box
           component="article"
-          sx={{ minWidth: 0, maxWidth: '78ch', display: 'flex', flexDirection: 'column', gap: 3 }}
+          sx={{ minWidth: 0, maxWidth: 608, display: 'flex', flexDirection: 'column', gap: 3 }}
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             <Typography
@@ -191,6 +208,7 @@ export function DocPage({
               sx={{
                 fontSize: 11,
                 fontWeight: 600,
+                lineHeight: 1.3,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'text.secondary',
@@ -254,21 +272,7 @@ export function H2({ id, children }: { id: string; children: ReactNode }) {
 
 export function Para({ children, sx }: { children: ReactNode; sx?: SxProps<Theme> }) {
   return (
-    <Typography
-      component="p"
-      variant="body2"
-      sx={[
-        {
-          m: 0,
-          lineHeight: 1.65,
-          color: 'text.secondary',
-          fontSize: 15,
-          textWrap: 'pretty',
-          '& strong': { color: 'text.primary', fontWeight: 600 },
-        },
-        ...(Array.isArray(sx) ? sx : [sx]),
-      ]}
-    >
+    <Typography component="p" variant="body2" sx={[DOC_BODY, ...(Array.isArray(sx) ? sx : [sx])]}>
       {children}
     </Typography>
   );

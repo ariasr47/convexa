@@ -29,6 +29,16 @@
  * attempt silently finds nothing and never retries. The effect below is the manual equivalent,
  * run once after mount.
  *
+ * Layout (fidelity COL, SITE-02): the trust pages' document layout (`trust/DocPage.tsx`, the Final
+ * board's `.doc` in `design/src/screens/final/shell-site-docs.mjs` `methodologyBoard`) on the page
+ * column — a 240px index, a 48px gap, and a 562px reading column (the board's `.doc article`, 72ch)
+ * that opens with the H1 in display type at clamp(32px, 3.4vw, 44px), so the index's top lines up
+ * with the H1's (y130 at 1440, 32px under the nav). Section headings are 24px display type; body
+ * copy is 15.5/1.65 in `text.secondary` (the "muted" limitation notes 14px), 18px apart, with 24px
+ * more above each heading. "What's live" sits in bordered panels (`WhatsLive.tsx`). The disclaimer
+ * and the three actions close the reading column, as on the board. The title block is its own grid
+ * item, so under 900px the index rail still comes under the title.
+ *
  * The on-this-page index is a sticky VERTICAL list from `md` (mirrors
  * `design/src/screens/methodology.mjs:6`'s `.toc { position: sticky }`). Under 900px it is the
  * Final board's sideways rail of 44px chips under the title (design/src/screens/v4/docs-dialogs.mjs
@@ -51,9 +61,12 @@
  */
 import { SANS_FACE } from '@/shared/figure';
 import { isDemoBuild } from '@/shared/lib/demoSite';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
+import type { Theme } from '@mui/material/styles';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -63,7 +76,7 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { METHOD_COPY, WHATS_LIVE, type MethodSection } from './copy';
-import { WhatsLiveBody } from './WhatsLive';
+import { DOC_BODY, WhatsLiveBody } from './WhatsLive';
 
 /** The on-this-page index: “What’s live on this site” first (the bar's deep link), then the
  *  copy's sections. One list, so the index and the body cannot diverge. */
@@ -79,6 +92,61 @@ const SCROLL_CLEAR = { xs: 72, md: 76 } as const;
 
 const headingId = (section: MethodSection) => `${section.id}-heading`;
 
+/** Display type, the boards' `.display` (as the trust pages set it, `trust/DocPage.tsx`). */
+const DOC_DISPLAY = {
+  fontFamily: typographyTokens.displayFontFamily,
+  fontStretch: typographyTokens.displayFontStretch,
+  fontWeight: 700,
+  lineHeight: 1.1,
+} as const;
+
+/** The board's `.doc article` rhythm: 18px between blocks, 24px more above each section heading. */
+const ARTICLE_GAP = 2.25;
+
+/** A section heading: 24px display type, as on the trust pages (`DocPage.tsx` `H2`). */
+const H2_SX = {
+  ...DOC_DISPLAY,
+  fontSize: 24,
+  letterSpacing: '-0.01em',
+  m: 0,
+  mt: 3,
+  textWrap: 'balance',
+} as const;
+
+/** A section's table, the board's `.ss-tbl`: 13.5px, caps steel headers over the strong line, steel
+ *  cells top-aligned on hairlines with no lead-in padding, the first column in `text.primary`. */
+const SECTION_TABLE_SX = (t: Theme) =>
+  ({
+    '& th': {
+      fontSize: 11,
+      fontWeight: 600,
+      letterSpacing: '0.06em',
+      textTransform: 'uppercase',
+      lineHeight: 1.5,
+      color: 'text.secondary',
+      p: '8px 10px 8px 0',
+      borderBottom: `1px solid ${extrasFor(t).lineStrong}`,
+    },
+    '& td': {
+      fontSize: 13.5,
+      lineHeight: 1.5,
+      color: 'text.secondary',
+      verticalAlign: 'top',
+      p: '9px 10px 9px 0',
+      borderBottom: `1px solid ${t.palette.divider}`,
+    },
+    '& td:first-of-type': { color: 'text.primary' },
+  }) as const;
+
+/** A section: its blocks 18px apart, the heading first. */
+const SECTION_SX = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: ARTICLE_GAP,
+  scrollMarginTop: SCROLL_CLEAR,
+  '&:focus:not(:focus-visible)': { outline: 'none' },
+} as const;
+
 function SectionBlocks({ section }: { section: MethodSection }) {
   const vocabulary = section.id === 'vocabulary';
   return (
@@ -86,17 +154,12 @@ function SectionBlocks({ section }: { section: MethodSection }) {
       {section.blocks.map((block, blockIndex) => {
         if (block.kind === 'prose') {
           return (
-            <Stack key={`${section.id}-prose-${blockIndex}`} spacing={1.25} sx={{ mb: 1.5 }}>
+            <Stack key={`${section.id}-prose-${blockIndex}`} spacing={ARTICLE_GAP}>
               {block.body.map((para, paraIndex) => (
                 <Typography
                   key={`${section.id}-p-${blockIndex}-${paraIndex}`}
                   component="p"
-                  variant="body2"
-                  sx={{
-                    color: block.muted ? 'text.secondary' : 'text.primary',
-                    m: 0,
-                    lineHeight: 1.65,
-                  }}
+                  sx={[DOC_BODY, block.muted ? { fontSize: 14 } : {}]}
                 >
                   {para}
                 </Typography>
@@ -105,7 +168,7 @@ function SectionBlocks({ section }: { section: MethodSection }) {
           );
         }
         return (
-          <Table key={`${section.id}-table-${blockIndex}`} size="small" sx={{ mb: 1.5 }}>
+          <Table key={`${section.id}-table-${blockIndex}`} size="small" sx={SECTION_TABLE_SX}>
             <TableHead>
               <TableRow>
                 {block.head.map((h) => (
@@ -215,28 +278,39 @@ export function MethodologyPage() {
   return (
     <Box
       data-testid="methodology-page"
-      sx={{ maxWidth: 1040, mx: 'auto', px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}
+      sx={{ ...pageColumnSx, pt: { xs: 3, md: 4 }, pb: { xs: 3, md: 5 } }}
     >
-      <Stack spacing={1.5} sx={{ mb: 4, maxWidth: 760 }}>
-        <Typography
-          component="h1"
-          variant="h4"
-          sx={{ fontWeight: 700, letterSpacing: '-0.01em', m: 0 }}
-        >
-          {METHOD_COPY.title}
-        </Typography>
-        <Typography component="p" variant="body1" sx={{ color: 'text.secondary', m: 0 }}>
-          {METHOD_COPY.subhead}
-        </Typography>
-      </Stack>
-
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: '220px minmax(0, 760px)' },
-          gap: { xs: 2, md: 6 },
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: '240px minmax(0, 1fr)' },
+          // From 900px: the title block and the article share column 2, the index spans both rows.
+          gridTemplateRows: { md: 'auto 1fr' },
+          columnGap: 6,
+          rowGap: { xs: 2, md: ARTICLE_GAP },
         }}
       >
+        <Stack
+          spacing={1.25}
+          sx={{ minWidth: 0, maxWidth: 562, gridColumn: { md: '2' }, gridRow: { md: '1' } }}
+        >
+          <Typography
+            component="h1"
+            sx={{
+              ...DOC_DISPLAY,
+              fontSize: 'clamp(32px, 3.4vw, 44px)',
+              letterSpacing: '-0.02em',
+              m: 0,
+              textWrap: 'balance',
+            }}
+          >
+            {METHOD_COPY.title}
+          </Typography>
+          <Typography component="p" sx={DOC_BODY}>
+            {METHOD_COPY.subhead}
+          </Typography>
+        </Stack>
+
         <Box
           component="nav"
           ref={railRef}
@@ -253,6 +327,8 @@ export function MethodologyPage() {
             position: { xs: 'static', md: 'sticky' },
             top: { md: SCROLL_CLEAR.md },
             alignSelf: 'start',
+            gridColumn: { md: '1' },
+            gridRow: { md: '1 / span 2' },
           }}
         >
           {INDEX.map((section) => (
@@ -287,7 +363,11 @@ export function MethodologyPage() {
           ))}
         </Box>
 
-        <Stack component="article" spacing={4.5} sx={{ minWidth: 0 }}>
+        <Stack
+          component="article"
+          spacing={ARTICLE_GAP}
+          sx={{ minWidth: 0, maxWidth: 562, gridColumn: { md: '2' }, gridRow: { md: '2' } }}
+        >
           <Box
             component="section"
             id={WHATS_LIVE.id}
@@ -295,17 +375,9 @@ export function MethodologyPage() {
             tabIndex={-1}
             data-testid="methodology-whats-live"
             data-form={demo ? 'staging' : 'production'}
-            sx={{
-              scrollMarginTop: SCROLL_CLEAR,
-              '&:focus:not(:focus-visible)': { outline: 'none' },
-            }}
+            sx={SECTION_SX}
           >
-            <Typography
-              component="h2"
-              id={`${WHATS_LIVE.id}-heading`}
-              variant="h6"
-              sx={{ fontWeight: 700, mb: 1.25, letterSpacing: '-0.01em' }}
-            >
+            <Typography component="h2" id={`${WHATS_LIVE.id}-heading`} sx={H2_SX}>
               {WHATS_LIVE.h}
             </Typography>
             <WhatsLiveBody demo={demo} />
@@ -317,73 +389,74 @@ export function MethodologyPage() {
               id={section.id}
               aria-labelledby={headingId(section)}
               tabIndex={-1}
-              sx={{
-                scrollMarginTop: SCROLL_CLEAR,
-                '&:focus:not(:focus-visible)': { outline: 'none' },
-              }}
+              sx={SECTION_SX}
             >
-              <Typography
-                component="h2"
-                id={headingId(section)}
-                variant="h6"
-                sx={{ fontWeight: 700, mb: 1.25, letterSpacing: '-0.01em' }}
-              >
+              <Typography component="h2" id={headingId(section)} sx={H2_SX}>
                 {section.h}
               </Typography>
               <SectionBlocks section={section} />
             </Box>
           ))}
+
+          <Typography
+            component="p"
+            data-testid="methodology-disclaimer"
+            sx={{
+              m: 0,
+              pt: 2,
+              borderTop: 1,
+              borderColor: 'divider',
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: 'text.secondary',
+              textWrap: 'pretty',
+            }}
+          >
+            {METHOD_COPY.disclaimer}
+          </Typography>
+
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            useFlexGap
+            sx={{ flexWrap: 'wrap' }}
+            data-testid="methodology-ctas"
+          >
+            {/* D-15 / ruling A (2026-10-15): the free Ticker is the one amber primary, as the board
+                draws it; production walls the Scanner behind sign-in, so it is the neutral second.
+                Back to home is a neutral text button. */}
+            <Button
+              component={RouterLink}
+              to="/ticker"
+              variant="contained"
+              data-testid="methodology-cta-ticker"
+              sx={{ minHeight: 44 }}
+            >
+              {METHOD_COPY.ctaTicker}
+            </Button>
+            <Button
+              component={RouterLink}
+              to="/scanner"
+              variant="outlined"
+              color="inherit"
+              data-testid="methodology-cta-scanner"
+              sx={{ minHeight: 44, borderColor: 'divider' }}
+            >
+              {METHOD_COPY.ctaScanner}
+            </Button>
+            <Button
+              component={RouterLink}
+              to="/"
+              variant="text"
+              color="inherit"
+              data-testid="methodology-cta-home"
+              sx={{ minHeight: 44 }}
+            >
+              {METHOD_COPY.ctaBack}
+            </Button>
+          </Stack>
         </Stack>
       </Box>
-
-      <Typography
-        component="p"
-        variant="caption"
-        data-testid="methodology-disclaimer"
-        sx={{ display: 'block', color: 'text.secondary', mt: 4, lineHeight: 1.5 }}
-      >
-        {METHOD_COPY.disclaimer}
-      </Typography>
-
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={1.5}
-        sx={{ mt: 3 }}
-        data-testid="methodology-ctas"
-      >
-        {/* D-15 / ruling A (2026-10-15): the free Ticker is the one amber primary, as the board
-            draws it; production walls the Scanner behind sign-in, so it is the neutral second.
-            Back to home is a neutral text button. */}
-        <Button
-          component={RouterLink}
-          to="/ticker"
-          variant="contained"
-          data-testid="methodology-cta-ticker"
-          sx={{ minHeight: 44 }}
-        >
-          {METHOD_COPY.ctaTicker}
-        </Button>
-        <Button
-          component={RouterLink}
-          to="/scanner"
-          variant="outlined"
-          color="inherit"
-          data-testid="methodology-cta-scanner"
-          sx={{ minHeight: 44, borderColor: 'divider' }}
-        >
-          {METHOD_COPY.ctaScanner}
-        </Button>
-        <Button
-          component={RouterLink}
-          to="/"
-          variant="text"
-          color="inherit"
-          data-testid="methodology-cta-home"
-          sx={{ minHeight: 44 }}
-        >
-          {METHOD_COPY.ctaBack}
-        </Button>
-      </Stack>
     </Box>
   );
 }
