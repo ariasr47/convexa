@@ -4,6 +4,7 @@
  * and the 10-year is checked against the rate each note was valued with.
  */
 import { ChartFrame, chartRoles, type Provenance } from '@/shared/charts/frame';
+import type { FrameHeight, FrameReserve } from '@/shared/charts/frame/ChartFrame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor } from '@/shared/theme/tokens';
@@ -1951,7 +1952,7 @@ function GroupDates({
  */
 function MarketsLoading() {
   const provenance: Provenance = dataMode === 'demo' ? 'sample' : 'primary';
-  const frame = (metric: string, sub: string, height: number) => (
+  const frame = (metric: string, sub: string, height: FrameHeight, reserve?: FrameReserve) => (
     <ChartFrame
       finding={metric}
       metric={metric}
@@ -1959,6 +1960,7 @@ function MarketsLoading() {
       provenance={provenance}
       status={{ kind: 'loading' }}
       height={height}
+      reserve={reserve}
     />
   );
   return (
@@ -1988,10 +1990,29 @@ function MarketsLoading() {
         </Box>
         <Box sx={PAIR_SX}>
           <Box sx={{ minWidth: 0 }}>
-            {frame('Treasury yield curve', 'U.S. Treasury par yields by maturity · percent', 280)}
+            {frame(
+              'Treasury yield curve',
+              'U.S. Treasury par yields by maturity · percent',
+              // CurvePanel's H: 240 on a narrow plot, 280 otherwise.
+              { xs: 240, sm: 280 },
+              // The ready head's rows at their usual length (curveFinding, CurvePanel's sub and
+              // legend), held so the frame keeps its height when the data lands (FND-15).
+              {
+                finding:
+                  'The front end fell 0.21 points in a year while the 30-year rose 0.72: the curve steepened; the front no longer inverts',
+                sub: 'U.S. Treasury par yields by maturity · percent · Oct 7, 2026 against a month and a year earlier · 1 month to 30 years, spaced by √years',
+                tag: { state: 'updated', detail: 'Oct 7' },
+                legend: 3,
+              },
+            )}
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            {frame('The 10-year’s move, split', 'Change over the year · percentage points', 170)}
+            {frame('The 10-year’s move, split', 'Change over the year · percentage points', 160, {
+              finding: 'Real yields did all of it. Inflation expectations held still.',
+              sub: 'Change over the year to Oct 7, 2026 · percentage points · 10-year = real (TIPS) + breakeven (calculated) · zero at the centre',
+              tag: { state: 'computed' },
+              note: 'The 10-year is a real yield plus expected inflation, so this splits its move between the two. Breakeven is the 10-year less the real 10-year.',
+            })}
           </Box>
         </Box>
         {frame('2s10s spread', '10-year less 2-year Treasury par yield · percentage points', 262)}

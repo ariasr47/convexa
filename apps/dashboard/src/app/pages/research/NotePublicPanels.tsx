@@ -23,7 +23,7 @@ import { localToday, upcoming } from 'virtual:convexa-research';
 import { standing } from './filings';
 import { formatNoteDate, formatShortDate } from './format';
 import type { Read } from './publicData';
-import { Caps, ProvenanceChip, SourceProblem } from './publicUi';
+import { ProvenanceChip, SourceProblem } from './publicUi';
 import { SecRecordSections, SECTION_TITLE } from './SecRecordSections';
 import { notSecFiler, tickerSecStale } from './secState';
 import type { Aging } from './types';
@@ -352,6 +352,11 @@ export function FiledSinceCard({ ticker }: { ticker: string }) {
   );
 }
 
+/**
+ * A public-data card's head: its title, then its state tag. The title is the boards' `.ph h3`
+ * (`design/src/lib.mjs:93-94`): a 14px/600 heading in sentence case, in the text colour, taking the
+ * row's free width so the tag sits at its end (fidelity DESK-22; it was an 11px caps label).
+ */
 export function CardHead({ label, tag }: { label: string; tag: React.ReactNode }) {
   return (
     <Box
@@ -360,10 +365,15 @@ export function CardHead({ label, tag }: { label: string; tag: React.ReactNode }
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '6px 10px',
+        gap: '8px 10px',
       }}
     >
-      <Caps>{label}</Caps>
+      <Box
+        component="h3"
+        sx={{ m: 0, fontSize: 14, fontWeight: 600, lineHeight: 1.5, flex: '1 1 auto', minWidth: 0 }}
+      >
+        {label}
+      </Box>
       {tag}
     </Box>
   );

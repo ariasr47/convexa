@@ -47,6 +47,9 @@ export function ResearchColumn({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** The note's Overview · Technical · Research row: the boards' `.hd-tabs`, in sentence case at
+ *  13px/500 (600 on the current tab) with no tracking, 44px tall, as every other tab row (fidelity
+ *  FND-03; this row was uppercase with 0.04em tracking, and 49.4px tall on 14px padding). */
 function TickerTabs({ ticker }: { ticker: string }) {
   const base = `/ticker/${encodeURIComponent(ticker)}`;
   const tab = (to: string, label: string, current = false) => (
@@ -55,13 +58,13 @@ function TickerTabs({ ticker }: { ticker: string }) {
       to={to}
       aria-current={current ? 'page' : undefined}
       sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        minHeight: 44,
         px: { xs: 1, sm: 1.5 },
-        py: 1.75,
         textDecoration: 'none',
         fontSize: 13,
         fontWeight: current ? 600 : 500,
-        letterSpacing: { xs: '0.02em', sm: '0.04em' },
-        textTransform: 'uppercase',
         whiteSpace: 'nowrap',
         color: current ? 'text.primary' : 'text.secondary',
         boxShadow: (t) => (current ? `inset 0 -2px 0 ${t.palette.text.primary}` : 'none'),

@@ -194,7 +194,7 @@ export const SOURCES: readonly Source[] = [
     terms:
       'Public record, free to show. The SEC asks every program that reads EDGAR to identify itself with a name and a contact address.',
     where:
-      'Research → Filings, the insider card and “Filed since this note” under each ticker’s note.',
+      'Research → Filings, the insider card and “Filed since this note” in the side column of each ticker’s newest note.',
     link: ['SEC EDGAR', 'https://www.sec.gov/edgar'],
     shaped: 'SEC EDGAR filings',
     operator:
