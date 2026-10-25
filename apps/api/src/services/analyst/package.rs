@@ -1851,6 +1851,200 @@ pub fn build(request: &Request, inputs: &Inputs) -> Result<ContextPackage, Need>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::public_data::edgar_13f::{Holdings, Position};
+
+    fn at(s: &str) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
+    }
+
+    fn ymd(s: &str) -> NaiveDate {
+        NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap()
+    }
+
+    /// Spec 06 test (viii), second half: nine holding managers, one of them read without the
+    /// security in the prior quarter. `holder_rows` returns all nine (the site shows 8); the package
+    /// emits nine `13f.shares` at Q, a `13f.prior_absent` and no change for that manager, and totals
+    /// that cite every term they sum.
+    #[test]
+    fn every_holding_manager_is_emitted_and_a_zero_prior_gets_no_change() {
+        let (q, p) = (ymd("2026-06-30"), ymd("2026-03-31"));
+        let nvda = |shares: f64| Holdings {
+            by_cusip: HashMap::from([(
+                "67066G104".to_string(),
+                Position {
+                    issuer: "NVIDIA CORPORATION".into(),
+                    title: "COM".into(),
+                    shares,
+                    value: shares * 180.0,
+                },
+            )]),
+        };
+        let report = |cik: u64, holdings: Holdings| ManagerReport {
+            cik,
+            name: format!("MANAGER {}", letters(cik as usize)),
+            accession: format!("0000000000-26-{cik:06}"),
+            filed: ymd("2026-08-07"),
+            holdings: Arc::new(holdings),
+        };
+        let mut read = Read13F {
+            dataset: Dataset {
+                quarter: q,
+                prior: p,
+                now: (1..=9u64)
+                    .map(|cik| report(cik, nvda(1_000_000.0 * cik as f64)))
+                    .collect(),
+                // Manager 9's prior report was read and doesn't list the security.
+                before: (1..=9u64)
+                    .map(|cik| {
+                        let holdings = if cik == 9 {
+                            Holdings::default()
+                        } else {
+                            nvda(900_000.0 * cik as f64)
+                        };
+                        report(cik, holdings)
+                    })
+                    .collect(),
+                listed: 12,
+                unread: 0,
+                window: None,
+                stale: false,
+            },
+            reports: HashMap::new(),
+            unread: Vec::new(),
+            not_filed: Vec::new(),
+        };
+        for cik in 1..=9u64 {
+            for (period, accepted) in [(q, "2026-08-07T10:00:00Z"), (p, "2026-05-15T10:00:00Z")] {
+                read.reports.insert(
+                    (cik, period),
+                    ReportMeta {
+                        accepted: at(accepted),
+                        url: format!("https://www.sec.gov/Archives/edgar/data/{cik}/t.xml"),
+                        checked_at: at("2026-10-15T00:00:00Z"),
+                    },
+                );
+            }
+        }
+        let shares_outstanding = |end: &str, accepted: &str, value: f64| {
+            let fact = Fact {
+                id: fact_id(
+                    "xbrl.dei.EntityCommonStockSharesOutstanding.shares",
+                    &format!("0001045810-26-000001.{end}.i"),
+                    at(accepted),
+                ),
+                label: "Shares outstanding".into(),
+                value: FactValue::Number(value),
+                unit: Some(Unit::Shares),
+                as_of: at(accepted),
+                checked_at: at("2026-10-15T00:00:00Z"),
+                state: StateWord::Updated,
+                url: Some("https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json".into()),
+                derived_from: None,
+            };
+            SharesOutstanding {
+                fact,
+                value,
+                end: ymd(end),
+            }
+        };
+        let so_q = shares_outstanding("2026-05-16", "2026-05-28T12:00:00Z", 24_400_000_000.0);
+        let so_p = shares_outstanding("2026-02-13", "2026-02-25T12:00:00Z", 24_500_000_000.0);
+        let so = |s: &SharesOutstanding| DatedValue {
+            value: s.value,
+            as_of: s.end,
+        };
+        let rows = edgar_13f::holder_rows(
+            &read.dataset,
+            "NVIDIA CORP",
+            "NVDA",
+            Some(so(&so_q)),
+            Some(so(&so_p)),
+        );
+        assert_eq!(
+            rows.rows.len(),
+            9,
+            "every holding manager, before the cut to 8"
+        );
+
+        let mut set = FactSet::default();
+        let found = holders_facts(
+            &mut set,
+            &read,
+            "NVIDIA CORP",
+            "NVDA",
+            Some(&so_q),
+            Some(&so_p),
+            at("2026-10-13T00:00:00Z"),
+            at("2026-10-15T00:00:00Z"),
+        )
+        .unwrap();
+        assert_eq!(found.matched, Match::Found);
+        let series = |s: &str| -> Vec<&Fact> {
+            let head = format!("sec_edgar:{s}:");
+            set.facts
+                .values()
+                .map(|(_, f)| f)
+                .filter(|f| f.id.starts_with(&head))
+                .collect()
+        };
+        let shares_q: Vec<&Fact> = series("13f.shares")
+            .into_iter()
+            .filter(|f| f.id.contains(".2026-06-30:"))
+            .collect();
+        assert_eq!(shares_q.len(), 9);
+        let absent = series("13f.prior_absent");
+        assert_eq!(absent.len(), 1);
+        assert!(absent[0]
+            .id
+            .starts_with("sec_edgar:13f.prior_absent:9.2026-03-31:"));
+        assert_eq!(absent[0].value, FactValue::Flag(true));
+        let changes = series("13f.change_bp");
+        assert_eq!(changes.len(), 8);
+        assert!(
+            changes
+                .iter()
+                .all(|f| !f.id.starts_with("sec_edgar:13f.change_bp:9.")),
+            "a zero prior is not a purchase"
+        );
+        let pcts = series("13f.pct");
+        assert_eq!(pcts.len(), 9);
+        let cited = |s: &str| -> Vec<String> {
+            let total = series(s);
+            assert_eq!(total.len(), 1, "{s}");
+            total[0].derived_from.clone().unwrap()
+        };
+        let sorted = |facts: Vec<&Fact>| -> Vec<String> {
+            let mut ids: Vec<String> = facts.iter().map(|f| f.id.clone()).collect();
+            ids.sort();
+            ids
+        };
+        assert_eq!(cited("13f.total_pct"), sorted(pcts.clone()));
+        assert_eq!(cited("13f.total_change_bp"), sorted(changes.clone()));
+        assert_eq!(cited("13f.managers_holding"), sorted(shares_q.clone()));
+        let total = |s: &str| match &series(s)[0].value {
+            FactValue::Number(n) => *n,
+            other => panic!("{other:?}"),
+        };
+        let sum = |facts: &[&Fact]| -> f64 {
+            facts
+                .iter()
+                .map(|f| match f.value {
+                    FactValue::Number(n) => n,
+                    _ => 0.0,
+                })
+                .sum()
+        };
+        assert_eq!(total("13f.total_pct"), canonical::round4(sum(&pcts)));
+        assert_eq!(
+            total("13f.total_change_bp"),
+            canonical::round4(sum(&changes))
+        );
+        // The shares-outstanding points a % cites are emitted in fundamentals.
+        assert!(set
+            .facts
+            .values()
+            .any(|(part, f)| *part == Part::Fundamentals && f.id == so_q.fact.id));
+    }
 
     /// Spec 06 test (vii): the three state words the package emits are `DataStateKey` members in
     /// the site's closed vocabulary, so a browser read renders them without any mapping.

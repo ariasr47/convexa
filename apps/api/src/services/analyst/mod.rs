@@ -11,3 +11,6 @@ pub mod canonical;
 pub mod cli;
 pub mod inputs;
 pub mod package;
+
+#[cfg(test)]
+mod q1_tests;
