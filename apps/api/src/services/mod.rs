@@ -1,5 +1,6 @@
 //! Application services (orchestration over infrastructure).
 
+pub mod analyst;
 pub mod analytics;
 pub mod auth;
 pub mod broker;
