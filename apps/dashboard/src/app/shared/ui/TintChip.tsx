@@ -6,12 +6,47 @@
  * `emphasis` (redesign-stage-3 §5.3): conviction/emphasis rendered in BRAND amber — text-grade
  * `textAmber` (via `extrasFor`, light-mode contrast gated §5.2) on a `primary`-alpha tint.
  * Structurally distinct from `warning` (burnt orange, reserved for TRUE warnings + icon).
+ *
+ * Light text (fidelity LTXT, 2026-10-25): the 11px label sits on its own 16% tint, and in light the
+ * fill colour as text failed WCAG AA's 4.5:1 there for every tone but `emphasis` (over white:
+ * neutral steel 4.38, info 4.31, warning 4.27, error 3.77, success 2.88). Light labels take the
+ * text-grade token of their hue instead (`textInfo` 6.31, `textDown` 5.17, `textUp` 5.19,
+ * `textAmber` 4.79), and the two tones with no text-grade token, `neutral` and `warning`, take
+ * `text.primary` on their tint (13.3 and 13.2), as `DataStateTag`'s quiet and warn tags do (the
+ * boards' `.stag.k-quiet`, and `.dwarn .dline`'s "steel on the warn tint measured 4.25:1 in light").
+ * The fills keep their hue, and `warning` keeps its glyph. Dark is unchanged.
  */
 import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
-import { alpha } from '@mui/material/styles';
+import { alpha, type Theme } from '@mui/material/styles';
 
 type Tone = 'success' | 'error' | 'info' | 'warning' | 'neutral' | 'emphasis';
+
+/** The label colour: the fill's own hue in dark; in light, a text-grade colour that clears AA on
+ *  the tint (see the header). */
+function labelColor(t: Theme, tone: Tone): string {
+  const x = extrasFor(t);
+  if (t.palette.mode === 'light') {
+    switch (tone) {
+      case 'neutral':
+      case 'warning':
+        return t.palette.text.primary;
+      case 'emphasis':
+        return x.textAmber;
+      case 'info':
+        return x.textInfo;
+      case 'success':
+        return x.textUp;
+      case 'error':
+        return x.textDown;
+    }
+  }
+  return tone === 'neutral'
+    ? t.palette.text.secondary
+    : tone === 'emphasis'
+      ? x.textAmber
+      : t.palette[tone].main;
+}
 
 export function TintChip({ tone, label }: { tone: Tone; label: string }) {
   return (
@@ -28,12 +63,7 @@ export function TintChip({ tone, label }: { tone: Tone; label: string }) {
         letterSpacing: '0.02em',
         whiteSpace: 'nowrap',
         lineHeight: 1.5,
-        color:
-          tone === 'neutral'
-            ? t.palette.text.secondary
-            : tone === 'emphasis'
-              ? extrasFor(t).textAmber
-              : t.palette[tone].main,
+        color: labelColor(t, tone),
         bgcolor:
           tone === 'neutral'
             ? alpha(t.palette.text.secondary, 0.16)
