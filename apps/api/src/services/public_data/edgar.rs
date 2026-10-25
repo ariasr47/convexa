@@ -1267,7 +1267,9 @@ mod tests {
         }
     }
 
-    /// Spec 06 test (iv): every row of both checked-in indexes carries its acceptance time.
+    /// Spec 06 test (iv): every row of both checked-in indexes carries its acceptance time, and so
+    /// does every 13F-HR row of the manager index the Q1 fixture holds (State Street's), which
+    /// `edgar_13f.rs` reads through its own copy of the column.
     #[test]
     fn every_submissions_row_carries_its_acceptance_time() {
         let hand = submissions();
@@ -1283,6 +1285,33 @@ mod tests {
             1_000,
             "1,000 of 1,000 real rows"
         );
+
+        // Stated through `accepted_at`, so it holds whatever rule step 0 settles; test (v) pins
+        // the rule itself.
+        let manager = super::super::edgar_13f::parse_manager_index(include_bytes!(
+            "../../../tests/fixtures/analyst/q1/blobs/fe7cb455c6464c7d13054858e16defc2d7fc967e3c7bd01db5435b8a73a883f4"
+        ))
+        .unwrap();
+        let read: Vec<(&str, Option<DateTime<Utc>>)> = manager
+            .filings
+            .iter()
+            .map(|f| (f.accession.as_str(), f.accepted))
+            .collect();
+        assert_eq!(
+            read,
+            [
+                (
+                    "0000093751-26-000507",
+                    accepted_at("2026-08-07T14:24:39.000Z")
+                ),
+                (
+                    "0000093751-26-000315",
+                    accepted_at("2026-05-15T15:02:11.000Z")
+                ),
+            ],
+            "2 of 2 13F-HR rows"
+        );
+        assert!(read.iter().all(|(_, accepted)| accepted.is_some()));
     }
 
     /// Spec 06 test (iv): a ticker listed twice resolves to the row under the lower key, whatever
