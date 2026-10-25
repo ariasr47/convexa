@@ -6,7 +6,8 @@
  *
  * Design: design/src/screens/final/shell-site-docs.mjs (levelsSchematic) on the chart kit's `plot`
  * (design/src/chart-kit.mjs `.cx`): mono 11px labels (the levels at 500 in phosphor, the strike ends
- * at 400 in steel), the plot inset 20/20 (12 on the right under 480px) × 28/30, and the frame is
+ * at 400 in steel), the plot inset 20/20 (12 on the right under 480px) × 28/30 (42 on top when the
+ * Flip label rises a row to clear its neighbours, which the board does not yet do), and the frame is
  * `.ss-schem` in shell-site-kit.mjs: a 1px panel, radius 12, padded 16 18 12 (fidelity audit
  * 2026-10-25, SITE-12).
  */
@@ -56,6 +57,15 @@ const CURVE: readonly (readonly [number, number])[] = [
 const PUT = 16;
 const FLIP = 44;
 const CALL = 68;
+const PUT_LABEL = 'Put wall · −γ';
+const FLIP_LABEL = 'Flip';
+const CALL_LABEL = 'Call wall · +γ';
+
+/** IBM Plex Mono advances every glyph 600/1000 em, so an 11px label is 6.6px per character. */
+const labelWidth = (text: string) => [...text].length * 11 * 0.6;
+/** The least gap between two level labels on one row, and the row Flip rises when a gap is less. */
+const LABEL_GAP = 8;
+const LABEL_ROW = 14;
 
 /** A Catmull-Rom path through the points, as cubic Béziers. */
 function smoothPath(pts: readonly (readonly [number, number])[]): string {
@@ -81,9 +91,21 @@ export function LevelsSchematic({ height = 240 }: { height?: number }) {
   const narrow = width < 480;
   const pl = 20;
   const pr = narrow ? 12 : 20;
-  const pt = 28;
   const pb = 30;
   const x = (v: number) => pl + (v / 100) * (width - pl - pr);
+  // The three level labels share one row while each clears its neighbour by 8px. In a narrower
+  // drawing (the index card under about 313px: 270 at a 390 phone, 286 at 768) "Flip" would run
+  // into "Call wall · +γ", so Flip rises one 14px row and the plot starts 14px lower. Every label
+  // stays centred on its own line, at 11px.
+  const span = (at: number, text: string) => {
+    const half = labelWidth(text) / 2;
+    return [x(at) - half, x(at) + half] as const;
+  };
+  const [, putRight] = span(PUT, PUT_LABEL);
+  const [flipLeft, flipRight] = span(FLIP, FLIP_LABEL);
+  const [callLeft] = span(CALL, CALL_LABEL);
+  const lift = flipLeft - putRight < LABEL_GAP || callLeft - flipRight < LABEL_GAP ? LABEL_ROW : 0;
+  const pt = 28 + lift;
   const y = (v: number) => pt + ((95 - v) / (95 + 90)) * (height - pt - pb);
   const path = smoothPath(CURVE.map(([a, b]) => [x(a), y(b)] as const));
   // `.cx .pl`: mono 500 11px in phosphor, its box 8px above the point. `.cx .xl`: mono 400 11px in
@@ -95,7 +117,7 @@ export function LevelsSchematic({ height = 240 }: { height?: number }) {
     fontFamily: typographyTokens.monoFontFamily,
   } as const;
   const tick = { fontSize: 11, fontFamily: typographyTokens.monoFontFamily } as const;
-  const level = (at: number, text: string, emph: boolean) => (
+  const level = (at: number, text: string, emph: boolean, raise = 0) => (
     <g key={text}>
       <line
         x1={x(at)}
@@ -108,7 +130,7 @@ export function LevelsSchematic({ height = 240 }: { height?: number }) {
       />
       <text
         x={x(at)}
-        y={pt - 10}
+        y={pt - 10 - raise}
         textAnchor="middle"
         fill={theme.palette.text.primary}
         style={label}
@@ -138,9 +160,9 @@ export function LevelsSchematic({ height = 240 }: { height?: number }) {
             zero
           </text>
         )}
-        {level(PUT, 'Put wall · −γ', false)}
-        {level(FLIP, 'Flip', true)}
-        {level(CALL, 'Call wall · +γ', false)}
+        {level(PUT, PUT_LABEL, false)}
+        {level(FLIP, FLIP_LABEL, true, lift)}
+        {level(CALL, CALL_LABEL, false)}
         <path d={path} fill="none" stroke={roles.emph} strokeWidth={2.5} strokeLinejoin="round" />
         <text x={x(0)} y={height - pb + 17} fill={theme.palette.text.secondary} style={tick}>
           lower strikes

@@ -26,7 +26,8 @@ import { useSessionArchive, type UseSessionArchiveOptions } from './useSessionAr
 import type { ArchiveState } from './viewModel';
 
 /** One of the page's panels: a heading, an optional tag, then its body (the board's hd-p, padded
- *  18 20, so the gate's fields run 778px wide in the 820 column at 1440). */
+ *  18 20, so the gate's fields run 778px wide in the 820 column at 1440, and 16 under 768px, so
+ *  they run 324 wide at x33 on a 390 phone). */
 function Panel({
   title,
   tag,
@@ -47,6 +48,7 @@ function Panel({
           gap: 1.75,
           p: '18px 20px',
           '&:last-child': { pb: '18px' },
+          '@media (max-width: 767px)': { p: '16px', '&:last-child': { pb: '16px' } },
         }}
       >
         <Box

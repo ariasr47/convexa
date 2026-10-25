@@ -72,73 +72,86 @@ function dimsLabel(d: RecentTrace['dims']): string {
     .join(' · ');
 }
 
+/** Max (5th) and count (6th) leave the stage table under 600px; every row has all seven cells. */
+const NARROW_STAGES = {
+  '@media (max-width: 599px)': {
+    '& th:nth-of-type(5), & td:nth-of-type(5), & th:nth-of-type(6), & td:nth-of-type(6)': {
+      display: 'none',
+    },
+  },
+} as const;
+
 function ScopeView({ scope }: { scope: MetricsScope }) {
   const v = scope.vendor;
   const c = scope.cache;
   const ratioPct = Math.round(c.hit_ratio <= 1 ? c.hit_ratio * 100 : c.hit_ratio);
   return (
     <Box sx={{ mt: 1 }}>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Stage</TableCell>
-            <TableCell>
-              <Tooltip arrow title={IO_CPU_TIP}>
-                <span>kind</span>
-              </Tooltip>
-            </TableCell>
-            <TableCell align="right">
-              <Tooltip arrow title={PCTL_TIP}>
-                <span>p50</span>
-              </Tooltip>
-            </TableCell>
-            <TableCell align="right">p95</TableCell>
-            <TableCell align="right">max</TableCell>
-            <TableCell align="right">count</TableCell>
-            <TableCell align="right">ok/err/skip</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {scope.stages.map((s) => (
-            <TableRow key={s.stage}>
+      {/* The table scrolls inside its card rather than being cut off by it, and under 600px it drops
+          max and count, as the board's stage table does (shell-site-kit.mjs `.ss-stages`). */}
+      <Box sx={{ overflowX: 'auto' }}>
+        <Table size="small" sx={NARROW_STAGES}>
+          <TableHead>
+            <TableRow>
+              <TableCell>Stage</TableCell>
               <TableCell>
-                <Tooltip arrow title={STAGE_DOC[s.stage]}>
-                  <span style={{ borderBottom: '1px dotted', cursor: 'help' }}>{s.stage}</span>
+                <Tooltip arrow title={IO_CPU_TIP}>
+                  <span>kind</span>
                 </Tooltip>
               </TableCell>
-              <TableCell>
-                <Tooltip arrow title={s.kind}>
-                  <Chip size="small" variant="outlined" label={ioCpu(s.kind)} />
-                </Tooltip>
-              </TableCell>
-              <TableCell align="right">{s.count === 0 ? '—' : fmtMs(s.p50_ms)}</TableCell>
-              <TableCell align="right">{s.count === 0 ? '—' : fmtMs(s.p95_ms)}</TableCell>
-              <TableCell align="right">{s.count === 0 ? '—' : fmtMs(s.max_ms)}</TableCell>
-              <TableCell align="right">{num(s.count)}</TableCell>
               <TableCell align="right">
-                {num(s.ok)}/{num(s.error)}/{num(s.skipped)}
+                <Tooltip arrow title={PCTL_TIP}>
+                  <span>p50</span>
+                </Tooltip>
               </TableCell>
+              <TableCell align="right">p95</TableCell>
+              <TableCell align="right">max</TableCell>
+              <TableCell align="right">count</TableCell>
+              <TableCell align="right">ok/err/skip</TableCell>
             </TableRow>
-          ))}
-          <TableRow>
-            <TableCell sx={{ fontWeight: 600 }}>TOTAL</TableCell>
-            <TableCell />
-            <TableCell align="right" sx={{ fontWeight: 600 }}>
-              {scope.latency_total.count === 0 ? '—' : fmtMs(scope.latency_total.p50_ms)}
-            </TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600 }}>
-              {scope.latency_total.count === 0 ? '—' : fmtMs(scope.latency_total.p95_ms)}
-            </TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600 }}>
-              {scope.latency_total.count === 0 ? '—' : fmtMs(scope.latency_total.max_ms)}
-            </TableCell>
-            <TableCell align="right" sx={{ fontWeight: 600 }}>
-              {num(scope.latency_total.count)}
-            </TableCell>
-            <TableCell />
-          </TableRow>
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {scope.stages.map((s) => (
+              <TableRow key={s.stage}>
+                <TableCell>
+                  <Tooltip arrow title={STAGE_DOC[s.stage]}>
+                    <span style={{ borderBottom: '1px dotted', cursor: 'help' }}>{s.stage}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>
+                  <Tooltip arrow title={s.kind}>
+                    <Chip size="small" variant="outlined" label={ioCpu(s.kind)} />
+                  </Tooltip>
+                </TableCell>
+                <TableCell align="right">{s.count === 0 ? '—' : fmtMs(s.p50_ms)}</TableCell>
+                <TableCell align="right">{s.count === 0 ? '—' : fmtMs(s.p95_ms)}</TableCell>
+                <TableCell align="right">{s.count === 0 ? '—' : fmtMs(s.max_ms)}</TableCell>
+                <TableCell align="right">{num(s.count)}</TableCell>
+                <TableCell align="right">
+                  {num(s.ok)}/{num(s.error)}/{num(s.skipped)}
+                </TableCell>
+              </TableRow>
+            ))}
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>TOTAL</TableCell>
+              <TableCell />
+              <TableCell align="right" sx={{ fontWeight: 600 }}>
+                {scope.latency_total.count === 0 ? '—' : fmtMs(scope.latency_total.p50_ms)}
+              </TableCell>
+              <TableCell align="right" sx={{ fontWeight: 600 }}>
+                {scope.latency_total.count === 0 ? '—' : fmtMs(scope.latency_total.p95_ms)}
+              </TableCell>
+              <TableCell align="right" sx={{ fontWeight: 600 }}>
+                {scope.latency_total.count === 0 ? '—' : fmtMs(scope.latency_total.max_ms)}
+              </TableCell>
+              <TableCell align="right" sx={{ fontWeight: 600 }}>
+                {num(scope.latency_total.count)}
+              </TableCell>
+              <TableCell />
+            </TableRow>
+          </TableBody>
+        </Table>
+      </Box>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mt: 1, flexWrap: 'wrap' }}>
         <Tooltip arrow title={CACHE_TIP}>
           <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
@@ -378,23 +391,27 @@ export function OperatorMetrics() {
                           <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
                         </Tooltip>
                       </Stack>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>trace_id</TableCell>
-                            <TableCell>ticker</TableCell>
-                            <TableCell>dims</TableCell>
-                            <TableCell>cache</TableCell>
-                            <TableCell align="right">total</TableCell>
-                            <TableCell align="right">inspect</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {data.recent_traces.map((t) => (
-                            <TraceRow key={t.trace_id} t={t} />
-                          ))}
-                        </TableBody>
-                      </Table>
+                      {/* Scrolls inside its card on a phone, so cache, total and the inspect
+                          button stay reachable instead of being cut off by the card. */}
+                      <Box sx={{ overflowX: 'auto' }}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>trace_id</TableCell>
+                              <TableCell>ticker</TableCell>
+                              <TableCell>dims</TableCell>
+                              <TableCell>cache</TableCell>
+                              <TableCell align="right">total</TableCell>
+                              <TableCell align="right">inspect</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {data.recent_traces.map((t) => (
+                              <TraceRow key={t.trace_id} t={t} />
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Box>
                     </CardContent>
                   </Card>
                 )}
