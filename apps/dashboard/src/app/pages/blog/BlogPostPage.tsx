@@ -5,11 +5,13 @@
  * not a published post renders `notFound` — the site's own 404, passed in by the route table since
  * pages never import each other.
  *
- * Design: design/src/screens/final/shell-site-docs.mjs (blogPostBoard).
+ * Design: design/src/screens/final/shell-site-docs.mjs (blogPostBoard), styled by `.ss-post` and
+ * `.ss-schem` in shell-site-kit.mjs: a 72ch measure (562px of content), a flex column on an 18px
+ * rhythm, the H1 at clamp(32px, 3.6vw, 46px) / 1.08, steel body with phosphor emphasis, and the
+ * callout on the panel (fidelity audit 2026-10-25, SITE-11).
  */
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
 import Link from '@mui/material/Link';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -28,6 +30,34 @@ const linkSx = { color: (t: Parameters<typeof extrasFor>[0]) => extrasFor(t).tex
 const DISPLAY = {
   fontFamily: typographyTokens.displayFontFamily,
   fontStretch: typographyTokens.displayFontStretch,
+  fontWeight: 700,
+  letterSpacing: '-0.01em',
+  // The boards balance every heading (`h1, h2, h3 { text-wrap: balance }`, design/src/lib.mjs).
+  textWrap: 'balance',
+} as const;
+/** Body copy is steel; the phrases the post bolds stay phosphor (`.ss-post p strong`). */
+const BODY = {
+  m: 0,
+  fontSize: 16,
+  lineHeight: 1.7,
+  color: 'text.secondary',
+  textWrap: 'pretty',
+  '& strong': { color: 'text.primary' },
+} as const;
+/** The board's solid tag (`.stag.k-solid`): 22px, 11/600, a strong hairline, no fill. */
+const TAG_SX = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  height: 22,
+  px: 1,
+  borderRadius: '999px',
+  border: '1px solid',
+  borderColor: (t: Parameters<typeof extrasFor>[0]) => extrasFor(t).lineStrong,
+  fontSize: 11,
+  fontWeight: 600,
+  lineHeight: 1,
+  whiteSpace: 'nowrap',
+  color: 'text.primary',
 } as const;
 
 function Inline({ text }: { text: string }) {
@@ -80,36 +110,36 @@ function BlockView({ block }: { block: Block }): ReactNode {
       return (
         <Typography
           component="h2"
-          sx={{
-            ...DISPLAY,
-            fontSize: { xs: 22, sm: 24 },
-            fontWeight: 700,
-            mt: 5,
-            mb: 1.5,
-            lineHeight: 1.25,
-          }}
+          // 18px of margin on top of the column's 18px gap (`.ss-post h2`).
+          sx={{ ...DISPLAY, fontSize: 24, lineHeight: 1.2, m: 0, mt: '18px' }}
         >
           <Inline text={block.text} />
         </Typography>
       );
     case 'h3':
       return (
-        <Typography component="h3" sx={{ fontSize: 17, fontWeight: 700, mt: 3, mb: 1 }}>
+        <Typography
+          component="h3"
+          sx={{ fontSize: 17, fontWeight: 700, m: 0, mt: '6px', textWrap: 'balance' }}
+        >
           <Inline text={block.text} />
         </Typography>
       );
     case 'p':
       return (
-        <Typography component="p" sx={{ fontSize: 16, lineHeight: 1.7, m: 0, mb: 2 }}>
+        <Typography component="p" sx={BODY}>
           <Inline text={block.text} />
         </Typography>
       );
     case 'ul':
     case 'ol':
       return (
-        <Box component={block.kind} sx={{ m: 0, mb: 2, pl: 3, fontSize: 16, lineHeight: 1.7 }}>
+        <Box
+          component={block.kind}
+          sx={{ ...BODY, pl: '22px', display: 'flex', flexDirection: 'column', gap: '6px' }}
+        >
           {block.items.map((item, i) => (
-            <Box component="li" key={i} sx={{ my: 0.75 }}>
+            <Box component="li" key={i}>
               <Inline text={item} />
             </Box>
           ))}
@@ -119,23 +149,25 @@ function BlockView({ block }: { block: Block }): ReactNode {
       return (
         <Box
           component="blockquote"
-          sx={{
+          // The callout sits on the panel, phosphor on a strong left rule (`.ss-post blockquote`).
+          sx={(t) => ({
             m: 0,
-            my: 3,
-            pl: 2,
-            borderLeft: '3px solid',
-            borderColor: 'text.secondary',
-            color: 'text.secondary',
-            fontSize: 16,
-            lineHeight: 1.7,
-          }}
+            py: '12px',
+            px: 2,
+            borderLeft: `2px solid ${extrasFor(t).lineStrong}`,
+            borderRadius: '0 8px 8px 0',
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+            fontSize: 14.5,
+            lineHeight: 1.6,
+          })}
         >
           <Inline text={block.text} />
         </Box>
       );
     case 'table':
       return (
-        <Box sx={{ overflowX: 'auto', my: 3 }}>
+        <Box sx={{ overflowX: 'auto' }}>
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -198,13 +230,25 @@ export function BlogPostPage({ file, notFound }: { file: string; notFound: React
     <Box
       component="article"
       data-testid={`blog-post-${article.slug}`}
-      sx={{ maxWidth: 720, mx: 'auto', px: 2, py: { xs: 3, md: 5 } }}
+      // 594 = the 562px measure plus the 16px gutters, so the text column is the board's at every
+      // width (the board centres a 72ch article inside the page column).
+      sx={{
+        maxWidth: 594,
+        mx: 'auto',
+        px: 2,
+        pt: 5,
+        pb: 3,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '18px',
+      }}
     >
       <Link
         component={RouterLink}
         to="/blog"
         sx={{
           ...linkSx,
+          alignSelf: 'flex-start',
           display: 'inline-flex',
           alignItems: 'center',
           minHeight: 24,
@@ -216,27 +260,38 @@ export function BlogPostPage({ file, notFound }: { file: string; notFound: React
         ← All posts
       </Link>
       <Box
-        sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5, mt: 3, mb: 1.5 }}
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '6px 14px',
+          fontSize: 13,
+          color: 'text.secondary',
+        }}
       >
-        <Chip label={article.tag} size="small" variant="outlined" />
-        <Typography component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
+        <Box component="span" sx={TAG_SX}>
+          {article.tag}
+        </Box>
+        <span>
           {BLOG_COPY.eyebrow} · {BLOG_COPY.heading}
-        </Typography>
+        </span>
       </Box>
       <Typography
         component="h1"
         sx={{
           ...DISPLAY,
-          fontSize: { xs: 30, sm: 38 },
-          fontWeight: 700,
-          lineHeight: 1.15,
+          fontSize: 'clamp(32px, 3.6vw, 46px)',
+          lineHeight: 1.08,
+          letterSpacing: '-0.02em',
           m: 0,
-          mb: 2,
         }}
       >
         {article.title}
       </Typography>
-      <Typography component="p" sx={{ fontSize: 18, lineHeight: 1.6, m: 0, mb: 1 }}>
+      <Typography
+        component="p"
+        sx={{ fontSize: 18, lineHeight: 1.7, m: 0, color: 'text.primary', textWrap: 'pretty' }}
+      >
         {article.description}
       </Typography>
       {blocks.map((block, i) => (

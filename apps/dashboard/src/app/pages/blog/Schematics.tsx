@@ -4,9 +4,14 @@
  * labelled zero line and by the ±γ labels, not by hue. The SVG is drawn at its measured width so
  * its labels stay at 11px or more on a phone (P-13) instead of shrinking with a viewBox.
  *
- * Design: design/src/screens/final/shell-site-docs.mjs (levelsSchematic).
+ * Design: design/src/screens/final/shell-site-docs.mjs (levelsSchematic) on the chart kit's `plot`
+ * (design/src/chart-kit.mjs `.cx`): mono 11px labels (the levels at 500 in phosphor, the strike ends
+ * at 400 in steel), the plot inset 20/20 (12 on the right under 480px) × 28/30, and the frame is
+ * `.ss-schem` in shell-site-kit.mjs: a 1px panel, radius 12, padded 16 18 12 (fidelity audit
+ * 2026-10-25, SITE-12).
  */
 import { chartRoles } from '@/shared/charts/frame';
+import { typographyTokens } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
@@ -67,21 +72,29 @@ function smoothPath(pts: readonly (readonly [number, number])[]): string {
   return d;
 }
 
-export function LevelsSchematic() {
+/** The board's plot height: 240 in a post, 170 on the index card (`levelsSchematic(170)`). */
+export function LevelsSchematic({ height = 240 }: { height?: number }) {
   const theme = useTheme();
   const roles = chartRoles(theme);
   const [ref, width] = useMeasuredWidth<HTMLDivElement>(640);
+  // Under 480px the kit pulls the plot's right edge in and drops the minor "zero" label.
   const narrow = width < 480;
-  const height = narrow ? 200 : 240;
   const pl = 20;
-  const pr = 20;
-  const pt = 34;
+  const pr = narrow ? 12 : 20;
+  const pt = 28;
   const pb = 30;
   const x = (v: number) => pl + (v / 100) * (width - pl - pr);
   const y = (v: number) => pt + ((95 - v) / (95 + 90)) * (height - pt - pb);
   const path = smoothPath(CURVE.map(([a, b]) => [x(a), y(b)] as const));
-  const label = { fontSize: 12, fontFamily: theme.typography.fontFamily } as const;
-  const minor = { fontSize: 11, fontFamily: theme.typography.fontFamily } as const;
+  // `.cx .pl`: mono 500 11px in phosphor, its box 8px above the point. `.cx .xl`: mono 400 11px in
+  // steel, its box 8px below the plot. An 11px mono line's baseline sits about 2px above its box's
+  // bottom, so the label baselines are 10px above and 17px below.
+  const label = {
+    fontSize: 11,
+    fontWeight: 500,
+    fontFamily: typographyTokens.monoFontFamily,
+  } as const;
+  const tick = { fontSize: 11, fontFamily: typographyTokens.monoFontFamily } as const;
   const level = (at: number, text: string, emph: boolean) => (
     <g key={text}>
       <line
@@ -95,10 +108,9 @@ export function LevelsSchematic() {
       />
       <text
         x={x(at)}
-        y={pt - 12}
+        y={pt - 10}
         textAnchor="middle"
-        fill={emph ? roles.emph : roles.ctx}
-        fontWeight={600}
+        fill={theme.palette.text.primary}
         style={label}
       >
         {text}
@@ -116,7 +128,13 @@ export function LevelsSchematic() {
       >
         <line x1={x(0)} x2={x(100)} y1={y(0)} y2={y(0)} stroke={roles.axis} strokeWidth={1} />
         {!narrow && (
-          <text x={x(28)} y={y(0) - 6} fill={roles.ctx} style={minor}>
+          <text
+            x={x(28)}
+            y={y(4) - 10}
+            textAnchor="middle"
+            fill={theme.palette.text.primary}
+            style={label}
+          >
             zero
           </text>
         )}
@@ -124,10 +142,16 @@ export function LevelsSchematic() {
         {level(FLIP, 'Flip', true)}
         {level(CALL, 'Call wall · +γ', false)}
         <path d={path} fill="none" stroke={roles.emph} strokeWidth={2.5} strokeLinejoin="round" />
-        <text x={x(0)} y={height - 8} fill={roles.ctx} style={minor}>
+        <text x={x(0)} y={height - pb + 17} fill={theme.palette.text.secondary} style={tick}>
           lower strikes
         </text>
-        <text x={x(100)} y={height - 8} textAnchor="end" fill={roles.ctx} style={minor}>
+        <text
+          x={x(100)}
+          y={height - pb + 17}
+          textAnchor="end"
+          fill={theme.palette.text.secondary}
+          style={tick}
+        >
           higher strikes
         </text>
       </svg>
@@ -238,30 +262,52 @@ const FIGURES: Record<string, () => ReactNode> = {
   'two-speed-desk': () => <TwoSpeedsSchematic />,
 };
 
+/** The schematic frame (`.ss-schem`): a 1px panel, radius 12, padded 16 18 12, its caption 10px
+ *  under the drawing at 12.5px steel. The post's figures and the index card's figure share it. */
+export function SchematicFrame({
+  children,
+  caption,
+  testId,
+  hidden,
+}: {
+  children: ReactNode;
+  caption: ReactNode;
+  testId?: string;
+  hidden?: boolean;
+}) {
+  return (
+    <Box
+      component="figure"
+      data-testid={testId}
+      aria-hidden={hidden || undefined}
+      sx={{
+        m: 0,
+        p: '16px 18px 12px',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: '12px',
+        bgcolor: 'background.paper',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        minWidth: 0,
+      }}
+    >
+      {children}
+      <Box component="figcaption" sx={{ fontSize: 12.5, color: 'text.secondary', lineHeight: 1.5 }}>
+        {caption}
+      </Box>
+    </Box>
+  );
+}
+
 /** A post figure by its file name in docs/blog/img, framed and captioned; null for an unknown name. */
 export function Schematic({ name, caption }: { name: string; caption: ReactNode }) {
   const draw = FIGURES[name];
   if (!draw) return null;
   return (
-    <Box
-      component="figure"
-      data-testid={`schematic-${name}`}
-      sx={{
-        m: 0,
-        my: 3,
-        p: { xs: 1.5, sm: 2 },
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-      }}
-    >
+    <SchematicFrame testId={`schematic-${name}`} caption={caption}>
       {draw()}
-      <Box
-        component="figcaption"
-        sx={{ mt: 1.5, fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}
-      >
-        {caption}
-      </Box>
-    </Box>
+    </SchematicFrame>
   );
 }

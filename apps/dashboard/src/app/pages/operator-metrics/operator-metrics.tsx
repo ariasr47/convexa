@@ -4,7 +4,9 @@
  * never triggers a bundle fetch or any compute. Honest-presentation: no fabricated/zeroed number
  * as real (empty → `—`), `skipped` shown as skipped, low headroom is factual & non-alerting.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
 import { OpsBar, OpsTag } from '@/shared/ui/OpsBar';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import { MetricsScope, RecentTrace, StageKind, StageName } from '@convexa/api';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -15,7 +17,6 @@ import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Collapse from '@mui/material/Collapse';
-import Container from '@mui/material/Container';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
@@ -405,21 +406,44 @@ export function OperatorMetrics() {
     );
   }
 
+  // The page column (design: opsMetricsBoard's `main.wrap`, padded 28/48 with an 18px rhythm), so
+  // the content starts at x80 on a 1440 screen like every other page (fidelity audit 2026-10-25,
+  // COL). The H1 is the board's display voice, Archivo 32/35.2 (SITE-14).
   return (
     <>
       {header}
-      <Container maxWidth="lg" component="main" sx={{ py: 3.5, pb: 6 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mb: 2.5 }}>
-          <Typography component="h1" sx={{ m: 0, fontSize: { xs: 26, sm: 32 }, fontWeight: 700 }}>
+      <Box component="main" sx={{ ...pageColumnSx, pt: 3.5, pb: 6 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mb: 2.25 }}>
+          <Typography
+            component="h1"
+            sx={{
+              m: 0,
+              fontFamily: typographyTokens.displayFontFamily,
+              fontStretch: typographyTokens.displayFontStretch,
+              fontSize: 32,
+              fontWeight: 700,
+              letterSpacing: '-0.01em',
+              lineHeight: 1.1,
+              textWrap: 'balance',
+            }}
+          >
             Operator metrics
           </Typography>
-          <Typography sx={{ m: 0, fontSize: 14.5, color: 'text.secondary', maxWidth: '80ch' }}>
+          <Typography
+            sx={{
+              m: 0,
+              fontSize: 14.5,
+              lineHeight: 1.5,
+              color: 'text.secondary',
+              maxWidth: '80ch',
+            }}
+          >
             Latency of the options bundle, stage by stage, for this API process. Not linked from the
             site; the trader pages never call it.
           </Typography>
         </Box>
         {body}
-      </Container>
+      </Box>
     </>
   );
 }

@@ -1,6 +1,7 @@
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { OpsBar, OpsTag } from '@/shared/ui/OpsBar';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -8,7 +9,6 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
-import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -25,7 +25,8 @@ import { TRIO, type TrioSymbol } from './schedule';
 import { useSessionArchive, type UseSessionArchiveOptions } from './useSessionArchive';
 import type { ArchiveState } from './viewModel';
 
-/** One of the page's panels: a heading, an optional tag, then its body (the board's hd-p). */
+/** One of the page's panels: a heading, an optional tag, then its body (the board's hd-p, padded
+ *  18 20, so the gate's fields run 778px wide in the 820 column at 1440). */
 function Panel({
   title,
   tag,
@@ -39,7 +40,15 @@ function Panel({
 }) {
   return (
     <Card variant="outlined" component="section" aria-label={title} data-testid={testId}>
-      <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+      <CardContent
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1.75,
+          p: '18px 20px',
+          '&:last-child': { pb: '18px' },
+        }}
+      >
         <Box
           sx={{
             display: 'flex',
@@ -76,7 +85,8 @@ function GateForm({
   tokenError?: boolean;
 }) {
   return (
-    <Stack spacing={2} sx={{ maxWidth: 560 }}>
+    // The fields fill the panel (the board's `fld` rows), not a 560px column (fidelity SITE-14).
+    <Stack spacing={2}>
       <Typography variant="body2" color="text.secondary">
         {COPY.lockedCaption}
       </Typography>
@@ -122,10 +132,12 @@ function GateForm({
           }}
         />
       </Tooltip>
+      {/* Neutral and outlined (the board's `btn secondary`): this page has no amber primary. The
+          theme's coarse-pointer floor still makes it 44px on touch. */}
       <Button
-        variant="contained"
+        variant="outlined"
         onClick={api.unlock}
-        sx={{ minHeight: 44, alignSelf: 'flex-start' }}
+        sx={{ alignSelf: 'flex-start' }}
         data-testid="osa-unlock"
       >
         {COPY.unlock}
@@ -363,13 +375,27 @@ export function OperatorSessionArchive(props: OperatorSessionArchiveProps = {}) 
       <OpsBar path="/_ops/research">
         <OpsTag>{COPY.readOnlyChip}</OpsTag>
       </OpsBar>
-      <Container component="main" maxWidth="lg" sx={{ pt: 3.5, pb: 6 }}>
-        <Stack spacing={2.25} sx={{ maxWidth: 900 }}>
+      {/* The page column, left-aligned: the board's `main.wrap` capped at 900 with its gutter, so
+          820px of content at x80 on a 1440 screen (fidelity audit 2026-10-25, COL). */}
+      <Box component="main" sx={{ ...pageColumnSx, pt: 3.5, pb: 6 }}>
+        <Stack spacing={2.25} sx={{ maxWidth: 820 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-            <Typography component="h1" sx={{ m: 0, fontSize: { xs: 26, sm: 32 }, fontWeight: 700 }}>
+            <Typography
+              component="h1"
+              sx={{
+                m: 0,
+                fontFamily: typographyTokens.displayFontFamily,
+                fontStretch: typographyTokens.displayFontStretch,
+                fontSize: 32,
+                fontWeight: 700,
+                letterSpacing: '-0.01em',
+                lineHeight: 1.1,
+                textWrap: 'balance',
+              }}
+            >
               {COPY.title}
             </Typography>
-            <Typography sx={{ m: 0, fontSize: 14.5, color: 'text.secondary', maxWidth: '80ch' }}>
+            <Typography sx={{ m: 0, fontSize: 14.5, lineHeight: 1.5, color: 'text.secondary' }}>
               {COPY.lead}
             </Typography>
           </Box>
@@ -617,7 +643,7 @@ export function OperatorSessionArchive(props: OperatorSessionArchiveProps = {}) 
             </>
           )}
         </Stack>
-      </Container>
+      </Box>
     </Box>
   );
 }

@@ -6,35 +6,72 @@
  * Owner ruling D-A = (A), 2026-09-10 (SPEC §1): published posts only, never a draft slot; with
  * none, the page says so.
  *
- * Design: design/src/screens/final/shell-site-docs.mjs (blogIndexBoard, blogStates).
+ * Design: design/src/screens/final/shell-site-docs.mjs (blogIndexBoard, blogStates): the page
+ * column capped at 1100, a caps eyebrow, the H1 at clamp(32px, 3.4vw, 44px), a 16px lead, and each
+ * card a panel padded 24 with a 28px Archivo title and its schematic in the `.ss-schem` frame
+ * (fidelity audit 2026-10-25, SITE-12).
  */
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
-import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { BLOG_COPY } from './copy';
 import { BLOG_ARTICLES, postPath, type BlogArticle } from './posts';
-import { LevelsSchematic } from './Schematics';
+import { LevelsSchematic, SchematicFrame } from './Schematics';
+
+const DISPLAY = {
+  fontFamily: typographyTokens.displayFontFamily,
+  fontStretch: typographyTokens.displayFontStretch,
+  fontWeight: 700,
+  letterSpacing: '-0.01em',
+} as const;
+/** The board's solid tag (`.stag.k-solid`): 22px, 11/600, a strong hairline, no fill. */
+const TAG_SX = {
+  alignSelf: 'flex-start',
+  display: 'inline-flex',
+  alignItems: 'center',
+  height: 22,
+  px: 1,
+  borderRadius: '999px',
+  border: '1px solid',
+  borderColor: (t: Parameters<typeof extrasFor>[0]) => extrasFor(t).lineStrong,
+  fontSize: 11,
+  fontWeight: 600,
+  lineHeight: 1,
+  whiteSpace: 'nowrap',
+  color: 'text.primary',
+} as const;
 
 export function BlogIndex({ articles }: { articles: readonly BlogArticle[] }) {
   return (
     <Box
-      sx={{ maxWidth: 1100, mx: 'auto', px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}
+      // The page column (`.wrap`) capped at the board's 1100: 1020px of content at x210 on a 1440
+      // screen. Everything inside sits on the board's 24px rhythm.
+      sx={{
+        ...pageColumnSx,
+        maxWidth: 1100,
+        pt: 5,
+        pb: { xs: 3, md: 5 },
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 3,
+      }}
       data-testid="blog-page"
     >
-      <Stack spacing={1.25} sx={{ mb: 3 }}>
+      <Stack spacing={1.25}>
         <Typography
           component="p"
           sx={{
             m: 0,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 600,
-            letterSpacing: '0.12em',
+            letterSpacing: '0.06em',
+            lineHeight: 1.3,
             textTransform: 'uppercase',
             color: 'text.secondary',
           }}
@@ -42,15 +79,20 @@ export function BlogIndex({ articles }: { articles: readonly BlogArticle[] }) {
           {BLOG_COPY.eyebrow}
         </Typography>
         <Typography
-          variant="h4"
           component="h1"
-          sx={{ fontWeight: 700, letterSpacing: '-0.01em', m: 0 }}
+          sx={{
+            ...DISPLAY,
+            fontSize: 'clamp(32px, 3.4vw, 44px)',
+            lineHeight: 1.1,
+            textWrap: 'balance',
+            m: 0,
+          }}
         >
           {BLOG_COPY.heading}
         </Typography>
         <Typography
-          variant="body1"
-          sx={{ color: 'text.secondary', maxWidth: '62ch', lineHeight: 1.6, m: 0 }}
+          component="p"
+          sx={{ color: 'text.secondary', maxWidth: '62ch', fontSize: 16, lineHeight: 1.6, m: 0 }}
         >
           {BLOG_COPY.intro}
         </Typography>
@@ -69,14 +111,15 @@ export function BlogIndex({ articles }: { articles: readonly BlogArticle[] }) {
           </Typography>
         </Box>
       ) : (
-        <Stack spacing={2.5}>
+        <Stack spacing={3}>
           {articles.map((a) => (
-            <Card key={a.slug} variant="outlined" data-testid={`blog-card-${a.slug}`}>
-              <CardActionArea
-                component={RouterLink}
-                to={postPath(a.slug)}
-                sx={{ p: { xs: 2, sm: 3 } }}
-              >
+            <Card
+              key={a.slug}
+              variant="outlined"
+              data-testid={`blog-card-${a.slug}`}
+              sx={{ borderRadius: '12px' }}
+            >
+              <CardActionArea component={RouterLink} to={postPath(a.slug)} sx={{ p: 3 }}>
                 <Box
                   sx={{
                     display: 'grid',
@@ -86,36 +129,37 @@ export function BlogIndex({ articles }: { articles: readonly BlogArticle[] }) {
                   }}
                 >
                   <Stack spacing={1.25} sx={{ minWidth: 0 }}>
-                    <Box>
-                      <Chip label={a.tag} size="small" variant="outlined" />
+                    <Box component="span" sx={TAG_SX}>
+                      {a.tag}
                     </Box>
                     <Typography
-                      variant="h5"
                       component="h2"
-                      sx={{ lineHeight: 1.2, fontWeight: 700 }}
+                      sx={{ ...DISPLAY, fontSize: 28, lineHeight: 1.15, m: 0 }}
                     >
                       {a.title}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    <Typography
+                      component="p"
+                      sx={{ m: 0, fontSize: 14.5, lineHeight: 1.45, color: 'text.secondary' }}
+                    >
                       {a.description}
                     </Typography>
                     <Typography
-                      variant="body2"
-                      sx={{ color: (theme) => extrasFor(theme).textInfo, fontWeight: 600 }}
+                      component="p"
+                      sx={{
+                        m: 0,
+                        fontSize: 14,
+                        color: (theme) => extrasFor(theme).textInfo,
+                        fontWeight: 600,
+                      }}
                     >
                       {BLOG_COPY.readPost}
                     </Typography>
                   </Stack>
                   {a.cardFigure === 'walls-and-flip' && (
-                    <Box component="figure" sx={{ m: 0, minWidth: 0 }} aria-hidden>
-                      <LevelsSchematic />
-                      <Box
-                        component="figcaption"
-                        sx={{ mt: 1, fontSize: 12, color: 'text.secondary' }}
-                      >
-                        {BLOG_COPY.schematic}
-                      </Box>
-                    </Box>
+                    <SchematicFrame caption={BLOG_COPY.schematic} hidden>
+                      <LevelsSchematic height={170} />
+                    </SchematicFrame>
                   )}
                 </Box>
               </CardActionArea>
@@ -124,7 +168,10 @@ export function BlogIndex({ articles }: { articles: readonly BlogArticle[] }) {
         </Stack>
       )}
       {articles.length > 0 && (
-        <Typography component="p" sx={{ color: 'text.secondary', fontSize: 13, mt: 2.5, mb: 0 }}>
+        <Typography
+          component="p"
+          sx={{ color: 'text.secondary', fontSize: 12, lineHeight: 1.45, m: 0 }}
+        >
           {articles.length === 1 ? BLOG_COPY.onePost : BLOG_COPY.morePosts}
         </Typography>
       )}
