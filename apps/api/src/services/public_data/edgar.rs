@@ -3,7 +3,7 @@
 //! User-Agent (SEC_USER_AGENT); every request goes through the process-wide SEC gate.
 
 use super::types::{DatedValue, Fact, Filing, FilingKind, PeriodicFiling};
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate, Timelike, Utc};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -48,11 +48,20 @@ pub(crate) fn ticker_key(ticker: &str) -> String {
 }
 
 /// `company_tickers.json`: `{"0":{"cik_str":1045810,"ticker":"NVDA","title":"..."}, ...}`.
+///
+/// Entries are walked in the numeric order of their keys (`"0"`, `"1"`, … `"10"`), which is SEC's
+/// own order, so a ticker listed twice resolves to the same row on every run (a map's iteration
+/// order would pick a different one from run to run). Keys that aren't numbers come last.
 pub(crate) fn parse_company_tickers(json: &[u8]) -> Result<HashMap<String, u64>, String> {
-    let map: HashMap<String, Value> = serde_json::from_slice(json)
+    let map: serde_json::Map<String, Value> = serde_json::from_slice(json)
         .map_err(|_| "SEC company tickers answer is not a JSON object".to_string())?;
+    let mut entries: Vec<(&String, &Value)> = map.iter().collect();
+    entries.sort_by_key(|(key, _)| {
+        let numeric = key.trim().parse::<u64>().ok();
+        (numeric.is_none(), numeric, key.as_str())
+    });
     let mut out = HashMap::with_capacity(map.len());
-    for entry in map.values() {
+    for (_, entry) in entries {
         let Some(ticker) = entry.get("ticker").and_then(Value::as_str) else {
             continue;
         };
@@ -62,7 +71,8 @@ pub(crate) fn parse_company_tickers(json: &[u8]) -> Result<HashMap<String, u64>,
             _ => None,
         };
         if let Some(cik) = cik {
-            // The file can list a ticker more than once; the first (largest filer) wins.
+            // The file can list a ticker more than once; the first in key order (SEC lists the
+            // largest filer first) wins.
             out.entry(ticker.trim().to_ascii_uppercase()).or_insert(cik);
         }
     }
@@ -74,6 +84,9 @@ pub(crate) fn parse_company_tickers(json: &[u8]) -> Result<HashMap<String, u64>,
 pub(crate) struct SubmissionRow {
     pub accession: String,
     pub filed: NaiveDate,
+    /// When EDGAR accepted the filing (`acceptanceDateTime`, read by [`accepted_at`]). `None` when
+    /// the column is missing or the cell can't be read. Internal: no public answer carries it.
+    pub accepted: Option<DateTime<Utc>>,
     pub report_date: Option<NaiveDate>,
     pub form: String,
     pub items: Vec<String>,
@@ -97,6 +110,8 @@ struct RawRecent {
     accession: Vec<Option<String>>,
     #[serde(rename = "filingDate")]
     filing_date: Vec<Option<String>>,
+    #[serde(rename = "acceptanceDateTime", default)]
+    acceptance: Vec<Option<String>>,
     #[serde(rename = "reportDate", default)]
     report_date: Vec<Option<String>>,
     #[serde(default)]
@@ -113,6 +128,125 @@ struct RawRecent {
 pub(crate) fn date(raw: Option<&str>) -> Option<NaiveDate> {
     let raw = raw?.trim();
     NaiveDate::parse_from_str(raw.get(..10)?, "%Y-%m-%d").ok()
+}
+
+/// The instant EDGAR accepted a filing, from its `acceptanceDateTime` cell.
+///
+/// **The rule:** EDGAR writes the value with a `Z`, but it is the true instant moved later by New
+/// York's UTC offset (4 h in summer, 5 h in winter). So the true instant is the UTC instant with
+/// the same digits as the value's New York wall time: `2026-08-27T00:21:19Z` reads as
+/// `2026-08-26T20:21:19Z`, which is 16:21:19 EDT on Aug 26 (NVIDIA's results 8-K
+/// `0001045810-26-000073`, filed 2026-08-26).
+///
+/// **Evidence (spec 06, step 0), measured on `sec_real_submissions_nvda.json`** (1,000 real rows,
+/// fetched 2026-10-15, no value edited), counting rows inside EDGAR's filing hours (06:00 to 22:00
+/// Eastern) and rows accepted on or before their `filingDate`:
+///
+/// | Reading of the value | Inside hours | On or before `filingDate` |
+/// |---|---|---|
+/// | A true UTC instant | 674 | 885 |
+/// | Eastern wall time with a wrong `Z` | 69 | 73 |
+/// | **This rule** | **999** | **999** |
+///
+/// The one row this rule misses is an SEC-generated EFFECT notice at 00:15 ET
+/// (`9999999995-23-001582`). The rule also puts NVIDIA's results 8-Ks (Item 2.02) after the close,
+/// summer and winter alike: `…-26-000073` at 16:21:19 EDT, `…-26-000019` at 16:31:25 EST on
+/// 2026-02-25. Every wrong reading lands later than this one, so a wrong rule would drop real
+/// filings near an event but never leak the future.
+///
+/// **Still to confirm:** the spec checks the rule against EDGAR's own filing headers
+/// (`<accession>.hdr.sgml`, `ACCEPTANCE-DATETIME`, Eastern) for `0001045810-26-000073`,
+/// `0001045810-26-000019` and `0001197647-26-000011`. Those three GETs need the owner's
+/// `SEC_USER_AGENT`, which this build lane didn't have; if the headers disagree, the headers win.
+/// Until then the live CLI's guard ([`acceptance_fit`]) is the standing check.
+///
+/// Sub-seconds are dropped (EDGAR writes `.000`). A value with another offset than `Z`, or one that
+/// isn't RFC 3339, is `None`: the rule is only known for EDGAR's `Z` form.
+pub(crate) fn accepted_at(raw: &str) -> Option<DateTime<Utc>> {
+    let stamped = DateTime::parse_from_rfc3339(raw.trim()).ok()?;
+    if stamped.offset().local_minus_utc() != 0 {
+        return None;
+    }
+    let wall = stamped
+        .with_timezone(&chrono_tz::America::New_York)
+        .naive_local()
+        .with_nanosecond(0)?;
+    Some(wall.and_utc())
+}
+
+/// The timezone guard's count over a submissions index: of the rows with an acceptance time, how
+/// many fall outside EDGAR's filing hours (06:00 to 22:00 Eastern) or after their `filingDate`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct AcceptanceFit {
+    pub outside: usize,
+    pub of: usize,
+}
+
+impl AcceptanceFit {
+    /// Above 1% the rule in [`accepted_at`] needs checking (the right rule measures 0.1% on the
+    /// real NVDA index, the wrong ones 32% or more).
+    pub(crate) fn trips(&self) -> bool {
+        self.outside * 100 > self.of
+    }
+}
+
+/// Count the rows whose acceptance time doesn't fit EDGAR's hours (see [`AcceptanceFit`]).
+pub(crate) fn acceptance_fit(rows: &[SubmissionRow]) -> AcceptanceFit {
+    let mut fit = AcceptanceFit { outside: 0, of: 0 };
+    for row in rows {
+        let Some(accepted) = row.accepted else {
+            continue;
+        };
+        fit.of += 1;
+        let eastern = accepted.with_timezone(&chrono_tz::America::New_York);
+        let in_hours = (6..22).contains(&eastern.hour());
+        if !in_hours || eastern.date_naive() > row.filed {
+            fit.outside += 1;
+        }
+    }
+    fit
+}
+
+/// How far back one submissions page reaches: its oldest `filingDate`, and whether
+/// `filings.files` lists older pages (EDGAR's `filings.recent` holds at most 1,000 rows).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PageReach {
+    pub oldest: Option<NaiveDate>,
+    pub older_pages: bool,
+}
+
+#[derive(Deserialize)]
+struct RawReach {
+    filings: RawReachFilings,
+}
+
+#[derive(Deserialize)]
+struct RawReachFilings {
+    recent: RawReachRecent,
+    #[serde(default)]
+    files: Vec<Value>,
+}
+
+#[derive(Deserialize)]
+struct RawReachRecent {
+    #[serde(rename = "filingDate", default)]
+    filing_date: Vec<Option<String>>,
+}
+
+/// Read a submissions page's reach (an issuer's or a 13F manager's: the shape is the same).
+pub(crate) fn page_reach(json: &[u8]) -> Result<PageReach, String> {
+    let raw: RawReach = serde_json::from_slice(json)
+        .map_err(|_| "SEC submissions answer has no filings.recent arrays".to_string())?;
+    Ok(PageReach {
+        oldest: raw
+            .filings
+            .recent
+            .filing_date
+            .iter()
+            .filter_map(|d| date(d.as_deref()))
+            .min(),
+        older_pages: !raw.filings.files.is_empty(),
+    })
 }
 
 fn non_empty(raw: Option<&str>) -> Option<String> {
@@ -149,6 +283,7 @@ pub(crate) fn parse_submissions(json: &[u8]) -> Result<Vec<SubmissionRow>, Strin
         rows.push(SubmissionRow {
             accession,
             filed,
+            accepted: cell(&recent.acceptance, i).as_deref().and_then(accepted_at),
             report_date: date(cell(&recent.report_date, i).as_deref()),
             form,
             items,
@@ -160,7 +295,7 @@ pub(crate) fn parse_submissions(json: &[u8]) -> Result<Vec<SubmissionRow>, Strin
 }
 
 /// Insider forms feed the insider summary, never the filings list.
-fn is_insider_form(form: &str) -> bool {
+pub(crate) fn is_insider_form(form: &str) -> bool {
     let base = form.strip_suffix("/A").unwrap_or(form);
     matches!(base, "3" | "4" | "5" | "144")
 }
@@ -941,6 +1076,7 @@ mod tests {
         let rows = vec![SubmissionRow {
             accession: "0001046179-26-000010".into(),
             filed: day("2026-04-15"),
+            accepted: None,
             report_date: Some(day("2025-12-31")),
             form: "20-F".into(),
             items: vec![],
@@ -970,6 +1106,7 @@ mod tests {
         let rows = vec![SubmissionRow {
             accession: "0000000001-26-000003".into(),
             filed: day("2026-08-01"),
+            accepted: None,
             report_date: Some(day("2026-06-30")),
             form: "10-Q".into(),
             items: vec![],
@@ -980,5 +1117,94 @@ mod tests {
         assert_eq!(revenue.value, 9.0);
         assert_eq!(revenue.prior_value, Some(7.0));
         assert_eq!(revenue.prior_period_end, Some(day("2026-03-31")));
+    }
+
+    const REAL_SUBMISSIONS: &[u8] =
+        include_bytes!("../../../tests/fixtures/public_data/sec_real_submissions_nvda.json");
+
+    fn instant(s: &str) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
+    }
+
+    /// Spec 06 test (iv): every row of both checked-in indexes carries its acceptance time.
+    #[test]
+    fn every_submissions_row_carries_its_acceptance_time() {
+        let hand = submissions();
+        assert_eq!(
+            hand.iter().filter(|r| r.accepted.is_some()).count(),
+            16,
+            "16 of 16 hand-built rows"
+        );
+        let real = parse_submissions(REAL_SUBMISSIONS).unwrap();
+        assert_eq!(real.len(), 1_000);
+        assert_eq!(
+            real.iter().filter(|r| r.accepted.is_some()).count(),
+            1_000,
+            "1,000 of 1,000 real rows"
+        );
+    }
+
+    /// Spec 06 test (iv): a ticker listed twice resolves to the row under the lower key, whatever
+    /// the file's own order, and keys compare as numbers ("9" before "10").
+    #[test]
+    fn a_ticker_listed_twice_resolves_to_the_row_under_the_lower_key() {
+        let map = parse_company_tickers(
+            br#"{"10":{"cik_str":10,"ticker":"DUP"},"9":{"cik_str":9,"ticker":"DUP"},
+                 "1":{"cik_str":2,"ticker":"TWO"},"0":{"cik_str":1,"ticker":"TWO"}}"#,
+        )
+        .unwrap();
+        assert_eq!(map.get("TWO"), Some(&1), "key 0 wins over key 1");
+        assert_eq!(map.get("DUP"), Some(&9), "key 9 wins over key 10");
+    }
+
+    /// Spec 06 test (v): the rule fits EDGAR's hours on the real index (1 of 1,000 rows outside,
+    /// the SEC's own EFFECT notice), a deliberately wrong rule (the value read as a true UTC
+    /// instant) trips the guard, and the three anchor filings parse to the instants the step 0
+    /// headers are to confirm (16:21:19 EDT, 16:31:25 EST, 17:04:09 EDT).
+    #[test]
+    fn the_timezone_rule_fits_edgars_hours_and_a_wrong_rule_trips_the_guard() {
+        let rows = parse_submissions(REAL_SUBMISSIONS).unwrap();
+        let fit = acceptance_fit(&rows);
+        assert_eq!(
+            fit,
+            AcceptanceFit {
+                outside: 1,
+                of: 1_000
+            }
+        );
+        assert!(!fit.trips());
+        let at = |accession: &str| {
+            rows.iter()
+                .find(|r| r.accession == accession)
+                .and_then(|r| r.accepted)
+                .unwrap()
+        };
+        assert_eq!(at("0001045810-26-000073"), instant("2026-08-26T20:21:19Z"));
+        assert_eq!(at("0001045810-26-000019"), instant("2026-02-25T21:31:25Z"));
+        assert_eq!(at("0001197647-26-000011"), instant("2026-10-09T21:04:09Z"));
+
+        let raw: Value = serde_json::from_slice(REAL_SUBMISSIONS).unwrap();
+        let recent = &raw["filings"]["recent"];
+        let as_utc: HashMap<&str, DateTime<Utc>> = recent["accessionNumber"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .zip(recent["acceptanceDateTime"].as_array().unwrap())
+            .map(|(a, v)| (a.as_str().unwrap(), instant(v.as_str().unwrap())))
+            .collect();
+        let wrong: Vec<SubmissionRow> = rows
+            .iter()
+            .map(|row| SubmissionRow {
+                accepted: as_utc.get(row.accession.as_str()).copied(),
+                ..row.clone()
+            })
+            .collect();
+        let wrong_fit = acceptance_fit(&wrong);
+        assert_eq!(wrong_fit.of, 1_000);
+        assert!(
+            wrong_fit.trips(),
+            "the plain-UTC reading puts {} of 1,000 rows outside",
+            wrong_fit.outside
+        );
     }
 }

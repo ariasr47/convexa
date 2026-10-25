@@ -653,6 +653,7 @@ mod tests {
         SubmissionRow {
             accession: format!("a-{form}-{date}"),
             filed: day(date),
+            accepted: None,
             report_date: None,
             form: form.into(),
             items: items.iter().map(|s| s.to_string()).collect(),
@@ -729,6 +730,7 @@ mod tests {
         let row = |form: &str, items: &[&str], filed: &str| SubmissionRow {
             accession: format!("a-{filed}"),
             filed: day(filed),
+            accepted: None,
             report_date: None,
             form: form.into(),
             items: items.iter().map(|s| s.to_string()).collect(),

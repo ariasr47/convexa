@@ -24,7 +24,7 @@ use super::edgar::{self, date, elements, first_text, CompanyFacts};
 use super::fetch::{FetchError, Http};
 use super::types::{DataState, DatedValue};
 use super::PublicDataService;
-use chrono::{Datelike, NaiveDate, Weekday};
+use chrono::{DateTime, Datelike, NaiveDate, Utc, Weekday};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -111,6 +111,8 @@ pub(crate) struct ThirteenF {
     pub accession: String,
     pub form: String,
     pub filed: NaiveDate,
+    /// When EDGAR accepted it ([`edgar::accepted_at`]); `None` when the cell is missing or unread.
+    pub accepted: Option<DateTime<Utc>>,
     pub period: NaiveDate,
 }
 
@@ -129,6 +131,28 @@ impl ManagerIndex {
         self.filings
             .iter()
             .filter(|f| f.form == "13F-HR" && f.period == period)
+            .max_by(|a, b| {
+                a.filed
+                    .cmp(&b.filed)
+                    .then_with(|| a.accession.cmp(&b.accession))
+            })
+    }
+
+    /// [`ManagerIndex::report`]'s rule, among reports EDGAR had accepted by `cutoff`: the latest
+    /// original 13F-HR for the quarter ending `period`. A report without an acceptance time can't
+    /// be placed, so it is never chosen.
+    pub(crate) fn report_accepted_by(
+        &self,
+        period: NaiveDate,
+        cutoff: DateTime<Utc>,
+    ) -> Option<&ThirteenF> {
+        self.filings
+            .iter()
+            .filter(|f| {
+                f.form == "13F-HR"
+                    && f.period == period
+                    && f.accepted.is_some_and(|accepted| accepted <= cutoff)
+            })
             .max_by(|a, b| {
                 a.filed
                     .cmp(&b.filed)
@@ -155,6 +179,8 @@ struct RawRecent {
     accession: Vec<Option<String>>,
     #[serde(rename = "filingDate")]
     filing_date: Vec<Option<String>>,
+    #[serde(rename = "acceptanceDateTime", default)]
+    acceptance: Vec<Option<String>>,
     #[serde(rename = "reportDate", default)]
     report_date: Vec<Option<String>>,
     #[serde(default)]
@@ -177,6 +203,9 @@ pub(crate) fn parse_manager_index(json: &[u8]) -> Result<ManagerIndex, String> {
                 accession: cell(&r.accession, i)?,
                 form,
                 filed: date(cell(&r.filing_date, i).as_deref())?,
+                accepted: cell(&r.acceptance, i)
+                    .as_deref()
+                    .and_then(edgar::accepted_at),
                 period: date(cell(&r.report_date, i).as_deref())?,
             })
         })

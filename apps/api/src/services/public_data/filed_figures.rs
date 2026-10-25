@@ -651,6 +651,7 @@ mod tests {
         let row = SubmissionRow {
             accession: "F-25".into(),
             filed: day("2025-04-17"),
+            accepted: None,
             report_date: Some(day("2024-12-31")),
             form: "20-F".into(),
             items: vec![],
@@ -706,6 +707,7 @@ mod tests {
         let row = SubmissionRow {
             accession: "0001193125-25-083423".into(),
             filed: day("2025-04-17"),
+            accepted: None,
             report_date: Some(day("2024-12-31")),
             form: "20-F".into(),
             items: vec![],

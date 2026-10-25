@@ -1495,6 +1495,7 @@ mod tests {
         let rows = vec![SubmissionRow {
             accession: "0001045810-26-000001".into(),
             filed: today_eastern() - chrono::Duration::days(10),
+            accepted: None,
             report_date: None,
             form: "10-Q".into(),
             items: Vec::new(),

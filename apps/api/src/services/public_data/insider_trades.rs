@@ -593,6 +593,7 @@ mod tests {
         SubmissionRow {
             accession: accession.into(),
             filed: day(filed),
+            accepted: None,
             report_date: None,
             form: "4".into(),
             items: vec![],
