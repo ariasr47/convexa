@@ -14,7 +14,7 @@
 import { formatShortDate } from '@/pages/research/format';
 import { Caps } from '@/pages/research/publicUi';
 import { DISPLAY, PANEL_SX } from '@/pages/research/ui';
-import { TickerTabs } from '@/pages/ticker/TickerTabs';
+import { listingLine, TickerTabs } from '@/pages/ticker/TickerTabs';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { demoDeskUrl } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
@@ -85,6 +85,8 @@ export function TechnicalAnalysisLive({ symbol }: { symbol: string }) {
   const path = `/ticker/${encodeURIComponent(ticker)}`;
   const note = researchIndex.find((r) => r.ticker === ticker);
   const priceAsOf = note?.latest.aging.priceAsOf;
+  // "NVIDIA · Nasdaq": the company and its exchange (fidelity DESK-23).
+  const listing = listingLine(ticker, note?.latest.company, note?.latest.about);
 
   return (
     <Box sx={{ display: 'grid', gap: 2.5, minWidth: 0 }}>
@@ -105,9 +107,9 @@ export function TechnicalAnalysisLive({ symbol }: { symbol: string }) {
           >
             {ticker}
           </Box>
-          {note?.latest.company && (
+          {listing && (
             <Box component="span" sx={{ fontSize: 14, color: 'text.secondary' }}>
-              {note.latest.company}
+              {listing}
             </Box>
           )}
         </Box>

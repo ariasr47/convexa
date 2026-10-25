@@ -8,9 +8,9 @@
  */
 import { Caps } from '@/pages/research/publicUi';
 import { DISPLAY, MONO } from '@/pages/research/ui';
-import { TickerTabs } from '@/pages/ticker/TickerTabs';
+import { listingLine, TickerTabs } from '@/pages/ticker/TickerTabs';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
+import { STAGING_DEMO_NAMES, STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
 import {
   loadSampleBars,
@@ -27,6 +27,7 @@ import Skeleton from '@mui/material/Skeleton';
 import { alpha } from '@mui/material/styles';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { researchIndex } from 'virtual:convexa-research';
 import { SampleTaChart, shortDate } from './SampleTaChart';
 
 const READINGS: { key: IndicatorName; label: string; sub: string; places: number }[] = [
@@ -52,6 +53,14 @@ const linkSx = { color: (theme: Parameters<typeof extrasFor>[0]) => extrasFor(th
 const linkBox = { ...linkSx, display: 'inline-flex', alignItems: 'center', minHeight: 44 };
 
 function Masthead({ symbol }: { symbol: string }) {
+  // "SPDR S&P 500 ETF · NYSE Arca": the demo's own name for the symbol, else a note's, then its
+  // exchange (fidelity DESK-23, board `ticker-tech.mjs:64`).
+  const note = researchIndex.find((r) => r.ticker === symbol);
+  const listing = listingLine(
+    symbol,
+    STAGING_DEMO_NAMES[symbol] ?? note?.latest.company,
+    note?.latest.about,
+  );
   return (
     <>
       <Box
@@ -64,11 +73,24 @@ function Masthead({ symbol }: { symbol: string }) {
           gap: '12px 32px',
         }}
       >
-        <Box
-          component="h1"
-          sx={{ ...DISPLAY, m: 0, fontWeight: 700, fontSize: { xs: 36, sm: 44 }, lineHeight: 1 }}
-        >
-          {symbol}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 14px' }}>
+          <Box
+            component="h1"
+            sx={{
+              ...DISPLAY,
+              m: 0,
+              fontWeight: 700,
+              fontSize: { xs: 36, sm: 44 },
+              lineHeight: 1,
+            }}
+          >
+            {symbol}
+          </Box>
+          {listing && (
+            <Box component="span" sx={{ fontSize: 14, color: 'text.secondary' }}>
+              {listing}
+            </Box>
+          )}
         </Box>
         <TickerTabs ticker={symbol} current="technical" />
       </Box>

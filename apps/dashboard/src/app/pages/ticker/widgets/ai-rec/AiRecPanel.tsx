@@ -84,6 +84,19 @@ interface Props {
   fillHeight?: boolean;
 }
 
+/**
+ * `fillHeight`: the panel fills its grid row, and so does the read's Widget inside it. On a wide
+ * screen `ReadSheet` renders its children as a fragment, so the Widget root is this box's direct
+ * child; without `flex: 1` it stopped 135px short of the row the side column sets, where the Final
+ * board's `.tk-work` stretches the read to the row (fidelity DESK-03).
+ */
+const FILL_HEIGHT_SX = {
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1,
+  '& > [data-widget-id="ai-rec"]': { flex: 1 },
+} as const;
+
 export const AiRecPanel = memo(function AiRecPanel({
   ticker,
   bundle,
@@ -287,10 +300,7 @@ export const AiRecPanel = memo(function AiRecPanel({
         : COPY.noTrade.title
       : null;
     return (
-      <Box
-        data-testid="ai-rec-panel"
-        sx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
-      >
+      <Box data-testid="ai-rec-panel" sx={fillHeight ? FILL_HEIGHT_SX : undefined}>
         <ReadSheet verdict={sampleVerdict} isTrade={Boolean(sampleIsTrade)} defaultExpanded={false}>
           <Widget
             id="ai-rec"
@@ -413,10 +423,7 @@ export const AiRecPanel = memo(function AiRecPanel({
   }
 
   return (
-    <Box
-      data-testid="ai-rec-panel"
-      sx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
-    >
+    <Box data-testid="ai-rec-panel" sx={fillHeight ? FILL_HEIGHT_SX : undefined}>
       <ReadSheet verdict={verdictText} isTrade={Boolean(isTradeVerdict)}>
         <Widget
           id="ai-rec"

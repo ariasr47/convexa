@@ -45,26 +45,34 @@ export function termFinding(pts: TermStructure['points']): string {
   return `${far.dte}-day implied vol at ${far.atm_iv.toFixed(1)}% sits ${rel}`;
 }
 
-function useWidth<T extends HTMLElement>() {
+function useSize<T extends HTMLElement>() {
   const ref = useRef<T>(null);
-  const [w, setW] = useState(0);
+  const [size, setSize] = useState({ w: 0, h: 0 });
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    setW(el.getBoundingClientRect().width);
+    const r = el.getBoundingClientRect();
+    setSize({ w: r.width, h: r.height });
     if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(([e]) => setW(e.contentRect.width));
+    const ro = new ResizeObserver(([e]) =>
+      setSize({ w: e.contentRect.width, h: e.contentRect.height }),
+    );
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  return [ref, w] as const;
+  return [ref, size] as const;
 }
+
+/** Plot geometry: the top pad, the inline plot height and the band under it for the day labels. */
+const PT = 20;
+const PH_INLINE = 110;
+const PB = 22;
 
 /** The line: days to expiry on x (to scale), IV on an absolute scale with round gridlines. */
 function TermLine({ pts }: { pts: TermStructure['points'] }) {
   const t = useTheme();
   const roles = chartRoles(t);
-  const [ref, W] = useWidth<HTMLDivElement>();
+  const [ref, { w: W, h: boxH }] = useSize<HTMLDivElement>();
   const ivs = pts.map((p) => p.atm_iv);
   const step = 2;
   let lo = Math.floor(Math.min(...ivs) / step) * step;
@@ -81,9 +89,11 @@ function TermLine({ pts }: { pts: TermStructure['points'] }) {
   const maxDte = Math.max(...pts.map((p) => p.dte), 1);
   const PL = 44;
   const PR = 16;
-  const PT = 20;
-  const PH = 110;
-  const H = PT + PH + 22;
+  // The box is 152px inline. In the expand overlay its column has a definite height and the box
+  // takes what is left of it, so the plot grows to fill the dialog instead of sitting 152px tall
+  // above ~400px of nothing (fidelity DESK-09; the board's expanded term structure is ~375px).
+  const PH = Math.max(PH_INLINE, Math.floor(boxH) - PT - PB);
+  const H = PT + PH + PB;
   const x = (dte: number) => PL + (dte / maxDte) * Math.max(0, W - PL - PR);
   const y = (v: number) => PT + ((hi - v) / (hi - lo || 1)) * PH;
   // A dot's label above it, dropped when it would touch the one before (the table has them all).
@@ -109,7 +119,13 @@ function TermLine({ pts }: { pts: TermStructure['points'] }) {
     return true;
   });
   return (
-    <Box ref={ref} data-testid="term-ribbon" sx={{ height: H, minWidth: 0 }}>
+    <Box
+      ref={ref}
+      data-testid="term-ribbon"
+      // `flex: 1 1 0` with the inline height as its floor: inline (content-sized column) the box is
+      // 152px; in a column with room to spare (the overlay) it takes the room.
+      sx={{ flex: '1 1 0', minHeight: PT + PH_INLINE + PB, minWidth: 0 }}
+    >
       {W > 0 && (
         <svg
           width={W}
@@ -203,8 +219,13 @@ export const TermStructureCard = memo(function TermStructureCard({
       title="Term structure"
       subtitle={subtitle}
       info={termStructure ? termTip(termStructure) : undefined}
+      // A flex column down to the line, so the line can take the overlay's spare height (DESK-09).
+      bodySx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
     >
-      <Box data-testid="term-structure" sx={{ display: 'grid', gap: 1 }}>
+      <Box
+        data-testid="term-structure"
+        sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}
+      >
         {unavailable || !termStructure ? (
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Term structure unavailable this cycle.

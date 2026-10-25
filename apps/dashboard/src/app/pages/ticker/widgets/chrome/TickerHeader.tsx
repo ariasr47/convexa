@@ -418,9 +418,12 @@ export function TickerHeader({
               "Demo · sample data", its tape being a scenario replay) and the display-only last
               trade. The chip slot is UNCONDITIONAL (ruling 1 / AC-9): before the first stream fact
               it renders the wordless placeholder, never nothing. */}
+          {/* `useFlexGap`: a wrapped chip starts at the column edge, not 8px in (the margin
+              spacing indented the second line and squeezed the source chip onto two lines at 390). */}
           <Stack
             direction="row"
             spacing={1}
+            useFlexGap
             sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
           >
             {DESK_IS_SAMPLE ? (
@@ -509,14 +512,17 @@ export function TickerHeader({
           >
             {tabs}
             {(inlineControls || onOpenTrade) && (
+              // One row: the `.tk-sel` chips, then the CTA (board `.tk-ctl`, gaps 10px 12px;
+              // fidelity DESK-05). `useFlexGap`, so a wrapped row carries no stray margin.
               <Stack
                 direction="row"
-                spacing={1.5}
+                useFlexGap
                 sx={{
                   alignItems: 'center',
                   flexWrap: 'wrap',
                   justifyContent: { xs: 'flex-start', sm: 'flex-end' },
-                  rowGap: 1,
+                  columnGap: 1.5,
+                  rowGap: 1.25,
                 }}
               >
                 {inlineControls}
@@ -527,11 +533,14 @@ export function TickerHeader({
                   <Stack
                     sx={{
                       flexShrink: 0,
-                      // `flex-end` (not `stretch`): amber is spent exactly once on this page and an
-                      // 800px slab of it is not that one spend.
-                      alignItems: { xs: 'flex-start', sm: 'flex-end' },
-                      alignSelf: { xs: 'flex-start', sm: 'auto' },
-                      maxWidth: 460,
+                      // A phone gives the one amber action the column at 44px, as the board's phone
+                      // masthead does (`.tk-mast .act .btn { width: 100%; min-height: 44px }`,
+                      // fidelity DESK-06). From `sm` it keeps its own width, `flex-end`: an 800px
+                      // slab of amber on a wide screen is not the page's one spend.
+                      alignItems: { xs: 'stretch', sm: 'flex-end' },
+                      alignSelf: { xs: 'stretch', sm: 'auto' },
+                      flexBasis: { xs: '100%', sm: 'auto' },
+                      maxWidth: { xs: 'none', sm: 460 },
                     }}
                   >
                     {storeFaulted && <TickerFaultedNotice />}
@@ -551,7 +560,12 @@ export function TickerHeader({
                           size="small"
                           onClick={onOpenTrade}
                           data-testid="open-sim-trade"
-                          sx={{ flexShrink: 0, whiteSpace: 'nowrap', minHeight: 36 }}
+                          sx={{
+                            flexShrink: 0,
+                            whiteSpace: 'nowrap',
+                            minHeight: { xs: 44, sm: 36 },
+                            width: { xs: '100%', sm: 'auto' },
+                          }}
                         >
                           + Open simulated trade
                         </Button>

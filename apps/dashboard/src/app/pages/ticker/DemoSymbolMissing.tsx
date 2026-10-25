@@ -6,16 +6,16 @@
  * Design: design/src/screens/final/ticker.mjs (desk states, "Not in the demo").
  */
 import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 
 export function DemoSymbolMissing({ ticker }: { ticker: string }) {
   const t = ticker.toUpperCase();
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
+    <Box sx={{ ...pageColumnSx, py: 3 }}>
       <Box
         component="section"
         role="status"
@@ -53,6 +53,6 @@ export function DemoSymbolMissing({ ticker }: { ticker: string }) {
           ))}
         </Box>
       </Box>
-    </Container>
+    </Box>
   );
 }

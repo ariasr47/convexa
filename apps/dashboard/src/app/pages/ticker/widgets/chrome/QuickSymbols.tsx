@@ -34,11 +34,14 @@ export function QuickSymbols({ currentSymbol, onSelect, note }: QuickSymbolsProp
       data-testid="quick-symbols"
       sx={(t) => ({
         display: 'flex',
-        alignItems: 'flex-start',
+        // A phone's chips are 44px (the coarse touch floor): the label centres on them.
+        alignItems: { xs: 'center', sm: 'flex-start' },
         gap: 1.25,
-        pt: 1.25,
+        // On a phone the row follows the full-width controls with no rule, as the board's phone
+        // desk (fidelity DESK-06); from `sm` the hairline still divides it from the masthead.
+        pt: { xs: 0, sm: 1.25 },
         mt: 0.25,
-        borderTop: `1px solid ${t.palette.divider}`,
+        borderTop: { xs: 'none', sm: `1px solid ${t.palette.divider}` },
         minWidth: 0,
       })}
     >
@@ -52,7 +55,7 @@ export function QuickSymbols({ currentSymbol, onSelect, note }: QuickSymbolsProp
           lineHeight: 1.2,
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
-          pt: 0.75,
+          pt: { xs: 0, sm: 0.75 },
           flexShrink: 0,
         }}
       >
@@ -64,11 +67,18 @@ export function QuickSymbols({ currentSymbol, onSelect, note }: QuickSymbolsProp
         useFlexGap
         spacing={0.75}
         sx={{
-          flexWrap: 'wrap',
+          flexWrap: { xs: 'nowrap', sm: 'wrap' },
           minWidth: 0,
-          // Narrow widths: wrap (wireframe). Horizontal scroll is acceptable if wrap is awkward —
-          // prefer wrap first.
           rowGap: 0.75,
+          // A phone keeps the symbols on one row that scrolls sideways, as the board's phone desk
+          // (`.hd-syms`: `overflow-x: auto`, no scrollbar; fidelity DESK-06): two wrapped rows of
+          // 44px chips pushed Structure 133px down the first screen. The 4px pad (taken back by the
+          // negative margin) keeps a chip's focus ring inside the scroll box.
+          overflowX: { xs: 'auto', sm: 'visible' },
+          p: { xs: '4px', sm: 0 },
+          m: { xs: '-4px', sm: 0 },
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
         {pins.map((sym) => (
@@ -144,6 +154,7 @@ function QuickChip({
       sx={(t) => ({
         appearance: 'none',
         cursor: 'pointer',
+        flex: '0 0 auto',
         m: 0,
         px: 1.25,
         py: 0.5,

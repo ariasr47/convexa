@@ -24,6 +24,7 @@ import { usePublicTicker } from '@/pages/research/publicData';
 import { Caps, SourceProblem } from '@/pages/research/publicUi';
 import { notSecFiler, tickerSecStale } from '@/pages/research/secState';
 import { DISPLAY, FreshnessLine, MONO, PANEL_SX } from '@/pages/research/ui';
+import { TickerTabs } from '@/pages/ticker/TickerTabs';
 import { recordVisit } from '@/pages/ticker/recentTickers/store';
 import { TradingViewDaily } from '@/pages/ticker/technical-analysis/TradingViewDaily';
 import { QuickSymbols } from '@/pages/ticker/widgets/chrome/QuickSymbols';
@@ -37,13 +38,11 @@ import {
 } from '@/shared/dataState/vocabulary';
 import { demoDeskUrl } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import type { PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
 import Link from '@mui/material/Link';
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -73,7 +72,7 @@ export function PublicDesk({ feed }: { feed: FeedOff }) {
   const path = `/ticker/${encodeURIComponent(ticker)}`;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3, display: 'grid', gap: 3 }}>
+    <Box sx={{ ...pageColumnSx, py: 3, display: 'grid', gap: 3 }}>
       <Box component="header" sx={{ display: 'grid', gap: 1.5 }}>
         <Box
           sx={{
@@ -94,7 +93,9 @@ export function PublicDesk({ feed }: { feed: FeedOff }) {
                   ...DISPLAY,
                   m: 0,
                   fontWeight: 700,
-                  fontSize: { xs: 36, sm: 44 },
+                  // The Final board's desk h1 (`.tk-mast .who h1`): 36 at 1440, 30 on a phone
+                  // (fidelity DESK-11; it was 44/36).
+                  fontSize: 'clamp(30px, 2.8vw, 36px)',
                   lineHeight: 1,
                 }}
               >
@@ -123,33 +124,8 @@ export function PublicDesk({ feed }: { feed: FeedOff }) {
               width: { xs: '100%', sm: 'auto' },
             }}
           >
-            <Tabs
-              value="overview"
-              aria-label={`${ticker} ticker views`}
-              variant={phone ? 'scrollable' : 'standard'}
-              scrollButtons={phone ? 'auto' : false}
-              sx={{
-                minHeight: 44,
-                '& .MuiTab-root': { minHeight: 44, minWidth: 96 },
-                // Neutral current tab (owner ruling A, 2026-10-15), as TickerTabs.
-                '& .MuiTab-root.Mui-selected': { color: 'text.primary', fontWeight: 600 },
-                '& .MuiTabs-indicator': { bgcolor: 'text.primary' },
-              }}
-            >
-              <Tab component={RouterLink} to={path} value="overview" label="Overview" />
-              <Tab
-                component={RouterLink}
-                to={`${path}/technical-analysis`}
-                value="technical"
-                label="Technical"
-              />
-              <Tab
-                component={RouterLink}
-                to={`${path}/research`}
-                value="research"
-                label="Research"
-              />
-            </Tabs>
+            {/* The same tab control as the demo desk and the other two tabs (one control, one size). */}
+            <TickerTabs ticker={ticker} current="overview" />
             {note && (
               <Button
                 component={RouterLink}
@@ -179,7 +155,7 @@ export function PublicDesk({ feed }: { feed: FeedOff }) {
       <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
         Research and tools, not investment advice.
       </Box>
-    </Container>
+    </Box>
   );
 }
 
@@ -268,7 +244,8 @@ function ZoneHead({ id, title, sub }: { id: string; title: string; sub: string }
       <Box
         component="h2"
         id={id}
-        sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: { xs: 22, sm: 26 } }}
+        // The board's `.tk-zone h2`: 22/700, 20 on a phone (fidelity DESK-11; it was 26/600).
+        sx={{ ...DISPLAY, m: 0, fontWeight: 700, fontSize: { xs: 20, sm: 22 } }}
       >
         {title}
       </Box>
@@ -321,6 +298,11 @@ function PublicZone({
   // the live SEC panels move up beside the chart, and FINRA folds into one Off card after them, with
   // the owner's reason. With FINRA on, the cards render as before.
   const finraOff = !!d && !read.error && d.state !== 'off' && finraFolded(d);
+  const theme = useTheme();
+  const twoColumns = useMediaQuery(theme.breakpoints.up('md'));
+  const chartRef = useRef<HTMLDivElement>(null);
+  const sideRef = useRef<HTMLDivElement>(null);
+  const chartHeight = useLevelChartHeight(chartRef, sideRef, twoColumns, CHART_MIN_HEIGHT);
   return (
     <Box component="section" aria-labelledby="public-zone" sx={{ display: 'grid', gap: 2 }}>
       <ZoneHead
@@ -328,16 +310,21 @@ function PublicZone({
         title="Live from public data"
         sub="Each panel names its source and how late that source reports."
       />
+      {/* The board's `.tk-hero` row: the chart beside the side column, stretched, and the chart
+          as tall as the side column so both end level (fidelity DESK-19; a fixed 520 ended 91px
+          short of the side). The side's cards keep their own heights (`alignContent: start`). */}
       <Box
         sx={{
           display: 'grid',
           gap: 2,
           gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 2fr) minmax(0, 1fr)' },
-          alignItems: 'start',
+          alignItems: 'stretch',
         }}
       >
-        <TradingViewDaily ticker={ticker} height={520} phoneHeight={420} />
-        <Box sx={{ display: 'grid', gap: 2, minWidth: 0 }}>
+        <Box ref={chartRef} sx={{ minWidth: 0 }}>
+          <TradingViewDaily ticker={ticker} height={chartHeight} phoneHeight={420} />
+        </Box>
+        <Box ref={sideRef} sx={{ display: 'grid', gap: 2, minWidth: 0, alignContent: 'start' }}>
           <NoteCard ticker={ticker} note={note} d={d} />
           {d && finraOff && (
             <>
@@ -391,6 +378,61 @@ function PublicZone({
       {finraOff && cards}
     </Box>
   );
+}
+
+/** The TradingView frame's floor beside the side column, and its height when the row is one column. */
+const CHART_MIN_HEIGHT = 520;
+
+/**
+ * The TradingView frame's height that ends the chart level with the side column: the side column's
+ * content height less the chart section's own chrome (its head, caption, gaps and the fence's
+ * padding), never under `min`. The chrome is the chart section's height less the frame's, read from
+ * `TradingViewDaily`'s markup (a section holding the head row, then the fenced frame), so it doesn't
+ * depend on the frame's height: a blocked chart (an alert in the frame's place) can't feed back
+ * into the target. The side column is measured to its last card, not its box, because the row
+ * stretches the box to the chart. One column (below `md`): `min`, and TradingViewDaily's own phone
+ * height below `sm`.
+ */
+function useLevelChartHeight(
+  chartRef: React.RefObject<HTMLDivElement | null>,
+  sideRef: React.RefObject<HTMLDivElement | null>,
+  enabled: boolean,
+  min: number,
+): number {
+  const [height, setHeight] = useState(min);
+  useEffect(() => {
+    const chart = chartRef.current;
+    const side = sideRef.current;
+    if (!enabled || !chart || !side || typeof ResizeObserver === 'undefined') {
+      setHeight(min);
+      return;
+    }
+    const measure = () => {
+      const section = chart.firstElementChild;
+      const frame = section?.children[1]?.firstElementChild;
+      const last = side.lastElementChild;
+      if (!section || !frame || !last) return;
+      const chrome = section.getBoundingClientRect().height - frame.getBoundingClientRect().height;
+      const sideContent = last.getBoundingClientRect().bottom - side.getBoundingClientRect().top;
+      setHeight(Math.max(min, Math.round(sideContent - chrome)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(side);
+    ro.observe(chart);
+    Array.from(side.children).forEach((c) => ro.observe(c));
+    // A card that mounts later (the filings once the public read lands) changes the side's children.
+    const mo = new MutationObserver(() => {
+      Array.from(side.children).forEach((c) => ro.observe(c));
+      measure();
+    });
+    mo.observe(side, { childList: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, [chartRef, sideRef, enabled, min]);
+  return height;
 }
 
 /** Both FINRA parts read Off (the owner's switch): nothing of FINRA's to show, one reason to give. */
@@ -461,20 +503,16 @@ function NoteCard({
       component="article"
       sx={{ ...PANEL_SX, p: '18px 20px', display: 'grid', gap: 1.25, alignContent: 'start' }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '6px 10px',
-        }}
-      >
-        <Caps>Research note</Caps>
-        <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-          <FreshnessLine freshness={f} notFollowingSince={n.notFollowingSince} />
-        </Box>
-      </Box>
+      {/* The same card head as the filings and insider cards beside it, so the side column's
+          titles share one style (the boards' `.ph h3`, fidelity DESK-22, comes with CardHead). */}
+      <CardHead
+        label="Research note"
+        tag={
+          <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+            <FreshnessLine freshness={f} notFollowingSince={n.notFollowingSince} />
+          </Box>
+        }
+      />
       <Box
         component="h3"
         sx={{
@@ -757,7 +795,8 @@ function FeedPanel({
           gap: '6px 10px',
         }}
       >
-        <Box component="h3" id={`feed-${p.key}`} sx={{ m: 0, fontSize: 15, fontWeight: 600 }}>
+        {/* 14/600, the boards' panel title (`.hd-p .ph h3`, fidelity DESK-22). */}
+        <Box component="h3" id={`feed-${p.key}`} sx={{ m: 0, fontSize: 14, fontWeight: 600 }}>
           {p.title(ticker)}
         </Box>
         <DataStateTag state={tag} />
@@ -844,7 +883,7 @@ function FeedZone({
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}
           >
-            <Box component="h3" sx={{ m: 0, fontSize: 15, fontWeight: 600 }}>
+            <Box component="h3" sx={{ m: 0, fontSize: 14, fontWeight: 600 }}>
               {`${FEED_PANELS.length} panels need the options feed`}
             </Box>
           </Box>

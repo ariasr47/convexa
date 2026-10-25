@@ -51,7 +51,6 @@ import AlertTitle from '@mui/material/AlertTitle';
 import type { BoxProps } from '@mui/material/Box';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
 import Fade from '@mui/material/Fade';
 import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
@@ -65,6 +64,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import {
   WidgetChromeProvider,
   WidgetProvenanceProvider,
@@ -378,7 +378,7 @@ function WorkGridSkeleton() {
         sx={{
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr)',
-          gap: '14px',
+          gap: 2,
           [theme.containerQueries('ticker-work').up(1000)]: {
             gridTemplateColumns: 'minmax(0, 7fr) minmax(0, 5fr)',
           },
@@ -401,7 +401,7 @@ function WorkGridSkeleton() {
             />
           ))}
         </SkeletonPanel>
-        <Stack spacing={1.75}>
+        <Stack spacing={2}>
           <StatSkeleton />
           <StatSkeleton />
           <StatSkeleton />
@@ -783,7 +783,9 @@ export function TickerDashboard() {
   );
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
+    // The one page column, the boards' `.wrap` (fidelity COL): 1280px of content at x80 on a 1440
+    // screen, so the work grid's 7fr/5fr and the context band's three tracks take the board's widths.
+    <Box sx={{ ...pageColumnSx, py: 3 }}>
       {/* Whenever the full deck is NOT shown (cold-load / cold-start error / none-selected) the deck
           hero has no market state to anchor, so only the control strip renders standalone — the trader
           can still change ticker/expirations. Once `m` is present AND some expirations are selected,
@@ -1100,7 +1102,9 @@ export function TickerDashboard() {
                         display: 'grid',
                         // `minmax(0, 1fr)`: the same 480px-reserve hazard as the context band.
                         gridTemplateColumns: 'minmax(0, 1fr)',
-                        gap: '14px',
+                        // 16px, the Final board's `.tk-work` and `.tk-side` gap (ticker-desk.mjs:32-33):
+                        // 7fr/5fr of a 1280 column is then the board's 737/527 exactly (fidelity COL).
+                        gap: 2,
                         alignItems: 'stretch',
                         // Lane 4: 7fr/5fr, not the board's 8/4. At 8/4 the side column (≈377px at
                         // 1280) broke "Sim orders · SPY" onto four lines and ran ~480px past the
@@ -1131,7 +1135,7 @@ export function TickerDashboard() {
                         sx={{
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '14px',
+                          gap: 2,
                           minWidth: 0,
                         }}
                       >
@@ -1214,8 +1218,10 @@ export function TickerDashboard() {
                           // responsive table (`design/src/screens/responsive-spec.mjs`'s "Context
                           // band" row) — 1 col below `tablet`(768), 2 from `tablet` (768–1099,
                           // covering the design's separate tablet/small-laptop rows, both 2-col), 3
-                          // from `laptop` (1100–1599, covering laptop/desktop, both 3-col), 4 from
-                          // `wide`(1600+). The bare `repeat(3, minmax(0,1fr))` this replaces never
+                          // from `laptop` (1100 up). Fidelity DESK-02: no 4-up track from `wide`; the
+                          // Final board's `.tk-ctx` stays at three columns at every width from 900
+                          // (`ticker-desk.mjs:34`), and at 1680 four columns left row 3 holding Setups
+                          // alone. The bare `repeat(3, minmax(0,1fr))` this replaces never
                           // reflowed below laptop width — at 390 it squeezed all nine ctx-grid cards
                           // into three ~110px columns, the dominant driver of the phone page-height
                           // overflow. `Widget`'s own `span={2}` (`gridColumn: { xs: '1 / -1', md:
@@ -1230,7 +1236,6 @@ export function TickerDashboard() {
                             xs: 'minmax(0, 1fr)',
                             tablet: 'repeat(2, minmax(0, 1fr))',
                             laptop: 'repeat(3, minmax(0, 1fr))',
-                            wide: 'repeat(4, minmax(0, 1fr))',
                           },
                           gap: 2,
                           // Quiet cards vary a lot in natural height (a compact tenor ribbon beside a
@@ -1455,7 +1460,7 @@ export function TickerDashboard() {
         asSentCandidates={aiRec.rec?.sent?.candidates ?? undefined}
         asSentRiskInputs={aiRec.rec?.sent?.risk_inputs ?? undefined}
       />
-    </Container>
+    </Box>
   );
 }
 

@@ -1,9 +1,9 @@
 /**
- * TickerToolbar — the command deck's **control strip** (tier 2 of the CommandDeck). The three controls
- * (Ticker entry · Expirations multi-select · Persona picker) are unified into ONE segmented, divided
- * container: a single instrument panel with hairline `divider` seams between segments, each segment an
- * uppercase micro-label above its control. (Previously three bare, separate labeled `Field`s floating
- * on the page — see the ticker-command-deck plan.)
+ * TickerToolbar — the command deck's **controls** (tier 2 of the CommandDeck, or beside the CTA in the
+ * headline row from `laptop`). The controls (Ticker entry · Expirations multi-select · Persona picker)
+ * are the Final board's `.tk-sel` chips: each a 36px bordered chip with its caps label, value and
+ * chevron inside (fidelity DESK-05; earlier a segmented panel with hairline seams, and before that
+ * three bare labeled `Field`s — see the ticker-command-deck plan).
  *
  * Scope (owner decision): the toolbar mirrors the Figma strictly. The connection status + regime chip
  * live in `TickerHeader` (the deck hero), not here; the README's other extra controls (Dark-pool
@@ -17,6 +17,7 @@
  */
 import { PersonaPicker } from '@/features/personas/components';
 import type { usePersona } from '@/features/personas/usePersona';
+import { extrasFor } from '@/shared/theme/tokens';
 import type { Expiration } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Checkbox from '@mui/material/Checkbox';
@@ -26,21 +27,20 @@ import ListItemText from '@mui/material/ListItemText';
 import MenuItem from '@mui/material/MenuItem';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Select from '@mui/material/Select';
-import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { type ReactNode } from 'react';
 import { dteLabel } from '../_kit/copy';
 
 /**
- * One segment of the instrument panel — an uppercase micro-label INLINE beside its control, one
- * compact row (ticker fidelity repair, change 3 (F3) close-out: was a `Stack` — label stacked ABOVE
- * the control, two lines tall per segment — against the design's own one-line `.field`
- * (`design/src/lib.mjs:57`: `height: 36px`, the caps label and value on the same row). Re-skin only:
- * the SAME `Select`/`PersonaPicker` children, same ids/testids/behaviour, only the wrapping layout
- * changes — `ticker-toolbar` ran 73px against a segment's own ≈36–40px control height, most of the
- * remainder the masthead's ≤200px threshold (design 186) was missing by. When `htmlFor` is given the
- * caption is a real `<label>` so the control keeps an accessible name. */
+ * One control as the Final board's `.tk-sel` chip (`design/src/screens/final/ticker-desk.mjs:28`):
+ * a 36px bordered chip on the well holding the caps label, the value and a chevron, so Expirations,
+ * Persona and the CTA sit on one 36px row (fidelity DESK-05: two 47px outlined selects at 306 and
+ * 288px wrapped the CTA onto a third line). Re-skin only: the SAME `Select`/`PersonaPicker` children,
+ * ids, testids and accessible names; the chip is the field, so the control inside drops its own
+ * outline, padding and 190px minimum. Below `tablet` each chip takes a full row at 44px, as the
+ * board's phone does. When `htmlFor` is given the caption is a real `<label>`.
+ */
 function Segment({
   label,
   htmlFor,
@@ -51,10 +51,36 @@ function Segment({
   children: ReactNode;
 }) {
   return (
-    <Stack
-      direction="row"
-      spacing={1}
-      sx={{ alignItems: 'center', px: { xs: 0, sm: 1.75 }, py: 0.5, minWidth: 0, maxWidth: '100%' }}
+    <Box
+      sx={(t) => ({
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 1,
+        minHeight: { xs: 44, tablet: 36 },
+        flex: { xs: '1 1 100%', tablet: '0 1 auto' },
+        pl: 1.5,
+        pr: 1.25,
+        boxSizing: 'border-box',
+        minWidth: 0,
+        maxWidth: '100%',
+        borderRadius: '8px',
+        border: `1px solid ${extrasFor(t).lineStrong}`,
+        bgcolor: extrasFor(t).well,
+        fontSize: 13,
+        '& .MuiFormControl-root': { minWidth: 0, flex: { xs: '1 1 auto', tablet: '0 1 auto' } },
+        '& .MuiInputBase-root': { fontSize: 13, fontWeight: 600, borderRadius: 0 },
+        '& .MuiOutlinedInput-notchedOutline': { border: 0 },
+        '& .MuiSelect-select.MuiSelect-select.MuiSelect-select': {
+          minHeight: 0,
+          py: 0,
+          pl: 0,
+          pr: '22px',
+          lineHeight: { xs: '42px', tablet: '34px' },
+        },
+        '& .MuiSelect-icon': { right: -4, fontSize: 18, color: 'text.secondary' },
+        // The standalone fallback's ticker entry sits in a chip too.
+        '& input.MuiInputBase-input': { py: 0.75, px: 0.5 },
+      })}
     >
       <Typography
         component={htmlFor ? 'label' : 'span'}
@@ -74,7 +100,7 @@ function Segment({
         {label}
       </Typography>
       {children}
-    </Stack>
+    </Box>
   );
 }
 
@@ -126,9 +152,10 @@ export function TickerToolbar({
       data-testid="ticker-toolbar"
       sx={(t) => ({
         display: 'inline-flex',
-        alignItems: 'stretch',
+        alignItems: 'center',
         flexWrap: { xs: 'wrap', sm: 'nowrap' },
-        rowGap: 1.5,
+        // The board's `.tk-ctl` gaps between chips (10px rows, 12px columns).
+        gap: '10px 12px',
         width: embedded && !inline ? '100%' : undefined,
         // Standalone: recessed instrument panel. Embedded row: hairline top + seams (deck is the
         // frame). Embedded inline (PASS 2 change 9): same seams, no top divider/full-width — there
@@ -136,7 +163,14 @@ export function TickerToolbar({
         ...(embedded
           ? {
               border: 'none',
-              ...(inline ? {} : { borderTop: `1px solid ${t.palette.divider}`, pt: 1.5 }),
+              // On a phone the chips are full-width bordered fields under the tabs, as the
+              // board's phone masthead draws them, with no rule above (fidelity DESK-06).
+              ...(inline
+                ? {}
+                : {
+                    borderTop: { xs: 'none', sm: `1px solid ${t.palette.divider}` },
+                    pt: { xs: 0, sm: 1.5 },
+                  }),
               borderRadius: 0,
               bgcolor: 'transparent',
               boxShadow: 'none',
@@ -151,10 +185,6 @@ export function TickerToolbar({
                 t.palette.mode === 'dark' ? 'inset 0 1px 0 rgba(255,255,255,0.04)' : 'none',
               p: 0.75,
             }),
-        // Hairline seams BETWEEN segments (not before the first).
-        '& > * + *': {
-          borderLeft: { xs: 'none', sm: `1px solid ${t.palette.divider}` },
-        },
       })}
     >
       {/* Ticker fidelity repair, change 3 (F3) — the design's desk carries no bare ticker input
@@ -181,11 +211,7 @@ export function TickerToolbar({
       )}
 
       <Segment label="Expirations">
-        <FormControl
-          size="small"
-          sx={{ minWidth: 190, maxWidth: '100%' }}
-          disabled={!allDates.length}
-        >
+        <FormControl size="small" sx={{ maxWidth: '100%' }} disabled={!allDates.length}>
           <Select
             multiple
             displayEmpty
@@ -200,7 +226,7 @@ export function TickerToolbar({
             }}
             renderValue={() =>
               selected === null
-                ? 'All expirations'
+                ? 'All'
                 : selected.length === 0
                   ? 'None selected'
                   : `${selected.length} of ${allDates.length}`
@@ -223,9 +249,7 @@ export function TickerToolbar({
       </Segment>
 
       {loading && (
-        <Box
-          sx={{ display: 'flex', alignItems: 'center', px: 1.25, borderLeft: 'none !important' }}
-        >
+        <Box sx={{ display: 'flex', alignItems: 'center', px: 0.5 }}>
           <CircularProgress size={18} />
         </Box>
       )}
