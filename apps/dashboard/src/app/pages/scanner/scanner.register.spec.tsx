@@ -117,17 +117,15 @@ describe('criterion 9 (SB) — the table and the card render one datum identical
   it('a fully-populated row: every figure carries the same text + register + state in both layouts', () => {
     const row = makeRow({ symbol: 'SPY' });
     const { tableRow, cardEl, unmount } = renderBoth(row);
+    // The figures both layouts render (fidelity ACC-04/05: Vol and the ok row's age left both; the
+    // card's third line carries the flip distance and the wall levels, as the phone board draws it).
     for (const id of [
       'cell-price',
       'cell-chg',
       'cell-score',
       'cell-regime',
-      'cell-vol',
       'cell-dist-flip',
-      'cell-dist-flip-level',
-      'cell-dist-wall',
       'cell-dist-wall-level',
-      'cell-updated',
     ]) {
       expect(readCell(tableRow, id), `${id} table vs card`).toEqual(readCell(cardEl, id));
     }
@@ -156,9 +154,8 @@ describe('criterion 9 (SB) — the table and the card render one datum identical
       'cell-score',
       'cell-tier',
       'cell-regime',
-      'cell-vol',
       'cell-dist-flip',
-      'cell-dist-wall',
+      'cell-dist-wall-level',
     ]) {
       expect(readCell(tableRow, id), `${id} table vs card`).toEqual(readCell(cardEl, id));
     }
@@ -201,10 +198,11 @@ describe('criterion 17 + U-6 — the closed-nine literal never renders inside th
     unmount();
   });
 
-  it('a lookup MISS on tier/regime/vol renders `unavailable` (state "unavailable"); a genuine absence renders `—` (state "empty")', () => {
+  it('a lookup MISS on tier/regime renders `unavailable` (state "unavailable"); a genuine absence renders `—` (state "empty")', () => {
     const missRow = makeRow({ tier: 'legendary', regime: 'sideways', vol_regime: 'chaotic' });
     const { tableRow: missTable, unmount: u1 } = renderBoth(missRow);
-    for (const id of ['cell-tier', 'cell-regime', 'cell-vol']) {
+    // Vol is no longer a table column (fidelity ACC-04); tier and regime still render the lookup.
+    for (const id of ['cell-tier', 'cell-regime']) {
       const cell = readCell(missTable, id);
       expect(cell.text, id).toBe('unavailable');
       expect(cell.state, id).toBe('unavailable');
@@ -214,7 +212,7 @@ describe('criterion 17 + U-6 — the closed-nine literal never renders inside th
 
     const absentRow = makeRow({ tier: null, regime: null, vol_regime: null });
     const { tableRow: absentTable, unmount: u2 } = renderBoth(absentRow);
-    for (const id of ['cell-tier', 'cell-regime', 'cell-vol']) {
+    for (const id of ['cell-tier', 'cell-regime']) {
       const cell = readCell(absentTable, id);
       expect(cell.text, id).toBe('—');
       expect(cell.state, id).toBe('empty');

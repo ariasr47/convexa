@@ -143,9 +143,9 @@ export const VOL_FILTER_OPTIONS = [
   { value: 'iv_rich', label: 'IV rich' },
 ] as const;
 
-export const SCORE_FILTER_OPTIONS = [{ value: 70, label: 'Score ≥70' }] as const;
+export const SCORE_FILTER_OPTIONS = [{ value: 70, label: 'Score ≥ 70' }] as const;
 
-export const FLIP_FILTER_OPTIONS = [{ value: 1, label: '|Flip| ≤1%' }] as const;
+export const FLIP_FILTER_OPTIONS = [{ value: 1, label: '|Flip| ≤ 1%' }] as const;
 
 /**
  * index-first-defaults AC-3 — the CLOSED lead-group membership for the scanner's zero-state (no
@@ -193,7 +193,13 @@ const INDEX_MEGACAP_SET: ReadonlySet<string> = new Set(INDEX_MEGACAP_SYMBOLS);
 /** Closed lead-group membership test (case-canonical: the wire is already UPPER). */
 export const isIndexMegacap = (symbol: string): boolean => INDEX_MEGACAP_SET.has(symbol);
 
-/** The locked column set + order (UX §1.1, left→right triage reading order). */
+/**
+ * The column set + order: the Final Scanner board's eight (`design/src/screens/final/account-pages.mjs`
+ * demoScanTable), left→right triage reading order. Vol, As-of and Status left the table (fidelity
+ * ACC-04): As-of repeated the header's structure age on every row, Status was empty on every `ok` row,
+ * and Vol is a filter chip and a "why this score" driver. A row's status, and a stale row's age, now
+ * sit in its Symbol cell, and only when they say something (`ScanTable.tsx` SymbolCell).
+ */
 export const SCAN_COLUMNS = [
   'symbol',
   'price',
@@ -201,31 +207,30 @@ export const SCAN_COLUMNS = [
   'score',
   'tier',
   'regime',
-  'vol_regime',
   'flip',
   'walls',
-  'updated',
-  'status',
 ] as const;
 export type ScanColumn = (typeof SCAN_COLUMNS)[number];
 
+/** The board's header words (`account-pages.mjs` demoScanTable `<thead>`). */
 export const COLUMN_LABELS: Record<ScanColumn, string> = {
   symbol: 'Symbol',
   price: 'Price',
-  chg_pct: 'Chg %',
+  chg_pct: 'Chg',
   score: 'Score',
   tier: 'Tier',
   regime: 'Regime',
-  vol_regime: 'Vol',
-  flip: 'Flip',
-  walls: 'Walls',
-  // design/src/screens/scanner.mjs:23 — the "As-of" / per-row age column (surfaces fidelity repair,
-  // change 4/F8). The KEY, testids (`scan-th-updated`/`cell-updated`) and `updatedText()`'s own
-  // copy are unchanged — only this display label moves; STATUS stays its own column (folding it
-  // into this one is a bigger structural change than this label rename and is not built here).
-  updated: 'As-of',
-  status: 'Status',
+  flip: 'Flip dist',
+  walls: 'Call / put wall',
 };
+
+/** The figure columns, right-aligned in header and cell (the board's `th.n` / `td.n`). */
+export const NUMERIC_COLUMNS: ReadonlySet<ScanColumn> = new Set<ScanColumn>([
+  'price',
+  'chg_pct',
+  'flip',
+  'walls',
+]);
 
 /** The CLOSED set of sortable columns (UX §1.2) → the wire sort key each maps to. A column absent
  *  from this map renders a plain, non-interactive header. */

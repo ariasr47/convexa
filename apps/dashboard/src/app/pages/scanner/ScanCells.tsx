@@ -7,8 +7,8 @@
  *   - `ScoreCell`, `LevelDistCell`, `LabelCell` are NEUTRAL. A score is a rate and a distance is a
  *     signed proximity; tinting either manufactures a verdict the datum cannot support (the exact
  *     class the Stage-3 sweep caught on a proximity chip).
- *   - `TierCell` is the row's SINGLE amber spend (`TintChip tone="emphasis"` ⇒ the text-grade
- *     `textAmber` resolved through `extrasFor` inside TintChip). Nothing else on a row is amber.
+ *   - `TierCell` is plain text, weight only (600 for Prime and Actionable, 400 below), as the Final
+ *     Scanner board draws it (fidelity ACC-04). Nothing on a row is amber.
  *   - `StatusCell` warning tones carry a ⚠ GLYPH in the label — hue never carries "warning" alone.
  * Every nullable value renders one of the closed nine, never `0` (curvature-v2-surfaces criteria 3,
  * 4, 17). All colour is a theme token; zero hex.
@@ -175,10 +175,9 @@ export function ScoreCell({
       : '';
   const value = dash(row.score, fmtScore);
   const { figureState, mono } = figureStateOf({ value, register: 'traced' });
-  // The bar (design/src/screens/scanner.mjs:35, `score bar + number`) — present on every row that
-  // has a real numeric score. NEUTRAL fill (`text.secondary`), never conditionally amber like the
-  // design's own mock: the shipped invariant is "the scan surface's ONE amber spend is the per-row
-  // tier chip" (`stage3-amber.spec.ts:328`) — a second amber-bearing element here would break it.
+  // The bar, then the number (the Final board's `.score`: a 56×6 track, `account-pages.mjs`
+  // scoreBar) — present on every row that has a real numeric score. NEUTRAL fill
+  // (`text.secondary`), never amber: a score is a rate, not a verdict.
   const hasScore = typeof row.score === 'number' && Number.isFinite(row.score);
   const pct = hasScore ? Math.max(0, Math.min(100, row.score as number)) : 0;
   const score = (
@@ -204,21 +203,14 @@ export function ScoreCell({
     </Typography>
   );
   return (
-    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-      {focusableHelp ? (
-        <Tooltip arrow title={why}>
-          {score}
-        </Tooltip>
-      ) : (
-        score
-      )}
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
       {hasScore && (
         <Box
           data-testid="cell-score-bar"
           aria-hidden
           sx={{
-            width: 36,
-            height: 5,
+            width: 56,
+            height: 6,
             borderRadius: '3px',
             // `action.disabledBackground` — the shipped "quiet track" token (already spent on
             // AlertsPage.tsx's refused-control chrome); the OTHER raised-panel-adjacent token one
@@ -234,6 +226,13 @@ export function ScoreCell({
           />
         </Box>
       )}
+      {focusableHelp ? (
+        <Tooltip arrow title={why}>
+          {score}
+        </Tooltip>
+      ) : (
+        score
+      )}
       {d ? (
         <Typography
           component="span"
@@ -247,17 +246,25 @@ export function ScoreCell({
   );
 }
 
-/** Tier — the row's single amber spend, via the closed lookup, reserved for `Prime`
- *  (design/src/screens/scanner.mjs's `tierChip`, "amber Prime" — surfaces fidelity repair, change
- *  4/F8). Every other resolved tier renders the SAME chip shape in the neutral tone — still a real
- *  chip, still closed-lookup text, just not a second amber spend on the row. A MISS renders
- *  `unavailable`, a genuine absence renders `—` (U-6) — never the raw enum, never conflated. */
+/** Tier, through the closed lookup, as plain text (Final Scanner board, `account-pages.mjs`
+ *  demoScanTable: `font-weight: 600` for Prime and Actionable, 400 for Watch; fidelity ACC-04). The
+ *  weight carries the rank; there is no chip and no amber on a row. A MISS renders `unavailable`, a
+ *  genuine absence renders `—` (U-6) — never the raw enum, never conflated. */
 export function TierCell({ row }: { row: ScanRow }) {
   const result = tierLookup(row.tier);
-  return result.kind === 'value' ? (
-    <TintChip tone={row.tier === 'prime' ? 'emphasis' : 'neutral'} label={result.text} />
-  ) : (
-    <Dash testid="cell-tier" value={result.kind === 'miss' ? 'unavailable' : EM_DASH} />
+  if (result.kind !== 'value') {
+    return <Dash testid="cell-tier" value={result.kind === 'miss' ? 'unavailable' : EM_DASH} />;
+  }
+  const strong = row.tier === 'prime' || row.tier === 'actionable';
+  return (
+    <Typography
+      component="span"
+      data-testid="cell-tier"
+      data-figure-register="sans"
+      sx={{ fontSize: 'inherit', fontWeight: strong ? 600 : 400, color: 'text.primary' }}
+    >
+      {result.text}
+    </Typography>
   );
 }
 
@@ -280,6 +287,39 @@ export function LabelCell({ result, testid }: { result: ClosedLookupResult; test
   return <Dash testid={testid} value={result.kind === 'miss' ? 'unavailable' : EM_DASH} />;
 }
 
+/**
+ * A consumed signed distance (`dist_to_flip_pct`, `dist_to_wall_pct`): pre-computed on the wire, a
+ * NO-SIDE datum, so it stays neutral. One atom for the table's level cells and the card's
+ * "Flip · walls" line, so the figure renders one way in both. `size` is the only knob: 11px beside a
+ * level in the table, the line's own size on the card.
+ */
+export function DistFigure({
+  distPct,
+  testid,
+  title,
+  size = '0.6875rem',
+}: {
+  distPct: number | null;
+  testid: string;
+  title?: string;
+  size?: string;
+}) {
+  const value = dash(distPct, fmtSignedPct);
+  const { figureState, mono } = figureStateOf({ value, register: 'traced' });
+  return (
+    <Box
+      component="span"
+      data-testid={testid}
+      data-figure-state={figureState}
+      data-figure-register={mono ? 'mono' : 'sans'}
+      title={title}
+      sx={{ ...faceFor(mono), fontSize: size, color: 'text.secondary' }}
+    >
+      {value}
+    </Box>
+  );
+}
+
 /** A consumed level + its consumed signed distance. Both arrive pre-computed on the wire; the
  *  distance is a NO-SIDE datum and stays neutral. Optional poll delta is also neutral. */
 export function LevelDistCell({
@@ -296,8 +336,6 @@ export function LevelDistCell({
 }) {
   const levelValue = dash(level, fmtPrice);
   const levelState = figureStateOf({ value: levelValue, register: 'traced' });
-  const distValue = dash(distPct, fmtSignedPct);
-  const distState = figureStateOf({ value: distValue, register: 'traced' });
   const d = distDelta != null && Number.isFinite(distDelta) ? fmtDelta(distDelta, 1) : '';
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
@@ -310,15 +348,7 @@ export function LevelDistCell({
       >
         {levelValue}
       </Box>
-      <Box
-        component="span"
-        data-testid={testid}
-        data-figure-state={distState.figureState}
-        data-figure-register={distState.mono ? 'mono' : 'sans'}
-        sx={{ ...faceFor(distState.mono), fontSize: '0.6875rem', color: 'text.secondary' }}
-      >
-        {distValue}
-      </Box>
+      <DistFigure distPct={distPct} testid={testid} />
       {d ? (
         <Box
           component="span"
@@ -332,19 +362,40 @@ export function LevelDistCell({
   );
 }
 
-/**
- * Both walls, call / put (the board's "Call / put wall"), with the distance to the nearer one, which
- * is the wall `dist_to_wall_pct` measures. Showing only the nearer wall left most rows naming the
- * call wall alone, and a reader couldn't tell which wall the level was (site check D-23).
- */
-export function WallsCell({ row }: { row: ScanRow }) {
+/** Both walls as "call / put" (the board's "Call / put wall"); `—` for either one the wire lacks. */
+export function WallLevels({
+  row,
+  color = 'text.primary',
+}: {
+  row: ScanRow;
+  /** The table's figure colour; the card's quiet line passes `text.secondary`. */
+  color?: string;
+}) {
   const none = row.call_wall == null && row.put_wall == null;
-  const levelValue = none
+  const value = none
     ? EM_DASH
     : `${dash(row.call_wall, fmtPrice)} / ${dash(row.put_wall, fmtPrice)}`;
-  const levelState = figureStateOf({ value: levelValue, register: 'traced' });
-  const distValue = dash(row.dist_to_wall_pct, fmtSignedPct);
-  const distState = figureStateOf({ value: distValue, register: 'traced' });
+  const { figureState, mono } = figureStateOf({ value, register: 'traced' });
+  return (
+    <Box
+      component="span"
+      data-testid="cell-dist-wall-level"
+      data-figure-state={figureState}
+      data-figure-register={mono ? 'mono' : 'sans'}
+      sx={{ ...faceFor(mono), fontSize: 'inherit', color, whiteSpace: 'nowrap' }}
+    >
+      {value}
+    </Box>
+  );
+}
+
+/**
+ * Both walls, call / put (the board's "Call / put wall"), with the distance to the nearer one, which
+ * is the wall `dist_to_wall_pct` measures (and the column sorts by). Showing only the nearer wall left
+ * most rows naming the call wall alone, and a reader couldn't tell which wall the level was (site
+ * check D-23).
+ */
+export function WallsCell({ row }: { row: ScanRow }) {
   const nearer = nearerWall(row);
   const which = nearer == null ? null : nearer === row.call_wall ? 'call' : 'put';
   return (
@@ -352,30 +403,12 @@ export function WallsCell({ row }: { row: ScanRow }) {
       component="span"
       sx={{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: '6px' }}
     >
-      <Box
-        component="span"
-        data-testid="cell-dist-wall-level"
-        data-figure-state={levelState.figureState}
-        data-figure-register={levelState.mono ? 'mono' : 'sans'}
-        sx={{
-          ...faceFor(levelState.mono),
-          fontSize: 'inherit',
-          color: 'text.primary',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {levelValue}
-      </Box>
-      <Box
-        component="span"
-        data-testid="cell-dist-wall"
-        data-figure-state={distState.figureState}
-        data-figure-register={distState.mono ? 'mono' : 'sans'}
+      <WallLevels row={row} />
+      <DistFigure
+        distPct={row.dist_to_wall_pct}
+        testid="cell-dist-wall"
         title={which ? `Distance to the nearer wall, the ${which} wall` : undefined}
-        sx={{ ...faceFor(distState.mono), fontSize: '0.6875rem', color: 'text.secondary' }}
-      >
-        {distValue}
-      </Box>
+      />
     </Box>
   );
 }
@@ -409,5 +442,24 @@ export function StatusCell({ row, nowS }: { row: ScanRow; nowS: number }) {
         <TintChip tone={meta.tone} label={meta.label} />
       </Box>
     </Tooltip>
+  );
+}
+
+/**
+ * A row's state, said only when it says something (fidelity ACC-04/05): the closed-lookup status
+ * chip for any status but `ok`, and the structure age beside it only on a `stale` row, where the age
+ * is the point (a `building` row has no honest age to give). Nothing on an `ok` row: the header's
+ * structure age covers it. The table's Symbol cell and the card's footer both render this one atom.
+ */
+export function RowFlags({ row, nowS }: { row: ScanRow; nowS: number }) {
+  if (statusMeta(row.status).label == null) return null;
+  return (
+    <Box
+      component="span"
+      sx={{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 8px' }}
+    >
+      <StatusCell row={row} nowS={nowS} />
+      {row.status === 'stale' && <UpdatedCell row={row} nowS={nowS} />}
+    </Box>
   );
 }

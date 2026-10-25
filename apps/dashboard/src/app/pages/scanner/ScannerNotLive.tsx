@@ -19,8 +19,10 @@ import { FINRA_OFF_REASON, FINRA_ON_PRODUCTION } from '@/shared/dataState/finraS
 import { DATA_STATES, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
+import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 import { SCAN_COPY } from './labels';
 import { liveCardTag, type CardTag as Tag } from './liveCardTag';
@@ -260,12 +262,25 @@ export function ScannerNotLive() {
   return (
     <Box
       data-testid="scanner-not-live"
-      sx={{ maxWidth: 1240, mx: 'auto', p: { xs: 2, sm: 3 }, display: 'grid', gap: 3 }}
+      // The one page column (`pageColumnSx`, the boards' `.wrap`; fidelity COL), with its own py.
+      sx={{ ...pageColumnSx, py: { xs: 2, sm: 3 }, display: 'grid', gap: 3 }}
     >
       <Box component="header">
-        <Box component="h1" sx={{ fontSize: '1.7rem', fontWeight: 700, m: '0 0 4px' }}>
+        {/* The account pages' one title size (owner, NO-12 A, 2026-10-25), as the board's `.ap-h h1`
+            draws it. The theme's h1 variant carries the display face: a page source names no font
+            family (fonts.spec N-1). */}
+        <Typography
+          component="h1"
+          variant="h1"
+          sx={{
+            fontSize: 'clamp(30px, 3vw, 40px)',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.1,
+            m: '0 0 4px',
+          }}
+        >
           {SCAN_COPY.heading}
-        </Box>
+        </Typography>
         <Box component="p" sx={{ fontSize: '0.88rem', color: 'text.secondary', m: 0 }}>
           One dense read of the tracked universe, ranked by dealer structure. Open any row for its
           desk.

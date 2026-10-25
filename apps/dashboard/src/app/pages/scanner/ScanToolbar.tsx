@@ -5,13 +5,16 @@
  *
  * Honesty rules enforced here (UX §3.3): the label for the owner-curated default view says
  * "Default view" — it NEVER says "saved", "your", or anything implying persistence for a visitor who
- * has none. The anonymous prompt is standing, not a surprise on click, and it is the SAME prompt a
+ * has none. A view that IS kept for its reader says "Your view" (or its name): an account view, and
+ * the demo's browser-stored view (`source: 'demo_local'`, the Final board's "Your view"; fidelity
+ * ACC-07). The anonymous prompt is standing, not a surprise on click, and it is the SAME prompt a
  * refused write re-raises. Nothing here writes: `onEditView`/`onDensity`/`onFilters` are pure UI
  * callbacks. Session is clock-derived, not a stream claim.
  */
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import type { GateApi } from '@/features/auth/useGate';
 import { extrasFor } from '@/shared/theme/tokens';
+import { coarseFloor } from '@/shared/ui/touch';
 import type { ScanDensity, ScanView } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -66,8 +69,10 @@ const segItemSx = (active: boolean) => (theme: { palette: { mode: string } }) =>
   borderRadius: '7px',
   color: active ? 'text.primary' : 'text.secondary',
   whiteSpace: 'nowrap',
-  // Spine #6: ≥40 desktop comfort; theme coarse floor raises to 44 on touch.
+  // Spine #6: ≥40 desktop comfort. The theme's coarse floor is an element selector that this
+  // class-level minHeight beats, so the 44 on a coarse pointer is carried here (ACC-17).
   minHeight: 40,
+  ...coarseFloor,
 });
 
 const editButtonSx = {
@@ -96,14 +101,18 @@ const chipSx = (active: boolean) => (theme: { palette: { mode: string } }) => ({
   borderRadius: '999px',
   color: active ? 'text.primary' : 'text.secondary',
   whiteSpace: 'nowrap',
-  // Spine #6: comfortable keyboard target; theme coarse media lifts to 44.
+  // Spine #6: comfortable keyboard target; 44 on a coarse pointer, carried locally (ACC-17).
   minHeight: 40,
+  ...coarseFloor,
 });
 
-/** "Default view" for the owner-curated fallback; the account view's own name (or a neutral
- *  "Your view") once one exists. Never a persistence claim for an anonymous visitor. */
+/** Views kept for their reader: the signed-in account's, and the demo's (stored in this browser). */
+const OWN_VIEW_SOURCES: ReadonlySet<string> = new Set(['account', 'demo_local']);
+
+/** "Default view" for the owner-curated fallback; a kept view's own name (or a neutral "Your view").
+ *  Never a persistence claim for an anonymous visitor. */
 function viewLabel(view: ScanView | null): string {
-  if (view?.source !== 'account') return 'Default view';
+  if (view == null || !OWN_VIEW_SOURCES.has(view.source)) return 'Default view';
   return view.name?.trim() ? view.name : 'Your view';
 }
 
@@ -130,9 +139,9 @@ export function ScanToolbar({
     <Box data-testid="scan-toolbar" sx={{ mb: '12px' }}>
       {/* The desk strip (session + structure as-of) moved up into the page header (Scanner.tsx,
           design/src/screens/scanner.mjs:65-72's right cluster) — this row now opens directly on
-          the view label + controls (design :73-81, `.scan-tools`): view label + count + Edit
-          view, the seven preset chips and Showing X of N · clear all on ONE wrapping row, the
-          density toggle trailing it. */}
+          the view label + controls (the Final board's `.ap-bar`): view label + count + Edit view,
+          a spacer, then the seven preset chips in the board's order (tiers, score, flip, vol) and
+          Showing X of N · clear all, the density toggle trailing them at the column edge. */}
       <Box
         sx={{
           display: 'flex',
@@ -166,7 +175,9 @@ export function ScanToolbar({
           {SCAN_COPY.editView}
         </Box>
 
-        <Box sx={{ width: '1px', height: '20px', bgcolor: 'divider' }} />
+        {/* The board's spacer (`.ap-bar`): the filters and the density toggle sit at the column's
+            right edge, not 213px short of it (fidelity ACC-07). */}
+        <Box aria-hidden sx={{ flex: '1 1 0', minWidth: 0 }} />
 
         {/* Desk filters — client-side only; chips toggle (second click clears that dimension). */}
         <Box
@@ -189,24 +200,6 @@ export function ScanToolbar({
               aria-pressed={filters.tier === opt.value}
               onClick={() => onFilters({ ...filters, tier: toggleScalar(filters.tier, opt.value) })}
               sx={chipSx(filters.tier === opt.value)}
-            >
-              {opt.label}
-            </Box>
-          ))}
-          {VOL_FILTER_OPTIONS.map((opt) => (
-            <Box
-              key={opt.value}
-              component="button"
-              type="button"
-              data-testid={`scan-filter-vol-${opt.value}`}
-              aria-pressed={filters.volRegime === opt.value}
-              onClick={() =>
-                onFilters({
-                  ...filters,
-                  volRegime: toggleScalar(filters.volRegime, opt.value),
-                })
-              }
-              sx={chipSx(filters.volRegime === opt.value)}
             >
               {opt.label}
             </Box>
@@ -243,6 +236,24 @@ export function ScanToolbar({
                 })
               }
               sx={chipSx(filters.maxAbsDistFlip === opt.value)}
+            >
+              {opt.label}
+            </Box>
+          ))}
+          {VOL_FILTER_OPTIONS.map((opt) => (
+            <Box
+              key={opt.value}
+              component="button"
+              type="button"
+              data-testid={`scan-filter-vol-${opt.value}`}
+              aria-pressed={filters.volRegime === opt.value}
+              onClick={() =>
+                onFilters({
+                  ...filters,
+                  volRegime: toggleScalar(filters.volRegime, opt.value),
+                })
+              }
+              sx={chipSx(filters.volRegime === opt.value)}
             >
               {opt.label}
             </Box>

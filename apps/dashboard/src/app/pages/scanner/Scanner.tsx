@@ -17,14 +17,17 @@
  * is the one gated write and the SERVER refuses it, not this file (`[server-side-gate-enforcement]`).
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { MONO_FACE } from '@/shared/figure';
+import { extrasFor } from '@/shared/theme/tokens';
 import { Jargon } from '@/shared/ui/Jargon';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
+import { coarseFloor } from '@/shared/ui/touch';
 import { dataMode } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, type Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useCallback, useMemo, useState } from 'react';
@@ -32,7 +35,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { EMPTY_FILTERS, filtersActive, partitionLeadGroup } from './format';
 import { SCAN_COPY } from './labels';
 import { ScanCardList } from './ScanCard';
-import { SampleAwareFrame, ScanTable, type ScanGroup } from './ScanTable';
+import { ScanTable, type ScanGroup } from './ScanTable';
 import { ScanToolbar } from './ScanToolbar';
 import { useLivePrices } from './useLivePrices';
 import { useScan } from './useScan';
@@ -54,7 +57,8 @@ function ScanSkeleton() {
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '10px',
+        // The panel role, 12 (`shape.borderRadius`), not a raw '10px' (fidelity ACC-24).
+        borderRadius: 1,
         padding: '12px',
         display: 'flex',
         flexDirection: 'column',
@@ -117,7 +121,7 @@ const DEMO_COPY = {
     'The demo’s tracked universe has six names. Edits and filters stay in this browser until you reset the demo.',
 } as const;
 
-/** The sample frame's head over the demo table and cards (SampleAwareFrame). */
+/** The sample frame's head over the demo table (SampleAwareFrame) and above the phone cards. */
 const DEMO_SAMPLE_HEAD = (
   <>
     <DataStateTag state="sample" label={DEMO_COPY.sampleTag} />
@@ -133,23 +137,38 @@ const DEMO_SAMPLE_HEAD = (
  * ("zero-state lead group") rather than the page (site check D-03).
  */
 function ScanNotes() {
+  // The board's `.hd-p` panel (fidelity ACC-08): the panel colour, radius 12, 18px 20px in, a 14px
+  // title with its tag at the right, then the 12px line. The titles stay h2 (the page's next level
+  // under its h1); the board's h3 is its generic panel helper's.
   const card = {
-    p: '12px 14px',
+    p: '18px 20px',
+    // The board's `.hd-p` under 768px (`v4/hybrid-desk.mjs`): 16px all round.
+    '@media (max-width: 767px)': { p: '16px' },
+    bgcolor: 'background.paper',
     border: '1px solid',
     borderColor: 'divider',
-    borderRadius: 1.5,
+    borderRadius: 1,
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
+    gap: '12px',
+    minWidth: 0,
+  } as const;
+  const head = {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: '8px 10px',
   } as const;
   const title = {
-    fontSize: '0.6875rem',
-    fontWeight: 700,
-    letterSpacing: '.04em',
-    textTransform: 'uppercase',
-    color: 'text.secondary',
+    flex: '1 1 auto',
+    minWidth: 0,
+    m: 0,
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    lineHeight: 1.5,
+    color: 'text.primary',
   } as const;
-  const body = { fontSize: '0.8rem', color: 'text.secondary', lineHeight: 1.55 } as const;
+  const body = { fontSize: '0.75rem', color: 'text.secondary', lineHeight: 1.45 } as const;
   return (
     <Box
       data-testid="scan-notes"
@@ -157,13 +176,15 @@ function ScanNotes() {
         mt: '16px',
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))',
-        gap: '14px',
+        gap: '16px',
       }}
     >
       <Box sx={card}>
-        <Typography component="h2" sx={title}>
-          How a score is built
-        </Typography>
+        <Box sx={head}>
+          <Typography component="h2" sx={title}>
+            How a score is built
+          </Typography>
+        </Box>
         <Typography sx={body}>
           Four parts: distance to a wall, IV stretch, setups and the flip.{' '}
           <Link component={RouterLink} to="/methodology#score" underline="always">
@@ -173,7 +194,7 @@ function ScanNotes() {
       </Box>
       {DEMO && (
         <Box sx={card}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
+          <Box sx={head}>
             <Typography component="h2" sx={title}>
               Your view
             </Typography>
@@ -186,18 +207,47 @@ function ScanNotes() {
   );
 }
 
-const ctaSx = {
-  mt: '12px',
+/**
+ * The empty states' panel and its one action, as the Final states board draws them (`account-pages.mjs`
+ * scannerStates, "Empty view" and "No filter match"; fidelity ACC-23): a dashed panel, the title, the
+ * line, and an outlined secondary button. The fix is a reader's next step, not the page's amber spend.
+ */
+const emptyPanelSx = {
+  p: '18px 20px',
+  // The board's `.hd-p` under 768px (`v4/hybrid-desk.mjs`): 16px all round.
+  '@media (max-width: 767px)': { p: '16px' },
+  bgcolor: 'background.paper',
+  border: '1px dashed',
+  borderColor: 'divider',
+  borderRadius: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: '12px',
+} as const;
+const emptyTitleSx = { fontSize: '0.875rem', fontWeight: 600, m: 0 } as const;
+const emptyBodySx = {
+  fontSize: '0.75rem',
+  lineHeight: 1.45,
+  color: 'text.secondary',
+  m: 0,
+} as const;
+const ctaSx = (theme: Theme) => ({
   cursor: 'pointer',
-  bgcolor: 'primary.main',
-  color: 'primary.contrastText',
-  border: 'none',
+  bgcolor: 'transparent',
+  color: 'text.primary',
+  border: '1px solid',
+  borderColor: extrasFor(theme).lineStrong,
   font: 'inherit',
-  fontSize: '0.82rem',
-  fontWeight: 700,
+  fontSize: '0.8125rem',
+  fontWeight: 600,
+  lineHeight: 1,
   borderRadius: '8px',
-  padding: '8px 15px',
-};
+  minHeight: 36,
+  padding: '0 14px',
+  '&:hover': { bgcolor: extrasFor(theme).panelRaised, borderColor: 'text.secondary' },
+  ...coarseFloor,
+});
 
 export function Scanner() {
   const scan = useScan();
@@ -276,7 +326,8 @@ export function Scanner() {
   );
 
   return (
-    <Box data-testid="scanner-page" sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
+    // The one page column (`pageColumnSx`, the boards' `.wrap`; fidelity COL), with the page's own py.
+    <Box data-testid="scanner-page" sx={{ ...pageColumnSx, py: 3 }}>
       {/* Header: the Final board's mast (`design/src/screens/final/account-pages.mjs` scannerStaging,
           `.ac-scanh`). A grid, not a wrapping flex row: from md (900) the session cluster owns a
           right column, top-aligned with the title; below md it drops under the lead as ONE
@@ -294,13 +345,14 @@ export function Scanner() {
         }}
       >
         <Box sx={{ minWidth: 0 }}>
+          {/* The theme's h1 variant carries the display face (Archivo, its stretch, 700): a page
+              source names no font family (fonts.spec N-1). */}
           <Typography
             component="h1"
+            variant="h1"
             sx={{
-              fontFamily: typographyTokens.displayFontFamily,
-              fontStretch: typographyTokens.displayFontStretch,
-              fontSize: '1.75rem',
-              fontWeight: 700,
+              // One page-title size for the account pages (owner, NO-12 A, 2026-10-25): 40px at 1440.
+              fontSize: 'clamp(30px, 3vw, 40px)',
               lineHeight: 1.1,
               letterSpacing: '-0.01em',
               m: '0 0 6px',
@@ -333,7 +385,7 @@ export function Scanner() {
             alignItems: { xs: 'center', md: 'flex-end' },
             alignSelf: 'start',
             gap: { xs: '6px 12px', md: '6px' },
-            // Centres the 24px chip on the title's first line (1.75rem × 1.1 ≈ 31px), on the 4-pt ladder.
+            // The board's `.ac-sess` margin-top, 4px: the chip sits near the title's cap height.
             mt: { md: '4px' },
             minWidth: 0,
           }}
@@ -416,11 +468,10 @@ export function Scanner() {
             component="span"
             data-testid="scan-structure-asof"
             sx={{
-              fontFamily: typographyTokens.monoFontFamily,
+              ...MONO_FACE,
               fontSize: '0.75rem',
               lineHeight: 1.45,
               color: 'text.secondary',
-              fontVariantNumeric: 'tabular-nums',
               whiteSpace: 'nowrap',
             }}
           >
@@ -492,13 +543,9 @@ export function Scanner() {
       {scan.phase === 'loading' ? (
         <ScanSkeleton />
       ) : scan.isEmptyView ? (
-        <Box data-testid="scan-empty-view">
-          <Typography sx={{ fontSize: '0.95rem', fontWeight: 600 }}>
-            {SCAN_COPY.emptyViewTitle}
-          </Typography>
-          <Typography sx={{ fontSize: '0.86rem', color: 'text.secondary' }}>
-            {SCAN_COPY.emptyViewBody}
-          </Typography>
+        <Box data-testid="scan-empty-view" sx={emptyPanelSx}>
+          <Typography sx={emptyTitleSx}>{SCAN_COPY.emptyViewTitle}</Typography>
+          <Typography sx={emptyBodySx}>{SCAN_COPY.emptyViewBody}</Typography>
           {scan.view?.authenticated && (
             <Box
               component="button"
@@ -512,13 +559,9 @@ export function Scanner() {
           )}
         </Box>
       ) : scan.phase === 'ready' && displayRows.length === 0 && filtersActive(scan.filters) ? (
-        <Box data-testid="scan-empty-filter">
-          <Typography sx={{ fontSize: '0.95rem', fontWeight: 600 }}>
-            {SCAN_COPY.emptyFilterTitle}
-          </Typography>
-          <Typography sx={{ fontSize: '0.86rem', color: 'text.secondary' }}>
-            {SCAN_COPY.emptyFilterBody}
-          </Typography>
+        <Box data-testid="scan-empty-filter" sx={emptyPanelSx}>
+          <Typography sx={emptyTitleSx}>{SCAN_COPY.emptyFilterTitle}</Typography>
+          <Typography sx={emptyBodySx}>{SCAN_COPY.emptyFilterBody}</Typography>
           <Box
             component="button"
             type="button"
@@ -530,27 +573,16 @@ export function Scanner() {
           </Box>
         </Box>
       ) : isNarrow ? (
-        DEMO ? (
-          <SampleAwareFrame sampleHead={DEMO_SAMPLE_HEAD}>
-            <Box sx={{ p: '10px' }}>
-              <ScanCardList
-                rows={displayRows}
-                nowS={scan.nowS}
-                flashActive={flashActive}
-                deltas={scan.deltas}
-                priceOffline={priceOffline}
-              />
-            </Box>
-          </SampleAwareFrame>
-        ) : (
-          <ScanCardList
-            rows={displayRows}
-            nowS={scan.nowS}
-            flashActive={flashActive}
-            deltas={scan.deltas}
-            priceOffline={priceOffline}
-          />
-        )
+        // On a phone the sample head stands in its own box and each card is dashed, not inset in a
+        // frame (fidelity ACC-05).
+        <ScanCardList
+          rows={displayRows}
+          nowS={scan.nowS}
+          flashActive={flashActive}
+          deltas={scan.deltas}
+          priceOffline={priceOffline}
+          sampleHead={DEMO ? DEMO_SAMPLE_HEAD : undefined}
+        />
       ) : (
         <ScanTable
           rows={displayRows}

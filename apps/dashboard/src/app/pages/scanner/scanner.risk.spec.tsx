@@ -99,8 +99,10 @@ describe('the dense table renders the locked columns and never fabricates a valu
     expect(within(row).getByTestId('cell-score')).toHaveTextContent('82');
     expect(within(row).getByText('Prime')).toBeInTheDocument(); //   closed tier lookup
     expect(within(row).getByTestId('cell-regime')).toHaveTextContent('Pos γ');
-    expect(within(row).getByTestId('cell-vol')).toHaveTextContent('IV rich');
-    expect(within(row).getByTestId('cell-updated')).toHaveTextContent('Structure as-of 42s');
+    // Vol and As-of left the table (fidelity ACC-04): an ok row says no age of its own; the header
+    // states the structure age.
+    expect(within(row).queryByTestId('cell-vol')).toBeNull();
+    expect(within(row).queryByTestId('cell-updated')).toBeNull();
   });
 
   it('null numerics render the em-dash — never 0, never a fabricated value', () => {
@@ -154,7 +156,8 @@ describe('per-row honesty', () => {
     const row = rowFor('BLD');
     expect(within(row).getByTestId('cell-score')).toHaveTextContent('—');
     expect(within(row).getByTestId('cell-status')).toHaveTextContent('Building');
-    expect(within(row).getByTestId('cell-updated')).toHaveTextContent('—');
+    // No age at all on a building row (fidelity ACC-04: the age shows only on a stale row).
+    expect(within(row).queryByTestId('cell-updated')).toBeNull();
     expect(row.textContent).not.toMatch(/Updated/); // no fabricated freshness anywhere on the row
   });
 

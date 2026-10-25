@@ -1,6 +1,7 @@
 /**
- * `/scanner` — the ≥`sm` dense terminal table (UX §1.1/§1.2): the LOCKED 11-column set in its locked
- * order, a sticky header row, a sticky Symbol column, and `compact` density by default. The table
+ * `/scanner` — the ≥`sm` dense terminal table (UX §1.1/§1.2): the Final board's eight columns in its
+ * order (`labels.ts` SCAN_COLUMNS), figures right-aligned, a sticky header row, a sticky Symbol
+ * column, and `compact` density by default. The table
  * scrolls inside its OWN `overflow-x` container so a wide desktop column set can never make the page
  * body scroll sideways.
  *
@@ -17,18 +18,19 @@ import { MONO_FACE } from '@/shared/figure';
 import { extrasFor } from '@/shared/theme/tokens';
 import type { ScanDensity, ScanRow, ScanViewSort } from '@convexa/api';
 import Box from '@mui/material/Box';
-import { alpha } from '@mui/material/styles';
+import { alpha, type Theme } from '@mui/material/styles';
 import { Fragment, useCallback, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { type PollDelta } from './format';
 import {
   COLUMN_LABELS,
+  NUMERIC_COLUMNS,
   regimeLookup,
   SCAN_COLUMNS,
   SCAN_COPY,
   SCAN_PREVIEW_COPY,
   SORTABLE_COLUMNS,
-  volLookup,
+  statusMeta,
   type ScanColumn,
 } from './labels';
 import {
@@ -36,10 +38,9 @@ import {
   LabelCell,
   LevelDistCell,
   PriceCell,
+  RowFlags,
   ScoreCell,
-  StatusCell,
   TierCell,
-  UpdatedCell,
   WallsCell,
 } from './ScanCells';
 import { PreviewToggle, ScanRowPreview } from './ScanRowPreview';
@@ -78,10 +79,12 @@ const thSx = {
   top: 0,
   zIndex: 2,
   textAlign: 'left' as const,
-  padding: '9px 10px',
+  // The board's `.ap-table th` is 10px 12px at 11px/600 and .06em; the vertical 4px here keeps the
+  // header at the board's ~40px with the 32px sort buttons inside it.
+  padding: '4px 12px',
   fontSize: '0.6875rem', // the 11px chip/label type floor
   fontWeight: 600,
-  letterSpacing: '.03em',
+  letterSpacing: '.06em',
   textTransform: 'uppercase' as const,
   color: 'text.secondary',
   bgcolor: 'background.paper',
@@ -91,6 +94,9 @@ const thSx = {
 };
 /** The sticky Symbol column keeps identity on screen while the numerics scroll under it. */
 const stickyColSx = { position: 'sticky' as const, left: 0, bgcolor: 'background.paper' };
+/** Figures sit right-aligned, header and cell alike (the board's `th.n` / `td.n`). */
+const alignOf = (column: ScanColumn) =>
+  NUMERIC_COLUMNS.has(column) ? ('right' as const) : ('left' as const);
 
 /** Sort header control — keyboard-reachable button with a real hit area (spine #6).
  *  Global `:focus-visible` ring applies; coarse pointers get the theme ≥44px floor. */
@@ -137,7 +143,11 @@ function HeaderCell({
       scope="col"
       aria-sort={ariaSortOf(column, sort)}
       data-testid={`scan-th-${column}`}
-      sx={column === 'symbol' ? { ...thSx, ...stickyColSx, zIndex: 3 } : thSx}
+      sx={
+        column === 'symbol'
+          ? { ...thSx, ...stickyColSx, zIndex: 3 }
+          : { ...thSx, textAlign: alignOf(column) }
+      }
     >
       {key ? (
         <Box
@@ -167,14 +177,15 @@ function cellContent(
   delta?: PollDelta | null,
 ) {
   switch (column) {
-    case 'symbol':
-      return (
+    case 'symbol': {
+      const link = (
         <Box
           component={RouterLink}
           to={`/ticker/${row.symbol}`}
           data-testid="scan-row-link"
           // Spine #6: fill the cell so the real <a> is the keyboard + touch target (≥44 on coarse
-          // via theme floor). Row body click remains mouse convenience only.
+          // via theme floor). Row body click remains mouse convenience only. 30px at a fine
+          // pointer: with the 10px cell padding, the board's 51px row.
           sx={{
             ...MONO_FACE,
             fontWeight: 600,
@@ -182,9 +193,7 @@ function cellContent(
             textDecoration: 'none',
             display: 'flex',
             alignItems: 'center',
-            minHeight: 32,
-            // Stretch hit area without changing dense desktop type.
-            py: 0.25,
+            minHeight: 30,
             borderRadius: '4px',
             '@media (pointer: coarse)': { minHeight: 44 },
           }}
@@ -192,6 +201,16 @@ function cellContent(
           {row.symbol}
         </Box>
       );
+      // A row's status (and a stale row's age) lives here, and only when it says something
+      // (fidelity ACC-04): the Status and As-of columns were empty or repeated the header.
+      if (statusMeta(row.status).label == null) return link;
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {link}
+          <RowFlags row={row} nowS={nowS} />
+        </Box>
+      );
+    }
     case 'price':
       return <PriceCell row={row} active={flashActive} offline={priceOffline(row.symbol)} />;
     case 'chg_pct':
@@ -202,8 +221,6 @@ function cellContent(
       return <TierCell row={row} />;
     case 'regime':
       return <LabelCell testid="cell-regime" result={regimeLookup(row.regime)} />;
-    case 'vol_regime':
-      return <LabelCell testid="cell-vol" result={volLookup(row.vol_regime)} />;
     case 'flip':
       return (
         <LevelDistCell
@@ -215,10 +232,6 @@ function cellContent(
       );
     case 'walls':
       return <WallsCell row={row} />;
-    case 'updated':
-      return <UpdatedCell row={row} nowS={nowS} />;
-    case 'status':
-      return <StatusCell row={row} nowS={nowS} />;
     default:
       return null;
   }
@@ -255,9 +268,10 @@ function ScanTableRow({
   rowRef: (el: HTMLElement | null) => void;
   buttonRef: (el: HTMLButtonElement | null) => void;
 }) {
+  // Comfortable is the board's `.ap-table td`: 10px 12px at 13px, a 51px row.
   const tdSx = {
-    padding: density === 'compact' ? '7px 10px' : '12px 10px',
-    fontSize: density === 'compact' ? '0.8rem' : '0.86rem',
+    padding: density === 'compact' ? '7px 12px' : '10px 12px',
+    fontSize: density === 'compact' ? '0.8rem' : '0.8125rem',
     borderBottom: '1px solid',
     borderColor: 'divider',
     whiteSpace: 'nowrap' as const,
@@ -297,7 +311,7 @@ function ScanTableRow({
         }}
         sx={{
           cursor: 'pointer',
-          // Hover chrome is NEUTRAL — the row's one amber is the tier chip.
+          // Hover chrome is NEUTRAL — nothing on a row is amber.
           '&:hover': { bgcolor: (theme) => extrasFor(theme).panelRaised },
           // The theme's one focus ring (its colour and width), drawn on the cells' inner edges: an
           // outline on a <tr> is clipped by the table's own scroller and painted over by the sticky
@@ -326,7 +340,11 @@ function ScanTableRow({
           <Box
             component="td"
             key={column}
-            sx={column === 'symbol' ? { ...tdSx, ...stickyColSx } : tdSx}
+            sx={
+              column === 'symbol'
+                ? { ...tdSx, ...stickyColSx }
+                : { ...tdSx, textAlign: alignOf(column) }
+            }
           >
             {cellContent(column, row, nowS, flashActive, priceOffline, delta)}
           </Box>
@@ -359,6 +377,9 @@ export function ScanTable({
 }: ScanTableProps) {
   // Ungrouped ⇒ ONE unlabeled section: the body renders identically to the pre-grouping table.
   const sections: ScanGroup[] = groups ?? [{ key: 'all', label: null, rows }];
+  // A group's header row only separates groups: when every row is in one group (the demo's six
+  // names are all indexes and megacaps) it would only label the whole table (fidelity ACC-04).
+  const separated = sections.filter((g) => g.rows.length > 0).length > 1;
 
   // One preview open at a time; ephemeral (never persisted, gone on reload), like the leg
   // disclosure on Positions. Keyed by symbol, so a poll that re-sorts the rows keeps it open.
@@ -411,7 +432,7 @@ export function ScanTable({
         <Box component="tbody">
           {sections.map((group) => (
             <Fragment key={group.key}>
-              {group.label != null && (
+              {separated && group.label != null && (
                 /* AC-3: the lead-group header REUSES the table's header treatment (same type ramp,
                    same secondary token) — no new visual language, no color semantics. Non-sticky:
                    it scrolls with its rows. */
@@ -420,7 +441,7 @@ export function ScanTable({
                     component="th"
                     scope="colgroup"
                     colSpan={COLUMN_COUNT}
-                    sx={{ ...thSx, position: 'static', zIndex: 'auto' }}
+                    sx={{ ...thSx, position: 'static', zIndex: 'auto', py: '10px' }}
                   >
                     {group.label}
                   </Box>
@@ -451,9 +472,45 @@ export function ScanTable({
 }
 
 /**
- * The table's panel. Sample data takes the sample frame (canon P-8, as ChartFrame draws it): a dashed
- * border with the hatch stripe and the sample head above the rows, so a demo scan never reads as
- * market data (site check D-03). Otherwise the solid panel, as before.
+ * The sample frame's surface (canon P-8, as ChartFrame draws it): the panel, a dashed border and the
+ * 8px hatch band across its top. The table's frame, and on a phone the sample head box and each card
+ * (fidelity ACC-05), spread this one object, so the three never drift.
+ */
+export const sampleFrameSx = (t: Theme) =>
+  ({
+    position: 'relative',
+    bgcolor: 'background.paper',
+    border: `1px dashed ${extrasFor(t).textTertiary}`,
+    // U-35 (scanner half): the panel role is 12 (`shape.borderRadius`), not a raw '10px' string.
+    borderRadius: 1,
+    overflow: 'hidden',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      height: 8,
+      pointerEvents: 'none',
+      background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(
+        t.palette.text.secondary,
+        0.28,
+      )} 6px 12px)`,
+    },
+  }) as const;
+
+/** The sample head's row: the Sample tag and its one line (the board's `.ac-tblhead`). */
+export const sampleHeadRowSx = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: '8px 12px',
+} as const;
+
+/**
+ * The table's panel. Sample data takes the sample frame (`sampleFrameSx`) with the sample head above
+ * the rows, so a demo scan never reads as market data (site check D-03). Otherwise the solid panel,
+ * as before.
  */
 export function SampleAwareFrame({
   sampleHead,
@@ -466,42 +523,26 @@ export function SampleAwareFrame({
   return (
     <Box
       data-provenance={sample ? 'sample' : undefined}
-      sx={(t) => ({
-        position: 'relative',
-        bgcolor: 'background.paper',
-        border: sample ? `1px dashed ${extrasFor(t).textTertiary}` : '1px solid',
-        borderColor: sample ? undefined : 'divider',
-        // U-35 (scanner half): the panel role is 12 (`shape.borderRadius`), not a raw '10px' string.
-        borderRadius: 1,
-        overflow: 'hidden',
-        ...(sample && {
-          pt: '8px',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 0,
-            height: 8,
-            pointerEvents: 'none',
-            background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(
-              t.palette.text.secondary,
-              0.28,
-            )} 6px 12px)`,
-          },
-        }),
-      })}
+      sx={(t) =>
+        sample
+          ? { ...sampleFrameSx(t), pt: '8px' }
+          : {
+              position: 'relative',
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1,
+              overflow: 'hidden',
+            }
+      }
     >
       {sample && (
         <Box
           data-testid="scan-sample-head"
           sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: '6px 10px',
-            px: '12px',
-            py: '10px',
+            ...sampleHeadRowSx,
+            px: '14px',
+            py: '12px',
             borderBottom: '1px solid',
             borderColor: 'divider',
           }}
