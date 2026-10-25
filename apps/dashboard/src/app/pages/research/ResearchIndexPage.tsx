@@ -74,6 +74,20 @@ const DEMO = dataMode === 'demo';
  */
 const FOMC_DAYS = fomcDays(null);
 
+/** A Coming up row: `expected` when the note gives the catalyst as expected, not confirmed. */
+type ComingUpItem = Upcoming & { ticker: string; expected?: boolean };
+
+/** Whether the note gives this catalyst as expected (its catalysts block's status word), so its row
+ *  can say so beside the window, as the note's own list does ("Expected"). */
+const isExpected = (events: Aging['events'], u: Upcoming) =>
+  events.some(
+    (e) =>
+      e.kind === 'catalyst' &&
+      e.status === 'expected' &&
+      e.label === u.label &&
+      e.when.end === u.date,
+  );
+
 /**
  * The next catalysts across notes, up to six, soonest first as upcoming() orders them. The FOMC is one
  * row for every note it makes due, as on the calendar, not one per note, and it always keeps a
@@ -83,7 +97,7 @@ function comingUp(
   rows: { ticker: string; aging: Aging }[],
   today: string,
   fomcWho: string,
-): (Upcoming & { ticker: string })[] {
+): ComingUpItem[] {
   // As upcoming() orders each note's: the day it opens, or once open, the day it closes.
   const byStart = (a: Upcoming, b: Upcoming) =>
     a.at.localeCompare(b.at) || a.date.localeCompare(b.date);
@@ -95,7 +109,7 @@ function comingUp(
       .flatMap((r) =>
         upcoming(r.aging.events, today, 70)
           .filter((u) => u.label !== FOMC_TRIGGER)
-          .map((u) => ({ ...u, ticker: r.ticker })),
+          .map((u) => ({ ...u, ticker: r.ticker, expected: isExpected(r.aging.events, u) })),
       )
       .sort(byStart)
       .slice(0, nextFomc ? 5 : 6),
@@ -230,11 +244,20 @@ function CardHead({
       }}
     >
       {/* One line: a long legal name ("Space Exploration Technologies Corp. (SpaceX)") ends in an
-          ellipsis rather than pushing the chip to a line of its own. */}
+          ellipsis rather than pushing the chip to a line of its own. The clip box reaches 4px past
+          the text (padding, cancelled by the margin, so nothing moves): the ticker link names the
+          card, and its keyboard ring (2px outline at a 2px offset, theme.ts) must not be clipped. */}
       <Box
         component="span"
         title={company ?? undefined}
-        sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+        sx={{
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          p: '4px',
+          m: '-4px',
+        }}
       >
         <Link
           component={RouterLink}
@@ -540,14 +563,12 @@ function TickerCard({ row, today }: { row: Row; today: string }) {
  * One panel with a ruled list (design: research.mjs indexBody `coming`, `.drows`; fidelity audit
  * 2026-10-25, R-06): date, what, and how far off. On staging the panel is dashed with the hatch
  * stripe and says Sample once, in its head (canon P-3, P-8; owner decision D1, spec 01 step 5).
+ * Production's lead is the board's, naming the calendar too (two lines on a phone, one from a
+ * tablet up); what it used to spell out sits on the rows themselves:
+ * the FOMC row names every valued note, the estimate row says it is estimated from filing history,
+ * and a catalyst the note gives as expected says "expected" beside its window.
  */
-function ComingUpList({
-  items,
-  demo = false,
-}: {
-  items: (Upcoming & { ticker: string })[];
-  demo?: boolean;
-}) {
+function ComingUpList({ items, demo = false }: { items: ComingUpItem[]; demo?: boolean }) {
   if (items.length === 0) return null;
   return (
     <Box
@@ -555,7 +576,8 @@ function ComingUpList({
       aria-labelledby="coming-up"
       sx={(t) => ({
         ...PANEL_SX,
-        p: '18px 20px',
+        // 16px on a phone, as the board's panels below 768px (`.hd-p { padding: 16px }`).
+        p: { xs: '16px', tablet: '18px 20px' },
         display: 'flex',
         flexDirection: 'column',
         gap: 1.5,
@@ -578,19 +600,35 @@ function ComingUpList({
         }),
       })}
     >
+      {/* The tag stays at the right of the title (the board's `.ph`): on a phone the title wraps
+          beside it rather than the tag dropping to a line of its own; only below ~120px of room for
+          the title does the tag go under it. */}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 10px' }}>
         <Box
           component="h2"
           id="coming-up"
-          sx={{ m: 0, flex: '1 1 auto', minWidth: 0, fontSize: 14, fontWeight: 600 }}
+          sx={{
+            m: 0,
+            flex: '1 1 120px',
+            minWidth: 0,
+            fontSize: 14,
+            fontWeight: 600,
+            lineHeight: 1.35,
+          }}
         >
-          Coming up · next 10 weeks
+          {/* Wrapped beside the tag, it breaks after "Coming up ·", never inside "next 10 weeks". */}
+          Coming up ·{' '}
+          <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
+            next 10 weeks
+          </Box>
         </Box>
-        {demo ? (
-          <DataStateTag state="sample" />
-        ) : (
-          <DataStateTag state="computed" detail="from every note" />
-        )}
+        <Box sx={{ flex: 'none', display: 'flex' }}>
+          {demo ? (
+            <DataStateTag state="sample" />
+          ) : (
+            <DataStateTag state="computed" detail="from every note" />
+          )}
+        </Box>
       </Box>
       <Box
         component="p"
@@ -598,7 +636,7 @@ function ComingUpList({
       >
         {demo
           ? 'Each note’s results date, the FOMC decision for every note, and results windows estimated from filing history. Each date is when its note comes due for review. As of Oct 7, 2026.'
-          : 'Catalysts from every note, and the calendar’s: the FOMC for every note with a valuation, and results windows estimated from filing history. Each date is when its note comes due for review; an estimated window, once the results are filed.'}
+          : 'Catalysts from every note and the calendar. Each date is also when its note comes due for review.'}
       </Box>
       <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid' }}>
         {items.map((u, i) => {
@@ -636,7 +674,7 @@ function ComingUpList({
                 </Box>
                 {when && (
                   <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-                    {` · ${when}`}
+                    {` · ${u.expected ? 'expected ' : ''}${when}`}
                   </Box>
                 )}
               </Box>
