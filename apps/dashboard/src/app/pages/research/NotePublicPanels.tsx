@@ -1,8 +1,9 @@
 /**
  * Below a ticker's note: who is positioned how (short interest, short-sale volume, insider trades) and
- * what the company has filed since the note was written. Each card names its source and its delay,
- * because each source reports late in its own way, and carries one data-state word (canon P-2): an
- * outage reads "Source down", never as an empty fact.
+ * the SEC record. Beside it, in the note's side column: what the company has filed since the note was
+ * written (`FiledSinceCard`). Each card names its source and its delay, because each source reports
+ * late in its own way, and carries one data-state word (canon P-2): an outage reads "Source down",
+ * never as an empty fact.
  *
  * FINRA's data is credited to FINRA as owner and source, derived figures included, with a
  * do-not-redistribute notice (FINRA Equity Data terms §2.3; docs/public-data/README.md).
@@ -15,17 +16,18 @@ import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord, publicPartGap } from '@/shared/dataState/vocabulary';
 import { dataMode, type PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
 import { localToday, upcoming } from 'virtual:convexa-research';
 import { standing } from './filings';
 import { formatNoteDate, formatShortDate } from './format';
 import type { Read } from './publicData';
-import { Caps, SourceProblem } from './publicUi';
-import { SecRecordSections } from './SecRecordSections';
+import { Caps, ProvenanceChip, SourceProblem } from './publicUi';
+import { SecRecordSections, SECTION_TITLE } from './SecRecordSections';
 import { notSecFiler, tickerSecStale } from './secState';
 import type { Aging } from './types';
-import { DISPLAY, MONO, PANEL_SX } from './ui';
+import { DISPLAY, Eyebrow, MONO, Panel, PANEL_SX } from './ui';
 import { useWidth } from './useWidth';
 
 const big = (n: number) =>
@@ -35,6 +37,31 @@ const big = (n: number) =>
       ? `${(n / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1 })}M`
       : n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 
+type FiledSinceNote = { date: string; accessions: string[]; aging: Aging };
+/** What "Filed since this note" reads: the page's one public-data answer and the note it checks. */
+type FiledSinceInput = { read: Read<PublicTicker>; note: FiledSinceNote };
+
+/**
+ * "Filed since this note" sits in the note's side column, under "This note comes due" (fidelity
+ * audit 2026-10-25, NO-4 A), but the page reads the public answer once, in NotesView, and hands it
+ * to NotePublicPanels under the note. NotePublicPanels shares that read with the side column through
+ * this store, keyed by ticker, so the move costs no second request. It holds an entry only while the
+ * newest note's panels are mounted: an older note has none, so its side column has no such card.
+ */
+const filedSinceInputs = new Map<string, FiledSinceInput>();
+const filedSinceListeners = new Set<() => void>();
+function shareFiledSince(ticker: string, input: FiledSinceInput | null) {
+  if (input) filedSinceInputs.set(ticker.toUpperCase(), input);
+  else filedSinceInputs.delete(ticker.toUpperCase());
+  filedSinceListeners.forEach((listener) => listener());
+}
+function subscribeFiledSince(listener: () => void) {
+  filedSinceListeners.add(listener);
+  return () => {
+    filedSinceListeners.delete(listener);
+  };
+}
+
 export function NotePublicPanels({
   ticker,
   read,
@@ -42,9 +69,20 @@ export function NotePublicPanels({
 }: {
   ticker: string;
   read: Read<PublicTicker>;
-  note: { date: string; accessions: string[]; aging: Aging };
+  note: FiledSinceNote;
 }) {
-  const today = useMemo(() => localToday(), []);
+  const { data, error, loading, retry } = read;
+  const { date, accessions, aging } = note;
+  // Before paint, so the side column's card is there on the first frame. `retry` is a new closure
+  // over the same setter on every render; the read itself is the rest.
+  useLayoutEffect(() => {
+    shareFiledSince(ticker, {
+      read: { data, error, loading, retry },
+      note: { date, accessions, aging },
+    });
+    return () => shareFiledSince(ticker, null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticker, data, error, loading, date, accessions, aging]);
   if (read.loading && !read.data) {
     return (
       <Box
@@ -99,10 +137,6 @@ export function NotePublicPanels({
         testId="note-public-off"
       />
     );
-  const newFilings = d.filings.filter((f) => standing(f, note) === 'new');
-  const nextResults = upcoming(note.aging.events, today, 3650).find((u) =>
-    /results|earnings/i.test(u.label),
-  );
   return (
     <Box sx={{ display: 'grid', gap: 4 }}>
       <Box component="section" aria-labelledby="positioned" sx={{ display: 'grid', gap: 1.75 }}>
@@ -110,7 +144,7 @@ export function NotePublicPanels({
           <Box
             component="h2"
             id="positioned"
-            sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 22 }}
+            sx={{ ...DISPLAY, m: 0, fontWeight: 600, ...SECTION_TITLE }}
           >
             Who is positioned how
           </Box>
@@ -142,112 +176,179 @@ export function NotePublicPanels({
         )}
       </Box>
       <SecRecordSections d={d} />
+    </Box>
+  );
+}
+
+/**
+ * "Filed since this note", in the newest note's side column under "This note comes due" (fidelity
+ * audit 2026-10-25, NO-4 A): the filings made after the note's date that it doesn't cite, from SEC
+ * EDGAR, on the answer NotePublicPanels shares (`shareFiledSince`). Until that answer is shared, and
+ * on an older note, it renders nothing.
+ */
+export function FiledSinceCard({ ticker }: { ticker: string }) {
+  const input = useSyncExternalStore(
+    subscribeFiledSince,
+    () => filedSinceInputs.get(ticker.toUpperCase()) ?? null,
+  );
+  const today = useMemo(() => localToday(), []);
+  if (!input) return null;
+  const { read, note } = input;
+  const d = read.data;
+  const line = {
+    m: 0,
+    fontSize: 13,
+    color: 'text.secondary',
+    lineHeight: 1.5,
+    textWrap: 'pretty',
+  } as const;
+  let tag: React.ReactNode = null;
+  let body: React.ReactNode;
+  let sourced = false;
+  if (read.loading && !d) {
+    body = (
       <Box
-        component="section"
-        aria-labelledby="filed-since"
-        sx={{ ...PANEL_SX, p: { xs: 2, sm: 3 }, display: 'grid', gap: 2 }}
-      >
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '6px 14px' }}>
-          <Box
-            component="h2"
-            id="filed-since"
-            sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 22 }}
-          >
-            Filed since this note
-          </Box>
-          <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
-            From SEC EDGAR, checked every hour.
-          </Box>
-          <DataStateTag
-            state={publicDataWord(d.filings_state, {
-              stale: d.filings_state === 'live' && tickerSecStale(d),
-              demo: dataMode === 'demo',
-            })}
-          />
+        aria-busy="true"
+        aria-label="Loading the filings since this note"
+        sx={(t) => ({
+          height: 44,
+          borderRadius: '8px',
+          bgcolor: alpha(t.palette.text.secondary, 0.06),
+        })}
+      />
+    );
+  } else if (read.error || !d) {
+    tag = <DataStateTag state="couldntLoad" />;
+    body = (
+      <>
+        <Box component="p" sx={line}>
+          Convexa&apos;s server didn&apos;t answer, so this list is unknown, not empty.
         </Box>
-        {d.filings_state === 'not_configured' ? (
-          <Box component="p" sx={{ m: 0, fontSize: 14, color: 'text.secondary' }}>
-            SEC filings aren&apos;t set up on this server yet (EDGAR needs an identifying contact
-            address).
+        <Button onClick={read.retry} sx={{ justifySelf: 'start', minHeight: 44 }}>
+          Try again
+        </Button>
+      </>
+    );
+  } else if (d.state === 'off') {
+    // PUBLIC_DATA=off on the API: the band under the note says so too, never silence.
+    tag = <DataStateTag state="off" />;
+    body = (
+      <Box component="p" sx={line}>
+        Public-data panels are off on this server.
+      </Box>
+    );
+  } else {
+    sourced = true;
+    tag = (
+      <DataStateTag
+        state={publicDataWord(d.filings_state, {
+          stale: d.filings_state === 'live' && tickerSecStale(d),
+          demo: dataMode === 'demo',
+        })}
+      />
+    );
+    const newFilings = d.filings.filter((f) => standing(f, note) === 'new');
+    const nextResults = upcoming(note.aging.events, today, 3650).find((u) =>
+      /results|earnings/i.test(u.label),
+    );
+    body =
+      d.filings_state === 'not_configured' ? (
+        <Box component="p" sx={line}>
+          SEC filings aren&apos;t set up on this server yet (EDGAR needs an identifying contact
+          address).
+        </Box>
+      ) : d.filings_state === 'unavailable' && d.filings.length === 0 ? (
+        <Box component="p" sx={line}>
+          {`${d.filings_detail ?? 'EDGAR did not answer.'} This list is unknown, not empty.`}
+        </Box>
+      ) : newFilings.length === 0 ? (
+        <>
+          <Box component="span" sx={{ fontSize: 13, fontWeight: 600 }}>
+            {`Nothing yet. The note was written ${formatNoteDate(note.date)}.`}
           </Box>
-        ) : d.filings_state === 'unavailable' && d.filings.length === 0 ? (
-          <Box component="p" sx={{ m: 0, fontSize: 14, color: 'text.secondary' }}>
-            {`${d.filings_detail ?? 'EDGAR did not answer.'} This list is unknown, not empty.`}
-          </Box>
-        ) : newFilings.length === 0 ? (
-          <Box
-            sx={(t) => ({
-              display: 'grid',
-              gap: 1,
-              p: 2,
-              borderRadius: '10px',
-              border: `1px solid ${alpha(t.palette.text.secondary, 0.25)}`,
-            })}
-          >
+          {nextResults && (
+            <Box component="span" sx={{ ...line, fontSize: 12 }}>
+              {`Next expected: ${nextResults.label.replace(/\.$/, '')}, ${nextResults.whenLabel}. When a results or quarterly filing lands, the note comes due and the filing is listed here.`}
+            </Box>
+          )}
+        </>
+      ) : (
+        <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid' }}>
+          {newFilings.map((f) => (
             <Box
-              component="span"
-              sx={{ fontWeight: 600 }}
-            >{`Nothing yet. The note was written ${formatNoteDate(note.date)}.`}</Box>
-            {nextResults && (
+              component="li"
+              key={f.accession}
+              sx={(t) => ({
+                display: 'grid',
+                gridTemplateColumns: '56px minmax(0, 1fr) auto',
+                gap: 1,
+                alignItems: 'center',
+                py: 1,
+                borderTop: `1px solid ${t.palette.divider}`,
+                fontSize: 13,
+              })}
+            >
+              <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
+                {formatShortDate(f.filed)}
+              </Box>
               <Box
                 component="span"
-                sx={{ fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}
+                sx={{
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
               >
-                {`Next expected: ${nextResults.label.replace(/\.$/, '')}, ${nextResults.whenLabel}. When a results or quarterly filing lands, the note comes due and the filing is listed here.`}
-              </Box>
-            )}
-          </Box>
-        ) : (
-          <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid' }}>
-            {newFilings.map((f) => (
-              <Box
-                component="li"
-                key={f.accession}
-                sx={(t) => ({
-                  display: 'grid',
-                  gridTemplateColumns: '64px minmax(0, 1fr) auto',
-                  gap: 1.5,
-                  alignItems: 'center',
-                  py: 1.25,
-                  borderTop: `1px solid ${t.palette.divider}`,
-                  fontSize: 13,
-                })}
-              >
-                <Box component="span" sx={{ ...MONO, color: 'text.secondary' }}>
-                  {formatShortDate(f.filed)}
-                </Box>
                 <Box
                   component="span"
-                  sx={{
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
+                  sx={{ ...MONO, fontSize: 11, color: 'text.secondary', mr: 1 }}
                 >
-                  <Box
-                    component="span"
-                    sx={{ ...MONO, fontSize: 11, color: 'text.secondary', mr: 1 }}
-                  >
-                    {f.form}
-                  </Box>
-                  {f.description || f.form}
+                  {f.form}
                 </Box>
-                <Box
-                  component="a"
-                  href={f.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ fontSize: 12, fontWeight: 500 }}
-                >
-                  Open
-                </Box>
+                {f.description || f.form}
               </Box>
-            ))}
-          </Box>
-        )}
+              <Box
+                component="a"
+                href={f.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ fontSize: 12, fontWeight: 500 }}
+              >
+                Open
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      );
+  }
+  return (
+    <Panel
+      component="section"
+      aria-label="Filed since this note"
+      sx={{ display: 'grid', gap: 1, alignContent: 'start' }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '6px 10px',
+        }}
+      >
+        <Eyebrow component="h2" sx={{ m: 0, fontWeight: 400 }}>
+          Filed since this note
+        </Eyebrow>
+        {tag}
       </Box>
-    </Box>
+      {body}
+      {sourced && (
+        <Box sx={{ justifySelf: 'start', maxWidth: '100%' }}>
+          <ProvenanceChip text="SEC EDGAR · checked every hour" kind="primary" />
+        </Box>
+      )}
+    </Panel>
   );
 }
 
@@ -491,7 +592,9 @@ export function ShortInterestCard({ d, compact = false }: { d: PublicTicker; com
                   left: 0,
                   right: 0,
                   bottom: `${(v / top) * 100}%`,
-                  borderTop: `1px ${v === 0 ? 'solid' : 'dashed'} ${v === 0 ? chartRoles(t).axis : chartRoles(t).grid}`,
+                  // Solid gridlines on the grid token (fidelity FND-17): dashes are the canon's mark for
+                  // sample frames and the average line, not for a scale.
+                  borderTop: `1px solid ${v === 0 ? chartRoles(t).axis : chartRoles(t).grid}`,
                 })}
               />
               <Box

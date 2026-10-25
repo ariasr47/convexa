@@ -26,6 +26,7 @@ import {
 import { NoteInlines } from './Inlines';
 import { NoteBody } from './NoteBody';
 import { NoteContext } from './noteContext';
+import { FiledSinceCard } from './NotePublicPanels';
 import {
   calendarTriggers,
   ESTIMATE_TRIGGER,
@@ -37,7 +38,12 @@ import type { Aging, Freshness, NoteBlock, ResearchNote, ValuationBlock } from '
 import { DISPLAY, Eyebrow, FreshnessLine, MONO, Panel, Pill, YourCall } from './ui';
 import { useActiveSection } from './useActiveSection';
 
-export const RESEARCH_DISCLAIMER = 'Personal research notes. Not financial advice.';
+/** The Notes page's footnote (Final · Research index, production: design/src/screens/final/
+ *  research.mjs:146; fidelity R-21). */
+export const RESEARCH_DISCLAIMER =
+  'Personal research notes. Prices in the notes are each note’s own, from its price date. Not investment advice.';
+/** A note's own footnote opens as its board's does (final/ticker-note.mjs:111; fidelity R-21). */
+const NOTE_DISCLAIMER = 'Personal research notes. Not investment advice.';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
@@ -511,6 +517,7 @@ function SideCards({
   f,
   today,
   valuation,
+  newest,
 }: {
   note: ResearchNote;
   /** The note's dates with the calendar's review triggers added. */
@@ -519,6 +526,8 @@ function SideCards({
   f: Freshness;
   today: string;
   valuation: ValuationBlock | null;
+  /** The ticker's newest note: only it reads what was filed since. */
+  newest: boolean;
 }) {
   const next = upcoming(aging.events, today, 3650)[0] ?? null;
   const due = [
@@ -586,6 +595,8 @@ function SideCards({
           </Box>
         </Panel>
       )}
+      {/* Beside what makes the note due, the filings that would (fidelity NO-4 A, owner 2026-10-25). */}
+      {newest && <FiledSinceCard ticker={note.ticker} />}
       {valuation?.uncertainty && (
         <Panel sx={{ display: 'grid', gap: 1 }}>
           <Eyebrow sx={label}>
@@ -731,9 +742,11 @@ export function NoteView({
         {rest.length > 0 && <NoteBody blocks={rest} label={note.title} />}
         <Box
           sx={{
-            display: { xs: 'grid', lg: 'none' },
+            display: { xs: 'grid', desktop: 'none' },
             gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
             gap: 1.5,
+            // Each card at its own height: a stretched card spreads its few lines over the row.
+            alignItems: 'start',
           }}
         >
           <SideCards
@@ -743,18 +756,23 @@ export function NoteView({
             f={f}
             today={today}
             valuation={valuation}
+            newest={latest === null}
           />
         </Box>
 
         <Box
           sx={{
             display: 'grid',
+            // The board's tracks (final/ticker-note.mjs, v4/notes.mjs:8, :21; fidelity DESK-18): rail
+            // 220 and side 450 with 40px gaps from 1300px, so 220 / 530 / 450 at 1440, the body
+            // taking what wider screens add; a 200px rail and the body below 1300, where the side's
+            // cards sit above the parts (the board moves them under the whole note).
             gridTemplateColumns: {
               xs: 'minmax(0, 1fr)',
               md: '200px minmax(0, 1fr)',
-              lg: '200px minmax(0, 1fr) 260px',
+              desktop: '220px minmax(0, 1fr) 450px',
             },
-            gap: { xs: 3, md: 4 },
+            gap: { xs: 3, md: 5 },
             alignItems: 'start',
           }}
         >
@@ -818,15 +836,15 @@ export function NoteView({
               component="p"
               sx={{ m: 0, fontSize: 12, color: 'text.secondary', lineHeight: 1.6 }}
             >
-              {RESEARCH_DISCLAIMER} Figures come from the cited sources as of the dates shown;
-              "calc" marks arithmetic on cited figures. Valuation values are computed from the
-              stated inputs when the site builds. Stance, target, odds and forecast probabilities
-              are the author's own and stay blank until set.
+              {NOTE_DISCLAIMER} Figures come from the cited sources as of the dates shown; "calc"
+              marks arithmetic on cited figures. Valuation values are computed from the stated
+              inputs when the site builds. Stance, target, odds and forecast probabilities are the
+              author's own and stay blank until set.
             </Box>
           </Box>
           <Box
             sx={{
-              display: { xs: 'none', lg: 'grid' },
+              display: { xs: 'none', desktop: 'grid' },
               gap: 1.5,
               position: 'sticky',
               top: 88,
@@ -842,6 +860,7 @@ export function NoteView({
               f={f}
               today={today}
               valuation={valuation}
+              newest={latest === null}
             />
           </Box>
         </Box>

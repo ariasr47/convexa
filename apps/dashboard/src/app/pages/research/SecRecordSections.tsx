@@ -11,10 +11,25 @@ import { FundHoldingsSection } from './FundHoldings';
 import { InsiderClustersSection } from './InsiderClusters';
 import { PeersSection } from './Peers';
 
+/** A public-record section's title size: the board's 24px, 21px below 768px, tracked −0.01em
+ *  (`.pl-sec h2`, design/src/screens/final/planned-kit.mjs:28, :80; fidelity R-16). */
+export const SECTION_TITLE = {
+  fontSize: { xs: 21, tablet: 24 },
+  letterSpacing: '-0.01em',
+} as const;
+
 export function SecRecordSections({ d }: { d: PublicTicker }) {
   if (d.state === 'off') return null;
   return (
-    <Box sx={{ display: 'grid', gap: 4, minWidth: 0 }}>
+    <Box
+      sx={{
+        display: 'grid',
+        gap: 4,
+        minWidth: 0,
+        // Each section's own title (section > header box > h2), never a frame's heading inside it.
+        '& > section > div > h2': SECTION_TITLE,
+      }}
+    >
       <InsiderClustersSection d={d} />
       <FiledFiguresSection d={d} />
       <FundHoldingsSection d={d} />

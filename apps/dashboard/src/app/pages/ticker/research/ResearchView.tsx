@@ -300,11 +300,14 @@ function SampleNote({
     <Box
       sx={{
         display: 'grid',
-        gap: { xs: 3, md: 4 },
+        // The board's tracks (final/ticker-note.mjs `.nv`, v4/notes.mjs:8, :21): rail 220, body
+        // 530 and the side the rest, with 40px gaps from 1300px (220 / 530 / 450 at 1440); below
+        // 1300 a 200px rail with the side under the body.
+        gap: { xs: 3, md: 5 },
         gridTemplateColumns: {
           xs: 'minmax(0, 1fr)',
-          md: '180px minmax(0, 1fr)',
-          lg: '180px minmax(0, 1fr) minmax(0, 320px)',
+          md: '200px minmax(0, 1fr)',
+          desktop: '220px minmax(0, 530px) minmax(0, 1fr)',
         },
         alignItems: 'start',
       }}
@@ -381,7 +384,7 @@ function SampleNote({
         </Section>
         {footer}
       </Stack>
-      <Box sx={{ gridColumn: { md: '2', lg: 'auto' }, minWidth: 0 }}>{side}</Box>
+      <Box sx={{ gridColumn: { md: '2', desktop: 'auto' }, minWidth: 0 }}>{side}</Box>
     </Box>
   );
 }
