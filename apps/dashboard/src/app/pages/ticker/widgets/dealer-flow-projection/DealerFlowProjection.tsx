@@ -17,15 +17,25 @@
  *     feeds score/gate/tier/setup; zero bull/bear/buy/sell/edge framing.
  *   - `theme-token-discipline` — token-only via MUI theme (`text.disabled`/`text.secondary`/`divider`,
  *     mono via tokens), zero hardcoded hex; dark/light parity comes from the shared `Widget`/tile chrome.
+ *
+ * Owner decision NO-1 A (2026-10-25, fidelity lane L5): in the quiet band the card is the board's
+ * summary (`design/src/screens/final/ticker-desk.mjs:228`): the charm drift as the figure, its
+ * horizon and the vanna base as the one line, and a foot: the sample source chip on the demo, the
+ * static basis "Snapshot, never live" on the live build (no clock age, so the card stays
+ * byte-identical across a stream drop). The two limbs, the +5 IV-pt illustration and the assumptions
+ * footer render in the expand overlay. Both bodies keep the null rules above; a limb that is missing
+ * is named in words, never shown as $0.
  */
-import { memo } from 'react';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
+import { useWidgetProvenance } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import type { DealerFlowProjection as Dfp } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import type { ReactNode } from 'react';
+import { memo } from 'react';
 import {
   CHARM_EMPTY,
   CHARM_LABEL,
@@ -44,6 +54,18 @@ import {
   VANNA_LABEL,
   VANNA_NEGATION,
 } from '../_kit/copy';
+import {
+  ContextSummary,
+  OverlayFoot,
+  OverlayLead,
+  QUIET_BODY_SX,
+  STATIC_BASIS,
+  SummaryFoot,
+  SummaryOrFull,
+} from '../market-context/ContextSummary';
+
+/** The board's sample source chip for this card (`ticker-desk.mjs:228`). */
+const SAMPLE_SOURCE = 'Sample · shaped like dealer flow';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -147,83 +169,156 @@ function VannaSection({ vanna }: { vanna: NonNullable<Dfp['vanna']> }) {
   );
 }
 
+/**
+ * The quiet-band summary. The figure is the charm drift; the line carries its horizon and the vanna
+ * base. A missing limb is named by its pinned "unavailable this cycle" sentence in the line, and the
+ * figure falls back to the other limb, so the card never shows a number it does not have.
+ */
+function DfpSummary({ dfp, foot }: { dfp: Dfp | null; foot: ReactNode }) {
+  if (dfp == null) {
+    return (
+      <ContextSummary
+        testid="dealer-flow-projection"
+        line={<span data-testid="dfp-whole-empty">{DFP_WHOLE_EMPTY}</span>}
+        foot={foot}
+      />
+    );
+  }
+  const { charm, vanna } = dfp;
+  const vannaBase = vanna ? `${fmtSignedUsdCompact(vanna.projected_delta)} on +1 IV pt` : null;
+  if (charm) {
+    return (
+      <ContextSummary
+        testid="dealer-flow-projection"
+        figure={`${fmtSignedUsdCompact(charm.projected_delta)} delta drift`}
+        figureAttrs={{ 'data-testid': 'dfp-charm-drift' }}
+        help={<AccessibleHelp label={`About ${CHARM_LABEL}`} text={charmInfo(charm.opex_date)} />}
+        line={
+          <>
+            <span data-testid="dfp-charm-horizon">
+              to {humanOpex(charm.opex_date)} ({dayCount(charm.horizon_days)})
+            </span>
+            {' from charm · '}
+            {vannaBase != null ? (
+              <>
+                {'vanna '}
+                <span data-testid="dfp-vanna-base">{vannaBase}</span>
+              </>
+            ) : (
+              <span data-testid="dfp-vanna-empty">{VANNA_EMPTY}</span>
+            )}
+          </>
+        }
+        foot={foot}
+      />
+    );
+  }
+  if (vannaBase != null) {
+    return (
+      <ContextSummary
+        testid="dealer-flow-projection"
+        figure={vannaBase}
+        figureAttrs={{ 'data-testid': 'dfp-vanna-base' }}
+        help={<AccessibleHelp label={`About ${VANNA_LABEL}`} text={VANNA_INFO} />}
+        line={
+          <>
+            {'from vanna · '}
+            <span data-testid="dfp-charm-empty">{CHARM_EMPTY}</span>
+          </>
+        }
+        foot={foot}
+      />
+    );
+  }
+  return (
+    <ContextSummary
+      testid="dealer-flow-projection"
+      line={
+        <>
+          <span data-testid="dfp-charm-empty">{CHARM_EMPTY}</span>{' '}
+          <span data-testid="dfp-vanna-empty">{VANNA_EMPTY}</span>
+        </>
+      }
+      foot={foot}
+    />
+  );
+}
+
+/** The full read, in the expand overlay: both limbs, the illustration and the assumptions footer. */
+function DfpFull({ dfp, foot }: { dfp: Dfp | null; foot: ReactNode }) {
+  return (
+    <Box data-testid="dealer-flow-projection">
+      <OverlayLead>{DFP_SUBTITLE}</OverlayLead>
+      {dfp == null ? (
+        // Whole-read null: the shell + a single muted line. NO 0, NO error screen.
+        <EmptyLine text={DFP_WHOLE_EMPTY} testid="dfp-whole-empty" />
+      ) : (
+        <>
+          <Box
+            sx={{
+              display: 'grid',
+              // The two limbs pair side by side once the body is wide enough (2×210px, so in the
+              // 1200px expand overlay) and stack below that (a phone's overlay), via
+              // `auto-fit`/`minmax`. Before NO-1 this body sat in a ≈340–416px band card, where the
+              // limbs always stacked; the overlay is now the only place it renders.
+              gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+              gap: 1,
+            }}
+          >
+            {dfp.charm != null ? (
+              <CharmSection charm={dfp.charm} />
+            ) : (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <EmptyLine text={CHARM_EMPTY} testid="dfp-charm-empty" />
+              </Box>
+            )}
+            {dfp.vanna != null ? (
+              <VannaSection vanna={dfp.vanna} />
+            ) : (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <EmptyLine text={VANNA_EMPTY} testid="dfp-vanna-empty" />
+              </Box>
+            )}
+          </Box>
+
+          {/* Shared assumptions footer — always present with the read. Carries the linear/first-order
+              framing + spot basis and the binding honesty frame (verbatim). */}
+          <Box sx={{ mt: 1.75 }} data-testid="dfp-footer">
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              {dfpFooterAssumptions(dfp.spot_basis)}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              {DFP_HONESTY_FRAME}
+            </Typography>
+          </Box>
+        </>
+      )}
+      {foot != null && <OverlayFoot>{foot}</OverlayFoot>}
+    </Box>
+  );
+}
+
 export const DealerFlowProjection = memo(function DealerFlowProjection({ dfp }: Props) {
+  // The foot: the sample source chip on the demo (so the head carries no Sample tag, owner D1); on
+  // the live build the read's static basis, never a clock age, so a stream drop or a bundle tick
+  // leaves this card's text byte-identical.
+  const sample = useWidgetProvenance() === 'sample';
+  const foot = <SummaryFoot sample={sample} sampleSource={SAMPLE_SOURCE} basis={STATIC_BASIS} />;
   return (
     <Widget
       id="dealer-flow-projection"
       title={DFP_TITLE}
-      subtitle={DFP_SUBTITLE}
       info={DFP_INFO}
-      // Ticker fidelity repair, change 2 (F2) — the context band's `repeat(3, minmax(0,1fr))` quiet
-      // grid (`design/src/screens/desk.mjs:43`) puts Projected dealer flow, Market context and Term
-      // structure in ONE row of three 1-col cards; `span={2}` (full-width, for the old 2-col bento)
-      // would break that row. Dropped, not resized to `span={1}` (the `Widget` default already is).
-      bodyVariant="inset"
+      sampleTag={false}
+      bodySx={QUIET_BODY_SX}
+      // Ticker fidelity repair, change 2 (F2) — one 1-col card of the context band's three-column
+      // grid (`span` stays the `Widget` default). NO-1 A: the subtitle moved into the overlay body
+      // (`DfpFull`), since the Widget header is shared by the band card and the overlay.
     >
-      <Box data-testid="dealer-flow-projection">
-        {dfp == null ? (
-          // Whole-read null: the shell + a single muted line. NO 0, NO error screen.
-          <EmptyLine text={DFP_WHOLE_EMPTY} testid="dfp-whole-empty" />
-        ) : (
-          <>
-            <Box
-              sx={{
-                display: 'grid',
-                // Intrinsically responsive (matches ReadStrip's idiom): the two limbs pair
-                // side-by-side once the widget is wide enough (~440px) and stack below it, via
-                // `auto-fit`/`minmax`. Ticker fidelity repair, change 2 (F2) close-out: since F2
-                // dropped this widget to `span={1}` of the context band's 3-col grid
-                // (`design/src/screens/desk.mjs:43`), its rendered column is ≈340–390px — always
-                // BELOW the 420px (2×210) the pairing needs, so in this card the two limbs always
-                // stack (matching the design's own stacked `flowLimb` rows). The `auto-fit`/`minmax`
-                // mechanism stays rather than a hand-rolled `flexDirection: 'column'` — it is still
-                // correct, general responsive behaviour (the same markup would re-pair if this
-                // widget's `span` ever grows again) — only `gap` tightens, closing most of the
-                // remaining stacked-limb height gap after `LimbCard` dropped its `Card`/`CardContent`
-                // padding, above. CORRECTED (curvature-v2-foundations SPEC §2.5): the prior claim
-                // here — that this Emotion version doesn't pass `@container` through and warns on the
-                // kebab-case condition — is FALSE for the dependency state in this tree (verified
-                // three levels down: Emotion emits an object key with an object value verbatim, its
-                // kebab-case warning fires only in the scalar-value branch for CSS property names;
-                // stylis 4.2.0 special-cases `@c…n` into the nested-at-rule branch; MUI attaches
-                // `theme.containerQueries` and sorts container queries on every `sx` result).
-                // Container-query support is NOT the risk. This widget stays on `auto-fit`/`minmax`
-                // anyway — it is one of the four hand-rolled StatTile-family widgets ruling 6 keeps
-                // unconverted; adding `@container` here is a later phase's rebuild, not this comment
-                // fix.
-                gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-                gap: 1,
-              }}
-            >
-              {dfp.charm != null ? (
-                <CharmSection charm={dfp.charm} />
-              ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <EmptyLine text={CHARM_EMPTY} testid="dfp-charm-empty" />
-                </Box>
-              )}
-              {dfp.vanna != null ? (
-                <VannaSection vanna={dfp.vanna} />
-              ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <EmptyLine text={VANNA_EMPTY} testid="dfp-vanna-empty" />
-                </Box>
-              )}
-            </Box>
-
-            {/* Shared assumptions footer — always present with the read. Carries the linear/first-order
-                framing + spot basis and the binding honesty frame (verbatim). */}
-            <Box sx={{ mt: 1.75 }} data-testid="dfp-footer">
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {dfpFooterAssumptions(dfp.spot_basis)}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {DFP_HONESTY_FRAME}
-              </Typography>
-            </Box>
-          </>
-        )}
-      </Box>
+      <SummaryOrFull
+        summary={<DfpSummary dfp={dfp} foot={foot} />}
+        full={<DfpFull dfp={dfp} foot={sample ? foot : null} />}
+      />
     </Widget>
   );
 });

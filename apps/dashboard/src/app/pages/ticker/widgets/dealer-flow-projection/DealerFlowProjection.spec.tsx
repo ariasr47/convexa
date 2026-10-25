@@ -10,11 +10,16 @@
  *      refactor to multiplication would render plausible numbers a reviewer cannot catch.
  * NOT asserted (visible + intentional → review): titles/subtitle/footer/negation wording, tooltip
  * copy, banned-language scans, offline-caption scans (page-level byte-identity covers live coupling).
+ *
+ * Owner decision NO-1 A (2026-10-25): the band card is a summary and the limbs, the illustration and
+ * the footer render in the expand overlay, so invariant 1 is checked on both bodies and invariant 2
+ * in the overlay, where the +5 IV-pt figure now lives.
  */
 import { theme } from '@/shared/theme/theme';
 import type { DealerFlowProjection as Dfp } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { CHARM_EMPTY, DFP_WHOLE_EMPTY, VANNA_EMPTY } from '../_kit/copy';
 import { DealerFlowProjection } from './DealerFlowProjection';
@@ -49,31 +54,56 @@ function renderDfp(value: Dfp | null) {
   );
 }
 
+/** Opens the card's expand overlay, where the full read renders; returns queries scoped to it. */
+async function expand() {
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Expand widget' }));
+  return within(await screen.findByRole('dialog'));
+}
+
 describe('DealerFlowProjection · independent limb degradation', () => {
-  it('vanna=null → charm + footer intact, pinned vanna copy, NO fabricated $0 or +1-IV figure', () => {
+  it('vanna=null → charm + footer intact, pinned vanna copy, NO fabricated $0 or +1-IV figure', async () => {
     renderDfp(dfp({ vanna: null }));
+    // The band summary: the charm figure survives, the vanna slot is its pinned sentence.
     expect(screen.getByText(VANNA_EMPTY)).toBeInTheDocument();
-    expect(screen.queryByTestId('dfp-vanna')).toBeNull();
-    expect(screen.getByText('+$4.2M delta drift')).toBeInTheDocument(); // charm survives
-    expect(screen.getByTestId('dfp-footer')).toBeInTheDocument();
+    expect(screen.getByText('+$4.2M delta drift')).toBeInTheDocument();
+    expect(screen.queryByText(/\$0\b/)).toBeNull();
+    expect(screen.queryByText(/on \+1 IV pt/)).toBeNull();
+    // The overlay's full read.
+    const overlay = await expand();
+    expect(overlay.getByText(VANNA_EMPTY)).toBeInTheDocument();
+    expect(overlay.queryByTestId('dfp-vanna')).toBeNull();
+    expect(overlay.getByText('+$4.2M delta drift')).toBeInTheDocument(); // charm survives
+    expect(overlay.getByTestId('dfp-footer')).toBeInTheDocument();
     expect(screen.queryByText(/\$0\b/)).toBeNull();
     expect(screen.queryByText(/on \+1 IV pt/)).toBeNull();
   });
 
-  it('charm=null → vanna + footer intact, pinned charm copy, NO fabricated horizon/date/$0', () => {
+  it('charm=null → vanna + footer intact, pinned charm copy, NO fabricated horizon/date/$0', async () => {
     renderDfp(dfp({ charm: null }));
+    // The band summary: the vanna base takes the figure, the charm slot is its pinned sentence.
     expect(screen.getByText(CHARM_EMPTY)).toBeInTheDocument();
-    expect(screen.queryByTestId('dfp-charm')).toBeNull();
-    expect(screen.getByText('+$1.9M on +1 IV pt')).toBeInTheDocument(); // vanna survives
-    expect(screen.getByTestId('dfp-footer')).toBeInTheDocument();
+    expect(screen.getByText('+$1.9M on +1 IV pt')).toBeInTheDocument();
+    expect(screen.queryByText(/\$0\b/)).toBeNull();
+    expect(screen.queryByText(/delta drift/)).toBeNull();
+    expect(screen.queryByText(/\d+ days?\)/)).toBeNull();
+    // The overlay's full read.
+    const overlay = await expand();
+    expect(overlay.getByText(CHARM_EMPTY)).toBeInTheDocument();
+    expect(overlay.queryByTestId('dfp-charm')).toBeNull();
+    expect(overlay.getByText('+$1.9M on +1 IV pt')).toBeInTheDocument(); // vanna survives
+    expect(overlay.getByTestId('dfp-footer')).toBeInTheDocument();
     expect(screen.queryByText(/\$0\b/)).toBeNull();
     expect(screen.queryByText(/delta drift/)).toBeNull();
     expect(screen.queryByText(/\d+ days?\)/)).toBeNull(); // no invented horizon line
   });
 
-  it('whole-read null → the single pinned empty line, no limbs/footer, no $0, no thrown render', () => {
+  it('whole-read null → the single pinned empty line, no limbs/footer, no $0, no thrown render', async () => {
     expect(() => renderDfp(null)).not.toThrow();
     expect(screen.getByText(DFP_WHOLE_EMPTY)).toBeInTheDocument();
+    expect(screen.queryByTestId('dfp-charm-drift')).toBeNull();
+    expect(screen.queryByText(/\$0\b/)).toBeNull();
+    const overlay = await expand();
+    expect(overlay.getByText(DFP_WHOLE_EMPTY)).toBeInTheDocument();
     expect(screen.queryByTestId('dfp-charm')).toBeNull();
     expect(screen.queryByTestId('dfp-vanna')).toBeNull();
     expect(screen.queryByTestId('dfp-footer')).toBeNull();
@@ -82,13 +112,14 @@ describe('DealerFlowProjection · independent limb degradation', () => {
 });
 
 describe('DealerFlowProjection · illustrative figure is wire-verbatim', () => {
-  it('renders the wire +5 IV-pt value, never base×5 (fixture deliberately NOT 5× the base)', () => {
+  it('renders the wire +5 IV-pt value, never base×5 (fixture deliberately NOT 5× the base)', async () => {
     renderDfp(
       dfp({
         vanna: vanna({ projected_delta: 1_000_000, illustrative_projected_delta: 3_000_000 }),
       }),
     );
-    const vannaBlock = screen.getByTestId('dfp-vanna');
+    const overlay = await expand();
+    const vannaBlock = overlay.getByTestId('dfp-vanna');
     expect(within(vannaBlock).getByText('+$1.0M on +1 IV pt')).toBeInTheDocument();
     expect(within(vannaBlock).getByText('+$3.0M on +5 IV pt (illus.)')).toBeInTheDocument();
     expect(screen.queryByText('+$5.0M on +5 IV pt (illus.)')).toBeNull(); // NOT 5× the base

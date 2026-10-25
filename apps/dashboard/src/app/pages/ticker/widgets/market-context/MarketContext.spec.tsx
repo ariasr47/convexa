@@ -15,6 +15,10 @@
  * NOT asserted (visible + intentional → review): the 20-value label wording table, basis/tooltip/
  * advisory copy, digested-only structure (no table/chart), theme/hex scans, live-prop source scans
  * (the page-level byte-identity walk catches any live coupling behaviorally).
+ *
+ * Owner decision NO-1 A (2026-10-25): the band card is a summary and the 2×2 renders in the expand
+ * overlay. The per-slot matrix runs in the overlay, where the slots live; the summary is held to the
+ * same no-fabrication, no-raw-token and no-descriptor rules before the overlay opens.
  */
 import { theme } from '@/shared/theme/theme';
 import type {
@@ -26,6 +30,7 @@ import type {
 } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import {
   MC_ATR_EMPTY,
@@ -103,6 +108,12 @@ function renderMc(value: MarketContextPack | null) {
       <MarketContext pack={value} />
     </ThemeProvider>,
   );
+}
+
+/** Opens the card's expand overlay, where the 2×2 renders; returns queries scoped to it. */
+async function expand() {
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Expand widget' }));
+  return within(await screen.findByRole('dialog'));
 }
 
 // =================================================================================================
@@ -196,18 +207,23 @@ const MATRIX: NullCase[] = [
 describe('MarketContext · five-level null matrix (best-effort-isolated-or-null)', () => {
   it.each(MATRIX)(
     '$name → only that slot degrades to its pinned copy; siblings intact; nothing fabricated',
-    ({ value, slot, copy, intact, absent }) => {
+    async ({ value, slot, copy, intact, absent }) => {
       expect(() => renderMc(value)).not.toThrow();
 
+      // The band summary: never a fabricated zero, and no error/retry surface.
+      expect(screen.queryByText(/\$0\b/)).toBeNull();
+      expect(screen.queryByText(/retry|error/i)).toBeNull();
+
+      const overlay = await expand();
       // The degraded slot carries its pinned unavailable copy…
-      const el = screen.getByTestId(slot);
+      const el = overlay.getByTestId(slot);
       expect(within(el).getByText(copy)).toBeInTheDocument();
       // …and NO fabricated scalar took its place ($/%/decimal — "14-day" etc. survive this scan).
       expect(el.textContent ?? '').not.toMatch(/[$%]|\d\.\d/);
 
       // Isolation: the sibling probes still render their populated values.
-      for (const probe of intact) expect(screen.getByText(probe)).toBeInTheDocument();
-      for (const id of absent ?? []) expect(screen.queryByTestId(id)).toBeNull();
+      for (const probe of intact) expect(overlay.getByText(probe)).toBeInTheDocument();
+      for (const id of absent ?? []) expect(overlay.queryByTestId(id)).toBeNull();
 
       // Never a fabricated zero anywhere, and no error/retry surface.
       expect(screen.queryByText(/\$0\b/)).toBeNull();
@@ -220,7 +236,7 @@ describe('MarketContext · five-level null matrix (best-effort-isolated-or-null)
 // 2. Unknown-enum closure at render — honest fallback, raw token never in the DOM
 // =================================================================================================
 describe('MarketContext · unknown wire enum (closed-lookup wiring)', () => {
-  it('renders that label’s unavailable state and never the raw token; siblings unaffected', () => {
+  it('renders that label’s unavailable state and never the raw token; siblings unaffected', async () => {
     // A label family WITH a pinned per-row empty sentence.
     const baseDirection = tiRead().direction;
     if (!baseDirection) throw new Error('tiRead fixture must carry a direction read');
@@ -231,19 +247,24 @@ describe('MarketContext · unknown wire enum (closed-lookup wiring)', () => {
         }),
       }),
     );
+    // The band summary never shows the raw token either.
+    expect(screen.queryByText(/sideways/i)).toBeNull();
+    let overlay = await expand();
     expect(
-      within(screen.getByTestId('mc-trend')).getByText(MC_TREND_ROW_EMPTY),
+      within(overlay.getByTestId('mc-trend')).getByText(MC_TREND_ROW_EMPTY),
     ).toBeInTheDocument();
     expect(screen.queryByText(/sideways/i)).toBeNull();
     // Sibling isolation (F2 — the compact card keeps only ONE row per family, so the sibling probe
     // is another family's kept headline, not the dropped Strength row).
-    expect(within(screen.getByTestId('mc-shape')).getByText('Concentrated')).toBeInTheDocument();
+    expect(within(overlay.getByTestId('mc-shape')).getByText('Concentrated')).toBeInTheDocument();
     r1.unmount();
 
     // A label family WITHOUT one (row label kept, muted value cell).
     renderMc(pack({ gex_profile_shape: shapeRead({ concentration_label: 'clustered' as never }) }));
+    expect(screen.queryByText(/clustered/i)).toBeNull();
+    overlay = await expand();
     expect(
-      within(screen.getByTestId('mc-concentration')).getByText(MC_CELL_EMPTY),
+      within(overlay.getByTestId('mc-concentration')).getByText(MC_CELL_EMPTY),
     ).toBeInTheDocument();
     expect(screen.queryByText(/clustered/i)).toBeNull();
   });
@@ -253,8 +274,10 @@ describe('MarketContext · unknown wire enum (closed-lookup wiring)', () => {
 // 3. Wire descriptors never rendered (sentinel, by construction)
 // =================================================================================================
 describe('MarketContext · wire descriptors', () => {
-  it('the wire window/thresholds/flow_basis/method strings never reach the DOM', () => {
+  it('the wire window/thresholds/flow_basis/method strings never reach the DOM', async () => {
     const { container } = renderMc(pack());
     expect(container.textContent ?? '').not.toContain(WIRE_DESC);
+    await expand();
+    expect(document.body.textContent ?? '').not.toContain(WIRE_DESC);
   });
 });

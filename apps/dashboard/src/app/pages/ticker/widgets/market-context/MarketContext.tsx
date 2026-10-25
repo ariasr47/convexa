@@ -10,12 +10,16 @@
  * `MC_FLOW_BASIS` / `mcAtrBasis` are unchanged, byte-identical calls. The widget-level advisory
  * footer is unchanged too.
  *
- * The secondary rows this repair drops from the compact card — Strength, Momentum, Balance, Center
- * of mass, Composition, ATR 5d/30d — are not recoverable via the widget's `⤢` expand: `Widget`'s
- * expand renders the SAME `children` larger, never different content (this file's own prior
- * `digested-labels-not-raw-dump` comment already said as much: "the expanded overlay shows this same
- * body larger"). A residual, recorded in the repair report rather than solved with new shared
- * `Widget`/overlay plumbing this task's blast radius does not call for.
+ * The secondary rows this repair dropped from the compact card — Strength, Momentum, Balance, Center
+ * of mass, Composition, ATR 5d/30d — stay dropped: the expand overlay shows the 2×2 below, not them.
+ *
+ * Owner decision NO-1 A (2026-10-25, fidelity lane L5): in the quiet band the card is now the
+ * board's summary (`design/src/screens/final/ticker-desk.mjs:229`): trend and profile shape as one
+ * Sans figure ("Uptrend · Dispersed"), flow vs positioning and the 14-day ATR as the one line, and a
+ * foot: the sample source chip on the demo, the static basis "Snapshot, never live" on the live
+ * build. The 2×2 with its basis lines and the advisory footer render in the expand overlay
+ * (`SummaryOrFull`, `./ContextSummary.tsx`). Both bodies read the same closed lookups; a missing read
+ * is named "unavailable" in the summary, never filled in.
  *
  * Binding invariants (restated so the seam stays honest):
  *   - `[live-vs-static-isolation]` — STATIC. It takes NO `offline`/`isLive`/`streamOffline` prop,
@@ -39,11 +43,11 @@
  *     `divider`, mono via tokens), zero hardcoded hex; dark/light parity from the shared chrome.
  *   - No auth gate — renders for anonymous visitors; no session/gate call anywhere in it.
  */
-import { memo } from 'react';
 import { faceFor, figureStateOf } from '@/shared/figure';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
+import { useWidgetProvenance } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import type {
   AtrRead,
   FlowVsPositioningRead,
@@ -53,7 +57,10 @@ import type {
 } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { memo, type ReactNode } from 'react';
 import {
+  fmt1,
+  fmtAtrUsd,
   MC_ADVISORY,
   MC_ATR_EMPTY,
   MC_ATR_SHORT,
@@ -85,8 +92,20 @@ import {
   mcShapeBasis,
   mcTiBasis,
 } from '../_kit/copy';
+import {
+  ContextSummary,
+  OverlayFoot,
+  OverlayLead,
+  QUIET_BODY_SX,
+  STATIC_BASIS,
+  SummaryFoot,
+  SummaryOrFull,
+} from './ContextSummary';
 
 const MONO = typographyTokens.monoFontFamily;
+
+/** The board's sample source chip for this card (`ticker-desk.mjs:229`). */
+const SAMPLE_SOURCE = 'Sample · shaped like market context';
 
 interface Props {
   /** The additive static read (`m.market_context ?? null`). NO live/offline prop is accepted — this
@@ -317,40 +336,154 @@ function AtrCell({ read }: { read: AtrRead | null }) {
   );
 }
 
-export const MarketContext = memo(function MarketContext({ pack }: Props) {
-  return (
-    <Widget id="market-context" title={MC_TITLE} subtitle={MC_SUBTITLE} info={MC_INFO}>
-      <Box data-testid="market-context">
-        {pack == null ? (
-          // Whole-pack null (L5) ≡ missing key: the shell + ONE muted line. No cells, no
-          // advisory footer (nothing to frame), NO 0, NO error screen.
-          <EmptyLine text={MC_WHOLE_EMPTY} testid="mc-whole-empty" />
-        ) : (
-          <>
-            {/* F2 — one card, a 2×2 of values (`desk.mjs:43`'s `ctx-2`), not four full sub-cards. */}
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 2,
-              }}
-            >
-              <TrendCell read={pack.trend_momentum} />
-              <ShapeCell read={pack.gex_profile_shape} />
-              <FlowCell read={pack.flow_vs_positioning} />
-              <AtrCell read={pack.atr} />
-            </Box>
+/** A summary part a read could not supply: its own words plus "unavailable", never a value. */
+const missing = (what: string) => `${what} unavailable`;
 
-            {/* Widget-level advisory footer — always present with a non-null pack (Default + L1–L4);
-                verbatim, no interaction (`model-read-carries-its-assumptions`). */}
-            <Box sx={{ mt: 1.75 }} data-testid="mc-footer">
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {MC_ADVISORY}
-              </Typography>
-            </Box>
-          </>
-        )}
-      </Box>
+/**
+ * The quiet-band summary (`ticker-desk.mjs:229`): "Uptrend · Dispersed" as the figure, then "flow vs
+ * positioning divergent · ATR 14d $12.94 (1.9%)". Every part goes through the same closed lookup as
+ * the 2×2; a part whose read (or label) is missing leaves the figure and is named in the line.
+ */
+function McSummary({ pack, foot }: { pack: MarketContextPack | null; foot: ReactNode }) {
+  if (pack == null) {
+    return (
+      <ContextSummary
+        testid="market-context"
+        line={<span data-testid="mc-whole-empty">{MC_WHOLE_EMPTY}</span>}
+        foot={foot}
+      />
+    );
+  }
+  const direction = pack.trend_momentum?.direction;
+  const trend = direction == null ? null : mcDisplay(MC_DIRECTION_DISPLAY, direction.label);
+  const shapeRead = pack.gex_profile_shape;
+  const shape =
+    shapeRead == null ? null : mcDisplay(MC_CONCENTRATION_DISPLAY, shapeRead.concentration_label);
+  const location = pack.flow_vs_positioning?.location;
+  const flow = location == null ? null : mcDisplay(MC_LOCATION_DISPLAY, location.label);
+  const atr14 = pack.atr?.atr_14d ?? null;
+
+  // [key, part] pairs, joined with " · ".
+  type Part = [key: string, node: ReactNode];
+  const figureParts: Part[] = [];
+  if (trend != null) figureParts.push(['trend', <span data-testid="mc-trend">{trend}</span>]);
+  if (shape != null)
+    figureParts.push(['shape', <span data-testid="mc-concentration">{shape}</span>]);
+
+  const lineParts: Part[] = [];
+  if (trend == null) lineParts.push(['trend', missing('trend')]);
+  if (shape == null) lineParts.push(['shape', missing('profile shape')]);
+  lineParts.push([
+    'flow',
+    flow != null ? (
+      <>
+        {'flow vs positioning '}
+        <span data-testid="mc-location">{flow.toLocaleLowerCase('en-US')}</span>
+      </>
+    ) : (
+      missing('flow vs positioning')
+    ),
+  ]);
+  lineParts.push([
+    'atr',
+    atr14 != null ? (
+      <>
+        {'ATR 14d '}
+        <span data-testid="mc-atr-14d">
+          {fmtAtrUsd(atr14.value)} ({fmt1(atr14.pct_of_close)}%)
+        </span>
+      </>
+    ) : (
+      missing('ATR 14d')
+    ),
+  ]);
+
+  const join = (parts: Part[]) =>
+    parts.map(([key, node], i) => (
+      <span key={key}>
+        {i > 0 && ' · '}
+        {node}
+      </span>
+    ));
+
+  return (
+    <ContextSummary
+      testid="market-context"
+      face="sans"
+      figure={figureParts.length > 0 ? join(figureParts) : undefined}
+      help={
+        figureParts.length > 0 ? (
+          <AccessibleHelp
+            label={`About ${MC_ROW_TREND} and ${MC_SHAPE_SHORT.toLocaleLowerCase('en-US')}`}
+            text={`${MC_TIP_TI_CARD} ${MC_TIP_SHAPE_CARD}`}
+          />
+        ) : undefined
+      }
+      line={join(lineParts)}
+      foot={foot}
+    />
+  );
+}
+
+/** The full read, in the expand overlay: the 2×2 with each cell's basis, then the advisory footer. */
+function McFull({ pack, foot }: { pack: MarketContextPack | null; foot: ReactNode }) {
+  return (
+    <Box data-testid="market-context">
+      <OverlayLead>{MC_SUBTITLE}</OverlayLead>
+      {pack == null ? (
+        // Whole-pack null (L5) ≡ missing key: the shell + ONE muted line. No cells, no
+        // advisory footer (nothing to frame), NO 0, NO error screen.
+        <EmptyLine text={MC_WHOLE_EMPTY} testid="mc-whole-empty" />
+      ) : (
+        <>
+          {/* F2 — one card, a 2×2 of values (`desk.mjs:43`'s `ctx-2`), not four full sub-cards. */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: 2,
+            }}
+          >
+            <TrendCell read={pack.trend_momentum} />
+            <ShapeCell read={pack.gex_profile_shape} />
+            <FlowCell read={pack.flow_vs_positioning} />
+            <AtrCell read={pack.atr} />
+          </Box>
+
+          {/* Widget-level advisory footer — always present with a non-null pack (Default + L1–L4);
+              verbatim, no interaction (`model-read-carries-its-assumptions`). */}
+          <Box sx={{ mt: 1.75 }} data-testid="mc-footer">
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              {MC_ADVISORY}
+            </Typography>
+          </Box>
+        </>
+      )}
+      {foot != null && <OverlayFoot>{foot}</OverlayFoot>}
+    </Box>
+  );
+}
+
+export const MarketContext = memo(function MarketContext({ pack }: Props) {
+  // The foot: the sample source chip on the demo (so the head carries no Sample tag, owner D1); on
+  // the live build the read's static basis, never a clock age, so a stream drop or a bundle tick
+  // leaves this card's text byte-identical.
+  const sample = useWidgetProvenance() === 'sample';
+  const foot = <SummaryFoot sample={sample} sampleSource={SAMPLE_SOURCE} basis={STATIC_BASIS} />;
+  return (
+    // NO-1 A: the subtitle moved into the overlay body (`McFull`), since the Widget header is shared
+    // by the band card and the overlay.
+    <Widget
+      id="market-context"
+      title={MC_TITLE}
+      info={MC_INFO}
+      sampleTag={false}
+      bodySx={QUIET_BODY_SX}
+    >
+      <SummaryOrFull
+        summary={<McSummary pack={pack} foot={foot} />}
+        full={<McFull pack={pack} foot={sample ? foot : null} />}
+      />
     </Widget>
   );
 });
