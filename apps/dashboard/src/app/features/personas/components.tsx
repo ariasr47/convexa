@@ -3,6 +3,7 @@
  * persona never recomputes or fetches. Copy is verbatim from UX_BLUEPRINT.
  */
 import { bottomSheetActionsSx, bottomSheetDialogSx, grabHandleSx } from '@/shared/ui/bottomSheet';
+import { coarseFloor } from '@/shared/ui/touch';
 import type { PersonaDefinition, PersonaRisk } from '@convexa/api';
 import CheckIcon from '@mui/icons-material/Check';
 import Alert from '@mui/material/Alert';
@@ -214,6 +215,10 @@ export function PersonaCustomizeForm({
                     onClick={() => fillFrom(p)}
                     sx={{
                       minHeight: 36,
+                      // A 36px row is the desk's mouse density; under a coarse pointer (the phone
+                      // sheet) the row takes the canon's 44px touch floor. The theme's element-
+                      // selector floor does not reach an `li[role="option"]` (shared/ui/touch.ts).
+                      ...coarseFloor,
                       gap: 1,
                       fontSize: 13,
                       fontWeight: on ? 600 : 400,
