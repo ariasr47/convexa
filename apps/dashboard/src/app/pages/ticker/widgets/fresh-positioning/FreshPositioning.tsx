@@ -31,10 +31,23 @@ import {
 /** The board's sample source chip for this card (`ticker-desk.mjs:230`). */
 const SAMPLE_SOURCE = 'Sample · shaped like the chain';
 
+/**
+ * How many strikes the desk hands this card: `TickerDashboard` ranks the chain's strikes at or above
+ * the cutoff and keeps the top 8 (`.slice(0, 8)` where it builds `unusualStrikes`). A list this long
+ * may have been cut, so its length is a true count only below this number.
+ */
+export const FRESH_TOP_N = 8;
+
 interface Props {
   chainVolOiRatio: number | null;
   volOiThreshold: number;
+  /** The strikes at or above the cutoff, ranked by Vol/OI, cut to the desk's top `FRESH_TOP_N`. */
   unusualStrikes: StrikeRow[];
+  /**
+   * How many strikes in the whole chain meet the cutoff, counted before the list was cut. When it is
+   * absent the card states a count only for a list shorter than `FRESH_TOP_N`.
+   */
+  unusualCount?: number | null;
   /** Fill the parent's height (for the side-by-side row) instead of the default top margin. */
   fillHeight?: boolean;
   /** REST-bundle age (seconds) — product spine #4. */
@@ -43,6 +56,16 @@ interface Props {
 
 const COUNT_WORDS = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 const countWord = (n: number) => COUNT_WORDS[n] ?? String(n);
+
+/**
+ * The count the summary may state, in words. The list's own length is true only while it is shorter
+ * than the cut; at the cut the chain may hold more, so the line says "eight or more" unless the caller
+ * passed the uncut count.
+ */
+function strikeCountWords(listed: number, total: number | null | undefined): string {
+  if (total != null && total >= listed) return countWord(total);
+  return listed < FRESH_TOP_N ? countWord(listed) : `${countWord(FRESH_TOP_N)} or more`;
+}
 
 /** "$715 · 1.68×": a strike and its Vol/OI ratio, the summary's figure form. */
 const strikeRatio = (s: StrikeRow) => `$${s.strike} · ${(s.vol_oi_ratio as number).toFixed(2)}×`;
@@ -63,28 +86,31 @@ function emptySentence(
  * The quiet-band summary: "$715 · 1.68×", then "the top of three strikes where today’s volume
  * outruns open interest ($710 1.56×, $705 1.44×)". "Outruns" is only said when the cutoff is at
  * least 1.0×, where a listed strike's volume is at least its open interest; below that the line
- * names the cutoff instead.
+ * names the cutoff instead. The count never comes from a list that may have been cut
+ * (`strikeCountWords`): 14 qualifying strikes read "the top of eight or more strikes", not "eight".
  */
 function FreshSummary({
   chainVolOiRatio,
   volOiThreshold,
   unusualStrikes,
+  unusualCount,
   foot,
 }: {
   chainVolOiRatio: number | null;
   volOiThreshold: number;
   unusualStrikes: StrikeRow[];
+  unusualCount: number | null | undefined;
   foot: ReactNode;
 }) {
   const empty = emptySentence(chainVolOiRatio, volOiThreshold, unusualStrikes);
   if (empty != null) return <ContextSummary line={empty} foot={foot} />;
   const [top, ...rest] = unusualStrikes;
-  const n = unusualStrikes.length;
+  const count = strikeCountWords(unusualStrikes.length, unusualCount);
   const where =
     volOiThreshold >= 1
       ? 'where today’s volume outruns open interest'
       : `at Vol/OI ≥ ${fmtThresh(volOiThreshold)}×`;
-  const lead = n === 1 ? `the one strike ${where}` : `the top of ${countWord(n)} strikes ${where}`;
+  const lead = count === 'one' ? `the one strike ${where}` : `the top of ${count} strikes ${where}`;
   // Each figure in the line is traced (a real Convexa-computed ratio), resolved through the shared
   // module as the overlay's rows are.
   const next = rest.slice(0, 2).map((s) => {
@@ -153,8 +179,9 @@ function FreshFull({
         <Stack spacing={0.5}>
           {/* Ticker fidelity repair, change 2 (F2) — three rows, no "+N more" affordance
               (`design/src/screens/desk.mjs:43`'s `contextCard('Fresh positioning · Vol/OI', ...)`).
-              The count in the ⓘ tooltip (`volOiTip`) still reads the FULL `unusualStrikes.length` —
-              only the rendered rows are capped here. */}
+              `unusualStrikes` is already the desk's top `FRESH_TOP_N`; this cuts it to three rows.
+              The ⓘ tooltip's count (`volOiTip`) is `unusualCount` when the caller passes it, else
+              this list's length, which stops at `FRESH_TOP_N`. */}
           {unusualStrikes.slice(0, 3).map((s) => {
             // The strike + Vol/OI ratio — always a real Convexa-computed figure on a row the
             // backend returned (SPEC §2.4): traced register through the shared module.
@@ -206,6 +233,7 @@ export const FreshPositioning = memo(function FreshPositioning({
   chainVolOiRatio,
   volOiThreshold,
   unusualStrikes,
+  unusualCount = null,
   structureAgeSeconds = null,
 }: Props) {
   // The foot: the sample source chip on the demo (so the head carries no Sample tag, owner D1), the
@@ -225,7 +253,7 @@ export const FreshPositioning = memo(function FreshPositioning({
     <Widget
       id="fresh-positioning"
       title="Fresh positioning (Vol/OI)"
-      info={volOiTip(volOiThreshold, unusualStrikes.length)}
+      info={volOiTip(volOiThreshold, unusualCount ?? unusualStrikes.length)}
       sampleTag={false}
       bodySx={QUIET_BODY_SX}
     >
@@ -235,6 +263,7 @@ export const FreshPositioning = memo(function FreshPositioning({
             chainVolOiRatio={chainVolOiRatio}
             volOiThreshold={volOiThreshold}
             unusualStrikes={unusualStrikes}
+            unusualCount={unusualCount}
             foot={foot}
           />
         }
