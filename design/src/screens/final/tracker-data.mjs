@@ -61,6 +61,13 @@ export const OPEN_QUESTIONS = [
     why: 'Signed-in Risk inputs are stored on the account, and Settings tags them Stored here. Methodology defines the word the wider way, which is the true one; the canon row would need a superseding line.',
   },
   {
+    id: 'Q-GITHUB-HREF',
+    asked: '2026-10-22',
+    status: 'open',
+    ask: 'The staging footer’s “GitHub ↗” link (spec 01, Q3): your GitHub profile, or the public repository?',
+    why: 'docs/product/specs/2026-10-21/README.md, Owner decisions (S1-Q3). The footer ships without the link until you choose.',
+  },
+  {
     id: 'Q-HOOD-NI',
     asked: '2026-10-15',
     status: 'open',

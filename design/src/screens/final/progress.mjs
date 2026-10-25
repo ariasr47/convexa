@@ -109,7 +109,7 @@ export function progressBoard(groups) {
     const boards = rows.reduce((a, r) => a + r.boards.length + (r.spec ? 1 : 0), 0);
 
     const totals = `<div class="tot">
-      <div><span class="n">${rows.length}</span><span class="l">screens on this page · ${boards} boards</span></div>
+      <div><span class="n">${rows.length}</span><span class="l">screens on this canvas · ${boards} boards</span></div>
       <div><span class="n">${screens.built}</span><span class="l">built: every item on the card shipped</span></div>
       <div><span class="n">${screens.progress}</span><span class="l">in progress: some shipped or partly built</span></div>
       <div><span class="n">${screens.designed}</span><span class="l">designed, not started</span></div>
@@ -155,9 +155,9 @@ export function progressBoard(groups) {
 
     return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><article class="pm" aria-label="Board map">
       <header>
-        <div class="eyebrow">Final · Convexa v1 · board map</div>
+        <div class="eyebrow">Start here · board map</div>
         <h1 class="display">What’s built</h1>
-        <p class="lead">Every screen on this page, read from its own spec card’s “Built so far” each time the design builds; nothing on this board is typed by hand. A screen is <strong>Built</strong> when every item on its card is shipped, <strong>In progress</strong> when some are shipped or partly built, and <strong>Designed</strong> when none are. A planned tool’s status counts only its own items, not the page it sits on. Board names are the ones in its row, left to right.</p>
+        <p class="lead">Every screen on this canvas, grouped by the page it sits on (the page list, top left), read from its own spec card’s “Built so far” each time the design builds; nothing on this board is typed by hand. A screen is <strong>Built</strong> when every item on its card is shipped, <strong>In progress</strong> when some are shipped or partly built, and <strong>Designed</strong> when none are. A planned tool’s status counts only its own items, not the page it sits on. Board names are the ones in its row, left to right.</p>
       </header>
       ${totals}
       ${groups.map(group).join('')}
@@ -301,12 +301,7 @@ export function trackerBoard(groups) {
         <thead><tr><th>Question</th><th>What’s asked, and why</th><th>Screens it holds</th></tr></thead>
         <tbody>${questions.map((q) => `<tr><td class="id">${q.id}</td><td>${q.ask}<span class="why">${q.why}</span></td><td>${unblocks(q)}</td></tr>`).join('')}</tbody>
       </table>
-      ${answered.length ? `<div class="grp-h"><h2>Answered</h2><span class="c">${answered.length}, kept as the record</span></div>
-      <table class="answered">
-        <colgroup><col style="width: 15%;"><col style="width: 40%;"><col></colgroup>
-        <thead><tr><th>Question</th><th>What was asked</th><th>Answer</th></tr></thead>
-        <tbody>${answered.map((q) => `<tr><td class="id">${q.id}<span class="why">${q.answered ?? q.asked}</span></td><td>${q.ask}</td><td><b>${q.answer}</b></td></tr>`).join('')}</tbody>
-      </table>` : ''}
+      ${answered.length ? `<p class="lead">${answered.length} answered question${answered.length === 1 ? '' : 's'} left this board; <code>tracker-data.mjs</code> and DESIGN_SYSTEM.md Amendments keep the answers.</p>` : ''}
     </section>`;
 
     const group = (g) => {
@@ -319,9 +314,10 @@ export function trackerBoard(groups) {
           const items = p.open.length
             ? `<ul>${p.open.map((b) => `<li><span class="chip w-${waitOf(b)}">${WAITS[waitOf(b)].word}</span><span class="t">${gapText(b)}${b.ask ? ` <span class="ask">${b.ask}</span>` : ''}</span></li>`).join('')}</ul>`
             : '<span class="none">Nothing open</span>';
-          const iss = issues.length
-            ? `<ul>${issues.map((i) => `<li class="${closedIssue(i) ? 'fixed' : ''}"><span class="chip sv-${i.sev}">${i.id}</span><span class="t">${i.title}<span class="env">${i.env}${issueState(i)}</span></span></li>`).join('')}</ul>`
-            : '<span class="none">None known</span>';
+          const openIss = issues.filter((i) => !closedIssue(i));
+          const iss = openIss.length
+            ? `<ul>${openIss.map((i) => `<li><span class="chip sv-${i.sev}">${i.id}</span><span class="t">${i.title}<span class="env">${i.env}${issueState(i)}</span></span></li>`).join('')}</ul>`
+            : `<span class="none">${issues.length ? `None open · ${issues.length} fixed or closed` : 'None known'}</span>`;
           return `<tr>
             <td class="name"><strong>${r.label}</strong>${r.spec?.route ? `<span class="route">${r.spec.route}</span>` : ''}</td>
             <td><span class="st ${s.cls}">${s.word}</span>${bar(p)}<div class="counts">${p.shipped}/${p.total} shipped${issues.some((i) => !closedIssue(i)) ? ` · ${issues.filter((i) => !closedIssue(i)).length} issue${issues.filter((i) => !closedIssue(i)).length === 1 ? '' : 's'} open` : ''}</div></td>
@@ -342,9 +338,9 @@ export function trackerBoard(groups) {
 
     return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><article class="tk" aria-label="Screen tracker">
       <header>
-        <div class="eyebrow">Final · Convexa v1 · screen tracker</div>
+        <div class="eyebrow">Start here · screen tracker</div>
         <h1 class="display">Screen tracker</h1>
-        <p class="lead">Every screen, every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>, which records answers and fixes rather than deleting them. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
+        <p class="lead">Every screen, every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>; this board shows only what is still open, and the file keeps every answer and fix as the record. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
       </header>
       ${tiles}
       ${qTable}

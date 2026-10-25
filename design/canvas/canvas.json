@@ -1,5055 +1,2368 @@
 {
   "pages": [
     {
-      "id": "final",
-      "name": "Final · Convexa v1"
+      "id": "start",
+      "name": "Start here"
     },
     {
-      "id": "page-1",
+      "id": "ticker",
       "name": "Ticker desk"
     },
     {
-      "id": "page-2",
-      "name": "Responsive"
+      "id": "research",
+      "name": "Research"
     },
     {
-      "id": "page-3",
-      "name": "Site"
+      "id": "account",
+      "name": "Scanner & account"
     },
     {
-      "id": "page-4",
-      "name": "Dialogs & gates"
+      "id": "overlays",
+      "name": "Dialogs & overlays"
     },
     {
-      "id": "page-5",
-      "name": "System"
+      "id": "site",
+      "name": "Site & shell"
     },
     {
-      "id": "v4-data",
-      "name": "v4 · Data states"
+      "id": "foundations",
+      "name": "Foundations"
     },
     {
-      "id": "v4-tools",
-      "name": "v4 · Tools from public data"
-    },
-    {
-      "id": "v4-app",
-      "name": "v4 · App"
-    },
-    {
-      "id": "v4-research",
-      "name": "v4 · Research"
-    },
-    {
-      "id": "v4-coverage",
-      "name": "v4 · Coverage"
-    },
-    {
-      "id": "v5-charts",
-      "name": "v5 · Charts · audit and system"
-    },
-    {
-      "id": "q5-alerts",
-      "name": "Ruled · Alerts on public data (Q-5)"
-    },
-    {
-      "id": "v5-families",
-      "name": "v5 · Chart families · before and after"
-    },
-    {
-      "id": "v5-frontier",
-      "name": "v5 · Frontier"
+      "id": "planned",
+      "name": "Planned · not built"
     }
   ],
   "artboards": [
     {
-      "file": "FProgressMap.dc.html",
-      "title": "Final · Board map · What’s built",
+      "file": "Main.dc.html",
+      "title": "Board map · What’s built",
       "x": 0,
       "y": 0,
       "w": 1440,
       "h": 3737,
-      "page": "final",
+      "page": "start",
       "expand": "fill"
     },
     {
       "file": "FProgressTracker.dc.html",
-      "title": "Final · Board map · Screen tracker",
+      "title": "Board map · Screen tracker",
       "x": 1560,
       "y": 0,
       "w": 1440,
       "h": 6539,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FFoundationsSpec.dc.html",
-      "title": "Final · Foundations · spec",
-      "x": 0,
-      "y": 6899,
-      "w": 760,
-      "h": 2384,
-      "page": "final"
-    },
-    {
-      "file": "FFoundationsStateMatrix.dc.html",
-      "title": "Final · Foundations · State vocabulary × families",
-      "x": 880,
-      "y": 6899,
-      "w": 3220,
-      "h": 4043,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FFoundationsChartSystem.dc.html",
-      "title": "Final · Foundations · Chart system (P-8–P-13, ruled)",
-      "x": 4220,
-      "y": 6899,
-      "w": 1440,
-      "h": 7433,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FFoundationsChartStates.dc.html",
-      "title": "Final · Foundations · Every chart, in every state",
-      "x": 5780,
-      "y": 6899,
-      "w": 1440,
-      "h": 3681,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FFoundationsThirdParty.dc.html",
-      "title": "Final · Foundations · Ours, and theirs (P-8, P-14 load on view)",
-      "x": 7340,
-      "y": 6899,
-      "w": 1440,
-      "h": 1803,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FShellSpec.dc.html",
-      "title": "Final · Global shell · spec",
-      "x": 0,
-      "y": 14692,
-      "w": 760,
-      "h": 3415,
-      "page": "final"
-    },
-    {
-      "file": "FShellStaging.dc.html",
-      "title": "Final · Global shell · Staging · demo account",
-      "x": 880,
-      "y": 14692,
-      "w": 1440,
-      "h": 980,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FShellProduction.dc.html",
-      "title": "Final · Global shell · Production",
-      "x": 2440,
-      "y": 14692,
-      "w": 1440,
-      "h": 934,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FShellPhone.dc.html",
-      "title": "Final · Global shell · Phone · production",
-      "x": 4000,
-      "y": 14692,
-      "w": 390,
-      "h": 920,
-      "page": "final"
-    },
-    {
-      "file": "FShellStagingPhone.dc.html",
-      "title": "Final · Global shell · Phone · staging",
-      "x": 4510,
-      "y": 14692,
-      "w": 390,
-      "h": 920,
-      "page": "final"
-    },
-    {
-      "file": "FShellLight.dc.html",
-      "title": "Final · Global shell · Light · production",
-      "x": 5020,
-      "y": 14692,
-      "w": 1440,
-      "h": 934,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FShellStates.dc.html",
-      "title": "Final · Global shell · States",
-      "x": 6580,
-      "y": 14692,
-      "w": 1440,
-      "h": 4339,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FLandingSpec.dc.html",
-      "title": "Final · Landing · spec",
-      "x": 0,
-      "y": 19391,
-      "w": 760,
-      "h": 2846,
-      "page": "final"
-    },
-    {
-      "file": "FLandingStaging.dc.html",
-      "title": "Final · Landing · Staging · demo account",
-      "x": 880,
-      "y": 19391,
-      "w": 1440,
-      "h": 3050,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FLandingProduction.dc.html",
-      "title": "Final · Landing · Production",
-      "x": 2440,
-      "y": 19391,
-      "w": 1440,
-      "h": 2995,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FLandingPhone.dc.html",
-      "title": "Final · Landing · Phone · production",
-      "x": 4000,
-      "y": 19391,
-      "w": 390,
-      "h": 5682,
-      "page": "final"
-    },
-    {
-      "file": "FLandingLight.dc.html",
-      "title": "Final · Landing · Light · production",
-      "x": 4510,
-      "y": 19391,
-      "w": 1440,
-      "h": 2995,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FLandingStates.dc.html",
-      "title": "Final · Landing · States",
-      "x": 6070,
-      "y": 19391,
-      "w": 1440,
-      "h": 2952,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FMethodologySpec.dc.html",
-      "title": "Final · Methodology · spec",
-      "x": 0,
-      "y": 25433,
-      "w": 760,
-      "h": 1957,
-      "page": "final"
-    },
-    {
-      "file": "FMethodologyProduction.dc.html",
-      "title": "Final · Methodology · Production",
-      "x": 880,
-      "y": 25433,
-      "w": 1440,
-      "h": 5524,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FMethodologyStaging.dc.html",
-      "title": "Final · Methodology · Staging · demo account",
-      "x": 2440,
-      "y": 25433,
-      "w": 1440,
-      "h": 4630,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FMethodologyPhone.dc.html",
-      "title": "Final · Methodology · Phone · production",
-      "x": 4000,
-      "y": 25433,
-      "w": 390,
-      "h": 7498,
-      "page": "final"
-    },
-    {
-      "file": "FMethodologyLight.dc.html",
-      "title": "Final · Methodology · Light · production",
-      "x": 4510,
-      "y": 25433,
-      "w": 1440,
-      "h": 5524,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FMethodologyStates.dc.html",
-      "title": "Final · Methodology · States",
-      "x": 6070,
-      "y": 25433,
-      "w": 1440,
-      "h": 1941,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FBlogSpec.dc.html",
-      "title": "Final · Blog · spec",
-      "x": 0,
-      "y": 33291,
-      "w": 760,
-      "h": 1087,
-      "page": "final"
-    },
-    {
-      "file": "FBlogIndex.dc.html",
-      "title": "Final · Blog · Index · production and staging (identical apart from the bar)",
-      "x": 880,
-      "y": 33291,
-      "w": 1440,
-      "h": 920,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FBlogPost.dc.html",
-      "title": "Final · Blog · Post · production and staging (identical apart from the bar)",
-      "x": 2440,
-      "y": 33291,
-      "w": 1440,
-      "h": 2275,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FBlogPhone.dc.html",
-      "title": "Final · Blog · Phone · post",
-      "x": 4000,
-      "y": 33291,
-      "w": 390,
-      "h": 2952,
-      "page": "final"
-    },
-    {
-      "file": "FBlogLight.dc.html",
-      "title": "Final · Blog · Light · post",
-      "x": 4510,
-      "y": 33291,
-      "w": 1440,
-      "h": 2275,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FBlogStates.dc.html",
-      "title": "Final · Blog · States",
-      "x": 6070,
-      "y": 33291,
-      "w": 1440,
-      "h": 1463,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FNotFoundSpec.dc.html",
-      "title": "Final · 404 and route fallback · spec",
-      "x": 0,
-      "y": 36603,
-      "w": 760,
-      "h": 1491,
-      "page": "final"
-    },
-    {
-      "file": "FNotFoundBoth.dc.html",
-      "title": "Final · 404 and route fallback · Production and staging (identical apart from the bar)",
-      "x": 880,
-      "y": 36603,
-      "w": 1440,
-      "h": 920,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FNotFoundPhone.dc.html",
-      "title": "Final · 404 and route fallback · Phone · production",
-      "x": 2440,
-      "y": 36603,
-      "w": 390,
-      "h": 967,
-      "page": "final"
-    },
-    {
-      "file": "FNotFoundLight.dc.html",
-      "title": "Final · 404 and route fallback · Light · production",
-      "x": 2950,
-      "y": 36603,
-      "w": 1440,
-      "h": 920,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FNotFoundStates.dc.html",
-      "title": "Final · 404 and route fallback · States",
-      "x": 4510,
-      "y": 36603,
-      "w": 1440,
-      "h": 1304,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FCreditsSpec.dc.html",
-      "title": "Final · Data sources and credits · spec",
-      "x": 0,
-      "y": 38454,
-      "w": 760,
-      "h": 3764,
-      "page": "final"
-    },
-    {
-      "file": "FCreditsStaging.dc.html",
-      "title": "Final · Data sources and credits · Staging · demo account",
-      "x": 880,
-      "y": 38454,
-      "w": 1440,
-      "h": 4834,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FCreditsProduction.dc.html",
-      "title": "Final · Data sources and credits · Production",
-      "x": 2440,
-      "y": 38454,
-      "w": 1440,
-      "h": 4578,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FCreditsPhone.dc.html",
-      "title": "Final · Data sources and credits · Phone · production",
-      "x": 4000,
-      "y": 38454,
-      "w": 390,
-      "h": 6283,
-      "page": "final"
-    },
-    {
-      "file": "FCreditsLight.dc.html",
-      "title": "Final · Data sources and credits · Light · production",
-      "x": 4510,
-      "y": 38454,
-      "w": 1440,
-      "h": 4578,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FCreditsStates.dc.html",
-      "title": "Final · Data sources and credits · States",
-      "x": 6070,
-      "y": 38454,
-      "w": 1440,
-      "h": 2034,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FPrivacySpec.dc.html",
-      "title": "Final · Privacy · spec",
-      "x": 0,
-      "y": 45097,
-      "w": 760,
-      "h": 2294,
-      "page": "final"
-    },
-    {
-      "file": "FPrivacyStaging.dc.html",
-      "title": "Final · Privacy · Staging · demo account",
-      "x": 880,
-      "y": 45097,
-      "w": 1440,
-      "h": 2283,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FPrivacyProduction.dc.html",
-      "title": "Final · Privacy · Production",
-      "x": 2440,
-      "y": 45097,
-      "w": 1440,
-      "h": 3326,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FPrivacyPhone.dc.html",
-      "title": "Final · Privacy · Phone · production",
-      "x": 4000,
-      "y": 45097,
-      "w": 390,
-      "h": 4635,
-      "page": "final"
-    },
-    {
-      "file": "FPrivacyLight.dc.html",
-      "title": "Final · Privacy · Light · production",
-      "x": 4510,
-      "y": 45097,
-      "w": 1440,
-      "h": 3326,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FTermsSpec.dc.html",
-      "title": "Final · Terms and disclaimer · spec",
-      "x": 0,
-      "y": 50092,
-      "w": 760,
-      "h": 1469,
-      "page": "final"
-    },
-    {
-      "file": "FTermsStaging.dc.html",
-      "title": "Final · Terms and disclaimer · Staging · demo account",
-      "x": 880,
-      "y": 50092,
-      "w": 1440,
-      "h": 2667,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FTermsProduction.dc.html",
-      "title": "Final · Terms and disclaimer · Production",
-      "x": 2440,
-      "y": 50092,
-      "w": 1440,
-      "h": 2469,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FTermsPhone.dc.html",
-      "title": "Final · Terms and disclaimer · Phone · production",
-      "x": 4000,
-      "y": 50092,
-      "w": 390,
-      "h": 3446,
-      "page": "final"
-    },
-    {
-      "file": "FTermsLight.dc.html",
-      "title": "Final · Terms and disclaimer · Light · production",
-      "x": 4510,
-      "y": 50092,
-      "w": 1440,
-      "h": 2469,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FOperatorSpec.dc.html",
-      "title": "Final · Operator · spec",
-      "x": 0,
-      "y": 53898,
-      "w": 760,
-      "h": 1807,
-      "page": "final"
-    },
-    {
-      "file": "FOperatorProduction.dc.html",
-      "title": "Final · Operator · Production · /_ops/metrics",
-      "x": 880,
-      "y": 53898,
-      "w": 1440,
-      "h": 943,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FOperatorArchive.dc.html",
-      "title": "Final · Operator · Production · /_ops/research",
-      "x": 2440,
-      "y": 53898,
-      "w": 1440,
-      "h": 920,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FOperatorStaging.dc.html",
-      "title": "Final · Operator · Staging · both routes",
-      "x": 4000,
-      "y": 53898,
-      "w": 1440,
-      "h": 920,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FOperatorPhone.dc.html",
-      "title": "Final · Operator · Phone · production metrics",
-      "x": 5560,
-      "y": 53898,
-      "w": 390,
-      "h": 1020,
-      "page": "final"
-    },
-    {
-      "file": "FOperatorLight.dc.html",
-      "title": "Final · Operator · Light · production metrics",
-      "x": 6070,
-      "y": 53898,
-      "w": 1440,
-      "h": 943,
-      "page": "final",
-      "expand": "fill"
-    },
-    {
-      "file": "FOperatorStates.dc.html",
-      "title": "Final · Operator · States",
-      "x": 7630,
-      "y": 53898,
-      "w": 1440,
-      "h": 1439,
-      "page": "final",
+      "page": "start",
       "expand": "fill"
     },
     {
       "file": "FDeskSpec.dc.html",
-      "title": "Final · Ticker desk · spec",
+      "title": "Ticker desk · spec",
       "x": 0,
-      "y": 56065,
+      "y": 0,
       "w": 760,
       "h": 5511,
-      "page": "final"
+      "page": "ticker"
     },
     {
       "file": "FDeskStaging.dc.html",
-      "title": "Final · Ticker desk · Staging · demo account",
+      "title": "Ticker desk · Staging · demo account",
       "x": 880,
-      "y": 56065,
+      "y": 0,
       "w": 1440,
       "h": 3009,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FDeskProduction.dc.html",
-      "title": "Final · Ticker desk · Production",
+      "title": "Ticker desk · Production",
       "x": 2440,
-      "y": 56065,
+      "y": 0,
       "w": 1440,
       "h": 2460,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FDeskPhone.dc.html",
-      "title": "Final · Ticker desk · Phone · production",
+      "title": "Ticker desk · Phone · production",
       "x": 4000,
-      "y": 56065,
+      "y": 0,
       "w": 390,
       "h": 3029,
-      "page": "final"
+      "page": "ticker"
     },
     {
       "file": "FDeskLight.dc.html",
-      "title": "Final · Ticker desk · Light · production",
+      "title": "Ticker desk · Light · production",
       "x": 4510,
-      "y": 56065,
+      "y": 0,
       "w": 1440,
       "h": 2460,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FDeskStates.dc.html",
-      "title": "Final · Ticker desk · States",
+      "title": "Ticker desk · States",
       "x": 6070,
-      "y": 56065,
+      "y": 0,
       "w": 1440,
       "h": 2770,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FAiReadSpec.dc.html",
-      "title": "Final · AI read · spec",
+      "title": "AI read · spec",
       "x": 0,
-      "y": 61936,
+      "y": 5871,
       "w": 760,
       "h": 2916,
-      "page": "final"
+      "page": "ticker"
     },
     {
       "file": "FAiReadStaging.dc.html",
-      "title": "Final · AI read · Staging · full analysis drawer",
+      "title": "AI read · Staging · full analysis drawer",
       "x": 880,
-      "y": 61936,
+      "y": 5871,
       "w": 1440,
       "h": 1520,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FAiReadExport.dc.html",
-      "title": "Final · AI read · Staging · sample export drawer",
+      "title": "AI read · Staging · sample export drawer",
       "x": 2440,
-      "y": 61936,
+      "y": 5871,
       "w": 1440,
       "h": 1040,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FAiReadPeek.dc.html",
-      "title": "Final · AI read · Phone · staging · peek row",
+      "title": "AI read · Phone · staging · peek row",
       "x": 4000,
-      "y": 61936,
+      "y": 5871,
       "w": 390,
       "h": 920,
-      "page": "final"
+      "page": "ticker"
     },
     {
       "file": "FAiReadSheet.dc.html",
-      "title": "Final · AI read · Phone · staging · sheet open",
+      "title": "AI read · Phone · staging · sheet open",
       "x": 4510,
-      "y": 61936,
+      "y": 5871,
       "w": 390,
       "h": 1044,
-      "page": "final"
+      "page": "ticker"
     },
     {
       "file": "FAiReadProduction.dc.html",
-      "title": "Final · AI read · Production · Not live",
+      "title": "AI read · Production · Not live",
       "x": 5020,
-      "y": 61936,
+      "y": 5871,
       "w": 1440,
       "h": 1243,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FAiReadStates.dc.html",
-      "title": "Final · AI read · States",
+      "title": "AI read · States",
       "x": 6580,
-      "y": 61936,
+      "y": 5871,
       "w": 1440,
       "h": 3328,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FTechnicalSpec.dc.html",
-      "title": "Final · Technical tab · spec",
+      "title": "Technical tab · spec",
       "x": 0,
-      "y": 65624,
+      "y": 9559,
       "w": 760,
       "h": 2516,
-      "page": "final"
+      "page": "ticker"
     },
     {
       "file": "FTechnicalStaging.dc.html",
-      "title": "Final · Technical tab · Staging · demo account",
+      "title": "Technical tab · Staging · demo account",
       "x": 880,
-      "y": 65624,
+      "y": 9559,
       "w": 1440,
       "h": 1534,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FTechnicalProduction.dc.html",
-      "title": "Final · Technical tab · Production",
+      "title": "Technical tab · Production",
       "x": 2440,
-      "y": 65624,
+      "y": 9559,
       "w": 1440,
       "h": 1254,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FTechnicalPhone.dc.html",
-      "title": "Final · Technical tab · Phone · production",
+      "title": "Technical tab · Phone · production",
       "x": 4000,
-      "y": 65624,
+      "y": 9559,
       "w": 390,
       "h": 1741,
-      "page": "final"
+      "page": "ticker"
     },
     {
       "file": "FTechnicalLight.dc.html",
-      "title": "Final · Technical tab · Light · production",
+      "title": "Technical tab · Light · production",
       "x": 4510,
-      "y": 65624,
+      "y": 9559,
       "w": 1440,
       "h": 1254,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FTechnicalStates.dc.html",
-      "title": "Final · Technical tab · States",
+      "title": "Technical tab · States",
       "x": 6070,
-      "y": 65624,
+      "y": 9559,
       "w": 1440,
       "h": 2276,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FNoteSpec.dc.html",
-      "title": "Final · Research tab · note · spec",
+      "title": "Research tab · note · spec",
       "x": 0,
-      "y": 68500,
+      "y": 12435,
       "w": 760,
       "h": 3828,
-      "page": "final"
+      "page": "ticker"
     },
     {
       "file": "FNoteStaging.dc.html",
-      "title": "Final · Research tab · note · Staging · demo account",
+      "title": "Research tab · note · Staging · demo account",
       "x": 880,
-      "y": 68500,
+      "y": 12435,
       "w": 1440,
       "h": 1985,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FNoteProduction.dc.html",
-      "title": "Final · Research tab · note · Production",
+      "title": "Research tab · note · Production",
       "x": 2440,
-      "y": 68500,
+      "y": 12435,
       "w": 1440,
       "h": 4505,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FNotePhone.dc.html",
-      "title": "Final · Research tab · note · Phone · production",
+      "title": "Research tab · note · Phone · production",
       "x": 4000,
-      "y": 68500,
+      "y": 12435,
       "w": 390,
       "h": 6789,
-      "page": "final"
+      "page": "ticker"
     },
     {
       "file": "FNoteLight.dc.html",
-      "title": "Final · Research tab · note · Light · production",
+      "title": "Research tab · note · Light · production",
       "x": 4510,
-      "y": 68500,
+      "y": 12435,
       "w": 1440,
       "h": 4505,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FNoteStates.dc.html",
-      "title": "Final · Research tab · note · States",
+      "title": "Research tab · note · States",
       "x": 6070,
-      "y": 68500,
+      "y": 12435,
       "w": 1440,
       "h": 2503,
-      "page": "final",
+      "page": "ticker",
       "expand": "fill"
     },
     {
       "file": "FResearchIndexSpec.dc.html",
-      "title": "Final · Research · Notes · spec",
+      "title": "Research · Notes · spec",
       "x": 0,
-      "y": 75649,
+      "y": 0,
       "w": 760,
       "h": 2630,
-      "page": "final"
+      "page": "research"
     },
     {
       "file": "FResearchIndexStaging.dc.html",
-      "title": "Final · Research · Notes · Staging · demo account",
+      "title": "Research · Notes · Staging · demo account",
       "x": 880,
-      "y": 75649,
+      "y": 0,
       "w": 1440,
       "h": 1411,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchIndexProduction.dc.html",
-      "title": "Final · Research · Notes · Production",
+      "title": "Research · Notes · Production",
       "x": 2440,
-      "y": 75649,
+      "y": 0,
       "w": 1440,
       "h": 2597,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchIndexPhone.dc.html",
-      "title": "Final · Research · Notes · Phone · production",
+      "title": "Research · Notes · Phone · production",
       "x": 4000,
-      "y": 75649,
+      "y": 0,
       "w": 390,
       "h": 6417,
-      "page": "final"
+      "page": "research"
     },
     {
       "file": "FResearchIndexLight.dc.html",
-      "title": "Final · Research · Notes · Light · production",
+      "title": "Research · Notes · Light · production",
       "x": 4510,
-      "y": 75649,
+      "y": 0,
       "w": 1440,
       "h": 2597,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchIndexStates.dc.html",
-      "title": "Final · Research · Notes · States",
+      "title": "Research · Notes · States",
       "x": 6070,
-      "y": 75649,
+      "y": 0,
       "w": 1440,
       "h": 1407,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchMarketsSpec.dc.html",
-      "title": "Final · Research · Markets · spec",
+      "title": "Research · Markets · spec",
       "x": 0,
-      "y": 82426,
+      "y": 6777,
       "w": 760,
       "h": 2868,
-      "page": "final"
+      "page": "research"
     },
     {
       "file": "FResearchMarketsStaging.dc.html",
-      "title": "Final · Research · Markets · Staging · demo account",
+      "title": "Research · Markets · Staging · demo account",
       "x": 880,
-      "y": 82426,
+      "y": 6777,
       "w": 1440,
       "h": 2724,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchMarketsProduction.dc.html",
-      "title": "Final · Research · Markets · Production",
+      "title": "Research · Markets · Production",
       "x": 2440,
-      "y": 82426,
+      "y": 6777,
       "w": 1440,
       "h": 2843,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchMarketsPhone.dc.html",
-      "title": "Final · Research · Markets · Phone · production",
+      "title": "Research · Markets · Phone · production",
       "x": 4000,
-      "y": 82426,
+      "y": 6777,
       "w": 390,
       "h": 5659,
-      "page": "final"
+      "page": "research"
     },
     {
       "file": "FResearchMarketsLight.dc.html",
-      "title": "Final · Research · Markets · Light · production",
+      "title": "Research · Markets · Light · production",
       "x": 4510,
-      "y": 82426,
+      "y": 6777,
       "w": 1440,
       "h": 2843,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchMarketsStates.dc.html",
-      "title": "Final · Research · Markets · States",
+      "title": "Research · Markets · States",
       "x": 6070,
-      "y": 82426,
+      "y": 6777,
       "w": 1440,
       "h": 2164,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchFilingsSpec.dc.html",
-      "title": "Final · Research · Filings · spec",
+      "title": "Research · Filings · spec",
       "x": 0,
-      "y": 88445,
+      "y": 12796,
       "w": 760,
       "h": 2625,
-      "page": "final"
+      "page": "research"
     },
     {
       "file": "FResearchFilingsStaging.dc.html",
-      "title": "Final · Research · Filings · Staging · demo account",
+      "title": "Research · Filings · Staging · demo account",
       "x": 880,
-      "y": 88445,
+      "y": 12796,
       "w": 1440,
       "h": 1388,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchFilingsProduction.dc.html",
-      "title": "Final · Research · Filings · Production",
+      "title": "Research · Filings · Production",
       "x": 2440,
-      "y": 88445,
+      "y": 12796,
       "w": 1440,
       "h": 1547,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchFilingsPhone.dc.html",
-      "title": "Final · Research · Filings · Phone · production",
+      "title": "Research · Filings · Phone · production",
       "x": 4000,
-      "y": 88445,
+      "y": 12796,
       "w": 390,
       "h": 3335,
-      "page": "final"
+      "page": "research"
     },
     {
       "file": "FResearchFilingsLight.dc.html",
-      "title": "Final · Research · Filings · Light · production",
+      "title": "Research · Filings · Light · production",
       "x": 4510,
-      "y": 88445,
+      "y": 12796,
       "w": 1440,
       "h": 1547,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchFilingsStates.dc.html",
-      "title": "Final · Research · Filings · States",
+      "title": "Research · Filings · States",
       "x": 6070,
-      "y": 88445,
+      "y": 12796,
       "w": 1440,
       "h": 1848,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchScorecardSpec.dc.html",
-      "title": "Final · Research · Scorecard · spec",
+      "title": "Research · Scorecard · spec",
       "x": 0,
-      "y": 92140,
+      "y": 16491,
       "w": 760,
       "h": 2221,
-      "page": "final"
+      "page": "research"
     },
     {
       "file": "FResearchScorecardStaging.dc.html",
-      "title": "Final · Research · Scorecard · Staging · demo account",
+      "title": "Research · Scorecard · Staging · demo account",
       "x": 880,
-      "y": 92140,
+      "y": 16491,
       "w": 1440,
       "h": 2021,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchScorecardProduction.dc.html",
-      "title": "Final · Research · Scorecard · Production",
+      "title": "Research · Scorecard · Production",
       "x": 2440,
-      "y": 92140,
+      "y": 16491,
       "w": 1440,
       "h": 2050,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchScorecardPhone.dc.html",
-      "title": "Final · Research · Scorecard · Phone · production",
+      "title": "Research · Scorecard · Phone · production",
       "x": 4000,
-      "y": 92140,
+      "y": 16491,
       "w": 390,
       "h": 4949,
-      "page": "final"
+      "page": "research"
     },
     {
       "file": "FResearchScorecardLight.dc.html",
-      "title": "Final · Research · Scorecard · Light · production",
+      "title": "Research · Scorecard · Light · production",
       "x": 4510,
-      "y": 92140,
+      "y": 16491,
       "w": 1440,
       "h": 2050,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FResearchScorecardStates.dc.html",
-      "title": "Final · Research · Scorecard · States",
+      "title": "Research · Scorecard · States",
       "x": 6070,
-      "y": 92140,
+      "y": 16491,
       "w": 1440,
       "h": 1265,
-      "page": "final",
+      "page": "research",
       "expand": "fill"
     },
     {
       "file": "FScannerSpec.dc.html",
-      "title": "Final · Scanner · spec",
+      "title": "Scanner · spec",
       "x": 0,
-      "y": 97449,
+      "y": 0,
       "w": 760,
       "h": 2686,
-      "page": "final"
+      "page": "account"
     },
     {
       "file": "FScannerStaging.dc.html",
-      "title": "Final · Scanner · Staging · demo account",
+      "title": "Scanner · Staging · demo account",
       "x": 880,
-      "y": 97449,
+      "y": 0,
       "w": 1440,
       "h": 1217,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FScannerProduction.dc.html",
-      "title": "Final · Scanner · Production · signed out",
+      "title": "Scanner · Production · signed out",
       "x": 2440,
-      "y": 97449,
+      "y": 0,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FScannerProductionSignedIn.dc.html",
-      "title": "Final · Scanner · Production · signed in · Not live",
+      "title": "Scanner · Production · signed in · Not live",
       "x": 4000,
-      "y": 97449,
+      "y": 0,
       "w": 1440,
       "h": 994,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FScannerPhone.dc.html",
-      "title": "Final · Scanner · Phone · production",
+      "title": "Scanner · Phone · production",
       "x": 5560,
-      "y": 97449,
+      "y": 0,
       "w": 390,
       "h": 959,
-      "page": "final"
+      "page": "account"
     },
     {
       "file": "FScannerStagingPhone.dc.html",
-      "title": "Final · Scanner · Phone · staging",
+      "title": "Scanner · Phone · staging",
       "x": 6070,
-      "y": 97449,
+      "y": 0,
       "w": 390,
       "h": 2096,
-      "page": "final"
+      "page": "account"
     },
     {
       "file": "FScannerLight.dc.html",
-      "title": "Final · Scanner · Light · production, signed in",
+      "title": "Scanner · Light · production, signed in",
       "x": 6580,
-      "y": 97449,
+      "y": 0,
       "w": 1440,
       "h": 994,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FScannerStates.dc.html",
-      "title": "Final · Scanner · States",
+      "title": "Scanner · States",
       "x": 8140,
-      "y": 97449,
+      "y": 0,
       "w": 1440,
       "h": 2693,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FPositionsSpec.dc.html",
-      "title": "Final · Positions · spec",
+      "title": "Positions · spec",
       "x": 0,
-      "y": 100502,
+      "y": 3053,
       "w": 760,
       "h": 2041,
-      "page": "final"
+      "page": "account"
     },
     {
       "file": "FPositionsStaging.dc.html",
-      "title": "Final · Positions · Staging · demo account",
+      "title": "Positions · Staging · demo account",
       "x": 880,
-      "y": 100502,
+      "y": 3053,
       "w": 1440,
       "h": 1086,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FPositionsProduction.dc.html",
-      "title": "Final · Positions · Production · signed out",
+      "title": "Positions · Production · signed out",
       "x": 2440,
-      "y": 100502,
+      "y": 3053,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FPositionsPhone.dc.html",
-      "title": "Final · Positions · Phone · production",
+      "title": "Positions · Phone · production",
       "x": 4000,
-      "y": 100502,
+      "y": 3053,
       "w": 390,
       "h": 959,
-      "page": "final"
+      "page": "account"
     },
     {
       "file": "FPositionsStagingPhone.dc.html",
-      "title": "Final · Positions · Phone · staging",
+      "title": "Positions · Phone · staging",
       "x": 4510,
-      "y": 100502,
+      "y": 3053,
       "w": 390,
       "h": 1959,
-      "page": "final"
+      "page": "account"
     },
     {
       "file": "FPositionsLight.dc.html",
-      "title": "Final · Positions · Light · production",
+      "title": "Positions · Light · production",
       "x": 5020,
-      "y": 100502,
+      "y": 3053,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FPositionsStates.dc.html",
-      "title": "Final · Positions · States",
+      "title": "Positions · States",
       "x": 6580,
-      "y": 100502,
+      "y": 3053,
       "w": 1440,
       "h": 2115,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FAlertsSpec.dc.html",
-      "title": "Final · Alerts · spec",
+      "title": "Alerts · spec",
       "x": 0,
-      "y": 102977,
+      "y": 5528,
       "w": 760,
       "h": 2937,
-      "page": "final"
+      "page": "account"
     },
     {
       "file": "FAlertsStaging.dc.html",
-      "title": "Final · Alerts · Staging · demo account",
+      "title": "Alerts · Staging · demo account",
       "x": 880,
-      "y": 102977,
+      "y": 5528,
       "w": 1440,
       "h": 1931,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FAlertsProduction.dc.html",
-      "title": "Final · Alerts · Production · public data",
+      "title": "Alerts · Production · public data",
       "x": 2440,
-      "y": 102977,
+      "y": 5528,
       "w": 1440,
       "h": 2288,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FAlertsPhone.dc.html",
-      "title": "Final · Alerts · Phone · production",
+      "title": "Alerts · Phone · production",
       "x": 4000,
-      "y": 102977,
+      "y": 5528,
       "w": 390,
       "h": 3823,
-      "page": "final"
+      "page": "account"
     },
     {
       "file": "FAlertsLight.dc.html",
-      "title": "Final · Alerts · Light · production",
+      "title": "Alerts · Light · production",
       "x": 4510,
-      "y": 102977,
+      "y": 5528,
       "w": 1440,
       "h": 2288,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FAlertsStates.dc.html",
-      "title": "Final · Alerts · States (Q-5)",
+      "title": "Alerts · States (Q-5)",
       "x": 6070,
-      "y": 102977,
+      "y": 5528,
       "w": 1440,
       "h": 3419,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FSettingsSpec.dc.html",
-      "title": "Final · Settings · spec",
+      "title": "Settings · spec",
       "x": 0,
-      "y": 107160,
+      "y": 9711,
       "w": 760,
       "h": 2267,
-      "page": "final"
+      "page": "account"
     },
     {
       "file": "FSettingsStaging.dc.html",
-      "title": "Final · Settings · Staging · demo account",
+      "title": "Settings · Staging · demo account",
       "x": 880,
-      "y": 107160,
+      "y": 9711,
       "w": 1440,
       "h": 1825,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FSettingsProduction.dc.html",
-      "title": "Final · Settings · Production · signed out",
+      "title": "Settings · Production · signed out",
       "x": 2440,
-      "y": 107160,
+      "y": 9711,
       "w": 1440,
       "h": 1306,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FSettingsPhone.dc.html",
-      "title": "Final · Settings · Phone · production",
+      "title": "Settings · Phone · production",
       "x": 4000,
-      "y": 107160,
+      "y": 9711,
       "w": 390,
       "h": 1727,
-      "page": "final"
+      "page": "account"
     },
     {
       "file": "FSettingsLight.dc.html",
-      "title": "Final · Settings · Light · production",
+      "title": "Settings · Light · production",
       "x": 4510,
-      "y": 107160,
+      "y": 9711,
       "w": 1440,
       "h": 1306,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FSettingsStates.dc.html",
-      "title": "Final · Settings · States",
+      "title": "Settings · States",
       "x": 6070,
-      "y": 107160,
+      "y": 9711,
       "w": 1440,
       "h": 1661,
-      "page": "final",
+      "page": "account",
       "expand": "fill"
     },
     {
       "file": "FDialogsSpec.dc.html",
-      "title": "Final · Overlays · spec",
+      "title": "Overlays · spec",
       "x": 0,
-      "y": 109787,
+      "y": 0,
       "w": 760,
       "h": 2377,
-      "page": "final"
+      "page": "overlays"
     },
     {
       "file": "FDialogsSignIn.dc.html",
-      "title": "Final · Overlays · Sign in · production only",
+      "title": "Overlays · Sign in · production only",
       "x": 880,
-      "y": 109787,
+      "y": 0,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FDialogsTradeEntry.dc.html",
-      "title": "Final · Overlays · Trade entry · staging",
+      "title": "Overlays · Trade entry · staging",
       "x": 2440,
-      "y": 109787,
+      "y": 0,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FDialogsOrderDetail.dc.html",
-      "title": "Final · Overlays · Order detail · staging",
+      "title": "Overlays · Order detail · staging",
       "x": 4000,
-      "y": 109787,
+      "y": 0,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FDialogsPersona.dc.html",
-      "title": "Final · Overlays · Persona · staging",
+      "title": "Overlays · Persona · staging",
       "x": 5560,
-      "y": 109787,
+      "y": 0,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FDialogsViewEditor.dc.html",
-      "title": "Final · Overlays · Scan view editor · staging",
+      "title": "Overlays · Scan view editor · staging",
       "x": 7120,
-      "y": 109787,
+      "y": 0,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FDialogsWhatsSent.dc.html",
-      "title": "Final · Overlays · What’s sent drawer · staging",
+      "title": "Overlays · What’s sent drawer · staging",
       "x": 8680,
-      "y": 109787,
+      "y": 0,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FDialogsAlertFlow.dc.html",
-      "title": "Final · Overlays · New alert · three steps (production words)",
+      "title": "Overlays · New alert · three steps (production words)",
       "x": 10240,
-      "y": 109787,
+      "y": 0,
       "w": 1440,
       "h": 1917,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FDialogsPhone.dc.html",
-      "title": "Final · Overlays · Phone · bottom sheets",
+      "title": "Overlays · Phone · bottom sheets",
       "x": 11800,
-      "y": 109787,
+      "y": 0,
       "w": 390,
       "h": 5581,
-      "page": "final"
+      "page": "overlays"
     },
     {
       "file": "FDialogsStates.dc.html",
-      "title": "Final · Overlays · States",
+      "title": "Overlays · States",
       "x": 12310,
-      "y": 109787,
+      "y": 0,
       "w": 1440,
       "h": 2194,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FOverlaysSpec.dc.html",
-      "title": "Final · More overlays · spec",
+      "title": "More overlays · spec",
       "x": 0,
-      "y": 115728,
+      "y": 5941,
       "w": 760,
       "h": 2512,
-      "page": "final"
+      "page": "overlays"
     },
     {
       "file": "FOverlaysReassess.dc.html",
-      "title": "Final · More overlays · Reassessment request · staging",
+      "title": "More overlays · Reassessment request · staging",
       "x": 880,
-      "y": 115728,
+      "y": 5941,
       "w": 1440,
       "h": 1000,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FOverlaysArchive.dc.html",
-      "title": "Final · More overlays · Import archive · staging",
+      "title": "More overlays · Import archive · staging",
       "x": 2440,
-      "y": 115728,
+      "y": 5941,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FOverlaysExpand.dc.html",
-      "title": "Final · More overlays · Expanded widget · staging",
+      "title": "More overlays · Expanded widget · staging",
       "x": 4000,
-      "y": 115728,
+      "y": 5941,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FOverlaysViews.dc.html",
-      "title": "Final · More overlays · Name this view · staging",
+      "title": "More overlays · Name this view · staging",
       "x": 5560,
-      "y": 115728,
+      "y": 5941,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FOverlaysNotify.dc.html",
-      "title": "Final · More overlays · Browser notifications · production",
+      "title": "More overlays · Browser notifications · production",
       "x": 7120,
-      "y": 115728,
+      "y": 5941,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FOverlaysReset.dc.html",
-      "title": "Final · More overlays · Reset password · production (designed)",
+      "title": "More overlays · Reset password · production (designed)",
       "x": 8680,
-      "y": 115728,
+      "y": 5941,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FOverlaysResetPage.dc.html",
-      "title": "Final · More overlays · Set a new password · production (designed)",
+      "title": "More overlays · Set a new password · production (designed)",
       "x": 10240,
-      "y": 115728,
+      "y": 5941,
       "w": 1440,
       "h": 920,
-      "page": "final",
+      "page": "overlays",
       "expand": "fill"
     },
     {
       "file": "FOverlaysPhone.dc.html",
-      "title": "Final · More overlays · Phone · bottom sheets",
+      "title": "More overlays · Phone · bottom sheets",
       "x": 11800,
-      "y": 115728,
+      "y": 5941,
       "w": 390,
       "h": 4311,
-      "page": "final"
+      "page": "overlays"
     },
     {
       "file": "FOverlaysStates.dc.html",
-      "title": "Final · More overlays · States",
+      "title": "More overlays · States",
       "x": 12310,
-      "y": 115728,
+      "y": 5941,
       "w": 1440,
       "h": 3037,
-      "page": "final",
+      "page": "overlays",
+      "expand": "fill"
+    },
+    {
+      "file": "FShellSpec.dc.html",
+      "title": "Global shell · spec",
+      "x": 0,
+      "y": 0,
+      "w": 760,
+      "h": 3415,
+      "page": "site"
+    },
+    {
+      "file": "FShellStaging.dc.html",
+      "title": "Global shell · Staging · demo account",
+      "x": 880,
+      "y": 0,
+      "w": 1440,
+      "h": 980,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FShellProduction.dc.html",
+      "title": "Global shell · Production",
+      "x": 2440,
+      "y": 0,
+      "w": 1440,
+      "h": 934,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FShellPhone.dc.html",
+      "title": "Global shell · Phone · production",
+      "x": 4000,
+      "y": 0,
+      "w": 390,
+      "h": 920,
+      "page": "site"
+    },
+    {
+      "file": "FShellStagingPhone.dc.html",
+      "title": "Global shell · Phone · staging",
+      "x": 4510,
+      "y": 0,
+      "w": 390,
+      "h": 920,
+      "page": "site"
+    },
+    {
+      "file": "FShellLight.dc.html",
+      "title": "Global shell · Light · production",
+      "x": 5020,
+      "y": 0,
+      "w": 1440,
+      "h": 934,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FShellStates.dc.html",
+      "title": "Global shell · States",
+      "x": 6580,
+      "y": 0,
+      "w": 1440,
+      "h": 4339,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FLandingSpec.dc.html",
+      "title": "Landing · spec",
+      "x": 0,
+      "y": 4699,
+      "w": 760,
+      "h": 2846,
+      "page": "site"
+    },
+    {
+      "file": "FLandingStaging.dc.html",
+      "title": "Landing · Staging · demo account",
+      "x": 880,
+      "y": 4699,
+      "w": 1440,
+      "h": 3050,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FLandingProduction.dc.html",
+      "title": "Landing · Production",
+      "x": 2440,
+      "y": 4699,
+      "w": 1440,
+      "h": 2995,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FLandingPhone.dc.html",
+      "title": "Landing · Phone · production",
+      "x": 4000,
+      "y": 4699,
+      "w": 390,
+      "h": 5682,
+      "page": "site"
+    },
+    {
+      "file": "FLandingLight.dc.html",
+      "title": "Landing · Light · production",
+      "x": 4510,
+      "y": 4699,
+      "w": 1440,
+      "h": 2995,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FLandingStates.dc.html",
+      "title": "Landing · States",
+      "x": 6070,
+      "y": 4699,
+      "w": 1440,
+      "h": 2952,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FMethodologySpec.dc.html",
+      "title": "Methodology · spec",
+      "x": 0,
+      "y": 10741,
+      "w": 760,
+      "h": 1957,
+      "page": "site"
+    },
+    {
+      "file": "FMethodologyProduction.dc.html",
+      "title": "Methodology · Production",
+      "x": 880,
+      "y": 10741,
+      "w": 1440,
+      "h": 5524,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FMethodologyStaging.dc.html",
+      "title": "Methodology · Staging · demo account",
+      "x": 2440,
+      "y": 10741,
+      "w": 1440,
+      "h": 4630,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FMethodologyPhone.dc.html",
+      "title": "Methodology · Phone · production",
+      "x": 4000,
+      "y": 10741,
+      "w": 390,
+      "h": 7498,
+      "page": "site"
+    },
+    {
+      "file": "FMethodologyLight.dc.html",
+      "title": "Methodology · Light · production",
+      "x": 4510,
+      "y": 10741,
+      "w": 1440,
+      "h": 5524,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FMethodologyStates.dc.html",
+      "title": "Methodology · States",
+      "x": 6070,
+      "y": 10741,
+      "w": 1440,
+      "h": 1941,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FBlogSpec.dc.html",
+      "title": "Blog · spec",
+      "x": 0,
+      "y": 18599,
+      "w": 760,
+      "h": 1087,
+      "page": "site"
+    },
+    {
+      "file": "FBlogIndex.dc.html",
+      "title": "Blog · Index · production and staging (identical apart from the bar)",
+      "x": 880,
+      "y": 18599,
+      "w": 1440,
+      "h": 920,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FBlogPost.dc.html",
+      "title": "Blog · Post · production and staging (identical apart from the bar)",
+      "x": 2440,
+      "y": 18599,
+      "w": 1440,
+      "h": 2275,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FBlogPhone.dc.html",
+      "title": "Blog · Phone · post",
+      "x": 4000,
+      "y": 18599,
+      "w": 390,
+      "h": 2952,
+      "page": "site"
+    },
+    {
+      "file": "FBlogLight.dc.html",
+      "title": "Blog · Light · post",
+      "x": 4510,
+      "y": 18599,
+      "w": 1440,
+      "h": 2275,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FBlogStates.dc.html",
+      "title": "Blog · States",
+      "x": 6070,
+      "y": 18599,
+      "w": 1440,
+      "h": 1463,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FNotFoundSpec.dc.html",
+      "title": "404 and route fallback · spec",
+      "x": 0,
+      "y": 21911,
+      "w": 760,
+      "h": 1491,
+      "page": "site"
+    },
+    {
+      "file": "FNotFoundBoth.dc.html",
+      "title": "404 and route fallback · Production and staging (identical apart from the bar)",
+      "x": 880,
+      "y": 21911,
+      "w": 1440,
+      "h": 920,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FNotFoundPhone.dc.html",
+      "title": "404 and route fallback · Phone · production",
+      "x": 2440,
+      "y": 21911,
+      "w": 390,
+      "h": 967,
+      "page": "site"
+    },
+    {
+      "file": "FNotFoundLight.dc.html",
+      "title": "404 and route fallback · Light · production",
+      "x": 2950,
+      "y": 21911,
+      "w": 1440,
+      "h": 920,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FNotFoundStates.dc.html",
+      "title": "404 and route fallback · States",
+      "x": 4510,
+      "y": 21911,
+      "w": 1440,
+      "h": 1304,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FCreditsSpec.dc.html",
+      "title": "Data sources and credits · spec",
+      "x": 0,
+      "y": 23762,
+      "w": 760,
+      "h": 3764,
+      "page": "site"
+    },
+    {
+      "file": "FCreditsStaging.dc.html",
+      "title": "Data sources and credits · Staging · demo account",
+      "x": 880,
+      "y": 23762,
+      "w": 1440,
+      "h": 4834,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FCreditsProduction.dc.html",
+      "title": "Data sources and credits · Production",
+      "x": 2440,
+      "y": 23762,
+      "w": 1440,
+      "h": 4578,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FCreditsPhone.dc.html",
+      "title": "Data sources and credits · Phone · production",
+      "x": 4000,
+      "y": 23762,
+      "w": 390,
+      "h": 6283,
+      "page": "site"
+    },
+    {
+      "file": "FCreditsLight.dc.html",
+      "title": "Data sources and credits · Light · production",
+      "x": 4510,
+      "y": 23762,
+      "w": 1440,
+      "h": 4578,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FCreditsStates.dc.html",
+      "title": "Data sources and credits · States",
+      "x": 6070,
+      "y": 23762,
+      "w": 1440,
+      "h": 2034,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FPrivacySpec.dc.html",
+      "title": "Privacy · spec",
+      "x": 0,
+      "y": 30405,
+      "w": 760,
+      "h": 2294,
+      "page": "site"
+    },
+    {
+      "file": "FPrivacyStaging.dc.html",
+      "title": "Privacy · Staging · demo account",
+      "x": 880,
+      "y": 30405,
+      "w": 1440,
+      "h": 2283,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FPrivacyProduction.dc.html",
+      "title": "Privacy · Production",
+      "x": 2440,
+      "y": 30405,
+      "w": 1440,
+      "h": 3326,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FPrivacyPhone.dc.html",
+      "title": "Privacy · Phone · production",
+      "x": 4000,
+      "y": 30405,
+      "w": 390,
+      "h": 4635,
+      "page": "site"
+    },
+    {
+      "file": "FPrivacyLight.dc.html",
+      "title": "Privacy · Light · production",
+      "x": 4510,
+      "y": 30405,
+      "w": 1440,
+      "h": 3326,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FTermsSpec.dc.html",
+      "title": "Terms and disclaimer · spec",
+      "x": 0,
+      "y": 35400,
+      "w": 760,
+      "h": 1469,
+      "page": "site"
+    },
+    {
+      "file": "FTermsStaging.dc.html",
+      "title": "Terms and disclaimer · Staging · demo account",
+      "x": 880,
+      "y": 35400,
+      "w": 1440,
+      "h": 2667,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FTermsProduction.dc.html",
+      "title": "Terms and disclaimer · Production",
+      "x": 2440,
+      "y": 35400,
+      "w": 1440,
+      "h": 2469,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FTermsPhone.dc.html",
+      "title": "Terms and disclaimer · Phone · production",
+      "x": 4000,
+      "y": 35400,
+      "w": 390,
+      "h": 3446,
+      "page": "site"
+    },
+    {
+      "file": "FTermsLight.dc.html",
+      "title": "Terms and disclaimer · Light · production",
+      "x": 4510,
+      "y": 35400,
+      "w": 1440,
+      "h": 2469,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FOperatorSpec.dc.html",
+      "title": "Operator · spec",
+      "x": 0,
+      "y": 39206,
+      "w": 760,
+      "h": 1807,
+      "page": "site"
+    },
+    {
+      "file": "FOperatorProduction.dc.html",
+      "title": "Operator · Production · /_ops/metrics",
+      "x": 880,
+      "y": 39206,
+      "w": 1440,
+      "h": 943,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FOperatorArchive.dc.html",
+      "title": "Operator · Production · /_ops/research",
+      "x": 2440,
+      "y": 39206,
+      "w": 1440,
+      "h": 920,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FOperatorStaging.dc.html",
+      "title": "Operator · Staging · both routes",
+      "x": 4000,
+      "y": 39206,
+      "w": 1440,
+      "h": 920,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FOperatorPhone.dc.html",
+      "title": "Operator · Phone · production metrics",
+      "x": 5560,
+      "y": 39206,
+      "w": 390,
+      "h": 1020,
+      "page": "site"
+    },
+    {
+      "file": "FOperatorLight.dc.html",
+      "title": "Operator · Light · production metrics",
+      "x": 6070,
+      "y": 39206,
+      "w": 1440,
+      "h": 943,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FOperatorStates.dc.html",
+      "title": "Operator · States",
+      "x": 7630,
+      "y": 39206,
+      "w": 1440,
+      "h": 1439,
+      "page": "site",
+      "expand": "fill"
+    },
+    {
+      "file": "FFoundationsSpec.dc.html",
+      "title": "Foundations · spec",
+      "x": 0,
+      "y": 0,
+      "w": 760,
+      "h": 2384,
+      "page": "foundations"
+    },
+    {
+      "file": "FFoundationsStateMatrix.dc.html",
+      "title": "Foundations · State vocabulary × families",
+      "x": 880,
+      "y": 0,
+      "w": 3220,
+      "h": 4043,
+      "page": "foundations",
+      "expand": "fill"
+    },
+    {
+      "file": "FFoundationsChartSystem.dc.html",
+      "title": "Foundations · Chart system (P-8–P-13, ruled)",
+      "x": 4220,
+      "y": 0,
+      "w": 1440,
+      "h": 7433,
+      "page": "foundations",
+      "expand": "fill"
+    },
+    {
+      "file": "FFoundationsChartStates.dc.html",
+      "title": "Foundations · Every chart, in every state",
+      "x": 5780,
+      "y": 0,
+      "w": 1440,
+      "h": 3681,
+      "page": "foundations",
+      "expand": "fill"
+    },
+    {
+      "file": "FFoundationsThirdParty.dc.html",
+      "title": "Foundations · Ours, and theirs (P-8, P-14 load on view)",
+      "x": 7340,
+      "y": 0,
+      "w": 1440,
+      "h": 1803,
+      "page": "foundations",
       "expand": "fill"
     },
     {
       "file": "FPlannedLiquiditySpec.dc.html",
-      "title": "Final · Planned · Liquidity · spec",
+      "title": "Planned · Liquidity · spec",
       "x": 0,
-      "y": 121299,
+      "y": 0,
       "w": 760,
       "h": 2069,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedLiquidityStaging.dc.html",
-      "title": "Final · Planned · Liquidity · Staging · demo account",
+      "title": "Planned · Liquidity · Staging · demo account",
       "x": 880,
-      "y": 121299,
+      "y": 0,
       "w": 1440,
       "h": 1478,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedLiquidityProduction.dc.html",
-      "title": "Final · Planned · Liquidity · Production · as it would ship",
+      "title": "Planned · Liquidity · Production · as it would ship",
       "x": 2440,
-      "y": 121299,
+      "y": 0,
       "w": 1440,
       "h": 1424,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedLiquidityPhone.dc.html",
-      "title": "Final · Planned · Liquidity · Phone · production",
+      "title": "Planned · Liquidity · Phone · production",
       "x": 4000,
-      "y": 121299,
+      "y": 0,
       "w": 390,
       "h": 2215,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedLiquidityStates.dc.html",
-      "title": "Final · Planned · Liquidity · States",
+      "title": "Planned · Liquidity · States",
       "x": 4510,
-      "y": 121299,
+      "y": 0,
       "w": 1440,
       "h": 1845,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedCalendarSpec.dc.html",
-      "title": "Final · Planned · Calendar · spec",
+      "title": "Planned · Calendar · spec",
       "x": 0,
-      "y": 123874,
+      "y": 2575,
       "w": 760,
       "h": 2583,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedCalendarStaging.dc.html",
-      "title": "Final · Planned · Calendar · Staging · demo account",
+      "title": "Planned · Calendar · Staging · demo account",
       "x": 880,
-      "y": 123874,
+      "y": 2575,
       "w": 1440,
       "h": 1370,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedCalendarProduction.dc.html",
-      "title": "Final · Planned · Calendar · Production · as it would ship",
+      "title": "Planned · Calendar · Production · as it would ship",
       "x": 2440,
-      "y": 123874,
+      "y": 2575,
       "w": 1440,
       "h": 1645,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedCalendarPhone.dc.html",
-      "title": "Final · Planned · Calendar · Phone · production",
+      "title": "Planned · Calendar · Phone · production",
       "x": 4000,
-      "y": 123874,
+      "y": 2575,
       "w": 390,
       "h": 3105,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedCalendarStates.dc.html",
-      "title": "Final · Planned · Calendar · States",
+      "title": "Planned · Calendar · States",
       "x": 4510,
-      "y": 123874,
+      "y": 2575,
       "w": 1440,
       "h": 1546,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedOtcSpec.dc.html",
-      "title": "Final · Planned · Off-exchange volume · spec",
+      "title": "Planned · Off-exchange volume · spec",
       "x": 0,
-      "y": 127339,
+      "y": 6040,
       "w": 760,
       "h": 1539,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedOtcStaging.dc.html",
-      "title": "Final · Planned · Off-exchange volume · Staging · demo account",
+      "title": "Planned · Off-exchange volume · Staging · demo account",
       "x": 880,
-      "y": 127339,
+      "y": 6040,
       "w": 1440,
       "h": 1322,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedOtcProduction.dc.html",
-      "title": "Final · Planned · Off-exchange volume · Production · as it would ship",
+      "title": "Planned · Off-exchange volume · Production · as it would ship",
       "x": 2440,
-      "y": 127339,
+      "y": 6040,
       "w": 1440,
       "h": 1286,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedOtcPhone.dc.html",
-      "title": "Final · Planned · Off-exchange volume · Phone · production",
+      "title": "Planned · Off-exchange volume · Phone · production",
       "x": 4000,
-      "y": 127339,
+      "y": 6040,
       "w": 390,
       "h": 1814,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedOtcStates.dc.html",
-      "title": "Final · Planned · Off-exchange volume · States",
+      "title": "Planned · Off-exchange volume · States",
       "x": 4510,
-      "y": 127339,
+      "y": 6040,
       "w": 1440,
       "h": 1803,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedClustersSpec.dc.html",
-      "title": "Final · Planned · Insider clusters · spec",
+      "title": "Planned · Insider clusters · spec",
       "x": 0,
-      "y": 129513,
+      "y": 8214,
       "w": 760,
       "h": 1819,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedClustersStaging.dc.html",
-      "title": "Final · Planned · Insider clusters · Staging · demo account",
+      "title": "Planned · Insider clusters · Staging · demo account",
       "x": 880,
-      "y": 129513,
+      "y": 8214,
       "w": 1440,
       "h": 1306,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedClustersProduction.dc.html",
-      "title": "Final · Planned · Insider clusters · Production · as it would ship",
+      "title": "Planned · Insider clusters · Production · as it would ship",
       "x": 2440,
-      "y": 129513,
+      "y": 8214,
       "w": 1440,
       "h": 1270,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedClustersPhone.dc.html",
-      "title": "Final · Planned · Insider clusters · Phone · production",
+      "title": "Planned · Insider clusters · Phone · production",
       "x": 4000,
-      "y": 129513,
+      "y": 8214,
       "w": 390,
       "h": 1808,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedClustersStates.dc.html",
-      "title": "Final · Planned · Insider clusters · States",
+      "title": "Planned · Insider clusters · States",
       "x": 4510,
-      "y": 129513,
+      "y": 8214,
       "w": 1440,
       "h": 1464,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedHoldersSpec.dc.html",
-      "title": "Final · Planned · Fund holdings (13F) · spec",
+      "title": "Planned · Fund holdings (13F) · spec",
       "x": 0,
-      "y": 131692,
+      "y": 10393,
       "w": 760,
       "h": 1708,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedHoldersStaging.dc.html",
-      "title": "Final · Planned · Fund holdings (13F) · Staging · demo account",
+      "title": "Planned · Fund holdings (13F) · Staging · demo account",
       "x": 880,
-      "y": 131692,
+      "y": 10393,
       "w": 1440,
       "h": 1342,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedHoldersProduction.dc.html",
-      "title": "Final · Planned · Fund holdings (13F) · Production · as it would ship",
+      "title": "Planned · Fund holdings (13F) · Production · as it would ship",
       "x": 2440,
-      "y": 131692,
+      "y": 10393,
       "w": 1440,
       "h": 1374,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedHoldersPhone.dc.html",
-      "title": "Final · Planned · Fund holdings (13F) · Phone · production",
+      "title": "Planned · Fund holdings (13F) · Phone · production",
       "x": 4000,
-      "y": 131692,
+      "y": 10393,
       "w": 390,
       "h": 2026,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedHoldersStates.dc.html",
-      "title": "Final · Planned · Fund holdings (13F) · States",
+      "title": "Planned · Fund holdings (13F) · States",
       "x": 4510,
-      "y": 131692,
+      "y": 10393,
       "w": 1440,
       "h": 1647,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedXbrlSpec.dc.html",
-      "title": "Final · Planned · Figures against the filing · spec",
+      "title": "Planned · Figures against the filing · spec",
       "x": 0,
-      "y": 134078,
+      "y": 12779,
       "w": 760,
       "h": 2088,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedXbrlStaging.dc.html",
-      "title": "Final · Planned · Figures against the filing · Staging · demo account",
+      "title": "Planned · Figures against the filing · Staging · demo account",
       "x": 880,
-      "y": 134078,
+      "y": 12779,
       "w": 1440,
       "h": 1564,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedXbrlProduction.dc.html",
-      "title": "Final · Planned · Figures against the filing · Production · as it would ship",
+      "title": "Planned · Figures against the filing · Production · as it would ship",
       "x": 2440,
-      "y": 134078,
+      "y": 12779,
       "w": 1440,
       "h": 1658,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedXbrlPhone.dc.html",
-      "title": "Final · Planned · Figures against the filing · Phone · production",
+      "title": "Planned · Figures against the filing · Phone · production",
       "x": 4000,
-      "y": 134078,
+      "y": 12779,
       "w": 390,
       "h": 2631,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedXbrlStates.dc.html",
-      "title": "Final · Planned · Figures against the filing · States",
+      "title": "Planned · Figures against the filing · States",
       "x": 4510,
-      "y": 134078,
+      "y": 12779,
       "w": 1440,
       "h": 1373,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedPeersSpec.dc.html",
-      "title": "Final · Planned · Peers · spec",
+      "title": "Planned · Peers · spec",
       "x": 0,
-      "y": 137069,
+      "y": 15770,
       "w": 760,
       "h": 1516,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedPeersStaging.dc.html",
-      "title": "Final · Planned · Peers · Staging · demo account",
+      "title": "Planned · Peers · Staging · demo account",
       "x": 880,
-      "y": 137069,
+      "y": 15770,
       "w": 1440,
       "h": 1219,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedPeersProduction.dc.html",
-      "title": "Final · Planned · Peers · Production · as it would ship",
+      "title": "Planned · Peers · Production · as it would ship",
       "x": 2440,
-      "y": 137069,
+      "y": 15770,
       "w": 1440,
       "h": 1183,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedPeersPhone.dc.html",
-      "title": "Final · Planned · Peers · Phone · production",
+      "title": "Planned · Peers · Phone · production",
       "x": 4000,
-      "y": 137069,
+      "y": 15770,
       "w": 390,
       "h": 1654,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedPeersStates.dc.html",
-      "title": "Final · Planned · Peers · States",
+      "title": "Planned · Peers · States",
       "x": 4510,
-      "y": 137069,
+      "y": 15770,
       "w": 1440,
       "h": 1250,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedSignalsSpec.dc.html",
-      "title": "Final · Planned · Signal track record · spec",
+      "title": "Planned · Signal track record · spec",
       "x": 0,
-      "y": 139083,
+      "y": 17784,
       "w": 760,
       "h": 1390,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedSignalsStaging.dc.html",
-      "title": "Final · Planned · Signal track record · Staging · demo account",
+      "title": "Planned · Signal track record · Staging · demo account",
       "x": 880,
-      "y": 139083,
+      "y": 17784,
       "w": 1440,
       "h": 1231,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedSignalsProduction.dc.html",
-      "title": "Final · Planned · Signal track record · Production · design target (blocked)",
+      "title": "Planned · Signal track record · Production · design target (blocked)",
       "x": 2440,
-      "y": 139083,
+      "y": 17784,
       "w": 1440,
       "h": 1195,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedSignalsPhone.dc.html",
-      "title": "Final · Planned · Signal track record · Phone · production design target",
+      "title": "Planned · Signal track record · Phone · production design target",
       "x": 4000,
-      "y": 139083,
+      "y": 17784,
       "w": 390,
       "h": 1602,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedSignalsStates.dc.html",
-      "title": "Final · Planned · Signal track record · States",
+      "title": "Planned · Signal track record · States",
       "x": 4510,
-      "y": 139083,
+      "y": 17784,
       "w": 1440,
       "h": 1562,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedTaSpec.dc.html",
-      "title": "Final · Planned · Technical readings · spec",
+      "title": "Planned · Technical readings · spec",
       "x": 0,
-      "y": 141045,
+      "y": 19746,
       "w": 760,
       "h": 1659,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedTaStaging.dc.html",
-      "title": "Final · Planned · Technical readings · Staging · demo account",
+      "title": "Planned · Technical readings · Staging · demo account",
       "x": 880,
-      "y": 141045,
+      "y": 19746,
       "w": 1440,
       "h": 1907,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedTaProduction.dc.html",
-      "title": "Final · Planned · Technical readings · Production · design target (blocked)",
+      "title": "Planned · Technical readings · Production · design target (blocked)",
       "x": 2440,
-      "y": 141045,
+      "y": 19746,
       "w": 1440,
       "h": 1467,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "FPlannedTaPhone.dc.html",
-      "title": "Final · Planned · Technical readings · Phone · production design target",
+      "title": "Planned · Technical readings · Phone · production design target",
       "x": 4000,
-      "y": 141045,
+      "y": 19746,
       "w": 390,
       "h": 2561,
-      "page": "final"
+      "page": "planned"
     },
     {
       "file": "FPlannedTaStates.dc.html",
-      "title": "Final · Planned · Technical readings · States",
+      "title": "Planned · Technical readings · States",
       "x": 4510,
-      "y": 141045,
+      "y": 19746,
       "w": 1440,
       "h": 1456,
-      "page": "final",
+      "page": "planned",
       "expand": "fill"
-    },
-    {
-      "file": "Main.dc.html",
-      "title": "Ticker desk · SPY (interactive · expand and resize the window)",
-      "x": 0,
-      "y": 0,
-      "w": 1440,
-      "h": 2300,
-      "page": "page-1",
-      "is_interactive": true,
-      "expand": "fill"
-    },
-    {
-      "file": "DeskStates.dc.html",
-      "title": "Desk · loading, failed, offline, empty, Prime, closed",
-      "x": 1560,
-      "y": 0,
-      "w": 1440,
-      "h": 2200,
-      "page": "page-1"
-    },
-    {
-      "file": "AiRead.dc.html",
-      "title": "AI read · nine states (narrow form)",
-      "x": 3120,
-      "y": 0,
-      "w": 1440,
-      "h": 1720,
-      "page": "page-1"
-    },
-    {
-      "file": "Flows.dc.html",
-      "title": "User flows",
-      "x": 4680,
-      "y": 0,
-      "w": 1440,
-      "h": 760,
-      "page": "page-1"
-    },
-    {
-      "file": "DirectionB.dc.html",
-      "title": "Direction B · sticky read rail",
-      "x": 0,
-      "y": 2440,
-      "w": 760,
-      "h": 640,
-      "page": "page-1"
-    },
-    {
-      "file": "DirectionC.dc.html",
-      "title": "Direction C · focus mode",
-      "x": 880,
-      "y": 2440,
-      "w": 760,
-      "h": 640,
-      "page": "page-1"
-    },
-    {
-      "file": "Desk1920.dc.html",
-      "title": "Desk · 1920 wide",
-      "x": 0,
-      "y": 0,
-      "w": 1920,
-      "h": 2100,
-      "page": "page-2",
-      "is_interactive": true
-    },
-    {
-      "file": "Desk1280.dc.html",
-      "title": "Desk · 1280 laptop",
-      "x": 2040,
-      "y": 0,
-      "w": 1280,
-      "h": 2400,
-      "page": "page-2",
-      "is_interactive": true
-    },
-    {
-      "file": "Desk1024.dc.html",
-      "title": "Desk · 1024 tablet landscape",
-      "x": 3440,
-      "y": 0,
-      "w": 1024,
-      "h": 2900,
-      "page": "page-2",
-      "is_interactive": true
-    },
-    {
-      "file": "Desk834.dc.html",
-      "title": "Desk · 834 tablet",
-      "x": 4584,
-      "y": 0,
-      "w": 834,
-      "h": 3500,
-      "page": "page-2",
-      "is_interactive": true
-    },
-    {
-      "file": "Desk390.dc.html",
-      "title": "Desk · 390 phone viewport (tap the AI read peek)",
-      "x": 5538,
-      "y": 0,
-      "w": 390,
-      "h": 1400,
-      "page": "page-2",
-      "is_interactive": true
-    },
-    {
-      "file": "Landing834.dc.html",
-      "title": "Landing · 834",
-      "x": 0,
-      "y": 3640,
-      "w": 834,
-      "h": 4100,
-      "page": "page-2"
-    },
-    {
-      "file": "Landing390.dc.html",
-      "title": "Landing · 390",
-      "x": 954,
-      "y": 3640,
-      "w": 390,
-      "h": 5000,
-      "page": "page-2"
-    },
-    {
-      "file": "Scanner834.dc.html",
-      "title": "Scanner · 834 (cards)",
-      "x": 1464,
-      "y": 3640,
-      "w": 834,
-      "h": 2300,
-      "page": "page-2"
-    },
-    {
-      "file": "Scanner390.dc.html",
-      "title": "Scanner · 390",
-      "x": 2418,
-      "y": 3640,
-      "w": 390,
-      "h": 3900,
-      "page": "page-2"
-    },
-    {
-      "file": "Positions390.dc.html",
-      "title": "Positions · 390 (cards)",
-      "x": 2928,
-      "y": 3640,
-      "w": 390,
-      "h": 2600,
-      "page": "page-2"
-    },
-    {
-      "file": "Settings390.dc.html",
-      "title": "Settings · 390 (tabs)",
-      "x": 3438,
-      "y": 3640,
-      "w": 390,
-      "h": 2300,
-      "page": "page-2"
-    },
-    {
-      "file": "RespSpec.dc.html",
-      "title": "Responsive spec",
-      "x": 3948,
-      "y": 3640,
-      "w": 1440,
-      "h": 1300,
-      "page": "page-2"
-    },
-    {
-      "file": "Landing.dc.html",
-      "title": "Landing",
-      "x": 0,
-      "y": 0,
-      "w": 1440,
-      "h": 2960,
-      "page": "page-3"
-    },
-    {
-      "file": "Scanner.dc.html",
-      "title": "Scanner",
-      "x": 1560,
-      "y": 0,
-      "w": 1440,
-      "h": 1300,
-      "page": "page-3"
-    },
-    {
-      "file": "Positions.dc.html",
-      "title": "Positions",
-      "x": 3120,
-      "y": 0,
-      "w": 1440,
-      "h": 1220,
-      "page": "page-3"
-    },
-    {
-      "file": "Alerts.dc.html",
-      "title": "Alerts",
-      "x": 4680,
-      "y": 0,
-      "w": 1440,
-      "h": 1100,
-      "page": "page-3"
-    },
-    {
-      "file": "Settings.dc.html",
-      "title": "Settings",
-      "x": 0,
-      "y": 3100,
-      "w": 1440,
-      "h": 1820,
-      "page": "page-3"
-    },
-    {
-      "file": "Methodology.dc.html",
-      "title": "Methodology",
-      "x": 1560,
-      "y": 3100,
-      "w": 1440,
-      "h": 2400,
-      "page": "page-3"
-    },
-    {
-      "file": "Blog.dc.html",
-      "title": "Blog",
-      "x": 3120,
-      "y": 3100,
-      "w": 1440,
-      "h": 900,
-      "page": "page-3"
-    },
-    {
-      "file": "Lab.dc.html",
-      "title": "Lab",
-      "x": 4680,
-      "y": 3100,
-      "w": 1440,
-      "h": 1000,
-      "page": "page-3"
-    },
-    {
-      "file": "Auth.dc.html",
-      "title": "Sign in + auth wall",
-      "x": 0,
-      "y": 0,
-      "w": 1440,
-      "h": 940,
-      "page": "page-4"
-    },
-    {
-      "file": "TradeEntry.dc.html",
-      "title": "Trade entry · position and order variants",
-      "x": 1560,
-      "y": 0,
-      "w": 1440,
-      "h": 1150,
-      "page": "page-4"
-    },
-    {
-      "file": "WhatsSent.dc.html",
-      "title": "What’s sent drawer",
-      "x": 3120,
-      "y": 0,
-      "w": 1440,
-      "h": 960,
-      "page": "page-4"
-    },
-    {
-      "file": "Persona.dc.html",
-      "title": "Persona · picker and customize",
-      "x": 4680,
-      "y": 0,
-      "w": 1440,
-      "h": 900,
-      "page": "page-4"
-    },
-    {
-      "file": "OrderDetail.dc.html",
-      "title": "Order detail",
-      "x": 0,
-      "y": 1290,
-      "w": 1440,
-      "h": 760,
-      "page": "page-4"
-    },
-    {
-      "file": "ViewEditor.dc.html",
-      "title": "Scan view editor",
-      "x": 1560,
-      "y": 1290,
-      "w": 1440,
-      "h": 900,
-      "page": "page-4"
-    },
-    {
-      "file": "NotFound.dc.html",
-      "title": "Route fallback + 404",
-      "x": 3120,
-      "y": 1290,
-      "w": 1440,
-      "h": 640,
-      "page": "page-4"
-    },
-    {
-      "file": "Operator.dc.html",
-      "title": "Operator · metrics + research",
-      "x": 4680,
-      "y": 1290,
-      "w": 1440,
-      "h": 1080,
-      "page": "page-4"
     },
     {
       "file": "Library.dc.html",
       "title": "Library · 1 of 3 · tokens, type, controls, data",
       "x": 0,
-      "y": 0,
+      "y": 7793,
       "w": 1440,
       "h": 6240,
-      "page": "page-5"
+      "page": "foundations",
+      "expand": "fill"
     },
     {
       "file": "LibraryB.dc.html",
       "title": "Library · 2 of 3 · chrome, overlays, patterns, states, charts, motion",
       "x": 1560,
-      "y": 0,
+      "y": 7793,
       "w": 1440,
       "h": 4750,
-      "page": "page-5"
+      "page": "foundations",
+      "expand": "fill"
     },
     {
       "file": "LibraryC.dc.html",
       "title": "Library · 3 of 3 · React mapping",
       "x": 3120,
-      "y": 0,
+      "y": 7793,
       "w": 1440,
       "h": 3970,
-      "page": "page-5"
-    },
-    {
-      "file": "Components.dc.html",
-      "title": "Components & motion sheet",
-      "x": 4680,
-      "y": 0,
-      "w": 1440,
-      "h": 2720,
-      "page": "page-5"
-    },
-    {
-      "file": "DeskLight.dc.html",
-      "title": "Desk · light scheme (interactive)",
-      "x": 0,
-      "y": 6380,
-      "w": 1440,
-      "h": 2300,
-      "page": "page-5",
-      "is_interactive": true
-    },
-    {
-      "file": "LandingLight.dc.html",
-      "title": "Landing · light scheme",
-      "x": 1560,
-      "y": 6380,
-      "w": 1440,
-      "h": 2960,
-      "page": "page-5"
-    },
-    {
-      "file": "V4SourceMap.dc.html",
-      "title": "v4 · Source map: where every number comes from",
-      "x": 0,
-      "y": 0,
-      "w": 1920,
-      "h": 6450,
-      "page": "v4-data"
-    },
-    {
-      "file": "V4HybridDesk.dc.html",
-      "title": "v4 · Hybrid desk · NVDA · not-live panels explained",
-      "x": 2040,
-      "y": 0,
-      "w": 1440,
-      "h": 2990,
-      "page": "v4-data",
-      "expand": "fill"
-    },
-    {
-      "file": "V4HybridDeskSample.dc.html",
-      "title": "v4 · Hybrid desk · NVDA · sample illustrations on",
-      "x": 3600,
-      "y": 0,
-      "w": 1440,
-      "h": 2990,
-      "page": "v4-data",
-      "expand": "fill"
-    },
-    {
-      "file": "V4HybridDesk390.dc.html",
-      "title": "v4 · Hybrid desk · NVDA · phone",
-      "x": 5160,
-      "y": 0,
-      "w": 390,
-      "h": 4340,
-      "page": "v4-data"
-    },
-    {
-      "file": "V4StateMatrix.dc.html",
-      "title": "v4 · State matrix · 9 families × 14 states",
-      "x": 0,
-      "y": 6760,
-      "w": 3220,
-      "h": 4090,
-      "page": "v4-data"
-    },
-    {
-      "file": "V4StateMatrix390.dc.html",
-      "title": "v4 · State matrix · phone widths",
-      "x": 3340,
-      "y": 6760,
-      "w": 3740,
-      "h": 4510,
-      "page": "v4-data"
-    },
-    {
-      "file": "V4HybridDesk834.dc.html",
-      "title": "v4 · Hybrid desk · 834 tablet",
-      "x": 5670,
-      "y": 0,
-      "w": 834,
-      "h": 4260,
-      "page": "v4-data"
-    },
-    {
-      "file": "V4HybridDesk390Light.dc.html",
-      "title": "v4 · Hybrid desk · phone · light",
-      "x": 6624,
-      "y": 0,
-      "w": 390,
-      "h": 4340,
-      "page": "v4-data"
-    },
-    {
-      "file": "V4Roadmap.dc.html",
-      "title": "v4 · Roadmap: everything Convexa can build without the paid feed",
-      "x": 0,
-      "y": 0,
-      "w": 1920,
-      "h": 2400,
-      "page": "v4-tools"
-    },
-    {
-      "file": "V4Markets.dc.html",
-      "title": "v4 · Markets · rates, liquidity, calendar, positioning (built + build)",
-      "x": 2040,
-      "y": 0,
-      "w": 1440,
-      "h": 3030,
-      "page": "v4-tools",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Filings.dc.html",
-      "title": "v4 · Filings · the SEC feed and filing detail (switch)",
-      "x": 3600,
-      "y": 0,
-      "w": 1440,
-      "h": 1290,
-      "page": "v4-tools",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Scorecard.dc.html",
-      "title": "v4 · Scorecard · forecasts live, signal track record blocked",
-      "x": 5160,
-      "y": 0,
-      "w": 1440,
-      "h": 1500,
-      "page": "v4-tools",
-      "expand": "fill"
-    },
-    {
-      "file": "V4TickerResearch.dc.html",
-      "title": "v4 · Ticker research · NVDA · every public panel",
-      "x": 6720,
-      "y": 0,
-      "w": 1440,
-      "h": 2230,
-      "page": "v4-tools",
-      "expand": "fill"
-    },
-    {
-      "file": "V4ToolLiquidity.dc.html",
-      "title": "v4 · Tool · Liquidity panel · build",
-      "x": 0,
-      "y": 4000,
-      "w": 1440,
-      "h": 2370,
-      "page": "v4-tools"
-    },
-    {
-      "file": "V4ToolCalendar.dc.html",
-      "title": "v4 · Tool · Macro calendar · build",
-      "x": 1560,
-      "y": 4000,
-      "w": 1440,
-      "h": 2550,
-      "page": "v4-tools"
-    },
-    {
-      "file": "V4ToolOtc.dc.html",
-      "title": "v4 · Tool · Off-exchange volume (weekly) · build / verify",
-      "x": 3120,
-      "y": 4000,
-      "w": 1440,
-      "h": 2370,
-      "page": "v4-tools"
-    },
-    {
-      "file": "V4ToolClusters.dc.html",
-      "title": "v4 · Tool · Insider clusters · build",
-      "x": 4680,
-      "y": 4000,
-      "w": 1440,
-      "h": 2270,
-      "page": "v4-tools"
-    },
-    {
-      "file": "V4ToolHolders.dc.html",
-      "title": "v4 · Tool · Fund holdings (13F) · build",
-      "x": 6240,
-      "y": 4000,
-      "w": 1440,
-      "h": 2310,
-      "page": "v4-tools"
-    },
-    {
-      "file": "V4ToolXbrl.dc.html",
-      "title": "v4 · Tool · Note figures from XBRL · build",
-      "x": 0,
-      "y": 7300,
-      "w": 1440,
-      "h": 2470,
-      "page": "v4-tools"
-    },
-    {
-      "file": "V4ToolPeers.dc.html",
-      "title": "v4 · Tool · Peer table · build",
-      "x": 1560,
-      "y": 7300,
-      "w": 1440,
-      "h": 2440,
-      "page": "v4-tools"
-    },
-    {
-      "file": "V4ToolTa.dc.html",
-      "title": "v4 · Tool · Technical analysis · blocked",
-      "x": 3120,
-      "y": 7300,
-      "w": 1440,
-      "h": 3100,
-      "page": "v4-tools"
-    },
-    {
-      "file": "V4ToolSignals.dc.html",
-      "title": "v4 · Tool · Signal track record · blocked",
-      "x": 4680,
-      "y": 7300,
-      "w": 1440,
-      "h": 2260,
-      "page": "v4-tools"
-    },
-    {
-      "file": "V4Shell.dc.html",
-      "title": "v4 · Global shell · desktop",
-      "x": 0,
-      "y": 0,
-      "w": 1440,
-      "h": 760,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Shell390.dc.html",
-      "title": "v4 · Global shell · phone",
-      "x": 1560,
-      "y": 0,
-      "w": 390,
-      "h": 844,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4ShellLight.dc.html",
-      "title": "v4 · Global shell · light",
-      "x": 2070,
-      "y": 0,
-      "w": 1440,
-      "h": 760,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4ShellStates.dc.html",
-      "title": "v4 · Global shell · states",
-      "x": 3630,
-      "y": 0,
-      "w": 1440,
-      "h": 2620,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4Landing.dc.html",
-      "title": "v4 · Landing · desktop",
-      "x": 0,
-      "y": 3040,
-      "w": 1440,
-      "h": 2400,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Landing390.dc.html",
-      "title": "v4 · Landing · phone",
-      "x": 1560,
-      "y": 3040,
-      "w": 390,
-      "h": 4100,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4LandingLight.dc.html",
-      "title": "v4 · Landing · light",
-      "x": 2070,
-      "y": 3040,
-      "w": 1440,
-      "h": 2400,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4LandingStates.dc.html",
-      "title": "v4 · Landing · states",
-      "x": 3630,
-      "y": 3040,
-      "w": 1440,
-      "h": 1450,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4DeskLight.dc.html",
-      "title": "v4 · Hybrid desk · light",
-      "x": 0,
-      "y": 7560,
-      "w": 1440,
-      "h": 2990,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4DeskStates.dc.html",
-      "title": "v4 · Ticker desk (desktop and phone on v4 · Data states) · states",
-      "x": 1560,
-      "y": 7560,
-      "w": 1440,
-      "h": 2690,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4Technical.dc.html",
-      "title": "v4 · Ticker · Technical tab (TradingView) · desktop",
-      "x": 0,
-      "y": 10970,
-      "w": 1440,
-      "h": 1270,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Technical390.dc.html",
-      "title": "v4 · Ticker · Technical tab (TradingView) · phone",
-      "x": 1560,
-      "y": 10970,
-      "w": 390,
-      "h": 1370,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4TechnicalLight.dc.html",
-      "title": "v4 · Ticker · Technical tab (TradingView) · light",
-      "x": 2070,
-      "y": 10970,
-      "w": 1440,
-      "h": 1270,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4TechnicalStates.dc.html",
-      "title": "v4 · Ticker · Technical tab (TradingView) · states",
-      "x": 3630,
-      "y": 10970,
-      "w": 1440,
-      "h": 1320,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4Scanner.dc.html",
-      "title": "v4 · Scanner · desktop",
-      "x": 0,
-      "y": 12760,
-      "w": 1440,
-      "h": 1310,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Scanner390.dc.html",
-      "title": "v4 · Scanner · phone",
-      "x": 1560,
-      "y": 12760,
-      "w": 390,
-      "h": 1810,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4ScannerLight.dc.html",
-      "title": "v4 · Scanner · light",
-      "x": 2070,
-      "y": 12760,
-      "w": 1440,
-      "h": 1310,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4ScannerStates.dc.html",
-      "title": "v4 · Scanner · states",
-      "x": 3630,
-      "y": 12760,
-      "w": 1440,
-      "h": 1790,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4Positions.dc.html",
-      "title": "v4 · Positions · desktop",
-      "x": 0,
-      "y": 14990,
-      "w": 1440,
-      "h": 1070,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Positions390.dc.html",
-      "title": "v4 · Positions · phone",
-      "x": 1560,
-      "y": 14990,
-      "w": 390,
-      "h": 1910,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4PositionsLight.dc.html",
-      "title": "v4 · Positions · light",
-      "x": 2070,
-      "y": 14990,
-      "w": 1440,
-      "h": 1070,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4PositionsSignedOut.dc.html",
-      "title": "v4 · Positions · signed out (wall)",
-      "x": 3630,
-      "y": 14990,
-      "w": 1440,
-      "h": 710,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4PositionsStates.dc.html",
-      "title": "v4 · Positions · states",
-      "x": 5190,
-      "y": 14990,
-      "w": 1440,
-      "h": 1560,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4Alerts.dc.html",
-      "title": "v4 · Alerts · desktop",
-      "x": 0,
-      "y": 17320,
-      "w": 1440,
-      "h": 1010,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Alerts390.dc.html",
-      "title": "v4 · Alerts · phone",
-      "x": 1560,
-      "y": 17320,
-      "w": 390,
-      "h": 1890,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4AlertsLight.dc.html",
-      "title": "v4 · Alerts · light",
-      "x": 2070,
-      "y": 17320,
-      "w": 1440,
-      "h": 1010,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4AlertsStates.dc.html",
-      "title": "v4 · Alerts · states",
-      "x": 3630,
-      "y": 17320,
-      "w": 1440,
-      "h": 1280,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4Settings.dc.html",
-      "title": "v4 · Settings · desktop",
-      "x": 0,
-      "y": 19630,
-      "w": 1440,
-      "h": 1650,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Settings390.dc.html",
-      "title": "v4 · Settings · phone",
-      "x": 1560,
-      "y": 19630,
-      "w": 390,
-      "h": 2090,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4SettingsLight.dc.html",
-      "title": "v4 · Settings · light",
-      "x": 2070,
-      "y": 19630,
-      "w": 1440,
-      "h": 1650,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4SettingsSignedOut.dc.html",
-      "title": "v4 · Settings · signed out",
-      "x": 3630,
-      "y": 19630,
-      "w": 1440,
-      "h": 1320,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4SettingsStates.dc.html",
-      "title": "v4 · Settings · states",
-      "x": 5190,
-      "y": 19630,
-      "w": 1440,
-      "h": 1400,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4Methodology.dc.html",
-      "title": "v4 · Methodology · desktop",
-      "x": 0,
-      "y": 22140,
-      "w": 1440,
-      "h": 1930,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Methodology390.dc.html",
-      "title": "v4 · Methodology · phone",
-      "x": 1560,
-      "y": 22140,
-      "w": 390,
-      "h": 2600,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4MethodologyLight.dc.html",
-      "title": "v4 · Methodology · light",
-      "x": 2070,
-      "y": 22140,
-      "w": 1440,
-      "h": 1930,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4MethodologyStates.dc.html",
-      "title": "v4 · Methodology · states",
-      "x": 3630,
-      "y": 22140,
-      "w": 1440,
-      "h": 1360,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4Blog.dc.html",
-      "title": "v4 · Blog · desktop",
-      "x": 0,
-      "y": 25160,
-      "w": 1440,
-      "h": 740,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Blog390.dc.html",
-      "title": "v4 · Blog · phone",
-      "x": 1560,
-      "y": 25160,
-      "w": 390,
-      "h": 950,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4BlogLight.dc.html",
-      "title": "v4 · Blog · light",
-      "x": 2070,
-      "y": 25160,
-      "w": 1440,
-      "h": 740,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Lab.dc.html",
-      "title": "v4 · Lab · desktop",
-      "x": 0,
-      "y": 26530,
-      "w": 1440,
-      "h": 1110,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Lab390.dc.html",
-      "title": "v4 · Lab · phone",
-      "x": 1560,
-      "y": 26530,
-      "w": 390,
-      "h": 2000,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4LabLight.dc.html",
-      "title": "v4 · Lab · light",
-      "x": 2070,
-      "y": 26530,
-      "w": 1440,
-      "h": 1110,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4NotFound.dc.html",
-      "title": "v4 · 404 and route fallback · desktop",
-      "x": 0,
-      "y": 28950,
-      "w": 1440,
-      "h": 700,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4NotFound390.dc.html",
-      "title": "v4 · 404 and route fallback · phone",
-      "x": 1560,
-      "y": 28950,
-      "w": 390,
-      "h": 900,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4NotFoundLight.dc.html",
-      "title": "v4 · 404 and route fallback · light",
-      "x": 2070,
-      "y": 28950,
-      "w": 1440,
-      "h": 700,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4SignIn.dc.html",
-      "title": "v4 · Sign in and the wall · desktop",
-      "x": 0,
-      "y": 30270,
-      "w": 1440,
-      "h": 1000,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4SignIn390.dc.html",
-      "title": "v4 · Sign in and the wall · phone",
-      "x": 1560,
-      "y": 30270,
-      "w": 390,
-      "h": 1000,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4SignInLight.dc.html",
-      "title": "v4 · Sign in and the wall · light",
-      "x": 2070,
-      "y": 30270,
-      "w": 1440,
-      "h": 1000,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4SignInStates.dc.html",
-      "title": "v4 · Sign in and the wall · states",
-      "x": 3630,
-      "y": 30270,
-      "w": 1440,
-      "h": 1330,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4TradeEntry.dc.html",
-      "title": "v4 · Trade entry · desktop",
-      "x": 0,
-      "y": 32020,
-      "w": 1440,
-      "h": 1100,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4TradeEntry390.dc.html",
-      "title": "v4 · Trade entry · phone",
-      "x": 1560,
-      "y": 32020,
-      "w": 390,
-      "h": 1300,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4TradeEntryLight.dc.html",
-      "title": "v4 · Trade entry · light",
-      "x": 2070,
-      "y": 32020,
-      "w": 1440,
-      "h": 1100,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4TradeEntryStates.dc.html",
-      "title": "v4 · Trade entry · states",
-      "x": 3630,
-      "y": 32020,
-      "w": 1440,
-      "h": 1400,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4OrderDetail.dc.html",
-      "title": "v4 · Order detail · desktop",
-      "x": 0,
-      "y": 33840,
-      "w": 1440,
-      "h": 1000,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4OrderDetail390.dc.html",
-      "title": "v4 · Order detail · phone",
-      "x": 1560,
-      "y": 33840,
-      "w": 390,
-      "h": 1100,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4OrderDetailLight.dc.html",
-      "title": "v4 · Order detail · light",
-      "x": 2070,
-      "y": 33840,
-      "w": 1440,
-      "h": 1000,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4OrderDetailStates.dc.html",
-      "title": "v4 · Order detail · states",
-      "x": 3630,
-      "y": 33840,
-      "w": 1440,
-      "h": 660,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4WhatsSent.dc.html",
-      "title": "v4 · What’s sent drawer · desktop",
-      "x": 0,
-      "y": 35360,
-      "w": 1440,
-      "h": 1120,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4WhatsSent390.dc.html",
-      "title": "v4 · What’s sent drawer · phone",
-      "x": 1560,
-      "y": 35360,
-      "w": 390,
-      "h": 1100,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4WhatsSentLight.dc.html",
-      "title": "v4 · What’s sent drawer · light",
-      "x": 2070,
-      "y": 35360,
-      "w": 1440,
-      "h": 1120,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4WhatsSentStates.dc.html",
-      "title": "v4 · What’s sent drawer · states",
-      "x": 3630,
-      "y": 35360,
-      "w": 1440,
-      "h": 1290,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4Persona.dc.html",
-      "title": "v4 · Persona · desktop",
-      "x": 0,
-      "y": 37070,
-      "w": 1440,
-      "h": 1000,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Persona390.dc.html",
-      "title": "v4 · Persona · phone",
-      "x": 1560,
-      "y": 37070,
-      "w": 390,
-      "h": 1100,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4PersonaLight.dc.html",
-      "title": "v4 · Persona · light",
-      "x": 2070,
-      "y": 37070,
-      "w": 1440,
-      "h": 1000,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4PersonaStates.dc.html",
-      "title": "v4 · Persona · states",
-      "x": 3630,
-      "y": 37070,
-      "w": 1440,
-      "h": 760,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4ViewEditor.dc.html",
-      "title": "v4 · Scan view editor · desktop",
-      "x": 0,
-      "y": 38590,
-      "w": 1440,
-      "h": 1000,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4ViewEditor390.dc.html",
-      "title": "v4 · Scan view editor · phone",
-      "x": 1560,
-      "y": 38590,
-      "w": 390,
-      "h": 1200,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4ViewEditorLight.dc.html",
-      "title": "v4 · Scan view editor · light",
-      "x": 2070,
-      "y": 38590,
-      "w": 1440,
-      "h": 1000,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4ViewEditorStates.dc.html",
-      "title": "v4 · Scan view editor · states",
-      "x": 3630,
-      "y": 38590,
-      "w": 1440,
-      "h": 840,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4Operator.dc.html",
-      "title": "v4 · Operator · desktop",
-      "x": 0,
-      "y": 40210,
-      "w": 1440,
-      "h": 730,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Operator390.dc.html",
-      "title": "v4 · Operator · phone",
-      "x": 1560,
-      "y": 40210,
-      "w": 390,
-      "h": 840,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4OperatorLight.dc.html",
-      "title": "v4 · Operator · light",
-      "x": 2070,
-      "y": 40210,
-      "w": 1440,
-      "h": 730,
-      "page": "v4-app",
-      "expand": "fill"
-    },
-    {
-      "file": "V4OperatorStates.dc.html",
-      "title": "v4 · Operator · states",
-      "x": 3630,
-      "y": 40210,
-      "w": 1440,
-      "h": 790,
-      "page": "v4-app"
-    },
-    {
-      "file": "V4NoteView.dc.html",
-      "title": "v4 · Note view · NVDA · neutral directions (supersedes the research canvas Main board)",
-      "x": 0,
-      "y": 0,
-      "w": 1440,
-      "h": 3520,
-      "page": "v4-research",
-      "expand": "fill"
-    },
-    {
-      "file": "V4NoteView390.dc.html",
-      "title": "v4 · Note view · phone",
-      "x": 1560,
-      "y": 0,
-      "w": 390,
-      "h": 4740,
-      "page": "v4-research"
-    },
-    {
-      "file": "V4NoteViewLight.dc.html",
-      "title": "v4 · Note view · light",
-      "x": 2070,
-      "y": 0,
-      "w": 1440,
-      "h": 3520,
-      "page": "v4-research",
-      "expand": "fill"
-    },
-    {
-      "file": "V4NoteStates.dc.html",
-      "title": "v4 · Note view · states",
-      "x": 3630,
-      "y": 0,
-      "w": 1440,
-      "h": 1200,
-      "page": "v4-research"
-    },
-    {
-      "file": "V4ResearchIndex.dc.html",
-      "title": "v4 · Research index with the tabs",
-      "x": 0,
-      "y": 5020,
-      "w": 1440,
-      "h": 1300,
-      "page": "v4-research",
-      "expand": "fill"
-    },
-    {
-      "file": "V4ResearchIndex390.dc.html",
-      "title": "v4 · Research index · phone",
-      "x": 1560,
-      "y": 5020,
-      "w": 390,
-      "h": 2030,
-      "page": "v4-research"
-    },
-    {
-      "file": "V4ResearchIndexLight.dc.html",
-      "title": "v4 · Research index · light",
-      "x": 2070,
-      "y": 5020,
-      "w": 1440,
-      "h": 1300,
-      "page": "v4-research",
-      "expand": "fill"
-    },
-    {
-      "file": "V4Markets390.dc.html",
-      "title": "v4 · Markets · phone",
-      "x": 0,
-      "y": 7840,
-      "w": 390,
-      "h": 4910,
-      "page": "v4-research"
-    },
-    {
-      "file": "V4Filings390.dc.html",
-      "title": "v4 · Filings · phone",
-      "x": 510,
-      "y": 7840,
-      "w": 390,
-      "h": 2620,
-      "page": "v4-research"
-    },
-    {
-      "file": "V4Scorecard390.dc.html",
-      "title": "v4 · Scorecard · phone",
-      "x": 1020,
-      "y": 7840,
-      "w": 390,
-      "h": 3130,
-      "page": "v4-research"
-    },
-    {
-      "file": "V4TickerResearch390.dc.html",
-      "title": "v4 · Ticker research · phone",
-      "x": 1530,
-      "y": 7840,
-      "w": 390,
-      "h": 4290,
-      "page": "v4-research"
-    },
-    {
-      "file": "V4MarketsLight.dc.html",
-      "title": "v4 · Markets · light",
-      "x": 2040,
-      "y": 7840,
-      "w": 1440,
-      "h": 3030,
-      "page": "v4-research",
-      "expand": "fill"
-    },
-    {
-      "file": "V4FilingsLight.dc.html",
-      "title": "v4 · Filings · light",
-      "x": 3600,
-      "y": 7840,
-      "w": 1440,
-      "h": 1290,
-      "page": "v4-research",
-      "expand": "fill"
-    },
-    {
-      "file": "V4ScorecardLight.dc.html",
-      "title": "v4 · Scorecard · light",
-      "x": 5160,
-      "y": 7840,
-      "w": 1440,
-      "h": 1500,
-      "page": "v4-research",
-      "expand": "fill"
-    },
-    {
-      "file": "V4TickerResearchLight.dc.html",
-      "title": "v4 · Ticker research · light",
-      "x": 6720,
-      "y": 7840,
-      "w": 1440,
-      "h": 2230,
-      "page": "v4-research",
-      "expand": "fill"
-    },
-    {
-      "file": "V4MarketsDemo.dc.html",
-      "title": "v4 · Markets · demo build (dashed chips)",
-      "x": 8280,
-      "y": 7840,
-      "w": 1440,
-      "h": 3030,
-      "page": "v4-research",
-      "expand": "fill"
-    },
-    {
-      "file": "V4StateMatrixLight.dc.html",
-      "title": "v4 · State matrix · light",
-      "x": 0,
-      "y": 14660,
-      "w": 3220,
-      "h": 4090,
-      "page": "v4-research"
-    },
-    {
-      "file": "V4NoteView390Light.dc.html",
-      "title": "v4 · Note view · phone · light",
-      "x": 5190,
-      "y": 0,
-      "w": 390,
-      "h": 4740,
-      "page": "v4-research"
-    },
-    {
-      "file": "V4Markets834.dc.html",
-      "title": "v4 · Markets · 834 tablet",
-      "x": 9840,
-      "y": 7840,
-      "w": 834,
-      "h": 3790,
-      "page": "v4-research"
-    },
-    {
-      "file": "V4Coverage.dc.html",
-      "title": "v4 · Coverage matrix · route × width × theme × states",
-      "x": 0,
-      "y": 0,
-      "w": 1920,
-      "h": 1890,
-      "page": "v4-coverage"
-    },
-    {
-      "file": "V5Audit.dc.html",
-      "title": "v5 · Every chart, audited",
-      "x": 0,
-      "y": 0,
-      "w": 1440,
-      "h": 2120,
-      "page": "v5-charts",
-      "expand": "fill"
-    },
-    {
-      "file": "V5ChartSystem.dc.html",
-      "title": "v5 · One chart system",
-      "x": 1560,
-      "y": 0,
-      "w": 1440,
-      "h": 7460,
-      "page": "v5-charts",
-      "expand": "fill"
-    },
-    {
-      "file": "V5ChartStates.dc.html",
-      "title": "v5 · Every chart, in every state",
-      "x": 3120,
-      "y": 0,
-      "w": 1440,
-      "h": 3710,
-      "page": "v5-charts",
-      "expand": "fill"
-    },
-    {
-      "file": "V5ChartPhone.dc.html",
-      "title": "v5 · Charts on a phone (390)",
-      "x": 4680,
-      "y": 0,
-      "w": 390,
-      "h": 2340,
-      "page": "v5-charts"
-    },
-    {
-      "file": "V5ThirdParty.dc.html",
-      "title": "v5 · Ours, and theirs",
-      "x": 5190,
-      "y": 0,
-      "w": 1440,
-      "h": 1830,
-      "page": "v5-charts",
-      "expand": "fill"
-    },
-    {
-      "file": "V5ChartSystemLight.dc.html",
-      "title": "v5 · One chart system · light",
-      "x": 6750,
-      "y": 0,
-      "w": 1440,
-      "h": 7460,
-      "page": "v5-charts",
-      "expand": "fill"
-    },
-    {
-      "file": "V5Alerts.dc.html",
-      "title": "Alerts on public data · desktop",
-      "x": 0,
-      "y": 0,
-      "w": 1440,
-      "h": 2350,
-      "page": "q5-alerts",
-      "expand": "fill"
-    },
-    {
-      "file": "V5Alerts390.dc.html",
-      "title": "Alerts on public data · phone",
-      "x": 1560,
-      "y": 0,
-      "w": 390,
-      "h": 4000,
-      "page": "q5-alerts"
-    },
-    {
-      "file": "V5AlertsLight.dc.html",
-      "title": "Alerts on public data · light",
-      "x": 2070,
-      "y": 0,
-      "w": 1440,
-      "h": 2350,
-      "page": "q5-alerts",
-      "expand": "fill"
-    },
-    {
-      "file": "V5AlertsFlow.dc.html",
-      "title": "New alert · choose, set up, read back",
-      "x": 3630,
-      "y": 0,
-      "w": 1440,
-      "h": 1920,
-      "page": "q5-alerts",
-      "expand": "fill"
-    },
-    {
-      "file": "V5AlertsFlow390.dc.html",
-      "title": "New alert · phone (bottom sheets)",
-      "x": 5190,
-      "y": 0,
-      "w": 390,
-      "h": 5100,
-      "page": "q5-alerts"
-    },
-    {
-      "file": "V5AlertsStates.dc.html",
-      "title": "Alerts on public data · states",
-      "x": 5700,
-      "y": 0,
-      "w": 1440,
-      "h": 3560,
-      "page": "q5-alerts",
-      "expand": "fill"
-    },
-    {
-      "file": "V5FamNoteFigures.dc.html",
-      "title": "v5 · Note figures · before and after",
-      "x": 0,
-      "y": 0,
-      "w": 1440,
-      "h": 3120,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5FamNoteValuation.dc.html",
-      "title": "v5 · Valuation · before and after",
-      "x": 1560,
-      "y": 0,
-      "w": 1440,
-      "h": 2650,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5FamMarkets.dc.html",
-      "title": "v5 · Markets · before and after",
-      "x": 3120,
-      "y": 0,
-      "w": 1440,
-      "h": 3230,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5FamScorecard.dc.html",
-      "title": "v5 · Scorecard and Filings · before and after",
-      "x": 4680,
-      "y": 0,
-      "w": 1440,
-      "h": 2080,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5FamPanels.dc.html",
-      "title": "v5 · Note panels · before and after",
-      "x": 6240,
-      "y": 0,
-      "w": 1440,
-      "h": 1770,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5FamDesk.dc.html",
-      "title": "v5 · Ticker desk · before and after",
-      "x": 0,
-      "y": 4000,
-      "w": 1440,
-      "h": 3720,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5FamOther.dc.html",
-      "title": "v5 · Scanner, positions, operator, Lab",
-      "x": 1560,
-      "y": 4000,
-      "w": 1440,
-      "h": 1360,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5Tools.dc.html",
-      "title": "v5 · Planned tools, charted",
-      "x": 3120,
-      "y": 4000,
-      "w": 1440,
-      "h": 5040,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5TvFraming.dc.html",
-      "title": "v5 · TradingView, framed",
-      "x": 4680,
-      "y": 4000,
-      "w": 1440,
-      "h": 3660,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5Tools390.dc.html",
-      "title": "v5 · Planned tools · phone",
-      "x": 6240,
-      "y": 4000,
-      "w": 390,
-      "h": 7140,
-      "page": "v5-families"
-    },
-    {
-      "file": "V5TvFraming390.dc.html",
-      "title": "v5 · TradingView · phone",
-      "x": 6750,
-      "y": 4000,
-      "w": 390,
-      "h": 6960,
-      "page": "v5-families"
-    },
-    {
-      "file": "V5FamNoteFigures390.dc.html",
-      "title": "v5 · Note figures · phone",
-      "x": 0,
-      "y": 11800,
-      "w": 390,
-      "h": 4770,
-      "page": "v5-families"
-    },
-    {
-      "file": "V5FamMarkets390.dc.html",
-      "title": "v5 · Markets · phone",
-      "x": 510,
-      "y": 11800,
-      "w": 390,
-      "h": 5370,
-      "page": "v5-families"
-    },
-    {
-      "file": "V5FamMarketsLight.dc.html",
-      "title": "v5 · Markets · light",
-      "x": 1020,
-      "y": 11800,
-      "w": 1440,
-      "h": 3230,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5FamScorecardLight.dc.html",
-      "title": "v5 · Scorecard · light",
-      "x": 2580,
-      "y": 11800,
-      "w": 1440,
-      "h": 2080,
-      "page": "v5-families",
-      "expand": "fill"
-    },
-    {
-      "file": "V5Frontier.dc.html",
-      "title": "v5 · The frontier · overview",
-      "x": 0,
-      "y": 0,
-      "w": 1440,
-      "h": 1370,
-      "page": "v5-frontier",
-      "expand": "fill"
-    },
-    {
-      "file": "V5FrontierGamma.dc.html",
-      "title": "v5 · F1 · Dealer-gamma surface (WebGL) · fallback shown",
-      "x": 1560,
-      "y": 0,
-      "w": 1440,
-      "h": 2610,
-      "page": "v5-frontier",
+      "page": "foundations",
       "expand": "fill"
     },
     {
       "file": "V5FrontierCurve.dc.html",
-      "title": "v5 · F2 · A year of the curve · fallback shown",
-      "x": 3120,
-      "y": 0,
+      "title": "Prototype F2 · a year of the curve · fallback shown (runs in design/site/v5-frontier-curve.html)",
+      "x": 0,
+      "y": 22667,
       "w": 1440,
       "h": 2460,
-      "page": "v5-frontier",
+      "page": "planned",
       "expand": "fill"
     },
     {
       "file": "V5FrontierCalib.dc.html",
-      "title": "v5 · F3 · Calibration, explorable · fallback shown",
-      "x": 4680,
-      "y": 0,
+      "title": "Prototype F3 · calibration, explorable · fallback shown (runs in design/site/v5-frontier-calibration.html)",
+      "x": 1560,
+      "y": 22667,
       "w": 1440,
       "h": 1880,
-      "page": "v5-frontier",
+      "page": "planned",
       "expand": "fill"
-    },
-    {
-      "file": "V5FrontierCurve390.dc.html",
-      "title": "v5 · F2 · phone",
-      "x": 6240,
-      "y": 0,
-      "w": 390,
-      "h": 3570,
-      "page": "v5-frontier"
     }
   ],
   "annotations": [
     {
-      "id": "note-final",
-      "x": 0,
-      "y": -460,
-      "w": 1100,
-      "page": "final",
-      "text": "Final · Convexa v1 (2026-10-14). The whole app in its ruled state, one row per screen: the spec card (purpose, every widget’s data source, production vs staging, every state in its words, phone, acceptance, build status, rulings, code), then staging (the demo account: signed in, all sample), production where it differs (no mocks; what needs the Massive options feed shows Not live), phone, light and states. Carries P-1–P-4, P-6, P-8–P-15 and the 2026-10-14 environment rulings. The earlier pages stay as history."
+      "id": "note-start",
+      "page": "start",
+      "x": 3120,
+      "y": 0,
+      "w": 900,
+      "size": "l",
+      "text": "Convexa Desk Redesign: every screen in its current, ruled design (organized 2026-10-25).\n\nPages: Ticker desk (the desk, its AI read, and the Technical and Research tabs) · Research (Notes, Markets, Filings and Scorecard) · Scanner & account (Scanner, Positions, Alerts and Settings) · Dialogs & overlays (every dialog, drawer and sheet) · Site & shell (the shell, the public pages and the operator pages) · Foundations (data states, the chart system, and the token and component library) · Planned · not built (the public-data tools, designed and waiting, and two prototypes not yet ruled on).\n\nEach row is one screen, left to right: its spec card (purpose, where every number comes from, states, acceptance, what is built), then staging (the demo account, all sample), production where it differs, phone, light, and its states.\n\nRuled questions, fixed issues and the earlier rounds (v2–v5 directions, audits and before/after boards) are off the canvas: the record is git, design/CHANGELOG.md and DESIGN_SYSTEM.md Amendments."
     },
     {
-      "id": "note-final-planned",
+      "id": "row-progress",
+      "page": "start",
       "x": 0,
-      "y": 120599,
-      "page": "final",
-      "text": "Planned · designed, not built — the public-data tools from docs/public-data/CANDIDATES.md",
+      "y": -300,
       "kind": "title1",
-      "maxW": 4000
+      "maxW": 3000,
+      "text": "Board map"
     },
     {
-      "id": "note-tweaks",
+      "id": "row-desk",
+      "page": "ticker",
       "x": 0,
-      "y": -150,
-      "w": 560,
-      "page": "page-1",
-      "text": "Ticker desk — the tweak chips switch readState (idle · loading · trade · no_trade · stale · cooldown · signed_out · no_key), live (pulses, particles, trail), scheme (dark · light) and the phone sheet (open · peek). Click “Analyze current snapshot” to run loading → trade; Field / Magnet switches the hero. Expand this frame and resize your window: the layout is fluid."
+      "y": -300,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Ticker desk · /ticker/:ticker"
     },
     {
-      "id": "note-resp",
+      "id": "row-ai-read",
+      "page": "ticker",
       "x": 0,
-      "y": -150,
-      "w": 620,
-      "page": "page-2",
-      "text": "Same source, five widths. Every frame here renders the identical page body through one set of media and container queries — nothing is redrawn by hand. The phone desk docks the AI read as a bottom sheet; tables become cards under 1000px; the settings rail becomes tabs under 900px."
+      "y": 5571,
+      "kind": "title1",
+      "maxW": 8020,
+      "text": "AI read · /ticker/:ticker"
     },
     {
-      "id": "note-site",
+      "id": "row-technical",
+      "page": "ticker",
       "x": 0,
-      "y": -150,
-      "w": 520,
-      "page": "page-3",
-      "text": "Site surfaces at 1440. Copy is grounded in the product (69-name universe, ~60s desk cadence, ~3-min scanner sweep, 7–45 DTE, simulated book, BYO key); all prices, P/L, scores and timestamps are sample values."
+      "y": 9259,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Technical tab · /ticker/:symbol/technical-analysis"
     },
     {
-      "id": "note-dialogs",
+      "id": "row-note",
+      "page": "ticker",
       "x": 0,
-      "y": -150,
-      "w": 520,
-      "page": "page-4",
-      "text": "Every overlay and gate in the product: sign-in and the private-testing wall, the one shared sim trade-entry dialog in both variants (with the six binding disclosures verbatim), the egress drawer, persona editing, order detail in both coverage states, the scan view editor, route fallback, 404, and the two operator surfaces."
+      "y": 12135,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Research tab · note · /ticker/:symbol/research"
     },
     {
-      "id": "note-v4-data",
+      "id": "row-research-index",
+      "page": "research",
       "x": 0,
-      "y": -520,
-      "w": 900,
-      "page": "v4-data",
-      "text": "v4 · Data states (2026-10-13). The hybrid site: live where free public data reaches, honestly not live where the paid options feed is needed. Source map → state matrix → the NVDA desk in both honest options (explain, or a labelled sample). Every board names the review findings it resolves (design/REVIEW-2026-10-13.md). Figures are illustrative design values."
+      "y": -300,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Research · Notes · /research"
     },
     {
-      "id": "note-v4-tools",
+      "id": "row-research-markets",
+      "page": "research",
       "x": 0,
-      "y": -520,
-      "w": 900,
-      "page": "v4-tools",
-      "text": "v4 · Tools from public data (2026-10-13). Source of truth: docs/public-data/CANDIDATES.md and its status words (live · switch · build · verify · blocked). Top row: the roadmap and the built research pages, re-sourced and joined by the new tools. Rows below: one sheet per priority tool with desktop, phone and every state. Blocked tools draw their design target with illustrative values; the gate is open question Q-1."
+      "y": 6477,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Research · Markets · /research/markets"
     },
     {
-      "id": "note-v4-app",
+      "id": "row-research-filings",
+      "page": "research",
       "x": 0,
-      "y": -520,
-      "w": 900,
-      "page": "v4-app",
-      "text": "v4 · App (2026-10-13). One row per route: desktop 1440 dark, phone 390, light 1440, then the route’s states board. The ticker desk’s desktop and phone boards are on v4 · Data states. Findings per route: design/REVIEW-2026-10-13.md (wave 3). Figures are illustrative design values."
+      "y": 12496,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Research · Filings · /research/filings"
     },
     {
-      "id": "note-v4-research",
+      "id": "row-research-scorecard",
+      "page": "research",
       "x": 0,
-      "y": -520,
-      "w": 900,
-      "page": "v4-research",
-      "text": "v4 · Research refresh (2026-10-13). The note view with neutral directions supersedes the research canvas’s Main board (that canvas is left as it is); the index with its tabs; phone boards for Markets, Filings, Scorecard and ticker research; light boards for every research page and the state matrix; Markets in the demo build."
+      "y": 16191,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Research · Scorecard · /research/scorecard"
     },
     {
-      "id": "note-v5-charts",
+      "id": "row-scanner",
+      "page": "account",
       "x": 0,
-      "y": -620,
-      "w": 900,
-      "page": "v5-charts",
-      "text": "v5 · Charts (2026-10-13). Wave 1 audits every chart in the app and on these boards (design/CHARTS-2026-10-13.md); wave 2 is one chart system: a frame that makes a claim and names its source, a plot with text at true size, labels on the data, a table twin, one tab stop, the seven data states. Values are illustrative; sources are the ones the app reads."
+      "y": -300,
+      "kind": "title1",
+      "maxW": 9580,
+      "text": "Scanner · /scanner"
     },
     {
-      "id": "note-system",
+      "id": "row-positions",
+      "page": "account",
       "x": 0,
-      "y": -150,
-      "w": 560,
-      "page": "page-5",
-      "text": "The library is generated from tokens/tokens.json and src/components — every state shown there is a registered state. The light renders prove the scheme is a token swap, not a second layout."
+      "y": 2753,
+      "kind": "title1",
+      "maxW": 8020,
+      "text": "Positions · /positions"
     },
     {
-      "id": "find-V4SourceMap",
+      "id": "row-alerts",
+      "page": "account",
       "x": 0,
-      "y": -230,
-      "w": 640,
-      "page": "v4-data",
-      "text": "v4 · Source map: where every number comes from. Resolves X-01, X-02, X-03, X-08, DS-01–DS-04. Findings: design/REVIEW-2026-10-13.md."
+      "y": 5228,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Alerts · /alerts"
     },
     {
-      "id": "find-V4HybridDesk",
-      "x": 2040,
-      "y": -230,
-      "w": 640,
-      "page": "v4-data",
-      "text": "v4 · Hybrid desk · NVDA · not-live panels explained. Resolves X-01, X-03, X-05, X-06, TKR-01–TKR-07. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4HybridDeskSample",
-      "x": 3600,
-      "y": -230,
-      "w": 640,
-      "page": "v4-data",
-      "text": "v4 · Hybrid desk · NVDA · sample illustrations on. Resolves X-10, TKR-02, TKR-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4HybridDesk390",
-      "x": 5160,
-      "y": -230,
-      "w": 390,
-      "page": "v4-data",
-      "text": "v4 · Hybrid desk · NVDA · phone. Resolves X-12, TKR-06, TKR-08. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4StateMatrix",
+      "id": "row-settings",
+      "page": "account",
       "x": 0,
-      "y": 6530,
-      "w": 640,
-      "page": "v4-data",
-      "text": "v4 · State matrix · 9 families × 14 states. Resolves X-01, X-02, X-09, X-10, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
+      "y": 9411,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Settings · /settings"
     },
     {
-      "id": "find-V4StateMatrix390",
-      "x": 3340,
-      "y": 6530,
-      "w": 640,
-      "page": "v4-data",
-      "text": "v4 · State matrix · phone widths. Resolves X-12, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4HybridDesk834",
-      "x": 5670,
-      "y": -230,
-      "w": 640,
-      "page": "v4-data",
-      "text": "v4 · Hybrid desk · 834 tablet. Resolves TKR-08. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4HybridDesk390Light",
-      "x": 6624,
-      "y": -230,
-      "w": 390,
-      "page": "v4-data",
-      "text": "v4 · Hybrid desk · phone · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Roadmap",
+      "id": "row-dialogs",
+      "page": "overlays",
       "x": 0,
-      "y": -230,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Roadmap: everything Convexa can build without the paid feed. Resolves TL-13, Q-1, Q-2, Q-3. Findings: design/REVIEW-2026-10-13.md."
+      "y": -300,
+      "kind": "title1",
+      "maxW": 13750,
+      "text": "Overlays · dialogs, drawer and sheets on every route"
     },
     {
-      "id": "find-V4Markets",
-      "x": 2040,
-      "y": -230,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Markets · rates, liquidity, calendar, positioning (built + build). Resolves X-08, TL-01, TL-03, TL-14. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Filings",
-      "x": 3600,
-      "y": -230,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Filings · the SEC feed and filing detail (switch). Resolves X-13, DS-02, TL-15. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Scorecard",
-      "x": 5160,
-      "y": -230,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Scorecard · forecasts live, signal track record blocked. Resolves TL-12, TL-16. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4TickerResearch",
-      "x": 6720,
-      "y": -230,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Ticker research · NVDA · every public panel. Resolves TL-05–TL-11, TL-17. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ToolLiquidity",
+      "id": "row-overlays",
+      "page": "overlays",
       "x": 0,
-      "y": 3770,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Tool · Liquidity panel · build. Resolves TL-01, TL-02. Findings: design/REVIEW-2026-10-13.md."
+      "y": 5641,
+      "kind": "title1",
+      "maxW": 13750,
+      "text": "More overlays · dialogs on /positions, /ticker/:ticker, /alerts; /account/reset and /account/invite (proposed)"
     },
     {
-      "id": "find-V4ToolCalendar",
-      "x": 1560,
-      "y": 3770,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Tool · Macro calendar · build. Resolves TL-03, TL-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ToolOtc",
-      "x": 3120,
-      "y": 3770,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Tool · Off-exchange volume (weekly) · build / verify. Resolves TL-05, TKR-07. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ToolClusters",
-      "x": 4680,
-      "y": 3770,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Tool · Insider clusters · build. Resolves TL-06. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ToolHolders",
-      "x": 6240,
-      "y": 3770,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Tool · Fund holdings (13F) · build. Resolves TL-07. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ToolXbrl",
+      "id": "row-shell",
+      "page": "site",
       "x": 0,
-      "y": 7070,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Tool · Note figures from XBRL · build. Resolves TL-08, TL-09. Findings: design/REVIEW-2026-10-13.md."
+      "y": -300,
+      "kind": "title1",
+      "maxW": 8020,
+      "text": "Global shell · every route inside the shell"
     },
     {
-      "id": "find-V4ToolPeers",
-      "x": 1560,
-      "y": 7070,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Tool · Peer table · build. Resolves TL-10. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ToolTa",
-      "x": 3120,
-      "y": 7070,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Tool · Technical analysis · blocked. Resolves TL-11, TKR-05, DS-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ToolSignals",
-      "x": 4680,
-      "y": 7070,
-      "w": 640,
-      "page": "v4-tools",
-      "text": "v4 · Tool · Signal track record · blocked. Resolves TL-12. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Shell",
+      "id": "row-landing",
+      "page": "site",
       "x": 0,
-      "y": -230,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Global shell · desktop. Resolves X-01, SHL-01–SHL-05. Findings: design/REVIEW-2026-10-13.md."
+      "y": 4399,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Landing · /"
     },
     {
-      "id": "find-V4Shell390",
-      "x": 1560,
-      "y": -230,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Global shell · phone. Resolves X-01, SHL-01–SHL-05. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ShellLight",
-      "x": 2070,
-      "y": -230,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Global shell · light. Resolves X-01, SHL-01–SHL-05. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ShellStates",
-      "x": 3630,
-      "y": -230,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Global shell · states. Resolves X-01, SHL-01–SHL-05. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Landing",
+      "id": "row-methodology",
+      "page": "site",
       "x": 0,
-      "y": 2810,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Landing · desktop. Resolves LND-01–LND-04. Findings: design/REVIEW-2026-10-13.md."
+      "y": 10441,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Methodology · /methodology (deep link /methodology#data)"
     },
     {
-      "id": "find-V4Landing390",
-      "x": 1560,
-      "y": 2810,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Landing · phone. Resolves LND-01–LND-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4LandingLight",
-      "x": 2070,
-      "y": 2810,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Landing · light. Resolves LND-01–LND-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4LandingStates",
-      "x": 3630,
-      "y": 2810,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Landing · states. Resolves LND-01–LND-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4DeskLight",
+      "id": "row-blog",
+      "page": "site",
       "x": 0,
-      "y": 7330,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Hybrid desk · light. Resolves X-02, DS-02, DS-03, TKR-03, TKR-05. Findings: design/REVIEW-2026-10-13.md."
+      "y": 18299,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Blog · /blog and /blog/how-we-read-dealer-structure.html"
     },
     {
-      "id": "find-V4DeskStates",
-      "x": 1560,
-      "y": 7330,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Ticker desk (desktop and phone on v4 · Data states) · states. Resolves X-02, DS-02, DS-03, TKR-03, TKR-05. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Technical",
+      "id": "row-not-found",
+      "page": "site",
       "x": 0,
-      "y": 10740,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Ticker · Technical tab (TradingView) · desktop. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
+      "y": 21611,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "404 and route fallback · * (any unmatched path inside the shell)"
     },
     {
-      "id": "find-V4Technical390",
-      "x": 1560,
-      "y": 10740,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Ticker · Technical tab (TradingView) · phone. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4TechnicalLight",
-      "x": 2070,
-      "y": 10740,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Ticker · Technical tab (TradingView) · light. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4TechnicalStates",
-      "x": 3630,
-      "y": 10740,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Ticker · Technical tab (TradingView) · states. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Scanner",
+      "id": "row-credits",
+      "page": "site",
       "x": 0,
-      "y": 12530,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Scanner · desktop. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
+      "y": 23462,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Data sources and credits · /credits (proposed; deep links /credits#treasury, #cftc, #finra-si, #finra-shvol, #sec, #tradingview, #massive)"
     },
     {
-      "id": "find-V4Scanner390",
-      "x": 1560,
-      "y": 12530,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Scanner · phone. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ScannerLight",
-      "x": 2070,
-      "y": 12530,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Scanner · light. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ScannerStates",
-      "x": 3630,
-      "y": 12530,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Scanner · states. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Positions",
+      "id": "row-privacy",
+      "page": "site",
       "x": 0,
-      "y": 14760,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Positions · desktop. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
+      "y": 30105,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Privacy · /privacy (proposed)"
     },
     {
-      "id": "find-V4Positions390",
-      "x": 1560,
-      "y": 14760,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Positions · phone. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4PositionsLight",
-      "x": 2070,
-      "y": 14760,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Positions · light. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4PositionsSignedOut",
-      "x": 3630,
-      "y": 14760,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Positions · signed out (wall). Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4PositionsStates",
-      "x": 5190,
-      "y": 14760,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Positions · states. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Alerts",
+      "id": "row-terms",
+      "page": "site",
       "x": 0,
-      "y": 17090,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Alerts · desktop. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
+      "y": 35100,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Terms and disclaimer · /terms (proposed)"
     },
     {
-      "id": "find-V4Alerts390",
-      "x": 1560,
-      "y": 17090,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Alerts · phone. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4AlertsLight",
-      "x": 2070,
-      "y": 17090,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Alerts · light. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4AlertsStates",
-      "x": 3630,
-      "y": 17090,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Alerts · states. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Settings",
+      "id": "row-operator",
+      "page": "site",
       "x": 0,
-      "y": 19400,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Settings · desktop. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
+      "y": 38906,
+      "kind": "title1",
+      "maxW": 9070,
+      "text": "Operator · /_ops/metrics and /_ops/research (unlinked)"
     },
     {
-      "id": "find-V4Settings390",
-      "x": 1560,
-      "y": 19400,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Settings · phone. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4SettingsLight",
-      "x": 2070,
-      "y": 19400,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Settings · light. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4SettingsSignedOut",
-      "x": 3630,
-      "y": 19400,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Settings · signed out. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4SettingsStates",
-      "x": 5190,
-      "y": 19400,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Settings · states. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Methodology",
+      "id": "row-foundations",
+      "page": "foundations",
       "x": 0,
-      "y": 21910,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Methodology · desktop. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
+      "y": -300,
+      "kind": "title1",
+      "maxW": 8780,
+      "text": "Foundations · every route"
     },
     {
-      "id": "find-V4Methodology390",
-      "x": 1560,
-      "y": 21910,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Methodology · phone. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4MethodologyLight",
-      "x": 2070,
-      "y": 21910,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Methodology · light. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4MethodologyStates",
-      "x": 3630,
-      "y": 21910,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Methodology · states. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Blog",
+      "id": "row-planned-liquidity",
+      "page": "planned",
       "x": 0,
-      "y": 24930,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Blog · desktop. Resolves DOC-04. Findings: design/REVIEW-2026-10-13.md."
+      "y": -300,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Planned · Liquidity · /research/markets#liquidity (proposed)"
     },
     {
-      "id": "find-V4Blog390",
-      "x": 1560,
-      "y": 24930,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Blog · phone. Resolves DOC-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4BlogLight",
-      "x": 2070,
-      "y": 24930,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Blog · light. Resolves DOC-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Lab",
+      "id": "row-planned-calendar",
+      "page": "planned",
       "x": 0,
-      "y": 26300,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Lab · desktop. Resolves DOC-03. Findings: design/REVIEW-2026-10-13.md."
+      "y": 2275,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Planned · Calendar · /research/markets#coming-up (proposed)"
     },
     {
-      "id": "find-V4Lab390",
-      "x": 1560,
-      "y": 26300,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Lab · phone. Resolves DOC-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4LabLight",
-      "x": 2070,
-      "y": 26300,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Lab · light. Resolves DOC-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4NotFound",
+      "id": "row-planned-otc",
+      "page": "planned",
       "x": 0,
-      "y": 28720,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · 404 and route fallback · desktop. Resolves DOC-04, DOC-05. Findings: design/REVIEW-2026-10-13.md."
+      "y": 5740,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Planned · Off-exchange volume · /ticker/:symbol/research"
     },
     {
-      "id": "find-V4NotFound390",
-      "x": 1560,
-      "y": 28720,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · 404 and route fallback · phone. Resolves DOC-04, DOC-05. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4NotFoundLight",
-      "x": 2070,
-      "y": 28720,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · 404 and route fallback · light. Resolves DOC-04, DOC-05. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4SignIn",
+      "id": "row-planned-clusters",
+      "page": "planned",
       "x": 0,
-      "y": 30040,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Sign in and the wall · desktop. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
+      "y": 7914,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Planned · Insider clusters · /ticker/:symbol/research"
     },
     {
-      "id": "find-V4SignIn390",
-      "x": 1560,
-      "y": 30040,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Sign in and the wall · phone. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4SignInLight",
-      "x": 2070,
-      "y": 30040,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Sign in and the wall · light. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4SignInStates",
-      "x": 3630,
-      "y": 30040,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Sign in and the wall · states. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4TradeEntry",
+      "id": "row-planned-holders",
+      "page": "planned",
       "x": 0,
-      "y": 31790,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Trade entry · desktop. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
+      "y": 10093,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Planned · Fund holdings (13F) · /ticker/:symbol/research"
     },
     {
-      "id": "find-V4TradeEntry390",
-      "x": 1560,
-      "y": 31790,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Trade entry · phone. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4TradeEntryLight",
-      "x": 2070,
-      "y": 31790,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Trade entry · light. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4TradeEntryStates",
-      "x": 3630,
-      "y": 31790,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Trade entry · states. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4OrderDetail",
+      "id": "row-planned-xbrl",
+      "page": "planned",
       "x": 0,
-      "y": 33610,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Order detail · desktop. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
+      "y": 12479,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Planned · Figures against the filing · /ticker/:symbol/research"
     },
     {
-      "id": "find-V4OrderDetail390",
-      "x": 1560,
-      "y": 33610,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Order detail · phone. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4OrderDetailLight",
-      "x": 2070,
-      "y": 33610,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Order detail · light. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4OrderDetailStates",
-      "x": 3630,
-      "y": 33610,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Order detail · states. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4WhatsSent",
+      "id": "row-planned-peers",
+      "page": "planned",
       "x": 0,
-      "y": 35130,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · What’s sent drawer · desktop. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
+      "y": 15470,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Planned · Peers · /ticker/:symbol/research"
     },
     {
-      "id": "find-V4WhatsSent390",
-      "x": 1560,
-      "y": 35130,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · What’s sent drawer · phone. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4WhatsSentLight",
-      "x": 2070,
-      "y": 35130,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · What’s sent drawer · light. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4WhatsSentStates",
-      "x": 3630,
-      "y": 35130,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · What’s sent drawer · states. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Persona",
+      "id": "row-planned-signals",
+      "page": "planned",
       "x": 0,
-      "y": 36840,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Persona · desktop. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
+      "y": 17484,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Planned · Signal track record · /research/scorecard#signals"
     },
     {
-      "id": "find-V4Persona390",
-      "x": 1560,
-      "y": 36840,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Persona · phone. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4PersonaLight",
-      "x": 2070,
-      "y": 36840,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Persona · light. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4PersonaStates",
-      "x": 3630,
-      "y": 36840,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Persona · states. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ViewEditor",
+      "id": "row-planned-ta",
+      "page": "planned",
       "x": 0,
-      "y": 38360,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Scan view editor · desktop. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
+      "y": 19446,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Planned · Technical readings · /ticker/:symbol/technical-analysis"
     },
     {
-      "id": "find-V4ViewEditor390",
-      "x": 1560,
-      "y": 38360,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Scan view editor · phone. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ViewEditorLight",
-      "x": 2070,
-      "y": 38360,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Scan view editor · light. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ViewEditorStates",
-      "x": 3630,
-      "y": 38360,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Scan view editor · states. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Operator",
+      "id": "row-Library",
+      "page": "foundations",
       "x": 0,
-      "y": 39980,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Operator · desktop. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
+      "y": 7493,
+      "kind": "title1",
+      "maxW": 4560,
+      "text": "Library · tokens, components and their React mapping"
     },
     {
-      "id": "find-V4Operator390",
-      "x": 1560,
-      "y": 39980,
-      "w": 390,
-      "page": "v4-app",
-      "text": "v4 · Operator · phone. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4OperatorLight",
-      "x": 2070,
-      "y": 39980,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Operator · light. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4OperatorStates",
-      "x": 3630,
-      "y": 39980,
-      "w": 640,
-      "page": "v4-app",
-      "text": "v4 · Operator · states. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4NoteView",
+      "id": "row-V5FrontierCurve",
+      "page": "planned",
       "x": 0,
-      "y": -230,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Note view · NVDA · neutral directions (supersedes the research canvas Main board). Resolves RSH-01, RSH-02. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4NoteView390",
-      "x": 1560,
-      "y": -230,
-      "w": 390,
-      "page": "v4-research",
-      "text": "v4 · Note view · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4NoteViewLight",
-      "x": 2070,
-      "y": -230,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Note view · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4NoteStates",
-      "x": 3630,
-      "y": -230,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Note view · states. Resolves RSH-06. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ResearchIndex",
-      "x": 0,
-      "y": 4790,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Research index with the tabs. Resolves RSH-05. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ResearchIndex390",
-      "x": 1560,
-      "y": 4790,
-      "w": 390,
-      "page": "v4-research",
-      "text": "v4 · Research index · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ResearchIndexLight",
-      "x": 2070,
-      "y": 4790,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Research index · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Markets390",
-      "x": 0,
-      "y": 7610,
-      "w": 390,
-      "page": "v4-research",
-      "text": "v4 · Markets · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Filings390",
-      "x": 510,
-      "y": 7610,
-      "w": 390,
-      "page": "v4-research",
-      "text": "v4 · Filings · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Scorecard390",
-      "x": 1020,
-      "y": 7610,
-      "w": 390,
-      "page": "v4-research",
-      "text": "v4 · Scorecard · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4TickerResearch390",
-      "x": 1530,
-      "y": 7610,
-      "w": 390,
-      "page": "v4-research",
-      "text": "v4 · Ticker research · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4MarketsLight",
-      "x": 2040,
-      "y": 7610,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Markets · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4FilingsLight",
-      "x": 3600,
-      "y": 7610,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Filings · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4ScorecardLight",
-      "x": 5160,
-      "y": 7610,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Scorecard · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4TickerResearchLight",
-      "x": 6720,
-      "y": 7610,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Ticker research · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4MarketsDemo",
-      "x": 8280,
-      "y": 7610,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Markets · demo build (dashed chips). Resolves X-09, TL-14. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4StateMatrixLight",
-      "x": 0,
-      "y": 14430,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · State matrix · light. Resolves RSH-04, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4NoteView390Light",
-      "x": 5190,
-      "y": -230,
-      "w": 390,
-      "page": "v4-research",
-      "text": "v4 · Note view · phone · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Markets834",
-      "x": 9840,
-      "y": 7610,
-      "w": 640,
-      "page": "v4-research",
-      "text": "v4 · Markets · 834 tablet. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "find-V4Coverage",
-      "x": 0,
-      "y": -230,
-      "w": 640,
-      "page": "v4-coverage",
-      "text": "v4 · Coverage matrix · route × width × theme × states. Resolves coverage; gaps listed in the matrix. Findings: design/REVIEW-2026-10-13.md."
-    },
-    {
-      "id": "v5-V5Audit",
-      "x": 0,
-      "y": -260,
-      "w": 640,
-      "page": "v5-charts",
-      "text": "v5 · Every chart, audited. Wave 1: 82 entries, the top ten, what recurs. Long form: design/CHARTS-2026-10-13.md."
-    },
-    {
-      "id": "v5-V5ChartSystem",
-      "x": 1560,
-      "y": -260,
-      "w": 640,
-      "page": "v5-charts",
-      "text": "v5 · One chart system. Wave 2: rules, colour roles (validator results), mark specs, every primitive, the React module map. Resolves SYS-01."
-    },
-    {
-      "id": "v5-V5ChartStates",
-      "x": 3120,
-      "y": -260,
-      "w": 640,
-      "page": "v5-charts",
-      "text": "v5 · Every chart, in every state. Wave 2: ready + the seven data states at final size, scrub, keyboard focus, primitive × state. Resolves CH2, the silent nulls."
-    },
-    {
-      "id": "v5-V5ChartPhone",
-      "x": 4680,
-      "y": -260,
-      "w": 390,
-      "page": "v5-charts",
-      "text": "v5 · Charts on a phone (390). Wave 2: re-layout, never scale-down; text ≥ 11px; the bridge as rows, crossing zero."
-    },
-    {
-      "id": "v5-V5ThirdParty",
-      "x": 5190,
-      "y": -260,
-      "w": 640,
-      "page": "v5-charts",
-      "text": "v5 · Ours, and theirs. Wave 2: a Convexa chart beside TradingView’s frame; the eight deliberate differences. Resolves TT-01, DB-15."
-    },
-    {
-      "id": "v5-V5ChartSystemLight",
-      "x": 6750,
-      "y": -260,
-      "w": 640,
-      "page": "v5-charts",
-      "text": "v5 · One chart system · light. The same board in the light scheme: the roles are token swaps."
-    },
-    {
-      "id": "v5-V5Alerts",
-      "x": 0,
-      "y": -260,
-      "w": 640,
-      "page": "q5-alerts",
-      "text": "Alerts on public data · desktop. Q-5: six kinds, each naming its source and delay; SEC kinds Not set up until SEC_USER_AGENT; structure kinds Not live. P-1 legend, P-2 words."
-    },
-    {
-      "id": "v5-V5Alerts390",
-      "x": 1560,
-      "y": -260,
-      "w": 390,
-      "page": "q5-alerts",
-      "text": "Alerts on public data · phone. Q-5 at 390: rules as stacked rows, the kind table as cards, 44px targets."
-    },
-    {
-      "id": "v5-V5AlertsLight",
-      "x": 2070,
-      "y": -260,
-      "w": 640,
-      "page": "q5-alerts",
-      "text": "Alerts on public data · light. Q-5 in the light scheme."
-    },
-    {
-      "id": "v5-V5AlertsFlow",
-      "x": 3630,
-      "y": -260,
-      "w": 640,
-      "page": "q5-alerts",
-      "text": "New alert · choose, set up, read back. Q-5: the create-alert dialog in three steps, with three set-up variants and the saved result."
-    },
-    {
-      "id": "v5-V5AlertsFlow390",
-      "x": 5190,
-      "y": -260,
-      "w": 390,
-      "page": "q5-alerts",
-      "text": "New alert · phone (bottom sheets). Q-5 at 390: each step is a bottom sheet."
-    },
-    {
-      "id": "v5-V5AlertsStates",
-      "x": 5700,
-      "y": -260,
-      "w": 640,
-      "page": "q5-alerts",
-      "text": "Alerts on public data · states. Q-5: empty, not set up, source down, couldn’t load, off, fired, blocked, demo, and the dialog’s validation, duplicate, saving and failed save."
-    },
-    {
-      "id": "v5-V5FamNoteFigures",
-      "x": 0,
-      "y": -260,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · Note figures · before and after. Wave 3: RN-01–RN-05, RN-13. The bridge crosses zero; losses go below it; guidance as a whisker; filings on the event lane."
-    },
-    {
-      "id": "v5-V5FamNoteValuation",
-      "x": 1560,
-      "y": -260,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · Valuation · before and after. Wave 3: RN-06, RN-08–RN-12. Ranges solid to their ends; labels at their marks; the base diamond as the one amber mark."
-    },
-    {
-      "id": "v5-V5FamMarkets",
-      "x": 3120,
-      "y": -260,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · Markets · before and after. Wave 3: RM-02–RM-06. Claims per component, the inversion line, FOMC decisions, per-note drift, named medians and zero."
-    },
-    {
-      "id": "v5-V5FamScorecard",
-      "x": 4680,
-      "y": -260,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · Scorecard and Filings · before and after. Wave 3: RS-02–RS-04. Bars that sum to N; calibration with Wilson intervals and n; reported figures with change and an honest error."
-    },
-    {
-      "id": "v5-V5FamPanels",
-      "x": 6240,
-      "y": -260,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · Note panels · before and after. Wave 3: RP-01–RP-03. Shares and % of float on separate scales; short-sale volume as a gated target; the off state."
-    },
-    {
-      "id": "v5-V5FamDesk",
-      "x": 0,
-      "y": 3740,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · Ticker desk · before and after. Wave 3: TD-01–TD-12. Sample (the demo’s form) beside not live (production); gamma sign by position and text as well as hue."
-    },
-    {
-      "id": "v5-V5FamOther",
-      "x": 1560,
-      "y": 3740,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · Scanner, positions, operator, Lab. Wave 3: SC, PO, OP, LD, LB. P-5 is rejected, so the scanner change stays green/red text."
-    },
-    {
-      "id": "v5-V5Tools",
-      "x": 3120,
-      "y": 3740,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · Planned tools, charted. Wave 3: PT-01–PT-09 arrive designed: claim, form, source and delay, honest state."
-    },
-    {
-      "id": "v5-V5TvFraming",
-      "x": 4680,
-      "y": 3740,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · TradingView, framed. Wave 3: the Technical tab, the desk’s price panel, the frame’s states, load on request (P-14), and where a frame belongs."
-    },
-    {
-      "id": "v5-V5Tools390",
-      "x": 6240,
-      "y": 3740,
-      "w": 390,
-      "page": "v5-families",
-      "text": "v5 · Planned tools · phone. At 390."
-    },
-    {
-      "id": "v5-V5TvFraming390",
-      "x": 6750,
-      "y": 3740,
-      "w": 390,
-      "page": "v5-families",
-      "text": "v5 · TradingView · phone. At 390: the 480px frame, the table as stacked rows."
-    },
-    {
-      "id": "v5-V5FamNoteFigures390",
-      "x": 0,
-      "y": 11540,
-      "w": 390,
-      "page": "v5-families",
-      "text": "v5 · Note figures · phone. At 390: the bridge as rows, short labels, no scale-down."
-    },
-    {
-      "id": "v5-V5FamMarkets390",
-      "x": 510,
-      "y": 11540,
-      "w": 390,
-      "page": "v5-families",
-      "text": "v5 · Markets · phone. At 390: one-column facets, only the latest FOMC chip, the curve with leaders."
-    },
-    {
-      "id": "v5-V5FamMarketsLight",
-      "x": 1020,
-      "y": 11540,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · Markets · light. The Markets family in the light scheme."
-    },
-    {
-      "id": "v5-V5FamScorecardLight",
-      "x": 2580,
-      "y": 11540,
-      "w": 640,
-      "page": "v5-families",
-      "text": "v5 · Scorecard · light. Calibration and by-month in the light scheme."
-    },
-    {
-      "id": "v5-V5Frontier",
-      "x": 0,
-      "y": -260,
-      "w": 640,
-      "page": "v5-frontier",
-      "text": "v5 · The frontier · overview. Wave 4: three prototypes in design/site (v5-frontier-*.html) with measured budgets; what was considered and not built."
-    },
-    {
-      "id": "v5-V5FrontierGamma",
-      "x": 1560,
-      "y": -260,
-      "w": 640,
-      "page": "v5-frontier",
-      "text": "v5 · F1 · Dealer-gamma surface (WebGL) · fallback shown. F1 runs in design/site/v5-frontier-gamma.html. Here: the static projection it falls back to. Needs P-15."
-    },
-    {
-      "id": "v5-V5FrontierCurve",
-      "x": 3120,
-      "y": -260,
-      "w": 640,
-      "page": "v5-frontier",
-      "text": "v5 · F2 · A year of the curve · fallback shown. F2 runs in design/site/v5-frontier-curve.html. Here: today’s curve and the year in four curves."
-    },
-    {
-      "id": "v5-V5FrontierCalib",
-      "x": 4680,
-      "y": -260,
-      "w": 640,
-      "page": "v5-frontier",
-      "text": "v5 · F3 · Calibration, explorable · fallback shown. F3 runs in design/site/v5-frontier-calibration.html. Here: the 95% chart and the table."
-    },
-    {
-      "id": "v5-V5FrontierCurve390",
-      "x": 6240,
-      "y": -260,
-      "w": 390,
-      "page": "v5-frontier",
-      "text": "v5 · F2 · phone. F2 at 390."
+      "y": 22367,
+      "kind": "title1",
+      "maxW": 3000,
+      "text": "Prototypes · not ruled: a year of the curve (F2), calibration you can question (F3)"
     }
   ],
   "launch": {
     "view": "canvas",
-    "page": "final"
+    "page": "start"
   }
 }

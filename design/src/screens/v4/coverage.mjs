@@ -1,7 +1,7 @@
 // v4 · Coverage — route × width × theme × states → the board that draws it, gaps marked honestly.
-// Board names are checked against canvas.config.mjs at build time, so a renamed or missing board
-// shows up here as a gap instead of a false claim.
-import { artboards } from '../../canvas.config.mjs';
+// History since 2026-10-25: the v4 boards left the canvas (it holds the final design only). Board names
+// were checked against canvas.config.mjs at build time until then, with 0 missing; they are checked now
+// against the v4 canvas as it stood (git show af9822f8:design/canvas/canvas.json).
 import { FAMILIES, STATE_ROWS } from '../../data/states.mjs';
 import { TOOLS } from '../../data/tools.mjs';
 import { SOURCE_MAP } from '../../data/hybrid.mjs';
@@ -56,8 +56,11 @@ export const COVERAGE = [
   ['Operator', 'V4Operator', 'V4Operator390', 'V4OperatorLight', G('token swap'), G(''), 'V4OperatorStates', 'Operator'],
 ];
 
+/** Every board the v4 canvas held (af9822f8:design/canvas/canvas.json) that this sheet names. */
+const V4_BOARDS = new Set(COVERAGE.flatMap(([, ...cs]) => cs.slice(0, -1).map((c) => (typeof c === 'string' ? c : c[0] === 'part' ? c[1] : null)).filter(Boolean)));
+
 export function coverageBody({ minHeight = 3600, scheme = 'dark' } = {}) {
-  const names = new Set(artboards.map((a) => a.name));
+  const names = V4_BOARDS;
   let ok = 0, part = 0, gap = 0, missing = 0;
   const cell = (c) => {
     if (typeof c === 'string') { if (names.has(c)) { ok++; return `<span class="ok">${c}</span>`; } missing++; gap++; return `<span class="gap">missing: ${c}</span>`; }
@@ -72,7 +75,7 @@ export function coverageBody({ minHeight = 3600, scheme = 'dark' } = {}) {
   const tot = `<div class="cov-tot">${[['Cells covered', ok], ['Partly covered', part], ['Gaps', gap], ['of', total], ['Missing board refs', missing]].map(([l, v]) => `<div><span class="caps">${l}</span><b>${v}</b></div>`).join('')}</div>`;
   const tot2 = `<div class="cov-tot">${[['Widget family × state', `${famCells} of ${famCells}`], ['…at phone width', `${famCells} of ${famCells}`], ['…in light', `${famCells} of ${famCells}`], ['Tool × state', `${toolCells} of ${toolCells}`], ['Widgets on the source map', mapped]].map(([l, v]) => `<div><span class="caps">${l}</span><b style="font-size: 22px;">${v}</b></div>`).join('')}</div>`;
   return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><div class="sheet">
-    ${sheetHead('Coverage: every route, width, theme and state', 'Each cell names the board that draws it. Partial means another board covers it in part (and says how); a gap is a gap, with the reason. Board names are checked against the canvas registry at build time, so nothing here claims a board that does not exist. Tablet (834) is drawn only where a layout changes in a way the phone and desktop boards don’t show.', 'coverage (wave 5)')}
+    ${sheetHead('Coverage: every route, width, theme and state', 'Each cell names the board that draws it. Partial means another board covers it in part (and says how); a gap is a gap, with the reason. Board names were checked against the canvas registry at build time, with none missing; since 2026-10-25 these v4 boards are history and the canvas draws the final design only. Tablet (834) is drawn only where a layout changes in a way the phone and desktop boards don’t show.', 'coverage (wave 5)')}
     <section aria-label="Route totals" style="display: flex; flex-direction: column; gap: 10px;"><span class="caps" style="color: var(--phosphor);">Routes × 6 columns</span>${tot}</section>
     <section aria-label="State totals" style="display: flex; flex-direction: column; gap: 10px;"><span class="caps" style="color: var(--phosphor);">Data states</span>${tot2}</section>
     <div style="overflow-x: auto;"><table class="cov"><thead><tr><th>Route</th><th>1440 · dark</th><th>390 · dark</th><th>1440 · light</th><th>390 · light</th><th>834 · tablet</th><th>States board</th><th>v2 boards kept</th></tr></thead><tbody>${rows}</tbody></table></div>

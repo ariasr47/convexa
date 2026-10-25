@@ -7,8 +7,9 @@ and declare their states, screen modules that compose those components over samp
 registry that says which screens render at which widths. A build regenerates everything else: the
 Claude Design canvas, the static site, the library page, `tokens.css` and `tokens.json`.
 
-**Editable canvas from v5 on (2026-10-13): https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe** — one file per board (`project/<Name>.dc.html` + `project/canvas.json`), published by `node design/src/emit-project.mjs <out>` after a build.
-History, kept as it is: the v2–v4 single-page canvas https://claude.ai/code/artifact/82be651e-c9a1-4ad4-a672-886626f8cf73 (v16) and the research canvas https://claude.ai/artifact/HxZArSCsbrjQCx8VBbYRw7.
+**The canvas, "Convexa Desk Redesign": https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe** — one file per board (`project/<Name>.dc.html` + `project/canvas.json`), published by `node design/src/emit-project.mjs <out>` after a build.
+Since 2026-10-25 it holds only the current, ruled design, on eight pages: **Start here** (the board map, which is the entry board `Main`, and the screen tracker), **Ticker desk**, **Research**, **Scanner & account**, **Dialogs & overlays**, **Site & shell**, **Foundations** (with the library) and **Planned · not built**. Which row sits on which page: `PAGE_ROWS` in `src/screens/final/index.mjs`; a row with no page fails the build.
+The earlier rounds (v2 pages, v4 and v5 pages, the Q-5 page, Directions B and C) are off the canvas; their screen modules still build the static site, and git keeps the boards (`git show af9822f8:design/canvas/canvas.json`). The old single-page v2–v4 canvas https://claude.ai/code/artifact/82be651e-c9a1-4ad4-a672-886626f8cf73 now points here; its last full version is `canvas/convexa-desk-redesign.html`. The research canvas https://claude.ai/artifact/HxZArSCsbrjQCx8VBbYRw7 stays as history.
 
 ```
 design/

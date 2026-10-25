@@ -564,9 +564,9 @@
 <body>
 <div class="v4" style="width: 100%; min-height: 0px; background: var(--ink); color: var(--phosphor);"><article class="tk" aria-label="Screen tracker">
       <header>
-        <div class="eyebrow">Final · Convexa v1 · screen tracker</div>
+        <div class="eyebrow">Start here · screen tracker</div>
         <h1 class="display">Screen tracker</h1>
-        <p class="lead">Every screen, every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>, which records answers and fixes rather than deleting them. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
+        <p class="lead">Every screen, every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>; this board shows only what is still open, and the file keeps every answer and fix as the record. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
       </header>
       <div class="tiles">
       <div class="tile"><span class="h">Screens · 33</span><div class="nums">
@@ -575,83 +575,29 @@
         <div class="row"><span><span class="st designed">Designed</span></span><span class="n">3</span></div>
       </div></div>
       <div class="tile"><span class="h">Open items · 16</span><div class="nums">
-        <div class="row"><span><span class="chip w-build">To build</span></span><span class="n">4</span></div><div class="row"><span><span class="chip w-owner">Waiting on you</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-parked">Parked by you</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-spend">Needs paid data</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-decided">Left out on purpose</span></span><span class="n">3</span></div>
+        <div class="row"><span><span class="chip w-build">To build</span></span><span class="n">4</span></div><div class="row"><span><span class="chip w-owner">Waiting on you</span></span><span class="n">2</span></div><div class="row"><span><span class="chip w-parked">Parked by you</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-spend">Needs paid data</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-decided">Left out on purpose</span></span><span class="n">4</span></div>
       </div></div>
       <div class="tile"><span class="h">Known issues open · 0</span><div class="nums">
         <div class="row"><span><span class="chip sv-high">High</span></span><span class="n">0</span></div><div class="row"><span><span class="chip sv-medium">Medium</span></span><span class="n">0</span></div><div class="row"><span><span class="chip sv-low">Low</span></span><span class="n">0</span></div>
         <div class="row"><span><span class="none">Fixed or not reproduced</span></span><span class="n">26</span></div>
       </div></div>
       <div class="tile"><span class="h">Waiting on you</span><div class="nums">
-        <div class="row"><span>Open questions</span><span class="n">2</span></div>
-        <div class="row"><span>Items they hold</span><span class="n">3</span></div>
+        <div class="row"><span>Open questions</span><span class="n">3</span></div>
+        <div class="row"><span>Items they hold</span><span class="n">2</span></div>
         <div class="row"><span><span class="none">Answered</span></span><span class="n">20</span></div>
       </div></div>
     </div>
       <section class="grp qs">
-      <div class="grp-h"><h2>Waiting on you</h2><span class="c">2 open questions</span></div>
+      <div class="grp-h"><h2>Waiting on you</h2><span class="c">3 open questions</span></div>
       <table>
         <colgroup><col style="width: 11%;"><col style="width: 55%;"><col></colgroup>
         <thead><tr><th>Question</th><th>What’s asked, and why</th><th>Screens it holds</th></tr></thead>
-        <tbody><tr><td class="id">Q-FINRA-TERMS</td><td>Create a free Individual account on developer.finra.org, accept its API Terms yourself, and provision a Public credential?<span class="why">Researched 2026-10-15 (docs/public-data/FINRA-TERMS-2026-10-15.md): FINRA allows free, attributed, non-commercial display only through its API with a credential; the cdn.finra.org Reg SHO files fall under finra.org terms that need written consent. With the credential, Convexa moves all three datasets onto the API and production can turn FINRA back on.</span></td><td><div class="ub"><span class="chip">Planned · Off-exchange volume</span></div></td></tr><tr><td class="id">Q-HOOD-NI</td><td>research/HOOD says net income $573M for Q2 2026; the 10-Q tags NetIncomeLoss $561M. Which is right?<span class="why">Found while adding concept cells (metadata only). The row was left without a concept cell; the note’s figure is unchanged until you decide.</span></td><td><span class="none">No card item; see why</span></td></tr></tbody>
+        <tbody><tr><td class="id">Q-FINRA-TERMS</td><td>Create a free Individual account on developer.finra.org, accept its API Terms yourself, and provision a Public credential?<span class="why">Researched 2026-10-15 (docs/public-data/FINRA-TERMS-2026-10-15.md): FINRA allows free, attributed, non-commercial display only through its API with a credential; the cdn.finra.org Reg SHO files fall under finra.org terms that need written consent. With the credential, Convexa moves all three datasets onto the API and production can turn FINRA back on.</span></td><td><div class="ub"><span class="chip">Planned · Off-exchange volume</span></div></td></tr><tr><td class="id">Q-GITHUB-HREF</td><td>The staging footer’s “GitHub ↗” link (spec 01, Q3): your GitHub profile, or the public repository?<span class="why">docs/product/specs/2026-10-21/README.md, Owner decisions (S1-Q3). The footer ships without the link until you choose.</span></td><td><div class="ub"><span class="chip">Global shell</span></div></td></tr><tr><td class="id">Q-HOOD-NI</td><td>research/HOOD says net income $573M for Q2 2026; the 10-Q tags NetIncomeLoss $561M. Which is right?<span class="why">Found while adding concept cells (metadata only). The row was left without a concept cell; the note’s figure is unchanged until you decide.</span></td><td><span class="none">No card item; see why</span></td></tr></tbody>
       </table>
-      <div class="grp-h"><h2>Answered</h2><span class="c">20, kept as the record</span></div>
-      <table class="answered">
-        <colgroup><col style="width: 15%;"><col style="width: 40%;"><col></colgroup>
-        <thead><tr><th>Question</th><th>What was asked</th><th>Answer</th></tr></thead>
-        <tbody><tr><td class="id">Q-MOVE-MARKS<span class="why">2026-10-16</span></td><td>Calendar “moved from” marks: is it fine that an API deploy clears them (provisional: yes)?</td><td><b>Keep: an API deploy clears the “moved from” marks; the date shown is always right.</b></td></tr><tr><td class="id">Q-CLUSTER-MERGE<span class="why">2026-10-16</span></td><td>Insider clusters: count identical same-day buys reported by related filers as one buy (provisional: yes)?</td><td><b>Keep: identical same-day buys reported by related filers count as one buy.</b></td></tr><tr><td class="id">Q-SAMPLE-MERGE<span class="why">2026-10-16</span></td><td>Returning staging visitors: merge newly added sample alerts into their saved ones by id (provisional: yes)?</td><td><b>Keep: returning staging visitors get new sample alerts merged in by id; their own edits stay.</b></td></tr><tr><td class="id">Q-STORED-HERE-WORDS<span class="why">2026-10-16</span></td><td>“Stored here” means “kept in this browser or your account” (as built), not “this browser only” (as the canon row says)?</td><td><b>“Stored here” means kept in this browser or on your account (as built); the canon row supersedes answer (6).</b></td></tr><tr><td class="id">Q-PEERS-SOURCE<span class="why">2026-10-16</span></td><td>Peer lists: keep them in the API (as built), or add a peers: field to each note’s front matter (as the Peers card says)?</td><td><b>Keep the peer lists in the API (xbrl_frames.rs) for now.</b></td></tr><tr><td class="id">Q-DESK-HIERARCHY<span class="why">2026-10-16</span></td><td>Approve the ticker desk’s new visual hierarchy (Ticker desk row, “Before → after” board), or say what to change?</td><td><b>Approved as built (2026-10-16): price, change and verdict first; the chart and every level on the first screen.</b></td></tr><tr><td class="id">Q-ROW-CLICK<span class="why">2026-10-16</span></td><td>Scanner: a click on a row opens its preview (as built), or goes straight to the desk?</td><td><b>Keep: a click on a row opens its preview, as Enter does; the symbol link and the preview’s desk link navigate.</b></td></tr><tr><td class="id">Q-PALETTE-NAMES<span class="why">2026-10-16</span></td><td>⌘K company names for live tickers: SEC’s legal names (“NVIDIA CORP”), a static list in the repo, or none?</td><td><b>None for now: live rows show the symbol; no legal names in capitals, no hand-kept list.</b></td></tr><tr><td class="id">Q-SAMPLE-ONCE<span class="why">2026-10-22</span></td><td>D1 (spec 1 Q1, spec 3 Q2): on the demo, the bar is the page’s one “Demo · sample data”; does a sample frame with no source line still say “Sample” in its head (spec 3), or only show its dashed, hatched border (spec 1)?</td><td><b>Spec 3’s text: the bar is the page’s one “Demo · sample data”; a frame names the sample once, by a Sample or Demo source chip or else one word in its head; the “Sample note” kind pill stays (DESIGN_SYSTEM.md Amendments, 2026-10-22).</b></td></tr><tr><td class="id">Q-BAR-AS-OF<span class="why">2026-10-22</span></td><td>D2 (spec 1 Q2): from 600px up, should the demo bar’s as-of read “As of Oct 7, 2026” rather than the brief’s “Sample scenario · Oct 7, 2026”?</td><td><b>Yes: from 600px up the demo bar reads “As of Oct 7, 2026” (DESIGN_SYSTEM.md Amendments, 2026-10-22).</b></td></tr><tr><td class="id">Q-SEC-LOCAL<span class="why">2026-10-15</span></td><td>May build lanes use the production SEC_USER_AGENT string locally to save real SEC responses?</td><td><b>Yes: lanes may use the production SEC_USER_AGENT value locally, for sec.gov only, to save real responses.</b></td></tr><tr><td class="id">Q-NOTES<span class="why">2026-10-15</span></td><td>May build lanes add XBRL concept names and a filing column to your published notes, or will you?</td><td><b>Yes, metadata only (concept cells and a filing column); every note diff is shown with the push.</b></td></tr><tr><td class="id">Q-PRIVACY<span class="why">2026-10-15</span></td><td>A privacy contact address, or rule that “ask the site’s owner” is final.</td><td><b>The owner’s public GitHub profile is the contact route.</b></td></tr><tr><td class="id">Q-FINRA<span class="why">2026-10-15</span></td><td>Do FINRA’s display terms allow short interest, Reg SHO daily volume and OTC data on a public site (Q-2)?</td><td><b>Interim: FINRA data on staging only; production shows it as Off until the owner confirms the terms (Q-FINRA-TERMS).</b></td></tr><tr><td class="id">Q-ALERTS-SERVER<span class="why">2026-10-15</span></td><td>Should public-data alerts be checked on the server?</td><td><b>No: alerts stay browser-checked, and the page says so.</b></td></tr><tr><td class="id">Q-STORED-HERE<span class="why">2026-10-15</span></td><td>Add “Stored here” to P-2’s closed list of state words, or reword the Settings tags?</td><td><b>Yes: “Stored here” joins P-2’s state words.</b></td></tr><tr><td class="id">Q-COMING-UP<span class="why">2026-10-15</span></td><td>Staging /research Coming up: the Notes index board (empty) or the Calendar board (every sample note due)?</td><td><b>The Calendar board: staging shows the sample notes’ review triggers.</b></td></tr><tr><td class="id">Q-REVIEW-DUE<span class="why">2026-10-15</span></td><td>Every valued note turns Review due on Oct 29, the day after the FOMC decision. Keep that rule?</td><td><b>Keep it: every valued note turns Review due the day after each FOMC.</b></td></tr><tr><td class="id">Q-RECENT-PAGES<span class="why">2026-10-15</span></td><td>Should ⌘K Recent also list pages (as the board shows), not just tickers?</td><td><b>No: ⌘K Recent lists tickers only.</b></td></tr><tr><td class="id">Q-AMBER<span class="why">2026-10-15</span></td><td>Outlined and text buttons: neutral as the boards draw them, or amber as the 2026-10-13 theme default?</td><td><b>A: the boards win; amber stays on the one primary action (DESIGN_SYSTEM.md Amendments, 2026-10-15).</b></td></tr></tbody>
-      </table>
+      <p class="lead">20 answered questions left this board; <code>tracker-data.mjs</code> and DESIGN_SYSTEM.md Amendments keep the answers.</p>
     </section>
       <section class="grp">
-        <div class="grp-h"><h2>Foundations</h2><span class="c">1 screen · 0 open items · 0 known issues open</span></div>
-        <table>
-          <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
-          <tbody><tr>
-            <td class="name"><strong>Foundations</strong><span class="route">every route</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
-            <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-low">D-16</span><span class="t">Amber on outlined and text buttons, the avatar and the active nav label (ruling A: make them neutral)<span class="env">both · fixed e1062021</span></span></li></ul></td>
-          </tr></tbody>
-        </table>
-      </section><section class="grp">
-        <div class="grp-h"><h2>Shell and site</h2><span class="c">6 screens · 2 open items · 0 known issues open</span></div>
-        <table>
-          <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
-          <tbody><tr>
-            <td class="name"><strong>Global shell</strong><span class="route">every route inside the shell</span></td>
-            <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="14 shipped, 0 partly built, 2 designed, of 16"><i class="s" style="width: 87.5%;"></i><i class="t" style="width: 12.5%;"></i></div><div class="counts">14/16 shipped</div></td>
-            <td><ul><li><span class="chip w-owner">Waiting on you</span><span class="t">Company names on production ⌘K rows for tickers without a note (D-13, checked 2026-10-16): apps/api/config/universe.json lists symbols only, and no other file the API reads carries names. The one name-bearing source the API …</span></li><li><span class="chip w-owner">Waiting on you</span><span class="t">The staging footer’s “GitHub ↗” link (spec 01, Q3): the owner’s profile or the public repository. Not drawn or built until answered.</span></li></ul></td>
-            <td><ul><li class="fixed"><span class="chip sv-medium">D-13</span><span class="t">⌘K rows: wall-clock ages on sample data, no company names<span class="env">both · closed by your ruling: company names for live tickers: none, by your ruling of 2026-10-16 (Q-PALETTE-NAMES)</span></span></li></ul></td>
-          </tr><tr>
-            <td class="name"><strong>Landing</strong><span class="route">/</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="9 shipped, 0 partly built, 0 designed, of 9"><i class="s" style="width: 100%;"></i></div><div class="counts">9/9 shipped</div></td>
-            <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-high">D-06</span><span class="t">The hero curve crosses the headline and buttons at 390 px<span class="env">both · fixed 342db5b5</span></span></li><li class="fixed"><span class="chip sv-medium">D-08</span><span class="t">Structure field: gamma sign by red/green only, amber flip line, lines through labels (P-11)<span class="env">both · fixed 342db5b5</span></span></li><li class="fixed"><span class="chip sv-low">D-25</span><span class="t">FLIP DIST reads −0.8% where the board says +0.8%<span class="env">both · fixed 342db5b5</span></span></li></ul></td>
-          </tr><tr>
-            <td class="name"><strong>Methodology</strong><span class="route">/methodology (deep link /methodology#data)</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
-            <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-medium">D-14</span><span class="t">What’s live words disagree with Credits and the board; release schedules missing<span class="env">both · fixed 7197eee6</span></span></li><li class="fixed"><span class="chip sv-medium">D-15</span><span class="t">“Open Scanner” is the primary though production walls the Scanner; the board makes Ticker primary<span class="env">both · fixed 7197eee6</span></span></li></ul></td>
-          </tr><tr>
-            <td class="name"><strong>Blog</strong><span class="route">/blog and /blog/how-we-read-dealer-structure.html</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
-            <td><span class="none">Nothing open</span></td>
-            <td><span class="none">None known</span></td>
-          </tr><tr>
-            <td class="name"><strong>404 and route fallback</strong><span class="route">* (any unmatched path inside the shell) · every lazy route’s loading and failure</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
-            <td><span class="none">Nothing open</span></td>
-            <td><span class="none">None known</span></td>
-          </tr><tr>
-            <td class="name"><strong>Operator</strong><span class="route">/_ops/metrics and /_ops/research (unlinked)</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 0 designed, of 4"><i class="s" style="width: 100%;"></i></div><div class="counts">4/4 shipped</div></td>
-            <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-low">D-17</span><span class="t">/_ops/research shows only the unlock form; archive sections missing<span class="env">production · fixed 7197eee6</span></span></li></ul></td>
-          </tr></tbody>
-        </table>
-      </section><section class="grp">
-        <div class="grp-h"><h2>Ticker</h2><span class="c">3 screens · 0 open items · 0 known issues open</span></div>
+        <div class="grp-h"><h2>Ticker desk</h2><span class="c">4 screens · 0 open items · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
@@ -659,17 +605,22 @@
             <td class="name"><strong>Ticker desk</strong><span class="route">/ticker/:ticker · Overview</span></td>
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="20 shipped, 0 partly built, 0 designed, of 20"><i class="s" style="width: 100%;"></i></div><div class="counts">20/20 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-high">D-02</span><span class="t">The demo desk has no Sample tag and shows live-feed cues (live dot, “as-of 15s”, running tape)<span class="env">staging · fixed 4884e3fd</span></span></li><li class="fixed"><span class="chip sv-medium">D-08</span><span class="t">Structure field: gamma sign by red/green only, amber flip line, lines through labels (P-11)<span class="env">both · fixed 342db5b5</span></span></li><li class="fixed"><span class="chip sv-low">D-22</span><span class="t">Context captions cut off; no ▲/▼ in the masthead; read strip scrolls at 390; NVDA values equal SPY’s<span class="env">staging · fixed b9c2bd2f</span></span></li><li class="fixed"><span class="chip sv-low">D-26</span><span class="t">TradingView logs “Cannot listen to the event from the provided iframe” on every load<span class="env">production · not reproduced: dev server only: React StrictMode runs the embed effect twice; not in a production build</span></span></li></ul></td>
+            <td><span class="none">None open · 4 fixed or closed</span></td>
+          </tr><tr>
+            <td class="name"><strong>AI read</strong><span class="route">/ticker/:ticker · the read panel, its drawers and the phone sheet</span></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
+            <td><span class="none">Nothing open</span></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Technical tab</strong><span class="route">/ticker/:symbol/technical-analysis</span></td>
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="7 shipped, 0 partly built, 0 designed, of 7"><i class="s" style="width: 100%;"></i></div><div class="counts">7/7 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-low">D-26</span><span class="t">TradingView logs “Cannot listen to the event from the provided iframe” on every load<span class="env">production · not reproduced: dev server only: React StrictMode runs the embed effect twice; not in a production build</span></span></li></ul></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Research tab · note</strong><span class="route">/ticker/:symbol/research · /ticker/:symbol/research/:slug</span></td>
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="13 shipped, 0 partly built, 0 designed, of 13"><i class="s" style="width: 100%;"></i></div><div class="counts">13/13 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-high">D-01</span><span class="t">Note tables wrap one or two characters a line on phones and split numbers on desktop<span class="env">production · fixed c478dc97</span></span></li><li class="fixed"><span class="chip sv-low">D-21</span><span class="t">Demo note lacks chart, rail and tag; live note says “gTC Berlin”; “All research” cut off at 390<span class="env">both · fixed 432aac5a</span></span></li></ul></td>
+            <td><span class="none">None open · 2 fixed or closed</span></td>
           </tr></tbody>
         </table>
       </section><section class="grp">
@@ -681,26 +632,26 @@
             <td class="name"><strong>Research · Notes</strong><span class="route">/research</span></td>
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="10 shipped, 0 partly built, 0 designed, of 10"><i class="s" style="width: 100%;"></i></div><div class="counts">10/10 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-low">D-20</span><span class="t">Coming up out of date order; mini-chart captions don’t explain dashed bars<span class="env">production · fixed 798aef49</span></span></li><li class="fixed"><span class="chip sv-low">D-24</span><span class="t">Calibration labels overlap; index filter chips missing; trust-page headings differ<span class="env">both · fixed 432aac5a</span></span></li></ul></td>
+            <td><span class="none">None open · 2 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Research · Markets</strong><span class="route">/research/markets</span></td>
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="9 shipped, 0 partly built, 0 designed, of 9"><i class="s" style="width: 100%;"></i></div><div class="counts">9/9 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-high">D-05</span><span class="t">The demo note-rate chart lists the 14 production notes<span class="env">staging · fixed 798aef49</span></span></li><li class="fixed"><span class="chip sv-medium">D-09</span><span class="t">About 8 s of wordless grey blocks on a cold load; frames don’t name their metric (P-10)<span class="env">production · fixed 798aef49</span></span></li><li class="fixed"><span class="chip sv-medium">D-11</span><span class="t">The curve title averages a twist into “rose”<span class="env">both · fixed 798aef49</span></span></li><li class="fixed"><span class="chip sv-low">D-18</span><span class="t">Curve legend, 1-month line, “Inverted below 0”, FOMC outcomes and jump rail missing; ranged dates drop out of Coming up<span class="env">both · fixed cfd0c9ae</span></span></li><li class="fixed"><span class="chip sv-low">D-19</span><span class="t">Rates strip and Filings frames untagged; footnotes cite real sources; Settings sample panels solid<span class="env">staging · fixed cfd0c9ae</span></span></li></ul></td>
+            <td><span class="none">None open · 5 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Research · Filings</strong><span class="route">/research/filings</span></td>
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="9 shipped, 0 partly built, 0 designed, of 9"><i class="s" style="width: 100%;"></i></div><div class="counts">9/9 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-low">D-19</span><span class="t">Rates strip and Filings frames untagged; footnotes cite real sources; Settings sample panels solid<span class="env">staging · fixed cfd0c9ae</span></span></li></ul></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Research · Scorecard</strong><span class="route">/research/scorecard</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 1 designed, of 6"><i class="s" style="width: 83.33333333333334%;"></i><i class="t" style="width: 16.666666666666664%;"></i></div><div class="counts">5/6 shipped</div></td>
             <td><ul><li><span class="chip w-spend">Needs paid data</span><span class="t">Grading signals at all: needs a licensed daily price history.</span></li></ul></td>
-            <td><ul><li class="fixed"><span class="chip sv-low">D-24</span><span class="t">Calibration labels overlap; index filter chips missing; trust-page headings differ<span class="env">both · fixed 432aac5a</span></span></li></ul></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Account</h2><span class="c">5 screens · 2 open items · 0 known issues open</span></div>
+        <div class="grp-h"><h2>Scanner & account</h2><span class="c">4 screens · 2 open items · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
@@ -708,61 +659,34 @@
             <td class="name"><strong>Scanner</strong><span class="route">/scanner</span></td>
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="11 shipped, 0 partly built, 0 designed, of 11"><i class="s" style="width: 100%;"></i></div><div class="counts">11/11 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-high">D-03</span><span class="t">The demo Scanner has no sample marking; row preview and “Your view” card missing<span class="env">staging · fixed ac817eca</span></span></li><li class="fixed"><span class="chip sv-low">D-23</span><span class="t">Green PAPER chip; Settings forms and “25000”; walls column shows one wall; seeded rule shows only “Gamma flip”<span class="env">both · fixed ac817eca</span></span></li></ul></td>
+            <td><span class="none">None open · 2 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Positions</strong><span class="route">/positions</span></td>
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-high">D-04</span><span class="t">The seeded limit order fills on load: $950 at risk and −$256 instead of $300 and −$53<span class="env">staging · fixed 621b1f9d</span></span></li><li class="fixed"><span class="chip sv-low">D-23</span><span class="t">Green PAPER chip; Settings forms and “25000”; walls column shows one wall; seeded rule shows only “Gamma flip”<span class="env">both · fixed ac817eca</span></span></li></ul></td>
+            <td><span class="none">None open · 2 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Alerts</strong><span class="route">/alerts</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="7 shipped, 0 partly built, 1 designed, of 8"><i class="s" style="width: 87.5%;"></i><i class="t" style="width: 12.5%;"></i></div><div class="counts">7/8 shipped</div></td>
             <td><ul><li><span class="chip w-decided">Left out on purpose</span><span class="t">Server-side scheduled checks: left out by owner ruling (2026-10-15, answer 5). The reader’s browser checks while Alerts is open, and the page says so; a server check would need somewhere to send a firing, and there is no email …</span></li></ul></td>
-            <td><ul><li class="fixed"><span class="chip sv-low">D-23</span><span class="t">Green PAPER chip; Settings forms and “25000”; walls column shows one wall; seeded rule shows only “Gamma flip”<span class="env">both · fixed ac817eca</span></span></li></ul></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Settings</strong><span class="route">/settings</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 1 designed, of 7"><i class="s" style="width: 85.71428571428571%;"></i><i class="t" style="width: 14.285714285714285%;"></i></div><div class="counts">6/7 shipped</div></td>
             <td><ul><li><span class="chip w-parked">Parked by you</span><span class="t">The section rail (deferred by owner ruling D-B; the page is one 760px column).</span></li></ul></td>
-            <td><ul><li class="fixed"><span class="chip sv-medium">D-10</span><span class="t">Log in and signed-out Settings never say sign-ups are closed; disabled Google button looks enabled<span class="env">production · fixed ac817eca</span></span></li><li class="fixed"><span class="chip sv-low">D-19</span><span class="t">Rates strip and Filings frames untagged; footnotes cite real sources; Settings sample panels solid<span class="env">staging · fixed cfd0c9ae</span></span></li><li class="fixed"><span class="chip sv-low">D-23</span><span class="t">Green PAPER chip; Settings forms and “25000”; walls column shows one wall; seeded rule shows only “Gamma flip”<span class="env">both · fixed ac817eca</span></span></li></ul></td>
-          </tr><tr>
+            <td><span class="none">None open · 3 fixed or closed</span></td>
+          </tr></tbody>
+        </table>
+      </section><section class="grp">
+        <div class="grp-h"><h2>Dialogs & overlays</h2><span class="c">2 screens · 1 open item · 0 known issues open</span></div>
+        <table>
+          <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
+          <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <tbody><tr>
             <td class="name"><strong>Overlays</strong><span class="route">dialogs, drawer and sheets on every route</span></td>
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-medium">D-10</span><span class="t">Log in and signed-out Settings never say sign-ups are closed; disabled Google button looks enabled<span class="env">production · fixed ac817eca</span></span></li></ul></td>
-          </tr></tbody>
-        </table>
-      </section><section class="grp">
-        <div class="grp-h"><h2>Trust pages</h2><span class="c">3 screens · 2 open items · 0 known issues open</span></div>
-        <table>
-          <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
-          <tbody><tr>
-            <td class="name"><strong>Data sources and credits</strong><span class="route">/credits (proposed; deep links /credits#treasury, #cftc, #finra-si, #finra-shvol, #sec, #tradingview, #massive)</span></td>
-            <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="8 shipped, 1 partly built, 0 designed, of 9"><i class="s" style="width: 88.88888888888889%;"></i><i class="p" style="width: 11.11111111111111%;"></i></div><div class="counts">8/9 shipped</div></td>
-            <td><ul><li><span class="chip w-decided">Left out on purpose</span><span class="t">No separate GET /api/public-data/sources: a new operation grows the frozen precutover operation baseline, so the rows ride the two answers the page already reads.</span></li></ul></td>
-            <td><ul><li class="fixed"><span class="chip sv-medium">D-12</span><span class="t">Undated “Updated”, a doubled “Wednesday”, stale daily sources marked Updated, early summary count<span class="env">production · fixed 7197eee6</span></span></li></ul></td>
-          </tr><tr>
-            <td class="name"><strong>Privacy</strong><span class="route">/privacy (proposed)</span></td>
-            <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 1 designed, of 5"><i class="s" style="width: 80%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">4/5 shipped</div></td>
-            <td><ul><li><span class="chip w-parked">Parked by you</span><span class="t">No self-serve account deletion exists (no endpoint in routes/auth.rs); the page says to ask the owner. Parked by owner (2026-10-14): the privacy page says to ask the owner.</span></li></ul></td>
-            <td><ul><li class="fixed"><span class="chip sv-low">D-24</span><span class="t">Calibration labels overlap; index filter chips missing; trust-page headings differ<span class="env">both · fixed 432aac5a</span></span></li></ul></td>
-          </tr><tr>
-            <td class="name"><strong>Terms and disclaimer</strong><span class="route">/terms (proposed)</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="3 shipped, 0 partly built, 0 designed, of 3"><i class="s" style="width: 100%;"></i></div><div class="counts">3/3 shipped</div></td>
-            <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-low">D-24</span><span class="t">Calibration labels overlap; index filter chips missing; trust-page headings differ<span class="env">both · fixed 432aac5a</span></span></li></ul></td>
-          </tr></tbody>
-        </table>
-      </section><section class="grp">
-        <div class="grp-h"><h2>Deeper surfaces</h2><span class="c">2 screens · 1 open item · 0 known issues open</span></div>
-        <table>
-          <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
-          <tbody><tr>
-            <td class="name"><strong>AI read</strong><span class="route">/ticker/:ticker · the read panel, its drawers and the phone sheet</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
-            <td><span class="none">Nothing open</span></td>
-            <td><ul><li class="fixed"><span class="chip sv-medium">D-07</span><span class="t">Demo verdict only after a click; trace line missing; real-clock ages in the drawer<span class="env">staging · fixed b9c2bd2f</span></span></li></ul></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>More overlays</strong><span class="route">dialogs on /positions, /ticker/:ticker, /alerts; /account/reset and /account/invite (proposed)</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 1 designed, of 5"><i class="s" style="width: 80%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">4/5 shipped</div></td>
@@ -771,7 +695,71 @@
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Planned · designed, not built</h2><span class="c">9 screens · 8 open items · 0 known issues open</span></div>
+        <div class="grp-h"><h2>Site & shell</h2><span class="c">9 screens · 4 open items · 0 known issues open</span></div>
+        <table>
+          <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
+          <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <tbody><tr>
+            <td class="name"><strong>Global shell</strong><span class="route">every route inside the shell</span></td>
+            <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="14 shipped, 0 partly built, 2 designed, of 16"><i class="s" style="width: 87.5%;"></i><i class="t" style="width: 12.5%;"></i></div><div class="counts">14/16 shipped</div></td>
+            <td><ul><li><span class="chip w-decided">Left out on purpose</span><span class="t">Company names on production ⌘K rows for tickers without a note (D-13, checked 2026-10-16): apps/api/config/universe.json lists symbols only, and no other file the API reads carries names. The one name-bearing source the API … <span class="ask">Q-PALETTE-NAMES</span></span></li><li><span class="chip w-owner">Waiting on you</span><span class="t">The staging footer’s “GitHub ↗” link (spec 01, Q3): the owner’s profile or the public repository. Not drawn or built until answered. <span class="ask">Q-GITHUB-HREF</span></span></li></ul></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
+          </tr><tr>
+            <td class="name"><strong>Landing</strong><span class="route">/</span></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="9 shipped, 0 partly built, 0 designed, of 9"><i class="s" style="width: 100%;"></i></div><div class="counts">9/9 shipped</div></td>
+            <td><span class="none">Nothing open</span></td>
+            <td><span class="none">None open · 3 fixed or closed</span></td>
+          </tr><tr>
+            <td class="name"><strong>Methodology</strong><span class="route">/methodology (deep link /methodology#data)</span></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
+            <td><span class="none">Nothing open</span></td>
+            <td><span class="none">None open · 2 fixed or closed</span></td>
+          </tr><tr>
+            <td class="name"><strong>Blog</strong><span class="route">/blog and /blog/how-we-read-dealer-structure.html</span></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
+            <td><span class="none">Nothing open</span></td>
+            <td><span class="none">None known</span></td>
+          </tr><tr>
+            <td class="name"><strong>404 and route fallback</strong><span class="route">* (any unmatched path inside the shell) · every lazy route’s loading and failure</span></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
+            <td><span class="none">Nothing open</span></td>
+            <td><span class="none">None known</span></td>
+          </tr><tr>
+            <td class="name"><strong>Data sources and credits</strong><span class="route">/credits (proposed; deep links /credits#treasury, #cftc, #finra-si, #finra-shvol, #sec, #tradingview, #massive)</span></td>
+            <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="8 shipped, 1 partly built, 0 designed, of 9"><i class="s" style="width: 88.88888888888889%;"></i><i class="p" style="width: 11.11111111111111%;"></i></div><div class="counts">8/9 shipped</div></td>
+            <td><ul><li><span class="chip w-decided">Left out on purpose</span><span class="t">No separate GET /api/public-data/sources: a new operation grows the frozen precutover operation baseline, so the rows ride the two answers the page already reads.</span></li></ul></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
+          </tr><tr>
+            <td class="name"><strong>Privacy</strong><span class="route">/privacy (proposed)</span></td>
+            <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 1 designed, of 5"><i class="s" style="width: 80%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">4/5 shipped</div></td>
+            <td><ul><li><span class="chip w-parked">Parked by you</span><span class="t">No self-serve account deletion exists (no endpoint in routes/auth.rs); the page says to ask the owner. Parked by owner (2026-10-14): the privacy page says to ask the owner.</span></li></ul></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
+          </tr><tr>
+            <td class="name"><strong>Terms and disclaimer</strong><span class="route">/terms (proposed)</span></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="3 shipped, 0 partly built, 0 designed, of 3"><i class="s" style="width: 100%;"></i></div><div class="counts">3/3 shipped</div></td>
+            <td><span class="none">Nothing open</span></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
+          </tr><tr>
+            <td class="name"><strong>Operator</strong><span class="route">/_ops/metrics and /_ops/research (unlinked)</span></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 0 designed, of 4"><i class="s" style="width: 100%;"></i></div><div class="counts">4/4 shipped</div></td>
+            <td><span class="none">Nothing open</span></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
+          </tr></tbody>
+        </table>
+      </section><section class="grp">
+        <div class="grp-h"><h2>Foundations</h2><span class="c">1 screen · 0 open items · 0 known issues open</span></div>
+        <table>
+          <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
+          <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <tbody><tr>
+            <td class="name"><strong>Foundations</strong><span class="route">every route</span></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
+            <td><span class="none">Nothing open</span></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
+          </tr></tbody>
+        </table>
+      </section><section class="grp">
+        <div class="grp-h"><h2>Planned · not built</h2><span class="c">9 screens · 8 open items · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
@@ -784,7 +772,7 @@
             <td class="name"><strong>Planned · Calendar</strong><span class="route">/research/markets#coming-up (proposed) · review triggers on /research and each note</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 1 designed, of 6"><i class="s" style="width: 83.33333333333334%;"></i><i class="t" style="width: 16.666666666666664%;"></i></div><div class="counts">5/6 shipped</div></td>
             <td><ul><li><span class="chip w-decided">Left out on purpose</span><span class="t">A release’s reference period (“CPI, September”): left out. Neither saved schedule states one (BLS’s events carry no description; BEA’s file is dates only), and BEA’s own file shows the month-after rule breaking in the 2025 …</span></li></ul></td>
-            <td><ul><li class="fixed"><span class="chip sv-low">D-18</span><span class="t">Curve legend, 1-month line, “Inverted below 0”, FOMC outcomes and jump rail missing; ranged dates drop out of Coming up<span class="env">both · fixed cfd0c9ae</span></span></li></ul></td>
+            <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Planned · Off-exchange volume</strong><span class="route">/ticker/:symbol/research · public-record band (proposed)</span></td>
             <td><span class="st designed">Designed</span><div class="bar" role="img" aria-label="1 shipped, 0 partly built, 1 designed, of 2"><i class="s" style="width: 50%;"></i><i class="t" style="width: 50%;"></i></div><div class="counts">1/2 shipped</div></td>

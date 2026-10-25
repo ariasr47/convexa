@@ -256,3 +256,28 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   label-collision scan (none left); build and verify-tokens exit 0; no NUL bytes.
 - **Published** to https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe as versions 11–12 (index + 332 changed boards;
   the older pages changed through the shared footer and chart kit). The canvas page itself was not opened in a browser.
+
+## 2026-10-25 · The canvas, organized: current design only, one page per product area
+
+- **Owner ask:** organize "Convexa Desk Redesign", make things easy to find, remove what is stale and what has
+  been ruled on. The canvas (https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe) is now titled "Convexa Desk
+  Redesign" and holds **206 boards on 8 pages**: Start here (the board map as the entry board `Main`, and the
+  screen tracker), Ticker desk, Research, Scanner & account, Dialogs & overlays, Site & shell, Foundations (the
+  four foundation boards and the three library boards) and Planned · not built (the nine tools, and the two v5
+  frontier prototypes the owner has not ruled on: F2, a year of the curve, and F3, calibration you can
+  question; F1 shipped as the landing hero). Each row carries a title with
+  its route; Start here carries a guide note naming every page.
+- **Off the canvas (182 boards, 7 pages):** the v2 pages (Ticker desk with Directions B and C, Responsive, Site,
+  Dialogs & gates, the light desk and landing, the components sheet), v4 · Data states, Tools, App, Research and
+  Coverage, v5 · Charts, Families and the Frontier overview, F1 and F2's phone board, and "Ruled · Alerts on
+  public data (Q-5)". Every one is superseded by a final row or the library, or was ruled on;
+  the record is git (`af9822f8:design/canvas/`) and this file. Their screen modules
+  still build the static site; the v4 coverage sheet now checks its board names against the v4 canvas as it
+  stood, not the live registry.
+- **Ruled items off the boards:** the screen tracker shows only open questions and open issues; the 20 answered
+  questions and the closed issues stay in `tracker-data.mjs` as the record. Two stale items fixed: ⌘K company
+  names was still "Waiting on you" though the owner ruled "none" on 2026-10-16 (now Left out on purpose,
+  Q-PALETTE-NAMES); the staging footer's GitHub link (spec 01 Q3) waited on the owner with no question on the
+  tracker (now Q-GITHUB-HREF). Open questions: Q-FINRA-TERMS, Q-HOOD-NI, Q-GITHUB-HREF.
+- The old single-page canvas (82be651e, "Convexa Desk Redesign", frozen at v4) now points to this one; its last
+  full version is `canvas/convexa-desk-redesign.html`.
