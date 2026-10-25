@@ -16,10 +16,13 @@
  * - "Show the numbers" opens the table twin: the same values as text, for every chart.
  * - In loading and message states the body keeps the chart's final height (no layout shift); a
  *   message sits on a faint ghost grid, a failure marked in the warning colour, never green or red.
- *   Loading draws the same ghost grid (the board's `.cskel`) and keeps the frame's rows: a legend the
- *   call site passes, and the foot. A loading frame given no foot reserves the standard one, a
- *   source chip and the "Show the numbers" row, as ghosts, so the frame doesn't jump when the data
- *   lands (fidelity audit 2026-10-25, FND-15).
+ *   Loading draws the same ghost grid (the board's `.cskel`) and keeps the frame's rows, so the frame
+ *   doesn't jump when the data lands (fidelity audit 2026-10-25, FND-15; acceptance: 24px or less).
+ *   A loading frame given no foot holds the standard one as ghosts: a source chip and an as-of line
+ *   that wrap where the real ones do on a narrow frame, the chip at the coarse 44 of the /credits
+ *   link it becomes, and the "Show the numbers" row at the summary's own 24 (44 on a coarse
+ *   pointer). Rows only the ready frame knows (the finding's lines, the state tag, a longer sub, the
+ *   legend, a note) are held by `reserve`: stand-ins laid out invisibly, or a ghost legend row.
  *
  * Text inside a chart is HTML or SVG text at 11px or more (P-13); that's the plot's job, not the frame's.
  *
@@ -34,11 +37,33 @@ import { coarseFloor } from '@/shared/ui/touch';
 import { useFrameDemoTag, useWidgetProvenance } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
-import { alpha, type Theme } from '@mui/material/styles';
+import { alpha, type Breakpoint, type Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { frameTitle, type ChartStatus } from './frameTitle';
 
 export type Provenance = 'primary' | 'third' | 'sample';
+
+/** The plot's height: one number, or one per breakpoint for a plot that draws shorter on a phone. */
+export type FrameHeight = number | Partial<Record<Breakpoint, number>>;
+
+/**
+ * Loading only: the ready frame's rows that only the data can fill, held so the frame keeps its
+ * height when the data lands (FND-15). Text stand-ins are laid out invisibly (`visibility: hidden`,
+ * `aria-hidden`) in the ready frame's type, so they wrap at every width as the real rows will;
+ * pass text of the ready text's usual length. The loading title still names the metric (P-10).
+ */
+export interface FrameReserve {
+  /** A stand-in of the ready finding (the title's lines). */
+  finding?: string;
+  /** A stand-in of the ready sub. */
+  sub?: string;
+  /** The ready frame's state tag, resolved as the ready frame would resolve it. */
+  tag?: { state: DataStateKey; detail?: string; word?: string };
+  /** A ghost legend row with this many entries. */
+  legend?: number;
+  /** A stand-in of the ready note under the plot. */
+  note?: string;
+}
 
 export interface TableTwinData {
   caption: string;
@@ -68,6 +93,7 @@ export function ChartFrame({
   asOf,
   table,
   action,
+  reserve,
   headingLevel = 'h3',
   children,
   testId,
@@ -86,7 +112,7 @@ export function ChartFrame({
   status?: ChartStatus;
   tag?: { state: DataStateKey; detail?: string; word?: string };
   /** The plot's height, kept by the loading and message bodies. */
-  height: number;
+  height: FrameHeight;
   legend?: ReactNode;
   note?: ReactNode;
   source?: { text: string; href?: string };
@@ -94,6 +120,8 @@ export function ChartFrame({
   table?: TableTwinData;
   /** A message state's one action (Try again). */
   action?: ReactNode;
+  /** Loading only: the ready rows to hold (FrameReserve). */
+  reserve?: FrameReserve;
   headingLevel?: 'h2' | 'h3';
   children?: ReactNode;
   testId?: string;
@@ -102,21 +130,28 @@ export function ChartFrame({
   const demoTag = useFrameDemoTag();
   const provenance = given ?? board;
   const boardSample = given === undefined && provenance === 'sample';
-  const tag = !boardSample
-    ? givenTag
-    : demoTag
-      ? { state: 'demo' as const }
-      : givenTag && ['warn', 'quiet'].includes(DATA_STATES[givenTag.state].kind)
-        ? givenTag
-        : source
-          ? undefined
-          : { state: 'sample' as const };
+  const resolveTag = (given: FrameReserve['tag'], hasSource: boolean) =>
+    !boardSample
+      ? given
+      : demoTag
+        ? { state: 'demo' as const }
+        : given && ['warn', 'quiet'].includes(DATA_STATES[given.state].kind)
+          ? given
+          : hasSource
+            ? undefined
+            : { state: 'sample' as const };
+  const tag = resolveTag(givenTag, !!source);
   const title = frameTitle(status, finding, metric);
   const ready = status.kind === 'ready';
   const loading = status.kind === 'loading';
-  // A loading frame given no foot holds the standard one (source chip + table twin) as ghosts.
+  // A loading frame given no foot holds the standard one (source chip + as-of + table twin) as ghosts.
   const ghostFoot = loading && !source && !asOf;
   const ghostTwin = loading && (!!table || ghostFoot);
+  const hold = loading ? reserve : undefined;
+  // The ready head, laid out invisibly under the loading one: the taller of the two sets the height.
+  const holdHead = !!hold && (!!hold.finding || !!hold.sub || !!hold.tag);
+  // The ready frame's tag, as the ready frame resolves it (a held foot means a source line comes).
+  const holdTag = hold?.tag ? resolveTag(hold.tag, !!source || ghostFoot) : undefined;
   return (
     <Box
       component="figure"
@@ -156,54 +191,52 @@ export function ChartFrame({
     >
       <Box
         component="figcaption"
-        sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0 }}
+        sx={
+          holdHead
+            ? { display: 'grid', minWidth: 0, '& > *': { gridArea: '1 / 1' } }
+            : { display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0 }
+        }
       >
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: '6px 10px' }}>
-          <Box
-            component={headingLevel}
-            sx={{
-              m: 0,
-              flex: '1 1 260px',
-              minWidth: 0,
-              fontSize: { xs: 14, sm: 15 },
-              fontWeight: 600,
-              lineHeight: 1.35,
-              color: 'text.primary',
-              textWrap: 'balance',
-            }}
-          >
-            {title}
-          </Box>
-          {tag && <DataStateTag state={tag.state} detail={tag.detail} word={tag.word} />}
-        </Box>
-        {sub && (
-          <Box
-            component="p"
-            sx={{
-              m: 0,
-              fontSize: 12,
-              lineHeight: 1.45,
-              color: 'text.secondary',
-              textWrap: 'pretty',
-            }}
-          >
-            {sub}
-          </Box>
+        <Head
+          title={
+            <Box component={headingLevel} sx={TITLE_SX}>
+              {title}
+            </Box>
+          }
+          tag={tag}
+          sub={sub}
+          wrapped={holdHead}
+        />
+        {holdHead && (
+          <Head
+            hidden
+            title={
+              <Box component="span" sx={[TITLE_SX, { display: 'block' }]}>
+                {hold?.finding ?? title}
+              </Box>
+            }
+            tag={holdTag}
+            sub={hold?.sub ?? sub}
+            wrapped
+          />
         )}
       </Box>
 
       {(ready || loading) && legend}
+      {loading && !legend && !!hold?.legend && <LegendGhost entries={hold.legend} />}
       {ready ? (
         children
       ) : (
         <StateBody status={status} height={height} metric={metric} action={action} />
       )}
       {ready && note && (
-        <Box
-          component="p"
-          sx={{ m: 0, fontSize: 12, lineHeight: 1.45, color: 'text.secondary', textWrap: 'pretty' }}
-        >
+        <Box component="p" sx={NOTE_SX}>
           {note}
+        </Box>
+      )}
+      {loading && hold?.note && (
+        <Box aria-hidden sx={[NOTE_SX, { visibility: 'hidden' }]}>
+          {hold.note}
         </Box>
       )}
 
@@ -225,12 +258,32 @@ export function ChartFrame({
               {asOf}
             </Box>
           )}
-          {ghostFoot && <Ghost width={180} height={24} radius={12} />}
+          {ghostFoot && (
+            <>
+              {/* The chip, at the coarse 44 of the /credits link it becomes (the theme's `a` floor). */}
+              <Box
+                component="span"
+                aria-hidden
+                sx={[{ display: 'inline-flex', alignItems: 'center', minHeight: 24 }, coarseFloor]}
+              >
+                <Ghost width={240} height={24} radius={12} />
+              </Box>
+              {/* The as-of line (Mono 11 at 1.3); with the chip it wraps where the real pair does. */}
+              <Box
+                component="span"
+                aria-hidden
+                sx={{ display: 'inline-flex', alignItems: 'center', height: `${11 * 1.3}px` }}
+              >
+                <Ghost width={112} height={10} radius={5} />
+              </Box>
+            </>
+          )}
         </Box>
       )}
       {ready && table && <TableTwin {...table} />}
       {ghostTwin && (
-        <Box aria-hidden sx={{ height: 24, display: 'flex', alignItems: 'center' }}>
+        // The summary's own row: 24, and the coarse 44 its `coarseFloor` gives it.
+        <Box aria-hidden sx={[{ height: 24, display: 'flex', alignItems: 'center' }, coarseFloor]}>
           <Ghost width={116} height={12} radius={6} />
         </Box>
       )}
@@ -245,7 +298,7 @@ function StateBody({
   action,
 }: {
   status: Exclude<ChartStatus, { kind: 'ready' }>;
-  height: number;
+  height: FrameHeight;
   metric: string;
   action?: ReactNode;
 }) {
@@ -318,6 +371,99 @@ function StateBody({
 /** A gridline every quarter of the plot, in the chart grid's line colour (`roles.ts` `grid`). */
 function ghostGrid(t: Theme): string {
   return `repeating-linear-gradient(0deg, transparent 0 calc(25% - 1px), ${t.palette.divider} calc(25% - 1px) 25%)`;
+}
+
+const TITLE_SX = {
+  m: 0,
+  flex: '1 1 260px',
+  minWidth: 0,
+  fontSize: { xs: 14, sm: 15 },
+  fontWeight: 600,
+  lineHeight: 1.35,
+  color: 'text.primary',
+  textWrap: 'balance',
+} as const;
+const SUB_SX = {
+  m: 0,
+  fontSize: 12,
+  lineHeight: 1.45,
+  color: 'text.secondary',
+  textWrap: 'pretty',
+} as const;
+const NOTE_SX = SUB_SX;
+
+/** The frame's head: the title and its state tag on one wrapping row, then the sub. `hidden` lays
+ *  out a reserve copy (no heading, no text in the accessibility tree) that only gives the height. */
+function Head({
+  title,
+  tag,
+  sub,
+  wrapped,
+  hidden = false,
+}: {
+  title: ReactNode;
+  tag?: { state: DataStateKey; detail?: string; word?: string };
+  sub?: ReactNode;
+  /** Inside the reserve grid: a block of its own rather than the figcaption's direct rows. */
+  wrapped: boolean;
+  hidden?: boolean;
+}) {
+  const rows = (
+    <>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: '6px 10px' }}>
+        {title}
+        {tag && <DataStateTag state={tag.state} detail={tag.detail} word={tag.word} />}
+      </Box>
+      {sub && (
+        <Box component={hidden ? 'span' : 'p'} sx={[SUB_SX, { display: 'block' }]}>
+          {sub}
+        </Box>
+      )}
+    </>
+  );
+  if (!wrapped) return rows;
+  return (
+    <Box
+      aria-hidden={hidden || undefined}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 0.5,
+        minWidth: 0,
+        ...(hidden && { visibility: 'hidden', pointerEvents: 'none' }),
+      }}
+    >
+      {rows}
+    </Box>
+  );
+}
+
+/** A loading legend: one row of ghost entries (a swatch and a label bar) at the legend's 12px line. */
+function LegendGhost({ entries }: { entries: number }) {
+  return (
+    <Box aria-hidden sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', fontSize: 12 }}>
+      {Array.from({ length: entries }, (_, i) => (
+        <Box
+          key={i}
+          component="span"
+          sx={(t) => ({
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.75,
+            minHeight: '1lh',
+            '& > i': {
+              display: 'inline-block',
+              width: 16,
+              borderTop: `2px solid ${alpha(t.palette.text.secondary, 0.16)}`,
+            },
+          })}
+        >
+          <i />
+          <Ghost width={72} height={10} radius={5} />
+        </Box>
+      ))}
+    </Box>
+  );
 }
 
 /** A placeholder bar for a row the ready frame will fill (the source chip, the table twin). */
@@ -403,10 +549,13 @@ export function TableTwin({ caption, cols, rows }: TableTwinData) {
         component="summary"
         // The local 24px beats the theme's coarse floor (an element selector), so the summary
         // carries its own coarse 44 (`shared/ui/touch.ts`; spec 2026-10-21/02 part (b), FND-09).
-        // Last in the array, so its media rule follows the 24.
+        // Last in the array, so its media rule follows the 24. A block-level flex box sized to its
+        // text, not inline-flex: inline, it sat on the details' 24.75px body line and drew the row
+        // 25.1 tall, 1.1 more than its loading ghost (FND-15).
         sx={[
           (t) => ({
-            display: 'inline-flex',
+            display: 'flex',
+            width: 'fit-content',
             alignItems: 'center',
             gap: 0.75,
             minHeight: 24,
