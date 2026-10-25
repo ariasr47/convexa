@@ -21,7 +21,7 @@ import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { CustomizationToolbar } from './CustomizationToolbar';
 import { PositionsView } from './PositionsView';
 import { deriveGroups } from './derive';
@@ -61,6 +61,10 @@ interface Props {
   entryPrefill?: EntryPrefill;
   entryOpen: boolean;
   onEntryOpen: (open: boolean) => void;
+  /** Leads the toolbar's row: the page's book switch (Simulated | Broker). */
+  toolbarLead?: ReactNode;
+  /** The panel beside the orders panel: the page's Track record (owner NO-6 A, 2026-10-25). */
+  besideOrders?: ReactNode;
 }
 
 export function PositionsPanel({
@@ -77,6 +81,8 @@ export function PositionsPanel({
   entryPrefill,
   entryOpen,
   onEntryOpen,
+  toolbarLead,
+  besideOrders,
 }: Props) {
   const m = data?.market_state;
   // No options feed on this site: there is no bundle to pick a contract from, so the entry opens
@@ -85,7 +91,7 @@ export function PositionsPanel({
   const marketDataMode = useMarketDataMode();
   const chainless = marketDataOff(marketDataMode);
   // Position-side backlink (AC-31): "From sim order · view order →" opens the order detail in the
-  // Orders panel above.
+  // Orders panel below the book.
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
 
   // No `markResFor` any more: every presentational component reads the `PositionView` the hook
@@ -117,17 +123,8 @@ export function PositionsPanel({
         testid="positions-signin-prompt"
       />
 
-      {/* Simulated orders — the management home (UX §4.5), ABOVE the positions view, inside the
-          Simulated tab only (the Live tab stays the locked placeholder). All tickers; rows for
-          tickers other than this page's focused/streamed one read not-evaluated (D5 — correct). */}
-      <OrdersPanel
-        coverage={{ ticker, mid: live?.mid ?? null, isLive, streamOffline }}
-        openDetailOrderId={viewOrderId}
-        onDetailClose={() => setViewOrderId(null)}
-        onViewPosition={() => setViewOrderId(null)}
-      />
-
       <CustomizationToolbar
+        lead={toolbarLead}
         pf={pf}
         positions={pf.positions}
         guardSaveView={guardSaveView}
@@ -174,6 +171,29 @@ export function PositionsPanel({
         onCancel={pf.cancelLimit}
         onViewOrder={setViewOrderId}
       />
+
+      {/* The book first, then the orders panel beside the Track record (owner, NO-6 A, 2026-10-25:
+          the Final board's `positionsStaging`, `repeat(auto-fit, minmax(min(420px, 100%), 1fr))`,
+          gap 16). Simulated orders are the management home (UX §4.5), inside the Simulated tab
+          only. All tickers; rows for tickers other than this page's focused/streamed one read
+          not-evaluated (D5 — correct). */}
+      <Box
+        data-testid="orders-track-row"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))',
+          gap: 2,
+          mt: '22px',
+        }}
+      >
+        <OrdersPanel
+          coverage={{ ticker, mid: live?.mid ?? null, isLive, streamOffline }}
+          openDetailOrderId={viewOrderId}
+          onDetailClose={() => setViewOrderId(null)}
+          onViewPosition={() => setViewOrderId(null)}
+        />
+        {besideOrders}
+      </Box>
 
       {/* The SHARED sim-entry dialog (`trading/TradeEntryDialog`, also the Ticker page's). Positions
           rests a limit `pending` (fills only on a live cross via the existing resolver lifecycle), so

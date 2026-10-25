@@ -424,10 +424,11 @@ describe('positions · end-to-end flow (centerpiece)', () => {
     // wait for it rather than asserting in the same tick (that race failed under suite load).
     expect((await screen.findAllByText('offline · last known')).length).toBeGreaterThan(0);
     expect(document.querySelectorAll('svg[data-testid="PauseIcon"]').length).toBeGreaterThan(0);
-    // static contract still renders (slim Ticker — symbol + `$250 Call` leg), never blanked
+    // static contract still renders (symbol + `250 C · <expiry>`, the board's contract wording for
+    // a single option leg, fidelity ACC-09), never blanked
     const contract = screen.getAllByTestId('cell-contract')[0];
     expect(within(contract).getByText('TSLA')).toBeInTheDocument();
-    expect(within(contract).getByText(/\$250 Call/)).toBeInTheDocument();
+    expect(within(contract).getByText(/^250 C · /)).toBeInTheDocument();
     // customization toolbar still works under a drop
     expect(screen.getByTestId('customization-toolbar')).toBeInTheDocument();
   }, 20000);
@@ -875,8 +876,9 @@ describe('positions · the offline contract on the six live-derived cells (27a/2
     expect(within(markCell).getByTestId('cell-mark-caption').textContent).toBe(
       'offline · last known',
     );
-    // the FIGURE itself is retained — never blanked, never replaced by a closed-nine member.
-    expect(markCell.textContent).toMatch(/\$/);
+    // the FIGURE itself is retained — never blanked, never replaced by a closed-nine member. A
+    // single option leg reads its mark per share (fidelity ACC-09), so the figure is a price.
+    expect(markCell.textContent).toMatch(/\d+\.\d{2}/);
   });
 
   it('27b — no retained value renders a closed-nine member + the pause icon, with NO "last known" words', () => {

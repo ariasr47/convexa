@@ -18,6 +18,11 @@
  */
 import { TR_ARCHIVE_PARTIAL_NOTE } from '@/features/trading/positions/labels';
 import { positionsFaulted } from '@/features/trading/positions/store';
+import { MONO_FACE } from '@/shared/figure';
+import { extrasFor } from '@/shared/theme/tokens';
+import { bottomSheetActionsSx, bottomSheetDialogSx, grabHandleSx } from '@/shared/ui/bottomSheet';
+import CloseIcon from '@mui/icons-material/Close';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -25,8 +30,10 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
+import type { Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import { useCallback, useRef, useState } from 'react';
 import {
@@ -42,10 +49,12 @@ import {
   TR_DECLINE_NOT_OURS,
   TR_DECLINE_UNREADABLE,
   TR_DECLINE_VERSION,
+  TR_DIALOG_CLOSE,
   TR_EXPORT_LABEL,
   TR_IMPORT_CANCEL,
   TR_IMPORT_CONFIRM,
   TR_IMPORT_CONFIRM_BODY,
+  TR_IMPORT_CONFIRM_NOTE,
   TR_IMPORT_CONFIRM_TITLE,
   TR_IMPORT_DECLINED_STORE_BODY,
   TR_IMPORT_DECLINED_STORE_TITLE,
@@ -77,6 +86,66 @@ const DECLINE_COPY: Record<Exclude<DeclineReason, 'store_unreadable'>, string> =
   not_ours: TR_DECLINE_NOT_OURS,
   version: TR_DECLINE_VERSION,
 };
+
+/** The board's ghost `sm` button (`.btn.ghost.sm`): 30px, radius 8, steel; 44 on a coarse pointer
+ *  (the theme's floor for every button). */
+const closeButtonSx = {
+  width: 30,
+  height: 30,
+  borderRadius: '8px',
+  color: 'text.secondary',
+} as const;
+
+/** The board's dialog head (`.v4dlg .dh`): the 16px/700 title, then its close, over a divider
+ *  (the body's own, `DialogContent dividers`). */
+function DialogHead({
+  title,
+  testid,
+  onClose,
+}: {
+  title: string;
+  testid: string;
+  onClose: () => void;
+}) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: '18px', py: '14px' }}>
+      <DialogTitle
+        data-testid={testid}
+        sx={{ p: 0, flex: '1 1 auto', minWidth: 0, fontSize: '1rem', fontWeight: 700 }}
+      >
+        {title}
+      </DialogTitle>
+      <IconButton size="small" aria-label={TR_DIALOG_CLOSE} onClick={onClose} sx={closeButtonSx}>
+        <CloseIcon sx={{ fontSize: 18 }} />
+      </IconButton>
+    </Box>
+  );
+}
+
+/** The board's body (`.v4dlg .db`): 16px 18px, its parts 14px apart. */
+const dialogBodySx = {
+  px: '18px',
+  py: '16px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '14px',
+} as const;
+
+/** The board's foot (`.v4dlg .df`): 12px 18px, the actions at the end. */
+const dialogFootSx = { px: '18px', py: '12px', gap: 1, '& > :not(style) ~ :not(style)': { ml: 0 } };
+
+/** The board's callout (`.ov-call`): the raised surface, radius 8, 12.5px steel with its glyph. */
+const calloutSx = (t: Theme) => ({
+  display: 'flex',
+  gap: '8px',
+  alignItems: 'flex-start',
+  p: '10px 12px',
+  borderRadius: '8px',
+  bgcolor: extrasFor(t).panelRaised,
+  color: 'text.secondary',
+  fontSize: '0.78125rem',
+  lineHeight: 1.45,
+});
 
 type DialogState =
   | { step: 'closed' }
@@ -150,14 +219,19 @@ export function ArchiveBlock({
     onImported();
   }, [dialog, onImported]);
 
+  const close = useCallback(() => setDialog({ step: 'closed' }), []);
+
   return (
     <Box data-testid="tr-archive" sx={{ mt: 2 }}>
-      {/* One compact row (surfaces fidelity repair, change 1): heading + lead on the left, the two
-          actions on the right — the same content as before, just not three stacked lines. */}
+      {/* The heading with its two actions at the row's end, then the lead beneath at full width
+          (the Track record panel beside the orders panel is half the column, so a lead squeezed
+          between them ran five lines; owner NO-6 A, 2026-10-25). Source order is unchanged:
+          heading, lead, actions — `order` only moves the lead under them. */}
       <Stack
         direction="row"
+        useFlexGap
         spacing={1.5}
-        sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
+        sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.75 }}
       >
         <Typography variant="subtitle2" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
           {TR_ARCHIVE_HEADING}
@@ -165,12 +239,18 @@ export function ArchiveBlock({
         <Typography
           variant="body2"
           data-testid="tr-archive-lead"
-          sx={{ color: 'text.secondary', flex: '1 1 240px', minWidth: 0 }}
+          sx={{ color: 'text.secondary', flex: '1 1 100%', minWidth: 0, order: 3 }}
         >
           {faulted ? `${TR_ARCHIVE_LEAD} ${TR_ARCHIVE_PARTIAL_NOTE}` : TR_ARCHIVE_LEAD}
         </Typography>
         {/* Always enabled, never gated, never disabled — an empty archive is a valid archive. */}
-        <Button size="small" variant="outlined" onClick={onExport} data-testid="tr-export">
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={onExport}
+          data-testid="tr-export"
+          sx={{ ml: 'auto' }}
+        >
           {TR_EXPORT_LABEL}
         </Button>
         <Button
@@ -191,25 +271,53 @@ export function ArchiveBlock({
         />
       </Stack>
 
-      <Dialog open={dialog.step !== 'closed'} onClose={() => setDialog({ step: 'closed' })}>
+      {/* The board's dialog (`final-overlays-archive`, fidelity SITE-15): 560 wide, a head with its
+          close, the body between dividers, the actions in a foot; under 600px the shared bottom
+          sheet. The surface (panel, line, radius 16) is the theme's. Every step takes the same
+          frame, so the confirm and the report it leads to are one dialog. */}
+      <Dialog
+        open={dialog.step !== 'closed'}
+        onClose={close}
+        fullWidth
+        maxWidth={false}
+        sx={[{ '& .MuiDialog-paper': { maxWidth: 560 } }, bottomSheetDialogSx]}
+      >
+        <Box aria-hidden sx={grabHandleSx} />
         {dialog.step === 'confirm' && (
           <>
-            <DialogTitle data-testid="tr-import-confirm-title">
-              {TR_IMPORT_CONFIRM_TITLE}
-            </DialogTitle>
-            <DialogContent>
-              <Typography variant="body2" data-testid="tr-import-confirm-body">
+            <DialogHead
+              title={TR_IMPORT_CONFIRM_TITLE}
+              testid="tr-import-confirm-title"
+              onClose={close}
+            />
+            <DialogContent dividers sx={dialogBodySx}>
+              <Typography
+                variant="body2"
+                data-testid="tr-import-confirm-body"
+                sx={{ fontSize: '0.875rem', lineHeight: 1.55 }}
+              >
                 {TR_IMPORT_CONFIRM_BODY}
               </Typography>
               <Typography
-                variant="caption"
-                sx={{ display: 'block', mt: 1, color: 'text.secondary' }}
+                component="span"
+                data-testid="tr-import-confirm-file"
+                sx={{
+                  ...MONO_FACE,
+                  display: 'block',
+                  fontSize: '0.75rem',
+                  lineHeight: 1.5,
+                  color: 'text.secondary',
+                }}
               >
                 {trImportConfirmFile(dialog.filename)}
               </Typography>
+              <Box data-testid="tr-import-confirm-note" sx={calloutSx}>
+                <InfoOutlinedIcon aria-hidden sx={{ fontSize: 14, mt: '2px', flex: 'none' }} />
+                <span>{TR_IMPORT_CONFIRM_NOTE}</span>
+              </Box>
             </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDialog({ step: 'closed' })}>{TR_IMPORT_CANCEL}</Button>
+            <DialogActions sx={[dialogFootSx, bottomSheetActionsSx]}>
+              <Button onClick={close}>{TR_IMPORT_CANCEL}</Button>
               <Button variant="contained" onClick={onConfirmImport} data-testid="tr-import-confirm">
                 {TR_IMPORT_CONFIRM}
               </Button>
@@ -218,24 +326,30 @@ export function ArchiveBlock({
         )}
         {dialog.step === 'report' && (
           <>
-            <DialogTitle data-testid="tr-import-done-title">{TR_IMPORT_DONE_TITLE}</DialogTitle>
-            <DialogContent>
+            <DialogHead
+              title={TR_IMPORT_DONE_TITLE}
+              testid="tr-import-done-title"
+              onClose={close}
+            />
+            <DialogContent dividers sx={dialogBodySx}>
               {/* All three lines ALWAYS render, including zeros. */}
-              <Typography variant="body2" data-testid="tr-import-added">
-                {trImportAdded(dialog.report.added)}
-              </Typography>
-              <Typography variant="body2" data-testid="tr-import-skipped">
-                {trImportSkipped(dialog.report.skipped)}
-              </Typography>
-              <Typography variant="body2" data-testid="tr-import-conflict">
-                {trImportConflict(dialog.report.conflicts)}
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+              <Box>
+                <Typography variant="body2" data-testid="tr-import-added">
+                  {trImportAdded(dialog.report.added)}
+                </Typography>
+                <Typography variant="body2" data-testid="tr-import-skipped">
+                  {trImportSkipped(dialog.report.skipped)}
+                </Typography>
+                <Typography variant="body2" data-testid="tr-import-conflict">
+                  {trImportConflict(dialog.report.conflicts)}
+                </Typography>
+              </Box>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 {TR_IMPORT_FOOTER}
               </Typography>
             </DialogContent>
-            <DialogActions>
-              <Button variant="contained" onClick={() => setDialog({ step: 'closed' })}>
+            <DialogActions sx={[dialogFootSx, bottomSheetActionsSx]}>
+              <Button variant="contained" onClick={close}>
                 {TR_IMPORT_DONE}
               </Button>
             </DialogActions>
@@ -247,16 +361,18 @@ export function ArchiveBlock({
             not a dead end. */}
         {dialog.step === 'declined' && dialog.reason === 'store_unreadable' && (
           <>
-            <DialogTitle data-testid="tr-import-declined-title">
-              {TR_IMPORT_DECLINED_STORE_TITLE}
-            </DialogTitle>
-            <DialogContent>
+            <DialogHead
+              title={TR_IMPORT_DECLINED_STORE_TITLE}
+              testid="tr-import-declined-title"
+              onClose={close}
+            />
+            <DialogContent dividers sx={dialogBodySx}>
               <Typography variant="body2" data-testid="tr-import-declined-body">
                 {TR_IMPORT_DECLINED_STORE_BODY}
               </Typography>
             </DialogContent>
-            <DialogActions>
-              <Button variant="contained" onClick={() => setDialog({ step: 'closed' })}>
+            <DialogActions sx={[dialogFootSx, bottomSheetActionsSx]}>
+              <Button variant="contained" onClick={close}>
                 {TR_IMPORT_DONE}
               </Button>
             </DialogActions>
@@ -265,16 +381,18 @@ export function ArchiveBlock({
         {/* Class A — the FILE is the problem. The shared template + a closed `{reason}` fragment. */}
         {dialog.step === 'declined' && dialog.reason !== 'store_unreadable' && (
           <>
-            <DialogTitle data-testid="tr-import-declined-title">
-              {TR_IMPORT_DECLINED_TITLE}
-            </DialogTitle>
-            <DialogContent>
+            <DialogHead
+              title={TR_IMPORT_DECLINED_TITLE}
+              testid="tr-import-declined-title"
+              onClose={close}
+            />
+            <DialogContent dividers sx={dialogBodySx}>
               <Typography variant="body2" data-testid="tr-import-declined-body">
                 {trImportDeclinedBody(DECLINE_COPY[dialog.reason])}
               </Typography>
             </DialogContent>
-            <DialogActions>
-              <Button variant="contained" onClick={() => setDialog({ step: 'closed' })}>
+            <DialogActions sx={[dialogFootSx, bottomSheetActionsSx]}>
+              <Button variant="contained" onClick={close}>
                 {TR_IMPORT_DONE}
               </Button>
             </DialogActions>

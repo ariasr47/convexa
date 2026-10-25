@@ -1,13 +1,15 @@
 /**
- * OrdersPanel — the Positions-page management home (UX §4.5), rendered INSIDE the Simulated tab
- * ABOVE the positions view (the Live tab stays the locked placeholder — untouched). Every order,
- * every ticker; Open / History segmented pill (History = filled/cancelled/expired, never dropped,
- * AC-24); two-step cancel; detail; client-side Export JSON (`convexa-orders-{date}.json` — the
- * AC-33 audit floor); empty + store-fault states (§4.6). Rows for tickers other than this page's
- * focused/streamed one show the §4.3 not-evaluated state — CORRECT and required, not a bug (D5).
+ * OrdersPanel — the Positions-page management home (UX §4.5), rendered INSIDE the Simulated tab,
+ * BELOW the book and beside the Track record (owner, NO-6 A, 2026-10-25: the Final board's order).
+ * Every order, every ticker; Open / History segmented pill (History = filled/cancelled/expired,
+ * never dropped, AC-24); two-step cancel; detail; client-side Export JSON
+ * (`convexa-orders-{date}.json` — the AC-33 audit floor); empty + store-fault states (§4.6). Rows
+ * for tickers other than this page's focused/streamed one show the §4.3 not-evaluated state —
+ * CORRECT and required, not a bug (D5).
  */
 import { SIMULATED_TIP } from '@/features/trading/positions/labels';
 import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
+import { coarseFloor } from '@/shared/ui/touch';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -73,9 +75,12 @@ export function OrdersPanel({ coverage, openDetailOrderId, onDetailClose, onView
       sx={{
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '10px',
-        p: 2,
-        mb: 2,
+        // The panel role, 12 (`shape.borderRadius`), and the board's panel padding (`.hd-p`,
+        // 18px 20px, 16 on a phone; fidelity ACC-24). It sits in the page's orders | track record
+        // row, whose gap spaces it, so it carries no margin of its own.
+        borderRadius: 1,
+        p: { xs: '16px', sm: '18px 20px' },
+        minWidth: 0,
         bgcolor: 'background.paper',
       }}
     >
@@ -87,7 +92,8 @@ export function OrdersPanel({ coverage, openDetailOrderId, onDetailClose, onView
         spacing={1}
         sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
       >
-        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+        {/* The board's panel title (`.hd-p .ph h3`): 14px/600. */}
+        <Typography variant="subtitle1" sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
           {PANEL_TITLE}
         </Typography>
         <Tooltip arrow title={SIMULATED_TIP}>
@@ -98,7 +104,7 @@ export function OrdersPanel({ coverage, openDetailOrderId, onDetailClose, onView
           size="small"
           onClick={doExport}
           data-testid="orders-export"
-          sx={{ textTransform: 'none' }}
+          sx={{ textTransform: 'none', ...coarseFloor }}
         >
           {ACTION_EXPORT}
         </Button>
@@ -114,7 +120,9 @@ export function OrdersPanel({ coverage, openDetailOrderId, onDetailClose, onView
         value={tab}
         onChange={(_, v) => v && setTab(v)}
         aria-label="orders view"
-        sx={{ mb: 1 }}
+        // The coarse 44 on each toggle (canon rule 7; fidelity ACC-17); the control role, 8, on
+        // the group (ACC-24), not the panel role the group takes from `shape.borderRadius`.
+        sx={{ mb: 1, borderRadius: '8px', '& .MuiToggleButton-root': coarseFloor }}
       >
         <ToggleButton value="open" data-testid="orders-tab-open">
           Open

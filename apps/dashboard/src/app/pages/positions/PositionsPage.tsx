@@ -15,26 +15,40 @@
  * The durable store + `usePortfolio` durability logic are UNCHANGED — this file adds no durable
  * page/shell state. The LOCKED Live tab and SIMULATED posture are untouched (`[no-real-order-path]`).
  *
- * Re-skin (convexa-redesign · Positions): the page header is now a flex row — the title/subtitle on the
- * left, a live **Net P/L (open)** readout on the right (sum of the OPEN positions' P/L, dimmed on a
- * stream drop; `[live-vs-static-isolation]`). The 1240px centered content column replaces the MUI
- * `Container maxWidth="lg"`. No data path / handler changes.
+ * Re-skin (convexa-redesign · Positions): a live **Net P/L (open)** readout (sum of the OPEN
+ * positions' P/L, dimmed on a stream drop; `[live-vs-static-isolation]`), first beside the title and
+ * now the middle cell of the figure strip below it. No data path / handler changes.
+ *
+ * Final board layout (fidelity audit 2026-10-25; owner NO-6 A): the page column (`pageColumnSx`),
+ * the title, a full-width figure strip (capital at risk · Net P/L (open) · open · pending · closed),
+ * the book with its one toolbar row, then the orders panel beside the Track record panel, then the
+ * Track record's five families full width.
  */
 import { PRESETS } from '@/features/personas/presets';
 import { loadCustoms } from '@/features/personas/store';
 import { subscribeOrders } from '@/features/trading/orders/store';
 import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
-import { TrackRecordSection } from '@/features/trading/outcomes/TrackRecordSection';
-import { MarkFeedProvider, type MarkFeed } from '@/features/trading/positions/markFeed';
+import {
+  TrackRecordFamilies,
+  TrackRecordPanel,
+  useTrackRecord,
+} from '@/features/trading/outcomes/TrackRecordSection';
+import {
+  MarkFeedProvider,
+  MarkNotLiveTag,
+  type MarkFeed,
+} from '@/features/trading/positions/markFeed';
 import { PortfolioPanel } from '@/features/trading/positions/PortfolioPanel';
 import { allPositions } from '@/features/trading/positions/store';
 import { usePortfolio } from '@/features/trading/positions/usePortfolio';
 import { FigureCell } from '@/pages/ticker/widgets/_kit/FigureCell';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { usePollingResource } from '@/shared/hooks/usePollingResource';
 import { isDeliveringLive } from '@/shared/liveness/liveClaim';
-import { downText, upText } from '@/shared/theme/tokens';
+import { downText, extrasFor, upText } from '@/shared/theme/tokens';
+import { pageColumnSx } from '@/shared/ui/PageColumn';
 import { PanelContainer } from '@/shared/ui/PanelContainer';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import {
@@ -47,6 +61,7 @@ import {
   type DemoOrderFrame,
 } from '@convexa/api';
 import Box from '@mui/material/Box';
+import { alpha, type Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import { useEffect, useMemo, useState } from 'react';
 import { capitalAtRiskStateOf } from './capitalAtRisk';
@@ -61,14 +76,102 @@ import { netPlStateOf, type NetPlTint } from './netPl';
  * keys on — the value glyph's own `data-figure-register` attribute — never by touching `FigureCell`
  * (out of this task's file ownership; it stays FE-1's).
  */
-function netPlTintSx(tint: NetPlTint) {
-  if (!tint) return {};
-  return {
-    '& [data-figure-register="mono"]': {
-      color: tint === 'positive' ? upText : downText,
-    },
-  };
+function netPlTint(tint: NetPlTint) {
+  if (!tint) return undefined;
+  return tint === 'positive' ? upText : downText;
 }
+
+/**
+ * The figure strip (the Final board's `.ac-strip`, `design/src/screens/final/account-pages.mjs`):
+ * three cells across the column, 1px apart on the line colour, radius 12; one column under 900px.
+ * On the demo it is a sample frame (canon P-3, P-8): dashed in steel, the 8px hatch band at its head,
+ * and its cells on the frame's own panel, so no rule shows between them.
+ */
+const stripSx = (sample: boolean) => (t: Theme) => ({
+  position: 'relative' as const,
+  display: 'grid',
+  gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(3, minmax(0, 1fr))' },
+  gap: '1px',
+  bgcolor: sample ? 'background.paper' : 'divider',
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 1,
+  overflow: 'hidden',
+  ...(sample && {
+    borderStyle: 'dashed',
+    borderColor: extrasFor(t).textTertiary,
+    '&::before': {
+      content: '""',
+      position: 'absolute' as const,
+      left: 0,
+      right: 0,
+      top: 0,
+      height: 8,
+      pointerEvents: 'none' as const,
+      zIndex: 1,
+      background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(
+        t.palette.text.secondary,
+        0.28,
+      )} 6px 12px)`,
+    },
+  }),
+});
+
+/**
+ * One strip cell: the figure, and its state tag at the head's right. `FigureCell` is a card; inside
+ * the strip it is a flat cell (the board's `.ac-strip > div`: 14px 18px, the 24px mono value, a 12px
+ * caption), restyled from outside the primitive, as `netPlTint`'s colour reaches its value glyph.
+ */
+const stripCellSx = (sample: boolean, figureColor?: (t: Theme) => string) => ({
+  // One grid row: the figure spans the cell, and the tag sits over its top-right corner, level
+  // with the label row, which keeps clear of it; the value and the caption take the full width.
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) auto',
+  alignItems: 'start',
+  minWidth: 0,
+  '& > :first-child': { gridColumn: '1 / -1', gridRow: 1 },
+  bgcolor: sample ? 'transparent' : 'background.paper',
+  '& .MuiCard-root': {
+    border: 0,
+    borderRadius: 0,
+    bgcolor: 'transparent',
+    backgroundImage: 'none',
+    boxShadow: 'none',
+    transition: 'none',
+    '&:hover': { transform: 'none', boxShadow: 'none' },
+  },
+  '& .MuiCardContent-root, & .MuiCardContent-root:last-child': {
+    p: '14px 18px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
+  // The label row is the tag's height (22), as the board's label row holds its tag inline, and
+  // keeps the tag's width clear on its right.
+  '& .MuiCardContent-root > :first-child': { minHeight: 22, pr: '112px' },
+  '& [data-figure-register="mono"]': {
+    fontSize: 24,
+    lineHeight: 1.2,
+    ...(figureColor && { color: figureColor }),
+  },
+  // The caption keeps `FigureCell`'s own face (a page source names no font family, fonts.spec
+  // N-1); only its size and leading follow the board's 12px line.
+  '& [data-testid="stat-secondary"]': {
+    fontSize: '0.75rem',
+    lineHeight: 1.45,
+    mt: 0,
+  },
+});
+
+/** The cell's state tag (canon P-2), level with the figure's label. */
+const stripTagSx = {
+  gridColumn: 2,
+  gridRow: 1,
+  position: 'relative',
+  zIndex: 1,
+  pt: '14px',
+  pr: '18px',
+} as const;
 
 /** The lead under the title. It follows /api/health, not just the mark source: `paused` takes the
  *  not-live treatment in its own word (a feed exists and an operator stopped it), and `unknown`
@@ -212,62 +315,85 @@ function PositionsBook({ markFeed, lead }: { markFeed: MarkFeed; lead: Positions
   // `view.max_loss` every row/card cell already reads — not a second compute path.
   const capitalAtRisk = useMemo(() => capitalAtRiskStateOf({ views: pf.views }), [pf.views]);
 
+  // The book's counts, the strip's third cell (the Final board's `Open · pending · closed`): read
+  // from the same durable records the toolbar's status pills count, no new store, no fetch.
+  const counts = useMemo(() => {
+    const c = { open: 0, pending: 0, closed: 0 };
+    for (const p of pf.positions) {
+      if (p.status === 'open' || p.status === 'pending' || p.status === 'closed') c[p.status] += 1;
+    }
+    return c;
+  }, [pf.positions]);
+
+  // outcome-ledger: ONE read for the page's two Track record parts (owner, NO-6 A, 2026-10-25): its
+  // head and archive in the panel beside the orders panel, its five families full width below.
+  // ⚠ It is a STATIC historical read: it takes NO `data`/`live`/`isLive`/`streamOffline` input and
+  // does not dim on a stream drop — unlike the Net P/L cell above it, which is a LIVE P&L. Do not
+  // "make it consistent" with that cell (`[live-vs-static-isolation]`, AC-E17).
+  const trackRecord = useTrackRecord(personaLabelOf);
+
+  const sample = markFeed === 'sample';
+  const netPlTag =
+    markFeed === 'sample' ? (
+      <DataStateTag state="sample" label="Sample mark" />
+    ) : markFeed === 'notLive' ? (
+      <MarkNotLiveTag />
+    ) : null;
+
   return (
     <MarkFeedProvider value={markFeed}>
-      <Box sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '16px 24px',
-            mb: '6px',
-          }}
-        >
-          <Box>
-            <Typography component="h1" sx={{ fontSize: '1.7rem', fontWeight: 700, m: '0 0 4px' }}>
-              Positions
-            </Typography>
-            <Typography component="p" sx={{ fontSize: '0.88rem', color: 'text.secondary', m: 0 }}>
-              {POSITIONS_LEAD[lead]}
-            </Typography>
-          </Box>
-          {/* The mast's stat cluster (design/src/screens/positions.mjs:62-65, `.pos-stats`): capital
-            at risk beside the live Net P/L readout, right-aligned. Both render through `FigureCell`
-            itself, per the panel-shaped exception SPEC §2.1/§2.3 carve out for this readout (council
-            `decisions.md` §3 #0+#16; `council/R3-architect.md` #0 and #3 name it explicitly, having
-            weighed the cross-page import against the app's own "pages never import sibling pages"
-            rule at R1 and kept it narrow rather than promoting the whole card — a promotion
-            `AccessibleHelp`'s own import would force, which FE-12 already owns for the frame's ⓘ).
-            Each is wrapped in its own `PanelContainer` (`shared/ui/PanelContainer.tsx`) so the
-            declared 20→17→15 step has a named ancestor to step against at all (§2.4's hazard) —
-            without one, the step never fires at any viewport, with a green build. `minWidth`/
-            `flexShrink: 0` counter a real rendered defect this task found and fixed:
-            `container-type: inline-size` size-contains the box, so as a flex item with no floor it
-            collapsed to a ZERO-width, effectively invisible column (caught by a real
-            headless-browser pass, not by jsdom, which cannot evaluate container queries) — the SAME
-            shape `ReadStrip.tsx:57`'s `minWidth: 140` already carries for its own nested
-            `PanelContainer`s. */}
-          {/* Phone: the two figures share one full-width row instead of two narrow stacked boxes
-              (site check D-23); each keeps a floor, for the container-query reason above. */}
-          <Box
+      {/* The one page column (`pageColumnSx`, the boards' `.wrap`; fidelity COL), with the page's
+          own py, and the board's `.ap` rhythm: its sections 22px apart. */}
+      <Box
+        data-testid="positions-page"
+        sx={{ ...pageColumnSx, py: 3, display: 'flex', flexDirection: 'column', gap: '22px' }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          {/* The account pages' one title size (owner, NO-12 A, 2026-10-25), as the board's `.ap-h
+              h1` draws it: 40px at 1440 (fidelity ACC-16). The theme's h1 variant carries the
+              display face (Archivo, its stretch, 700): a page source names no font family. */}
+          <Typography
+            component="h1"
+            variant="h1"
             sx={{
-              display: 'flex',
-              alignItems: 'stretch',
-              gap: { xs: '12px', sm: '20px' },
-              flexWrap: 'wrap',
-              width: { xs: '100%', sm: 'auto' },
+              fontSize: 'clamp(30px, 3vw, 40px)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1,
+              m: 0,
             }}
           >
-            <PanelContainer
-              data-testid="positions-capital-at-risk"
-              sx={{
-                maxWidth: { xs: 'none', sm: 260 },
-                minWidth: 140,
-                flex: { xs: '1 1 0', sm: '0 0 auto' },
-              }}
-            >
+            Positions
+          </Typography>
+          <Typography
+            component="p"
+            sx={{
+              fontSize: '0.90625rem',
+              lineHeight: 1.55,
+              color: 'text.secondary',
+              m: '6px 0 0',
+              maxWidth: '70ch',
+            }}
+          >
+            {POSITIONS_LEAD[lead]}
+          </Typography>
+        </Box>
+
+        {/* The figure strip (the Final board's `.ac-strip`; owner, NO-6 A, 2026-10-25): three cells
+          across the column, capital at risk, the live Net P/L and the book's counts. Each figure
+          renders through `FigureCell` itself, per the panel-shaped exception SPEC §2.1/§2.3 carve
+          out for this readout (council `decisions.md` §3 #0+#16), restyled from outside the
+          primitive into the strip's flat cells (`stripCellSx`). Each sits in its own
+          `PanelContainer` (`shared/ui/PanelContainer.tsx`) so the declared 20→17→15 step has a
+          named ancestor to step against at all (§2.4's hazard); `minWidth: 0` keeps a size-contained
+          box from collapsing to zero width as a grid item. On the demo the strip is a sample
+          frame: dashed, with the 8px hatch band (canon P-3, P-8). */}
+        <Box
+          data-testid="positions-strip"
+          data-provenance={sample ? 'sample' : 'primary'}
+          sx={stripSx(sample)}
+        >
+          <Box data-testid="positions-capital-at-risk" sx={stripCellSx(sample)}>
+            <PanelContainer sx={{ minWidth: 0 }}>
               <FigureCell
                 label="Capital at risk"
                 register={capitalAtRisk.register}
@@ -276,15 +402,12 @@ function PositionsBook({ markFeed, lead }: { markFeed: MarkFeed; lead: Positions
                 offline={null}
               />
             </PanelContainer>
-            <PanelContainer
-              data-testid="positions-net-pl"
-              sx={{
-                maxWidth: { xs: 'none', sm: 320 },
-                minWidth: { xs: 140, sm: 200 },
-                flex: { xs: '1 1 0', sm: '0 0 auto' },
-                ...netPlTintSx(netPl.tint),
-              }}
-            >
+            <Box sx={stripTagSx}>
+              <DataStateTag state="computed" />
+            </Box>
+          </Box>
+          <Box data-testid="positions-net-pl" sx={stripCellSx(sample, netPlTint(netPl.tint))}>
+            <PanelContainer sx={{ minWidth: 0 }}>
               <FigureCell
                 label="Net P/L (open)"
                 register={netPl.register}
@@ -293,23 +416,40 @@ function PositionsBook({ markFeed, lead }: { markFeed: MarkFeed; lead: Positions
                 offline={netPl.offline}
               />
             </PanelContainer>
+            {netPlTag && <Box sx={stripTagSx}>{netPlTag}</Box>}
+          </Box>
+          <Box data-testid="positions-book-counts" sx={stripCellSx(sample)}>
+            <PanelContainer sx={{ minWidth: 0 }}>
+              <FigureCell
+                label="Open · pending · closed"
+                register="traced"
+                value={`${counts.open} · ${counts.pending} · ${counts.closed}`}
+                caption={
+                  sample ? 'saved in this browser’s demo workspace' : 'saved in this browser'
+                }
+                offline={null}
+              />
+            </PanelContainer>
+            <Box sx={stripTagSx}>
+              <DataStateTag state="local" />
+            </Box>
           </Box>
         </Box>
-        <PortfolioPanel
-          pf={pf}
-          data={data}
-          live={live}
-          isLive={isLive}
-          streamOffline={streamOffline}
-          ticker={ticker}
-          entryOpen={entryOpen}
-          onEntryOpen={setEntryOpen}
-        />
-        {/* outcome-ledger: the reflective read UNDER the book. The book is what this page is for.
-          ⚠ It is a STATIC historical read: it takes NO `data`/`live`/`isLive`/`streamOffline` prop
-          and does not dim on a stream drop — unlike the Net P/L header above, which is a LIVE P&L.
-          Do not "make it consistent" with that block (`[live-vs-static-isolation]`, AC-E17). */}
-        <TrackRecordSection personaLabel={personaLabelOf} />
+
+        <Box sx={{ minWidth: 0 }}>
+          <PortfolioPanel
+            pf={pf}
+            data={data}
+            live={live}
+            isLive={isLive}
+            streamOffline={streamOffline}
+            ticker={ticker}
+            entryOpen={entryOpen}
+            onEntryOpen={setEntryOpen}
+            besideOrders={<TrackRecordPanel record={trackRecord} />}
+          />
+        </Box>
+        <TrackRecordFamilies record={trackRecord} labelled />
       </Box>
     </MarkFeedProvider>
   );

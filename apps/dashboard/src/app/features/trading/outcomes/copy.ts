@@ -340,6 +340,10 @@ export const PERSONA_UNKNOWN_LABEL = 'Persona no longer saved';
 
 // ---- The archive (§5.9) -------------------------------------------------------------------------
 
+/** The families row's label on the Positions page, where it stands apart from the readout's head
+ *  (owner, NO-6 A, 2026-10-25: the head beside the orders panel, the families full width below). */
+export const TR_FAMILIES_LABEL = 'Track record by family';
+
 export const TR_ARCHIVE_HEADING = 'Archive';
 export const TR_ARCHIVE_LEAD =
   'Your trading history lives in this browser only. There’s no server backup — if you clear ' +
@@ -363,8 +367,15 @@ export const TR_IMPORT_CONFIRM_BODY =
   'have. If a record in the file is already here, it’s skipped. If it collides with a ' +
   'different record, your existing record wins. Importing the same file twice changes nothing.';
 export const trImportConfirmFile = (filename: string): string => `File: ${filename}`;
+/** The confirm's callout (the Final board's `final-overlays-archive`, fidelity SITE-15): the one
+ *  thing the body does not say, that pressing Import is the only step that reads the file in. */
+export const TR_IMPORT_CONFIRM_NOTE =
+  'Nothing is read into your history until you press Import. Your history lives in this browser ' +
+  'only; the archive is its one backup.';
 export const TR_IMPORT_CANCEL = 'Cancel';
 export const TR_IMPORT_CONFIRM = 'Import';
+/** The import dialog's close button: its accessible name (the board's head close, `.v4dlg .dh`). */
+export const TR_DIALOG_CLOSE = 'Close';
 
 export const TR_IMPORT_DONE_TITLE = 'Import complete';
 export const trImportAdded = (n: number): string => `${n} ${plural(n, 'record', 'records')} added.`;

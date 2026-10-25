@@ -46,6 +46,8 @@ import {
   plPctFigure,
   rowActionSx,
   RowContext,
+  singleOptionLeg,
+  unitEntryText,
 } from './PositionRow';
 import { STRUCTURE_LABELS } from './structure';
 import type { PositionView } from './view';
@@ -66,6 +68,7 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
   const isTerminal = p.status === 'closed' || p.status === 'cancelled';
   const isOpen = p.status === 'open';
   const plColor = view.pl_dollar == null ? 'text.primary' : view.pl_dollar >= 0 ? upText : downText;
+  const singleLeg = singleOptionLeg(view);
 
   // The BIG P/L block and the Mark footer value read the SAME text/state the row's `cell-pl` and
   // `cell-mark` render, from the shared helpers `PositionRow` exports — the table and this card can
@@ -124,7 +127,8 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '10px',
+        // The panel role, 12 (`shape.borderRadius`), not a raw '10px' (fidelity ACC-24).
+        borderRadius: 1,
         padding: '15px',
       }}
     >
@@ -254,10 +258,12 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
             {view.qty_text}
           </Box>
         </Box>
+        {/* A single option leg reads per share, as its row does (`PositionRow`, fidelity ACC-09):
+            the row and the card never disagree about a figure or its unit. */}
         <Box component="span">
-          {view.net_entry_basis === 'net_debit' ? 'Net debit' : 'Net credit'}{' '}
+          {singleLeg ? 'Entry' : view.net_entry_basis === 'net_debit' ? 'Net debit' : 'Net credit'}{' '}
           <Box component="span" sx={footValSx} data-testid="card-net-entry">
-            {dollars(view.net_entry_cost)}
+            {singleLeg ? unitEntryText(singleLeg) : dollars(view.net_entry_cost)}
           </Box>
         </Box>
         {/* The dim lives on THIS element, which keeps `card-mark`'s shipped identity as the

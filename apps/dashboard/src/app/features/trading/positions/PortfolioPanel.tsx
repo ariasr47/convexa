@@ -21,11 +21,12 @@ import { useGate } from '@/features/auth/useGate';
 import { EntryPrefill } from '@/features/trading/TradeEntryDialog';
 import { BrokerTabPanel } from '@/features/trading/broker/BrokerTabPanel';
 import { extrasFor } from '@/shared/theme/tokens';
+import { coarseFloor } from '@/shared/ui/touch';
 import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Snackbar from '@mui/material/Snackbar';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { PositionsPanel } from './PositionsPanel';
 import { revealFocusedControl } from './revealFocusedControl';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';
@@ -43,6 +44,9 @@ interface Props {
   entryPrefill?: EntryPrefill;
   entryOpen: boolean;
   onEntryOpen: (open: boolean) => void;
+  /** The panel beside the orders panel (the page's Track record; owner NO-6 A, 2026-10-25). A node,
+   *  not an import: this file may not reach `features/trading/outcomes` (boundaries.spec). */
+  besideOrders?: ReactNode;
 }
 
 export function PortfolioPanel({
@@ -55,6 +59,7 @@ export function PortfolioPanel({
   entryPrefill,
   entryOpen,
   onEntryOpen,
+  besideOrders,
 }: Props) {
   const [tab, setTab] = useState<'simulated' | 'live'>('simulated');
   const [toast, setToast] = useState<string | null>(null);
@@ -108,13 +113,73 @@ export function PortfolioPanel({
     fontSize: '0.82rem',
     fontWeight: 600,
     padding: '7px 13px',
-    borderRadius: '7px',
+    // The board's segment button (`.seg4 button`): 6 inside the control's 8 (fidelity ACC-24).
+    borderRadius: '6px',
     color: active ? 'text.primary' : 'text.secondary',
     display: 'inline-flex',
     alignItems: 'center',
     gap: '7px',
     whiteSpace: 'nowrap' as const,
+    // The coarse 44 (canon rule 7; fidelity ACC-17).
+    ...coarseFloor,
   });
+
+  // The book switch. On the Simulated tab it leads the toolbar's one row (the Final board's `.ap-bar`,
+  // owner NO-6 A, 2026-10-25); on the Broker tab, which has no toolbar, it stands on its own row.
+  /* Plain buttons, deliberately no `role="tab"`/`tablist`: this is a VISUAL re-skin (a segmented
+     pill, not an ARIA tab panel pair) — inventing an incomplete tablist pattern (no
+     `aria-controls`, no roving tabindex) would be a NEW axe finding this task does not own. */
+  const bookSwitch = (
+    <Box
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '3px',
+        bgcolor: (t) => extrasFor(t).panelRaised,
+        border: '1px solid',
+        borderColor: 'divider',
+        // The control role, 8 (fidelity ACC-24).
+        borderRadius: '8px',
+        padding: '3px',
+      }}
+    >
+      <Box
+        component="button"
+        type="button"
+        onClick={() => setTab('simulated')}
+        data-testid="tab-simulated"
+        sx={segTabSx(tab === 'simulated')}
+      >
+        Simulated
+        <Box
+          component="span"
+          sx={{
+            fontSize: '0.6875rem', // type floor >=11px (redesign-stage-0 item 4)
+            fontWeight: 700,
+            // Neutral chrome: green is reserved for direction (canon; site check D-23).
+            color: 'text.secondary',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: '4px',
+            padding: '1px 5px',
+          }}
+        >
+          PAPER
+        </Box>
+      </Box>
+      {/* Internal name/testid keep `live` (decisions.md I-4 carve-out); the trader reads "Broker". */}
+      <Box
+        component="button"
+        type="button"
+        onClick={() => setTab('live')}
+        data-testid="tab-live"
+        onFocus={revealFocusedControl}
+        sx={segTabSx(tab === 'live')}
+      >
+        Broker
+      </Box>
+    </Box>
+  );
 
   return (
     <Box
@@ -124,63 +189,19 @@ export function PortfolioPanel({
         '& [data-testid^="tr-family-empty-"]': { color: 'text.secondary !important' },
       }}
     >
-      {/* Plain buttons, deliberately no `role="tab"`/`tablist`: this is a VISUAL re-skin (a segmented
-          pill, not an ARIA tab panel pair) — inventing an incomplete tablist pattern (no `aria-controls`,
-          no roving tabindex) would be a NEW axe finding this task does not own. */}
-      <Box
-        sx={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '3px',
-          bgcolor: (t) => extrasFor(t).panelRaised,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: '9px',
-          padding: '3px',
-          mt: '20px',
-        }}
-      >
-        <Box
-          component="button"
-          type="button"
-          onClick={() => setTab('simulated')}
-          data-testid="tab-simulated"
-          sx={segTabSx(tab === 'simulated')}
-        >
-          Simulated
-          <Box
-            component="span"
-            sx={{
-              fontSize: '0.6875rem', // type floor >=11px (redesign-stage-0 item 4)
-              fontWeight: 700,
-              // Neutral chrome: green is reserved for direction (canon; site check D-23).
-              color: 'text.secondary',
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: '4px',
-              padding: '1px 5px',
-            }}
-          >
-            PAPER
-          </Box>
-        </Box>
-        {/* Internal name/testid keep `live` (decisions.md I-4 carve-out); the trader reads "Broker". */}
-        <Box
-          component="button"
-          type="button"
-          onClick={() => setTab('live')}
-          data-testid="tab-live"
-          onFocus={revealFocusedControl}
-          sx={segTabSx(tab === 'live')}
-        >
-          Broker
-        </Box>
-      </Box>
-
       {tab === 'live' ? (
-        <BrokerTabPanel data={data} live={live} isLive={isLive} streamOffline={streamOffline} />
+        <>
+          {/* The toolbar row's own bottom space (14px), so the switch sits where it does above the
+              book. */}
+          <Box sx={{ mb: '14px' }}>{bookSwitch}</Box>
+          <BrokerTabPanel data={data} live={live} isLive={isLive} streamOffline={streamOffline} />
+          {/* The Track record is the simulated book's, so it stays reachable from the Broker tab. */}
+          {besideOrders && <Box sx={{ mt: '22px' }}>{besideOrders}</Box>}
+        </>
       ) : (
         <PositionsPanel
+          toolbarLead={bookSwitch}
+          besideOrders={besideOrders}
           pf={pf}
           data={data}
           live={live}

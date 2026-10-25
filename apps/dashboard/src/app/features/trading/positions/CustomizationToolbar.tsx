@@ -14,7 +14,11 @@
  * the controls are gone. The Open-CTA handler (`onOpenEntry`, gated upstream) lands here.
  */
 import { extrasFor } from '@/shared/theme/tokens';
+import { bottomSheetActionsSx, bottomSheetDialogSx, grabHandleSx } from '@/shared/ui/bottomSheet';
+import { coarseFloor } from '@/shared/ui/touch';
+import { dataMode } from '@convexa/api';
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
+import CloseIcon from '@mui/icons-material/Close';
 import DeleteOutline from '@mui/icons-material/DeleteOutlineOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -30,7 +34,7 @@ import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useId, useMemo, useState, type ReactNode } from 'react';
 import { FaultedBanner, Refused } from './FaultedBanner';
 import { MERGE_NOTICE, MERGE_NOTICE_EXPORT, SAVED_VIEW_TIP, staleViewNotice } from './labels';
 import type { SimPosition } from './leg';
@@ -73,6 +77,9 @@ interface ToolbarProps {
   staleViewName?: string | null;
   /** Durable dismissal of the merge notice (it must never reappear). Absent ⇒ the notice is inert. */
   onDismissMerge?: () => void;
+  /** The book switch (Simulated | Broker), first in the controls row: the Final board draws one
+   *  toolbar row under the figure strip (owner, NO-6 A, 2026-10-25). */
+  lead?: ReactNode;
 }
 
 /**
@@ -149,7 +156,14 @@ function BannerRegion({
             component="a"
             href="#tr-archive"
             data-testid="merge-notice-export"
-            sx={{ fontSize: '0.78rem', color: 'info.main', whiteSpace: 'nowrap' }}
+            sx={{
+              fontSize: '0.78rem',
+              color: 'info.main',
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              ...coarseFloor,
+            }}
           >
             {MERGE_NOTICE_EXPORT}
           </Box>
@@ -207,6 +221,7 @@ const dismissSx = {
   color: 'text.secondary',
   p: 0,
   whiteSpace: 'nowrap' as const,
+  ...coarseFloor,
 };
 
 // ---- Segmented-control building blocks (the frame's pill groups; mode-aware via extrasFor) ------
@@ -229,9 +244,12 @@ const segItemSx = (active: boolean) => (theme: { palette: { mode: string } }) =>
   fontSize: '0.78rem',
   fontWeight: 600,
   padding: '6px 12px',
-  borderRadius: '7px',
+  // The board's segment button (`.seg4 button`): 6 inside the control's 8 (fidelity ACC-24).
+  borderRadius: '6px',
   color: active ? 'text.primary' : 'text.secondary',
   whiteSpace: 'nowrap',
+  // The coarse 44 (canon rule 7; fidelity ACC-17), as the board's `.seg4 button` on a phone.
+  ...coarseFloor,
 });
 
 function Segmented<T extends string>({
@@ -283,7 +301,102 @@ const selectBoxSx = {
   borderRadius: '8px',
   padding: '7px 11px',
   fontSize: '0.8rem',
+  ...coarseFloor,
 };
+
+// ---- The view dialogs (the Final board's `final-overlays-views`, fidelity SITE-04) ----------------
+
+/** Where a saved view lives, the board's line under the field. */
+const VIEW_STORAGE_LINE =
+  dataMode === 'demo'
+    ? 'Saved in this browser with the rest of the demo account’s data; Reset demo data clears it.'
+    : 'Saved in this browser, with the rest of your simulated book.';
+
+/** 560 wide (the board's `.v4dlg`); under 600px the shared bottom sheet. */
+const viewDialogSx = [{ '& .MuiDialog-paper': { maxWidth: 560 } }, bottomSheetDialogSx];
+/** The board's body (`.v4dlg .db`): 16px 18px. */
+const viewDialogBodySx = {
+  px: '18px',
+  py: '16px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '14px',
+} as const;
+/** The board's foot (`.v4dlg .df`): 12px 18px, the actions at the end, 8px apart. */
+const viewDialogFootSx = {
+  px: '18px',
+  py: '12px',
+  gap: 1,
+  '& > :not(style) ~ :not(style)': { ml: 0 },
+};
+
+/** The board's ghost `sm` button (`.btn.ghost.sm`): 30px, radius 8, steel; 44 on a coarse pointer
+ *  (the theme's floor for every button). */
+const closeButtonSx = {
+  width: 30,
+  height: 30,
+  borderRadius: '8px',
+  color: 'text.secondary',
+} as const;
+
+/** The board's dialog head (`.v4dlg .dh`): the 16px/700 title, then its close. */
+function ViewDialogHead({ title, onClose }: { title: string; onClose: () => void }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: '18px', py: '14px' }}>
+      <DialogTitle sx={{ p: 0, flex: '1 1 auto', minWidth: 0, fontSize: '1rem', fontWeight: 700 }}>
+        {title}
+      </DialogTitle>
+      <IconButton size="small" aria-label="Close" onClick={onClose} sx={closeButtonSx}>
+        <CloseIcon sx={{ fontSize: 18 }} />
+      </IconButton>
+    </Box>
+  );
+}
+
+/** The board's field (`.fld`): its label above the input (12.5px/600), its help beneath. */
+function ViewNameField({
+  value,
+  onChange,
+  placeholder,
+  help,
+  testid,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  help?: string;
+  testid: string;
+}) {
+  const id = useId();
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <Typography
+        component="label"
+        htmlFor={id}
+        sx={{ fontSize: '0.78125rem', fontWeight: 600, lineHeight: 1.5, color: 'text.primary' }}
+      >
+        View name
+      </Typography>
+      {/* autoFocus KEPT, justified (redesign-stage-0 §3 item 4): moving focus into a just-opened
+          modal's single field is the expected a11y behavior — the WCAG "sparingly" carve-out, not
+          a focus-steal. */}
+      <TextField
+        autoFocus
+        size="small"
+        fullWidth
+        id={id}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        helperText={help}
+        slotProps={{
+          formHelperText: { sx: { mx: 0, mt: '6px', fontSize: '0.75rem', lineHeight: 1.45 } },
+        }}
+        data-testid={testid}
+      />
+    </Box>
+  );
+}
 
 export function CustomizationToolbar({
   pf,
@@ -296,6 +409,7 @@ export function CustomizationToolbar({
   mergeNoticePending = false,
   staleViewName = null,
   onDismissMerge,
+  lead,
 }: ToolbarProps) {
   const guard = guardSaveView ?? ((run: () => void) => run());
   const { working, activeView, custom, hasUnsavedChanges } = pf;
@@ -335,6 +449,7 @@ export function CustomizationToolbar({
     ...(active
       ? { bgcolor: 'text.primary', color: 'background.default', borderColor: 'text.primary' }
       : { background: 'transparent', color: 'text.secondary', borderColor: 'divider' }),
+    ...coarseFloor,
   });
 
   return (
@@ -356,6 +471,7 @@ export function CustomizationToolbar({
           mb: '14px',
         }}
       >
+        {lead}
         {/* View picker (saved views). */}
         <Box
           component="button"
@@ -542,6 +658,7 @@ export function CustomizationToolbar({
               color: 'info.main',
               ml: '4px',
               whiteSpace: 'nowrap',
+              ...coarseFloor,
             }}
           >
             History · {historyCount}
@@ -573,6 +690,7 @@ export function CustomizationToolbar({
               whiteSpace: 'nowrap',
               cursor: canOpenEntry && !faulted ? 'pointer' : 'not-allowed',
               opacity: canOpenEntry ? 1 : 0.5,
+              ...coarseFloor,
             }}
           >
             + Open simulated position
@@ -590,25 +708,32 @@ export function CustomizationToolbar({
         faultedSlot={<FaultedBanner />}
       />
 
+      {/* The three view dialogs: the Final board's (`final-overlays-views`, fidelity SITE-04) —
+          560 wide, a head with its close, the body between dividers with a labelled field and its
+          help, the actions in a foot; under 600px the shared bottom sheet. */}
       {/* Save-as-new dialog. */}
-      <Dialog open={saveAsOpen} onClose={() => setSaveAsOpen(false)}>
-        <DialogTitle>Name this view</DialogTitle>
-        <DialogContent>
-          {/* autoFocus KEPT, justified (redesign-stage-0 §3 item 4): moving focus into a
-              just-opened modal's single field is the expected a11y behavior — the WCAG
-              "sparingly" carve-out, not a focus-steal. */}
-          <TextField
-            autoFocus
-            size="small"
-            fullWidth
-            sx={{ mt: 1 }}
-            placeholder="e.g. Tech swings"
+      <Dialog
+        open={saveAsOpen}
+        onClose={() => setSaveAsOpen(false)}
+        fullWidth
+        maxWidth={false}
+        sx={viewDialogSx}
+      >
+        <Box aria-hidden sx={grabHandleSx} />
+        <ViewDialogHead title="Name this view" onClose={() => setSaveAsOpen(false)} />
+        <DialogContent dividers sx={viewDialogBodySx}>
+          <ViewNameField
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            data-testid="save-as-name"
+            onChange={setName}
+            placeholder="e.g. Tech swings"
+            help={SAVED_VIEW_TIP}
+            testid="save-as-name"
           />
+          <Typography sx={{ fontSize: '0.75rem', lineHeight: 1.45, color: 'text.secondary', m: 0 }}>
+            {VIEW_STORAGE_LINE}
+          </Typography>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={[viewDialogFootSx, bottomSheetActionsSx]}>
           <Button onClick={() => setSaveAsOpen(false)}>Cancel</Button>
           <Button
             variant="contained"
@@ -626,23 +751,19 @@ export function CustomizationToolbar({
       </Dialog>
 
       {/* Rename dialog. */}
-      <Dialog open={!!renameOpen} onClose={() => setRenameOpen(null)}>
-        <DialogTitle>Rename view</DialogTitle>
-        <DialogContent>
-          {/* autoFocus KEPT, justified (redesign-stage-0 §3 item 4): moving focus into a
-              just-opened modal's single field is the expected a11y behavior — the WCAG
-              "sparingly" carve-out, not a focus-steal. */}
-          <TextField
-            autoFocus
-            size="small"
-            fullWidth
-            sx={{ mt: 1 }}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            data-testid="rename-name"
-          />
+      <Dialog
+        open={!!renameOpen}
+        onClose={() => setRenameOpen(null)}
+        fullWidth
+        maxWidth={false}
+        sx={viewDialogSx}
+      >
+        <Box aria-hidden sx={grabHandleSx} />
+        <ViewDialogHead title="Rename view" onClose={() => setRenameOpen(null)} />
+        <DialogContent dividers sx={viewDialogBodySx}>
+          <ViewNameField value={name} onChange={setName} testid="rename-name" />
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={[viewDialogFootSx, bottomSheetActionsSx]}>
           <Button onClick={() => setRenameOpen(null)}>Cancel</Button>
           <Button
             variant="contained"
@@ -659,15 +780,22 @@ export function CustomizationToolbar({
       </Dialog>
 
       {/* Delete confirm. */}
-      <Dialog open={!!deleteOpen} onClose={() => setDeleteOpen(null)}>
-        <DialogTitle>Delete view</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2">
+      <Dialog
+        open={!!deleteOpen}
+        onClose={() => setDeleteOpen(null)}
+        fullWidth
+        maxWidth={false}
+        sx={viewDialogSx}
+      >
+        <Box aria-hidden sx={grabHandleSx} />
+        <ViewDialogHead title="Delete view" onClose={() => setDeleteOpen(null)} />
+        <DialogContent dividers sx={viewDialogBodySx}>
+          <Typography variant="body2" sx={{ fontSize: '0.84375rem' }}>
             Delete '{custom.views.find((v) => v.id === deleteOpen)?.name}'? Your positions are
             unaffected.
           </Typography>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={[viewDialogFootSx, bottomSheetActionsSx]}>
           <Button onClick={() => setDeleteOpen(null)}>Cancel</Button>
           {/* Destructive: outlined burnt orange (the warn token) with the word, never red — red is
               money moving down (Final More overlays, Delete view). */}

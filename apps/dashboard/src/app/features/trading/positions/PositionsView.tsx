@@ -14,8 +14,9 @@
  */
 import { PauseMark } from '@/shared/figure';
 import { downText, extrasFor, upText } from '@/shared/theme/tokens';
+import { coarseFloor } from '@/shared/ui/touch';
 import Box from '@mui/material/Box';
-import { useTheme } from '@mui/material/styles';
+import { alpha, useTheme, type Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { COLUMN_LABELS, TABLE_HEADER_LABELS } from './defaults';
@@ -27,8 +28,9 @@ import {
   HISTORY_CAPTION,
   money,
 } from './labels';
+import { SampleMarksChip, sampleMarksLine, useMarkFeed } from './markFeed';
 import { PositionCard } from './PositionCard';
-import { PositionRow, RowContext } from './PositionRow';
+import { NUMERIC_COLUMNS, PositionRow, RowContext } from './PositionRow';
 import type { ColumnKey, Density, LayoutMode } from './types';
 import type { PlSample } from './useTrends';
 import type { PositionView } from './view';
@@ -40,6 +42,11 @@ import type { PositionView } from './view';
  *
  * `max_loss` sits between `trend` and `expiry`, matching SPEC §4 Flows 2's left→right scan order.
  * It is RENDERED ONLY AT `lg` AND ABOVE — see `visibleColumnsFor` below and the GATE Z ruling.
+ *
+ * `structure` is no longer its own column (fidelity audit 2026-10-25, ACC-09): the Final board names
+ * the structure on the contract cell's second line (`Long call · opened 2:25 PM`), which now carries
+ * the `cell-structure` name, so the column only repeated it. `structure` stays a stored column key
+ * (DEFAULT_COLUMNS) and a group and sort axis; only the rendered set dropped it.
  *
  * MEASURED in a real browser (Cypress, seeded portfolio, both schemes, both densities):
  *   1440px · 1280px — the table fits its host and the page does not scroll. PASSES.
@@ -59,7 +66,6 @@ import type { PositionView } from './view';
  */
 export const FIGMA_COLUMNS: ColumnKey[] = [
   'contract',
-  'structure',
   'qty',
   'entry',
   'mark',
@@ -81,8 +87,14 @@ export const FIGMA_COLUMNS: ColumnKey[] = [
 export function visibleColumnsFor(isLgUp: boolean): ColumnKey[] {
   return isLgUp ? FIGMA_COLUMNS : FIGMA_COLUMNS.filter((c) => c !== 'max_loss');
 }
+/** The contract column's header reads `Contract`, as the board's does: the cell names the
+ *  contract (`SPY 690 C · Oct 16`), not only its ticker (fidelity ACC-09). */
 const headerLabel = (c: ColumnKey) =>
-  c === 'simulated' ? '' : (TABLE_HEADER_LABELS[c] ?? COLUMN_LABELS[c]);
+  c === 'simulated'
+    ? ''
+    : c === 'contract'
+      ? 'Contract'
+      : (TABLE_HEADER_LABELS[c] ?? COLUMN_LABELS[c]);
 
 export interface ViewProps {
   groups: DerivedGroup[];
@@ -119,6 +131,7 @@ const openCtaSx = {
   fontSize: '0.82rem',
   fontWeight: 700,
   cursor: 'pointer',
+  ...coarseFloor,
 };
 const clearLinkSx = {
   mt: '10px',
@@ -130,6 +143,7 @@ const clearLinkSx = {
   fontSize: '0.82rem',
   cursor: 'pointer',
   display: 'block',
+  ...coarseFloor,
 };
 
 export function PositionsView(props: ViewProps) {
@@ -257,75 +271,135 @@ function subtotalNode(group: DerivedGroup) {
 
 // ---- Table layout ------------------------------------------------------------------------------
 
+/** The board's `.ap-table th` (fidelity ACC-09): 11px caps at 0.06em over the strong hairline. */
 const thSx = {
   textAlign: 'left' as const,
-  padding: '11px 12px',
-  fontSize: '0.7rem',
+  padding: '10px 12px',
+  fontSize: '0.6875rem',
   fontWeight: 600,
-  letterSpacing: '.03em',
+  letterSpacing: '0.06em',
   textTransform: 'uppercase' as const,
   color: 'text.secondary',
   borderBottom: '1px solid',
-  borderColor: 'divider',
+  borderColor: (t: Theme) => extrasFor(t).lineStrong,
   whiteSpace: 'nowrap' as const,
 };
 
+/**
+ * The book's frame: the panel (radius 12, the panel role; fidelity ACC-24). On the demo it is a
+ * sample frame (canon P-3, P-8): dashed, the 8px hatch band at its head, and its one "Sample" in a
+ * head row, the source chip (owner D1; the board's `.ap-tbl.is-sample` and `.ac-tblhead`).
+ */
+export const bookFrameSx = (sample: boolean) => (t: Theme) => ({
+  position: 'relative' as const,
+  bgcolor: 'background.paper',
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 1,
+  overflow: 'hidden',
+  ...(sample && {
+    borderStyle: 'dashed',
+    borderColor: extrasFor(t).textTertiary,
+    '&::before': {
+      content: '""',
+      position: 'absolute' as const,
+      left: 0,
+      right: 0,
+      top: 0,
+      height: 8,
+      borderRadius: '11px 11px 0 0',
+      pointerEvents: 'none' as const,
+      zIndex: 3,
+      background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(
+        t.palette.text.secondary,
+        0.28,
+      )} 6px 12px)`,
+    },
+  }),
+});
+
+/** The sample frame's head row: the source chip and where the marks come from. */
+function SampleMarksHead({ framed }: { framed: boolean }) {
+  return (
+    <Box
+      data-testid="positions-sample-head"
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: '8px 12px',
+        ...(framed
+          ? { p: '12px 14px', borderBottom: '1px solid', borderColor: 'divider' }
+          : { mb: '12px' }),
+      }}
+    >
+      <SampleMarksChip />
+      <Typography component="span" sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+        {sampleMarksLine()}
+      </Typography>
+    </Box>
+  );
+}
+
 function TableLayout(props: ViewProps & { visibleColumns: ColumnKey[] }) {
   const { density } = props;
+  const sample = useMarkFeed() === 'sample';
   // REVISION 2 — the fixed Figma set (not `props.columns`), narrowed by the ONE breakpoint gate.
   const columns = props.visibleColumns;
   const isGrouped = props.groups.length > 1 || props.groups[0]?.key !== '__all__';
-  const tdPad = density === 'compact' ? '7px 12px' : '12px';
+  // The board's row: 10px 12px, so a two-line contract cell makes a 60px row (fidelity ACC-09).
+  const tdPad = density === 'compact' ? '7px 12px' : '10px 12px';
   return (
     <Box
       data-testid="positions-table-frame"
-      sx={{
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: '10px',
-        overflowX: 'auto',
-        overflowY: 'hidden',
-      }}
+      data-provenance={sample ? 'sample' : 'primary'}
+      sx={bookFrameSx(sample)}
     >
-      <Box
-        component="table"
-        data-testid="positions-table"
-        data-density={density}
-        sx={{ width: '100%', borderCollapse: 'collapse' }}
-      >
-        <Box component="thead">
-          <Box component="tr">
-            {columns.map((c) => (
-              <Box component="th" key={c} sx={thSx}>
-                {headerLabel(c)}
-              </Box>
-            ))}
-            <Box
-              component="th"
-              sx={{
-                ...thSx,
-                position: 'sticky',
-                right: 0,
-                zIndex: 2,
-                bgcolor: 'background.paper',
-                borderLeft: '1px solid',
-                borderLeftColor: 'divider',
-              }}
-            />
+      {sample && <SampleMarksHead framed />}
+      <Box sx={{ overflowX: 'auto', overflowY: 'hidden' }}>
+        <Box
+          component="table"
+          data-testid="positions-table"
+          data-density={density}
+          sx={{ width: '100%', borderCollapse: 'collapse' }}
+        >
+          <Box component="thead">
+            <Box component="tr">
+              {columns.map((c) => (
+                <Box
+                  component="th"
+                  key={c}
+                  sx={NUMERIC_COLUMNS.has(c) ? { ...thSx, textAlign: 'right' } : thSx}
+                >
+                  {headerLabel(c)}
+                </Box>
+              ))}
+              <Box
+                component="th"
+                sx={{
+                  ...thSx,
+                  position: 'sticky',
+                  right: 0,
+                  zIndex: 2,
+                  bgcolor: 'background.paper',
+                  borderLeft: '1px solid',
+                  borderLeftColor: 'divider',
+                }}
+              />
+            </Box>
           </Box>
-        </Box>
-        <Box component="tbody">
-          {props.groups.map((g) => (
-            <GroupRows
-              key={g.key}
-              group={g}
-              props={props}
-              columns={columns}
-              showHeader={isGrouped}
-              tdPad={tdPad}
-            />
-          ))}
+          <Box component="tbody">
+            {props.groups.map((g) => (
+              <GroupRows
+                key={g.key}
+                group={g}
+                props={props}
+                columns={columns}
+                showHeader={isGrouped}
+                tdPad={tdPad}
+              />
+            ))}
+          </Box>
         </Box>
       </Box>
     </Box>
@@ -396,6 +470,7 @@ function GroupRows({
 
 function CardLayout(props: ViewProps) {
   const { density } = props;
+  const sample = useMarkFeed() === 'sample';
   const isGrouped = props.groups.length > 1 || props.groups[0]?.key !== '__all__';
   return (
     <Box
@@ -403,6 +478,8 @@ function CardLayout(props: ViewProps) {
       data-testid="positions-cards"
       data-density={density}
     >
+      {/* The cards name the sample once, above them, as the table's frame does in its head. */}
+      {sample && <SampleMarksHead framed={false} />}
       {props.groups.map((g) => (
         <Box key={g.key}>
           {isGrouped && (

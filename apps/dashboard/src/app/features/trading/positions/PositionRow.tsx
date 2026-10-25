@@ -25,12 +25,20 @@
  * undefined for a covered call (its legs have different multipliers) — the exact shape this feature
  * exists to hold — and the projection carries only dollar nets by design. The row becomes
  * arithmetically legible as a result: mark − net entry = P/L.
+ *
+ * ONE EXCEPTION, the Final board's (fidelity audit 2026-10-25, ACC-09): a position of ONE option leg
+ * with its strike, right and expiry recorded reads the way an options trader reads a contract,
+ * `SPY 690 C · Oct 16`, with the leg and its open time beneath (`Long call · opened 2:25 PM`), and
+ * its entry and mark PER SHARE (`3.00`, `2.47`). Nothing is computed for it: the entry is the leg's
+ * stored per-unit `entry_price` and the mark is the leg's own projected mark (`view.legs[0].mark`),
+ * so a per-unit price is only ever shown where one exists. Every other shape keeps the dollar nets.
  */
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
 import type { MarkBasis } from '@/features/trading/model/types';
 import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import { downText, upText } from '@/shared/theme/tokens';
+import { coarseFloor } from '@/shared/ui/touch';
 import { appNowMs } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -70,8 +78,9 @@ import {
   UNPRICEABLE_RECORD_TIP,
   WEAKEST_BASIS_TIP,
 } from './labels';
+import type { Leg } from './leg';
 import { LegDisclosureButton, LegDisclosurePanel } from './LegDisclosure';
-import { MarkNotLiveTag, SampleMarkTag, useMarkFeed } from './markFeed';
+import { MarkNotLiveTag, SampleMarkTag, scenarioClock, scenarioDay, useMarkFeed } from './markFeed';
 import { PlSparkline } from './PlSparkline';
 import { STRUCTURE_LABELS } from './structure';
 import type { ColumnKey } from './types';
@@ -80,10 +89,48 @@ import type { PositionView } from './view';
 
 /** Not-applicable. Keeps its shipped treatment and stays UNTESTIDDED (SPEC §4). */
 const DASH = '—';
-// Figma table cell numerics: 13.8px (0.86rem) — the size ladder does NOT travel with the register
-// (SPEC §2.1): `faceFor(mono)` supplies the face (family/tabular-nums/tracking), this file keeps the
-// panel-local size. Spread the face LAST in each cell's sx so it wins.
-const CELL_MONO_SIZE = { fontSize: '0.86rem' } as const;
+// Table cell numerics: 13px, the Final board's `.ap-table` (fidelity ACC-09) — the size ladder does
+// NOT travel with the register (SPEC §2.1): `faceFor(mono)` supplies the face (family/tabular-nums/
+// tracking), this file keeps the panel-local size. Spread the face LAST in each cell's sx so it wins.
+const CELL_MONO_SIZE = { fontSize: '0.8125rem' } as const;
+
+/**
+ * The one shape that reads per share (see the file header): a single option leg whose strike, right
+ * and expiry were recorded. Anything else returns null and keeps the dollar nets.
+ */
+export function singleOptionLeg(view: PositionView): Leg | null {
+  const legs = view.position.legs;
+  if (legs.length !== 1) return null;
+  const l = legs[0];
+  if (l.kind !== 'option' || l.strike == null || l.right == null || l.expiration == null) {
+    return null;
+  }
+  return l;
+}
+
+/** `690 C · Oct 16`: strike, the right's letter and the projected expiry, as the board writes it. */
+function contractWords(view: PositionView, leg: Leg): string {
+  const expiry = view.legs[0]?.expiry_text ?? '';
+  return `${leg.strike} ${leg.right === 'call' ? 'C' : 'P'}${expiry ? ` · ${expiry}` : ''}`;
+}
+
+/** `opened 2:25 PM` on the scenario's own day, `opened Oct 6` before it (New York time). */
+function openedText(iso: string): string | null {
+  const ms = Date.parse(iso);
+  if (!iso || !Number.isFinite(ms)) return null;
+  const day = scenarioDay(ms);
+  return `opened ${day === scenarioDay() ? scenarioClock(ms) : day}`;
+}
+
+/** The per-share entry for a single option leg: `3.00`, or `3.00 credit` for a short one (the word
+ *  carries a credit, untinted, as the dollar cell's qualifier does). */
+export function unitEntryText(leg: Leg): string {
+  return `${leg.entry_price.toFixed(2)}${leg.side === 'short' ? ' credit' : ''}`;
+}
+
+/** The entry cell's tip for the per-share reading. */
+export const UNIT_ENTRY_TIP =
+  'The premium per share this contract opened at. One contract is 100 shares, so 3.00 is $300.';
 
 /** UNSIGNED dollars — the qualifier word or the column header carries the direction. */
 const dollars = (n: number) => `$${Math.abs(Math.round(n))}`;
@@ -262,10 +309,11 @@ export function markFigure(view: PositionView): CellFigure {
   if (view.mark.unavailable || view.mark.net_mark == null) {
     return { text: 'unavailable', hasValue: false };
   }
-  return {
-    text: `${view.mark.basis === 'modeled' ? '≈ ' : ''}${netMoney(view.mark.net_mark)}`,
-    hasValue: true,
-  };
+  const approx = view.mark.basis === 'modeled' ? '≈ ' : '';
+  // A single option leg reads per share: the leg's own projected mark (file header, ACC-09).
+  const unit = singleOptionLeg(view) ? view.legs[0]?.mark : null;
+  if (unit != null) return { text: `${approx}${unit.toFixed(2)}`, hasValue: true };
+  return { text: `${approx}${netMoney(view.mark.net_mark)}`, hasValue: true };
 }
 export function plFigure(view: PositionView): CellFigure {
   return view.pl_dollar == null
@@ -344,46 +392,73 @@ export function cellContent(
           <Chip size="small" variant="outlined" label="SIMULATED" />
         </Tooltip>
       );
-    case 'contract':
-      // The frame's "Ticker" style: bold mono symbol + the secondary STRUCTURE LINE. Multi-leg must
-      // not promote the descriptor — same weight, same size, one line, never wrapping. The collapse
-      // is AUTHORED in the string (`$380…$460 condor (4 legs)`), never a CSS ellipsis mid-number;
-      // the full strike list stays reachable in the title.
+    case 'contract': {
+      // Two lines, the Final board's (fidelity ACC-09): the contract, then the structure and its
+      // open time in 12px steel. A single option leg reads `SPY 690 C · Oct 16` / `Long call ·
+      // opened 2:25 PM`; any other shape keeps the symbol + the STRUCTURE LINE, whose collapse is
+      // AUTHORED in the string (`$380…$460 condor (4 legs)`), never a CSS ellipsis mid-number, with
+      // the full strike list in the title. Multi-leg must not promote the descriptor — one line.
+      const single = singleOptionLeg(view);
+      const opened = openedText(p.opened_time);
       return (
-        <Stack
-          direction="row"
-          spacing={0.875}
-          sx={{ alignItems: 'baseline' }}
-          data-testid="cell-contract"
-        >
+        <Box data-testid="cell-contract">
+          <Stack direction="row" spacing={0.75} sx={{ alignItems: 'baseline' }}>
+            <Typography
+              component="span"
+              variant="body2"
+              sx={{ fontSize: '0.8125rem', fontWeight: 600, lineHeight: 1.5 }}
+            >
+              {leg0?.ticker}
+            </Typography>
+            <Typography
+              component="span"
+              variant="body2"
+              title={view.structure_line_full}
+              sx={
+                single
+                  ? { fontSize: '0.8125rem', fontWeight: 600, lineHeight: 1.5 }
+                  : { fontSize: '0.8rem', letterSpacing: 0, color: 'text.secondary' }
+              }
+              data-testid="structure-line"
+            >
+              {single ? contractWords(view, single) : view.structure_line_collapsed}
+            </Typography>
+            {/* Present ONLY when the position has more than one leg (AC-35). */}
+            {disclosure && view.legs.length > 1 && (
+              <LegDisclosureButton
+                expanded={disclosure.expanded}
+                onToggle={disclosure.onToggle}
+                panelId={disclosure.panelId}
+                legCount={view.legs.length}
+                variant="row"
+              />
+            )}
+          </Stack>
+          {/* The second line names the structure (the table's one place for it: the board has
+              no Structure column) and when it opened. The name is the outlined-chip's neutral
+              register — no colour, not amber; `Custom` reads like every other name (AC-15,
+              AC-78). STATIC: neither part ever dims. */}
           <Typography
             component="span"
-            variant="body2"
-            sx={{ ...faceFor(true), ...CELL_MONO_SIZE, fontWeight: 600 }}
+            data-testid="contract-subline"
+            sx={{
+              display: 'block',
+              fontSize: '0.75rem',
+              // 19.5px, the first line's: the board's second line sits in a 13px line box.
+              lineHeight: 1.625,
+              color: 'text.secondary',
+            }}
           >
-            {leg0?.ticker}
+            <Tooltip arrow title={STRUCTURE_TIP}>
+              <Box component="span" data-testid="cell-structure">
+                {STRUCTURE_LABELS[view.structure]}
+              </Box>
+            </Tooltip>
+            {opened ? ` · ${opened}` : ''}
           </Typography>
-          <Typography
-            component="span"
-            variant="body2"
-            title={view.structure_line_full}
-            sx={{ fontSize: '0.8rem', letterSpacing: 0, color: 'text.secondary' }}
-            data-testid="structure-line"
-          >
-            {view.structure_line_collapsed}
-          </Typography>
-          {/* Present ONLY when the position has more than one leg (AC-35). */}
-          {disclosure && view.legs.length > 1 && (
-            <LegDisclosureButton
-              expanded={disclosure.expanded}
-              onToggle={disclosure.onToggle}
-              panelId={disclosure.panelId}
-              legCount={view.legs.length}
-              variant="row"
-            />
-          )}
-        </Stack>
+        </Box>
       );
+    }
     case 'status':
       return (
         <Chip
@@ -468,11 +543,15 @@ export function cellContent(
             {markFig.text}
           </Typography>
           {basisMeta && (
-            <MarkProvenance
-              basis={view.mark.basis}
-              label={basisMeta.label}
-              tip={mixed ? `${basisMeta.tip} ${WEAKEST_BASIS_TIP}` : basisMeta.tip}
-            />
+            // Drawn before the figure (read after it), so the figures of a right-aligned column
+            // line up at its edge (fidelity ACC-09).
+            <Box component="span" sx={{ order: -1, display: 'inline-flex' }}>
+              <MarkProvenance
+                basis={view.mark.basis}
+                label={basisMeta.label}
+                tip={mixed ? `${basisMeta.tip} ${WEAKEST_BASIS_TIP}` : basisMeta.tip}
+              />
+            </Box>
           )}
           {markState.showPause && offlineDecoration(markState.caption, 'cell-mark-caption')}
         </Stack>
@@ -703,6 +782,22 @@ export function cellContent(
       );
     }
     case 'entry': {
+      // A single option leg reads its stored per-unit premium (file header, ACC-09).
+      const single = singleOptionLeg(view);
+      if (single) {
+        return (
+          <Tooltip arrow title={UNIT_ENTRY_TIP}>
+            <Typography
+              component="span"
+              variant="body2"
+              sx={{ ...faceFor(true), ...CELL_MONO_SIZE }}
+              data-testid="cell-entry"
+            >
+              {unitEntryText(single)}
+            </Typography>
+          </Tooltip>
+        );
+      }
       // The qualifier is derived from the SIGN, never from the structure name — a vertical can be
       // either. No abbreviation (`Dr`/`Cr`/`db`): abbreviating into an 11px floor is a slop tell.
       // The word is untinted: a credit is money received, not a gain (AC-78).
@@ -900,9 +995,32 @@ export const rowActionSx = {
   font: 'inherit',
   fontSize: '0.76rem',
   color: 'text.secondary',
-  borderRadius: '6px',
+  // The control role, 8 (canon radii; fidelity ACC-24), and the coarse 44 (ACC-17).
+  borderRadius: '8px',
   padding: '3px 9px',
+  ...coarseFloor,
 } as const;
+
+/**
+ * The columns that hold a figure: right-aligned in their header and their cell, in the mono face, as
+ * the board's `.ap-table td.n` (fidelity ACC-09). Text and state columns stay left.
+ */
+export const NUMERIC_COLUMNS: ReadonlySet<ColumnKey> = new Set<ColumnKey>([
+  'qty',
+  'entry',
+  'mark',
+  'pl',
+  'pl_pct',
+  'delta_entry',
+  'session_delta',
+  'max_loss',
+]);
+
+/** Right-aligns a cell's content, whether it is a block of text or one of the cells' flex rows. */
+const numericCellSx = {
+  textAlign: 'right' as const,
+  '& > .MuiStack-root': { justifyContent: 'flex-end' },
+};
 
 /**
  * PositionRow (convexa-redesign · Positions — Figma PositionRow `106:52`). One position rendered as a
@@ -929,10 +1047,13 @@ export function PositionRow({
   const hasLegs = ctx.view.legs.length > 1;
   const tdSx = {
     padding: tdPad,
-    fontSize: '0.86rem',
+    // 13px, the board's `.ap-table` (fidelity ACC-09).
+    fontSize: '0.8125rem',
     borderBottom: '1px solid',
     borderColor: 'divider',
     whiteSpace: 'nowrap' as const,
+    // A state tag (the mark's "Sample mark · 2:30 PM") keeps to one line, so a row stays one row.
+    '& [data-state]': { whiteSpace: 'nowrap' },
   };
   const actionTdSx = {
     ...tdSx,
@@ -947,7 +1068,11 @@ export function PositionRow({
     <>
       <Box component="tr" data-testid="position-row" data-id={p.id} data-status={p.status}>
         {columns.map((c) => (
-          <Box component="td" key={c} sx={tdSx}>
+          <Box
+            component="td"
+            key={c}
+            sx={NUMERIC_COLUMNS.has(c) ? { ...tdSx, ...numericCellSx } : tdSx}
+          >
             {cellContent(c, ctx, {
               expanded,
               onToggle: () => setExpanded((v) => !v),
@@ -956,40 +1081,52 @@ export function PositionRow({
           </Box>
         ))}
         <Box component="td" sx={actionTdSx} data-testid="position-actions-cell">
-          {p.status === 'open' && (
-            <Refused when={!!ctx.faulted}>
-              <Box component="button" type="button" onClick={() => onClose(p.id)} sx={rowActionSx}>
-                Close
+          {/* One line: the action, then the order backlink beside it (fidelity ACC-09: 60px rows). */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {p.status === 'open' && (
+              <Refused when={!!ctx.faulted}>
+                <Box
+                  component="button"
+                  type="button"
+                  onClick={() => onClose(p.id)}
+                  sx={rowActionSx}
+                >
+                  Close
+                </Box>
+              </Refused>
+            )}
+            {p.status === 'pending' && <PendingAffordance ctx={ctx} />}
+            {isTerminal && <ClosedSummary view={ctx.view} />}
+            {/* ai-rec-backtest-orders (AC-31): the position→order backlink — provenance line for a
+              position an order fill created (`origin_order_id`). Static (never dims). */}
+            {p.origin_order_id && ctx.onViewOrder && (
+              <Box
+                component="button"
+                type="button"
+                data-testid="position-view-order"
+                onClick={() => ctx.onViewOrder?.(p.origin_order_id as string)}
+                sx={{
+                  display: 'block',
+                  background: 'none',
+                  border: 'none',
+                  p: 0,
+                  font: 'inherit',
+                  fontSize: '0.72rem',
+                  lineHeight: 1.4,
+                  textAlign: 'left',
+                  // Two short lines beside the action, so the cell stays narrow and the row one row.
+                  whiteSpace: 'normal',
+                  maxWidth: 104,
+                  color: 'text.secondary',
+                  cursor: 'pointer',
+                  // Link-class provenance link binds `info` (stage-3 §4.2), never amber.
+                  '& > span': { color: 'info.main' },
+                }}
+              >
+                From sim order · <Box component="span">view order →</Box>
               </Box>
-            </Refused>
-          )}
-          {p.status === 'pending' && <PendingAffordance ctx={ctx} />}
-          {isTerminal && <ClosedSummary view={ctx.view} />}
-          {/* ai-rec-backtest-orders (AC-31): the position→order backlink — provenance line for a
-            position an order fill created (`origin_order_id`). Static (never dims). */}
-          {p.origin_order_id && ctx.onViewOrder && (
-            <Box
-              component="button"
-              type="button"
-              data-testid="position-view-order"
-              onClick={() => ctx.onViewOrder?.(p.origin_order_id as string)}
-              sx={{
-                display: 'block',
-                mt: 0.5,
-                background: 'none',
-                border: 'none',
-                p: 0,
-                font: 'inherit',
-                fontSize: '0.72rem',
-                color: 'text.secondary',
-                cursor: 'pointer',
-                // Link-class provenance link binds `info` (stage-3 §4.2), never amber.
-                '& > span': { color: 'info.main' },
-              }}
-            >
-              From sim order · <Box component="span">view order →</Box>
-            </Box>
-          )}
+            )}
+          </Box>
         </Box>
       </Box>
       {/* A REAL table structure (Design direction ¶2): the expansion is a SIBLING `<tr colSpan>`

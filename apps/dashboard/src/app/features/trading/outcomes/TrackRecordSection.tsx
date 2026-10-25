@@ -54,6 +54,7 @@ import {
   TR_COVERAGE_PARTIAL_BANNER,
   TR_EMPTY_TITLE,
   TR_EPOCH_NONE,
+  TR_FAMILIES_LABEL,
   TR_FAMILY_HEADING,
   TR_HIT_DEF,
   TR_MULTIPLICITY,
@@ -162,7 +163,8 @@ function CellView({ cell, sourcesComplete }: { cell: Cell; sourcesComplete: bool
 const familyCardSx = {
   border: '1px solid',
   borderColor: 'divider',
-  borderRadius: '10px',
+  // The panel role, 12 (`shape.borderRadius`), not a raw '10px' (fidelity ACC-24).
+  borderRadius: 1,
   padding: '14px 16px',
   minWidth: 0,
 };
@@ -347,9 +349,22 @@ export interface TrackRecordSectionProps {
   personaLabel?: (id: string) => string | null;
 }
 
-export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
-  // A re-import recomputes the read FROM THE STORES, never patches it — a patched count would drift
-  // from the stores and break the balance identity, the one thing the roll-up exists to guarantee.
+/**
+ * The read and its one re-read. A re-import recomputes the read FROM THE STORES, never patches it —
+ * a patched count would drift from the stores and break the balance identity, the one thing the
+ * roll-up exists to guarantee.
+ *
+ * The Positions page holds this ONE state and hands it to the two places the readout now renders
+ * (owner, NO-6 A, 2026-10-25): its head in a panel beside the orders panel, its five families as a
+ * full-width row below. Neither part takes a liveness input: `TrackRecordState` is the read and a
+ * re-read, nothing else (AC-E17).
+ */
+export interface TrackRecordState {
+  read: LedgerRead;
+  recompute: () => void;
+}
+
+export function useTrackRecord(personaLabel?: (id: string) => string | null): TrackRecordState {
   const [readVersion, setReadVersion] = useState(0);
   const recompute = useCallback(() => setReadVersion((v) => v + 1), []);
 
@@ -359,7 +374,12 @@ export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [personaLabel, readVersion],
   );
+  return useMemo(() => ({ read, recompute }), [read, recompute]);
+}
 
+/** The readout's head: the title and badge, the subtitle, "How this is counted" and "What wasn't
+ *  counted". The families and the archive render beside or below it, by the host's layout. */
+function TrackRecordHead({ read }: { read: LedgerRead }) {
   const body = selectBodyState(read);
   const { coverage, basis } = read;
   const noComputedCell = read.families.every((f) =>
@@ -367,14 +387,13 @@ export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
   );
 
   return (
-    <Box component="section" data-testid="track-record" sx={{ mt: 4 }}>
-      {/* The book ↔ "Track record" section seam — the shared ArcDivider (redesign-stage-2 §5.2
-          seam #2). */}
-      <ArcDivider sx={{ mb: 3 }} />
-
-      {/* ---- Header ---- */}
+    <>
+      {/* ---- Header: the board's panel head (`.hd-p .ph`), the title then its badge. ---- */}
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: '4px' }}>
-        <Typography component="h2" sx={{ fontSize: '1.25rem', fontWeight: 700, m: 0 }}>
+        <Typography
+          component="h2"
+          sx={{ fontSize: '0.875rem', fontWeight: 600, m: 0, flex: '1 1 auto', minWidth: 0 }}
+        >
           {TR_TITLE}
         </Typography>
         {/* SIMULATED is part of the read, not a footnote (`[no-real-order-path]`). */}
@@ -389,7 +408,7 @@ export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
           one toggle, per the repair task's own must-not-change instruction: it "stays reachable —
           behind a disclosure the design's compact cards do not show, never deleted". Nothing inside
           is removed, renamed or reworded — `tr-how-to-read` stays, same testids, same strings. */}
-      <Box component="details" data-testid="tr-how-counted" sx={{ mb: 2 }}>
+      <Box component="details" data-testid="tr-how-counted" sx={{ mb: 1 }}>
         <Box
           component="summary"
           sx={{
@@ -497,43 +516,116 @@ export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
           passes on this element caught). `tr-coverage` (above, inside the new disclosure) still
           never sits INSIDE `tr-breakdown` — the two are independent, matching the shipped
           non-containment assertion. */}
-      {body !== 'unreadable' && body !== 'empty' && (
-        <Box sx={{ mb: 1 }}>
-          <ExclusionBreakdown read={read} />
-        </Box>
-      )}
+      {body !== 'unreadable' && body !== 'empty' && <ExclusionBreakdown read={read} />}
+    </>
+  );
+}
 
-      {/* ---- The families: four-plus quiet cards (design/src/screens/positions.mjs:87-90,
-              `repeat(4, minmax(0,1fr))`), ALWAYS rendered — including the empty/unreadable states,
-              each family's own `tr-family-empty-*` message standing in for a `—` cell (the shipped
-              per-family empty-cohort honesty this component already carries; §2.7/canon 4: never a
-              blank space where a fact used to be). Five, in a FIXED order. Never sorted by rate —
-              that builds a leaderboard the sample cannot support. ---- */}
+/**
+ * The families: five quiet cards (design/src/screens/positions.mjs:87-90), ALWAYS rendered —
+ * including the empty/unreadable states, each family's own `tr-family-empty-*` message standing in
+ * for a `—` cell (the shipped per-family empty-cohort honesty this component already carries;
+ * §2.7/canon 4: never a blank space where a fact used to be). Five, in a FIXED order. Never sorted
+ * by rate — that builds a leaderboard the sample cannot support.
+ *
+ * `labelled`: on the Positions page the row stands apart from the readout's head (which sits in
+ * the panel beside the orders panel), so it carries its own small caps label naming it.
+ */
+export function TrackRecordFamilies({
+  record,
+  labelled = false,
+}: {
+  record: TrackRecordState;
+  labelled?: boolean;
+}) {
+  const { read } = record;
+  return (
+    <Box>
+      {labelled && (
+        <Typography
+          component="h3"
+          data-testid="tr-families-label"
+          sx={{
+            fontSize: '0.6875rem',
+            fontWeight: 600,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+            m: '0 0 10px',
+          }}
+        >
+          {TR_FAMILIES_LABEL}
+        </Typography>
+      )}
       <Box
         data-testid="tr-families"
         sx={{
-          mt: 1,
           display: 'grid',
           gridTemplateColumns: {
             xs: '1fr',
             sm: 'repeat(2, minmax(0, 1fr))',
             md: 'repeat(4, minmax(0, 1fr))',
             // Five families (the design's mock shows four) — one row at ≥ lg so the fifth never
-            // wraps alone under a 4-column grid (conductor fixup after the surfaces repair; the
-            // 1192 px content column gives ~229 px cards, the design's own card width).
+            // wraps alone under a 4-column grid (conductor fixup after the surfaces repair).
             lg: 'repeat(5, minmax(0, 1fr))',
           },
           gap: '12px',
         }}
       >
         {read.families.map((f) => (
-          <FamilyView key={f.key} family={f} sourcesComplete={basis.sources_complete} />
+          <FamilyView key={f.key} family={f} sourcesComplete={read.basis.sources_complete} />
         ))}
       </Box>
+    </Box>
+  );
+}
 
+/**
+ * The Positions page's Track record panel (owner, NO-6 A, 2026-10-25): the readout's head and the
+ * archive in the board's panel frame (`.hd-p`: the panel colour, a 1px line, radius 12, 18px 20px),
+ * beside the orders panel. The families render as a full-width row below (`TrackRecordFamilies`).
+ * It carries `track-record`, the readout's own testid, on the page.
+ */
+export function TrackRecordPanel({ record }: { record: TrackRecordState }) {
+  return (
+    <Box
+      component="section"
+      data-testid="track-record"
+      aria-label={TR_TITLE}
+      sx={{
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1,
+        p: { xs: '16px', sm: '18px 20px' },
+        minWidth: 0,
+      }}
+    >
+      <TrackRecordHead read={record.read} />
+      <ArchiveBlock onImported={record.recompute} />
+    </Box>
+  );
+}
+
+/**
+ * The whole readout in one section: head, families, archive, under the book ↔ Track record seam.
+ * The page lays the same parts out beside and below the orders panel instead (`TrackRecordPanel`,
+ * `TrackRecordFamilies`); this composite is the readout mounted on its own.
+ */
+export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
+  const record = useTrackRecord(personaLabel);
+  return (
+    <Box component="section" data-testid="track-record" sx={{ mt: 4 }}>
+      {/* The book ↔ "Track record" section seam — the shared ArcDivider (redesign-stage-2 §5.2
+          seam #2). */}
+      <ArcDivider sx={{ mb: 3 }} />
+      <TrackRecordHead read={record.read} />
+      <Box sx={{ mt: 1 }}>
+        <TrackRecordFamilies record={record} />
+      </Box>
       {/* ---- The archive: present in EVERY state, including empty and unreadable (on an empty
               surface it is the only useful thing here). ---- */}
-      <ArchiveBlock onImported={recompute} />
+      <ArchiveBlock onImported={record.recompute} />
     </Box>
   );
 }
