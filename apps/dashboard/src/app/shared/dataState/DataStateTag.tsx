@@ -4,6 +4,7 @@
  * warning colour (burnt orange) and nothing uses green or red. `detail` follows the word in the same
  * tag ("Updated Oct 13", "Delayed · 9 days").
  */
+import { extrasFor } from '@/shared/theme/tokens';
 import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import CropFreeOutlined from '@mui/icons-material/CropFreeOutlined';
 import EventOutlined from '@mui/icons-material/EventOutlined';
@@ -61,37 +62,48 @@ export function DataStateTag({
       component="span"
       data-state={state}
       sx={(t) => {
-        const quiet = kind === 'quiet' || kind === 'dashed' || kind === 'dotted';
-        const ink =
-          kind === 'warn'
-            ? t.palette.warning.main
-            : quiet
-              ? t.palette.text.secondary
-              : t.palette.text.primary;
+        const x = extrasFor(t);
+        // The library's `.stag` (design/src/lib.mjs:18-25, :116, :125). Text is phosphor in every
+        // kind but sample, which is steel; the glyph is steel, or the warning colour on a failure.
+        const look = {
+          solid: { border: `1px solid ${x.lineStrong}`, glyph: t.palette.text.secondary },
+          warn: {
+            border: `1px solid ${t.palette.warning.main}`,
+            bg: alpha(t.palette.warning.main, 0.14),
+            glyph: t.palette.warning.main,
+          },
+          quiet: { bg: alpha(t.palette.text.secondary, 0.16), glyph: t.palette.text.secondary },
+          dashed: {
+            border: `1px dashed ${x.textTertiary}`,
+            ink: t.palette.text.secondary,
+            glyph: t.palette.text.secondary,
+          },
+          dotted: { border: `1px dotted ${x.textTertiary}`, glyph: t.palette.text.secondary },
+        }[kind] as { border?: string; bg?: string; ink?: string; glyph: string };
         return {
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '5px',
+          gap: '6px',
           maxWidth: '100%',
-          minHeight: 24,
+          minHeight: 22,
           px: 1,
           py: '2px',
-          borderRadius: '12px',
-          border: `1px ${kind === 'dashed' ? 'dashed' : kind === 'dotted' ? 'dotted' : 'solid'} ${
-            kind === 'warn'
-              ? alpha(t.palette.warning.main, 0.6)
-              : alpha(t.palette.text.secondary, quiet ? 0.55 : 0.32)
-          }`,
-          color: ink,
-          fontSize: 12,
-          fontWeight: 500,
+          // A full pill at one line (the board's 999px); a tag that wraps keeps soft corners.
+          borderRadius: '11px',
+          border: look.border ?? 'none',
+          bgcolor: look.bg ?? 'transparent',
+          color: look.ink ?? t.palette.text.primary,
+          fontSize: 11,
+          fontWeight: 600,
           lineHeight: 1.35,
           whiteSpace: 'normal',
           overflowWrap: 'anywhere',
+          '& > svg': { color: look.glyph },
+          '@media (pointer: coarse)': { minHeight: 24 },
         };
       }}
     >
-      <Glyph aria-hidden sx={{ fontSize: 14, flex: 'none' }} />
+      <Glyph aria-hidden sx={{ fontSize: 12, flex: 'none' }} />
       <span>{detail ? `${word} · ${detail}` : word}</span>
     </Box>
   );

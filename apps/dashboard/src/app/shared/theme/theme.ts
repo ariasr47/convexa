@@ -55,7 +55,10 @@ const TYPOGRAPHY = {
   body1: { fontSize: '0.9375rem', lineHeight: 1.65 },
   body2: { fontSize: '0.8125rem' },
   caption: { fontSize: '0.75rem' },
-  button: { fontWeight: 600 },
+  // Sentence case for everything that reads the button variant: Tab, ToggleButton and Fab take
+  // `typography.button` directly, and MUI's default is UPPERCASE (OVERVIEW, FIELD/MAGNET,
+  // OPEN/HISTORY). The boards write every control in sentence case (fidelity audit 2026-10-25, FND-03).
+  button: { fontWeight: 600, textTransform: 'none' as const },
 } as const;
 
 const COMMON = {
@@ -240,9 +243,10 @@ const COMMON = {
     MuiInputBase: { styleOverrides: { root: { borderRadius: 8 } } },
     // The UNSELECTED label is `text.secondary`, not MUI's `palette.action.active` (ToggleButton.js),
     // which is rgba(0,0,0,0.54) in light: 4.38:1 on the dialog's light `panelRaised` (#ECECE7), under
-    // the 4.5:1 text floor. `text.secondary` measures 5.45:1 light and 5.52:1 dark there (spec
-    // 2026-10-21/02, part (c)). The selected (`&.Mui-selected`, (0,2,0)) and disabled labels are
-    // MUI's own and outrank this root colour, so only the resting label changes.
+    // the 4.5:1 text floor. `text.secondary` measures 4.57:1 light (steel `#5A6B85` since LTXT,
+    // fidelity audit 2026-10-25) and 5.52:1 dark there (spec 2026-10-21/02, part (c)). The selected
+    // (`&.Mui-selected`, (0,2,0)) and disabled labels are MUI's own and outrank this root colour, so
+    // only the resting label changes.
     MuiToggleButton: {
       styleOverrides: {
         root: ({ theme }: { theme: Theme }) => ({
@@ -279,7 +283,51 @@ const COMMON = {
     // DIALOG role = 16px (SPEC §2.2, ruling 4) — the single declared dialog radius; component-local
     // paper `sx` overrides (Widget.tsx, AuthDialog.tsx) were de-duplicated onto this in the same
     // change so there is one dialog radius, not several drifting values.
-    MuiDialog: { styleOverrides: { paper: { borderRadius: 16 } } },
+    //
+    // THE OVERLAY SURFACE (fidelity audit 2026-10-25, OVL): every dialog is the board's flat panel
+    // (`dialogFrame`, `design/src/lib.mjs`: `--panel`, a 1px `--line` border, radius 16). MUI paints
+    // a dark-mode elevation wash on Paper (`--Paper-overlay`, a white gradient at the paper's
+    // elevation: 0.165 on a Dialog's 24, 0.145 on a Drawer's 16), which rendered every overlay about
+    // rgb(58,64,72) instead of panel. `backgroundImage: 'none'` drops the wash; the colour is the
+    // panel token itself. The ⌘K palette alone keeps the board's raised surface, styled locally.
+    MuiDialog: {
+      styleOverrides: {
+        paper: ({ theme }: { theme: Theme }) => ({
+          borderRadius: 16,
+          backgroundImage: 'none',
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+        }),
+      },
+    },
+    // Drawers: the same flat panel, no wash, and a 1px line on the edge that faces the page. MUI
+    // draws that edge only for a permanent or persistent drawer (Drawer.js, `variant !== 'temporary'`);
+    // every drawer here is temporary (the Full analysis and export drawers, the phone read sheet and
+    // nav), so the theme draws it. `ownerState.anchor` is MUI's resolved anchor (RTL already applied).
+    MuiDrawer: {
+      styleOverrides: {
+        paper: ({
+          theme,
+          ownerState,
+        }: {
+          theme: Theme;
+          ownerState: { anchor?: 'left' | 'right' | 'top' | 'bottom' };
+        }) => {
+          const line = `1px solid ${theme.palette.divider}`;
+          const edge = {
+            left: 'borderRight',
+            right: 'borderLeft',
+            top: 'borderBottom',
+            bottom: 'borderTop',
+          } as const;
+          return {
+            backgroundImage: 'none',
+            backgroundColor: theme.palette.background.paper,
+            [edge[ownerState.anchor ?? 'left']]: line,
+          };
+        },
+      },
+    },
     // Links rebind to SIGNAL at the slot level (`info`) — amber is spent on brand/active
     // surfaces, not sprinkled across every anchor (redesign-stage-1 §1 self-critique 2).
     // Components that explicitly set a color still win (e.g. brand CTAs).

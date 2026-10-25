@@ -227,7 +227,9 @@ export function Widget({
   const body = (
     <Box
       sx={[
-        bodyPad === 'default' && { p: 2, pt: 1.5 },
+        // 20px sides, the board panel's inset (`.hd-p`, design/src/lib.mjs:88), so the body lines up
+        // under the title.
+        bodyPad === 'default' && { px: 2.5, pt: 1.5, pb: 2 },
         // Container-query context for the body: each widget styles its internals by its OWN width.
         // NAMED (SPEC §2.5): an unnamed `@container` resolves against the NEAREST container
         // ancestor, so a future nested rail would answer the panel's question instead of the panel
@@ -245,10 +247,13 @@ export function Widget({
     <Box
       className="widget__header"
       sx={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'flex-start',
         gap: 1,
-        px: 2,
+        // The board panel's 20px inset (`.hd-p`, design/src/lib.mjs:88): the title starts at x+21
+        // (fidelity audit 2026-10-25, FND-08).
+        px: 2.5,
         pt: 1.5,
         pb: 1,
         // Below `sm` the actions region may wrap to its own row instead of forcing the header (and
@@ -257,7 +262,9 @@ export function Widget({
         flexWrap: { xs: 'wrap', sm: 'nowrap' },
       }}
     >
-      {/* Drag grip — AFFORDANCE ONLY. Visible only when selected (not on every hover). */}
+      {/* Drag grip — AFFORDANCE ONLY. Visible only when selected (not on every hover). It sits in the
+          header's left gutter, out of the row, so the title never moves for an invisible slot
+          (FND-08: the slot put every title at x+41 against the board's x+21). */}
       {!inOverlay && !quiet && (
         <Tooltip arrow describeChild title="Rearrange (coming soon)">
           <Box
@@ -265,9 +272,11 @@ export function Widget({
             aria-hidden="true"
             className="widget__grip"
             sx={{
+              position: 'absolute',
+              left: 2,
+              top: 14,
               display: 'inline-flex',
               alignItems: 'center',
-              mt: 0.25,
               cursor: 'grab',
               color: 'text.disabled',
               opacity: selected ? 0.55 : 0,
@@ -297,18 +306,20 @@ export function Widget({
       >
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
           {icon && <Box sx={{ display: 'inline-flex', color: 'text.secondary' }}>{icon}</Box>}
-          {/* h2 ELEMENT (heading order: page h1 → widget h2), h6 STYLING unchanged (Stage 0 item 3). */}
+          {/* h2 ELEMENT (heading order: page h1 → widget h2), h6 STYLING (Stage 0 item 3) at the
+              boards' panel-head size: 14/600 at line height 1.5 (`.hd-p .ph h3`, FND-08). */}
           <Typography
             variant="h6"
             component="h2"
             sx={{
               minWidth: 0,
+              fontSize: 14,
+              lineHeight: 1.5,
               // Fidelity repair 2, N2 — `titleWrap` opt-in (default off, every OTHER widget keeps
               // today's single-line ellipsis unchanged).
               overflow: titleWrap ? 'visible' : 'hidden',
               textOverflow: titleWrap ? 'clip' : 'ellipsis',
               whiteSpace: titleWrap ? 'normal' : 'nowrap',
-              ...(quiet ? { fontSize: '1rem', fontWeight: 600 } : null),
             }}
           >
             {title}

@@ -77,7 +77,10 @@ export const palette = {
     error: '#d23b3b', //   RESERVED (as dark)
     warning: lightWarning,
     info: lightInfo,
-    text: { primary: inkText, secondary: 'rgba(0, 0, 0, 0.6)', disabled: 'rgba(0, 0, 0, 0.38)' },
+    // Light secondary text is steel, the boards' light `--steel` (design/tokens/tokens.json), not
+    // MUI's black at 0.6 (fidelity audit 2026-10-25, LTXT). Measured (WCAG 2): 5.42:1 on white, 5.00
+    // on paper, 4.78 on well and 4.57 on panelRaised, the hardest real light surface.
+    text: { primary: inkText, secondary: lightSecondary, disabled: 'rgba(0, 0, 0, 0.38)' },
     background: { default: paper, paper: '#ffffff' },
     divider: 'rgba(23,32,43,0.12)',
   },
@@ -225,7 +228,7 @@ export const extras = {
 export const extrasLight: Record<keyof typeof extras, string> = {
   panelRaised: '#ECECE7',
   hatchAlt: '#EFEFEA',
-  textSecondary: 'rgba(0, 0, 0, 0.6)',
+  textSecondary: lightSecondary, // = palette.light.text.secondary (LTXT)
   textDisabled: 'rgba(0, 0, 0, 0.38)',
   /**
    * Light text-grade amber — the §5.2 candidate `#8F5C0F` SHIPPED after passing the hard
@@ -251,7 +254,9 @@ export const extrasLight: Record<keyof typeof extras, string> = {
    * consumers anywhere in the app (defined in this file and touched only by token-hygiene specs),
    * so a darken past what real surfaces need would be un-evidenced — and the further candidate
    * that does clear it (`#58657D`) measures 5.88:1 on white, which would read as MORE contrast
-   * than `text.secondary`'s 5.74:1 there, inverting the tertiary-quieter-than-secondary hierarchy.
+   * than `text.secondary`'s 5.42:1 there (steel `#5A6B85` since LTXT, 2026-10-25; it was 5.74:1 as
+   * black at 0.6), inverting the tertiary-quieter-than-secondary hierarchy. `#5D6B84` itself measures
+   * 5.38:1 on white, a hair under secondary, so the hierarchy holds.
    * Re-verify against `raised2` the day a component actually paints a background with it.
    */
   textTertiary: '#5D6B84',

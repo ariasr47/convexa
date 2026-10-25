@@ -8,7 +8,7 @@
  * Design: design/src/chart-kit.mjs (CHART_CSS --c-* roles).
  */
 import { extrasFor } from '@/shared/theme/tokens';
-import { alpha, type Theme } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 
 export interface ChartRoles {
   /** The claim's series: phosphor. */
@@ -21,7 +21,7 @@ export interface ChartRoles {
   band: string;
   /** A band's edges and other hairline marks (steel2). */
   edge: string;
-  /** Gridlines. */
+  /** Gridlines: the line token, solid (the board's `--c-grid: var(--line)`). */
   grid: string;
   /** The zero line and axes. */
   axis: string;
@@ -38,7 +38,9 @@ export function chartRoles(t: Theme): ChartRoles {
     ctx2: x.chartContext2,
     band: x.chartBand,
     edge: x.textTertiary,
-    grid: alpha(t.palette.text.secondary, 0.14),
+    // The board's `--c-grid` is `var(--line)` in both schemes (design/src/chart-kit.mjs:25-27):
+    // `palette.divider` (fidelity audit 2026-10-25, FND-17).
+    grid: t.palette.divider,
     axis: x.lineStrong,
     up: t.palette.success.main,
     down: t.palette.error.main,

@@ -16,6 +16,10 @@
  * - "Show the numbers" opens the table twin: the same values as text, for every chart.
  * - In loading and message states the body keeps the chart's final height (no layout shift); a
  *   message sits on a faint ghost grid, a failure marked in the warning colour, never green or red.
+ *   Loading draws the same ghost grid (the board's `.cskel`) and keeps the frame's rows: a legend the
+ *   call site passes, and the foot. A loading frame given no foot reserves the standard one, a
+ *   source chip and the "Show the numbers" row, as ghosts, so the frame doesn't jump when the data
+ *   lands (fidelity audit 2026-10-25, FND-15).
  *
  * Text inside a chart is HTML or SVG text at 11px or more (P-13); that's the plot's job, not the frame's.
  *
@@ -26,11 +30,11 @@ import { CreditsLink } from '@/shared/credits/CreditsLink';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { DATA_STATES, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { coarseFloor } from '@/shared/ui/touch';
 import { useFrameDemoTag, useWidgetProvenance } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
-import Skeleton from '@mui/material/Skeleton';
-import { alpha } from '@mui/material/styles';
+import { alpha, type Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { frameTitle, type ChartStatus } from './frameTitle';
 
@@ -109,6 +113,10 @@ export function ChartFrame({
           : { state: 'sample' as const };
   const title = frameTitle(status, finding, metric);
   const ready = status.kind === 'ready';
+  const loading = status.kind === 'loading';
+  // A loading frame given no foot holds the standard one (source chip + table twin) as ghosts.
+  const ghostFoot = loading && !source && !asOf;
+  const ghostTwin = loading && (!!table || ghostFoot);
   return (
     <Box
       component="figure"
@@ -184,7 +192,7 @@ export function ChartFrame({
         )}
       </Box>
 
-      {ready && legend}
+      {(ready || loading) && legend}
       {ready ? (
         children
       ) : (
@@ -199,7 +207,7 @@ export function ChartFrame({
         </Box>
       )}
 
-      {(source || asOf) && (
+      {(source || asOf || ghostFoot) && (
         <Box
           sx={{
             display: 'flex',
@@ -217,9 +225,15 @@ export function ChartFrame({
               {asOf}
             </Box>
           )}
+          {ghostFoot && <Ghost width={180} height={24} radius={12} />}
         </Box>
       )}
       {ready && table && <TableTwin {...table} />}
+      {ghostTwin && (
+        <Box aria-hidden sx={{ height: 24, display: 'flex', alignItems: 'center' }}>
+          <Ghost width={116} height={12} radius={6} />
+        </Box>
+      )}
     </Box>
   );
 }
@@ -236,10 +250,22 @@ function StateBody({
   action?: ReactNode;
 }) {
   if (status.kind === 'loading') {
+    // The board's `.cskel` (design/src/chart-kit.mjs:134-135): the chart's ghost grid, a gridline
+    // every quarter of the plot, under a faint sheen. Static, so reduced motion needs nothing.
     return (
-      <Box role="img" aria-label={`Loading ${metric}`} aria-busy="true" sx={{ height }}>
-        <Skeleton variant="rounded" height={height} sx={{ borderRadius: '6px' }} />
-      </Box>
+      <Box
+        role="img"
+        aria-label={`Loading ${metric}`}
+        aria-busy="true"
+        sx={(t) => ({
+          height,
+          borderRadius: '6px',
+          backgroundImage: [
+            `linear-gradient(90deg, transparent, ${alpha(t.palette.text.secondary, 0.07)}, transparent)`,
+            ghostGrid(t),
+          ].join(', '),
+        })}
+      />
     );
   }
   const warn = status.tone === 'warn';
@@ -253,10 +279,7 @@ function StateBody({
         alignItems: 'center',
         p: 1,
         // The ghost grid: the chart's outline, so the frame reads as a chart with nothing in it.
-        backgroundImage: `repeating-linear-gradient(0deg, transparent 0 calc(25% - 1px), ${alpha(
-          t.palette.text.secondary,
-          0.14,
-        )} calc(25% - 1px) 25%)`,
+        backgroundImage: ghostGrid(t),
       })}
     >
       <Box
@@ -292,6 +315,29 @@ function StateBody({
   );
 }
 
+/** A gridline every quarter of the plot, in the chart grid's line colour (`roles.ts` `grid`). */
+function ghostGrid(t: Theme): string {
+  return `repeating-linear-gradient(0deg, transparent 0 calc(25% - 1px), ${t.palette.divider} calc(25% - 1px) 25%)`;
+}
+
+/** A placeholder bar for a row the ready frame will fill (the source chip, the table twin). */
+function Ghost({ width, height, radius }: { width: number; height: number; radius: number }) {
+  return (
+    <Box
+      component="span"
+      aria-hidden
+      sx={(t) => ({
+        display: 'block',
+        width,
+        maxWidth: '100%',
+        height,
+        borderRadius: `${radius}px`,
+        bgcolor: alpha(t.palette.text.secondary, 0.08),
+      })}
+    />
+  );
+}
+
 /** Where the figures come from, in the frame's provenance: solid, dotted (third party), dashed (sample). */
 function SourceChip({
   text,
@@ -305,21 +351,25 @@ function SourceChip({
   const chip = (
     <Box
       component="span"
+      // The library's `.prov` (design/src/lib.mjs:26-29): Mono 11/500; a primary source is phosphor
+      // on the strong line, a third party's or a sample's is steel on a dotted or dashed steel2 line
+      // (fidelity audit 2026-10-25, FND-16).
       sx={(t) => ({
-        display: 'inline-block',
+        display: 'inline-flex',
+        alignItems: 'center',
         maxWidth: '100%',
         minHeight: 24,
         px: 1.25,
-        py: '4px',
+        py: '2px',
         fontFamily: MONO,
         fontSize: 11,
+        fontWeight: 500,
         lineHeight: 1.35,
         borderRadius: '12px',
-        border: `1px ${BORDER[provenance]} ${alpha(
-          t.palette.text.secondary,
-          provenance === 'primary' ? 0.3 : 0.55,
-        )}`,
-        color: provenance === 'sample' ? 'text.secondary' : 'text.primary',
+        border: `1px ${BORDER[provenance]} ${
+          provenance === 'primary' ? extrasFor(t).lineStrong : extrasFor(t).textTertiary
+        }`,
+        color: provenance === 'primary' ? 'text.primary' : 'text.secondary',
         overflowWrap: 'anywhere',
       })}
     >
@@ -351,19 +401,25 @@ export function TableTwin({ caption, cols, rows }: TableTwinData) {
     <Box component="details" sx={{ '& > summary::-webkit-details-marker': { display: 'none' } }}>
       <Box
         component="summary"
-        sx={(t) => ({
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 0.75,
-          minHeight: 24,
-          cursor: 'pointer',
-          listStyle: 'none',
-          fontSize: 12,
-          fontWeight: 600,
-          color: extrasFor(t).textInfo,
-          '&::before': { content: '"▸"', fontSize: 11, color: t.palette.text.secondary },
-          'details[open] > &::before': { content: '"▾"' },
-        })}
+        // The local 24px beats the theme's coarse floor (an element selector), so the summary
+        // carries its own coarse 44 (`shared/ui/touch.ts`; spec 2026-10-21/02 part (b), FND-09).
+        // Last in the array, so its media rule follows the 24.
+        sx={[
+          (t) => ({
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.75,
+            minHeight: 24,
+            cursor: 'pointer',
+            listStyle: 'none',
+            fontSize: 12,
+            fontWeight: 600,
+            color: extrasFor(t).textInfo,
+            '&::before': { content: '"▸"', fontSize: 11, color: t.palette.text.secondary },
+            'details[open] > &::before': { content: '"▾"' },
+          }),
+          coarseFloor,
+        ]}
       >
         Show the numbers
       </Box>
