@@ -1,7 +1,7 @@
 //! The canonical JSON form of a context package, and its id (spec 06, "Canonical JSON and the id").
 //!
-//! - Object keys sorted by byte order (every key is ASCII), the same sort as
-//!   `bin/export_openapi.rs`; no whitespace; `serde_json`'s string escaping.
+//! - Object keys sorted by byte order (every key is ASCII), the same sort as the API contract
+//!   exporter in `src/bin/`; no whitespace; `serde_json`'s string escaping.
 //! - **Numbers:** an integral value below 2^53 is written as an integer; any other finite value in
 //!   Rust's shortest round-trip form (which never uses an exponent); `-0` is written `0`; a value
 //!   that isn't finite is refused. `serde_json` would write an integral `f64` as `46700000000.0`,
