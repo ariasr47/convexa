@@ -12,12 +12,37 @@ import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
+import type { ReactNode } from 'react';
 import { FieldLabel } from './FieldLabel';
 import type { ManualLegErrors } from './manualContract';
 import type { LegDraft } from './types';
 
 /** `100` for a standard option contract, `1` for equity — decided HERE and stored on the leg. */
 export const multiplierFor = (kind: InstrumentKind) => (kind === 'option' ? 100 : 1);
+
+/**
+ * The leg grid (the Final trade-entry board's `.ac-g4`, `design/src/screens/final/account-dialogs.mjs`;
+ * fidelity audit 2026-10-25, ACC-11): Side, Expiration, Strike and Right on one row of four from
+ * 600px, two by two on a phone. Quantity and the price sit on the row below, two across.
+ */
+const LEG_GRID_SX = {
+  display: 'grid',
+  gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' },
+  gap: '10px',
+} as const;
+const PAIR_GRID_SX = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: '10px',
+} as const;
+
+/** A value the trader cannot change here, drawn as the board's quiet field (`.fld .in.dis`): a
+ *  dashed outline, no fill, steel text. Read-only, never `disabled`, so it stays readable and in
+ *  the accessibility tree. */
+export const readOnlyFieldSx = {
+  '& .MuiOutlinedInput-root': { bgcolor: 'transparent', color: 'text.secondary' },
+  '& .MuiOutlinedInput-notchedOutline': { borderStyle: 'dashed' },
+} as const;
 
 /**
  * One leg's fields. For a SINGLE leg the ids and the layout are the shipped ones, so the common path
@@ -32,6 +57,7 @@ export function LegFields({
   strikes,
   inputSx,
   showPrice,
+  priceSlot,
   manualContract = false,
   today,
   errors,
@@ -46,6 +72,8 @@ export function LegFields({
   strikes: number[];
   inputSx: object;
   showPrice: boolean;
+  /** The single-option entry's mode-scoped price, owned by the dialog and drawn beside Quantity. */
+  priceSlot?: ReactNode;
   /** No options chain: the expiration and strike are typed, not picked (manualContract.ts). */
   manualContract?: boolean;
   /** Lower bound for the typed expiration (YYYY-MM-DD). */
@@ -84,48 +112,66 @@ export function LegFields({
         </Stack>
       )}
 
-      <Stack spacing={2}>
-        {/* Direction and instrument SIDE BY SIDE — two stacked full-width toggle groups per leg
-            turns a four-leg form into a wall of controls; paired, a leg reads as one line of
-            decisions. Buy/Sell is UNTINTED: a short leg is not a loss (SPEC §4 Design direction 4),
-            which is why it does not borrow the Call/Put green/red beneath it. */}
+      <Stack spacing="14px">
+        {/* The instrument (multi-leg only). Shares carry no strike/expiry/right at all — never a
+            zero-filled one. Half the row from 600px, so it lines up over the Side and Expiration
+            cells beneath it. */}
         {multiLeg && (
-          <Stack direction="row" spacing={1}>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              fullWidth
-              value={draft.side}
-              onChange={(_, v) => v && onPatch({ side: v as LegSide })}
-              aria-label={`direction${suffix}`}
-              data-testid={`entry-side-${index}`}
-              sx={{ flex: 1 }}
-            >
-              <ToggleButton value="long">Buy</ToggleButton>
-              <ToggleButton value="short">Sell</ToggleButton>
-            </ToggleButtonGroup>
-            {/* Shares carry no strike/expiry/right at all — never a zero-filled one. */}
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              fullWidth
-              value={draft.kind}
-              onChange={(_, v) => v && onPatch({ kind: v as InstrumentKind })}
-              aria-label={`instrument${suffix}`}
-              data-testid={`entry-kind-${index}`}
-              sx={{ flex: 1 }}
-            >
-              <ToggleButton value="option">Option</ToggleButton>
-              <ToggleButton value="equity">Shares</ToggleButton>
-            </ToggleButtonGroup>
-          </Stack>
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            fullWidth
+            value={draft.kind}
+            onChange={(_, v) => v && onPatch({ kind: v as InstrumentKind })}
+            aria-label={`instrument${suffix}`}
+            data-testid={`entry-kind-${index}`}
+            sx={{ width: { xs: '100%', sm: 'calc(50% - 5px)' } }}
+          >
+            <ToggleButton value="option">Option</ToggleButton>
+            <ToggleButton value="equity">Shares</ToggleButton>
+          </ToggleButtonGroup>
         )}
 
-        {isOption && (
-          <>
-            {manualContract ? (
-              <Stack direction="row" spacing={2}>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={LEG_GRID_SX}>
+          {/* Side. Buy/Sell is UNTINTED: a short leg is not a loss (SPEC §4 Design direction 4). A
+              single-leg entry has no short side to offer (its hosts open one long contract), so it
+              states the side as a read-only field rather than offering a control that can't act. */}
+          <Box sx={{ minWidth: 0 }}>
+            {multiLeg ? (
+              <>
+                <FieldLabel>Side</FieldLabel>
+                <ToggleButtonGroup
+                  exclusive
+                  size="small"
+                  fullWidth
+                  value={draft.side}
+                  onChange={(_, v) => v && onPatch({ side: v as LegSide })}
+                  aria-label={`direction${suffix}`}
+                  data-testid={`entry-side-${index}`}
+                >
+                  <ToggleButton value="long">Buy</ToggleButton>
+                  <ToggleButton value="short">Sell</ToggleButton>
+                </ToggleButtonGroup>
+              </>
+            ) : (
+              <>
+                <FieldLabel htmlFor={id('entry-side')}>Side</FieldLabel>
+                <TextField
+                  id={id('entry-side')}
+                  size="small"
+                  fullWidth
+                  value={draft.side === 'short' ? 'Short' : 'Long'}
+                  slotProps={{ htmlInput: { readOnly: true, 'aria-label': `Side${suffix}` } }}
+                  sx={readOnlyFieldSx}
+                />
+              </>
+            )}
+          </Box>
+
+          {isOption &&
+            (manualContract ? (
+              <>
+                <Box sx={{ minWidth: 0 }}>
                   <FieldLabel htmlFor={id('entry-expiration')}>Expiration</FieldLabel>
                   <TextField
                     id={id('entry-expiration')}
@@ -142,7 +188,7 @@ export function LegFields({
                     sx={inputSx}
                   />
                 </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ minWidth: 0 }}>
                   <FieldLabel htmlFor={id('entry-strike')}>Strike</FieldLabel>
                   <TextField
                     id={id('entry-strike')}
@@ -161,10 +207,10 @@ export function LegFields({
                     sx={inputSx}
                   />
                 </Box>
-              </Stack>
+              </>
             ) : (
               <>
-                <Box>
+                <Box sx={{ minWidth: 0 }}>
                   <FieldLabel htmlFor={id('entry-expiration')}>Expiration</FieldLabel>
                   <Select
                     id={id('entry-expiration')}
@@ -183,7 +229,7 @@ export function LegFields({
                   </Select>
                 </Box>
 
-                <Box>
+                <Box sx={{ minWidth: 0 }}>
                   <FieldLabel htmlFor={id('entry-strike')}>Strike</FieldLabel>
                   <Select
                     id={id('entry-strike')}
@@ -202,39 +248,32 @@ export function LegFields({
                   </Select>
                 </Box>
               </>
-            )}
+            ))}
 
-            {/* Call / Put — active CALL = success green, active PUT = error red. A DOMAIN fact on an
-                instrument control, not a claim about money: the tint ban is on POSITION and P&L
-                surfaces (SPEC §4 Design direction 4). */}
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              value={draft.right}
-              onChange={(_, v) => v && onPatch({ right: v as OptionRight })}
-              fullWidth
-              sx={{
-                '& .MuiToggleButton-root.Mui-selected': { color: 'common.white' },
-                '& .MuiToggleButton-root[value="call"].Mui-selected': {
-                  bgcolor: 'success.main',
-                  '&:hover': { bgcolor: 'success.dark' },
-                },
-                '& .MuiToggleButton-root[value="put"].Mui-selected': {
-                  bgcolor: 'error.main',
-                  '&:hover': { bgcolor: 'error.dark' },
-                },
-              }}
-            >
-              <ToggleButton value="call">Call</ToggleButton>
-              <ToggleButton value="put">Put</ToggleButton>
-            </ToggleButtonGroup>
-          </>
-        )}
+          {/* Right. NEUTRAL when selected (fidelity audit 2026-10-25, ACC-12): the canon never
+              colours call against put (ruling #18), so the pressed segment keeps the theme's quiet
+              selected fill, the same as the fill-mode control above it, never green or red. */}
+          {isOption && (
+            <Box sx={{ minWidth: 0 }}>
+              <FieldLabel>Right</FieldLabel>
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={draft.right}
+                onChange={(_, v) => v && onPatch({ right: v as OptionRight })}
+                fullWidth
+                aria-label={`Right${suffix}`}
+              >
+                <ToggleButton value="call">Call</ToggleButton>
+                <ToggleButton value="put">Put</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          )}
+        </Box>
 
-        {/* Size and price side by side — both are short numerics, and pairing them keeps a leg to
-            three rows instead of five. */}
-        <Stack direction="row" spacing={2}>
-          <Box sx={{ flex: 1 }}>
+        {/* Size and price side by side — both are short numerics. */}
+        <Box sx={PAIR_GRID_SX}>
+          <Box sx={{ minWidth: 0 }}>
             <FieldLabel htmlFor={id('entry-qty')}>{isOption ? 'Quantity' : 'Shares'}</FieldLabel>
             <TextField
               id={id('entry-qty')}
@@ -253,30 +292,34 @@ export function LegFields({
               sx={inputSx}
             />
           </Box>
-          {showPrice && (
-            <Box sx={{ flex: 1 }}>
-              <FieldLabel htmlFor={id('entry-leg-price')}>
-                {isOption ? 'Price per contract' : 'Avg share price'}
-              </FieldLabel>
-              <TextField
-                id={id('entry-leg-price')}
-                size="small"
-                fullWidth
-                type="number"
-                value={draft.price}
-                onChange={(e) =>
-                  onPatch({ price: e.target.value === '' ? '' : Number(e.target.value) })
-                }
-                error={manualContract && draft.price !== '' && !!errors?.price}
-                helperText={manualContract && draft.price !== '' ? errors?.price : undefined}
-                slotProps={{
-                  htmlInput: { min: 0, 'aria-label': `Price leg ${index + 1}` },
-                }}
-                sx={inputSx}
-              />
-            </Box>
+          {priceSlot != null ? (
+            <Box sx={{ minWidth: 0 }}>{priceSlot}</Box>
+          ) : (
+            showPrice && (
+              <Box sx={{ minWidth: 0 }}>
+                <FieldLabel htmlFor={id('entry-leg-price')}>
+                  {isOption ? 'Price per contract' : 'Avg share price'}
+                </FieldLabel>
+                <TextField
+                  id={id('entry-leg-price')}
+                  size="small"
+                  fullWidth
+                  type="number"
+                  value={draft.price}
+                  onChange={(e) =>
+                    onPatch({ price: e.target.value === '' ? '' : Number(e.target.value) })
+                  }
+                  error={manualContract && draft.price !== '' && !!errors?.price}
+                  helperText={manualContract && draft.price !== '' ? errors?.price : undefined}
+                  slotProps={{
+                    htmlInput: { min: 0, 'aria-label': `Price leg ${index + 1}` },
+                  }}
+                  sx={inputSx}
+                />
+              </Box>
+            )
           )}
-        </Stack>
+        </Box>
       </Stack>
     </Box>
   );

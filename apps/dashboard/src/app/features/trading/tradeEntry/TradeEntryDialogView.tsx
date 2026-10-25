@@ -9,9 +9,11 @@
  * deleted the Ticker page's separate ghost-trade engine, so a trader cannot produce two competing
  * records of one trade (AC-72). A single-leg entry is a one-element `legs` array — one open path.
  *
- * Skin/structure are the REDESIGNED ghost-trade dialog (Figma 118:1446): a 400px panel-raised slate
- * dialog (`extrasFor(theme).panelRaised` — theme-native, zero hardcoded hex), uppercase field labels,
- * a Manual price / Market / Limit fill-mode segmented control, mandatory confirm, `SIMULATED` chip.
+ * Skin/structure follow the Final trade-entry board (`design/src/screens/final/account-dialogs.mjs`,
+ * `tradeEntryDemo`; fidelity audit 2026-10-25, OVL, ACC-10/11/12/15): the theme's flat overlay panel,
+ * 760 wide, a ruled header (title, `SIMULATED`, close) and footer (disclaimer, Cancel, confirm), the
+ * leg on one row of four with the price beside Quantity, and a Net debit / Max loss / cap strip.
+ * Under 600px it is the shared bottom sheet (`shared/ui/bottomSheet.ts`).
  *
  * Capabilities absorbed from the old `positions/PositionEntryDialog.tsx`:
  *   - the honest per-mode fill-basis preview + chips (`user-entered price` / `snapshot mid` /
@@ -31,6 +33,9 @@
  * (server-gated, on Positions) write. No new/changed API call: the only network touch is the
  * EXISTING `GET /api/contract` lookup (`fetchTrackedContract`) both old dialogs already made.
  */
+import { useAuth } from '@/features/auth/AuthContext';
+import { RISK_INPUTS_COPY } from '@/features/auth/copy';
+import { formatAccountSize, formatAmount } from '@/features/auth/riskInputs';
 import {
   alreadyMetNotice,
   dialogScenarioStrip,
@@ -62,16 +67,22 @@ import {
   DIALOG_NET_COMPUTED,
   DIALOG_NET_INCOMPLETE,
   DISCLAIMER,
+  MAX_LOSS_LABEL,
+  MAX_LOSS_WITHHELD_META,
   netEntryPhrase,
   SIMULATED_TIP,
 } from '@/features/trading/positions/labels';
 import { netEntryCost, type Leg, type SimPosition } from '@/features/trading/positions/leg';
+import { maxLossOf } from '@/features/trading/positions/maxLoss';
 import { STRUCTURE_LABELS, structureKindOf } from '@/features/trading/positions/structure';
 import type { LegInput } from '@/features/trading/positions/usePortfolio';
+import { isNotANumber } from '@/shared/copy/notANumber';
 import { marketDataOff } from '@/shared/dataState/marketData';
+import { faceFor } from '@/shared/figure';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
-import { downText, extrasFor, upText } from '@/shared/theme/tokens';
-import { appNowMs, fetchTrackedContract } from '@convexa/api';
+import { downText, extrasFor } from '@/shared/theme/tokens';
+import { bottomSheetActionsSx, bottomSheetDialogSx, grabHandleSx } from '@/shared/ui/bottomSheet';
+import { appNowMs, dataMode, fetchTrackedContract } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -80,19 +91,19 @@ import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
+import Link from '@mui/material/Link';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
-import { alpha, useTheme } from '@mui/material/styles';
+import { alpha } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { FieldLabel } from './FieldLabel';
 import { FillModeToggle } from './FillModeToggle';
-import { LegFields, multiplierFor } from './LegFields';
+import { LegFields, multiplierFor, readOnlyFieldSx } from './LegFields';
 import {
   checkManualEntry,
   MANUAL_ENTRY_COPY,
@@ -114,6 +125,62 @@ import {
   type SubmitBase,
   type TradeEntrySubmit,
 } from './types';
+
+/** The board's figure strip (`.hd-fig`): cells on a 1px line grid, the well behind each. */
+const STRIP_SX = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+  gap: '1px',
+  bgcolor: 'divider',
+  borderRadius: '10px',
+  overflow: 'hidden',
+} as const;
+
+/** One strip cell: a caps label over its value. A closed not-a-number literal (`—`, `not set`)
+ *  renders in the text face, never the figure face (`shared/figure`, one register decision). */
+function StripCell({ label, value, testId }: { label: string; value: string; testId: string }) {
+  return (
+    <Box
+      data-testid={testId}
+      sx={(t) => ({
+        bgcolor: extrasFor(t).well,
+        p: '10px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+        minWidth: 0,
+      })}
+    >
+      <Typography
+        component="span"
+        sx={{
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          lineHeight: 1.3,
+          color: 'text.secondary',
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        component="span"
+        sx={{
+          ...faceFor(!isNotANumber(value)),
+          fontSize: { xs: 16, sm: 18 },
+          fontWeight: 500,
+          lineHeight: 1.2,
+          overflowWrap: 'anywhere',
+        }}
+      >
+        {value}
+      </Typography>
+    </Box>
+  );
+}
+
+const wholeDollars = (n: number) => `$${Math.abs(Math.round(n))}`;
 
 interface Props {
   open: boolean;
@@ -175,8 +242,6 @@ export function TradeEntryDialog({
   // The dialog's name is its title text (spec 2026-10-21/02, (a)). The title is a plain Typography,
   // not a DialogTitle, so MUI's generated `aria-labelledby` pointed at nothing; this id is real.
   const titleId = useId();
-  // Phones get a full-screen sheet (this form has many fields); tablets+ keep the centered dialog.
-  const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [mode, setMode] = useState<FillMode>('manual');
   // THE LEG DRAFTS. Seeded to exactly ONE row, so the single-leg path is byte-identical to shipped;
   // a multi-leg entry is the SAME array with more elements — never a second dialog, never a spread
@@ -378,6 +443,39 @@ export function TradeEntryDialog({
    */
   const runningNet = everyLegPriced ? netEntryCost(draftPosition) : null;
   const netPhrase = runningNet == null ? DIALOG_NET_INCOMPLETE : netEntryPhrase(runningNet);
+
+  // THE FIGURE STRIP (ACC-11). Net and Max loss come from the SAME leg arithmetic the book uses
+  // (`netEntryCost`, `maxLossOf` over the closed eligible set), so the dialog and the row it creates
+  // can never disagree; an ineligible shape withholds with the book's own words. Until every leg has
+  // a price both read `—`, never a partial figure (AC-10).
+  const maxLoss =
+    runningNet == null ? null : maxLossOf(draftPosition, structureKindOf(draftPosition));
+  const netCell = {
+    label: runningNet != null && runningNet < 0 ? 'Net credit' : 'Net debit',
+    value: runningNet == null ? '—' : wholeDollars(runningNet),
+  };
+  const maxLossValue =
+    maxLoss == null
+      ? '—'
+      : maxLoss.kind === 'figure'
+        ? wholeDollars(maxLoss.dollars)
+        : MAX_LOSS_WITHHELD_META[maxLoss.reason].label;
+  // The per-trade cap, RENDERED AS RECEIVED: the server derives the effective cap once from the
+  // owner's risk inputs, and this dialog performs no cap computation of its own and states no
+  // verdict (tradeable-rec-inputs SPEC §4, AC-63: the rec's own cap verdict arrives already rendered
+  // as `capAnnotation`). It shows the cap beside the entry's max loss; the reader compares.
+  const auth = useAuth();
+  const riskInputs = auth.authenticated ? (auth.settings?.risk_inputs ?? null) : null;
+  const effectiveCap = riskInputs?.effective_dollar_cap ?? null;
+  const capDerived =
+    effectiveCap?.state === 'derived' && effectiveCap.value != null ? effectiveCap.value : null;
+  const capFrom = effectiveCap?.derived_from;
+  const capLine =
+    capDerived == null
+      ? null
+      : capFrom?.cap_unit === 'percent' && capFrom.account_size != null && capFrom.cap_value != null
+        ? `Your cap: ${formatAccountSize(capFrom.account_size)} ${dataMode === 'demo' ? 'sample ' : ''}account × ${formatAmount(capFrom.cap_value)}% = $${formatAmount(capDerived)} per trade`
+        : `Your cap: $${formatAmount(capDerived)} per trade`;
   // The live-mark hint for the Limit preview: the same resolved mid/theoretical mark the market fill
   // uses (resolveMarketFill is the single source of that value).
   const liveMark = marketFill?.mark ?? null;
@@ -504,83 +602,144 @@ export function TradeEntryDialog({
     '& .MuiOutlinedInput-root, &.MuiOutlinedInput-root': { bgcolor: 'background.default' },
   };
 
+  // The single-option entry's price, drawn beside Quantity (the board's second leg row). Manual and
+  // Limit keep their separate typed values; Market shows the resolved fill as a read-only field, so
+  // the trader sees the price the entry opens at. Every other shape prices per leg in `LegFields`.
+  const marketPriceLabel =
+    dataMode === 'demo'
+      ? 'Sample mid'
+      : marketFill?.basis === 'theoretical'
+        ? 'Theoretical mark'
+        : 'Mid';
+  const priceSlot =
+    isOrder || !singleOptionEntry ? undefined : effectiveMode === 'market' ? (
+      <>
+        <FieldLabel htmlFor="entry-market-price">{marketPriceLabel}</FieldLabel>
+        <TextField
+          id="entry-market-price"
+          size="small"
+          fullWidth
+          value={marketFill ? marketFill.mark.toFixed(2) : ''}
+          slotProps={{ htmlInput: { readOnly: true, 'aria-label': marketPriceLabel } }}
+          sx={readOnlyFieldSx}
+        />
+      </>
+    ) : (
+      <>
+        <FieldLabel htmlFor="entry-price">{priceLabel}</FieldLabel>
+        <TextField
+          id="entry-price"
+          size="small"
+          fullWidth
+          type="number"
+          value={effectiveMode === 'limit' ? limitPrice : manualPrice}
+          onChange={(e) => {
+            const v = e.target.value === '' ? ('' as const) : Number(e.target.value);
+            if (effectiveMode === 'limit') setLimitPrice(v);
+            else setManualPrice(v);
+          }}
+          error={manualContract && manualPrice !== '' && !!manualLegErrors?.[0]?.price}
+          helperText={
+            manualContract && manualPrice !== '' ? manualLegErrors?.[0]?.price : undefined
+          }
+          slotProps={{ htmlInput: { 'aria-label': priceLabel } }}
+          sx={inputSx}
+        />
+      </>
+    );
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      fullScreen={fullScreen}
-      maxWidth="xs"
+      maxWidth={false}
       fullWidth
       aria-labelledby={titleId}
-      slotProps={{
-        paper: {
-          sx: {
-            borderRadius: '14px',
-            border: 1,
-            borderColor: 'divider',
-            backgroundImage: 'none',
-            bgcolor: (theme) => extrasFor(theme).panelRaised,
-          },
-        },
-      }}
+      // The surface is the theme's flat overlay panel (OVL); this dialog sets only its width, the
+      // board's 760 (ACC-10), and becomes the shared bottom sheet under 600px (ACC-15).
+      sx={bottomSheetDialogSx}
+      slotProps={{ paper: { sx: { maxWidth: 760 } } }}
     >
-      <DialogContent data-testid="trade-entry-dialog" sx={{ p: 3 }}>
-        <Stack spacing={2}>
-          {/* Header — title + SIMULATED (+ provenance) + close. */}
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ flexGrow: 1, minWidth: 0, alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
+      <DialogContent data-testid="trade-entry-dialog" sx={{ p: 0 }}>
+        <Box aria-hidden sx={grabHandleSx} />
+        {/* Header — title + SIMULATED (+ provenance) + close, ruled off the body (the board's `.dh`). */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: '18px',
+            py: '14px',
+            borderBottom: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ flexGrow: 1, minWidth: 0, alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
+          >
+            <Typography
+              id={titleId}
+              component="h2"
+              // Grows to push the tags to the close button, as the board's `.dh h2`; on a phone it
+              // wraps its own text rather than dropping the tags to a second row.
+              sx={{
+                flex: '1 1 160px',
+                minWidth: 0,
+                fontSize: 16,
+                fontWeight: 700,
+                lineHeight: 1.4,
+                color: 'text.primary',
+              }}
             >
-              <Typography
-                id={titleId}
-                variant="subtitle1"
-                sx={{ fontWeight: 700, color: 'text.primary' }}
-              >
-                {isOrder
-                  ? ORDER_DIALOG_TITLE
-                  : manualContract
-                    ? underlyingError(underlying) == null
-                      ? `Open simulated position · ${entryTicker}`
-                      : 'Open simulated position'
-                    : `Open simulated position · ${ticker}`}
-              </Typography>
+              {isOrder
+                ? ORDER_DIALOG_TITLE
+                : manualContract
+                  ? underlyingError(underlying) == null
+                    ? `Open simulated position · ${entryTicker}`
+                    : 'Open simulated position'
+                  : `Open simulated position · ${ticker}`}
+            </Typography>
+            {/* SIMULATED is a neutral outlined tag (ACC-12): a status tag never borrows the
+                success/error colours the canon keeps for money moving. */}
+            <Chip
+              size="small"
+              variant="outlined"
+              label="SIMULATED"
+              title={SIMULATED_TIP}
+              sx={(t) => ({
+                color: 'text.primary',
+                borderColor: extrasFor(t).lineStrong,
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+              })}
+            />
+            {!isOrder && prefill?.provenance && (
+              // KEEP amber (stage-3 §4.2: provenance is brand-flavored); the 13px LABEL binds
+              // text-grade `textAmber` (§5.2 gate), the border stays a `primary` alpha (UI class).
               <Chip
                 size="small"
-                label="SIMULATED"
-                title={SIMULATED_TIP}
+                variant="outlined"
+                label={prefill.provenance}
                 sx={(t) => ({
-                  bgcolor: alpha(t.palette.success.main, 0.18),
-                  color: upText(t),
-                  fontWeight: 700,
-                  letterSpacing: '0.04em',
+                  color: extrasFor(t).textAmber,
+                  borderColor: alpha(t.palette.primary.main, 0.5),
                 })}
               />
-              {!isOrder && prefill?.provenance && (
-                // KEEP amber (stage-3 §4.2: provenance is brand-flavored); the 13px LABEL binds
-                // text-grade `textAmber` (§5.2 gate), the border stays a `primary` alpha (UI class).
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  label={prefill.provenance}
-                  sx={(t) => ({
-                    color: extrasFor(t).textAmber,
-                    borderColor: alpha(t.palette.primary.main, 0.5),
-                  })}
-                />
-              )}
-            </Stack>
-            <IconButton
-              size="small"
-              onClick={onClose}
-              aria-label="Close"
-              sx={{ color: 'text.secondary', mt: -0.5, mr: -0.5 }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
+            )}
+          </Stack>
+          <IconButton
+            size="small"
+            onClick={onClose}
+            aria-label="Close"
+            sx={{ color: 'text.secondary', mr: -0.5 }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
 
+        <Stack spacing="14px" sx={{ px: '18px', py: '16px' }}>
           {/* ORDER VARIANT — notice strips (each only when applicable, §3.1-2 order) + provenance. */}
           {isOrder && (
             <>
@@ -695,9 +854,10 @@ export function TradeEntryDialog({
               expirations={expirations}
               strikes={strikes}
               inputSx={inputSx}
-              // The single-option path keeps the SHIPPED mode-scoped price field below; every other
-              // shape prices per leg, because that is the only honest way to net a structure.
+              // The single-option path keeps the SHIPPED mode-scoped price (`priceSlot`, beside
+              // Quantity); every other shape prices per leg, the only honest way to net a structure.
               showPrice={!isOrder && !singleOptionEntry}
+              priceSlot={i === 0 ? priceSlot : undefined}
               manualContract={manualContract}
               today={expiryToday}
               errors={manualLegErrors?.[i]}
@@ -846,32 +1006,6 @@ export function TradeEntryDialog({
               >
                 {priceMode === 'limit' ? LIMIT_HELPER : MARKET_HELPER}
               </Typography>
-            </Box>
-          )}
-
-          {/* Mode-scoped price (hidden in Market mode). Manual and Limit keep separate typed values.
-              Only the SINGLE-OPTION path uses it — every other shape prices per leg above. */}
-          {!isOrder && singleOptionEntry && effectiveMode !== 'market' && (
-            <Box>
-              <FieldLabel htmlFor="entry-price">{priceLabel}</FieldLabel>
-              <TextField
-                id="entry-price"
-                size="small"
-                fullWidth
-                type="number"
-                value={effectiveMode === 'limit' ? limitPrice : manualPrice}
-                onChange={(e) => {
-                  const v = e.target.value === '' ? ('' as const) : Number(e.target.value);
-                  if (effectiveMode === 'limit') setLimitPrice(v);
-                  else setManualPrice(v);
-                }}
-                error={manualContract && manualPrice !== '' && !!manualLegErrors?.[0]?.price}
-                helperText={
-                  manualContract && manualPrice !== '' ? manualLegErrors?.[0]?.price : undefined
-                }
-                slotProps={{ htmlInput: { 'aria-label': priceLabel } }}
-                sx={inputSx}
-              />
             </Box>
           )}
 
@@ -1111,35 +1245,88 @@ export function TradeEntryDialog({
             </Alert>
           )}
 
+          {/* THE FIGURE STRIP (ACC-11) — the entry's net and worst case beside the per-trade cap,
+              then where that cap comes from. Not on the order variant: an order fills later, at a
+              price not known here. */}
+          {!isOrder && (
+            <Box data-testid="entry-figure-strip">
+              <Box sx={STRIP_SX}>
+                <StripCell label={netCell.label} value={netCell.value} testId="entry-strip-net" />
+                <StripCell
+                  label={MAX_LOSS_LABEL}
+                  value={maxLossValue}
+                  testId="entry-strip-max-loss"
+                />
+                <StripCell
+                  label="Cap per trade"
+                  value={capDerived == null ? 'not set' : `$${formatAmount(capDerived)}`}
+                  testId="entry-strip-cap"
+                />
+              </Box>
+              <Typography
+                component="p"
+                data-testid="entry-cap-line"
+                sx={{ m: 0, mt: '14px', fontSize: 12, lineHeight: 1.45, color: 'text.secondary' }}
+              >
+                {capLine != null
+                  ? `${capLine} (`
+                  : effectiveCap?.state === 'not_derivable'
+                    ? `${RISK_INPUTS_COPY.accountSizeNotSetReason}, so the cap can't be derived. `
+                    : 'Set an account size and a per-trade cap to see your cap here. '}
+                <Link
+                  href="/settings"
+                  underline="always"
+                  sx={(t) => ({ color: extrasFor(t).textInfo })}
+                >
+                  {capLine != null ? 'Settings · Risk inputs' : 'Set risk inputs →'}
+                </Link>
+                {capLine != null ? ').' : ''}
+              </Typography>
+            </Box>
+          )}
+
           {/* tradeable-rec-inputs — the cap-check annotation carried through to the confirm step,
               already rendered by the host; this dialog performs no cap computation of its own. */}
           {capAnnotation && <Box data-testid="entry-cap-annotation">{capAnnotation}</Box>}
+        </Stack>
 
-          {/* Disclaimer — shipped verbatim, or the mandatory D8-1 SIMULATED disclosure in the order
-              variant (always visible above the confirm, §3.1-9). */}
+        {/* Footer (the board's `.df`): the disclaimer — shipped verbatim, or the mandatory D8-1
+            SIMULATED disclosure in the order variant (§3.1-9) — then Cancel and the confirm. Under
+            600px the buttons stack full width at 44px, the disclaimer above them. */}
+        <Box
+          sx={[
+            {
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 1,
+              px: '18px',
+              py: '12px',
+              borderTop: 1,
+              borderColor: 'divider',
+            },
+            bottomSheetActionsSx,
+          ]}
+        >
           <Typography
-            variant="caption"
-            sx={{ color: 'text.secondary' }}
+            component="span"
+            sx={{ flex: '1 1 300px', fontSize: 12, lineHeight: 1.45, color: 'text.secondary' }}
             data-testid={isOrder ? 'order-simulated-disclosure' : undefined}
           >
             {isOrder ? simulatedDisclosure(ticker) : DISCLAIMER}
           </Typography>
-
-          {/* Footer. */}
-          <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end', pt: 0.5 }}>
-            <Button onClick={onClose} sx={{ color: 'text.secondary' }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              disableElevation
-              disabled={!canConfirm}
-              onClick={handleConfirm}
-            >
-              {confirmLabel}
-            </Button>
-          </Stack>
-        </Stack>
+          <Button onClick={onClose} sx={{ color: 'text.secondary' }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disableElevation
+            disabled={!canConfirm}
+            onClick={handleConfirm}
+          >
+            {confirmLabel}
+          </Button>
+        </Box>
       </DialogContent>
     </Dialog>
   );

@@ -47,7 +47,8 @@ import {
 } from './copy';
 import type { OrderEvalState, SimOrder } from './types';
 
-function statusTip(o: SimOrder): string {
+/** The status chip's tooltip, shared with the order detail's status line. */
+export function statusTip(o: SimOrder): string {
   switch (o.status) {
     case 'waiting':
       return waitingTip(o.ticker);
@@ -62,9 +63,32 @@ function statusTip(o: SimOrder): string {
   }
 }
 
+/**
+ * An order's lifecycle moment on the exchange clock: "Oct 7 2:30 PM ET" in every browser. An order
+ * triggers on the underlying's session, so a viewer's own zone (`toLocaleString()` read "10/7/2026,
+ * 11:30:00 AM" in a Pacific browser) put the moment at a time the market never printed (fidelity
+ * audit 2026-10-25, ACC-13). Shared by the row and the order detail's lifecycle.
+ */
+const ET_STAMP = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+export function etStamp(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const parts: Record<string, string> = {};
+  for (const p of ET_STAMP.formatToParts(d)) parts[p.type] = p.value;
+  return `${parts.month} ${parts.day} ${parts.hour}:${parts.minute} ${parts.dayPeriod} ET`;
+}
+
 /** Status timestamp per §4.1 — the relevant lifecycle moment. */
 function statusTime(o: SimOrder): string {
-  const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString() : '');
+  const fmt = etStamp;
   switch (o.status) {
     case 'waiting':
       return `placed ${fmt(o.created_time)}`;
