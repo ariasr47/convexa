@@ -18,7 +18,8 @@
  * the one overlay that keeps a raised surface (fidelity audit 2026-10-25, OVL ruling): panelRaised,
  * a 1px lineStrong border, radius 14, e4, 620 wide, 132px from the top from 600px up. The input row
  * leads with the search glyph and ends with an `esc` key; rows sit 8px in from the edges with an
- * 8px radius, and the selected row carries a 1px inset ring on the panel colour (SITE-03b).
+ * 8px radius, and the selected row carries a 1px inset ring on raised2 in dark (the board's `.opt`
+ * fill) and on white in light (SITE-03b).
  */
 import { listRecentVisits } from '@/pages/ticker/recentTickers/store';
 import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
@@ -658,11 +659,16 @@ function PaletteRow({
         borderRadius: '8px',
         cursor: 'pointer',
         fontSize: 14,
-        // The selected row is the panel colour inside the ring, so its steel labels (name, tier,
-        // date) clear AA on it: measured 6.19:1 dark, 5.42:1 light. `action.selected`'s wash over
-        // the raised paper measured 3.31:1 dark and 3.83:1 light. The board's dark row is raised2
-        // (#223041, steel 4.74:1); it waits on token-contrast.spec.ts's raised2 consumer list.
-        bgcolor: selected ? 'background.paper' : 'transparent',
+        // The selected row sits one step ABOVE the raised paper inside the ring, as the board's
+        // `.opt`: raised2 (#223041) in dark, where its steel labels (name, tier, date) measure
+        // 4.74:1. Light keeps white (`background.paper`, steel 5.42:1): light raised2 (#E3E3DD)
+        // under steel measures 4.20:1, below AA. `action.selected`'s wash over the raised paper
+        // measured 3.31:1 dark and 3.83:1 light. Gated in token-contrast.spec.ts (raised2 rows).
+        bgcolor: selected
+          ? t.palette.mode === 'dark'
+            ? extrasFor(t).panelRaised2
+            : t.palette.background.paper
+          : 'transparent',
         boxShadow: selected ? `inset 0 0 0 1px ${extrasFor(t).lineStrong}` : 'none',
         color: t.palette.text.primary,
         // Ruling 5 (AC-34): `role="option"` sits outside the theme's coarse-pointer floor.

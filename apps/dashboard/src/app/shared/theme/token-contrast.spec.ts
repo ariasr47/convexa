@@ -24,10 +24,14 @@
  * `panelRaised2` (`raised2`, `#E3E3DD`) is DELIBERATELY excluded from the steel2 light floor: no
  * component paints steel2 on it. Darkening far enough to also clear it (`#58657D`, 4.56:1 there)
  * would be un-evidenced AND would invert the tertiary-quieter-than-secondary hierarchy on white
- * (5.88:1 vs `text.secondary`'s composited 5.74:1). Its only consumers are the two avatar discs
+ * (5.88:1 vs `text.secondary`'s 5.42:1: solid steel `#5A6B85` since LTXT, 2026-10-25; the 5.74:1
+ * this note gave was black at 0.6, composited). Its consumers are the two avatar discs
  * (ruling A, 2026-10-15: the Final shell board's neutral `.ss-av`), which paint `text.primary` on it,
- * gated by its own floor row below. The liveness guard red-builds the day any OTHER file consumes
- * `panelRaised2`, which is the trigger to check what it paints there and redo the floor.
+ * and the ⌘K palette's selected row in DARK only (fidelity SITE-03b, the board's `.opt`), which paints
+ * `text.primary` and `text.secondary` (steel) on it; light keeps white there, because steel on light
+ * raised2 is 4.20:1. Each is gated by its own floor row below. The liveness guard red-builds the day
+ * any OTHER file consumes `panelRaised2`, which is the trigger to check what it paints there and redo
+ * the floor.
  */
 import { describe, expect, it } from 'vitest';
 import { extras, extrasLight, palette } from './tokens';
@@ -132,6 +136,12 @@ const FLOORS: Array<{ label: string; fg: string; on: Record<string, string>; flo
     floor: 4.5,
   },
   {
+    label: 'text.secondary (steel) dark on raised2 (the ⌘K selected row, SITE-03b; measured 4.74)',
+    fg: palette.dark.text.secondary,
+    on: { raised2: extras.panelRaised2 },
+    floor: 4.5,
+  },
+  {
     label: 'textDim dark on every real dark surface (panel, the cell-price offender, hardest)',
     fg: extras.textDim,
     on: DARK,
@@ -181,9 +191,14 @@ describe('text-token contrast floors, both schemes (steel2, textDim, textInfo)',
     }
   });
 
-  // The reviewed consumers: each paints `text.primary` (never steel2) on raised2 — the avatar disc
-  // shared by the nav and Settings, and the phone drawer's account row disc.
-  const RAISED2_CONSUMERS = ['features/auth/avatar.ts', 'shell/TopNav.tsx'];
+  // The reviewed consumers, none of which paints steel2 on raised2: the avatar disc shared by the
+  // nav and Settings and the phone drawer's account row disc (`text.primary`), and the ⌘K palette's
+  // selected row, dark only (`text.primary` and `text.secondary`).
+  const RAISED2_CONSUMERS = [
+    'features/auth/avatar.ts',
+    'shell/CommandPalette/CommandPalette.tsx',
+    'shell/TopNav.tsx',
+  ];
 
   it('LIVENESS GUARD: `panelRaised2` (raised2) has no consumer beyond the reviewed avatar discs — the premise the steel2 light floor rests on', () => {
     const sources = import.meta.glob(
