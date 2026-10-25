@@ -34,14 +34,24 @@ export const DR_CSS = `
   .dr-fig .v.n { color: var(--steel); }
   .dr-note { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 8px; background: var(--raised); font-size: 12px; line-height: 1.45; color: var(--steel); }
   .dr-note strong { color: var(--phosphor); font-weight: 600; }
-  .dr-info { padding: 10px 12px; border-radius: 8px; background: var(--signal-tint); color: var(--text-info); font-size: 12.5px; line-height: 1.45; }
-  .dr-ex { display: flex; flex-direction: column; gap: 6px; }
-  .dr-ex .t { display: flex; align-items: center; gap: 8px; }
-  .dr-ex .t b { flex: 1 1 auto; font-size: 13px; font-weight: 600; }
-  .dr-ex .cp { font: 600 11px 'IBM Plex Sans', sans-serif; letter-spacing: 0.04em; color: var(--amber-text); background: none; border: 0; padding: 0 4px; min-height: 24px; }
-  .dr-ex .cap { font-size: 11px; color: var(--steel); line-height: 1.4; }
-  .dr-ex pre { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--ink); border: 1px solid var(--line); font: 11.5px/1.6 'IBM Plex Mono', monospace; color: var(--steel); white-space: pre-wrap; word-break: break-word; }
-  .dr-ex .ns { font-size: 12px; color: var(--steel); }
+  .dr-dw.ex { width: 520px; }
+  .dr-dw.ex .dh { position: static; flex: none; gap: 8px; padding: 14px 18px; }
+  .dr-dw.ex .dh h2 { line-height: 1.65; text-wrap: wrap; }
+  .dr-dw.ex .dh .btn { width: 30px; padding: 0; }
+  .dr-dw.ex .db { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px 18px; gap: 14px; }
+  .dr-dw.ex .df { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--line); background: var(--panel); }
+  .dr-xl { margin: 0; font-size: 12px; line-height: 1.45; color: var(--steel); }
+  .dr-xs { font: 400 11px/1.65 'IBM Plex Mono', monospace; color: var(--steel); }
+  .dr-dw.ex .dr-xc { gap: 0; flex: none; padding: 18px 20px; }
+  .dr-xc .t { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .dr-xc .t b { font-size: 13px; font-weight: 600; line-height: 1.65; }
+  .dr-xc .cp { font: 600 11px/24px 'IBM Plex Sans', sans-serif; color: var(--amber-text); background: none; border: 0; padding: 2px; border-radius: 8px; }
+  .dr-xc .cap { margin: 2px 0 0; font-size: 11px; line-height: 1.4; color: var(--steel); }
+  .dr-xc pre { margin: 6px 0 0; max-height: 220px; overflow: auto; border-radius: 4px; font: 11.5px/1.6 'IBM Plex Mono', monospace; color: var(--steel); white-space: pre-wrap; word-break: break-word; }
+  .dr-xc pre[role="region"] { padding: 10px 12px; border-radius: 8px; background: var(--ink); border: 1px solid var(--line); }
+  .dr-xc .ns { margin: 4px 0 0; font-size: 12px; line-height: 1.65; color: var(--steel); }
+  @media (pointer: coarse) { .dr-xc .cp { min-width: 44px; min-height: 44px; } }
+  @media (max-width: 599px) { .dr-dw.ex { border-radius: 0 !important; } .dr-dw.ex .dh .btn { flex: none; width: 44px; height: 44px; padding: 0; } .dr-dw.ex .df .btn { flex: 1 1 100%; height: 44px; } }
   .dr-peek { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 10px 16px; margin: 0; background: var(--panel); color: var(--phosphor); font: inherit; text-align: left; border: 0; border-top: 1px solid var(--line-2); box-shadow: var(--e4); cursor: pointer; }
   .dr-peek .col { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; flex: 1 1 auto; min-width: 0; }
   .dr-peek .w { font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; white-space: nowrap; }
@@ -126,28 +136,53 @@ export const analysisBody = ({ minHeight = 0, scheme = 'dark' } = {}) =>
   `<div class="v4 dr-wrap" data-scheme="${scheme}" style="height: ${Math.max(minHeight, 1500)}px;">${behindDesk(scheme)}${analysisDrawer()}</div>`;
 
 // =================================================================================================
-// Staging · the export drawer (StateExportDrawer) over the demo desk
+// Staging · the sample export drawer (StateExportDrawer) over the demo desk, as shipped (fidelity ACC-10 and
+// ACC-21, a1ce2b3d and aa2a48b5): 520 wide (the full width under 600px), a fixed head with the Sample tag, a
+// body that scrolls, and a footer with the outlined Copy all and its note. The body leads with the egress
+// sentence (no tinted banner) and the scenario line; each category is a sample card (dashed steel2 border,
+// radius 12, 18px 20px, the 8px top hatch band in steel at 28%, NO-14 B). A card whose text was built has
+// its COPY; the three the demo leaves unsent say why and carry none. Text that fits sits unboxed in its card;
+// text over the 220px cap (the computed snapshot) is the bordered, focusable scroll well. Copy reuses the
+// shipped strings (copy.ts, StateExportDrawer.tsx) and the demo's own export (libs/api demo transport).
 // =================================================================================================
+/** The demo's computed snapshot (the export's `context`), serialized as the drawer shows it. */
+const EXPORT_CONTEXT = {
+  market_state: {
+    ticker: 'SPY', spot: 690.62, as_of: '2026-10-07T18:30:00Z', call_wall: 704.02, put_wall: 652.22, gamma_flip: 683.92, max_pain: 690.62, setup: 'Balanced structure', score: 74,
+    sample_analysis: 'Sample analysis · authored for this scenario. SPY shows balanced structure with authored score 74. Fingerprint spy-synthetic-variant-7-v1; source bar portfolio-2026-10-07-v1:SPY:2026-10-07. This is educational scenario copy, not a forecast, provider-generated response, or executable instruction. No market, broker, or AI provider was used.',
+  },
+  candidates: {
+    ticker: 'SPY', state: 'unavailable', as_of: '2026-10-07T18:30:00Z', anchor_basis: 'gex_spot', anchor_spot: 690.62, session_basis: 'rth', snapshot_age_seconds: 0, quote_age: 'not_available', band_pct: 10, budget: 'handoff',
+    caps: { max_bytes: 0, max_records: 0, rights: 2, strikes_per_tenor_right: 0, tenors: 3 },
+    contracts: [],
+    included: { contracts: 0, expiration_count: 0, expirations: [] },
+    omitted: { total: 0, expirations_omitted_by_cap: 0, by_reason: { expiration_cap: 0, no_interest: 0, outside_band: 0, outside_window: 0, strike_cap: 0 } },
+    liquidity: { atm_relative_spread_band: 'unknown', no_two_sided_quote: 0, quoted: 0, wide_quote_threshold_pct: 15, wide_quotes: false },
+    sent_to_model: false,
+  },
+  risk_inputs: { state: 'not_set', account_size: null, per_trade_cap: null, effective_dollar_cap: { state: 'not_set', value: null, not_derivable_reason: null, derived_from: { account_size: null, cap_value: null, cap_unit: null } }, storage_available: true, updated_at: null },
+  open_positions: { source: 'simulated', state: 'not_sent', this_underlying: null, portfolio: null },
+};
+const EXPORT_GLOSSARY = ['spot: the underlying’s close at the scenario snapshot', 'call_wall / put_wall: the strikes with the largest call and put dealer gamma', 'gamma_flip: where net dealer gamma changes sign', 'max_pain: the strike where open options would expire worth the least', 'score: the scanner’s 0–100 score for the setup'].join('\n');
 function exportDrawer() {
-  const sec = (title, inner, caption = '') => `<div class="dr-ex"><div class="t"><b>${title}</b><button class="cp" type="button" aria-label="Copy ${title}">COPY</button></div>${caption ? `<span class="cap">${caption}</span>` : ''}${inner}</div>`;
-  const pre = (s) => `<pre>${s}</pre>`;
-  const notSent = (title) => `<div class="dr-ex"><div class="t"><b>${title}</b></div><span class="ns">Not sent: the demo calls no model, so nothing leaves this browser.</span></div>`;
-  return `<aside class="dr-dw narrow" role="dialog" aria-modal="true" aria-labelledby="dr-ex-t"><div class="dh"><h2 id="dr-ex-t">Sample analysis export · SPY</h2>${stateTag('sample')}${closeBtn('Close export')}</div>
-    <div class="db" style="gap: 16px;">
-      <div class="dr-info" role="status">No content was sent to a model or external provider. This export contains authored sample context only.</div>
-      <span class="mono steel" style="font-size: 11px;">Scenario · ${ASOF} · Sample analysis · authored for this scenario</span>
-      <button class="btn primary" type="button" style="align-self: flex-start;">${icon('copy', 14)}Copy all</button>
-      ${sec('Computed snapshot (context)', pre('ticker: SPY (sample)\nspot: 690.62 · as of 2026-10-07 18:30 UTC\nlevels: call_wall 704.02 · gamma_flip 683.92\n        put_wall 652.22 · max_pain 690.62\nregime: positive_gamma · score 74 · actionable\nstraddle_move: 2.48 · expiry 2026-10-09'), 'A serialization of what Convexa already computed: no recompute, no new fetch. Null stays null.')}
+  const card = (title, inner) => `<section class="hd-p is-sample dr-xc" aria-label="${title}">${inner}</section>`;
+  const sent = (title, text, { caption = '', well = false } = {}) => card(title, `<div class="t"><b>${title}</b><button class="cp" type="button" aria-label="Copy ${title}">COPY</button></div>${caption ? `<p class="cap">${caption}</p>` : ''}<pre${well ? ` role="region" tabindex="0" aria-label="${title} export text"` : ''}>${text}</pre>`);
+  const notSent = (title) => card(title, `<div class="t"><b>${title}</b></div><p class="ns">Not sent: the demo calls no model, so nothing leaves this browser.</p>`);
+  return `<aside class="dr-dw ex" role="dialog" aria-modal="true" aria-labelledby="dr-ex-t"><div class="dh"><h2 id="dr-ex-t">Sample analysis export · SPY</h2>${stateTag('sample')}${closeBtn('Close export')}</div>
+    <div class="db">
+      <p class="dr-xl" role="status">No content was sent to a model or external provider. This export contains authored sample context only.</p>
+      <span class="dr-xs">Scenario · ${ASOF} · Sample analysis · authored for this scenario</span>
+      ${sent('Computed snapshot (context)', JSON.stringify(EXPORT_CONTEXT, null, 2), { caption: 'A serialization of what Convexa already computed — no recompute, no new fetch. Null stays null.', well: true })}
       ${notSent('Candidate contracts')}
-      ${notSent('Your risk inputs (as sent with this read)')}
+      ${notSent('Your risk inputs (as sent with this recommendation)')}
       ${notSent('Open positions')}
-      ${sec('Persona prompt', pre('—'), 'The demo builds no persona prompt; the sample read is authored.')}
-      ${sec('Field glossary', pre('spot: the underlying’s mid at the snapshot\ngamma_flip: where net dealer gamma changes sign\ncall_wall / put_wall: the largest +γ / −γ strikes\nstraddle_move: the move the ATM straddle prices'))}
-      <p class="dline">Copy all copies the text with its label, starting “# Sample analysis export · SPY”. On the live build the same drawer lists exactly what a read sends for this ticker: no other ticker, no name or email, no broker credentials, no API key.</p>
-    </div></aside>`;
+      ${sent('Persona prompt', '—', { caption: 'The demo builds no persona prompt; the sample read is authored.' })}
+      ${sent('Field glossary', EXPORT_GLOSSARY)}
+    </div>
+    <div class="df"><button class="btn secondary" type="button">${icon('copy', 14)}Copy all</button><span class="dr-xl">Copies the sample, labelled as one.</span></div></aside>`;
 }
 export const exportBody = ({ minHeight = 0, scheme = 'dark' } = {}) =>
-  `<div class="v4 dr-wrap" data-scheme="${scheme}" style="height: ${Math.max(minHeight, 1020)}px;">${behindDesk(scheme)}${exportDrawer()}</div>`;
+  `<div class="v4 dr-wrap" data-scheme="${scheme}" style="height: ${Math.max(minHeight, 1220)}px;">${behindDesk(scheme)}${exportDrawer()}</div>`;
 
 // =================================================================================================
 // Phone (390, staging) · the read sheet: peek row, and open

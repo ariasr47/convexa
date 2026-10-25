@@ -172,7 +172,7 @@ export const SOURCES = [
     reads: 'Filings of the last 90 days, Form 4 insider trades, and the figures companies report in 10-Q, 10-K and 20-F filings (XBRL company facts).',
     cadence: 'As filed: a filing appears minutes after the SEC accepts it. Convexa checks filings every hour and company facts every 24 hours.',
     terms: 'Public record, free to show. The SEC asks every program that reads EDGAR to identify itself with a name and a contact address.',
-    where: 'Research → Filings, the insider card and “Filed since this note” under each ticker’s note.',
+    where: 'Research → Filings, the insider card and “Filed since this note” in the side column of each ticker’s newest note.',
     link: ['SEC EDGAR', 'https://www.sec.gov/edgar'],
     prod: ['current', 'Updated · read Oct 13'], prodNote: 'Convexa checks filings every hour and company facts every 24 hours.',
     notSetUpNote: 'This site hasn’t been given the contact line EDGAR asks for, so filings and insider trades don’t load yet.',

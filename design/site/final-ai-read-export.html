@@ -352,7 +352,9 @@
   .pal .grp { padding: 8px 8px 4px; }
   .pal .grp > span.caps { display: block; padding: 6px 8px; }
   .pal .opt { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 40px; padding: 6px 8px; border-radius: 8px; font-size: 13.5px; }
-  .pal .opt[aria-selected="true"] { background: var(--raised-2); box-shadow: inset 0 0 0 1px var(--line-2); }
+  :root, [data-scheme="dark"] { --pal-sel: var(--raised-2); }
+  [data-scheme="light"] { --pal-sel: var(--panel); } /* light raised-2 under steel is 4.20:1, the panel 5.42:1: the app's row (fidelity SITE-03b, 46972f63) */
+  .pal .opt[aria-selected="true"] { background: var(--pal-sel); box-shadow: inset 0 0 0 1px var(--line-2); }
   .pal .pf { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--steel); }
   .drawer-p { position: absolute; top: 0; right: 0; bottom: 0; width: min(320px, 82%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--e4); padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
   .drawer-p a { display: flex; align-items: center; min-height: 48px; padding: 0 8px; border-radius: 8px; color: var(--phosphor); text-decoration: none; font-size: 16px; font-weight: 600; }
@@ -578,14 +580,24 @@
   .dr-fig .v.n { color: var(--steel); }
   .dr-note { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 8px; background: var(--raised); font-size: 12px; line-height: 1.45; color: var(--steel); }
   .dr-note strong { color: var(--phosphor); font-weight: 600; }
-  .dr-info { padding: 10px 12px; border-radius: 8px; background: var(--signal-tint); color: var(--text-info); font-size: 12.5px; line-height: 1.45; }
-  .dr-ex { display: flex; flex-direction: column; gap: 6px; }
-  .dr-ex .t { display: flex; align-items: center; gap: 8px; }
-  .dr-ex .t b { flex: 1 1 auto; font-size: 13px; font-weight: 600; }
-  .dr-ex .cp { font: 600 11px 'IBM Plex Sans', sans-serif; letter-spacing: 0.04em; color: var(--amber-text); background: none; border: 0; padding: 0 4px; min-height: 24px; }
-  .dr-ex .cap { font-size: 11px; color: var(--steel); line-height: 1.4; }
-  .dr-ex pre { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--ink); border: 1px solid var(--line); font: 11.5px/1.6 'IBM Plex Mono', monospace; color: var(--steel); white-space: pre-wrap; word-break: break-word; }
-  .dr-ex .ns { font-size: 12px; color: var(--steel); }
+  .dr-dw.ex { width: 520px; }
+  .dr-dw.ex .dh { position: static; flex: none; gap: 8px; padding: 14px 18px; }
+  .dr-dw.ex .dh h2 { line-height: 1.65; text-wrap: wrap; }
+  .dr-dw.ex .dh .btn { width: 30px; padding: 0; }
+  .dr-dw.ex .db { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px 18px; gap: 14px; }
+  .dr-dw.ex .df { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--line); background: var(--panel); }
+  .dr-xl { margin: 0; font-size: 12px; line-height: 1.45; color: var(--steel); }
+  .dr-xs { font: 400 11px/1.65 'IBM Plex Mono', monospace; color: var(--steel); }
+  .dr-dw.ex .dr-xc { gap: 0; flex: none; padding: 18px 20px; }
+  .dr-xc .t { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .dr-xc .t b { font-size: 13px; font-weight: 600; line-height: 1.65; }
+  .dr-xc .cp { font: 600 11px/24px 'IBM Plex Sans', sans-serif; color: var(--amber-text); background: none; border: 0; padding: 2px; border-radius: 8px; }
+  .dr-xc .cap { margin: 2px 0 0; font-size: 11px; line-height: 1.4; color: var(--steel); }
+  .dr-xc pre { margin: 6px 0 0; max-height: 220px; overflow: auto; border-radius: 4px; font: 11.5px/1.6 'IBM Plex Mono', monospace; color: var(--steel); white-space: pre-wrap; word-break: break-word; }
+  .dr-xc pre[role="region"] { padding: 10px 12px; border-radius: 8px; background: var(--ink); border: 1px solid var(--line); }
+  .dr-xc .ns { margin: 4px 0 0; font-size: 12px; line-height: 1.65; color: var(--steel); }
+  @media (pointer: coarse) { .dr-xc .cp { min-width: 44px; min-height: 44px; } }
+  @media (max-width: 599px) { .dr-dw.ex { border-radius: 0 !important; } .dr-dw.ex .dh .btn { flex: none; width: 44px; height: 44px; padding: 0; } .dr-dw.ex .df .btn { flex: 1 1 100%; height: 44px; } }
   .dr-peek { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 10px 16px; margin: 0; background: var(--panel); color: var(--phosphor); font: inherit; text-align: left; border: 0; border-top: 1px solid var(--line-2); box-shadow: var(--e4); cursor: pointer; }
   .dr-peek .col { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; flex: 1 1 auto; min-width: 0; }
   .dr-peek .w { font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; white-space: nowrap; }
@@ -618,7 +630,7 @@
 </style>
 </head>
 <body>
-<div class="v4 dr-wrap" style="height: 1020px;"><div class="dr-behind" aria-hidden="true"><div class="v4" style="width: 100%; min-height: 0px; background: var(--ink); color: var(--phosphor);">
+<div class="v4 dr-wrap" style="height: 1220px;"><div class="dr-behind" aria-hidden="true"><div class="v4" style="width: 100%; min-height: 0px; background: var(--ink); color: var(--phosphor);">
     <a href="#main" class="btn secondary sm" style="position: absolute; left: -9999px;">Skip to main content</a>
     <div role="status" aria-label="Demo scenario provenance" class="v4-notice demo fd-bar"><style>.fd-bar { padding-top: 8px; padding-bottom: 8px; } .v4-notice.demo.fd-bar { border-bottom: 1px solid var(--line); } .fd-bar > .wrap { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 0; } .fd-bar .fd-reset { margin-left: auto; height: 44px; } .fd-bar .fd-ph, .fd-bar .fd-br { display: none; } @media (max-width: 599px) { .fd-bar { padding-top: 0; padding-bottom: 0; } .fd-bar .fd-wd { display: none; } .fd-bar .fd-ph { display: inline; } .fd-bar .fd-br { display: block; flex-basis: 100%; height: 0; } }</style><div class="wrap"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"></rect></svg><strong style="font-weight: 700;">Demo · sample data</strong><span class="steel" aria-hidden="true">·</span><span class="steel fd-ph">Oct 7, 2026</span><span class="steel fd-wd">Convexa is an options desk: dealer positioning, SEC filings and research notes.</span><span class="steel fd-wd" aria-hidden="true">·</span><span class="steel fd-wd">As of Oct 7, 2026 · no market feed connected</span><button class="btn ghost sm fd-reset" type="button" aria-label="Reset demo data"><span class="fd-wd">Reset demo data</span><span class="fd-ph">Reset</span></button></div></div>
     <header class="v4n"><div class="wrap v4n-in">
@@ -666,28 +678,103 @@
       <section class="hd-p is-sample"><div class="ph"><h3>Fresh positioning (Vol/OI)</h3><span class="stag k-dashed"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"></rect></svg>Sample</span></div><span class="mono" style="font-size: 18px;">$715 · 1.68×</span><span class="dline">the top of three strikes where today’s volume outruns open interest ($710 1.56×, $705 1.44×)</span><div style="margin-top: auto;"><span class="prov dashed">Sample · shaped like the chain</span></div></section>
       <section class="hd-p is-sample"><div class="ph"><h3>Off-exchange blocks</h3><span class="stag k-dashed"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"></rect></svg>Sample</span></div><span class="mono" style="font-size: 18px;">1,371,000 sh @ $687.86</span><span class="dline">largest print, 2:28 PM ET in the scenario · −0.4% vs spot</span><div style="margin-top: auto;"><span class="prov dashed">Sample · shaped like block prints</span></div></section>
       <section class="hd-p is-sample" style="grid-column: span 2;"><div class="ph"><h3>Setups</h3><span class="stag k-dashed"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"></rect></svg>Sample</span></div><span style="font-size: 16px; font-weight: 600;">Balanced structure · medium</span><span class="dline">Rule-based · the same structure snapshot · authored scenario variant</span><div style="margin-top: auto;"><span class="prov dashed">Sample · shaped like scanner setups</span></div></section></div><section class="tk-about" aria-label="About this sample"><span class="caps">About this sample</span><strong style="font-size: 13px;">Demo · sample data · Authored scenario · October 7, 2026 · no market feed connected</strong><span class="dline">Structure and related signals use the selected expiry set: 2026-10-09, 2026-10-16, 2026-11-20. Full-chain context keeps its labeled full-chain basis. Sample analysis is authored for this scenario.</span></section><p class="dline" style="margin: 0;">Research and tools, not investment advice. Figures on this board are illustrative design values.</p></div></main>
-    <footer class="v4-foot"><div class="wrap v4-foot-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 14px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 10.4px; height: 10.1px; margin: 0 0.6px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/settings">Settings</a><a href="/credits">Sources and credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p><p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">Built by Rodrigo Arias · <a href="/blog/how-convexa-is-built" style="color: var(--steel);">How it’s built</a></p><p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p></div></footer>
-  </div></div><div class="dr-scrim" aria-hidden="true"></div><aside class="dr-dw narrow" role="dialog" aria-modal="true" aria-labelledby="dr-ex-t"><div class="dh"><h2 id="dr-ex-t">Sample analysis export · SPY</h2><span class="stag k-dashed"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"></rect></svg>Sample</span><button class="btn ghost sm" type="button" aria-label="Close export"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
-    <div class="db" style="gap: 16px;">
-      <div class="dr-info" role="status">No content was sent to a model or external provider. This export contains authored sample context only.</div>
-      <span class="mono steel" style="font-size: 11px;">Scenario · Oct 7, 2026 · 2:30 PM ET · Sample analysis · authored for this scenario</span>
-      <button class="btn primary" type="button" style="align-self: flex-start;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a1 1 0 011-1h10"></path></svg>Copy all</button>
-      <div class="dr-ex"><div class="t"><b>Computed snapshot (context)</b><button class="cp" type="button" aria-label="Copy Computed snapshot (context)">COPY</button></div><span class="cap">A serialization of what Convexa already computed: no recompute, no new fetch. Null stays null.</span><pre>ticker: SPY (sample)
-spot: 690.62 · as of 2026-10-07 18:30 UTC
-levels: call_wall 704.02 · gamma_flip 683.92
-        put_wall 652.22 · max_pain 690.62
-regime: positive_gamma · score 74 · actionable
-straddle_move: 2.48 · expiry 2026-10-09</pre></div>
-      <div class="dr-ex"><div class="t"><b>Candidate contracts</b></div><span class="ns">Not sent: the demo calls no model, so nothing leaves this browser.</span></div>
-      <div class="dr-ex"><div class="t"><b>Your risk inputs (as sent with this read)</b></div><span class="ns">Not sent: the demo calls no model, so nothing leaves this browser.</span></div>
-      <div class="dr-ex"><div class="t"><b>Open positions</b></div><span class="ns">Not sent: the demo calls no model, so nothing leaves this browser.</span></div>
-      <div class="dr-ex"><div class="t"><b>Persona prompt</b><button class="cp" type="button" aria-label="Copy Persona prompt">COPY</button></div><span class="cap">The demo builds no persona prompt; the sample read is authored.</span><pre>—</pre></div>
-      <div class="dr-ex"><div class="t"><b>Field glossary</b><button class="cp" type="button" aria-label="Copy Field glossary">COPY</button></div><pre>spot: the underlying’s mid at the snapshot
+    <footer class="v4-foot"><div class="wrap v4-foot-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 14px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 10.4px; height: 10.1px; margin: 0 0.6px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/settings">Settings</a><a href="/credits">Sources and credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p><style>@media (pointer: coarse) { .fd-auth a { display: inline-flex; align-items: center; min-height: 44px; } }</style><p class="fd-auth" style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">Built by Rodrigo Arias · <a href="/blog/how-convexa-is-built" style="color: var(--steel);">How it’s built</a> · <a href="https://github.com/ariasr47/convexa" target="_blank" rel="noopener noreferrer" style="color: var(--steel);">GitHub ↗</a></p><p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p></div></footer>
+  </div></div><div class="dr-scrim" aria-hidden="true"></div><aside class="dr-dw ex" role="dialog" aria-modal="true" aria-labelledby="dr-ex-t"><div class="dh"><h2 id="dr-ex-t">Sample analysis export · SPY</h2><span class="stag k-dashed"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"></rect></svg>Sample</span><button class="btn ghost sm" type="button" aria-label="Close export"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+    <div class="db">
+      <p class="dr-xl" role="status">No content was sent to a model or external provider. This export contains authored sample context only.</p>
+      <span class="dr-xs">Scenario · Oct 7, 2026 · 2:30 PM ET · Sample analysis · authored for this scenario</span>
+      <section class="hd-p is-sample dr-xc" aria-label="Computed snapshot (context)"><div class="t"><b>Computed snapshot (context)</b><button class="cp" type="button" aria-label="Copy Computed snapshot (context)">COPY</button></div><p class="cap">A serialization of what Convexa already computed — no recompute, no new fetch. Null stays null.</p><pre role="region" tabindex="0" aria-label="Computed snapshot (context) export text">{
+  "market_state": {
+    "ticker": "SPY",
+    "spot": 690.62,
+    "as_of": "2026-10-07T18:30:00Z",
+    "call_wall": 704.02,
+    "put_wall": 652.22,
+    "gamma_flip": 683.92,
+    "max_pain": 690.62,
+    "setup": "Balanced structure",
+    "score": 74,
+    "sample_analysis": "Sample analysis · authored for this scenario. SPY shows balanced structure with authored score 74. Fingerprint spy-synthetic-variant-7-v1; source bar portfolio-2026-10-07-v1:SPY:2026-10-07. This is educational scenario copy, not a forecast, provider-generated response, or executable instruction. No market, broker, or AI provider was used."
+  },
+  "candidates": {
+    "ticker": "SPY",
+    "state": "unavailable",
+    "as_of": "2026-10-07T18:30:00Z",
+    "anchor_basis": "gex_spot",
+    "anchor_spot": 690.62,
+    "session_basis": "rth",
+    "snapshot_age_seconds": 0,
+    "quote_age": "not_available",
+    "band_pct": 10,
+    "budget": "handoff",
+    "caps": {
+      "max_bytes": 0,
+      "max_records": 0,
+      "rights": 2,
+      "strikes_per_tenor_right": 0,
+      "tenors": 3
+    },
+    "contracts": [],
+    "included": {
+      "contracts": 0,
+      "expiration_count": 0,
+      "expirations": []
+    },
+    "omitted": {
+      "total": 0,
+      "expirations_omitted_by_cap": 0,
+      "by_reason": {
+        "expiration_cap": 0,
+        "no_interest": 0,
+        "outside_band": 0,
+        "outside_window": 0,
+        "strike_cap": 0
+      }
+    },
+    "liquidity": {
+      "atm_relative_spread_band": "unknown",
+      "no_two_sided_quote": 0,
+      "quoted": 0,
+      "wide_quote_threshold_pct": 15,
+      "wide_quotes": false
+    },
+    "sent_to_model": false
+  },
+  "risk_inputs": {
+    "state": "not_set",
+    "account_size": null,
+    "per_trade_cap": null,
+    "effective_dollar_cap": {
+      "state": "not_set",
+      "value": null,
+      "not_derivable_reason": null,
+      "derived_from": {
+        "account_size": null,
+        "cap_value": null,
+        "cap_unit": null
+      }
+    },
+    "storage_available": true,
+    "updated_at": null
+  },
+  "open_positions": {
+    "source": "simulated",
+    "state": "not_sent",
+    "this_underlying": null,
+    "portfolio": null
+  }
+}</pre></section>
+      <section class="hd-p is-sample dr-xc" aria-label="Candidate contracts"><div class="t"><b>Candidate contracts</b></div><p class="ns">Not sent: the demo calls no model, so nothing leaves this browser.</p></section>
+      <section class="hd-p is-sample dr-xc" aria-label="Your risk inputs (as sent with this recommendation)"><div class="t"><b>Your risk inputs (as sent with this recommendation)</b></div><p class="ns">Not sent: the demo calls no model, so nothing leaves this browser.</p></section>
+      <section class="hd-p is-sample dr-xc" aria-label="Open positions"><div class="t"><b>Open positions</b></div><p class="ns">Not sent: the demo calls no model, so nothing leaves this browser.</p></section>
+      <section class="hd-p is-sample dr-xc" aria-label="Persona prompt"><div class="t"><b>Persona prompt</b><button class="cp" type="button" aria-label="Copy Persona prompt">COPY</button></div><p class="cap">The demo builds no persona prompt; the sample read is authored.</p><pre>—</pre></section>
+      <section class="hd-p is-sample dr-xc" aria-label="Field glossary"><div class="t"><b>Field glossary</b><button class="cp" type="button" aria-label="Copy Field glossary">COPY</button></div><pre>spot: the underlying’s close at the scenario snapshot
+call_wall / put_wall: the strikes with the largest call and put dealer gamma
 gamma_flip: where net dealer gamma changes sign
-call_wall / put_wall: the largest +γ / −γ strikes
-straddle_move: the move the ATM straddle prices</pre></div>
-      <p class="dline">Copy all copies the text with its label, starting “# Sample analysis export · SPY”. On the live build the same drawer lists exactly what a read sends for this ticker: no other ticker, no name or email, no broker credentials, no API key.</p>
-    </div></aside></div>
+max_pain: the strike where open options would expire worth the least
+score: the scanner’s 0–100 score for the setup</pre></section>
+    </div>
+    <div class="df"><button class="btn secondary" type="button"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a1 1 0 011-1h10"></path></svg>Copy all</button><span class="dr-xl">Copies the sample, labelled as one.</span></div></aside></div>
 <div class="site-bar" role="toolbar" aria-label="Design site controls"><a href="index.html">← All screens</a><span class="lbl">AI read · Staging · sample export drawer</span><button id="scheme-btn" type="button" onclick="toggleScheme()">Light scheme</button></div>
 <script>
 (function () {

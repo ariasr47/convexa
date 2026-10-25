@@ -40,11 +40,17 @@
   .btn.link:hover { text-decoration: underline; }
   .btn.disabled, .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; filter: none !important; }
   .btn.focus { outline: 2px solid var(--amber-text); outline-offset: 2px; }
-  .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--steel); background: rgba(138,155,180,0.14); }
+  /* A tint chip's label: its fill's hue in dark; in light, a text-grade colour that clears AA on its own tint, as the
+     app's TintChip (eb07b0f5): steel on the neutral tint measured 4.11 to 4.45:1, signal 4.12, warn 4.19. Neutral and
+     warn take phosphor, live takes text-info; up, down and emph already use text-grade tokens. Set per scheme, so the
+     nearest data-scheme wins. */
+  :root, [data-scheme="dark"] { --chip-label: var(--steel); --chip-live: var(--signal); --chip-warn: var(--warn); }
+  [data-scheme="light"] { --chip-label: var(--phosphor); --chip-live: var(--text-info); --chip-warn: var(--phosphor); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--chip-label); background: rgba(138,155,180,0.14); }
   .chip.up { color: var(--text-up); background: var(--up-tint); } .chip.down { color: var(--text-down); background: var(--down-tint); }
-  .chip.live { color: var(--signal); background: var(--signal-tint); } .chip.warn { color: var(--warn); background: var(--warn-tint); }
-  .chip.emph { color: var(--amber-text); background: var(--amber-tint); } .chip.outline { background: transparent; border: 1px solid var(--line-2); }
-  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip.live { color: var(--chip-live); background: var(--signal-tint); } .chip.warn { color: var(--chip-warn); background: var(--warn-tint); }
+  .chip.emph { color: var(--amber-text); background: var(--amber-tint); } .chip.outline { color: var(--steel); background: transparent; border: 1px solid var(--line-2); }
+  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; } .chip.live .dot { background: var(--signal); }
   .is-live .chip.live .dot { animation: livePulse 1.6s ease-in-out infinite; }
   .sym { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); font: 600 12px/1 'IBM Plex Mono', monospace; letter-spacing: 0.04em; color: var(--phosphor); cursor: pointer; flex-shrink: 0; }
   .sym:hover { border-color: var(--steel); background: var(--raised); } .sym.on { border-color: var(--amber); color: var(--amber-text); background: var(--amber-tint); }

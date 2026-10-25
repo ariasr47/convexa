@@ -352,7 +352,9 @@
   .pal .grp { padding: 8px 8px 4px; }
   .pal .grp > span.caps { display: block; padding: 6px 8px; }
   .pal .opt { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 40px; padding: 6px 8px; border-radius: 8px; font-size: 13.5px; }
-  .pal .opt[aria-selected="true"] { background: var(--raised-2); box-shadow: inset 0 0 0 1px var(--line-2); }
+  :root, [data-scheme="dark"] { --pal-sel: var(--raised-2); }
+  [data-scheme="light"] { --pal-sel: var(--panel); } /* light raised-2 under steel is 4.20:1, the panel 5.42:1: the app's row (fidelity SITE-03b, 46972f63) */
+  .pal .opt[aria-selected="true"] { background: var(--pal-sel); box-shadow: inset 0 0 0 1px var(--line-2); }
   .pal .pf { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--steel); }
   .drawer-p { position: absolute; top: 0; right: 0; bottom: 0; width: min(320px, 82%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--e4); padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
   .drawer-p a { display: flex; align-items: center; min-height: 48px; padding: 0 8px; border-radius: 8px; color: var(--phosphor); text-decoration: none; font-size: 16px; font-weight: 600; }
@@ -582,16 +584,16 @@
       <div><span class="n">3</span><span class="l">designed, not started</span></div>
     </div>
     <div style="display: flex; flex-direction: column; gap: 8px;">
-      <div class="bar" role="img" aria-label="208 shipped, 5 partly built, 11 designed, of 224"><i class="s" style="width: 92.85714285714286%;"></i><i class="p" style="width: 2.232142857142857%;"></i><i class="t" style="width: 4.910714285714286%;"></i></div>
+      <div class="bar" role="img" aria-label="212 shipped, 5 partly built, 10 designed, of 227"><i class="s" style="width: 93.3920704845815%;"></i><i class="p" style="width: 2.2026431718061676%;"></i><i class="t" style="width: 4.405286343612335%;"></i></div>
       <div class="key">
-        <span><i style="background: var(--phosphor); border-color: var(--phosphor);"></i>Shipped · 208 (93%)</span>
+        <span><i style="background: var(--phosphor); border-color: var(--phosphor);"></i>Shipped · 212 (93%)</span>
         <span><i style="background: var(--steel); border-color: var(--steel);"></i>Partly built · 5</span>
-        <span><i style="background: repeating-linear-gradient(135deg, transparent 0 3px, var(--line-2) 3px 5px);"></i>Designed, not built · 11</span>
-        <span>of 224 items across every spec card</span>
+        <span><i style="background: repeating-linear-gradient(135deg, transparent 0 3px, var(--line-2) 3px 5px);"></i>Designed, not built · 10</span>
+        <span>of 227 items across every spec card</span>
       </div>
     </div>
       <section class="grp">
-        <div class="grp-h"><h2>Ticker desk</h2><span class="c">4 screens · 47/47 items shipped</span></div>
+        <div class="grp-h"><h2>Ticker desk</h2><span class="c">4 screens · 48/48 items shipped</span></div>
         <table>
           <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
@@ -604,7 +606,7 @@
           </tr><tr>
             <td class="name"><strong>AI read</strong><span class="route">/ticker/:ticker · the read panel, its drawers and the phone sheet</span></td>
             <td><span class="st built">Built</span></td>
-            <td><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
+            <td><div class="bar" role="img" aria-label="7 shipped, 0 partly built, 0 designed, of 7"><i class="s" style="width: 100%;"></i></div><div class="counts">7/7 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Export</span><span>Peek</span><span>Sheet</span><span>Production</span><span>States</span></div></td>
             <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>
@@ -703,20 +705,20 @@
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Site & shell</h2><span class="c">9 screens · 63/67 items shipped</span></div>
+        <div class="grp-h"><h2>Site & shell</h2><span class="c">9 screens · 66/69 items shipped</span></div>
         <table>
           <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Global shell</strong><span class="route">every route inside the shell</span></td>
             <td><span class="st progress">In progress</span></td>
-            <td><div class="bar" role="img" aria-label="14 shipped, 0 partly built, 2 designed, of 16"><i class="s" style="width: 87.5%;"></i><i class="t" style="width: 12.5%;"></i></div><div class="counts">14/16 shipped · 2 not built</div></td>
+            <td><div class="bar" role="img" aria-label="16 shipped, 0 partly built, 1 designed, of 17"><i class="s" style="width: 94.11764705882352%;"></i><i class="t" style="width: 5.88235294117647%;"></i></div><div class="counts">16/17 shipped · 1 not built</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>StagingPhone</span><span>Light</span><span>States</span></div></td>
-            <td class="next">Company names on production ⌘K rows for tickers without a note (D-13, checked 2026-10-16): apps/api/config/universe.json lists symbols only, and no other file the API reads carries names. …<span class="more">+ 1 more open on its spec card</span></td>
+            <td class="next">Company names on production ⌘K rows for tickers without a note (D-13, checked 2026-10-16): apps/api/config/universe.json lists symbols only, and no other file the API reads carries names. …</td>
           </tr><tr>
             <td class="name"><strong>Landing</strong><span class="route">/</span></td>
             <td><span class="st built">Built</span></td>
-            <td><div class="bar" role="img" aria-label="10 shipped, 0 partly built, 0 designed, of 10"><i class="s" style="width: 100%;"></i></div><div class="counts">10/10 shipped</div></td>
+            <td><div class="bar" role="img" aria-label="11 shipped, 0 partly built, 0 designed, of 11"><i class="s" style="width: 100%;"></i></div><div class="counts">11/11 shipped</div></td>
             <td><div class="boards"><span>Spec</span><span>Staging</span><span>Production</span><span>Phone</span><span>Light</span><span>States</span></div></td>
             <td class="next"><span class="none">Nothing open</span></td>
           </tr><tr>

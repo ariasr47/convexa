@@ -40,11 +40,17 @@
   .btn.link:hover { text-decoration: underline; }
   .btn.disabled, .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; filter: none !important; }
   .btn.focus { outline: 2px solid var(--amber-text); outline-offset: 2px; }
-  .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--steel); background: rgba(138,155,180,0.14); }
+  /* A tint chip's label: its fill's hue in dark; in light, a text-grade colour that clears AA on its own tint, as the
+     app's TintChip (eb07b0f5): steel on the neutral tint measured 4.11 to 4.45:1, signal 4.12, warn 4.19. Neutral and
+     warn take phosphor, live takes text-info; up, down and emph already use text-grade tokens. Set per scheme, so the
+     nearest data-scheme wins. */
+  :root, [data-scheme="dark"] { --chip-label: var(--steel); --chip-live: var(--signal); --chip-warn: var(--warn); }
+  [data-scheme="light"] { --chip-label: var(--phosphor); --chip-live: var(--text-info); --chip-warn: var(--phosphor); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--chip-label); background: rgba(138,155,180,0.14); }
   .chip.up { color: var(--text-up); background: var(--up-tint); } .chip.down { color: var(--text-down); background: var(--down-tint); }
-  .chip.live { color: var(--signal); background: var(--signal-tint); } .chip.warn { color: var(--warn); background: var(--warn-tint); }
-  .chip.emph { color: var(--amber-text); background: var(--amber-tint); } .chip.outline { background: transparent; border: 1px solid var(--line-2); }
-  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip.live { color: var(--chip-live); background: var(--signal-tint); } .chip.warn { color: var(--chip-warn); background: var(--warn-tint); }
+  .chip.emph { color: var(--amber-text); background: var(--amber-tint); } .chip.outline { color: var(--steel); background: transparent; border: 1px solid var(--line-2); }
+  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; } .chip.live .dot { background: var(--signal); }
   .is-live .chip.live .dot { animation: livePulse 1.6s ease-in-out infinite; }
   .sym { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); font: 600 12px/1 'IBM Plex Mono', monospace; letter-spacing: 0.04em; color: var(--phosphor); cursor: pointer; flex-shrink: 0; }
   .sym:hover { border-color: var(--steel); background: var(--raised); } .sym.on { border-color: var(--amber); color: var(--amber-text); background: var(--amber-tint); }
@@ -564,7 +570,9 @@
   .pal .grp { padding: 8px 8px 4px; }
   .pal .grp > span.caps { display: block; padding: 6px 8px; }
   .pal .opt { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 40px; padding: 6px 8px; border-radius: 8px; font-size: 13.5px; }
-  .pal .opt[aria-selected="true"] { background: var(--raised-2); box-shadow: inset 0 0 0 1px var(--line-2); }
+  :root, [data-scheme="dark"] { --pal-sel: var(--raised-2); }
+  [data-scheme="light"] { --pal-sel: var(--panel); } /* light raised-2 under steel is 4.20:1, the panel 5.42:1: the app's row (fidelity SITE-03b, 46972f63) */
+  .pal .opt[aria-selected="true"] { background: var(--pal-sel); box-shadow: inset 0 0 0 1px var(--line-2); }
   .pal .pf { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--steel); }
   .drawer-p { position: absolute; top: 0; right: 0; bottom: 0; width: min(320px, 82%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--e4); padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
   .drawer-p a { display: flex; align-items: center; min-height: 48px; padding: 0 8px; border-radius: 8px; color: var(--phosphor); text-decoration: none; font-size: 16px; font-weight: 600; }
@@ -695,11 +703,19 @@
   .ss-hero .sub { margin: 0; font-size: 16.5px; line-height: 1.6; color: var(--steel); max-width: 56ch; text-wrap: pretty; }
   .ss-chip { display: inline-flex; align-items: center; min-height: 26px; padding: 0 12px; border-radius: 999px; background: var(--amber-tint); color: var(--amber-text); font-size: 12.5px; font-weight: 600; align-self: flex-start; }
   .ss-heroband { position: relative; overflow: hidden; }
-  .ss-curve { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+  /* The curve's box runs (band − 28px) / 0.9 tall from the band's top, so its baseline (90% of the box) lands 28px
+     above the hero's foot, in the 56px bottom padding, and its long shallow run passes under the copy and the
+     footnote at any hero height; the band clips the strip below. As the app's HeroCurve box (Landing.tsx, e17906b4). */
+  .ss-curve { position: absolute; top: 0; left: 0; right: 0; width: 100%; height: calc((100% - 28px) / 0.9); display: block; pointer-events: none; }
   .ss-curve .base { stroke: var(--steel); opacity: 0.35; }
   .ss-curve .path { stroke: var(--amber); opacity: 0.9; }
   @media (max-width: 1099px) { .ss-curve { display: none; } }
   .ss-heroband > .wrap { position: relative; }
+  /* A narrow page (404, operator archive and staging) starts on the page column's left edge at every width: the
+     .wrap's own centring, 1360 to 1599px and 1560 from 1600px (lib.mjs .wrap), as NotFound.tsx and the operator
+     pages spread pageColumnSx with a narrower inner measure. */
+  .wrap.ss-col-start { margin-left: max(0px, calc((100% - 1360px) / 2)); margin-right: auto; }
+  @media (min-width: 1600px) { .wrap.ss-col-start { margin-left: max(0px, calc((100% - 1560px) / 2)); } }
   .ss-fieldp { background: var(--ink-2); border-radius: 8px; padding: 4px 6px 0; }
   /* The field's level labels as the shipped canvas draws them (paintStep.ts, markerLayout.ts): each on an ink
      knock-out plate (ink at 88%, 3px radius, 14px, 600 11px mono), so a level line running under a label never
@@ -798,7 +814,7 @@
   @media (max-width: 599px) { .ss-ops { padding: 8px 16px; } .ss-stages th:nth-child(4), .ss-stages td:nth-child(4), .ss-stages th:nth-child(5), .ss-stages td:nth-child(5) { display: none; } }
 </style>
 </helmet>
-<div class="v4" data-scheme="dark" style="width: 100%; min-height: 920px; background: var(--ink); color: var(--phosphor);"><main role="status" class="wrap" style="padding-top: 72px; padding-bottom: 72px; display: flex; flex-direction: column; gap: 14px; max-width: 760px; margin-left: max(0px, calc((100% - 1360px) / 2));"><span class="mono steel" style="font-size: 13px;">/_ops/metrics · /_ops/research</span><h1 class="display" style="margin: 0; font-size: 32px;">Unavailable in the public demo.</h1><p class="steel" style="margin: 0; font-size: 15.5px; line-height: 1.6;">Operator tools read a running API, and the demo has none: every screen runs in this browser on sample data.</p><a href="/" class="t-info" style="display: inline-flex; gap: 6px; align-items: center; min-height: 24px; font-weight: 600;">Back to the demo <svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></main></div>
+<div class="v4" data-scheme="dark" style="width: 100%; min-height: 920px; background: var(--ink); color: var(--phosphor);"><main role="status" class="wrap ss-col-start" style="padding-top: 72px; padding-bottom: 72px; display: flex; flex-direction: column; gap: 14px; max-width: 760px;"><span class="mono steel" style="font-size: 13px;">/_ops/metrics · /_ops/research</span><h1 class="display" style="margin: 0; font-size: 32px;">Unavailable in the public demo.</h1><p class="steel" style="margin: 0; font-size: 15.5px; line-height: 1.6;">Operator tools read a running API, and the demo has none: every screen runs in this browser on sample data.</p><a href="/" class="t-info" style="display: inline-flex; gap: 6px; align-items: center; min-height: 24px; font-weight: 600;">Back to the demo <svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></main></div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":920}}'>
 class Component extends DCLogic {}

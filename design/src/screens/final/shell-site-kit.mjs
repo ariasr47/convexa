@@ -22,11 +22,19 @@ export const SS_CSS = `
   .ss-hero .sub { margin: 0; font-size: 16.5px; line-height: 1.6; color: var(--steel); max-width: 56ch; text-wrap: pretty; }
   .ss-chip { display: inline-flex; align-items: center; min-height: 26px; padding: 0 12px; border-radius: 999px; background: var(--amber-tint); color: var(--amber-text); font-size: 12.5px; font-weight: 600; align-self: flex-start; }
   .ss-heroband { position: relative; overflow: hidden; }
-  .ss-curve { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+  /* The curve's box runs (band − 28px) / 0.9 tall from the band's top, so its baseline (90% of the box) lands 28px
+     above the hero's foot, in the 56px bottom padding, and its long shallow run passes under the copy and the
+     footnote at any hero height; the band clips the strip below. As the app's HeroCurve box (Landing.tsx, e17906b4). */
+  .ss-curve { position: absolute; top: 0; left: 0; right: 0; width: 100%; height: calc((100% - 28px) / 0.9); display: block; pointer-events: none; }
   .ss-curve .base { stroke: var(--steel); opacity: 0.35; }
   .ss-curve .path { stroke: var(--amber); opacity: 0.9; }
   @media (max-width: 1099px) { .ss-curve { display: none; } }
   .ss-heroband > .wrap { position: relative; }
+  /* A narrow page (404, operator archive and staging) starts on the page column's left edge at every width: the
+     .wrap's own centring, 1360 to 1599px and 1560 from 1600px (lib.mjs .wrap), as NotFound.tsx and the operator
+     pages spread pageColumnSx with a narrower inner measure. */
+  .wrap.ss-col-start { margin-left: max(0px, calc((100% - 1360px) / 2)); margin-right: auto; }
+  @media (min-width: 1600px) { .wrap.ss-col-start { margin-left: max(0px, calc((100% - 1560px) / 2)); } }
   .ss-fieldp { background: var(--ink-2); border-radius: 8px; padding: 4px 6px 0; }
   /* The field's level labels as the shipped canvas draws them (paintStep.ts, markerLayout.ts): each on an ink
      knock-out plate (ink at 88%, 3px radius, 14px, 600 11px mono), so a level line running under a label never

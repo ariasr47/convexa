@@ -345,3 +345,48 @@ Supersedes nothing above; repairs four regressions two read-only reviewers found
 - **Heights:** FCreditsStaging 6576 → 6584, FCreditsStates 2034 → 2035 (202 boards measured, 2 changed, none
   overflows; a second measurement changes 0). Checked: `node design/src/build.mjs` 0, `node
   design/src/verify-tokens.mjs` 0. Not published to the canvas artifact.
+
+## 2026-10-25 · Fidelity round 2, lane R2-C: the boards and canon follow what round 2 shipped
+
+Supersedes nothing above. Round 2's app lanes (`51b0ae57`..`e17906b4`) moved the app to the boards, and in six
+places the board was the one behind. Each item was measured on the board and on HEAD's demo and live builds (live
+`/api` faked) before and after; evidence in `tmp/fidelity/r2/R2-C-boards-canon/`.
+
+- **⌘K selected row in light (SITE-03b):** light raised-2 under steel measured 4.20:1; the row now takes the panel
+  in light (5.42:1, the app's white row since `46972f63`) and keeps raised-2 in dark (4.74:1, as the app). Set as a
+  per-scheme `--pal-sel` in `v4/shell-landing.mjs`, so the Final and v4 palettes both follow.
+- **⌘K Go to order (NO-11 A):** no change. Both palette boards already listed Scanner, Ticker, Research,
+  Positions, Alerts, which the app ships since `51b0ae57`.
+- **Export drawer (ACC-10, ACC-21):** `final-ai-read-export` is redrawn to the shipped `StateExportDrawer`
+  (`a1ce2b3d`, `aa2a48b5`). It was 420 wide, with a tinted banner, an amber Copy all at the top and unframed
+  sections. Now it is 520 wide (the full width under 600px), the egress line is its lead sentence, and each section
+  is a dashed sample card with the top hatch band. COPY sits only on the three built sections, and the snapshot is
+  the demo's own JSON in the bordered 220px scroll well. Copy all is an outlined footer action with its note. Head,
+  lead, wells and all six cards measure equal to the app at 1440 and 390, coarse COPY targets included; Copy all
+  is 102 wide against the app's 100, as on the what's-sent board. The board is 1220 tall, so every card shows.
+- **404 and operator boards on the page column:** at 1600px and wider they started at x320 at 1920 (the
+  `.wrap`'s 1360 centring); a `.wrap.ss-col-start` now follows the column's 1560 step. The h1 is at x220 at 1920,
+  equal to the app, and unchanged at 1440, 1280 and 390.
+- **Landing hero curve:** the curve's box ends 28px above the hero's foot, as the app's since `e17906b4`. Path
+  samples striking the CTA footnote dropped to 0 at 1280, 1440 and 1920. Production went from 186, 158 and 118,
+  staging from 521, 106 and 0. The baseline is 28px above the hero foot on every board, as in the app.
+- **Staging footer (S1-Q3):** the author line ends "· GitHub ↗" to https://github.com/ariasr47/convexa, in a new
+  tab with `rel="noopener noreferrer"`, and coarse 44px targets, as the app since `1ded978b`. Q-GITHUB-HREF is
+  answered in `tracker-data.mjs`, and the shell card's item is shipped. The card also records the round's other
+  shell commits.
+- **Still-different items resolved in the app:**
+  - The credits SEC card puts "Filed since this note" in the side column of each ticker's newest note (`9de328f8`).
+  - Light tint chips take text-grade labels, as `TintChip` since `eb07b0f5`. Neutral and warn use phosphor and
+    live uses text-info, through per-scheme variables. On `library.html` the lowest of those three labels went from
+    4.12:1 to 6.03:1. Emph stays amber-text at 3.96:1 on the library's raised surface, unchanged, as the app's
+    emphasis rule.
+- **Already equal, no change:** the production note's tab row (sentence case, 13/500, 600 current, 44 tall in both),
+  the demo bar on the page column (glyph x38.4/80/220/16 under the wordmark in both).
+- **Canon:** `DESIGN_SYSTEM.md` Amendments rows for NO-2 B (supersedes spec 01's 1240 bar column; shipped in
+  `1e30ff95`) and NO-11 A (supersedes rule 19's "Research last"; shipped in `51b0ae57`).
+- **Heights:** 7 changed (FShellSpec 3415 → 3651, FLandingSpec 2936 → 3025, FAiReadSpec 2916 → 3068,
+  FAiReadExport 1040 → 1240, FProgressMap 3643 → 3621, FProgressTracker 4588 → 4461, FCreditsPhone2 4669 → 4690),
+  202 measured, none overflows; a second measurement changes 0. The overflow and small-text sweep of every changed
+  board page at 390, 1440 and 1920 equals HEAD's. Those are 135 checks, and the 13 flags are already at HEAD: the
+  760-wide spec cards at 390, `components-sheet`, and the library's 19 small labels. Checked: `node
+  design/src/build.mjs` 0, `node design/src/verify-tokens.mjs` 0. Not published to the canvas artifact.

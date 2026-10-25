@@ -159,11 +159,17 @@ export const TOKENS_CSS = `
   .btn.link:hover { text-decoration: underline; }
   .btn.disabled, .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; filter: none !important; }
   .btn.focus { outline: 2px solid var(--amber-text); outline-offset: 2px; }
-  .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--steel); background: rgba(138,155,180,0.14); }
+  /* A tint chip's label: its fill's hue in dark; in light, a text-grade colour that clears AA on its own tint, as the
+     app's TintChip (eb07b0f5): steel on the neutral tint measured 4.11 to 4.45:1, signal 4.12, warn 4.19. Neutral and
+     warn take phosphor, live takes text-info; up, down and emph already use text-grade tokens. Set per scheme, so the
+     nearest data-scheme wins. */
+  :root, [data-scheme="dark"] { --chip-label: var(--steel); --chip-live: var(--signal); --chip-warn: var(--warn); }
+  [data-scheme="light"] { --chip-label: var(--phosphor); --chip-live: var(--text-info); --chip-warn: var(--phosphor); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--chip-label); background: rgba(138,155,180,0.14); }
   .chip.up { color: var(--text-up); background: var(--up-tint); } .chip.down { color: var(--text-down); background: var(--down-tint); }
-  .chip.live { color: var(--signal); background: var(--signal-tint); } .chip.warn { color: var(--warn); background: var(--warn-tint); }
-  .chip.emph { color: var(--amber-text); background: var(--amber-tint); } .chip.outline { background: transparent; border: 1px solid var(--line-2); }
-  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip.live { color: var(--chip-live); background: var(--signal-tint); } .chip.warn { color: var(--chip-warn); background: var(--warn-tint); }
+  .chip.emph { color: var(--amber-text); background: var(--amber-tint); } .chip.outline { color: var(--steel); background: transparent; border: 1px solid var(--line-2); }
+  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; } .chip.live .dot { background: var(--signal); }
   .is-live .chip.live .dot { animation: livePulse 1.6s ease-in-out infinite; }
   .sym { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); font: 600 12px/1 'IBM Plex Mono', monospace; letter-spacing: 0.04em; color: var(--phosphor); cursor: pointer; flex-shrink: 0; }
   .sym:hover { border-color: var(--steel); background: var(--raised); } .sym.on { border-color: var(--amber); color: var(--amber-text); background: var(--amber-tint); }
@@ -643,9 +649,11 @@ export function finalDemoNotice({ extra = '', phone = false } = {}) {
   const play = extra ? `<span class="fd-br"${phone ? ' style="display: block; flex-basis: 100%; height: 0;"' : ''}></span>${phone ? '' : fdSep(true)}${extra}` : '';
   return `<div role="status" aria-label="Demo scenario provenance" class="v4-notice demo fd-bar"${phone ? ' style="padding-top: 0; padding-bottom: 0;"' : ''}>${FD_CSS}<div class="wrap">${icon('sample', 14)}<strong style="font-weight: 700;">Demo · sample data</strong>${fdSep()}<span class="steel fd-ph"${ph}>Oct 7, 2026</span><span class="steel fd-wd"${wd}>Convexa is an options desk: dealer positioning, SEC filings and research notes.</span>${phone ? '' : fdSep(true)}<span class="steel fd-wd"${wd}>As of Oct 7, 2026 · no market feed connected</span>${play}<button class="btn ghost sm fd-reset" type="button" aria-label="Reset demo data"><span class="fd-wd"${wd}>Reset demo data</span><span class="fd-ph"${ph}>Reset</span></button></div></div>`;
 }
-/** The staging footer's author line (Footer.tsx), above the copyright. Its "GitHub ↗" link waits on the
- *  owner's question S1-Q3 (profile or repository), so it is not drawn. Production has no author line. */
-export const FINAL_AUTHOR = '<p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">Built by Rodrigo Arias · <a href="/blog/how-convexa-is-built" style="color: var(--steel);">How it’s built</a></p>';
+/** The staging footer's author line (Footer.tsx), above the copyright: who built it, the engineering post and
+ *  "GitHub ↗", the public repository in a new tab (owner answer S1-Q3, 2026-10-25; app 1ded978b). Both links sit
+ *  inline in the 12px line and become 44px-tall inline boxes under a coarse pointer (canon rule 7), as the app's.
+ *  Production has no author line. */
+export const FINAL_AUTHOR = '<style>@media (pointer: coarse) { .fd-auth a { display: inline-flex; align-items: center; min-height: 44px; } }</style><p class="fd-auth" style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">Built by Rodrigo Arias · <a href="/blog/how-convexa-is-built" style="color: var(--steel);">How it’s built</a> · <a href="https://github.com/ariasr47/convexa" target="_blank" rel="noopener noreferrer" style="color: var(--steel);">GitHub ↗</a></p>';
 export const FINAL_COPYRIGHT = '<p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p>';
 
 /** A Final-page board (2026-10-16): a v4 page whose production nav carries “Full demo ↗”. The v4 and v5
