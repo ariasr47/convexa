@@ -28,6 +28,14 @@ export const SS_CSS = `
   @media (max-width: 1099px) { .ss-curve { display: none; } }
   .ss-heroband > .wrap { position: relative; }
   .ss-fieldp { background: var(--ink-2); border-radius: 8px; padding: 4px 6px 0; }
+  /* The field's level labels as the shipped canvas draws them (paintStep.ts, markerLayout.ts): each on an ink
+     knock-out plate (ink at 88%, 3px radius, 14px, 600 11px mono), so a level line running under a label never
+     strikes it through; 9px right of its line, in 16px lanes from the plot top: put on the first lane, flip on the
+     second, call on the first while the plot is wide; in a chart box under 400px (the phone) the app's lane solver
+     drops call to the third lane and keeps it inside the plot's right edge, so this does too (L14-REV-2). */
+  .ss-fieldp .cx .pl.ss-lv { --lane: 0; left: var(--lx); top: calc(2px + var(--lane) * 16px); transform: translateX(9px); height: 14px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 88%, transparent); font: 600 11px/14px 'IBM Plex Mono', ui-monospace, monospace; }
+  .ss-fieldp .cx .pl.ss-lv.lv-flip { --lane: 1; }
+  @container (max-width: 400px) { .ss-fieldp .cx .pl.ss-lv.lv-call { --lane: 2; left: auto; right: 3px; transform: none; } }
   .ss-spine { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--steel); }
   .ss-ctas { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .ss-eyebrow { font: 600 11.5px/1.4 'IBM Plex Sans', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber-text); }
@@ -253,16 +261,16 @@ function smooth(pts, n = 6) {
  *  desk's field form): net gamma as a curve over faint strike bars, the put wall, the flip, the mid and the
  *  call wall as labelled verticals, ±$500 on a dark plot well, with its one-line encoding subtitle. */
 export function fieldIll(env = 'production') {
-  const PUT = 560, FLIPX = 568.5, MIDX = 573.12, CALL = 580, YM = 560;
+  const PUT = 560, FLIPX = 568.5, MIDX = 573.12, CALL = 580, YM = 560, XMIN = 548.75, XMAX = 601.25;
   const faint = (r) => `color-mix(in srgb, var(--${r}) 32%, transparent)`;
   const body = plot({ height: 240, pl: 48, pr: 16, prn: 12, pt: 30, pb: 30, ends: false, keyboard: false,
-    x: { min: 548.75, max: 601.25, ticks: [550, 560, 570, 580, 590, 600].map((v) => ({ v, label: String(v) })) },
+    x: { min: XMIN, max: XMAX, ticks: [550, 560, 570, 580, 590, 600].map((v) => ({ v, label: String(v) })) },
     y: { min: -YM, max: YM, ticks: [{ v: 500, label: '+$500' }, { v: 0, label: '0' }, { v: -500, label: '−$500' }] },
     hlines: [{ v: 0, kind: 'ref' }],
     bars: FIELD.map(([k, v]) => ({ x: k, v, role: faint(v > 0 ? 'up' : 'down') })), barW: 18,
     series: [{ points: smooth(FIELD), role: 'ctx', width: 2 }],
     segs: [{ x0: PUT, y0: -YM, x1: PUT, y1: YM, role: 'down', width: 1.5 }, { x0: FLIPX, y0: -YM, x1: FLIPX, y1: YM, role: 'emph', width: 2 }, { x0: MIDX, y0: -YM, x1: MIDX, y1: YM, role: 'ctx', width: 1 }, { x0: CALL, y0: -YM, x1: CALL, y1: YM, role: 'up', width: 1.5 }],
-    pointLabels: [{ x: PUT + 0.6, y: YM, text: 'put wall 560 · −γ', color: 'var(--text-down)', pos: 'pl-r' }, { x: FLIPX + 0.6, y: YM * 0.84, text: 'flip 568.50', pos: 'pl-r' }, { x: CALL + 0.6, y: YM, text: 'call wall 580 · +γ', color: 'var(--text-up)', pos: 'pl-r' }],
+    extra: [['put', PUT, 'put wall 560 · −γ', 'var(--text-down)'], ['flip', FLIPX, 'flip 568.50', 'var(--phosphor)'], ['call', CALL, 'call wall 580 · +γ', 'var(--text-up)']].map(([k, v, t, c]) => `<span class="pl ss-lv lv-${k}" style="--lx: ${(((v - XMIN) / (XMAX - XMIN)) * 100).toFixed(2)}%; color: ${c};">${t}</span>`).join(''),
     aria: 'Net dealer gamma by strike, illustrative sample: most negative at the 560 put wall, crossing zero at the 568.50 flip, most positive at the 580 call wall; mid 573.12.' });
   return illFrame(env, `${illHead(env, 'Net dealer gamma by strike')}<p class="cf-sub" style="margin: 0;">$M per 1% move · above the zero line, dealers long gamma (+γ); below, short (−γ) · the walls and the flip are labelled, the thin line is the mid 573.12</p><div class="ss-fieldp">${body}</div><p class="cap" style="margin: 0;">Point at the field, or focus it and use ← →, to read a strike.</p>`);
 }

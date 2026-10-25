@@ -467,6 +467,9 @@
   .ts-phone { width: 390px; box-sizing: border-box; padding: 16px; border-radius: 24px; border: 1px solid var(--line-2); background: var(--ink); }
   .ts-states { display: grid; grid-template-columns: repeat(4, 300px); gap: 16px; }
   .ts-states .st { display: flex; flex-direction: column; gap: 6px; }
+  /* The state cards grow with their content (at least 236px; a row's cards share its height): a fixed 236 let a
+     long card overlap its own foot, and a head whose tag wraps under the title (L14-REV-3) needs the room. */
+  .ts-states .st > .dcell { flex: 1 1 auto; }
   .rm-table td.unl { color: var(--phosphor); }
 
   .sheet { padding: 48px 64px 64px; display: flex; flex-direction: column; gap: 32px; box-sizing: border-box; }

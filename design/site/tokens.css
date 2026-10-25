@@ -123,8 +123,10 @@
   .dcell.is-sample::before, .hd-p.is-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; }
   .dcell.sheet { border-radius: 16px 16px 0 0; padding-top: 8px; }
   .dcell .handle { align-self: center; width: 36px; height: 4px; border-radius: 2px; background: var(--line-2); margin-bottom: 2px; }
-  .dcell .dhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 22px; }
-  .dcell .dtitle { font-size: 12px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* The head wraps: a tag too long to share the line with the title ('Delayed by source · filed within 2 days', the
+     app's word · detail) drops to its own line, and the title is never cut (L14-REV-3; it was ellipsized to 'Ins…'). */
+  .dcell .dhead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; min-height: 22px; }
+  .dcell .dtitle { font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
   .dcell .dbody { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0; }
   .dcell .dfoot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .dline { font-size: 12px; color: var(--steel); line-height: 1.45; text-wrap: pretty; }

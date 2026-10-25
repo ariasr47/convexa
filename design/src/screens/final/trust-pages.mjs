@@ -25,6 +25,9 @@ export const TR_CSS = `
   .tr-src dd { margin: 0; color: var(--phosphor); text-wrap: pretty; }
   .tr-src .now { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
   .tr-src .now .dline { font-size: 13px; }
+  /* The demo chip wraps as the app's does (Credits SourceCard: 4px 10px, 12px radius, 11px at 1.35): one 25px line
+     where it fits, two lines at 390. A nowrap chip (lib.mjs .prov) pushed the 390 page 45px wide (L14-REV-1). */
+  .tr-src .now .prov { white-space: normal; max-width: 100%; padding: 4px 10px; line-height: 1.35; border-radius: 12px; }
   .tr-src .links { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding-top: 12px; border-top: 1px solid var(--line); }
   .tr-src .links a { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; font-size: 13.5px; font-weight: 600; text-decoration: none; }
   .tr-src details summary { cursor: pointer; font-size: 13px; color: var(--steel); min-height: 24px; display: inline-flex; align-items: center; }

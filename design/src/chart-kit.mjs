@@ -172,8 +172,9 @@ const col = (r) => ROLE[r] || r || ROLE.emph;
  *  pointLabels: [{ x, y, text, pos }]     selective direct labels (an extreme, the latest, the one that matters)
  *  focus:  { x, title, rows: [{ role, value, name }] }   the scrub state, drawn (crosshair + readout + focus ring)
  *  gaps:   [{ x0, x1, label }]            explicit no-data stretches
+ *  extra:  html appended inside the plot area last (above every mark), for a chart's own labels
  */
-export function plot({ height = 220, pl = 46, pr = 120, prn = 64, pt = 18, pb = 28, x, y, series = [], bands = [], regions = [], hlines = [], bars = [], hbars = [], events = [], pointLabels = [], focus = null, gaps = [], aria = '', id = '', keyboard = true, barW = 24, hbarH = 14, ends = true, eventLane = '', whiskers = [], fbars = [], connect = false, dots = [], segs = [] } = {}) {
+export function plot({ height = 220, pl = 46, pr = 120, prn = 64, pt = 18, pb = 28, x, y, series = [], bands = [], regions = [], hlines = [], bars = [], hbars = [], events = [], pointLabels = [], focus = null, gaps = [], aria = '', id = '', keyboard = true, barW = 24, hbarH = 14, ends = true, eventLane = '', whiskers = [], fbars = [], connect = false, dots = [], segs = [], extra = '' } = {}) {
   const X = (v) => ((v - x.min) / (x.max - x.min)) * 100;
   const Y = (v) => (1 - (v - y.min) / (y.max - y.min)) * 100;
   const f2 = (n) => n.toFixed(2);
@@ -267,7 +268,7 @@ export function plot({ height = 220, pl = 46, pr = 120, prn = 64, pt = 18, pb = 
     html.push(`<div class="ro" style="${side}" aria-hidden="true"><span class="rh">${focus.title}</span>${(focus.rows || []).map((r) => `<span class="rr"><i style="background: ${col(r.role)};"></i><b>${r.value}</b><span>${r.name}</span></span>`).join('')}</div>`);
   }
   const kb = keyboard ? ` tabindex="0" role="group" aria-roledescription="chart" aria-label="${esc(aria)}"` : ` role="img" aria-label="${esc(aria)}"`;
-  return `<div class="cx"${id ? ` id="${id}"` : ''}${kb} style="height: ${height}px; --pl: ${pl}px; --pr: ${pr}px; --prn: ${prn}px; --pt: ${pt}px; --pb: ${pb}px;"><div class="pa"><svg class="ln" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">${svg.join('')}</svg>${html.join('')}</div></div>`;
+  return `<div class="cx"${id ? ` id="${id}"` : ''}${kb} style="height: ${height}px; --pl: ${pl}px; --pr: ${pr}px; --prn: ${prn}px; --pt: ${pt}px; --pb: ${pb}px;"><div class="pa"><svg class="ln" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">${svg.join('')}</svg>${html.join('')}${extra}</div></div>`;
 }
 
 /** The data table twin of a chart: native <details>, a labelled focusable scroll box, header cells. */

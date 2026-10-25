@@ -15,6 +15,9 @@ export const TOOLS_CSS = `
   .ts-phone { width: 390px; box-sizing: border-box; padding: 16px; border-radius: 24px; border: 1px solid var(--line-2); background: var(--ink); }
   .ts-states { display: grid; grid-template-columns: repeat(4, 300px); gap: 16px; }
   .ts-states .st { display: flex; flex-direction: column; gap: 6px; }
+  /* The state cards grow with their content (at least 236px; a row's cards share its height): a fixed 236 let a
+     long card overlap its own foot, and a head whose tag wraps under the title (L14-REV-3) needs the room. */
+  .ts-states .st > .dcell { flex: 1 1 auto; }
   .rm-table td.unl { color: var(--phosphor); }
 `;
 
@@ -28,7 +31,7 @@ export function toolSheetBody({ tool, minHeight = 2200, scheme = 'dark' } = {}) 
   const desktop = tool === 'ta' ? `<div style="display: flex; flex-direction: column; gap: 16px;">${renderTool('ta', {})}</div>` : panel(renderTool(tool, {}), t.name);
   const phone = `<div class="ts-phone">${tool === 'ta' ? `<div style="display: flex; flex-direction: column; gap: 14px;">${renderTool('ta', {})}</div>` : panel(renderTool(tool, {}), t.name)}</div>`;
   const research = tool === 'ta' ? `<div><div class="ts-label"><span class="caps">Research panel · on the note · a reading Convexa would compute</span></div><section class="hd-p"><div class="ph"><h3>Price since this note</h3>${stateTag('notLive', 'Not live · price source')}</div>${renderTool('ta', { research: true })}</section></div>` : '';
-  const states = `<div class="ts-states">${STATE_ROWS.map((r) => `<div class="st"><span class="caps">${r.name}</span>${toolCell({ tool, state: r.key })}</div>`).join('')}</div>`;
+  const states = `<div class="ts-states">${STATE_ROWS.map((r) => `<div class="st"><span class="caps">${r.name}</span>${toolCell({ tool, state: r.key, h: 'auto' })}</div>`).join('')}</div>`;
   return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><div class="sheet">
     ${sheetHead(t.name, t.unlocks + '.', FIND[tool] || '')}
     <dl class="ts-meta"><dt>Build status</dt><dd style="display: flex; gap: 6px; flex-wrap: wrap;">${statusChip(t.status)}<span class="steel" style="font-size: 12px;">${statusKeys(t.status).map((s) => BUILD_STATUS[s].note).join(' · ')}</span></dd><dt>Source</dt><dd>${t.source}</dd><dt>Delay</dt><dd>${t.delay}</dd><dt>Where it lives</dt><dd>${t.where}</dd></dl>

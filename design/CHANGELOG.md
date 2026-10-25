@@ -318,3 +318,30 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
 - **Heights:** re-measured from the built boards (natural height + 20); 106 changed, none overflows, none above
   8,000, no text under 11px. Checked: `node design/src/build.mjs` 0, `node design/src/verify-tokens.mjs` 0 (and
   1 against a copy of tokens.ts whose light `text.secondary` is MUI grey). Not published to the canvas artifact.
+
+## 2026-10-25 · Fidelity audit, lane L14 fix-up: four review defects
+
+Supersedes nothing above; repairs four regressions two read-only reviewers found in the L14 boards (d7155752).
+
+- **Credits demo chip wraps (L14-REV-1):** the source card's "Demo · shaped like …" chip wraps as the app's does
+  (4px 10px, 12px radius, 11px at 1.35). At 390 `final-credits-staging` is 390px wide again (was 435); the New
+  York Fed chip is 324×40 on two lines (app 324×40), and 385×25 on one line at 1280 and 1920 (app 385×25).
+- **Landing field labels on plates, in lanes (L14-REV-2):** put wall, flip and call wall each sit on an ink
+  knock-out plate (88%, 3px radius, 14px, 600 11px mono), 9px right of the line, in 16px lanes from the plot top:
+  put first, flip second, call first while the chart box is wider than 400px, else third and kept inside the
+  plot's right edge, as the shipped lane solver places them. 0 label overlaps on the five landing boards at 390,
+  768, 1280, 1440 and 1920 (was 15×11px at 390); a level line shows through a label in 0 of 14 rows (was 8–14,
+  e.g. the flip through the put-wall label at 1440, 9 of 14). `plot()` gains an `extra` slot for a chart's own
+  labels.
+- **State-card heads wrap (L14-REV-3):** a tag too long to share the line drops to its own line and the title is
+  never ellipsized. Title cuts on the Final state matrix, the library and the v4 matrices: 0 at 390, 1280 and
+  1920 (pre-fix-up 9, 5 on the v4 phone matrix; pre-lane 2). The Final and v4 matrices keep their fixed cells and
+  no card there newly outgrows its height (the v4 phone matrix's 22 bottom-sheet cards already did before the
+  lane; two of them, whose tag now sits under the title, grew 22px). The v4 tool sheets' state cards now grow with their content (at least
+  236px, a row's cards sharing its height): 0 of their 126 cards outgrow their frame (was 21, e.g. "Fund
+  holdings (13F)" whose foot sat over its last row).
+- **v4 note view tab row wraps (L14-REV-4):** "All research" takes its own line under ~440px; at 390 the page is
+  390px wide again (was 416), tabs 16–312, "All research" 16–119 on one line.
+- **Heights:** FCreditsStaging 6576 → 6584, FCreditsStates 2034 → 2035 (202 boards measured, 2 changed, none
+  overflows; a second measurement changes 0). Checked: `node design/src/build.mjs` 0, `node
+  design/src/verify-tokens.mjs` 0. Not published to the canvas artifact.
