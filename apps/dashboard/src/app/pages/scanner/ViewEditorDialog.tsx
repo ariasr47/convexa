@@ -94,7 +94,11 @@ const listRowSx = {
   fontSize: '0.75rem',
 } as const;
 
-/** The board's ghost `sm` button: 30px, steel, a raised hover; 44px on a coarse pointer. */
+/**
+ * The board's ghost `sm` button: 30px, steel, a raised hover; 44px on a coarse pointer. Its dimmed
+ * state keys on `aria-disabled`, not `:disabled`: an end chevron must stay focusable, because a native
+ * `disabled` on the button a keyboard user just pressed drops their focus out of the row (ACC-20).
+ */
 const ghostButtonSx = (theme: Theme) => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -109,8 +113,11 @@ const ghostButtonSx = (theme: Theme) => ({
   color: 'text.secondary',
   cursor: 'pointer',
   font: 'inherit',
-  '&:hover:not(:disabled)': { color: 'text.primary', bgcolor: extrasFor(theme).panelRaised },
-  '&:disabled': { opacity: 0.45, cursor: 'not-allowed' },
+  '&:hover:not([aria-disabled="true"])': {
+    color: 'text.primary',
+    bgcolor: extrasFor(theme).panelRaised,
+  },
+  '&[aria-disabled="true"]': { opacity: 0.45, cursor: 'not-allowed' },
   '@media (pointer: coarse)': { minHeight: 44, minWidth: 44, width: 44 },
 });
 
@@ -160,6 +167,8 @@ export function ViewEditorDialog({
       prev.includes(symbol) ? prev.filter((s) => s !== symbol) : [...prev, symbol],
     );
 
+  // A move past either end returns `prev` untouched: that is what makes the end chevrons (focusable,
+  // `aria-disabled`) a no-op when pressed.
   const move = (index: number, delta: number) =>
     setSelected((prev) => {
       const target = index + delta;
@@ -361,7 +370,7 @@ export function ViewEditorDialog({
                       type="button"
                       aria-label={`${SCAN_COPY.moveUp} ${symbol}`}
                       data-testid={`scan-move-up-${symbol}`}
-                      disabled={index === 0}
+                      aria-disabled={index === 0}
                       onClick={() => move(index, -1)}
                       sx={ghostButtonSx}
                     >
@@ -372,7 +381,7 @@ export function ViewEditorDialog({
                       type="button"
                       aria-label={`${SCAN_COPY.moveDown} ${symbol}`}
                       data-testid={`scan-move-down-${symbol}`}
-                      disabled={index === selected.length - 1}
+                      aria-disabled={index === selected.length - 1}
                       onClick={() => move(index, 1)}
                       sx={ghostButtonSx}
                     >
