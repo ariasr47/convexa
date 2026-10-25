@@ -3,7 +3,9 @@
 //! context package from SEC data. No model is called, no route serves it and no table stores it.
 //!
 //! - `canonical`: the canonical JSON form and `package_id`.
-//! - `package`: the package's types.
+//! - `package`: the package's types and the pure `build`.
+//! - `inputs`: the responses a package is built from.
 
 pub mod canonical;
+pub mod inputs;
 pub mod package;
