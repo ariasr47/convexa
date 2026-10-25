@@ -149,7 +149,10 @@ const COMMON = {
         // rule can win that fight; a `Select` that needs the floor gets it via the SAME
         // doubled-class idiom, LOCALLY, at its own call site (`AlertsPage.tsx`'s Kind/Level
         // selects, `SettingsPage.tsx`'s persona select) — see those files for the pattern.
-        // The shared form of that idiom is `selectCoarseFloorSx` in `shared/ui/touch.ts`.
+        // The shared form of that idiom is `selectCoarseFloorSx` in `shared/ui/touch.ts`. A small
+        // outlined select needs none of it now: it reaches 44 through its padding
+        // (`MuiOutlinedInput` below), which MUI's doubled class does not set, and its field root
+        // takes the floor below.
         //
         // `summary` (spec 2026-10-21/02, part (b)): a `<details>` disclosure is a control, so it
         // takes the floor too. This reaches only summaries with no local `minHeight` — an element
@@ -157,11 +160,27 @@ const COMMON = {
         // control) that sets its own `minHeight` below 44 carries its own coarse 44 instead
         // (`coarseFloor`, `shared/ui/touch.ts`). Raising this rule's specificity was rejected: it
         // would also pull local floors ABOVE 44 (the drawer's 48px rows) down to 44.
+        //
+        // MUI's text input is the one `input` the element floor cannot size correctly. It is
+        // content-box (`InputBase.js`), so `min-height: 44px` landed on its content and MUI's own
+        // padding was added on top: a small field measured 61.31px at 390. The floor moves to the
+        // field's border-box root instead (`.MuiInputBase-input` at (0,1,0) beats the bare `input`
+        // at (0,0,1)), so a field is never shorter than 44 and never taller than its own geometry.
+        // A multiline root is left alone, because its height follows its rows. The root rule sits
+        // behind `:where()` at (0,1,0) on purpose: a call site's own root `minHeight` still wins,
+        // the same contract as the rest of this floor. A select's text box is content-box as well,
+        // so a local select floor written without `boxSizing` (`SettingsPage.tsx`'s persona select)
+        // drew 44 plus padding; border-box makes every such floor land on 44. A small outlined
+        // field also grows its own padding to 44 (`MuiOutlinedInput` below), so the whole box is
+        // the target.
         '@media (pointer: coarse)': {
           'button, [role="button"], a, input, summary': {
             minHeight: 44,
             minWidth: 44,
           },
+          '.MuiInputBase-input': { minHeight: 0 },
+          '.MuiInputBase-input.MuiSelect-select': { boxSizing: 'border-box' },
+          '.MuiInputBase-root:where(:not(.MuiInputBase-multiline))': { minHeight: 44 },
         },
       }),
     },
@@ -185,13 +204,17 @@ const COMMON = {
     // the component's own hover arm.
     //
     // THE CONTROL SCALE (fidelity audit 2026-10-25, FND-07): the library's `.btn` is 36px at 13px,
-    // `.btn.sm` 30px at 12px and `.btn.lg` 44px at 14px with radius 10 (`design/src/lib.mjs`). MUI's
-    // own sizes ran one step large (31 at 13px, 37 at 14px, 42 at 15px; line height 1.75). Each size
-    // sets its font and a pixel line height, and MUI's vertical padding makes up the rest: 22 + 2×4,
-    // 24 + 2×6, 28 + 2×8 (an outlined button's 1px border replaces 1px of padding). Contained and
-    // outlined take the board's side padding (10 / 14 / 20, border included); a text button keeps
-    // MUI's tighter sides, because most of them sit inline beside other content. No `minHeight` here:
-    // it would outrank the coarse-pointer 44px floor above, which reaches buttons by element.
+    // `.btn.sm` 30px at 12px and `.btn.lg` 44px at 14px (`design/src/lib.mjs`). The library draws
+    // `.btn.lg` at radius 10, but the canon declares four radii and controls are 8
+    // (DESIGN_SYSTEM.md radius row; `design/tokens/tokens.json` `radius.control`), and design
+    // drift is settled in favour of the tokens. So a large button keeps the control radius above.
+    // MUI's own sizes ran one step large (31 at 13px, 37 at 14px, 42 at 15px; line height 1.75).
+    // Each size sets its font and a pixel line height, and MUI's vertical padding makes up the
+    // rest: 22 + 2×4, 24 + 2×6, 28 + 2×8 (an outlined button's 1px border replaces 1px of padding).
+    // Contained and outlined take the board's side padding (10 / 14 / 20, border included); a text
+    // button keeps MUI's tighter sides, because most of them sit inline beside other content. No
+    // `minHeight` here: it would outrank the coarse-pointer 44px floor above, which reaches buttons
+    // by element.
     MuiButton: {
       styleOverrides: {
         root: ({ theme }: { theme: Theme }) => {
@@ -212,7 +235,7 @@ const COMMON = {
               },
               {
                 props: { size: 'large' } as const,
-                style: { fontSize: px(14), lineHeight: '28px', borderRadius: 10 },
+                style: { fontSize: px(14), lineHeight: '28px' },
               },
               {
                 props: { size: 'medium', variant: 'contained' } as const,
@@ -301,6 +324,9 @@ const COMMON = {
     // zeroed sides beside an adornment stay, and a multiline field keeps its own padding. The label
     // follows the field to 13px: the outline's notch is cut at 0.75em of the field's font, so a 15px
     // label would overrun a 13px notch. Medium fields are not on the board and keep MUI's geometry.
+    // On a coarse pointer the padding grows to 12.65625px, so the field is the 44px floor with its
+    // text centred, and a select opens from anywhere in that box (the root floor in
+    // `MuiCssBaseline` alone would leave a 36px text box inside a 44px outline).
     MuiOutlinedInput: {
       styleOverrides: {
         root: { borderRadius: 8 },
@@ -309,7 +335,14 @@ const COMMON = {
             {
               props: ({ ownerState }: { ownerState: { size?: string; multiline?: boolean } }) =>
                 ownerState.size === 'small' && !ownerState.multiline,
-              style: { paddingTop: '8.65625px', paddingBottom: '8.65625px' },
+              style: {
+                paddingTop: '8.65625px',
+                paddingBottom: '8.65625px',
+                '@media (pointer: coarse)': {
+                  paddingTop: '12.65625px',
+                  paddingBottom: '12.65625px',
+                },
+              },
             },
           ],
         }),
@@ -331,7 +364,9 @@ const COMMON = {
       },
     },
     // The shrunk label sits 1px lower than MUI's -9px at the smaller font, which keeps its centre
-    // where MUI puts a 15px label's: about 1px above the outline.
+    // where MUI puts a 15px label's: about 1px above the outline. A resting (unshrunk) label sits
+    // on the field's text line: MUI's 9px at 36px, and 13px when a coarse pointer makes the field
+    // 44.
     MuiInputLabel: {
       styleOverrides: {
         root: ({ theme }: { theme: Theme }) => ({
@@ -351,6 +386,19 @@ const COMMON = {
                 ownerState.variant === 'outlined' &&
                 !!ownerState.shrink,
               style: { transform: 'translate(14px, -8px) scale(0.75)' },
+            },
+            {
+              props: ({
+                ownerState,
+              }: {
+                ownerState: { size?: string; variant?: string; shrink?: boolean };
+              }) =>
+                ownerState.size === 'small' &&
+                ownerState.variant === 'outlined' &&
+                !ownerState.shrink,
+              style: {
+                '@media (pointer: coarse)': { transform: 'translate(14px, 13px) scale(1)' },
+              },
             },
           ],
         }),
