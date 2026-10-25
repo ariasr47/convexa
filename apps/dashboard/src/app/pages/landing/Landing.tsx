@@ -232,7 +232,26 @@ export function Landing() {
         data-section="hero"
         sx={{ position: 'relative', overflow: 'hidden' }}
       >
-        <HeroCurve />
+        {/* The curve's box, so its long shallow run passes UNDER the copy and the footnote, as
+            `HeroCurve` intends, at any hero height. `HeroCurve` stretches its drawing over this box
+            and puts the baseline at 90% of its height (360 of 400 units), the run just above it, so
+            the box is (hero − 28px) / 0.9 tall: the baseline lands 28px above the hero's foot, in
+            the middle of its 56px bottom padding, and the section clips the empty strip below.
+            Stretched over the hero itself, the run struck through the production footnote's last
+            lines at 1280 and 1440 (landing legibility, fidelity gate 2026-10-25). Below `laptop`
+            the curve is not drawn. */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 'calc((100% - 28px) / 0.9)',
+            pointerEvents: 'none',
+          }}
+        >
+          <HeroCurve />
+        </Box>
         {/* The board's `.ss-hero` padding: 72px over and 56px under (40 and 32 on a phone). */}
         <Box
           sx={{ ...pageColumnSx, position: 'relative', pt: { xs: 5, md: 9 }, pb: { xs: 4, md: 7 } }}
@@ -287,6 +306,9 @@ export function Landing() {
                   // follows for every eyebrow, just not yet for this chip.
                   bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
                   color: (theme) => extrasFor(theme).textAmber,
+                  // The board's `.ss-chip` type, 12.5px/600 (fidelity REV-L2-FND07-1): the theme's
+                  // small chip is the library's 11px status chip, which this hero label is not.
+                  fontSize: 12.5,
                   fontWeight: 600,
                   borderRadius: 999,
                   '& .MuiChip-label': { whiteSpace: 'normal', px: 1.5, py: 0.5, lineHeight: 1.3 },
