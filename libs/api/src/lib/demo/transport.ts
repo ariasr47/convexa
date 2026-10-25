@@ -755,6 +755,10 @@ const supportedPath = (method: string, pathname: string): boolean => {
   return routes.some(([verb, pattern]) => verb === method && pattern.test(pathname));
 };
 
+/** How fast the demo's positioning thins past its authored 11-strike core, in points (DESK-10). */
+const GAMMA_THINS_OVER = 12;
+const OI_THINS_OVER = 8;
+
 function tickerPayload(
   scenario: Awaited<ReturnType<typeof loadScenario>> & {},
   key: string,
@@ -785,14 +789,42 @@ function tickerPayload(
   // D-22: Net DEX, Vol/OI, IV skew and the off-exchange share come from this symbol's own bars and
   // authored IV (flowSeed.ts), not one set of constants every symbol shared.
   const flow = flowSeed({ bars: scenario.bars, atmIvPct: atmIv });
-  const strikes = Array.from({ length: 11 }, (_, i) => {
-    const strike = Number((Math.floor(spot / 5) * 5 - 25 + i * 5).toFixed(2));
-    const callGex = Number((100_000_000 - Math.abs(strike - variant.wall) * 1_500_000).toFixed(2));
-    const putGex = Number((-80_000_000 + Math.abs(strike - variant.flip) * 1_000_000).toFixed(2));
-    const callOi = 20_000 + i * 101;
-    const putOi = 18_000 + i * 89;
+  // Fidelity DESK-10: the strike grid spans both walls with 12 points to spare, in 2.5-point steps
+  // (SPY: 640 to 717.5), so the field draws the put wall it names. It used to be 11 strikes 5
+  // points apart around spot (SPY 665 to 715): the authored core, which the grid still covers.
+  // Positioning keeps the core's shape: at twice the core's strike density each strike carries half
+  // of the core's per-strike gamma and open interest, and past the core both thin out. So the
+  // bundle's story holds: net GEX stays positive under the authored +γ regime, and Net DEX and
+  // Vol/OI keep their sign and size (SPY, all expirations: +$0.43B and 0.44×, from +$1.06B and
+  // 0.51×). A flat grid out to the put wall turned SPY's net GEX negative and multiplied its Net
+  // DEX by 14. The three strikes that trade over their open interest are the core's three (spot's
+  // 5-point strike plus 15, 20 and 25) at the core's full open interest and ratios, so Fresh
+  // positioning keeps its rows.
+  const callWall = variant.wall;
+  const putWall = Number((variant.wall - spot * 0.075).toFixed(2));
+  const coreLo = Math.floor(spot / 5) * 5 - 25;
+  const coreHi = coreLo + 50;
+  const strikeLo = Math.min(Math.floor((putWall - 12) / 2.5) * 2.5, coreLo);
+  const strikeHi = Math.max(Math.ceil((callWall + 12) / 2.5) * 2.5, coreHi);
+  const strikes = Array.from({ length: Math.round((strikeHi - strikeLo) / 2.5) + 1 }, (_, i) => {
+    const strike = Number((strikeLo + i * 2.5).toFixed(2));
+    // The core's own index scale (0 to 10 on its 5-point strikes), so values continue its ramps.
+    const core = (strike - coreLo) / 5;
+    const beyond = Math.max(0, coreLo - strike, strike - coreHi);
+    const unusual = Number.isInteger(core) && core >= 8 && core <= 10 ? core - 8 : null;
+    const gammaShare = 0.5 * Math.exp(-((beyond / GAMMA_THINS_OVER) ** 2));
+    const oiShare = unusual !== null ? 1 : 0.5 * Math.exp(-((beyond / OI_THINS_OVER) ** 2));
+    const callGex = Number(
+      ((100_000_000 - Math.abs(strike - variant.wall) * 1_500_000) * gammaShare).toFixed(2),
+    );
+    const putGex = Number(
+      ((-80_000_000 + Math.abs(strike - variant.flip) * 1_000_000) * gammaShare).toFixed(2),
+    );
+    const callOi = Math.max(1, Math.round((20_000 + core * 101) * oiShare));
+    const putOi = Math.max(1, Math.round((18_000 + core * 89) * oiShare));
     const totalOi = callOi + putOi;
-    const baseVolume = i >= 8 ? totalOi * (1.2 + (i - 8) * 0.1) : 3_500 + i * 41;
+    const baseVolume =
+      unusual !== null ? totalOi * (1.2 + unusual * 0.1) : (3_500 + core * 41) * oiShare;
     const volume = Math.round(baseVolume * flow.volumeMultiplier);
     // The API's own dollar DEX: delta × open interest × 100 × spot (quant-engine gex.rs).
     const delta = callDelta(spot, strike, atmIv, selectedDte);
@@ -915,8 +947,8 @@ function tickerPayload(
     gex_spot: spot,
     timestamp: stamp / 1000,
     timestamp_iso: DEMO_TIME,
-    call_wall: variant.wall,
-    put_wall: Number((variant.wall - spot * 0.075).toFixed(2)),
+    call_wall: callWall,
+    put_wall: putWall,
     peak_gex_strike: Number((Math.round(variant.wall / 5) * 5).toFixed(2)),
     gamma_flip: variant.flip,
     max_pain: spot,
