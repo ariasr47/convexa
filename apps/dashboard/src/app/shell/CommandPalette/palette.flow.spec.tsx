@@ -165,8 +165,9 @@ async function openWithKeyboard(user: ReturnType<typeof userEvent.setup>) {
 /**
  * The palette is a roving `aria-activedescendant` combobox (SPEC §2.6): DOM focus stays on the
  * INPUT throughout, never moves to an `<li role="option">` (those are not natively focusable — the
- * PALETTE_COMMANDS order is Scanner(0)·Ticker(1)·Positions(2)·Alerts(3), so reaching one is N
- * ArrowDown presses from the default index 0, then Enter — never `.focus()` on the row itself).
+ * PALETTE_COMMANDS order is Scanner(0)·Ticker(1)·Research(2)·Positions(3)·Alerts(4), the nav's
+ * (owner NO-11 A), so reaching one is N ArrowDown presses from the default index 0, then Enter —
+ * never `.focus()` on the row itself).
  */
 async function selectCommandByArrows(
   user: ReturnType<typeof userEvent.setup>,
@@ -177,7 +178,7 @@ async function selectCommandByArrows(
 }
 
 describe('AC-24 — ⌘K opens the palette from anywhere in the shell; all four surfaces reachable without a mouse', () => {
-  it('opens on ⌘K from the ticker page and reaches Scanner, Ticker, Positions, Alerts via the keyboard only', async () => {
+  it('opens on ⌘K from the ticker page and reaches Scanner, Ticker, Research, Positions, Alerts via the keyboard only', async () => {
     // Signed in — Scanner and Positions are both behind `RequireAuth`, and the signed-out wall has
     // its own coverage in `app.risk.spec.tsx`; this test's job is proving PALETTE navigation
     // reaches every surface, so it renders each surface's real content.
@@ -202,17 +203,24 @@ describe('AC-24 — ⌘K opens the palette from anywhere in the shell; all four 
     await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
     await screen.findByTestId('command-deck');
 
-    // Positions — index 2, two ArrowDowns.
+    // Research — index 2, two ArrowDowns (the nav's order, owner NO-11 A).
+    await openWithKeyboard(user);
+    await screen.findByTestId('palette-command-surface-research');
+    await selectCommandByArrows(user, 2);
+    await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
+    await screen.findByRole('heading', { level: 1, name: 'Research' }, { timeout: 5000 });
+
+    // Positions — index 3, three ArrowDowns.
     await openWithKeyboard(user);
     await screen.findByTestId('palette-command-surface-positions');
-    await selectCommandByArrows(user, 2);
+    await selectCommandByArrows(user, 3);
     await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
     await screen.findByTestId('portfolio-panel');
 
-    // Alerts — index 3, three ArrowDowns.
+    // Alerts — index 4, four ArrowDowns.
     await openWithKeyboard(user);
     await screen.findByTestId('palette-command-surface-alerts');
-    await selectCommandByArrows(user, 3);
+    await selectCommandByArrows(user, 4);
     await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
     await screen.findByTestId('alerts-page');
   });

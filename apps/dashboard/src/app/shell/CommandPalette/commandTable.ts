@@ -16,11 +16,12 @@ export interface PaletteCommand {
 }
 
 /** The five product surfaces (canon rule 19, amended 2026-10-12 for Research) — exactly these,
- *  nothing else. Research is last so the four older surfaces keep their palette positions. */
+ *  nothing else, in the nav's order: Research third, between Ticker and Positions (owner NO-11 A,
+ *  2026-10-25; each row shows its `g` key, and the shortcuts sheet lists g s · t · r · p · a). */
 export const PALETTE_COMMANDS: readonly PaletteCommand[] = [
   { id: 'surface-scanner', label: 'Scanner', to: '/scanner' },
   { id: 'surface-ticker', label: 'Ticker', to: '/ticker' },
+  { id: 'surface-research', label: 'Research', to: '/research' },
   { id: 'surface-positions', label: 'Positions', to: '/positions' },
   { id: 'surface-alerts', label: 'Alerts', to: '/alerts' },
-  { id: 'surface-research', label: 'Research', to: '/research' },
 ] as const;
