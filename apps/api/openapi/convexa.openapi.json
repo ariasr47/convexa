@@ -9906,6 +9906,16 @@
             },
             "description": ""
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WireError"
+                }
+              }
+            },
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -9957,8 +9967,14 @@
             "description": "service unavailable"
           }
         },
-        "security": [],
-        "x-convexa-security": "public",
+        "security": [
+          {
+            "session-cookie": []
+          }
+        ],
+        "summary": "The owner's account only ([`OwnerUser`]), checked before the path and query are read.",
+        "x-convexa-access": "owner",
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },
@@ -10022,6 +10038,16 @@
             },
             "description": ""
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WireError"
+                }
+              }
+            },
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -10073,9 +10099,14 @@
             "description": "service unavailable"
           }
         },
-        "security": [],
-        "summary": "Tracked-contract stats from the full warm chain (no new vendor fetch when warm).",
-        "x-convexa-security": "public",
+        "security": [
+          {
+            "session-cookie": []
+          }
+        ],
+        "summary": "Tracked-contract stats from the full warm chain (no new vendor fetch when warm). The owner's\naccount only ([`OwnerUser`]), checked before the path and query are read.",
+        "x-convexa-access": "owner",
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },
@@ -10157,6 +10188,16 @@
             },
             "description": ""
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WireError"
+                }
+              }
+            },
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -10208,9 +10249,14 @@
             "description": "service unavailable"
           }
         },
-        "security": [],
-        "summary": "GET /api/market-data?ticker=",
-        "x-convexa-security": "public",
+        "security": [
+          {
+            "session-cookie": []
+          }
+        ],
+        "summary": "GET /api/market-data?ticker= — the owner's account only, as the bundle.",
+        "x-convexa-access": "owner",
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },
@@ -10699,7 +10745,7 @@
                 }
               }
             },
-            "description": ""
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
           },
           "404": {
             "content": {
@@ -10753,13 +10799,13 @@
           }
         },
         "security": [
-          {},
           {
             "session-cookie": []
           }
         ],
-        "summary": "GET /api/recommendation/export/{ticker} — anonymous-ok, no LLM. Resolves a session\n**optionally** (the mechanism `GET /api/recommendation/status/{ticker}` already uses) so a\nsigned-in owner's drawer has one source of truth; anonymous callers keep working unchanged.",
-        "x-convexa-security": "optional-session",
+        "summary": "GET /api/recommendation/export/{ticker} — no LLM; the owner's account only ([`OwnerUser`]): the\nexport is the bundle's dealer levels and the candidate contracts, all computed from the licensed\noptions feed. It was anonymous-ok with an optional session until the owner gate; the owner check\nnow runs before the path and query are read, and the risk inputs are the owner's own.",
+        "x-convexa-access": "owner",
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },
@@ -10830,7 +10876,7 @@
                 }
               }
             },
-            "description": ""
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
           },
           "404": {
             "content": {
@@ -10884,13 +10930,13 @@
           }
         },
         "security": [
-          {},
           {
             "session-cookie": []
           }
         ],
-        "summary": "GET /api/recommendation/status/{ticker} — always 200 when bundle exists.",
-        "x-convexa-security": "optional-session",
+        "summary": "GET /api/recommendation/status/{ticker} — always 200 when bundle exists. The owner's account\nonly ([`OwnerUser`]): the gate's reasons name setups and the flip (\"near gamma flip\"), read\nfrom the licensed options feed.",
+        "x-convexa-access": "owner",
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },
@@ -10937,7 +10983,7 @@
                 }
               }
             },
-            "description": ""
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
           },
           "404": {
             "content": {
@@ -10985,7 +11031,8 @@
             "session-cookie": []
           }
         ],
-        "summary": "POST /api/recommendation/{ticker} — auth outermost; paused answers the exact AC-3 503 (SPEC B2\namendment, GATE Z 2026-09-24); otherwise always 200 for rec outcomes.",
+        "summary": "POST /api/recommendation/{ticker} — the owner gate outermost (after the body parse, as before):\nthe model reads the dealer levels and the candidate contracts, all computed from the licensed\noptions feed, so only the owner's account may ask (403 `auth_required` signed out, 403\n`owner_only` signed in as anyone else). Paused answers the exact AC-3 503 (SPEC B2 amendment,\nGATE Z 2026-09-24); otherwise always 200 for rec outcomes.",
+        "x-convexa-access": "owner",
         "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
@@ -11012,7 +11059,7 @@
                 }
               }
             },
-            "description": ""
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
           }
         },
         "security": [
@@ -11020,6 +11067,7 @@
             "session-cookie": []
           }
         ],
+        "x-convexa-access": "owner",
         "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
@@ -11046,7 +11094,7 @@
                 }
               }
             },
-            "description": ""
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
           }
         },
         "security": [
@@ -11054,6 +11102,7 @@
             "session-cookie": []
           }
         ],
+        "x-convexa-access": "owner",
         "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
@@ -11227,7 +11276,7 @@
                 }
               }
             },
-            "description": ""
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
           }
         },
         "security": [
@@ -11235,6 +11284,7 @@
             "session-cookie": []
           }
         ],
+        "x-convexa-access": "owner",
         "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
@@ -11297,6 +11347,16 @@
             },
             "description": ""
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WireError"
+                }
+              }
+            },
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -11348,9 +11408,14 @@
             "description": "service unavailable"
           }
         },
-        "security": [],
-        "summary": "GET /api/signals?ticker=",
-        "x-convexa-security": "public",
+        "security": [
+          {
+            "session-cookie": []
+          }
+        ],
+        "summary": "GET /api/signals?ticker= — the owner's account only, as the bundle.",
+        "x-convexa-access": "owner",
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },
@@ -11507,6 +11572,16 @@
               }
             }
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WireError"
+                }
+              }
+            },
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -11565,9 +11640,14 @@
             }
           }
         },
-        "security": [],
-        "summary": "GET /api/stream/{ticker} — LiveUpdate-shaped SSE for one underlying.",
-        "x-convexa-security": "public",
+        "security": [
+          {
+            "session-cookie": []
+          }
+        ],
+        "summary": "GET /api/stream/{ticker} — LiveUpdate-shaped SSE for one underlying. The owner's account only\n([`OwnerUser`]): every update carries the gamma flip. Checked before the path and query are read\nand before any SSE slot is taken.",
+        "x-convexa-access": "owner",
+        "x-convexa-security": "session",
         "x-convexa-surface": "sse"
       }
     },
@@ -11629,6 +11709,16 @@
             },
             "description": ""
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WireError"
+                }
+              }
+            },
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -11680,9 +11770,14 @@
             "description": "service unavailable"
           }
         },
-        "security": [],
-        "summary": "GET /api/strike-profile?ticker=",
-        "x-convexa-security": "public",
+        "security": [
+          {
+            "session-cookie": []
+          }
+        ],
+        "summary": "GET /api/strike-profile?ticker= — the owner's account only, as the bundle.",
+        "x-convexa-access": "owner",
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },
@@ -11790,6 +11885,16 @@
             },
             "description": ""
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WireError"
+                }
+              }
+            },
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -11841,9 +11946,14 @@
             "description": "service unavailable"
           }
         },
-        "security": [],
-        "summary": "GET /api/ticker/{ticker} — FE TickerBundle shape (not progressive dual-path DTO).",
-        "x-convexa-security": "public",
+        "security": [
+          {
+            "session-cookie": []
+          }
+        ],
+        "summary": "GET /api/ticker/{ticker} — FE TickerBundle shape (not progressive dual-path DTO). The owner's\naccount only ([`OwnerUser`]): the bundle carries the flip, the walls, net GEX and the strike\nprofile. The owner check runs before the path and query are read.",
+        "x-convexa-access": "owner",
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },
@@ -11911,6 +12021,16 @@
               }
             }
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WireError"
+                }
+              }
+            },
+            "description": "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+          },
           "404": {
             "content": {
               "application/json": {
@@ -11962,9 +12082,14 @@
             "description": "service unavailable"
           }
         },
-        "security": [],
-        "summary": "SSE: emit price the moment Path A has it; GEX follows on Path B.",
-        "x-convexa-security": "public",
+        "security": [
+          {
+            "session-cookie": []
+          }
+        ],
+        "summary": "SSE: emit price the moment Path A has it; GEX follows on Path B. The owner's account only\n([`OwnerUser`]), checked before the path and query are read and before any stream opens.",
+        "x-convexa-access": "owner",
+        "x-convexa-security": "session",
         "x-convexa-surface": "sse"
       }
     },

@@ -2,7 +2,7 @@
 #![allow(dead_code)] // OpenAPI DTOs and response enums are exporter-only schema markers.
 
 use crate::openapi::RouteResponse;
-use crate::routes::auth::{require_user, AuthUser, MaybeUser};
+use crate::routes::auth::{require_user, MaybeUser, OwnerUser};
 use crate::services::auth::{AuthError, UserRecord};
 use crate::services::scanner::projection::project_building;
 use crate::services::scanner::store::{
@@ -194,14 +194,19 @@ pub struct ScanViewBody {
     pub density: Option<String>,
 }
 
-/// `GET /api/scan` and `GET /api/scan/all`: signed in only, since every row carries dealer levels
-/// derived from the licensed options feed (SEC-1). Signed out is the shared 403 `auth_required`.
+/// `GET /api/scan` and `GET /api/scan/all`: the owner's account only, since every row carries
+/// dealer levels derived from the licensed options feed (SEC-1, then the owner gate). Signed out is
+/// the shared 403 `auth_required`; signed in but not the owner is 403 `owner_only`.
 #[allow(dead_code)]
 #[derive(Debug, IntoResponses)]
 pub enum ScanJsonResponse {
     #[response(status = 200, content_type = "application/json")]
     Ok(ScanEnvelope),
-    #[response(status = 403, content_type = "application/json")]
+    #[response(
+        status = 403,
+        content_type = "application/json",
+        description = "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+    )]
     Forbidden(AuthErrorBody),
 }
 
@@ -217,13 +222,18 @@ pub enum ScanViewGetResponse {
     Ok(ScanView),
 }
 
-/// `GET /api/scan/{symbol}/history`: signed in only, for the same reason as [`ScanJsonResponse`].
+/// `GET /api/scan/{symbol}/history`: the owner's account only, for the same reason as
+/// [`ScanJsonResponse`].
 #[allow(dead_code)]
 #[derive(Debug, IntoResponses)]
 pub enum StructureHistoryGetResponse {
     #[response(status = 200, content_type = "application/json")]
     Ok(StructureHistoryResponse),
-    #[response(status = 403, content_type = "application/json")]
+    #[response(
+        status = 403,
+        content_type = "application/json",
+        description = "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+    )]
     Forbidden(AuthErrorBody),
 }
 
@@ -410,7 +420,7 @@ pub struct DetailBody {
 )]
 pub async fn get_scan_contract(
     State(state): State<AppState>,
-    user: AuthUser,
+    user: OwnerUser,
 ) -> RouteResponse<ScanJsonResponse> {
     get_scan(State(state), user).await.into_response().into()
 }
@@ -418,7 +428,7 @@ pub async fn get_scan_contract(
 #[utoipa::path(get, path = "/api/scan/{symbol}/history", operation_id = "scan_history", params(("symbol" = String, Path), HistoryQuery), responses(StructureHistoryGetResponse))]
 pub async fn get_structure_history_contract(
     State(state): State<AppState>,
-    user: AuthUser,
+    user: OwnerUser,
     Path(symbol): Path<String>,
     Query(q): Query<HistoryQuery>,
 ) -> RouteResponse<StructureHistoryGetResponse> {
@@ -464,7 +474,7 @@ pub async fn get_scan_universe_contract(
 )]
 pub async fn get_scan_all_contract(
     State(state): State<AppState>,
-    user: AuthUser,
+    user: OwnerUser,
 ) -> RouteResponse<ScanJsonResponse> {
     get_scan_all(State(state), user)
         .await
@@ -607,12 +617,13 @@ async fn fill_rows(state: &AppState, symbols: &[String]) -> Vec<ScanRow> {
     rows
 }
 
-/// GET /api/scan — signed in only (SEC-1): the rows carry the flip and the walls, which derive from
-/// the licensed options feed and reach the owner's signed-in account alone (owner rule 2026-10-18).
-/// [`AuthUser`] refuses a signed-out caller with 403 `auth_required` before this body runs.
+/// GET /api/scan — the owner's account only: the rows carry the flip and the walls, which derive
+/// from the licensed options feed and reach the owner alone (owner rule 2026-10-18; SEC-1 made it
+/// signed in, the owner gate made it the owner). [`OwnerUser`] refuses a signed-out caller with 403
+/// `auth_required` and a signed-in non-owner with 403 `owner_only` before this body runs.
 pub async fn get_scan(
     State(state): State<AppState>,
-    AuthUser(user): AuthUser,
+    OwnerUser(user): OwnerUser,
 ) -> Json<ScanEnvelope> {
     let view = effective_view(&state, Some(&user)).await;
     let rows = fill_rows(&state, &view.symbols)
@@ -712,12 +723,12 @@ const STRUCTURE_HISTORY_BASIS: &str =
 Samples thinned to ≥5 minutes; last 576 kept per symbol (research capture spine). \
 Snapshot path, never a forecast. Durable: JSON file (local) or Postgres (prod).";
 
-/// GET /api/scan/{symbol}/history — one ticker's structure path, signed in only (SEC-1): each
-/// sample carries the flip, the walls and net GEX. The sign-in check runs before the path and query
-/// are read, so a signed-out caller gets 403 `auth_required` whatever it sends.
+/// GET /api/scan/{symbol}/history — one ticker's structure path, the owner's account only: each
+/// sample carries the flip, the walls and net GEX. The owner check runs before the path and query
+/// are read, so a refused caller gets its 403 whatever it sends.
 pub async fn get_structure_history(
     State(state): State<AppState>,
-    AuthUser(_user): AuthUser,
+    OwnerUser(_user): OwnerUser,
     Path(symbol): Path<String>,
     Query(q): Query<HistoryQuery>,
 ) -> Json<StructureHistoryResponse> {
@@ -774,10 +785,10 @@ pub async fn get_scan_universe(State(state): State<AppState>) -> Json<UniverseRe
     })
 }
 
-/// GET /api/scan/all — full universe ranked by score; signed in only, as [`get_scan`].
+/// GET /api/scan/all — full universe ranked by score; the owner's account only, as [`get_scan`].
 pub async fn get_scan_all(
     State(state): State<AppState>,
-    AuthUser(user): AuthUser,
+    OwnerUser(user): OwnerUser,
 ) -> Json<ScanEnvelope> {
     let symbols = state
         .universe
@@ -947,7 +958,7 @@ mod response_conversion_tests {
         .unwrap();
 
         let user = || {
-            AuthUser(UserRecord {
+            OwnerUser(UserRecord {
                 id: "scan-market-data-test".into(),
                 email: "scan-market-data@example.test".into(),
                 display_name: None,

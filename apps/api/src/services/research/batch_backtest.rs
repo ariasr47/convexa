@@ -1144,6 +1144,7 @@ mod tests {
             auth_session_absolute_secs: 86400,
             auth_registration_open: true,
             auth_demo_seed: None,
+            owner_emails: Default::default(),
             include_dark_pool: false,
             darkpool_lookback_secs: 3600,
             block_min_shares: 5000,

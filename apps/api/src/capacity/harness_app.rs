@@ -97,10 +97,16 @@ pub async fn build(input: CapacityAppInput) -> AppResult<FixtureApp> {
     };
     state.live_capacity = crate::services::live_capacity::LiveCapacity::new(0, 32);
     state.lifecycle_probe = LifecycleProbe::enabled();
+    // The owner gate stays on: the harness requests arrive as a real harness owner session.
+    let owner_cookie =
+        crate::services::capacity_harness::clients::harness_owner_session(&mut state)?;
     let probe = state.lifecycle_probe.clone();
-    let router = routes::router(state.clone())
-        .map_err(|e| crate::error::AppError::Config(e.to_string()))?
-        .layer(middleware::from_fn_with_state(probe, lifecycle_middleware));
+    let router = crate::services::capacity_harness::clients::with_harness_owner_session(
+        routes::router(state.clone())
+            .map_err(|e| crate::error::AppError::Config(e.to_string()))?
+            .layer(middleware::from_fn_with_state(probe, lifecycle_middleware)),
+        owner_cookie,
+    );
     Ok(FixtureApp {
         state,
         producer,

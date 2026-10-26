@@ -62,6 +62,11 @@ async fn paused_boot_and_every_b2_route_open_zero_vendor_connections() {
     // a "just build the client" path — would have every reason to try the vendor. It must not.
     cfg.warm_enabled = true;
     cfg.scan_enabled = true;
+    // The owner gate: the owner-only B2 routes answer the owner's account alone, so the account
+    // signed in below is named the owner, and the paused check is reached the way the owner
+    // reaches it in production rather than bypassed by a 403.
+    cfg.owner_emails =
+        api_rust::config::OwnerEmails::from_raw(Some("paused-b2-post-rec@example.test"));
     state.config = Arc::new(cfg);
 
     let router = routes::router(state).expect("production router graph builds");
@@ -78,8 +83,8 @@ async fn paused_boot_and_every_b2_route_open_zero_vendor_connections() {
     );
 
     // GATE Z amendment (2026-09-24), AC-3: `POST /api/recommendation/{ticker}` is a B2 route too,
-    // but it is `session`-gated (checked after `require_user`), unlike every route in the list
-    // below. Sign a real user in first — auth is pure in-memory (`AuthStore::open_memory`), so it
+    // but it is `session`-gated (checked after `require_user`; since the owner gate,
+    // `require_owner`), as every owner-only route in the list below now is. Sign a real user in first — auth is pure in-memory (`AuthStore::open_memory`), so it
     // cannot itself dial the vendor — so the paused check below is exercised the same way a
     // signed-in caller hits it in production, not bypassed by a 403.
     let signup = router
@@ -119,31 +124,34 @@ async fn paused_boot_and_every_b2_route_open_zero_vendor_connections() {
     // routes that render a fresh bundle. `/api/scan` is deliberately absent — it is the
     // persisted-state carve-out (AC-4), not a B2 route. `/api/price/{ticker}` is here because its
     // cold-cache miss falls through to the vendor stock snapshot (`AppState::quick_live_price`);
-    // this state's price cache is empty, so the request takes exactly that path.
-    let requests: &[(&str, &str)] = &[
-        ("GET", "/api/price/SPY"),
-        ("GET", "/api/ticker/SPY"),
-        ("GET", "/api/ticker/SPY/progressive"),
-        ("GET", "/api/candidates/SPY"),
+    // this state's price cache is empty, so the request takes exactly that path. The third field
+    // marks the owner-only routes (owner gate), which go out with the owner's session; the price
+    // reads stay public and go out anonymous, as in production.
+    let requests: &[(&str, &str, bool)] = &[
+        ("GET", "/api/price/SPY", false),
+        ("GET", "/api/ticker/SPY", true),
+        ("GET", "/api/ticker/SPY/progressive", true),
+        ("GET", "/api/candidates/SPY", true),
         (
             "GET",
             "/api/contract/SPY?expiration=2099-01-01&strike=100&right=call",
+            true,
         ),
-        ("GET", "/api/market-data?ticker=SPY"),
-        ("GET", "/api/signals?ticker=SPY"),
-        ("GET", "/api/strike-profile?ticker=SPY"),
-        ("GET", "/api/stream/SPY"),
-        ("GET", "/api/stream/prices?symbols=SPY"),
-        ("GET", "/api/recommendation/export/SPY"),
-        ("GET", "/api/recommendation/status/SPY"),
+        ("GET", "/api/market-data?ticker=SPY", true),
+        ("GET", "/api/signals?ticker=SPY", true),
+        ("GET", "/api/strike-profile?ticker=SPY", true),
+        ("GET", "/api/stream/SPY", true),
+        ("GET", "/api/stream/prices?symbols=SPY", false),
+        ("GET", "/api/recommendation/export/SPY", true),
+        ("GET", "/api/recommendation/status/SPY", true),
     ];
 
-    for (method, uri) in requests {
-        let request = Request::builder()
-            .method(*method)
-            .uri(*uri)
-            .body(Body::empty())
-            .expect("request builds");
+    for (method, uri, owner_only) in requests {
+        let mut request = Request::builder().method(*method).uri(*uri);
+        if *owner_only {
+            request = request.header("cookie", &cookie);
+        }
+        let request = request.body(Body::empty()).expect("request builds");
         let response = router
             .clone()
             .oneshot(request)

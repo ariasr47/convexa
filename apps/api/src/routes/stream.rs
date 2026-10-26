@@ -3,6 +3,7 @@
 
 use crate::domain::{is_et_weekend, is_nyse_full_day_holiday, StreamEvent, StreamKind};
 use crate::openapi::{AppErrorBody, RouteResponse};
+use crate::routes::auth::OwnerUser;
 use crate::services::live_capacity::{LiveCapacityKind, SubscriberGuard, CAPACITY_DETAIL};
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
@@ -104,10 +105,19 @@ pub enum StreamPricesResponse {
     Capacity(AppErrorBody),
 }
 
+/// The per-ticker live stream: the owner's account only, since every update carries the gamma flip
+/// computed from the licensed options feed (owner gate). The multi-symbol price stream stays
+/// public: stock prices only, never the options chain.
 #[derive(Debug, IntoResponses)]
 pub enum StreamTickerResponse {
     #[response(status = 200, content_type = "text/event-stream", headers(("Cache-Control" = String)))]
     Ok(Box<LiveUpdateBody>),
+    #[response(
+        status = 403,
+        content_type = "application/json",
+        description = "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+    )]
+    Forbidden(crate::openapi::WireError),
     #[response(status = 404, content_type = "application/json")]
     NotFound(AppErrorBody),
     #[response(status = 422, content_type = "application/json")]
@@ -177,6 +187,7 @@ impl IntoResponse for StreamTickerResponse {
     fn into_response(self) -> Response {
         match self {
             Self::Ok(body) => typed_sse_response(&body),
+            Self::Forbidden(body) => (StatusCode::FORBIDDEN, Json(body)).into_response(),
             Self::NotFound(body) => stream_error(StatusCode::NOT_FOUND, body),
             Self::Invalid(body) => stream_error(StatusCode::UNPROCESSABLE_ENTITY, body),
             Self::Internal(body) => stream_error(StatusCode::INTERNAL_SERVER_ERROR, body),
@@ -238,34 +249,38 @@ pub(crate) fn contract_representative_response(boundary: &str) -> Option<Respons
         "GET /api/stream/prices 200 text/event-stream public" => {
             StreamPricesResponse::Ok(representative_stream_prices()).into_response()
         }
-        "GET /api/stream/{ticker} 200 text/event-stream public" => {
+        "GET /api/stream/{ticker} 200 text/event-stream session" => {
             StreamTickerResponse::Ok(Box::new(representative_live_update())).into_response()
         }
-        "GET /api/stream/{ticker} 404 application/json public" => {
+        "GET /api/stream/{ticker} 403 application/json session" => {
+            StreamTickerResponse::Forbidden(crate::routes::auth::contract_owner_refusal())
+                .into_response()
+        }
+        "GET /api/stream/{ticker} 404 application/json session" => {
             StreamTickerResponse::NotFound(representative_stream_error("not found")).into_response()
         }
         "GET /api/stream/prices 404 application/json public" => {
             StreamPricesResponse::NotFound(representative_stream_error("not found")).into_response()
         }
-        "GET /api/stream/{ticker} 422 application/json public" => {
+        "GET /api/stream/{ticker} 422 application/json session" => {
             StreamTickerResponse::Invalid(representative_stream_error("validation")).into_response()
         }
         "GET /api/stream/prices 422 application/json public" => {
             StreamPricesResponse::Invalid(representative_stream_error("validation")).into_response()
         }
-        "GET /api/stream/{ticker} 500 application/json public" => {
+        "GET /api/stream/{ticker} 500 application/json session" => {
             StreamTickerResponse::Internal(representative_stream_error("internal")).into_response()
         }
         "GET /api/stream/prices 500 application/json public" => {
             StreamPricesResponse::Internal(representative_stream_error("internal")).into_response()
         }
-        "GET /api/stream/{ticker} 502 application/json public" => {
+        "GET /api/stream/{ticker} 502 application/json session" => {
             StreamTickerResponse::Upstream(representative_stream_error("upstream")).into_response()
         }
         "GET /api/stream/prices 502 application/json public" => {
             StreamPricesResponse::Upstream(representative_stream_error("upstream")).into_response()
         }
-        "GET /api/stream/{ticker} 503 application/json public" => {
+        "GET /api/stream/{ticker} 503 application/json session" => {
             StreamTickerResponse::Capacity(representative_stream_error("capacity")).into_response()
         }
         "GET /api/stream/prices 503 application/json public" => {
@@ -520,10 +535,13 @@ async fn stream_prices_http(
         .into_response()
 }
 
-/// GET /api/stream/{ticker} — LiveUpdate-shaped SSE for one underlying.
+/// GET /api/stream/{ticker} — LiveUpdate-shaped SSE for one underlying. The owner's account only
+/// ([`OwnerUser`]): every update carries the gamma flip. Checked before the path and query are read
+/// and before any SSE slot is taken.
 #[utoipa::path(get, path = "/api/stream/{ticker}", params(("ticker" = String, Path, description = "Ticker symbol"), TickerStreamQuery), responses(StreamTickerResponse))]
 pub async fn stream_ticker(
     State(state): State<AppState>,
+    _owner: OwnerUser,
     Path(ticker): Path<String>,
     Query(_q): Query<TickerStreamQuery>,
 ) -> RouteResponse<StreamTickerResponse> {

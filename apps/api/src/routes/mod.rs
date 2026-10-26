@@ -1016,79 +1016,91 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
         false,
     ),
     (
-        "GET /api/candidates/{ticker} 200 application/json public",
+        "GET /api/candidates/{ticker} 200 application/json session",
         "application/json",
         200,
         false,
     ),
     (
-        "GET /api/candidates/{ticker} 404 application/json public",
+        "GET /api/candidates/{ticker} 403 application/json session",
+        "application/json",
+        403,
+        false,
+    ),
+    (
+        "GET /api/candidates/{ticker} 404 application/json session",
         "application/json",
         404,
         false,
     ),
     (
-        "GET /api/candidates/{ticker} 422 application/json public",
+        "GET /api/candidates/{ticker} 422 application/json session",
         "application/json",
         422,
         false,
     ),
     (
-        "GET /api/candidates/{ticker} 500 application/json public",
+        "GET /api/candidates/{ticker} 500 application/json session",
         "application/json",
         500,
         false,
     ),
     (
-        "GET /api/candidates/{ticker} 502 application/json public",
+        "GET /api/candidates/{ticker} 502 application/json session",
         "application/json",
         502,
         false,
     ),
     (
-        "GET /api/candidates/{ticker} 503 application/json public",
+        "GET /api/candidates/{ticker} 503 application/json session",
         "application/json",
         503,
         false,
     ),
     (
-        "GET /api/contract/{ticker} 200 application/json public",
+        "GET /api/contract/{ticker} 200 application/json session",
         "application/json",
         200,
         false,
     ),
     (
-        "GET /api/contract/{ticker} 400 text/plain public",
+        "GET /api/contract/{ticker} 400 text/plain session",
         "text/plain",
         400,
         false,
     ),
     (
-        "GET /api/contract/{ticker} 404 application/json public",
+        "GET /api/contract/{ticker} 403 application/json session",
+        "application/json",
+        403,
+        false,
+    ),
+    (
+        "GET /api/contract/{ticker} 404 application/json session",
         "application/json",
         404,
         false,
     ),
     (
-        "GET /api/contract/{ticker} 422 application/json public",
+        "GET /api/contract/{ticker} 422 application/json session",
         "application/json",
         422,
         false,
     ),
     (
-        "GET /api/contract/{ticker} 500 application/json public",
+        "GET /api/contract/{ticker} 500 application/json session",
         "application/json",
         500,
         false,
     ),
     (
-        "GET /api/contract/{ticker} 502 application/json public",
+        "GET /api/contract/{ticker} 502 application/json session",
         "application/json",
         502,
         false,
     ),
     (
-        "GET /api/contract/{ticker} 503 application/json public",
+        "GET /api/contract/{ticker} 503 application/json session",
         "application/json",
         503,
         false,
@@ -1100,37 +1112,43 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
         false,
     ),
     (
-        "GET /api/market-data 200 application/json public",
+        "GET /api/market-data 200 application/json session",
         "application/json",
         200,
         false,
     ),
     (
-        "GET /api/market-data 404 application/json public",
+        "GET /api/market-data 403 application/json session",
+        "application/json",
+        403,
+        false,
+    ),
+    (
+        "GET /api/market-data 404 application/json session",
         "application/json",
         404,
         false,
     ),
     (
-        "GET /api/market-data 422 application/json public",
+        "GET /api/market-data 422 application/json session",
         "application/json",
         422,
         false,
     ),
     (
-        "GET /api/market-data 500 application/json public",
+        "GET /api/market-data 500 application/json session",
         "application/json",
         500,
         false,
     ),
     (
-        "GET /api/market-data 502 application/json public",
+        "GET /api/market-data 502 application/json session",
         "application/json",
         502,
         false,
     ),
     (
-        "GET /api/market-data 503 application/json public",
+        "GET /api/market-data 503 application/json session",
         "application/json",
         503,
         false,
@@ -1346,85 +1364,85 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
         false,
     ),
     (
-        "GET /api/recommendation/export/{ticker} 200 application/json optional-session",
+        "GET /api/recommendation/export/{ticker} 200 application/json session",
         "application/json",
         200,
         false,
     ),
     (
-        "GET /api/recommendation/export/{ticker} 403 application/json optional-session",
+        "GET /api/recommendation/export/{ticker} 403 application/json session",
         "application/json",
         403,
         false,
     ),
     (
-        "GET /api/recommendation/export/{ticker} 404 application/json optional-session",
+        "GET /api/recommendation/export/{ticker} 404 application/json session",
         "application/json",
         404,
         false,
     ),
     (
-        "GET /api/recommendation/export/{ticker} 422 application/json optional-session",
+        "GET /api/recommendation/export/{ticker} 422 application/json session",
         "application/json",
         422,
         false,
     ),
     (
-        "GET /api/recommendation/export/{ticker} 500 application/json optional-session",
+        "GET /api/recommendation/export/{ticker} 500 application/json session",
         "application/json",
         500,
         false,
     ),
     (
-        "GET /api/recommendation/export/{ticker} 502 application/json optional-session",
+        "GET /api/recommendation/export/{ticker} 502 application/json session",
         "application/json",
         502,
         false,
     ),
     (
-        "GET /api/recommendation/export/{ticker} 503 application/json optional-session",
+        "GET /api/recommendation/export/{ticker} 503 application/json session",
         "application/json",
         503,
         false,
     ),
     (
-        "GET /api/recommendation/status/{ticker} 200 application/json optional-session",
+        "GET /api/recommendation/status/{ticker} 200 application/json session",
         "application/json",
         200,
         false,
     ),
     (
-        "GET /api/recommendation/status/{ticker} 403 application/json optional-session",
+        "GET /api/recommendation/status/{ticker} 403 application/json session",
         "application/json",
         403,
         false,
     ),
     (
-        "GET /api/recommendation/status/{ticker} 404 application/json optional-session",
+        "GET /api/recommendation/status/{ticker} 404 application/json session",
         "application/json",
         404,
         false,
     ),
     (
-        "GET /api/recommendation/status/{ticker} 422 application/json optional-session",
+        "GET /api/recommendation/status/{ticker} 422 application/json session",
         "application/json",
         422,
         false,
     ),
     (
-        "GET /api/recommendation/status/{ticker} 500 application/json optional-session",
+        "GET /api/recommendation/status/{ticker} 500 application/json session",
         "application/json",
         500,
         false,
     ),
     (
-        "GET /api/recommendation/status/{ticker} 502 application/json optional-session",
+        "GET /api/recommendation/status/{ticker} 502 application/json session",
         "application/json",
         502,
         false,
     ),
     (
-        "GET /api/recommendation/status/{ticker} 503 application/json optional-session",
+        "GET /api/recommendation/status/{ticker} 503 application/json session",
         "application/json",
         503,
         false,
@@ -1514,73 +1532,85 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
         false,
     ),
     (
-        "GET /api/signals 200 application/json public",
+        "GET /api/signals 200 application/json session",
         "application/json",
         200,
         false,
     ),
     (
-        "GET /api/signals 404 application/json public",
+        "GET /api/signals 403 application/json session",
+        "application/json",
+        403,
+        false,
+    ),
+    (
+        "GET /api/signals 404 application/json session",
         "application/json",
         404,
         false,
     ),
     (
-        "GET /api/signals 422 application/json public",
+        "GET /api/signals 422 application/json session",
         "application/json",
         422,
         false,
     ),
     (
-        "GET /api/signals 500 application/json public",
+        "GET /api/signals 500 application/json session",
         "application/json",
         500,
         false,
     ),
     (
-        "GET /api/signals 502 application/json public",
+        "GET /api/signals 502 application/json session",
         "application/json",
         502,
         false,
     ),
     (
-        "GET /api/signals 503 application/json public",
+        "GET /api/signals 503 application/json session",
         "application/json",
         503,
         false,
     ),
     (
-        "GET /api/stream/{ticker} 200 text/event-stream public",
+        "GET /api/stream/{ticker} 200 text/event-stream session",
         "text/event-stream",
         200,
         false,
     ),
     (
-        "GET /api/stream/{ticker} 404 application/json public",
+        "GET /api/stream/{ticker} 403 application/json session",
+        "application/json",
+        403,
+        false,
+    ),
+    (
+        "GET /api/stream/{ticker} 404 application/json session",
         "application/json",
         404,
         false,
     ),
     (
-        "GET /api/stream/{ticker} 422 application/json public",
+        "GET /api/stream/{ticker} 422 application/json session",
         "application/json",
         422,
         false,
     ),
     (
-        "GET /api/stream/{ticker} 500 application/json public",
+        "GET /api/stream/{ticker} 500 application/json session",
         "application/json",
         500,
         false,
     ),
     (
-        "GET /api/stream/{ticker} 502 application/json public",
+        "GET /api/stream/{ticker} 502 application/json session",
         "application/json",
         502,
         false,
     ),
     (
-        "GET /api/stream/{ticker} 503 application/json public",
+        "GET /api/stream/{ticker} 503 application/json session",
         "application/json",
         503,
         false,
@@ -1622,109 +1652,127 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
         false,
     ),
     (
-        "GET /api/strike-profile 200 application/json public",
+        "GET /api/strike-profile 200 application/json session",
         "application/json",
         200,
         false,
     ),
     (
-        "GET /api/strike-profile 404 application/json public",
+        "GET /api/strike-profile 403 application/json session",
+        "application/json",
+        403,
+        false,
+    ),
+    (
+        "GET /api/strike-profile 404 application/json session",
         "application/json",
         404,
         false,
     ),
     (
-        "GET /api/strike-profile 422 application/json public",
+        "GET /api/strike-profile 422 application/json session",
         "application/json",
         422,
         false,
     ),
     (
-        "GET /api/strike-profile 500 application/json public",
+        "GET /api/strike-profile 500 application/json session",
         "application/json",
         500,
         false,
     ),
     (
-        "GET /api/strike-profile 502 application/json public",
+        "GET /api/strike-profile 502 application/json session",
         "application/json",
         502,
         false,
     ),
     (
-        "GET /api/strike-profile 503 application/json public",
+        "GET /api/strike-profile 503 application/json session",
         "application/json",
         503,
         false,
     ),
     (
-        "GET /api/ticker/{ticker} 200 application/json public",
+        "GET /api/ticker/{ticker} 200 application/json session",
         "application/json",
         200,
         false,
     ),
     (
-        "GET /api/ticker/{ticker} 404 application/json public",
+        "GET /api/ticker/{ticker} 403 application/json session",
+        "application/json",
+        403,
+        false,
+    ),
+    (
+        "GET /api/ticker/{ticker} 404 application/json session",
         "application/json",
         404,
         false,
     ),
     (
-        "GET /api/ticker/{ticker} 422 application/json public",
+        "GET /api/ticker/{ticker} 422 application/json session",
         "application/json",
         422,
         false,
     ),
     (
-        "GET /api/ticker/{ticker} 500 application/json public",
+        "GET /api/ticker/{ticker} 500 application/json session",
         "application/json",
         500,
         false,
     ),
     (
-        "GET /api/ticker/{ticker} 502 application/json public",
+        "GET /api/ticker/{ticker} 502 application/json session",
         "application/json",
         502,
         false,
     ),
     (
-        "GET /api/ticker/{ticker} 503 application/json public",
+        "GET /api/ticker/{ticker} 503 application/json session",
         "application/json",
         503,
         false,
     ),
     (
-        "GET /api/ticker/{ticker}/progressive 200 text/event-stream public",
+        "GET /api/ticker/{ticker}/progressive 200 text/event-stream session",
         "text/event-stream",
         200,
         false,
     ),
     (
-        "GET /api/ticker/{ticker}/progressive 404 application/json public",
+        "GET /api/ticker/{ticker}/progressive 403 application/json session",
+        "application/json",
+        403,
+        false,
+    ),
+    (
+        "GET /api/ticker/{ticker}/progressive 404 application/json session",
         "application/json",
         404,
         false,
     ),
     (
-        "GET /api/ticker/{ticker}/progressive 422 application/json public",
+        "GET /api/ticker/{ticker}/progressive 422 application/json session",
         "application/json",
         422,
         false,
     ),
     (
-        "GET /api/ticker/{ticker}/progressive 500 application/json public",
+        "GET /api/ticker/{ticker}/progressive 500 application/json session",
         "application/json",
         500,
         false,
     ),
     (
-        "GET /api/ticker/{ticker}/progressive 502 application/json public",
+        "GET /api/ticker/{ticker}/progressive 502 application/json session",
         "application/json",
         502,
         false,
     ),
     (
-        "GET /api/ticker/{ticker}/progressive 503 application/json public",
+        "GET /api/ticker/{ticker}/progressive 503 application/json session",
         "application/json",
         503,
         false,
@@ -2188,7 +2236,58 @@ fn apply_route_security(document: &mut OpenApi) {
     set("/api/scan", "get", session());
     set("/api/scan/all", "get", session());
     set("/api/scan/{symbol}/history", "get", session());
+
+    // The owner gate (docs/product/ai-analyst/DESIGN.md, "Licence compliance: the owner gate"):
+    // every owner-only operation needs the session cookie, and on top of it the account must be on
+    // `OWNER_EMAILS`. The OpenAPI security requirement stays `session-cookie` (that is what a
+    // caller presents); `x-convexa-access: owner` records the role and the 403 declares both
+    // refusals (`auth_required`, `owner_only`).
+    for (method, path) in OWNER_ONLY_OPERATIONS {
+        set(path, &method.to_ascii_lowercase(), session());
+    }
+    for (method, path) in OWNER_ONLY_OPERATIONS {
+        let operation = document
+            .paths
+            .paths
+            .get_mut(*path)
+            .and_then(|item| match *method {
+                "GET" => item.get.as_mut(),
+                "POST" => item.post.as_mut(),
+                _ => None,
+            })
+            .unwrap_or_else(|| panic!("owner-only operation {method} {path} is not registered"));
+        operation
+            .extensions
+            .get_or_insert_default()
+            .insert("x-convexa-access".to_string(), serde_json::json!("owner"));
+    }
 }
+
+/// Every operation behind the owner gate ([`auth::OwnerUser`] or, where the body is parsed first,
+/// [`auth::require_owner`]): each can return dealer levels (flip, walls, net GEX, the GEX profile)
+/// or other values computed from the licensed options feed ("Derived Works"), which reach the
+/// owner's account alone. Deliberately left out, and why: the scan universe (ticker names), the
+/// scan view (the caller's saved layout), prices and the price stream (stock quotes, never the
+/// options chain), personas (static), public data (public-domain sources with credit lines),
+/// health, the caller's own book, broker and auth surfaces, the sim-trade gate (a yes/no), the
+/// demo page (static HTML), and the operator-token research and metrics routes, which keep the
+/// operator token.
+pub const OWNER_ONLY_OPERATIONS: &[(&str, &str)] = &[
+    ("GET", "/api/scan"),
+    ("GET", "/api/scan/all"),
+    ("GET", "/api/scan/{symbol}/history"),
+    ("GET", "/api/ticker/{ticker}"),
+    ("GET", "/api/ticker/{ticker}/progressive"),
+    ("GET", "/api/market-data"),
+    ("GET", "/api/signals"),
+    ("GET", "/api/strike-profile"),
+    ("GET", "/api/contract/{ticker}"),
+    ("GET", "/api/candidates/{ticker}"),
+    ("GET", "/api/stream/{ticker}"),
+    ("POST", "/api/recommendation/{ticker}"),
+    ("GET", "/api/recommendation/export/{ticker}"),
+    ("GET", "/api/recommendation/status/{ticker}"),
+];
 
 /// Closed, source-derived classification for every ordinary operation.  This is deliberately
 /// computed from the operation's declared response media/status and its route path, not from a

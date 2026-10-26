@@ -207,6 +207,10 @@ function preferredHttpStatus(key, operation) {
     .sort((a, b) => a - b);
   const has = (status) => statuses.includes(status);
   const [method, path] = key.split(' ');
+  // The owner gate: an anonymous probe of an owner-only operation is refused (403) before the
+  // handler reads its path, query or body, so no other status is reachable signed out.
+  // The one owner-only POST parses its body first, so its malformed-body 422 still comes first.
+  if (has(403) && operation['x-convexa-access'] === 'owner' && method === 'GET') return 403;
   if (has(409) && /google\/start/.test(path)) return 409;
   if (has(200) && path.startsWith('/api/public-data/')) return 200;
   if (has(307)) return 307;
@@ -656,6 +660,16 @@ export function validateOpenapi(doc) {
                   : 'oauth-state';
         if (actualSecurityMode !== declaredSecurityMode)
           fail('incomplete contract coverage', `security mode at ${key}`);
+        // The owner gate's role marker (Rust `OWNER_ONLY_OPERATIONS`): only `owner`, only on a
+        // session operation, and only where the 403 that carries both refusals is declared.
+        const access = op['x-convexa-access'];
+        if (
+          access !== undefined &&
+          (access !== 'owner' ||
+            declaredSecurityMode !== 'session' ||
+            !op.responses['403']?.content?.['application/json'])
+        )
+          fail('incomplete contract coverage', `owner access declaration at ${key}`);
         for (const requirement of op.security) {
           if (!requirement || typeof requirement !== 'object')
             fail('incomplete contract coverage', `security requirement at ${key}`);
@@ -793,7 +807,8 @@ export function validateParity(parity, ops, openapi = null) {
       runtimeExpectedMedia,
       securityModeFor(operation),
       runtimeExpectedHeaders,
-      item.key !== 'GET /api/stream/{ticker}',
+      // The ticker stream's open SSE body is never observed to its end; its owner-gate 403 is.
+      !(item.key === 'GET /api/stream/{ticker}' && runtimeExpectedMedia === 'text/event-stream'),
     );
     if (
       JSON.stringify(canonical(item.expected_response)) !==
@@ -1465,7 +1480,7 @@ function buildParity(doc, ops, sourceSha) {
         runtimeMedia,
         securityModeFor(operation),
         runtimeHeaders,
-        key !== 'GET /api/stream/{ticker}',
+        !(key === 'GET /api/stream/{ticker}' && runtimeMedia === 'text/event-stream'),
       ),
       effect_assertion: mutationEffectFor(key, status),
       coverage_tags: ['operation-complete', 'public-or-authenticated'],
@@ -1755,7 +1770,7 @@ function buildParity(doc, ops, sourceSha) {
             base.media_type,
             securityModeFor(operation),
             base.header_names,
-            key !== 'GET /api/stream/{ticker}',
+            !(key === 'GET /api/stream/{ticker}' && base.media_type === 'text/event-stream'),
           ),
           effect_assertion: base.mutation_effect,
           setup_fixture: base.setup_fixture,

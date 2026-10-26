@@ -30,84 +30,84 @@
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
-      "boundary_id": "GET /api/market-data 200 application/json public",
+      "boundary_id": "GET /api/market-data 200 application/json session",
       "test": "market_price_contract_and_candidate_runtime_matrix",
       "fixture": "warm-analytics-cache",
       "setup": "SPY AnalyticsSnapshot in the production GexCache seam",
-      "request": "GET /api/market-data?ticker=SPY",
-      "expected_response": {"status":200,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "request": "GET /api/market-data?ticker=SPY as the owner (OWNER_EMAILS session cookie)",
+      "expected_response": {"status":200,"media_type":"application/json","security_mode":"session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
-      "boundary_id": "GET /api/market-data 404 application/json public",
+      "boundary_id": "GET /api/market-data 404 application/json session",
       "test": "market_price_contract_and_candidate_runtime_matrix",
       "fixture": "missing-ticker",
       "setup": "hermetic AppState with pre/post semantic-state snapshots",
-      "request": "GET /api/market-data",
-      "expected_response": {"status":404,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "request": "GET /api/market-data as the owner (OWNER_EMAILS session cookie)",
+      "expected_response": {"status":404,"media_type":"application/json","security_mode":"session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
-      "boundary_id": "GET /api/signals 404 application/json public",
+      "boundary_id": "GET /api/signals 404 application/json session",
       "test": "market_price_contract_and_candidate_runtime_matrix",
       "fixture": "missing-ticker",
       "setup": "hermetic AppState with pre/post semantic-state snapshots",
-      "request": "GET /api/signals",
-      "expected_response": {"status":404,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "request": "GET /api/signals as the owner (OWNER_EMAILS session cookie)",
+      "expected_response": {"status":404,"media_type":"application/json","security_mode":"session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
-      "boundary_id": "GET /api/strike-profile 404 application/json public",
+      "boundary_id": "GET /api/strike-profile 404 application/json session",
       "test": "market_price_contract_and_candidate_runtime_matrix",
       "fixture": "missing-ticker",
       "setup": "hermetic AppState with pre/post semantic-state snapshots",
-      "request": "GET /api/strike-profile",
-      "expected_response": {"status":404,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "request": "GET /api/strike-profile as the owner (OWNER_EMAILS session cookie)",
+      "expected_response": {"status":404,"media_type":"application/json","security_mode":"session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
-      "boundary_id": "GET /api/contract/{ticker} 422 application/json public",
+      "boundary_id": "GET /api/contract/{ticker} 422 application/json session",
       "test": "market_price_contract_and_candidate_runtime_matrix",
       "fixture": "invalid-contract-right",
       "setup": "SPY warm analytics cache with pre/post semantic-state snapshots",
-      "request": "GET /api/contract/SPY?expiration=1970-01-16&strike=100&right=bad",
-      "expected_response": {"status":422,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "request": "GET /api/contract/SPY?expiration=1970-01-16&strike=100&right=bad as the owner (OWNER_EMAILS session cookie)",
+      "expected_response": {"status":422,"media_type":"application/json","security_mode":"session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
-      "boundary_id": "GET /api/contract/{ticker} 404 application/json public",
+      "boundary_id": "GET /api/contract/{ticker} 404 application/json session",
       "test": "market_price_contract_and_candidate_runtime_matrix",
       "fixture": "missing-contract",
       "setup": "SPY snapshot with no matching contract and pre/post semantic-state snapshots",
-      "request": "GET /api/contract/SPY?expiration=1970-01-16&strike=100&right=call",
-      "expected_response": {"status":404,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "request": "GET /api/contract/SPY?expiration=1970-01-16&strike=100&right=call as the owner (OWNER_EMAILS session cookie)",
+      "expected_response": {"status":404,"media_type":"application/json","security_mode":"session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
-      "boundary_id": "GET /api/candidates/{ticker} 502 application/json public",
+      "boundary_id": "GET /api/candidates/{ticker} 502 application/json session",
       "test": "market_price_contract_and_candidate_runtime_matrix",
       "fixture": "vendor-fault",
       "setup": "UNKNOWN ticker with hermetic Massive seam and pre/post semantic-state snapshots",
-      "request": "GET /api/candidates/UNKNOWN",
-      "expected_response": {"status":502,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "request": "GET /api/candidates/UNKNOWN as the owner (OWNER_EMAILS session cookie)",
+      "expected_response": {"status":502,"media_type":"application/json","security_mode":"session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
-      "boundary_id": "GET /api/recommendation/status/{ticker} 502 application/json optional-session",
+      "boundary_id": "GET /api/recommendation/status/{ticker} 502 application/json session",
       "test": "recommendation_and_stream_runtime_failures_are_meaningful",
       "fixture": "vendor-fault",
       "setup": "UNKNOWN ticker with hermetic Massive seam and pre/post semantic-state snapshots",
-      "request": "GET /api/recommendation/status/UNKNOWN",
-      "expected_response": {"status":502,"media_type":"application/json","security_mode":"optional-session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "request": "GET /api/recommendation/status/UNKNOWN as the owner (OWNER_EMAILS session cookie)",
+      "expected_response": {"status":502,"media_type":"application/json","security_mode":"session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
-      "boundary_id": "GET /api/recommendation/export/{ticker} 502 application/json optional-session",
+      "boundary_id": "GET /api/recommendation/export/{ticker} 502 application/json session",
       "test": "recommendation_and_stream_runtime_failures_are_meaningful",
       "fixture": "vendor-fault",
       "setup": "UNKNOWN ticker with hermetic Massive seam and pre/post semantic-state snapshots",
-      "request": "GET /api/recommendation/export/UNKNOWN",
-      "expected_response": {"status":502,"media_type":"application/json","security_mode":"optional-session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "request": "GET /api/recommendation/export/UNKNOWN as the owner (OWNER_EMAILS session cookie)",
+      "expected_response": {"status":502,"media_type":"application/json","security_mode":"session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
@@ -138,12 +138,12 @@
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     },
     {
-      "boundary_id": "GET /api/stream/{ticker} 200 text/event-stream public",
+      "boundary_id": "GET /api/stream/{ticker} 200 text/event-stream session",
       "test": "recommendation_and_stream_runtime_failures_are_meaningful",
       "fixture": "live-stream-first-frame",
       "setup": "dormant StockStreamHub with SPY pre-registered and measured subscriber baseline",
-      "request": "GET /api/stream/SPY",
-      "expected_response": {"status":200,"media_type":"text/event-stream","security_mode":"public","header_names":["cache-control"],"header_value_policies":{"cache-control":"exact:no-cache"},"body_category":"sse","body_valid":true,"body_meaning":"sse"},
+      "request": "GET /api/stream/SPY as the owner (OWNER_EMAILS session cookie)",
+      "expected_response": {"status":200,"media_type":"text/event-stream","security_mode":"session","header_names":["cache-control"],"header_value_policies":{"cache-control":"exact:no-cache"},"body_category":"sse","body_valid":true,"body_meaning":"sse"},
       "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
     }
   ]

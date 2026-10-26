@@ -26,6 +26,7 @@ pub async fn serve(config: Config) -> AppResult<()> {
     } else {
         None
     };
+    crate::runtime_guardrails::log_owner_gate(&config);
     #[cfg(feature = "postgres")]
     let mut production_startup_id: Option<String> = None;
     let state = if let Some(validated) = production {

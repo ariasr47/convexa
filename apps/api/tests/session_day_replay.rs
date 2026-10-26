@@ -225,6 +225,7 @@ async fn planted_walk_prepare_sse_clock_path_b_vendor_zero_and_ended() {
     assert!(state.vendor_fixture.is_none());
 
     // First SSE data: already has session_tape + live false + feed session_tape.
+    let (state, owner_cookie) = replay_owner(state);
     let keep = state.clone();
     let router = routes::router(state.clone()).expect("router");
     let response = router
@@ -232,6 +233,7 @@ async fn planted_walk_prepare_sse_clock_path_b_vendor_zero_and_ended() {
             Request::builder()
                 .method("GET")
                 .uri("/api/stream/SPY")
+                .header("cookie", &owner_cookie)
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -603,12 +605,14 @@ async fn both_empty_starts_then_ends_without_fabricating() {
         "empty standing expected: {empty_standing:?}"
     );
 
+    let (state, owner_cookie) = replay_owner(state);
     let router = routes::router(state.clone()).expect("router");
     let response = router
         .oneshot(
             Request::builder()
                 .method("GET")
                 .uri("/api/stream/SPY")
+                .header("cookie", &owner_cookie)
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -784,6 +788,7 @@ async fn player_fault_does_not_5xx_bundle() {
         panic!("expected Play");
     };
 
+    let (state, owner_cookie) = replay_owner(state);
     let keep = state.clone();
     let router = routes::router(state.clone()).expect("router");
     let response = router
@@ -791,6 +796,7 @@ async fn player_fault_does_not_5xx_bundle() {
             Request::builder()
                 .method("GET")
                 .uri("/api/stream/SPY")
+                .header("cookie", &owner_cookie)
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -817,4 +823,24 @@ async fn player_fault_does_not_5xx_bundle() {
         .expect("player fault must not 5xx load_analytics");
     assert_eq!(src, "session_tape");
     drop(keep);
+}
+
+/// The owner gate: the replay's per-ticker stream answers the owner's account alone (the CLI
+/// reads `OWNER_EMAILS`), so the walks name an owner on the replay state, sign it up on the
+/// replay's in-memory store, and open the stream with its session.
+fn replay_owner(mut state: AppState) -> (AppState, String) {
+    const OWNER: &str = "replay-owner@example.test";
+    let mut config = (*state.config).clone();
+    config.owner_emails = api_rust::config::OwnerEmails::from_raw(Some(OWNER));
+    state.config = Arc::new(config);
+    let (_, sid) = state
+        .auth
+        .signup(OWNER, "runtime-password-123", None)
+        .expect("owner signup on the replay store");
+    let cookie = format!(
+        "{}={}",
+        api_rust::services::auth::COOKIE_NAME,
+        state.auth.signed_cookie_value(&sid)
+    );
+    (state, cookie)
 }

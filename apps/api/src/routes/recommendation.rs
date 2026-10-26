@@ -3,7 +3,7 @@
 
 use crate::error::AppError;
 use crate::openapi::RouteResponse;
-use crate::routes::auth::{require_user, session_user, AuthUser};
+use crate::routes::auth::{require_owner, AuthUser, OwnerUser};
 use crate::routes::market::build_bundle;
 use crate::services::analytics::load_analytics;
 use crate::services::recommendation::{
@@ -354,7 +354,11 @@ impl From<RecommendationRequest> for RecRequestBody {
 pub enum RecommendationResponse {
     #[response(status = 200, content_type = "application/json")]
     Ok(RecommendationBody),
-    #[response(status = 403, content_type = "application/json")]
+    #[response(
+        status = 403,
+        content_type = "application/json",
+        description = "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+    )]
     Forbidden(crate::openapi::WireError),
     #[response(status = 404, content_type = "application/json")]
     NotFound(crate::openapi::WireError),
@@ -452,14 +456,14 @@ pub(crate) fn contract_representative_response(boundary: &str) -> Option<Respons
             SimTradeGateResponse::Forbidden(representative_wire_error("forbidden")).into_response()
         }
         "POST /api/recommendation/{ticker} 200 application/json session"
-        | "GET /api/recommendation/export/{ticker} 200 application/json optional-session"
-        | "GET /api/recommendation/status/{ticker} 200 application/json optional-session" => {
+        | "GET /api/recommendation/export/{ticker} 200 application/json session"
+        | "GET /api/recommendation/status/{ticker} 200 application/json session" => {
             RecommendationResponse::Ok(representative_recommendation_body()).into_response()
         }
         "POST /api/recommendation/{ticker} 403 application/json session"
-        | "GET /api/recommendation/export/{ticker} 403 application/json optional-session"
-        | "GET /api/recommendation/status/{ticker} 403 application/json optional-session" => {
-            RecommendationResponse::Forbidden(representative_wire_error("forbidden"))
+        | "GET /api/recommendation/export/{ticker} 403 application/json session"
+        | "GET /api/recommendation/status/{ticker} 403 application/json session" => {
+            RecommendationResponse::Forbidden(crate::routes::auth::contract_owner_refusal())
                 .into_response()
         }
         "POST /api/recommendation/{ticker} 404 application/json session" => {
@@ -476,24 +480,24 @@ pub(crate) fn contract_representative_response(boundary: &str) -> Option<Respons
             RecommendationResponse::Unavailable(representative_wire_error("unavailable"))
                 .into_response()
         }
-        "GET /api/recommendation/export/{ticker} 404 application/json optional-session"
-        | "GET /api/recommendation/status/{ticker} 404 application/json optional-session" => {
+        "GET /api/recommendation/export/{ticker} 404 application/json session"
+        | "GET /api/recommendation/status/{ticker} 404 application/json session" => {
             crate::error::representative_error_response(StatusCode::NOT_FOUND)
         }
-        "GET /api/recommendation/export/{ticker} 422 application/json optional-session"
-        | "GET /api/recommendation/status/{ticker} 422 application/json optional-session" => {
+        "GET /api/recommendation/export/{ticker} 422 application/json session"
+        | "GET /api/recommendation/status/{ticker} 422 application/json session" => {
             crate::error::representative_error_response(StatusCode::UNPROCESSABLE_ENTITY)
         }
-        "GET /api/recommendation/export/{ticker} 500 application/json optional-session"
-        | "GET /api/recommendation/status/{ticker} 500 application/json optional-session" => {
+        "GET /api/recommendation/export/{ticker} 500 application/json session"
+        | "GET /api/recommendation/status/{ticker} 500 application/json session" => {
             crate::error::representative_error_response(StatusCode::INTERNAL_SERVER_ERROR)
         }
-        "GET /api/recommendation/export/{ticker} 502 application/json optional-session"
-        | "GET /api/recommendation/status/{ticker} 502 application/json optional-session" => {
+        "GET /api/recommendation/export/{ticker} 502 application/json session"
+        | "GET /api/recommendation/status/{ticker} 502 application/json session" => {
             crate::error::representative_error_response(StatusCode::BAD_GATEWAY)
         }
-        "GET /api/recommendation/export/{ticker} 503 application/json optional-session"
-        | "GET /api/recommendation/status/{ticker} 503 application/json optional-session" => {
+        "GET /api/recommendation/export/{ticker} 503 application/json session"
+        | "GET /api/recommendation/status/{ticker} 503 application/json session" => {
             crate::error::representative_error_response(StatusCode::SERVICE_UNAVAILABLE)
         }
         _ => return None,
@@ -501,8 +505,11 @@ pub(crate) fn contract_representative_response(boundary: &str) -> Option<Respons
     Some(response)
 }
 
-/// POST /api/recommendation/{ticker} — auth outermost; paused answers the exact AC-3 503 (SPEC B2
-/// amendment, GATE Z 2026-09-24); otherwise always 200 for rec outcomes.
+/// POST /api/recommendation/{ticker} — the owner gate outermost (after the body parse, as before):
+/// the model reads the dealer levels and the candidate contracts, all computed from the licensed
+/// options feed, so only the owner's account may ask (403 `auth_required` signed out, 403
+/// `owner_only` signed in as anyone else). Paused answers the exact AC-3 503 (SPEC B2 amendment,
+/// GATE Z 2026-09-24); otherwise always 200 for rec outcomes.
 #[utoipa::path(post, path = "/api/recommendation/{ticker}", operation_id = "recommendation_post", params(("ticker" = String, Path, description = "Ticker symbol")), request_body = RecommendationRequest, responses(RecommendationResponse))]
 pub async fn post_recommendation(
     State(state): State<AppState>,
@@ -521,7 +528,7 @@ async fn post_recommendation_http(
     Path(ticker): Path<String>,
     Json(body): Json<RecommendationRequest>,
 ) -> Response {
-    let user = match require_user(&state, &headers) {
+    let user = match require_owner(&state, &headers) {
         Ok(u) => u,
         Err(r) => return r,
     };
@@ -540,13 +547,14 @@ async fn post_recommendation_http(
     (StatusCode::OK, Json(out)).into_response()
 }
 
-/// GET /api/recommendation/export/{ticker} — anonymous-ok, no LLM. Resolves a session
-/// **optionally** (the mechanism `GET /api/recommendation/status/{ticker}` already uses) so a
-/// signed-in owner's drawer has one source of truth; anonymous callers keep working unchanged.
+/// GET /api/recommendation/export/{ticker} — no LLM; the owner's account only ([`OwnerUser`]): the
+/// export is the bundle's dealer levels and the candidate contracts, all computed from the licensed
+/// options feed. It was anonymous-ok with an optional session until the owner gate; the owner check
+/// now runs before the path and query are read, and the risk inputs are the owner's own.
 #[utoipa::path(get, path = "/api/recommendation/export/{ticker}", operation_id = "recommendation_export", params(RecQuery, ("ticker" = String, Path, description = "Ticker symbol")), responses(RecommendationResponse))]
 pub async fn get_export(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    OwnerUser(user): OwnerUser,
     Path(ticker): Path<String>,
     Query(q): Query<RecQuery>,
 ) -> Result<RouteResponse<RecommendationResponse>, AppError> {
@@ -583,10 +591,9 @@ pub async fn get_export(
         None => serde_json::json!({ "state": "unavailable" }),
     };
 
-    // Risk inputs — optional session resolve; anonymous (or a settings-read fault) ⇒ not_set,
-    // present, never omitted.
-    let user = session_user(&state, &headers);
-    let risk_inputs = match user.as_ref().and_then(|u| state.auth.get_settings(u).ok()) {
+    // Risk inputs — the owner's own settings; a settings-read fault ⇒ not_set, present, never
+    // omitted.
+    let risk_inputs = match state.auth.get_settings(&user).ok() {
         Some(settings) => {
             serde_json::to_value(settings.risk_inputs).unwrap_or_else(|_| not_set_risk_inputs())
         }
@@ -604,11 +611,13 @@ pub async fn get_export(
     .into())
 }
 
-/// GET /api/recommendation/status/{ticker} — always 200 when bundle exists.
+/// GET /api/recommendation/status/{ticker} — always 200 when bundle exists. The owner's account
+/// only ([`OwnerUser`]): the gate's reasons name setups and the flip ("near gamma flip"), read
+/// from the licensed options feed.
 #[utoipa::path(get, path = "/api/recommendation/status/{ticker}", operation_id = "recommendation_status", params(RecQuery, ("ticker" = String, Path, description = "Ticker symbol")), responses(RecommendationResponse))]
 pub async fn get_status(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    OwnerUser(user): OwnerUser,
     Path(ticker): Path<String>,
     Query(q): Query<RecQuery>,
 ) -> Result<RouteResponse<RecommendationResponse>, AppError> {
@@ -623,10 +632,9 @@ pub async fn get_status(
         dp,
     )
     .await?;
-    let user = session_user(&state, &headers);
-    let resolved = resolve_llm_key(&state, user.as_ref());
+    let resolved = resolve_llm_key(&state, Some(&user));
     let ai = bundle.get("ai_eval");
-    Ok(Json(status_payload(ai, &resolved, user.is_some()))
+    Ok(Json(status_payload(ai, &resolved, true))
         .into_response()
         .into())
 }

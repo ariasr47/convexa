@@ -1,6 +1,7 @@
 //! `GET /api/contract/{ticker}` — filter-independent tracked-contract stats.
 
 use crate::error::AppError;
+use crate::routes::auth::OwnerUser;
 use crate::services::analytics::load_analytics;
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
@@ -44,6 +45,8 @@ pub struct ContractGreeksWire {
     pub vega: f64,
 }
 
+/// One option contract's quote, greeks and IV from the licensed options feed: the owner's account
+/// only (owner gate).
 #[allow(dead_code)]
 #[derive(Debug, IntoResponses)]
 pub enum ContractResponse {
@@ -51,6 +54,12 @@ pub enum ContractResponse {
     Ok(ContractWire),
     #[response(status = 400, content_type = "text/plain")]
     BadRequest(crate::openapi::WireError),
+    #[response(
+        status = 403,
+        content_type = "application/json",
+        description = "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+    )]
+    Forbidden(crate::openapi::WireError),
     #[response(status = 404, content_type = "application/json")]
     NotFound(crate::openapi::WireError),
     #[response(status = 502, content_type = "application/json")]
@@ -67,6 +76,9 @@ impl IntoResponse for ContractResponse {
                 serde_json::to_string(&error).expect("WireError serializes"),
             )
                 .into_response(),
+            Self::Forbidden(error) => {
+                (axum::http::StatusCode::FORBIDDEN, Json(error)).into_response()
+            }
             Self::NotFound(error) => {
                 (axum::http::StatusCode::NOT_FOUND, Json(error)).into_response()
             }
@@ -117,6 +129,10 @@ pub(crate) fn contract_representative_for(
             })
             .into_response()
         }
+        axum::http::StatusCode::FORBIDDEN => {
+            ContractResponse::Forbidden(crate::routes::auth::contract_owner_refusal())
+                .into_response()
+        }
         axum::http::StatusCode::NOT_FOUND => {
             AppError::NotFound("contract not in current snapshot".into()).into_response()
         }
@@ -136,10 +152,12 @@ pub(crate) fn contract_representative_for(
     }
 }
 
-/// Tracked-contract stats from the full warm chain (no new vendor fetch when warm).
+/// Tracked-contract stats from the full warm chain (no new vendor fetch when warm). The owner's
+/// account only ([`OwnerUser`]), checked before the path and query are read.
 #[utoipa::path(get, path = "/api/contract/{ticker}", params(("ticker" = String, Path, description = "Ticker symbol"), ContractQuery), responses(ContractResponse))]
 pub async fn get_tracked_contract(
     State(state): State<AppState>,
+    _owner: OwnerUser,
     Path(ticker): Path<String>,
     Query(q): Query<ContractQuery>,
 ) -> Result<ContractResponse, AppError> {

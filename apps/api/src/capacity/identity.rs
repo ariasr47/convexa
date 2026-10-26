@@ -94,6 +94,11 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // `AuthErrorBody` response (three new boundaries, 219). Zero new operations, so
 // `precutover-operation-baseline.json` keeps its hash and four artifacts move (ledger
 // `route-growth-repins-api-artifact-oracle`).
+// Re-pinned 2026-10-26 (owner gate, DESIGN.md Amendments): the 14 `OWNER_ONLY_OPERATIONS` are
+// documented `session` with `x-convexa-access: owner` and a 403 naming both refusals; ten of them
+// were `public` or `optional-session`, and eight gain a 403 (227 boundaries). Zero new operations,
+// so `precutover-operation-baseline.json` keeps its hash and four artifacts move (ledger
+// `route-growth-repins-api-artifact-oracle`).
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -101,19 +106,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "e82795a09b5bb2a3eb164d967bd50fcf6a7dcca2059d3f9b9f5fe7be844f2bbc",
+        "07b3f71b39535afb343414e1b5c432067d88ecc5fbe284b62e7aa978c5567c17",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "b3202a0d63ca0762f8527791733b0c4f1c5685add43338121e27a493d08d7c22",
+        "194ce6df32c3d9bd823b6755e020d291d9354a9bbd7fbd4938984e2974868ffd",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "c285d779082b8de623809646e3048297992610f49b4fd626b140d67516193da2",
+        "c0cab6fa0ce2b0d103e1ade528c26c5516b0b883f59c67e99408f813fc5339e3",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "f8c7904ef8216051726f4e7ed6b74ec102f848d6177c29ba5f03fd6ed3c75b91",
+        "d039a05b40b31471ab76fd7122e7a1c11f46f92b656cdd7a21178ba5e9e2237a",
     ),
 ];
 

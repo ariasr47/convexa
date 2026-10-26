@@ -1189,11 +1189,13 @@ async fn scan_runtime_evidence_rejects_unauthenticated_write_and_bad_shape() {
 }
 
 /// A one-symbol universe whose scan row and structure sample carry real dealer levels, so any
-/// 200 a caller gets from a scan read carries them too.
+/// 200 a caller gets from a scan read carries them too. Since the owner gate, `OWNER_EMAILS` names
+/// [`SCAN_OWNER_EMAIL`], the one account a scan read answers.
 async fn scan_levels_router() -> (AppState, axum::Router) {
     let mut state = AppState::for_runtime_guardrail_tests(OPERATOR_TOKEN.into())
         .await
         .expect("hermetic state");
+    set_owner_emails(&mut state, Some(SCAN_OWNER_EMAIL));
     state.universe = Some(std::sync::Arc::new(UniverseConfig {
         universe: vec!["SPY".into()],
         default_view: vec!["SPY".into()],
@@ -1283,14 +1285,15 @@ async fn scan_reads_with_dealer_levels_refuse_a_signed_out_caller() {
             );
         }
     }
-    let email = format!("runtime-scan-levels-{}@example.test", std::process::id());
-    let (cookie, _) = signup(&state, &router, &email, false).await;
+    // Signed in is not enough since the owner gate: the owner's account is (the full matrix,
+    // non-owner included, is `owner_only_routes_answer_the_owner_alone`).
+    let (cookie, _) = signup(&state, &router, SCAN_OWNER_EMAIL, false).await;
     for uri in gated {
         let observed = get_json(&router, uri, Some(&cookie)).await;
-        assert_eq!(observed.status, StatusCode::OK, "signed in: GET {uri}");
+        assert_eq!(observed.status, StatusCode::OK, "owner: GET {uri}");
         assert!(
             carries_dealer_levels(&observed.json),
-            "signed in: GET {uri} lost the seeded levels"
+            "owner: GET {uri} lost the seeded levels"
         );
     }
     for uri in ["/api/scan/universe", "/api/scan/view"] {
@@ -1550,4 +1553,484 @@ async fn the_per_ip_sign_in_budget_answers_429_and_spares_other_addresses() {
         StatusCode::UNAUTHORIZED,
         "another address keeps its own budget"
     );
+}
+
+// ---------------------------------------------------------------------------------------------
+// The owner gate (docs/product/ai-analyst/DESIGN.md, "Licence compliance: the owner gate"):
+// licence-derived data reaches the owner's account alone, and "signed in" is not "owner".
+// ---------------------------------------------------------------------------------------------
+
+/// The scan reads' owner in [`scan_levels_router`].
+const SCAN_OWNER_EMAIL: &str = "runtime-scan-owner@example.test";
+
+/// Replace the state's `OWNER_EMAILS` with `raw` (`None` = unset), before the router is built.
+fn set_owner_emails(state: &mut AppState, raw: Option<&str>) {
+    let mut config = (*state.config).clone();
+    config.owner_emails = api_rust::config::OwnerEmails::from_raw(raw);
+    state.config = std::sync::Arc::new(config);
+}
+
+/// Every key that names a dealer level computed from the licensed options feed.
+const OWNER_LEVEL_KEYS: [&str; 5] = ["flip", "gamma_flip", "call_wall", "put_wall", "net_gex"];
+
+fn carries_owner_levels(value: &Value) -> bool {
+    match value {
+        Value::Object(map) => map.iter().any(|(key, v)| {
+            (OWNER_LEVEL_KEYS.contains(&key.as_str()) && !v.is_null() && v != 0.0)
+                || carries_owner_levels(v)
+        }),
+        Value::Array(items) => items.iter().any(carries_owner_levels),
+        _ => false,
+    }
+}
+
+/// A hermetic state whose every owner-only route has something to serve: the SPY scan row and
+/// structure sample with levels, and a SYN analytics snapshot computed from the checked-in
+/// fixture chain (real walls, flip and GEX profile) in the GEX cache with a warm SYN price, so no
+/// route reaches a vendor. `owner_emails` is the raw `OWNER_EMAILS` value (`None` = unset).
+async fn owner_gate_router(owner_emails: Option<&str>) -> (AppState, axum::Router) {
+    use api_rust::services::analytics::{compute_from_port, AnalyticsComputeParams};
+    use api_rust::services::market_data::{load_fixture_dir, MarketDataPort};
+    let mut state = AppState::for_runtime_guardrail_tests(OPERATOR_TOKEN.into())
+        .await
+        .expect("hermetic state");
+    set_owner_emails(&mut state, owner_emails);
+    // A TTL far past the test's run time, so the seeded snapshot cannot expire mid-matrix.
+    let mut cache_config = (*state.config).clone();
+    cache_config.gex_cache_ttl_secs = 3_600;
+    state.gex_cache = api_rust::state::GexCache::new(cache_config);
+    state.universe = Some(std::sync::Arc::new(UniverseConfig {
+        universe: vec!["SPY".into()],
+        default_view: vec!["SPY".into()],
+        path: std::path::PathBuf::new(),
+    }));
+    let row = ScanRow {
+        symbol: "SPY".into(),
+        price: Some(580.12),
+        chg_pct: Some(0.41),
+        score: Some(71.0),
+        tier: Some("A".into()),
+        regime: Some("positive_gamma".into()),
+        vol_regime: Some("neutral".into()),
+        flip: Some(574.5),
+        dist_to_flip_pct: Some(0.97),
+        call_wall: Some(590.0),
+        put_wall: Some(565.0),
+        dist_to_wall_pct: Some(-1.7),
+        as_of: 1_758_000_000.0,
+        status: "ok".into(),
+        score_drivers: None,
+    };
+    let mut sample = StructureSample::from_row(&row).expect("a scored ok row is a sample");
+    sample.net_gex = Some(1.2e9);
+    state.scan.upsert_row(row).await;
+    state.scan.append_structure_sample(sample).await;
+
+    let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market");
+    let port = MarketDataPort::fixture(load_fixture_dir(&dir).expect("SYN fixture chain"));
+    let mut snapshot =
+        compute_from_port(&port, "SYN", None, &AnalyticsComputeParams::default(), None)
+            .await
+            .expect("hermetic SYN analytics");
+    // The fixture chain quotes gamma and delta only, and `GET /api/contract/{ticker}` needs all
+    // four greeks (a missing one panics its handler, a gap that predates the gate), so fill
+    // theta and vega for the owner's 200.
+    let mut contracts = snapshot.contracts.to_vec();
+    for contract in &mut contracts {
+        let greeks = contract.greeks.get_or_insert_with(Default::default);
+        greeks.theta.get_or_insert(-0.01);
+        greeks.vega.get_or_insert(0.1);
+        greeks.delta.get_or_insert(0.5);
+        greeks.gamma.get_or_insert(0.01);
+    }
+    snapshot.contracts = contracts.into();
+    assert!(
+        snapshot.gex.call_wall != 0.0 && snapshot.gex.put_wall != 0.0,
+        "the SYN fixture must yield real walls, or the owner arm proves nothing"
+    );
+    state.gex_cache.set(snapshot).await;
+    state
+        .prices
+        .set_price(&api_rust::domain::LivePrice {
+            symbol: "SYN".into(),
+            price: 100.0,
+            bid: Some(99.95),
+            ask: Some(100.05),
+            ts_ns: 1,
+            received_at: Utc::now().timestamp(),
+        })
+        .await
+        .expect("warm SYN price");
+    // Pre-registered so opening the ticker stream has no lasting hub side effect.
+    state
+        .stock_hub
+        .subscribe(&["SYN".to_owned()])
+        .await
+        .expect("pre-register SYN");
+    let router = routes::router(state.clone()).expect("valid production contract graph");
+    (state, router)
+}
+
+/// One concrete request per owner-only operation, and whether the owner's 200 must carry levels.
+fn owner_gate_requests() -> Vec<(&'static str, &'static str, &'static str, bool)> {
+    vec![
+        ("GET", "/api/scan", "/api/scan", true),
+        ("GET", "/api/scan/all", "/api/scan/all", true),
+        (
+            "GET",
+            "/api/scan/{symbol}/history",
+            "/api/scan/SPY/history?limit=5",
+            true,
+        ),
+        ("GET", "/api/ticker/{ticker}", "/api/ticker/SYN", true),
+        (
+            "GET",
+            "/api/ticker/{ticker}/progressive",
+            "/api/ticker/SYN/progressive",
+            true,
+        ),
+        (
+            "GET",
+            "/api/market-data",
+            "/api/market-data?ticker=SYN",
+            true,
+        ),
+        ("GET", "/api/signals", "/api/signals?ticker=SYN", false),
+        // Gated as options-derived, but its wire today is `MarketWire` over the profile object,
+        // which keeps only `ticker` (a pre-existing projection gap), so no level reaches it.
+        (
+            "GET",
+            "/api/strike-profile",
+            "/api/strike-profile?ticker=SYN",
+            false,
+        ),
+        (
+            "GET",
+            "/api/contract/{ticker}",
+            "/api/contract/SYN?expiration=2026-08-21&strike=105&right=call",
+            false,
+        ),
+        (
+            "GET",
+            "/api/candidates/{ticker}",
+            "/api/candidates/SYN",
+            false,
+        ),
+        ("GET", "/api/stream/{ticker}", "/api/stream/SYN", true),
+        (
+            "POST",
+            "/api/recommendation/{ticker}",
+            "/api/recommendation/SYN",
+            false,
+        ),
+        (
+            "GET",
+            "/api/recommendation/export/{ticker}",
+            "/api/recommendation/export/SYN",
+            true,
+        ),
+        (
+            "GET",
+            "/api/recommendation/status/{ticker}",
+            "/api/recommendation/status/SYN",
+            false,
+        ),
+    ]
+}
+
+/// What one request answered: status, the `error` code of a JSON refusal, the body (JSON, or the
+/// SSE data events up to `done` or the first live update, as JSON), and whether Set-Cookie came.
+struct OwnerGateOutcome {
+    status: StatusCode,
+    error: Option<String>,
+    body: Value,
+    set_cookie: bool,
+}
+
+async fn owner_gate_call(
+    router: &axum::Router,
+    method: &str,
+    uri: &str,
+    cookie: Option<&str>,
+) -> OwnerGateOutcome {
+    use futures_util::StreamExt;
+    let mut request = Request::builder().method(method).uri(uri);
+    if let Some(cookie) = cookie {
+        request = request.header("cookie", cookie);
+    }
+    let body = if method == "POST" {
+        request = request.header("content-type", "application/json");
+        Body::from(r#"{"snapshot_fingerprint":"owner-gate"}"#)
+    } else {
+        Body::empty()
+    };
+    let response = router
+        .clone()
+        .oneshot(request.body(body).unwrap())
+        .await
+        .unwrap();
+    let status = response.status();
+    let set_cookie = response.headers().contains_key("set-cookie");
+    let media = response
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or_default()
+        .to_owned();
+    if media.starts_with("text/event-stream") {
+        // Read data events until the progressive stream says `done`, or the ticker stream sends
+        // its first live update; bounded so a stuck stream fails instead of hanging.
+        let mut stream = response.into_body().into_data_stream();
+        let mut text = String::new();
+        let mut events = Vec::new();
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+        'read: while let Ok(Some(Ok(chunk))) =
+            tokio::time::timeout_at(deadline, stream.next()).await
+        {
+            text.push_str(std::str::from_utf8(&chunk).expect("SSE is UTF-8"));
+            while let Some(end) = text.find("\n\n") {
+                let frame = text[..end].to_owned();
+                text.drain(..end + 2);
+                let event = frame
+                    .lines()
+                    .find_map(|line| line.strip_prefix("event:"))
+                    .map(|name| name.trim().to_owned());
+                let data = frame
+                    .lines()
+                    .filter_map(|line| line.strip_prefix("data:"))
+                    .map(str::trim)
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                if data.is_empty() {
+                    continue;
+                }
+                let value: Value = serde_json::from_str(&data).unwrap_or(Value::String(data));
+                let done = event.as_deref() == Some("done");
+                let live_update = event.is_none() && value.get("gamma_flip").is_some();
+                events.push(value);
+                if done || live_update {
+                    break 'read;
+                }
+            }
+        }
+        return OwnerGateOutcome {
+            status,
+            error: None,
+            body: Value::Array(events),
+            set_cookie,
+        };
+    }
+    let bytes = to_bytes(response.into_body(), 4 * 1024 * 1024)
+        .await
+        .expect("bounded body");
+    let body: Value = serde_json::from_slice(&bytes)
+        .unwrap_or_else(|_| Value::String(String::from_utf8_lossy(&bytes).into_owned()));
+    OwnerGateOutcome {
+        status,
+        error: body["error"].as_str().map(str::to_owned),
+        body,
+        set_cookie,
+    }
+}
+
+/// The owner gate's risk test (auth is a test floor). For every owner-only operation: signed out
+/// and with a forged cookie it is 403 `auth_required`; signed in as anyone but the owner it is 403
+/// `owner_only`; signed in as the owner (named in `OWNER_EMAILS` with stray case and whitespace)
+/// it is 200, and the reads that carry dealer levels carry them. No refusal carries a level or
+/// sets a cookie. The list under test is the contract's own (`OWNER_ONLY_OPERATIONS`, which also
+/// marks the OpenAPI document), so a route cannot be gated in one place and open in the other.
+#[tokio::test]
+async fn owner_only_routes_answer_the_owner_alone() {
+    let owner_email = "runtime-owner@example.test";
+    let (state, router) = owner_gate_router(Some(
+        "  Runtime-Owner@Example.TEST , second-owner@example.test ,",
+    ))
+    .await;
+    let requests = owner_gate_requests();
+    let mut listed = requests
+        .iter()
+        .map(|(method, path, _, _)| (method.to_string(), path.to_string()))
+        .collect::<Vec<_>>();
+    listed.sort();
+    let mut owner_only = routes::OWNER_ONLY_OPERATIONS
+        .iter()
+        .map(|(method, path)| (method.to_string(), path.to_string()))
+        .collect::<Vec<_>>();
+    owner_only.sort();
+    assert_eq!(
+        listed, owner_only,
+        "every owner-only operation is exercised"
+    );
+
+    let (owner_cookie, _) = signup(&state, &router, owner_email, false).await;
+    let (other_cookie, _) = signup(&state, &router, "runtime-not-owner@example.test", false).await;
+    let forged = format!("{COOKIE_NAME}=forged-session-id.forged-signature");
+    for (method, path, uri, carries_levels) in requests {
+        for (case, cookie, code) in [
+            ("signed out", None, "auth_required"),
+            ("forged cookie", Some(forged.as_str()), "auth_required"),
+            (
+                "signed in, not the owner",
+                Some(other_cookie.as_str()),
+                "owner_only",
+            ),
+        ] {
+            let refused = owner_gate_call(&router, method, uri, cookie).await;
+            assert_eq!(
+                refused.status,
+                StatusCode::FORBIDDEN,
+                "{case}: {method} {uri}"
+            );
+            assert_eq!(
+                refused.error.as_deref(),
+                Some(code),
+                "{case}: {method} {uri}"
+            );
+            assert!(
+                refused.body["message"].is_string(),
+                "{case}: {method} {uri} has a plain message"
+            );
+            assert!(
+                !carries_owner_levels(&refused.body),
+                "{case}: {method} {uri} leaked a level"
+            );
+            assert!(!refused.set_cookie, "{case}: {method} {uri} set a cookie");
+        }
+        let owner = owner_gate_call(&router, method, uri, Some(&owner_cookie)).await;
+        assert_eq!(
+            owner.status,
+            StatusCode::OK,
+            "owner: {method} {uri} ({path}): {}",
+            owner.body
+        );
+        assert_ne!(
+            owner.error.as_deref(),
+            Some("owner_only"),
+            "owner: {method} {uri}"
+        );
+        if carries_levels {
+            assert!(
+                carries_owner_levels(&owner.body),
+                "owner: {method} {uri} must carry the levels: {}",
+                owner.body
+            );
+        }
+    }
+}
+
+/// `OWNER_EMAILS` unset (or empty) is no owner: every owner-only route refuses every signed-in
+/// account, the would-be owner's included (fail closed), and signed out stays `auth_required`.
+#[tokio::test]
+async fn owner_only_routes_fail_closed_without_owner_emails() {
+    for raw in [None, Some(""), Some("  , ")] {
+        let (state, router) = owner_gate_router(raw).await;
+        let email = format!(
+            "runtime-would-be-owner-{}@example.test",
+            raw.map_or(0, str::len)
+        );
+        let (cookie, _) = signup(&state, &router, &email, false).await;
+        for (method, _, uri, _) in owner_gate_requests() {
+            let refused = owner_gate_call(&router, method, uri, Some(&cookie)).await;
+            assert_eq!(
+                refused.status,
+                StatusCode::FORBIDDEN,
+                "{raw:?}: {method} {uri}"
+            );
+            assert_eq!(
+                refused.error.as_deref(),
+                Some("owner_only"),
+                "{raw:?}: {method} {uri}"
+            );
+            assert!(
+                !carries_owner_levels(&refused.body),
+                "{raw:?}: {method} {uri}"
+            );
+            let anonymous = owner_gate_call(&router, method, uri, None).await;
+            assert_eq!(
+                anonymous.error.as_deref(),
+                Some("auth_required"),
+                "{raw:?}: {method} {uri}"
+            );
+        }
+    }
+}
+
+/// No operation can serialize a dealer level without being sorted: every operation whose declared
+/// JSON responses reach a property named for a level is owner-only or behind the operator token.
+/// SSE bodies are opaque strings in the document, which is why the explicit list exists at all.
+#[test]
+fn every_operation_that_declares_a_dealer_level_is_owner_only_or_operator() {
+    fn properties(document: &Value, schema: &Value, seen: &mut Vec<String>, out: &mut Vec<String>) {
+        if let Some(reference) = schema.get("$ref").and_then(Value::as_str) {
+            let name = reference.rsplit('/').next().unwrap().to_owned();
+            if seen.contains(&name) {
+                return;
+            }
+            seen.push(name.clone());
+            properties(
+                document,
+                &document["components"]["schemas"][&name],
+                seen,
+                out,
+            );
+            return;
+        }
+        if let Some(map) = schema.get("properties").and_then(Value::as_object) {
+            for (key, value) in map {
+                out.push(key.clone());
+                properties(document, value, seen, out);
+            }
+        }
+        for key in ["items", "additionalProperties"] {
+            if let Some(inner) = schema.get(key).filter(|v| v.is_object()) {
+                properties(document, inner, seen, out);
+            }
+        }
+        for key in ["allOf", "anyOf", "oneOf"] {
+            for inner in schema
+                .get(key)
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+            {
+                properties(document, inner, seen, out);
+            }
+        }
+    }
+    let document =
+        serde_json::to_value(routes::openapi().expect("contract graph")).expect("OpenAPI JSON");
+    let mut flagged = Vec::new();
+    for (path, item) in document["paths"].as_object().unwrap() {
+        for (method, operation) in item.as_object().unwrap() {
+            let mut names = Vec::new();
+            for response in operation["responses"].as_object().into_iter().flatten() {
+                for media in response.1["content"].as_object().into_iter().flatten() {
+                    properties(&document, &media.1["schema"], &mut Vec::new(), &mut names);
+                }
+            }
+            if names
+                .iter()
+                .any(|name| OWNER_LEVEL_KEYS.contains(&name.as_str()))
+            {
+                flagged.push((
+                    method.to_uppercase(),
+                    path.clone(),
+                    operation["x-convexa-security"].as_str().unwrap().to_owned(),
+                ));
+            }
+        }
+    }
+    assert!(
+        !flagged.is_empty(),
+        "the walk must find the level-bearing reads"
+    );
+    for (method, path, security) in flagged {
+        let owner_only = routes::OWNER_ONLY_OPERATIONS
+            .iter()
+            .any(|(m, p)| *m == method && *p == path);
+        assert!(
+            owner_only || security == "operator-token",
+            "{method} {path} declares a dealer level but is {security}, not owner-only"
+        );
+    }
 }

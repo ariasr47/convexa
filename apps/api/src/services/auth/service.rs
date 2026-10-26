@@ -154,6 +154,16 @@ pub fn auth_required() -> AuthError {
         retry_after_secs: None,
     }
 }
+/// Signed in, but not the owner (`OWNER_EMAILS`): licence-derived data reaches the owner alone.
+/// A closed code, distinct from `auth_required`, so a client can tell "sign in" from "not yours".
+pub fn owner_only() -> AuthError {
+    AuthError {
+        status: 403,
+        code: "owner_only",
+        message: "Only the site owner's account can see this data.".into(),
+        retry_after_secs: None,
+    }
+}
 pub fn settings_auth_required() -> AuthError {
     AuthError {
         status: 401,

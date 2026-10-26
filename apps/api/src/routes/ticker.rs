@@ -13,6 +13,7 @@
 
 use crate::error::AppError;
 use crate::openapi::RouteResponse;
+use crate::routes::auth::OwnerUser;
 use crate::routes::price::PriceWire;
 use crate::services::analytics::load_analytics;
 use crate::state::{AppState, PriceResponse};
@@ -76,6 +77,10 @@ pub(crate) fn contract_representative_for(
                 ProgressiveStreamResponse::Ok(r#"{"ticker":"SPY","phase":"done"}"#.into())
                     .into_response()
             }
+            axum::http::StatusCode::FORBIDDEN => {
+                ProgressiveStreamResponse::Forbidden(crate::routes::auth::contract_owner_refusal())
+                    .into_response()
+            }
             axum::http::StatusCode::NOT_FOUND => {
                 AppError::NotFound("ticker not found".into()).into_response()
             }
@@ -100,11 +105,19 @@ pub(crate) fn contract_representative_for(
     panic!("unknown ticker response-conversion boundary: {boundary}")
 }
 
+/// The progressive ticker stream: the owner's account only, since its `analytics` event carries
+/// the GEX profile computed from the licensed options feed (owner gate).
 #[allow(dead_code)]
 #[derive(Debug, IntoResponses)]
 pub enum ProgressiveStreamResponse {
     #[response(status = 200, content_type = "text/event-stream", headers(("Cache-Control" = String), ("X-Accel-Buffering" = String)))]
     Ok(String),
+    #[response(
+        status = 403,
+        content_type = "application/json",
+        description = "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+    )]
+    Forbidden(crate::openapi::WireError),
     #[response(status = 404, content_type = "application/json")]
     NotFound(crate::openapi::WireError),
     #[response(status = 422, content_type = "application/json")]
@@ -124,6 +137,9 @@ impl IntoResponse for ProgressiveStreamResponse {
                     .insert("x-accel-buffering", HeaderValue::from_static("no"));
                 response
             }
+            Self::Forbidden(error) => {
+                (axum::http::StatusCode::FORBIDDEN, Json(error)).into_response()
+            }
             Self::NotFound(error) => {
                 (axum::http::StatusCode::NOT_FOUND, Json(error)).into_response()
             }
@@ -134,10 +150,12 @@ impl IntoResponse for ProgressiveStreamResponse {
     }
 }
 
-/// SSE: emit price the moment Path A has it; GEX follows on Path B.
+/// SSE: emit price the moment Path A has it; GEX follows on Path B. The owner's account only
+/// ([`OwnerUser`]), checked before the path and query are read and before any stream opens.
 #[utoipa::path(get, path = "/api/ticker/{ticker}/progressive", params(("ticker" = String, Path, description = "Ticker symbol"), TickerQuery), responses(ProgressiveStreamResponse))]
 pub async fn stream_progressive(
     State(state): State<AppState>,
+    _owner: OwnerUser,
     Path(ticker): Path<String>,
     Query(q): Query<TickerQuery>,
 ) -> Result<RouteResponse<ProgressiveStreamResponse>, AppError> {

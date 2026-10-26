@@ -426,7 +426,7 @@ fn every_persisted_boundary_has_explicit_route_source_target() {
         .flat_map(|operation| operation["boundaries"].as_array().unwrap())
         .map(|boundary| boundary["boundary_id"].as_str().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(ids.len(), 219);
+    assert_eq!(ids.len(), 227);
     for id in ids {
         let target = api_rust::routes::response_conversion_registry_source_target(id)
             .unwrap_or_else(|| panic!("missing explicit route source target: {id}"));
@@ -675,6 +675,14 @@ declare_boundary_evidence_tests!(
     boundary_evidence_216,
     boundary_evidence_217,
     boundary_evidence_218,
+    boundary_evidence_219,
+    boundary_evidence_220,
+    boundary_evidence_221,
+    boundary_evidence_222,
+    boundary_evidence_223,
+    boundary_evidence_224,
+    boundary_evidence_225,
+    boundary_evidence_226,
 );
 /// Exercise the actual Axum router returned by production `routes::router` for every ordinary
 /// operation.  This intentionally uses no handler/facade mocks: status and media are observed at
@@ -691,12 +699,17 @@ fn source_owned_http_catalog() -> Value {
         .iter()
         .map(|row| {
             let key = format!("{} {}", row["method"].as_str().unwrap(), row["path"].as_str().unwrap());
-            let status = if key == "GET /api/health" || key == "GET /health" || key == "GET /" || key == "GET /demo" || key == "POST /api/auth/logout" || key == "GET /api/auth/session" || key == "GET /api/personas" || key == "GET /api/scan/universe" || key == "GET /api/scan/view" || key == "GET /api/stream/{ticker}" || key == "GET /api/ticker/{ticker}/progressive" { 200 } else if key.contains("google/callback") || key.contains("grok/callback") { 307 } else if key == "GET /api/auth/google/start" { 409 } else if key == "PUT /api/book" { 422 } else if key == "PUT /api/scan/view" || key.starts_with("GET /api/scan") { 403 } else if key.contains("/broker/book") || key.contains("/broker/credential") { 403 } else if key.contains("_metrics") || key.contains("_research") || key.contains("/settings") || key.contains("/credential") || key.contains("/broker/") { 401 } else if (key.contains("/auth/") && key != "POST /api/auth/login" && key != "POST /api/auth/signup") || key.contains("/book") || key.contains("sim-trade") { 403 } else if key == "POST /api/auth/login" || key == "POST /api/auth/signup" || key.contains("recommendation/{ticker}") || key == "GET /api/stream/prices" { 422 } else if key.contains("/prices") || key.contains("/contract/") { 400 } else if key.contains("/candidates/") || key.contains("/price/") || key.contains("/ticker/{ticker}") || key.contains("recommendation/export") || key.contains("recommendation/status") { 502 } else if key.contains("market-data") || key.contains("signals") || key.contains("strike-profile") { 404 } else { 200 };
+            // The owner gate refuses an anonymous GET before the handler reads anything; the one
+            // owner-only POST parses its body first, so its malformed-body 422 still comes first.
+            let owner_read = routes::OWNER_ONLY_OPERATIONS
+                .iter()
+                .any(|(method, path)| *method == "GET" && format!("{method} {path}") == key);
+            let status = if owner_read { 403 } else if key == "GET /api/health" || key == "GET /health" || key == "GET /" || key == "GET /demo" || key == "POST /api/auth/logout" || key == "GET /api/auth/session" || key == "GET /api/personas" || key == "GET /api/scan/universe" || key == "GET /api/scan/view" || key == "GET /api/stream/{ticker}" || key == "GET /api/ticker/{ticker}/progressive" { 200 } else if key.contains("google/callback") || key.contains("grok/callback") { 307 } else if key == "GET /api/auth/google/start" { 409 } else if key == "PUT /api/book" { 422 } else if key == "PUT /api/scan/view" || key.starts_with("GET /api/scan") { 403 } else if key.contains("/broker/book") || key.contains("/broker/credential") { 403 } else if key.contains("_metrics") || key.contains("_research") || key.contains("/settings") || key.contains("/credential") || key.contains("/broker/") { 401 } else if (key.contains("/auth/") && key != "POST /api/auth/login" && key != "POST /api/auth/signup") || key.contains("/book") || key.contains("sim-trade") { 403 } else if key == "POST /api/auth/login" || key == "POST /api/auth/signup" || key.contains("recommendation/{ticker}") || key == "GET /api/stream/prices" { 422 } else if key.contains("/prices") || key.contains("/contract/") { 400 } else if key.contains("/candidates/") || key.contains("/price/") || key.contains("/ticker/{ticker}") || key.contains("recommendation/export") || key.contains("recommendation/status") { 502 } else if key.contains("market-data") || key.contains("signals") || key.contains("strike-profile") { 404 } else { 200 };
             let access_mode = if key.contains("_metrics") || key.contains("_research") { "operator" } else { "anonymous" };
             let status = if access_mode == "operator" && status == 401 { 200 } else { status };
             let header_names = if status == 307 { vec!["location"] } else { Vec::new() };
             let plain_error = status == 400 || key == "POST /api/auth/login" || key == "POST /api/auth/signup" || key == "PUT /api/book" || key.contains("recommendation/{ticker}");
-            let body_meaning = if status == 307 { "empty" } else if key == "GET /" || key == "GET /demo" { "text" } else if (key.contains("stream") && key != "GET /api/stream/prices") || key.contains("progressive") { "sse" } else if plain_error { "text" } else { "json" };
+            let body_meaning = if status == 307 { "empty" } else if key == "GET /" || key == "GET /demo" { "text" } else if status != 403 && ((key.contains("stream") && key != "GET /api/stream/prices") || key.contains("progressive")) { "sse" } else if plain_error { "text" } else { "json" };
             let media_type = if status == 307 { Value::Null } else if plain_error { Value::String("text/plain".into()) } else if body_meaning == "text" { Value::String("text/html".into()) } else if body_meaning == "sse" { Value::String("text/event-stream".into()) } else { Value::String("application/json".into()) };
             let cookie_effect = if key == "POST /api/auth/logout" { "clear" } else { "none" };
             serde_json::json!({"key": key, "allowed_outcomes": [{"status": status, "access_mode": access_mode, "scenario_id": format!("{key}:source-owned"), "media_type": media_type, "header_names": header_names, "state_effect": "none", "mutation_effect": {"durable":"none","memory":"none","cookie":cookie_effect}, "body_meaning":body_meaning}]})
@@ -965,10 +978,13 @@ async fn http_parity_harness_observes_all_operations() {
                     || path.contains("/auth/signup")
                 {
                     "public"
+                } else if routes::OWNER_ONLY_OPERATIONS
+                    .iter()
+                    .any(|(method, owner_path)| *method == method_name && *owner_path == path)
+                {
+                    "session"
                 } else if path.contains("/auth/session")
                     || path.contains("/auth/logout")
-                    || path.contains("recommendation/export")
-                    || path.contains("recommendation/status")
                     || (method_name == "GET" && path == "/api/scan/view")
                 {
                     "optional-session"
@@ -1282,6 +1298,21 @@ fn every_operation_has_the_contract_security_mode() {
         ("GET", "/api/scan/universe", "public"),
         ("GET", "/api/scan/view", "optional-session"),
         ("PUT", "/api/scan/view", "session"),
+        // The owner gate: every owner-only read is a session operation (the role check rides on
+        // top of the cookie); the price reads and the price stream stay public.
+        ("GET", "/api/ticker/{ticker}", "session"),
+        ("GET", "/api/ticker/{ticker}/progressive", "session"),
+        ("GET", "/api/market-data", "session"),
+        ("GET", "/api/signals", "session"),
+        ("GET", "/api/strike-profile", "session"),
+        ("GET", "/api/contract/{ticker}", "session"),
+        ("GET", "/api/candidates/{ticker}", "session"),
+        ("GET", "/api/stream/{ticker}", "session"),
+        ("GET", "/api/recommendation/export/{ticker}", "session"),
+        ("GET", "/api/recommendation/status/{ticker}", "session"),
+        ("GET", "/api/price/{ticker}", "public"),
+        ("GET", "/api/prices", "public"),
+        ("GET", "/api/stream/prices", "public"),
     ];
     for (method, path, mode) in expected {
         assert_eq!(
@@ -1290,6 +1321,23 @@ fn every_operation_has_the_contract_security_mode() {
             "security mode mismatch for {method} {path}"
         );
     }
+    // `x-convexa-access: owner` is on exactly the owner-only operations.
+    let mut marked = Vec::new();
+    for (path, item) in d["paths"].as_object().unwrap() {
+        for (method, operation) in item.as_object().unwrap() {
+            if let Some(access) = operation.get("x-convexa-access") {
+                assert_eq!(access, "owner", "{method} {path}");
+                marked.push((method.to_uppercase(), path.clone()));
+            }
+        }
+    }
+    marked.sort();
+    let mut owner_only = routes::OWNER_ONLY_OPERATIONS
+        .iter()
+        .map(|(method, path)| (method.to_string(), path.to_string()))
+        .collect::<Vec<_>>();
+    owner_only.sort();
+    assert_eq!(marked, owner_only);
 }
 
 #[test]

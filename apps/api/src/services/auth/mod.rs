@@ -18,7 +18,7 @@ pub use risk::{
     RiskInputsState, RiskInputsWire,
 };
 pub use service::{
-    auth_required, settings_auth_required, AiSlot, AuthConfig, AuthError, AuthService,
+    auth_required, owner_only, settings_auth_required, AiSlot, AuthConfig, AuthError, AuthService,
     IdentityShape, ResolvedSession, SettingsWire, BROKER_PROVIDER, CREDENTIAL_KIND_BROKER,
 };
 pub use store::{

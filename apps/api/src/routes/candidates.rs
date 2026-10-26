@@ -2,6 +2,7 @@
 //! Never on the bundle, never on SSE, never on a passive page load. Issues NO vendor request:
 //! the snapshot read is the pre-existing warm-cache/singleflight read `/api/contract` already does.
 use crate::error::AppError;
+use crate::routes::auth::OwnerUser;
 use crate::services::analytics::load_analytics;
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
@@ -101,16 +102,27 @@ pub struct CandidateGreeksWire {
     pub vega: Option<f64>,
 }
 
+/// Candidate option contracts selected from the licensed options chain: the owner's account only
+/// (owner gate).
 #[derive(Debug, IntoResponses)]
 pub enum CandidatesResponse {
     #[response(status = 200, content_type = "application/json")]
     Ok(CandidatesWire),
+    #[response(
+        status = 403,
+        content_type = "application/json",
+        description = "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+    )]
+    Forbidden(crate::openapi::WireError),
 }
 
 impl IntoResponse for CandidatesResponse {
     fn into_response(self) -> Response {
         match self {
             Self::Ok(body) => Json(body).into_response(),
+            Self::Forbidden(body) => {
+                (axum::http::StatusCode::FORBIDDEN, Json(body)).into_response()
+            }
         }
     }
 }
@@ -136,6 +148,10 @@ pub(crate) fn contract_representative_for(
     }
     match status {
         axum::http::StatusCode::OK => contract_representative_response(),
+        axum::http::StatusCode::FORBIDDEN => {
+            CandidatesResponse::Forbidden(crate::routes::auth::contract_owner_refusal())
+                .into_response()
+        }
         axum::http::StatusCode::NOT_FOUND => {
             AppError::NotFound("no option-chain data for candidate ticker".into()).into_response()
         }
@@ -155,9 +171,11 @@ pub(crate) fn contract_representative_for(
     }
 }
 
+/// The owner's account only ([`OwnerUser`]), checked before the path and query are read.
 #[utoipa::path(get, path = "/api/candidates/{ticker}", params(("ticker" = String, Path, description = "Ticker symbol"), CandidatesQuery), responses(CandidatesResponse))]
 pub async fn get_candidates(
     State(state): State<AppState>,
+    _owner: OwnerUser,
     Path(ticker): Path<String>,
     Query(q): Query<CandidatesQuery>,
 ) -> Result<CandidatesResponse, AppError> {

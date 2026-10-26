@@ -1,6 +1,7 @@
 //! FE-facing market slices + personas + FE-shaped ticker bundle.
 
 use crate::error::AppError;
+use crate::routes::auth::OwnerUser;
 use crate::services::analytics::load_analytics;
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
@@ -457,16 +458,28 @@ pub struct PersonaWire {
     pub dte_pref: Option<String>,
 }
 
+/// The ticker bundle and its three slices (market state, signals, strike profile): the owner's
+/// account only, since every one carries dealer levels computed from the licensed options feed
+/// (owner gate). The 403 is the [`crate::routes::auth::OwnerUser`] refusal.
 #[derive(Debug, IntoResponses)]
 pub enum MarketResponse {
     #[response(status = 200, content_type = "application/json")]
     Ok(MarketWire),
+    #[response(
+        status = 403,
+        content_type = "application/json",
+        description = "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+    )]
+    Forbidden(crate::openapi::WireError),
 }
 
 impl IntoResponse for MarketResponse {
     fn into_response(self) -> Response {
         match self {
             Self::Ok(body) => Json(body).into_response(),
+            Self::Forbidden(body) => {
+                (axum::http::StatusCode::FORBIDDEN, Json(body)).into_response()
+            }
         }
     }
 }
@@ -518,6 +531,9 @@ pub(crate) fn contract_representative_for(
     }
     match status {
         axum::http::StatusCode::OK => contract_market_response(),
+        axum::http::StatusCode::FORBIDDEN => {
+            MarketResponse::Forbidden(crate::routes::auth::contract_owner_refusal()).into_response()
+        }
         axum::http::StatusCode::NOT_FOUND => {
             AppError::NotFound("no analytics for ticker".into()).into_response()
         }
@@ -777,10 +793,13 @@ fn resolve_dark_pool(state: &AppState, q: Option<bool>) -> bool {
     q.unwrap_or(state.config.include_dark_pool)
 }
 
-/// GET /api/ticker/{ticker} — FE TickerBundle shape (not progressive dual-path DTO).
+/// GET /api/ticker/{ticker} — FE TickerBundle shape (not progressive dual-path DTO). The owner's
+/// account only ([`OwnerUser`]): the bundle carries the flip, the walls, net GEX and the strike
+/// profile. The owner check runs before the path and query are read.
 #[utoipa::path(get, path = "/api/ticker/{ticker}", params(("ticker" = String, Path, description = "Ticker symbol"), TickerQuery), responses(MarketResponse))]
 pub async fn get_ticker_bundle(
     State(state): State<AppState>,
+    _owner: OwnerUser,
     Path(ticker): Path<String>,
     Query(q): Query<TickerQuery>,
 ) -> Result<MarketResponse, AppError> {
@@ -794,7 +813,7 @@ pub async fn get_ticker_bundle(
     ))
 }
 
-/// GET /api/market-data?ticker=
+/// GET /api/market-data?ticker= — the owner's account only, as the bundle.
 #[utoipa::path(
     get,
     path = "/api/market-data",
@@ -803,6 +822,7 @@ pub async fn get_ticker_bundle(
 )]
 pub async fn get_market_data(
     State(state): State<AppState>,
+    _owner: OwnerUser,
     Query(q): Query<MarketQuery>,
 ) -> Result<MarketResponse, AppError> {
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;
@@ -814,7 +834,7 @@ pub async fn get_market_data(
     ))
 }
 
-/// GET /api/signals?ticker=
+/// GET /api/signals?ticker= — the owner's account only, as the bundle.
 #[utoipa::path(
     get,
     path = "/api/signals",
@@ -823,6 +843,7 @@ pub async fn get_market_data(
 )]
 pub async fn get_signals(
     State(state): State<AppState>,
+    _owner: OwnerUser,
     Query(q): Query<MarketQuery>,
 ) -> Result<MarketResponse, AppError> {
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;
@@ -834,7 +855,7 @@ pub async fn get_signals(
     ))
 }
 
-/// GET /api/strike-profile?ticker=
+/// GET /api/strike-profile?ticker= — the owner's account only, as the bundle.
 #[utoipa::path(
     get,
     path = "/api/strike-profile",
@@ -843,6 +864,7 @@ pub async fn get_signals(
 )]
 pub async fn get_strike_profile(
     State(state): State<AppState>,
+    _owner: OwnerUser,
     Query(q): Query<MarketQuery>,
 ) -> Result<MarketResponse, AppError> {
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;

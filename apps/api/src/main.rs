@@ -532,6 +532,7 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 auth_session_absolute_secs: 86400,
                 auth_registration_open: true,
                 auth_demo_seed: None,
+                owner_emails: Default::default(),
                 include_dark_pool: true,
                 darkpool_lookback_secs: 3600,
                 block_min_shares: 5000,
@@ -1109,6 +1110,7 @@ async fn cmd_score_lab(
             auth_session_absolute_secs: 86400,
             auth_registration_open: true,
             auth_demo_seed: None,
+            owner_emails: Default::default(),
             include_dark_pool: true,
             darkpool_lookback_secs: 3600,
             block_min_shares: 5000,
@@ -1323,6 +1325,7 @@ async fn cmd_archive_coverage(et_date: Option<String>) -> ExitCode {
         auth_session_absolute_secs: 86400,
         auth_registration_open: true,
         auth_demo_seed: None,
+        owner_emails: Default::default(),
         include_dark_pool: true,
         darkpool_lookback_secs: 3600,
         block_min_shares: 5000,
@@ -1433,6 +1436,7 @@ async fn cmd_session_day_tape(symbol: Option<String>, et_date: Option<String>) -
         auth_session_absolute_secs: 86400,
         auth_registration_open: true,
         auth_demo_seed: None,
+        owner_emails: Default::default(),
         include_dark_pool: true,
         darkpool_lookback_secs: 3600,
         block_min_shares: 5000,
@@ -1528,6 +1532,7 @@ async fn cmd_flat_files(
         auth_session_absolute_secs: 86400,
         auth_registration_open: true,
         auth_demo_seed: None,
+        owner_emails: Default::default(),
         include_dark_pool: true,
         darkpool_lookback_secs: 3600,
         block_min_shares: 5000,
@@ -1627,6 +1632,7 @@ async fn cmd_session_day_replay(symbol: String, et_date: String, pace: Option<u3
         auth_session_absolute_secs: 86400,
         auth_registration_open: true,
         auth_demo_seed: None,
+        owner_emails: Default::default(),
         include_dark_pool: true,
         darkpool_lookback_secs: 3600,
         block_min_shares: 5000,
@@ -1697,13 +1703,21 @@ async fn cmd_session_day_replay(symbol: String, et_date: String, pace: Option<u3
             ExitCode::from(1)
         }
         api_rust::services::day_tape::construct::Prepare::Play {
-            state,
+            mut state,
             symbol,
             et_date,
             pace,
             day,
             empty_standing,
         } => {
+            // The replay serves recorded licensed data through the production router, owner gate
+            // included, so it reads the same `OWNER_EMAILS` as `serve` (straight from the env, so
+            // a `Config::from_env` fallback cannot drop it); unset, the per-ticker stream refuses
+            // everyone (fail closed).
+            let mut replay_config = (*state.config).clone();
+            replay_config.owner_emails = api_rust::config::OwnerEmails::from_env();
+            state.config = std::sync::Arc::new(replay_config);
+            api_rust::runtime_guardrails::log_owner_gate(&state.config);
             for line in &empty_standing {
                 eprintln!("{line}");
             }
@@ -1812,6 +1826,7 @@ async fn cmd_batch_backtest(
         auth_session_absolute_secs: 86400,
         auth_registration_open: true,
         auth_demo_seed: None,
+        owner_emails: Default::default(),
         include_dark_pool: true,
         darkpool_lookback_secs: 3600,
         block_min_shares: 5000,

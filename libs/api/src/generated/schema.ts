@@ -454,6 +454,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** The owner's account only ([`OwnerUser`]), checked before the path and query are read. */
     get: operations['get_candidates'];
     put?: never;
     post?: never;
@@ -470,7 +471,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Tracked-contract stats from the full warm chain (no new vendor fetch when warm). */
+    /**
+     * Tracked-contract stats from the full warm chain (no new vendor fetch when warm). The owner's
+     *     account only ([`OwnerUser`]), checked before the path and query are read.
+     */
     get: operations['get_tracked_contract'];
     put?: never;
     post?: never;
@@ -503,7 +507,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** GET /api/market-data?ticker= */
+    /** GET /api/market-data?ticker= — the owner's account only, as the bundle. */
     get: operations['get_market_data'];
     put?: never;
     post?: never;
@@ -643,9 +647,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * GET /api/recommendation/export/{ticker} — anonymous-ok, no LLM. Resolves a session
-     *     **optionally** (the mechanism `GET /api/recommendation/status/{ticker}` already uses) so a
-     *     signed-in owner's drawer has one source of truth; anonymous callers keep working unchanged.
+     * GET /api/recommendation/export/{ticker} — no LLM; the owner's account only ([`OwnerUser`]): the
+     *     export is the bundle's dealer levels and the candidate contracts, all computed from the licensed
+     *     options feed. It was anonymous-ok with an optional session until the owner gate; the owner check
+     *     now runs before the path and query are read, and the risk inputs are the owner's own.
      */
     get: operations['recommendation_export'];
     put?: never;
@@ -663,7 +668,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** GET /api/recommendation/status/{ticker} — always 200 when bundle exists. */
+    /**
+     * GET /api/recommendation/status/{ticker} — always 200 when bundle exists. The owner's account
+     *     only ([`OwnerUser`]): the gate's reasons name setups and the flip ("near gamma flip"), read
+     *     from the licensed options feed.
+     */
     get: operations['recommendation_status'];
     put?: never;
     post?: never;
@@ -683,8 +692,11 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * POST /api/recommendation/{ticker} — auth outermost; paused answers the exact AC-3 503 (SPEC B2
-     *     amendment, GATE Z 2026-09-24); otherwise always 200 for rec outcomes.
+     * POST /api/recommendation/{ticker} — the owner gate outermost (after the body parse, as before):
+     *     the model reads the dealer levels and the candidate contracts, all computed from the licensed
+     *     options feed, so only the owner's account may ask (403 `auth_required` signed out, 403
+     *     `owner_only` signed in as anyone else). Paused answers the exact AC-3 503 (SPEC B2 amendment,
+     *     GATE Z 2026-09-24); otherwise always 200 for rec outcomes.
      */
     post: operations['recommendation_post'];
     delete?: never;
@@ -780,7 +792,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** GET /api/signals?ticker= */
+    /** GET /api/signals?ticker= — the owner's account only, as the bundle. */
     get: operations['get_signals'];
     put?: never;
     post?: never;
@@ -814,7 +826,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** GET /api/stream/{ticker} — LiveUpdate-shaped SSE for one underlying. */
+    /**
+     * GET /api/stream/{ticker} — LiveUpdate-shaped SSE for one underlying. The owner's account only
+     *     ([`OwnerUser`]): every update carries the gamma flip. Checked before the path and query are read
+     *     and before any SSE slot is taken.
+     */
     get: operations['stream_ticker'];
     put?: never;
     post?: never;
@@ -831,7 +847,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** GET /api/strike-profile?ticker= */
+    /** GET /api/strike-profile?ticker= — the owner's account only, as the bundle. */
     get: operations['get_strike_profile'];
     put?: never;
     post?: never;
@@ -848,7 +864,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** GET /api/ticker/{ticker} — FE TickerBundle shape (not progressive dual-path DTO). */
+    /**
+     * GET /api/ticker/{ticker} — FE TickerBundle shape (not progressive dual-path DTO). The owner's
+     *     account only ([`OwnerUser`]): the bundle carries the flip, the walls, net GEX and the strike
+     *     profile. The owner check runs before the path and query are read.
+     */
     get: operations['get_ticker_bundle'];
     put?: never;
     post?: never;
@@ -865,7 +885,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** SSE: emit price the moment Path A has it; GEX follows on Path B. */
+    /**
+     * SSE: emit price the moment Path A has it; GEX follows on Path B. The owner's account only
+     *     ([`OwnerUser`]), checked before the path and query are read and before any stream opens.
+     */
     get: operations['stream_progressive'];
     put?: never;
     post?: never;
@@ -4877,6 +4900,15 @@ export interface operations {
           'application/json': components['schemas']['CandidatesWire'];
         };
       };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WireError'];
+        };
+      };
       /** @description not found */
       404: {
         headers: {
@@ -4954,6 +4986,15 @@ export interface operations {
         };
         content: {
           'text/plain': components['schemas']['WireError'];
+        };
+      };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WireError'];
         };
       };
       /** @description not found */
@@ -5043,6 +5084,15 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['MarketWire'];
+        };
+      };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WireError'];
         };
       };
       /** @description not found */
@@ -5458,6 +5508,7 @@ export interface operations {
           'application/json': components['schemas']['RecommendationBody'];
         };
       };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -5538,6 +5589,7 @@ export interface operations {
           'application/json': components['schemas']['RecommendationBody'];
         };
       };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -5617,6 +5669,7 @@ export interface operations {
           'application/json': components['schemas']['RecommendationBody'];
         };
       };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -5676,6 +5729,7 @@ export interface operations {
           'application/json': components['schemas']['ScanEnvelope'];
         };
       };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -5703,6 +5757,7 @@ export interface operations {
           'application/json': components['schemas']['ScanEnvelope'];
         };
       };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -5836,6 +5891,7 @@ export interface operations {
           'application/json': components['schemas']['StructureHistoryResponse'];
         };
       };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -5867,6 +5923,15 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['MarketWire'];
+        };
+      };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WireError'];
         };
       };
       /** @description not found */
@@ -6004,6 +6069,15 @@ export interface operations {
           'text/event-stream': components['schemas']['LiveUpdateBody'];
         };
       };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WireError'];
+        };
+      };
       404: {
         headers: {
           [name: string]: unknown;
@@ -6068,6 +6142,15 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['MarketWire'];
+        };
+      };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WireError'];
         };
       };
       /** @description not found */
@@ -6150,6 +6233,15 @@ export interface operations {
           'application/json': components['schemas']['MarketWire'];
         };
       };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WireError'];
+        };
+      };
       /** @description not found */
       404: {
         headers: {
@@ -6222,6 +6314,15 @@ export interface operations {
         };
         content: {
           'text/event-stream': string;
+        };
+      };
+      /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WireError'];
         };
       };
       /** @description not found */

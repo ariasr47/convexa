@@ -77,10 +77,31 @@ fn empty_snapshot(ticker: &str) -> AnalyticsSnapshot {
     }
 }
 
-async fn app() -> (axum::Router, AppState) {
-    let state = AppState::for_runtime_guardrail_tests(TOKEN.into())
+/// The owner (`OWNER_EMAILS`) of every hermetic state here: the owner-only market routes answer
+/// this account alone, so their evidence is observed through its session.
+const OWNER_EMAIL: &str = "runtime-market-owner@example.test";
+
+/// Name the owner in the state's `OWNER_EMAILS`, sign it up, and return its `Cookie` value.
+fn provision_owner(state: &mut AppState) -> String {
+    let mut config = (*state.config).clone();
+    config.owner_emails = api_rust::config::OwnerEmails::from_raw(Some(OWNER_EMAIL));
+    state.config = std::sync::Arc::new(config);
+    let (_, sid) = state
+        .auth
+        .signup(OWNER_EMAIL, "runtime-password-123", None)
+        .expect("owner signup on the hermetic store");
+    format!(
+        "{}={}",
+        api_rust::services::auth::COOKIE_NAME,
+        state.auth.signed_cookie_value(&sid)
+    )
+}
+
+async fn app() -> (axum::Router, AppState, String) {
+    let mut state = AppState::for_runtime_guardrail_tests(TOKEN.into())
         .await
         .expect("hermetic runtime state");
+    let owner = provision_owner(&mut state);
     state.gex_cache.set(empty_snapshot("SPY")).await;
     state
         .prices
@@ -102,18 +123,18 @@ async fn app() -> (axum::Router, AppState) {
         .await
         .expect("pre-register fixture symbol");
     let router = routes::router(state.clone()).expect("valid production contract graph");
-    (router, state)
+    (router, state, owner)
 }
 
-async fn get(app: &axum::Router, uri: &str) -> axum::response::Response {
+/// GET through the production router; `cookie` is the owner's session for the owner-only routes,
+/// `None` (anonymous) for the public ones.
+async fn get(app: &axum::Router, uri: &str, cookie: Option<&str>) -> axum::response::Response {
+    let mut request = Request::builder().method("GET").uri(uri);
+    if let Some(cookie) = cookie {
+        request = request.header(header::COOKIE, cookie);
+    }
     app.clone()
-        .oneshot(
-            Request::builder()
-                .method("GET")
-                .uri(uri)
-                .body(Body::empty())
-                .expect("GET request"),
-        )
+        .oneshot(request.body(Body::empty()).expect("GET request"))
         .await
         .expect("production router response")
 }
@@ -353,10 +374,12 @@ impl ObservedResponse {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn observe_json_no_effect<F>(
     app: &axum::Router,
     state: &AppState,
     uri: &str,
+    cookie: Option<&str>,
     expected_status: StatusCode,
     security_mode: &'static str,
     id: &str,
@@ -365,7 +388,7 @@ async fn observe_json_no_effect<F>(
     F: FnOnce(&Value),
 {
     let before = semantic_state(state).await;
-    let observed = consume_json(get(app, uri).await, security_mode, validate).await;
+    let observed = consume_json(get(app, uri, cookie).await, security_mode, validate).await;
     assert_eq!(observed.status, expected_status.as_u16());
     let proof = assert_no_effect(state, &before).await;
     observed.emit_no_effect(id, proof);
@@ -373,12 +396,14 @@ async fn observe_json_no_effect<F>(
 
 #[tokio::test]
 async fn market_price_contract_and_candidate_runtime_matrix() {
-    let (app, state) = app().await;
+    let (app, state, owner) = app().await;
+    let owner = Some(owner.as_str());
 
     observe_json_no_effect(
         &app,
         &state,
         "/api/prices?symbols=SPY,UNKNOWN",
+        None,
         StatusCode::OK,
         "public",
         "http-fragment:GET /api/prices 200 application/json public",
@@ -392,6 +417,7 @@ async fn market_price_contract_and_candidate_runtime_matrix() {
         &app,
         &state,
         "/api/prices?symbols=",
+        None,
         StatusCode::UNPROCESSABLE_ENTITY,
         "public",
         "http-fragment:GET /api/prices 422 application/json public",
@@ -402,6 +428,7 @@ async fn market_price_contract_and_candidate_runtime_matrix() {
         &app,
         &state,
         "/api/price/SPY",
+        None,
         StatusCode::OK,
         "public",
         "http-fragment:GET /api/price/{ticker} 200 application/json public",
@@ -412,9 +439,10 @@ async fn market_price_contract_and_candidate_runtime_matrix() {
         &app,
         &state,
         "/api/market-data?ticker=SPY",
+        owner,
         StatusCode::OK,
-        "public",
-        "http-fragment:GET /api/market-data 200 application/json public",
+        "session",
+        "http-fragment:GET /api/market-data 200 application/json session",
         |body| assert_eq!(body["ticker"], "SPY"),
     )
     .await;
@@ -422,23 +450,24 @@ async fn market_price_contract_and_candidate_runtime_matrix() {
     for (uri, id) in [
         (
             "/api/market-data",
-            "http-fragment:GET /api/market-data 404 application/json public",
+            "http-fragment:GET /api/market-data 404 application/json session",
         ),
         (
             "/api/signals",
-            "http-fragment:GET /api/signals 404 application/json public",
+            "http-fragment:GET /api/signals 404 application/json session",
         ),
         (
             "/api/strike-profile",
-            "http-fragment:GET /api/strike-profile 404 application/json public",
+            "http-fragment:GET /api/strike-profile 404 application/json session",
         ),
     ] {
         observe_json_no_effect(
             &app,
             &state,
             uri,
+            owner,
             StatusCode::NOT_FOUND,
-            "public",
+            "session",
             id,
             |body| assert!(body["detail"].is_string()),
         )
@@ -449,9 +478,10 @@ async fn market_price_contract_and_candidate_runtime_matrix() {
         &app,
         &state,
         "/api/contract/SPY?expiration=1970-01-16&strike=100&right=bad",
+        owner,
         StatusCode::UNPROCESSABLE_ENTITY,
-        "public",
-        "http-fragment:GET /api/contract/{ticker} 422 application/json public",
+        "session",
+        "http-fragment:GET /api/contract/{ticker} 422 application/json session",
         |body| assert!(body["detail"].is_string()),
     )
     .await;
@@ -459,9 +489,10 @@ async fn market_price_contract_and_candidate_runtime_matrix() {
         &app,
         &state,
         "/api/contract/SPY?expiration=1970-01-16&strike=100&right=call",
+        owner,
         StatusCode::NOT_FOUND,
-        "public",
-        "http-fragment:GET /api/contract/{ticker} 404 application/json public",
+        "session",
+        "http-fragment:GET /api/contract/{ticker} 404 application/json session",
         |body| assert!(body["detail"].is_string()),
     )
     .await;
@@ -469,9 +500,10 @@ async fn market_price_contract_and_candidate_runtime_matrix() {
         &app,
         &state,
         "/api/candidates/UNKNOWN",
+        owner,
         StatusCode::BAD_GATEWAY,
-        "public",
-        "http-fragment:GET /api/candidates/{ticker} 502 application/json public",
+        "session",
+        "http-fragment:GET /api/candidates/{ticker} 502 application/json session",
         |body| assert!(body["detail"].is_string()),
     )
     .await;
@@ -479,17 +511,35 @@ async fn market_price_contract_and_candidate_runtime_matrix() {
 
 #[tokio::test]
 async fn recommendation_and_stream_runtime_failures_are_meaningful() {
-    let (app, state) = app().await;
+    let (app, state, owner) = app().await;
+    let owner = Some(owner.as_str());
     for (uri, id) in [
-        ("/api/recommendation/status/UNKNOWN", "http-fragment:GET /api/recommendation/status/{ticker} 502 application/json optional-session"),
-        ("/api/recommendation/export/UNKNOWN", "http-fragment:GET /api/recommendation/export/{ticker} 502 application/json optional-session"),
+        (
+            "/api/recommendation/status/UNKNOWN",
+            "http-fragment:GET /api/recommendation/status/{ticker} 502 application/json session",
+        ),
+        (
+            "/api/recommendation/export/UNKNOWN",
+            "http-fragment:GET /api/recommendation/export/{ticker} 502 application/json session",
+        ),
     ] {
-        observe_json_no_effect(&app, &state, uri, StatusCode::BAD_GATEWAY, "optional-session", id, |body| assert!(body["detail"].is_string())).await;
+        observe_json_no_effect(
+            &app,
+            &state,
+            uri,
+            owner,
+            StatusCode::BAD_GATEWAY,
+            "session",
+            id,
+            |body| assert!(body["detail"].is_string()),
+        )
+        .await;
     }
     observe_json_no_effect(
         &app,
         &state,
         "/api/stream/prices?symbols=!!!",
+        None,
         StatusCode::UNPROCESSABLE_ENTITY,
         "public",
         "http-fragment:GET /api/stream/prices 422 application/json public",
@@ -498,7 +548,11 @@ async fn recommendation_and_stream_runtime_failures_are_meaningful() {
     .await;
 
     let before = semantic_state(&state).await;
-    let stream = consume_sse(get(&app, "/api/stream/prices?symbols=SPY").await, "public").await;
+    let stream = consume_sse(
+        get(&app, "/api/stream/prices?symbols=SPY", None).await,
+        "public",
+    )
+    .await;
     assert_eq!(stream.status, StatusCode::OK.as_u16());
     let proof = assert_no_effect(&state, &before).await;
     stream.emit_no_effect(
@@ -507,11 +561,11 @@ async fn recommendation_and_stream_runtime_failures_are_meaningful() {
     );
 
     let before = semantic_state(&state).await;
-    let stream = consume_sse(get(&app, "/api/stream/SPY").await, "public").await;
+    let stream = consume_sse(get(&app, "/api/stream/SPY", owner).await, "session").await;
     assert_eq!(stream.status, StatusCode::OK.as_u16());
     let proof = assert_no_effect(&state, &before).await;
     stream.emit_no_effect(
-        "http-fragment:GET /api/stream/{ticker} 200 text/event-stream public",
+        "http-fragment:GET /api/stream/{ticker} 200 text/event-stream session",
         proof,
     );
 }
@@ -529,12 +583,12 @@ async fn stream_capacity_refusal_is_503_with_retry_guidance() {
         .expect("pre-register capacity fixture symbol");
     let app = routes::router(state.clone()).expect("valid production contract graph");
 
-    let first = get(&app, "/api/stream/prices?symbols=SPY").await;
+    let first = get(&app, "/api/stream/prices?symbols=SPY", None).await;
     assert_eq!(first.status(), StatusCode::OK);
     assert_eq!(state.live_capacity.subscriber_count(), 1);
     let before = semantic_state(&state).await;
     let refused = consume_json(
-        get(&app, "/api/stream/prices?symbols=QQQ").await,
+        get(&app, "/api/stream/prices?symbols=QQQ", None).await,
         "public",
         |body| {
             assert_eq!(

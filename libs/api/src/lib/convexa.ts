@@ -258,7 +258,8 @@ export type StraddleMove = components['schemas']['StraddleMoveWire'];
 // ---- Candidate contract set (tradeable-rec-inputs INTERFACE_CONTRACT §1) -----------------------
 // `GET /api/candidates/{ticker}` — the dedicated deliberate pull, and the shape reused verbatim by
 // `sent.candidates` (in-app rec) and `context.candidates` (export). Never on the bundle, never on
-// SSE, never on a passive page load (AC-1). STATIC (chain-snapshot derived).
+// SSE, never on a passive page load (AC-1). STATIC (chain-snapshot derived). Owner only, as every
+// read computed from the licensed options feed (403 `auth_required` / `owner_only` otherwise).
 export type CandidateSetState = 'ok' | 'none_in_band' | 'unavailable';
 export type CandidateBudget = 'handoff' | 'prompt';
 export type QuotePresence = 'quoted' | 'no_two_sided_quote';
@@ -1177,11 +1178,13 @@ function toScanViewBody(view: ScanViewWrite): components['schemas']['ScanViewBod
   return { ...view } as components['schemas']['ScanViewBody'];
 }
 
-/** GET /api/scan — the requested-or-default view as slim rows + sweep metadata. Signed in only
- *  (SEC-1, 2026-10-26): the rows carry dealer levels derived from the licensed options feed, so a
- *  signed-out call is a 403 `auth_required` and rejects here. Signed in, the server is best-effort
- *  ALWAYS 200 (a store outage degrades CONTENT, never the status), so any other non-2xx is a
- *  TRANSPORT/proxy fault: we reject and the caller keeps its last-known rows. */
+/** GET /api/scan — the requested-or-default view as slim rows + sweep metadata. Owner only (SEC-1
+ *  made it signed in on 2026-10-26; the owner gate made it the owner's account): the rows carry
+ *  dealer levels derived from the licensed options feed, so a signed-out call is a 403
+ *  `auth_required` and a signed-in non-owner a 403 `owner_only`, and both reject here. As the
+ *  owner, the server is best-effort ALWAYS 200 (a store outage degrades CONTENT, never the status),
+ *  so any other non-2xx is a TRANSPORT/proxy fault: we reject and the caller keeps its last-known
+ *  rows. */
 export async function getScan(): Promise<ScanResponse> {
   const result = await http.GET('/api/scan');
   return dataOf(result, 'Scan read failed');
@@ -1239,10 +1242,10 @@ export type StructureSample = components['schemas']['StructureSampleDto'];
 /** `GET /api/scan/{symbol}/history` — durable structure path for the ticker Structure zone. */
 export type StructureHistoryResponse = components['schemas']['StructureHistoryResponse'];
 
-/** GET /api/scan/{symbol}/history — structure history, signed in only (SEC-1, 2026-10-26: each
- *  sample carries the flip, the walls and net GEX); a signed-out call is a 403 `auth_required` and
- *  rejects. Empty samples is honest cold-start, not an error. Transport faults reject so the caller
- *  can keep last-known path. */
+/** GET /api/scan/{symbol}/history — structure history, owner only (each sample carries the flip,
+ *  the walls and net GEX): signed out is a 403 `auth_required`, a signed-in non-owner a 403
+ *  `owner_only`, and both reject. Empty samples is honest cold-start, not an error. Transport
+ *  faults reject so the caller can keep last-known path. */
 export async function getStructureHistory(
   symbol: string,
   limit = 48,
@@ -1279,7 +1282,9 @@ function isLiveUpdate(value: unknown): value is LiveUpdate {
 /**
  * Subscribe to the live SSE stream for a ticker. Calls `onUpdate` on each payload and returns
  * an unsubscribe fn that closes the EventSource (which tears down the backend session when the
- * last subscriber leaves). SSE comment lines (heartbeats) are ignored by EventSource.
+ * last subscriber leaves). SSE comment lines (heartbeats) are ignored by EventSource. Owner only
+ * (every update carries the gamma flip): anyone else gets a 403 (`auth_required` / `owner_only`),
+ * which EventSource surfaces as an error and never as an update.
  */
 export function streamTicker(
   symbol: string,
@@ -1319,7 +1324,10 @@ export function streamTicker(
 }
 
 /** Full bundle for one ticker, optionally filtered by DTE window or explicit expirations. When
- *  `position` is supplied, the bundle additionally returns `position_eval` (else null). */
+ *  `position` is supplied, the bundle additionally returns `position_eval` (else null). Owner only
+ *  (the bundle carries the flip, the walls, net GEX and the strike profile): signed out is a 403
+ *  `auth_required`, a signed-in non-owner a 403 `owner_only`; `getTicker` throws `ApiError` with
+ *  that status and code. */
 export type FetchOpts = {
   /** Abort in-flight work on ticker/route change (perf §3.2). */
   signal?: AbortSignal;
@@ -1373,7 +1381,8 @@ export async function getTicker(
 
 /**
  * Filter-independent stats for one tracked option contract (GET /api/contract). Resolves from the
- * full snapshot regardless of the display DTE filter; no new vendor fetch.
+ * full snapshot regardless of the display DTE filter; no new vendor fetch. Owner only (the quote,
+ * greeks and IV come from the licensed options feed): anyone else gets a 403 and this throws.
  * Returns `null` when the contract is **not in the snapshot** (HTTP 404 → FE "tracking unavailable").
  * A 200 with `option_quote: null` is a valid result (FE → theoretical mark), NOT null here.
  * Other failures throw (the caller treats a throw as "tracking unavailable" too).
@@ -2087,7 +2096,10 @@ export async function putBook(body: {
 
 /** Request a rec (in-app LLM call). ALWAYS 200 for produced/no_trade/unavailable/gated_off — the
  *  `status` field distinguishes them. A non-2xx / network fault throws `ApiError`; the rec hook
- *  catches it and renders the `unavailable` panel state (never thrown to the page). No key is sent. */
+ *  catches it and renders the `unavailable` panel state (never thrown to the page). No key is sent.
+ *  Owner only (the model reads the dealer levels): signed out is a 403 `auth_required` and a
+ *  signed-in non-owner a 403 `owner_only`; both throw `AuthError` below. `owner_only` is not in
+ *  `AuthErrorCode` yet, so `authResultError` reports it as `auth_required` (status 403). */
 export async function requestRecommendation(
   symbol: string,
   body: RecRequest,
@@ -2116,7 +2128,9 @@ export async function requestRecommendation(
 }
 
 /** The structured state export (the always-available floor). 200 when a bundle exists; 404 if the
- *  ticker was never fetched. Triggers no LLM call. */
+ *  ticker was never fetched. Triggers no LLM call. Owner only (the export is the dealer levels and
+ *  the candidate contracts): anyone else gets a 403 (`auth_required` / `owner_only`) and this
+ *  throws. */
 export async function fetchRecExport(
   symbol: string,
   { personaId, sampleFingerprint }: { personaId?: string | null; sampleFingerprint?: string } = {},
@@ -2143,7 +2157,9 @@ export async function fetchRecExport(
 }
 
 /** Gating + cap + availability (drives the action's enabled/de-emphasized/disabled presentation).
- *  Cheap, side-effect-free, always 200. Throws only on a transport fault (caller degrades to inert). */
+ *  Cheap, side-effect-free, always 200 for the owner. Owner only (the gate's reasons name setups
+ *  and the flip): anyone else gets a 403 (`auth_required` / `owner_only`) and this throws, as on a
+ *  transport fault (caller degrades to inert). */
 export async function fetchRecStatus(symbol: string): Promise<RecStatus> {
   const result = await http.GET('/api/recommendation/status/{ticker}', {
     params: { path: { ticker: symbol.toUpperCase() } },

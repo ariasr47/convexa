@@ -26,9 +26,16 @@ async fn live_mode_post_recommendation_bundle_failure_still_answers_llm_error_20
     // `test_stub_config()`'s `market_data_mode` defaults to `Live` — left untouched here, unlike
     // the paused sibling in `market_data_paused_no_vendor_contact.rs`, so this exercises the
     // pre-existing fallback path exactly as production runs it in live mode.
-    let state = AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
-        .await
-        .expect("hermetic state");
+    let mut state =
+        AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
+            .await
+            .expect("hermetic state");
+    // The owner gate: the route answers the owner's account alone, so the account signed in below
+    // is named the owner and the fallback is reached as the owner reaches it.
+    let mut config = (*state.config).clone();
+    config.owner_emails =
+        api_rust::config::OwnerEmails::from_raw(Some("live-rec-fallback@example.test"));
+    state.config = std::sync::Arc::new(config);
     let router = routes::router(state).expect("production router graph builds");
 
     let signup = router

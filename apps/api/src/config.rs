@@ -68,6 +68,17 @@ pub struct Config {
     pub auth_registration_open: bool,
     /// Optional demo seed account (email:password) for local dev who-am-I prefill.
     pub auth_demo_seed: Option<(String, String)>,
+    /// `OWNER_EMAILS`: the comma-separated allowlist of the owner's account emails. Licence-derived
+    /// data (dealer levels and everything else computed from the paid options feed, "Derived
+    /// Works") reaches these accounts alone, through the `OwnerUser` extractor
+    /// (`routes/auth.rs`); "signed in" is not "owner" (docs/product/ai-analyst/DESIGN.md, "Licence
+    /// compliance: the owner gate"). Each entry is trimmed and compared case-insensitively against
+    /// the signed-in user's stored email. Absent or empty means no owner, and every owner-only
+    /// route refuses every caller (fail closed). Only the count is ever logged, never an address.
+    /// An allowlisted address is only as strong as sign-up: with `AUTH_REGISTRATION_OPEN` on, an
+    /// owner address nobody has registered yet could be claimed, so production keeps sign-ups
+    /// closed.
+    pub owner_emails: OwnerEmails,
     /// Include off-exchange/dark-pool context by default (Python `INCLUDE_DARK_POOL`).
     pub include_dark_pool: bool,
     /// Trade-tape lookback window for dark-pool summary (seconds).
@@ -177,6 +188,59 @@ impl SecUserAgent {
 impl std::fmt::Debug for SecUserAgent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("SecUserAgent(<redacted>)")
+    }
+}
+
+/// `OWNER_EMAILS`: the owner allowlist (see [`Config::owner_emails`]). Entries are stored trimmed
+/// and lowercased; empty entries are dropped, so an unset, empty or all-comma value is no owner.
+/// The addresses identify the owner, so `Debug` prints only the count: a `{config:?}` in a log
+/// line must never print one.
+#[derive(Clone, Default, PartialEq, Eq)]
+pub struct OwnerEmails(Vec<String>);
+
+impl OwnerEmails {
+    /// Env-free core of the `OWNER_EMAILS` read. `None` = unset (no owner).
+    pub fn from_raw(raw: Option<&str>) -> Self {
+        let mut emails: Vec<String> = raw
+            .unwrap_or_default()
+            .split(',')
+            .map(normalize_owner_email)
+            .filter(|email| !email.is_empty())
+            .collect();
+        emails.sort();
+        emails.dedup();
+        Self(emails)
+    }
+
+    /// Reads `OWNER_EMAILS` from the process env (`Config::from_env` and the session-day replay).
+    pub fn from_env() -> Self {
+        Self::from_raw(env::var("OWNER_EMAILS").ok().as_deref())
+    }
+
+    /// True when `email` (a signed-in user's stored email) is on the list. Trim and case do not
+    /// matter on either side. No owner configured ⇒ always false (fail closed).
+    pub fn contains(&self, email: &str) -> bool {
+        let email = normalize_owner_email(email);
+        !email.is_empty() && self.0.iter().any(|owner| *owner == email)
+    }
+
+    /// How many owner addresses are configured — the only thing about the list that is logged.
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+fn normalize_owner_email(raw: &str) -> String {
+    raw.trim().to_lowercase()
+}
+
+impl std::fmt::Debug for OwnerEmails {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "OwnerEmails(<{} redacted>)", self.0.len())
     }
 }
 
@@ -438,6 +502,7 @@ impl Config {
                 Some((e.to_string(), p.to_string()))
             }
         });
+        let owner_emails = OwnerEmails::from_env();
 
         // Python defaults: INCLUDE_DARK_POOL=true, DARKPOOL_LOOKBACK_SECONDS=3600, BLOCK_MIN_SHARES=5000.
         let include_dark_pool = env::var("INCLUDE_DARK_POOL")
@@ -550,6 +615,7 @@ impl Config {
             auth_session_absolute_secs,
             auth_registration_open,
             auth_demo_seed,
+            owner_emails,
             include_dark_pool,
             darkpool_lookback_secs,
             block_min_shares,
@@ -697,6 +763,54 @@ pub fn keep_root_conflicts(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The owner gate's allowlist: unset, empty, blank or all-comma is no owner (every owner-only
+    /// route refuses); entries are trimmed and case-insensitive on both sides; `Debug` never
+    /// prints an address.
+    #[test]
+    fn owner_emails_trim_ignore_case_fail_closed_and_never_print_an_address() {
+        for raw in [None, Some(""), Some("   "), Some(","), Some(" , ,, ")] {
+            let owners = OwnerEmails::from_raw(raw);
+            assert!(owners.is_empty(), "{raw:?} must be no owner");
+            assert_eq!(owners.len(), 0, "{raw:?}");
+            assert!(!owners.contains("owner@example.test"), "{raw:?}");
+            assert!(!owners.contains(""), "{raw:?}");
+        }
+
+        let owners = OwnerEmails::from_raw(Some(
+            "  Owner@Example.TEST , second@example.test,,owner@example.test ",
+        ));
+        assert_eq!(owners.len(), 2, "trimmed, lowercased and deduplicated");
+        for email in [
+            "owner@example.test",
+            "OWNER@EXAMPLE.TEST",
+            "  owner@example.test\t",
+            "Second@Example.Test",
+        ] {
+            assert!(owners.contains(email), "{email:?} is an owner");
+        }
+        for email in [
+            "",
+            "   ",
+            "owner@example.tes",
+            "owner@example.test.evil",
+            "xowner@example.test",
+            "owner@example.test,second@example.test",
+        ] {
+            assert!(!owners.contains(email), "{email:?} is not an owner");
+        }
+
+        let printed = format!("{owners:?}");
+        assert_eq!(printed, "OwnerEmails(<2 redacted>)");
+        assert!(!printed.to_ascii_lowercase().contains("example"));
+        let mut cfg = crate::state::test_stub_config();
+        cfg.owner_emails = owners;
+        let printed = format!("{cfg:?}");
+        assert!(
+            !printed.to_ascii_lowercase().contains("owner@example"),
+            "Config's Debug must not print an owner address"
+        );
+    }
 
     #[test]
     fn market_data_mode_defaults_live_accepts_live_or_paused_and_refuses_anything_else() {

@@ -1906,14 +1906,14 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/candidates/{ticker}",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "200"
     },
     "boundary_evidence_099": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
+        "$ref": "#/components/schemas/WireError"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -1925,8 +1925,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/candidates/{ticker}",
-      "security_mode": "public",
-      "status": "404"
+      "security_mode": "session",
+      "status": "403"
     },
     "boundary_evidence_100": {
       "body_category": "json",
@@ -1944,8 +1944,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/candidates/{ticker}",
-      "security_mode": "public",
-      "status": "422"
+      "security_mode": "session",
+      "status": "404"
     },
     "boundary_evidence_101": {
       "body_category": "json",
@@ -1963,8 +1963,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/candidates/{ticker}",
-      "security_mode": "public",
-      "status": "500"
+      "security_mode": "session",
+      "status": "422"
     },
     "boundary_evidence_102": {
       "body_category": "json",
@@ -1982,8 +1982,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/candidates/{ticker}",
-      "security_mode": "public",
-      "status": "502"
+      "security_mode": "session",
+      "status": "500"
     },
     "boundary_evidence_103": {
       "body_category": "json",
@@ -2001,10 +2001,29 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/candidates/{ticker}",
-      "security_mode": "public",
-      "status": "503"
+      "security_mode": "session",
+      "status": "502"
     },
     "boundary_evidence_104": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/candidates/{ticker}",
+      "security_mode": "session",
+      "status": "503"
+    },
+    "boundary_evidence_105": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2020,10 +2039,10 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/contract/{ticker}",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_105": {
+    "boundary_evidence_106": {
       "body_category": "text",
       "body_meaning": "text",
       "body_schema": {
@@ -2039,33 +2058,14 @@
       "header_value_policies": {},
       "media_type": "text/plain",
       "operation": "GET /api/contract/{ticker}",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "400"
-    },
-    "boundary_evidence_106": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/contract/{ticker}",
-      "security_mode": "public",
-      "status": "404"
     },
     "boundary_evidence_107": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
+        "$ref": "#/components/schemas/WireError"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2077,8 +2077,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/contract/{ticker}",
-      "security_mode": "public",
-      "status": "422"
+      "security_mode": "session",
+      "status": "403"
     },
     "boundary_evidence_108": {
       "body_category": "json",
@@ -2096,8 +2096,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/contract/{ticker}",
-      "security_mode": "public",
-      "status": "500"
+      "security_mode": "session",
+      "status": "404"
     },
     "boundary_evidence_109": {
       "body_category": "json",
@@ -2115,8 +2115,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/contract/{ticker}",
-      "security_mode": "public",
-      "status": "502"
+      "security_mode": "session",
+      "status": "422"
     },
     "boundary_evidence_110": {
       "body_category": "json",
@@ -2134,10 +2134,48 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/contract/{ticker}",
-      "security_mode": "public",
-      "status": "503"
+      "security_mode": "session",
+      "status": "500"
     },
     "boundary_evidence_111": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/contract/{ticker}",
+      "security_mode": "session",
+      "status": "502"
+    },
+    "boundary_evidence_112": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/contract/{ticker}",
+      "security_mode": "session",
+      "status": "503"
+    },
+    "boundary_evidence_113": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2156,7 +2194,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_112": {
+    "boundary_evidence_114": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2172,52 +2210,14 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/market-data",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "200"
-    },
-    "boundary_evidence_113": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/market-data",
-      "security_mode": "public",
-      "status": "404"
-    },
-    "boundary_evidence_114": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/market-data",
-      "security_mode": "public",
-      "status": "422"
     },
     "boundary_evidence_115": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
+        "$ref": "#/components/schemas/WireError"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2229,8 +2229,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/market-data",
-      "security_mode": "public",
-      "status": "500"
+      "security_mode": "session",
+      "status": "403"
     },
     "boundary_evidence_116": {
       "body_category": "json",
@@ -2248,8 +2248,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/market-data",
-      "security_mode": "public",
-      "status": "502"
+      "security_mode": "session",
+      "status": "404"
     },
     "boundary_evidence_117": {
       "body_category": "json",
@@ -2267,10 +2267,67 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/market-data",
-      "security_mode": "public",
-      "status": "503"
+      "security_mode": "session",
+      "status": "422"
     },
     "boundary_evidence_118": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/market-data",
+      "security_mode": "session",
+      "status": "500"
+    },
+    "boundary_evidence_119": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/market-data",
+      "security_mode": "session",
+      "status": "502"
+    },
+    "boundary_evidence_120": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/market-data",
+      "security_mode": "session",
+      "status": "503"
+    },
+    "boundary_evidence_121": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2292,7 +2349,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_119": {
+    "boundary_evidence_122": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2311,7 +2368,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_120": {
+    "boundary_evidence_123": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2330,7 +2387,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_121": {
+    "boundary_evidence_124": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2349,63 +2406,6 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_122": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/price/{ticker}",
-      "security_mode": "public",
-      "status": "404"
-    },
-    "boundary_evidence_123": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/price/{ticker}",
-      "security_mode": "public",
-      "status": "422"
-    },
-    "boundary_evidence_124": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/price/{ticker}",
-      "security_mode": "public",
-      "status": "500"
-    },
     "boundary_evidence_125": {
       "body_category": "json",
       "body_meaning": "json",
@@ -2423,7 +2423,7 @@
       "media_type": "application/json",
       "operation": "GET /api/price/{ticker}",
       "security_mode": "public",
-      "status": "502"
+      "status": "404"
     },
     "boundary_evidence_126": {
       "body_category": "json",
@@ -2442,9 +2442,66 @@
       "media_type": "application/json",
       "operation": "GET /api/price/{ticker}",
       "security_mode": "public",
-      "status": "503"
+      "status": "422"
     },
     "boundary_evidence_127": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/price/{ticker}",
+      "security_mode": "public",
+      "status": "500"
+    },
+    "boundary_evidence_128": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/price/{ticker}",
+      "security_mode": "public",
+      "status": "502"
+    },
+    "boundary_evidence_129": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/price/{ticker}",
+      "security_mode": "public",
+      "status": "503"
+    },
+    "boundary_evidence_130": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2463,7 +2520,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_128": {
+    "boundary_evidence_131": {
       "body_category": "text",
       "body_meaning": "text",
       "body_schema": {
@@ -2482,63 +2539,6 @@
       "security_mode": "public",
       "status": "400"
     },
-    "boundary_evidence_129": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/prices",
-      "security_mode": "public",
-      "status": "404"
-    },
-    "boundary_evidence_130": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/prices",
-      "security_mode": "public",
-      "status": "422"
-    },
-    "boundary_evidence_131": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/prices",
-      "security_mode": "public",
-      "status": "500"
-    },
     "boundary_evidence_132": {
       "body_category": "json",
       "body_meaning": "json",
@@ -2556,7 +2556,7 @@
       "media_type": "application/json",
       "operation": "GET /api/prices",
       "security_mode": "public",
-      "status": "502"
+      "status": "404"
     },
     "boundary_evidence_133": {
       "body_category": "json",
@@ -2575,9 +2575,66 @@
       "media_type": "application/json",
       "operation": "GET /api/prices",
       "security_mode": "public",
-      "status": "503"
+      "status": "422"
     },
     "boundary_evidence_134": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/prices",
+      "security_mode": "public",
+      "status": "500"
+    },
+    "boundary_evidence_135": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/prices",
+      "security_mode": "public",
+      "status": "502"
+    },
+    "boundary_evidence_136": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/prices",
+      "security_mode": "public",
+      "status": "503"
+    },
+    "boundary_evidence_137": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2596,63 +2653,6 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_135": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/public-data/filings",
-      "security_mode": "public",
-      "status": "404"
-    },
-    "boundary_evidence_136": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/public-data/filings",
-      "security_mode": "public",
-      "status": "422"
-    },
-    "boundary_evidence_137": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/public-data/filings",
-      "security_mode": "public",
-      "status": "500"
-    },
     "boundary_evidence_138": {
       "body_category": "json",
       "body_meaning": "json",
@@ -2670,7 +2670,7 @@
       "media_type": "application/json",
       "operation": "GET /api/public-data/filings",
       "security_mode": "public",
-      "status": "502"
+      "status": "404"
     },
     "boundary_evidence_139": {
       "body_category": "json",
@@ -2689,9 +2689,66 @@
       "media_type": "application/json",
       "operation": "GET /api/public-data/filings",
       "security_mode": "public",
-      "status": "503"
+      "status": "422"
     },
     "boundary_evidence_140": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/public-data/filings",
+      "security_mode": "public",
+      "status": "500"
+    },
+    "boundary_evidence_141": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/public-data/filings",
+      "security_mode": "public",
+      "status": "502"
+    },
+    "boundary_evidence_142": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/public-data/filings",
+      "security_mode": "public",
+      "status": "503"
+    },
+    "boundary_evidence_143": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2710,7 +2767,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_141": {
+    "boundary_evidence_144": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2729,63 +2786,6 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_142": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/public-data/tickers/{ticker}",
-      "security_mode": "public",
-      "status": "404"
-    },
-    "boundary_evidence_143": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/public-data/tickers/{ticker}",
-      "security_mode": "public",
-      "status": "422"
-    },
-    "boundary_evidence_144": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/public-data/tickers/{ticker}",
-      "security_mode": "public",
-      "status": "500"
-    },
     "boundary_evidence_145": {
       "body_category": "json",
       "body_meaning": "json",
@@ -2803,7 +2803,7 @@
       "media_type": "application/json",
       "operation": "GET /api/public-data/tickers/{ticker}",
       "security_mode": "public",
-      "status": "502"
+      "status": "404"
     },
     "boundary_evidence_146": {
       "body_category": "json",
@@ -2822,9 +2822,66 @@
       "media_type": "application/json",
       "operation": "GET /api/public-data/tickers/{ticker}",
       "security_mode": "public",
-      "status": "503"
+      "status": "422"
     },
     "boundary_evidence_147": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/public-data/tickers/{ticker}",
+      "security_mode": "public",
+      "status": "500"
+    },
+    "boundary_evidence_148": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/public-data/tickers/{ticker}",
+      "security_mode": "public",
+      "status": "502"
+    },
+    "boundary_evidence_149": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/public-data/tickers/{ticker}",
+      "security_mode": "public",
+      "status": "503"
+    },
+    "boundary_evidence_150": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2842,63 +2899,6 @@
       "operation": "POST /api/recommendation/{ticker}",
       "security_mode": "session",
       "status": "200"
-    },
-    "boundary_evidence_148": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/WireError"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "403"
-    },
-    "boundary_evidence_149": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/WireError"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "404"
-    },
-    "boundary_evidence_150": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/WireError"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "422"
     },
     "boundary_evidence_151": {
       "body_category": "json",
@@ -2917,7 +2917,7 @@
       "media_type": "application/json",
       "operation": "POST /api/recommendation/{ticker}",
       "security_mode": "session",
-      "status": "502"
+      "status": "403"
     },
     "boundary_evidence_152": {
       "body_category": "json",
@@ -2936,13 +2936,13 @@
       "media_type": "application/json",
       "operation": "POST /api/recommendation/{ticker}",
       "security_mode": "session",
-      "status": "503"
+      "status": "404"
     },
     "boundary_evidence_153": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/RecommendationBody"
+        "$ref": "#/components/schemas/WireError"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2953,9 +2953,9 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "200"
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "422"
     },
     "boundary_evidence_154": {
       "body_category": "json",
@@ -2972,15 +2972,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "403"
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "502"
     },
     "boundary_evidence_155": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
+        "$ref": "#/components/schemas/WireError"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2991,15 +2991,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "404"
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "503"
     },
     "boundary_evidence_156": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
+        "$ref": "#/components/schemas/RecommendationBody"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -3011,14 +3011,14 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "422"
+      "security_mode": "session",
+      "status": "200"
     },
     "boundary_evidence_157": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
+        "$ref": "#/components/schemas/WireError"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -3030,8 +3030,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "500"
+      "security_mode": "session",
+      "status": "403"
     },
     "boundary_evidence_158": {
       "body_category": "json",
@@ -3049,8 +3049,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "502"
+      "security_mode": "session",
+      "status": "404"
     },
     "boundary_evidence_159": {
       "body_category": "json",
@@ -3068,14 +3068,14 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "503"
+      "security_mode": "session",
+      "status": "422"
     },
     "boundary_evidence_160": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/RecommendationBody"
+        "$ref": "#/components/schemas/AppErrorBody"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -3086,15 +3086,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/recommendation/status/{ticker}",
-      "security_mode": "optional-session",
-      "status": "200"
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "session",
+      "status": "500"
     },
     "boundary_evidence_161": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/WireError"
+        "$ref": "#/components/schemas/AppErrorBody"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -3105,9 +3105,9 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/recommendation/status/{ticker}",
-      "security_mode": "optional-session",
-      "status": "403"
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "session",
+      "status": "502"
     },
     "boundary_evidence_162": {
       "body_category": "json",
@@ -3124,15 +3124,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/recommendation/status/{ticker}",
-      "security_mode": "optional-session",
-      "status": "404"
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "session",
+      "status": "503"
     },
     "boundary_evidence_163": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
+        "$ref": "#/components/schemas/RecommendationBody"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -3144,14 +3144,14 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/recommendation/status/{ticker}",
-      "security_mode": "optional-session",
-      "status": "422"
+      "security_mode": "session",
+      "status": "200"
     },
     "boundary_evidence_164": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
+        "$ref": "#/components/schemas/WireError"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -3163,8 +3163,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/recommendation/status/{ticker}",
-      "security_mode": "optional-session",
-      "status": "500"
+      "security_mode": "session",
+      "status": "403"
     },
     "boundary_evidence_165": {
       "body_category": "json",
@@ -3182,8 +3182,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/recommendation/status/{ticker}",
-      "security_mode": "optional-session",
-      "status": "502"
+      "security_mode": "session",
+      "status": "404"
     },
     "boundary_evidence_166": {
       "body_category": "json",
@@ -3201,10 +3201,67 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/recommendation/status/{ticker}",
-      "security_mode": "optional-session",
-      "status": "503"
+      "security_mode": "session",
+      "status": "422"
     },
     "boundary_evidence_167": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/status/{ticker}",
+      "security_mode": "session",
+      "status": "500"
+    },
+    "boundary_evidence_168": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/status/{ticker}",
+      "security_mode": "session",
+      "status": "502"
+    },
+    "boundary_evidence_169": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/status/{ticker}",
+      "security_mode": "session",
+      "status": "503"
+    },
+    "boundary_evidence_170": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3223,7 +3280,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_168": {
+    "boundary_evidence_171": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3242,7 +3299,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_169": {
+    "boundary_evidence_172": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3261,7 +3318,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_170": {
+    "boundary_evidence_173": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3280,7 +3337,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_171": {
+    "boundary_evidence_174": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3299,7 +3356,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_172": {
+    "boundary_evidence_175": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3318,7 +3375,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_173": {
+    "boundary_evidence_176": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3337,7 +3394,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_174": {
+    "boundary_evidence_177": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3356,7 +3413,7 @@
       "security_mode": "optional-session",
       "status": "200"
     },
-    "boundary_evidence_175": {
+    "boundary_evidence_178": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3375,7 +3432,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_176": {
+    "boundary_evidence_179": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3394,7 +3451,7 @@
       "security_mode": "session",
       "status": "401"
     },
-    "boundary_evidence_177": {
+    "boundary_evidence_180": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3413,7 +3470,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_178": {
+    "boundary_evidence_181": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3432,7 +3489,7 @@
       "security_mode": "session",
       "status": "409"
     },
-    "boundary_evidence_179": {
+    "boundary_evidence_182": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3451,7 +3508,7 @@
       "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_180": {
+    "boundary_evidence_183": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3470,7 +3527,7 @@
       "security_mode": "session",
       "status": "503"
     },
-    "boundary_evidence_181": {
+    "boundary_evidence_184": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3486,71 +3543,14 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/signals",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "200"
-    },
-    "boundary_evidence_182": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/signals",
-      "security_mode": "public",
-      "status": "404"
-    },
-    "boundary_evidence_183": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/signals",
-      "security_mode": "public",
-      "status": "422"
-    },
-    "boundary_evidence_184": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/signals",
-      "security_mode": "public",
-      "status": "500"
     },
     "boundary_evidence_185": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
+        "$ref": "#/components/schemas/WireError"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -3562,8 +3562,8 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/signals",
-      "security_mode": "public",
-      "status": "502"
+      "security_mode": "session",
+      "status": "403"
     },
     "boundary_evidence_186": {
       "body_category": "json",
@@ -3581,10 +3581,86 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/signals",
-      "security_mode": "public",
-      "status": "503"
+      "security_mode": "session",
+      "status": "404"
     },
     "boundary_evidence_187": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/signals",
+      "security_mode": "session",
+      "status": "422"
+    },
+    "boundary_evidence_188": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/signals",
+      "security_mode": "session",
+      "status": "500"
+    },
+    "boundary_evidence_189": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/signals",
+      "security_mode": "session",
+      "status": "502"
+    },
+    "boundary_evidence_190": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/signals",
+      "security_mode": "session",
+      "status": "503"
+    },
+    "boundary_evidence_191": {
       "body_category": "sse",
       "body_meaning": "sse",
       "body_schema": {
@@ -3604,10 +3680,29 @@
       },
       "media_type": "text/event-stream",
       "operation": "GET /api/stream/{ticker}",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_188": {
+    "boundary_evidence_192": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/stream/{ticker}",
+      "security_mode": "session",
+      "status": "403"
+    },
+    "boundary_evidence_193": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3623,10 +3718,10 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/stream/{ticker}",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "404"
     },
-    "boundary_evidence_189": {
+    "boundary_evidence_194": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3642,10 +3737,10 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/stream/{ticker}",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_190": {
+    "boundary_evidence_195": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3661,10 +3756,10 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/stream/{ticker}",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "500"
     },
-    "boundary_evidence_191": {
+    "boundary_evidence_196": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3680,10 +3775,10 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/stream/{ticker}",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "502"
     },
-    "boundary_evidence_192": {
+    "boundary_evidence_197": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3703,10 +3798,10 @@
       },
       "media_type": "application/json",
       "operation": "GET /api/stream/{ticker}",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "503"
     },
-    "boundary_evidence_193": {
+    "boundary_evidence_198": {
       "body_category": "sse",
       "body_meaning": "sse",
       "body_schema": {
@@ -3729,7 +3824,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_194": {
+    "boundary_evidence_199": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3748,7 +3843,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_195": {
+    "boundary_evidence_200": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3767,7 +3862,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_196": {
+    "boundary_evidence_201": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3786,7 +3881,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_197": {
+    "boundary_evidence_202": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3805,7 +3900,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_198": {
+    "boundary_evidence_203": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3828,7 +3923,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_199": {
+    "boundary_evidence_204": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3844,109 +3939,14 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/strike-profile",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "200"
-    },
-    "boundary_evidence_200": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/strike-profile",
-      "security_mode": "public",
-      "status": "404"
-    },
-    "boundary_evidence_201": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/strike-profile",
-      "security_mode": "public",
-      "status": "422"
-    },
-    "boundary_evidence_202": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/strike-profile",
-      "security_mode": "public",
-      "status": "500"
-    },
-    "boundary_evidence_203": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/strike-profile",
-      "security_mode": "public",
-      "status": "502"
-    },
-    "boundary_evidence_204": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/strike-profile",
-      "security_mode": "public",
-      "status": "503"
     },
     "boundary_evidence_205": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/MarketWire"
+        "$ref": "#/components/schemas/WireError"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -3957,9 +3957,9 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/ticker/{ticker}",
-      "security_mode": "public",
-      "status": "200"
+      "operation": "GET /api/strike-profile",
+      "security_mode": "session",
+      "status": "403"
     },
     "boundary_evidence_206": {
       "body_category": "json",
@@ -3976,8 +3976,8 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/ticker/{ticker}",
-      "security_mode": "public",
+      "operation": "GET /api/strike-profile",
+      "security_mode": "session",
       "status": "404"
     },
     "boundary_evidence_207": {
@@ -3995,8 +3995,8 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/ticker/{ticker}",
-      "security_mode": "public",
+      "operation": "GET /api/strike-profile",
+      "security_mode": "session",
       "status": "422"
     },
     "boundary_evidence_208": {
@@ -4014,8 +4014,8 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/ticker/{ticker}",
-      "security_mode": "public",
+      "operation": "GET /api/strike-profile",
+      "security_mode": "session",
       "status": "500"
     },
     "boundary_evidence_209": {
@@ -4033,8 +4033,8 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/ticker/{ticker}",
-      "security_mode": "public",
+      "operation": "GET /api/strike-profile",
+      "security_mode": "session",
       "status": "502"
     },
     "boundary_evidence_210": {
@@ -4052,11 +4052,144 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/ticker/{ticker}",
-      "security_mode": "public",
+      "operation": "GET /api/strike-profile",
+      "security_mode": "session",
       "status": "503"
     },
     "boundary_evidence_211": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/MarketWire"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/ticker/{ticker}",
+      "security_mode": "session",
+      "status": "200"
+    },
+    "boundary_evidence_212": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/ticker/{ticker}",
+      "security_mode": "session",
+      "status": "403"
+    },
+    "boundary_evidence_213": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/ticker/{ticker}",
+      "security_mode": "session",
+      "status": "404"
+    },
+    "boundary_evidence_214": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/ticker/{ticker}",
+      "security_mode": "session",
+      "status": "422"
+    },
+    "boundary_evidence_215": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/ticker/{ticker}",
+      "security_mode": "session",
+      "status": "500"
+    },
+    "boundary_evidence_216": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/ticker/{ticker}",
+      "security_mode": "session",
+      "status": "502"
+    },
+    "boundary_evidence_217": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/ticker/{ticker}",
+      "security_mode": "session",
+      "status": "503"
+    },
+    "boundary_evidence_218": {
       "body_category": "sse",
       "body_meaning": "sse",
       "body_schema": {
@@ -4078,10 +4211,29 @@
       },
       "media_type": "text/event-stream",
       "operation": "GET /api/ticker/{ticker}/progressive",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_212": {
+    "boundary_evidence_219": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/ticker/{ticker}/progressive",
+      "security_mode": "session",
+      "status": "403"
+    },
+    "boundary_evidence_220": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -4097,10 +4249,10 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/ticker/{ticker}/progressive",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "404"
     },
-    "boundary_evidence_213": {
+    "boundary_evidence_221": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -4116,10 +4268,10 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/ticker/{ticker}/progressive",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_214": {
+    "boundary_evidence_222": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -4135,10 +4287,10 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/ticker/{ticker}/progressive",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "500"
     },
-    "boundary_evidence_215": {
+    "boundary_evidence_223": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -4154,10 +4306,10 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/ticker/{ticker}/progressive",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "502"
     },
-    "boundary_evidence_216": {
+    "boundary_evidence_224": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -4173,10 +4325,10 @@
       "header_value_policies": {},
       "media_type": "application/json",
       "operation": "GET /api/ticker/{ticker}/progressive",
-      "security_mode": "public",
+      "security_mode": "session",
       "status": "503"
     },
-    "boundary_evidence_217": {
+    "boundary_evidence_225": {
       "body_category": "html",
       "body_meaning": "text",
       "body_schema": {
@@ -4195,7 +4347,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_218": {
+    "boundary_evidence_226": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {

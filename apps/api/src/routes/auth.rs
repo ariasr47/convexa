@@ -3,8 +3,8 @@
 
 use crate::openapi::RouteResponse;
 use crate::services::auth::{
-    auth_required, settings_auth_required, AuthError as AuthErr, AuthService, SettingsPatch,
-    UserRecord, COOKIE_NAME,
+    auth_required, owner_only, settings_auth_required, AuthError as AuthErr, AuthService,
+    SettingsPatch, UserRecord, COOKIE_NAME,
 };
 use crate::state::AppState;
 use axum::extract::{FromRequestParts, Query, State};
@@ -1095,6 +1095,47 @@ impl FromRequestParts<AppState> for AuthUser {
 
     async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Response> {
         require_user(state, &parts.headers).map(Self)
+    }
+}
+
+/// True when `user` is the owner: its stored email is on `OWNER_EMAILS` (trimmed, any case). No
+/// owner configured ⇒ false for everyone (fail closed).
+pub fn is_owner(state: &AppState, user: &UserRecord) -> bool {
+    state.config.owner_emails.contains(&user.email)
+}
+
+/// Helper for routes that serve licence-derived data: the signed-in owner, or a refusal. Signed
+/// out (or a forged/expired cookie) is the shared 403 `auth_required`; signed in but not the owner
+/// is 403 `owner_only`. Routes that parse a body first call this inline, as with [`require_user`].
+#[allow(clippy::result_large_err)]
+pub fn require_owner(state: &AppState, headers: &HeaderMap) -> Result<UserRecord, Response> {
+    let user = require_user(state, headers)?;
+    if is_owner(state, &user) {
+        Ok(user)
+    } else {
+        Err(auth_err(owner_only()))
+    }
+}
+
+/// The owner refusal's body, for the routes' representative 403 boundaries: the same closed code
+/// and message [`require_owner`] sends.
+pub(crate) fn contract_owner_refusal() -> crate::openapi::WireError {
+    let refusal = owner_only();
+    wire_error(refusal.code, &refusal.message)
+}
+
+/// Extractor form of [`require_owner`]: the owner gate (docs/product/ai-analyst/DESIGN.md,
+/// "Licence compliance: the owner gate"). Dealer levels and everything else computed from the
+/// paid options feed are Derived Works that reach the owner's account alone, and "signed in" is
+/// not "owner". Like [`AuthUser`], it runs before the handler body, the path and the query, so a
+/// refused caller learns nothing about the ticker it asked for.
+pub struct OwnerUser(pub UserRecord);
+
+impl FromRequestParts<AppState> for OwnerUser {
+    type Rejection = Response;
+
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Response> {
+        require_owner(state, &parts.headers).map(Self)
     }
 }
 

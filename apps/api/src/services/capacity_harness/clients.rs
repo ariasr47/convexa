@@ -14,15 +14,81 @@ use tokio::net::TcpStream;
 
 use super::types::OutcomeClass;
 
-/// Build production routes + rate-limit middleware (limiter is 0 on the harness).
-pub fn harness_router(state: AppState) -> AppResult<axum::Router> {
+/// Build production routes + rate-limit middleware (limiter is 0 on the harness). The harness
+/// measures the production router owner gate included, so every request it sends arrives as the
+/// harness owner ([`harness_owner_session`]).
+pub fn harness_router(mut state: AppState) -> AppResult<axum::Router> {
+    let owner_cookie = harness_owner_session(&mut state)?;
     let limiter = state.rate_limiter.clone();
     let router = crate::routes::router(state)
         .map_err(|e| AppError::Config(format!("incomplete contract coverage: {e}")))?;
-    Ok(router.layer(middleware::from_fn_with_state(
-        limiter,
-        rate_limit_middleware,
-    )))
+    Ok(with_harness_owner_session(
+        router.layer(middleware::from_fn_with_state(
+            limiter,
+            rate_limit_middleware,
+        )),
+        owner_cookie,
+    ))
+}
+
+/// The harness owner's address: a reserved `.invalid` domain, never a real account.
+pub const HARNESS_OWNER_EMAIL: &str = "capacity-harness-owner@example.invalid";
+
+/// Make the harness owner real on this (non-production, in-memory) state: name it in the state's
+/// `OWNER_EMAILS`, create its account with a fresh random password, sign it in, and return the
+/// `Cookie` header for that session. The owner gate itself is untouched: the routes still resolve
+/// and check this session exactly as they would the owner's in production. Call it before the
+/// router is built, since the router keeps its own copy of the state.
+pub fn harness_owner_session(state: &mut AppState) -> AppResult<axum::http::HeaderValue> {
+    use rand::RngCore;
+    let mut config = (*state.config).clone();
+    config.owner_emails = crate::config::OwnerEmails::from_raw(Some(HARNESS_OWNER_EMAIL));
+    state.config = std::sync::Arc::new(config);
+    let mut bytes = [0u8; 24];
+    rand::thread_rng().fill_bytes(&mut bytes);
+    let password = hex::encode(bytes);
+    let refused = |e: crate::services::auth::AuthError| {
+        AppError::Config(format!("capacity harness owner: {}", e.message))
+    };
+    state
+        .auth
+        .ensure_account(HARNESS_OWNER_EMAIL, &password, None)
+        .map_err(refused)?;
+    let (_, sid) = state
+        .auth
+        .login(HARNESS_OWNER_EMAIL, &password)
+        .map_err(refused)?;
+    let cookie = format!(
+        "{}={}",
+        crate::services::auth::COOKIE_NAME,
+        state.auth.signed_cookie_value(&sid)
+    );
+    axum::http::HeaderValue::from_str(&cookie)
+        .map_err(|e| AppError::Config(format!("capacity harness owner cookie: {e}")))
+}
+
+/// Attach the harness owner's session to every request that arrives without a `Cookie` header.
+pub fn with_harness_owner_session(
+    router: axum::Router,
+    owner_cookie: axum::http::HeaderValue,
+) -> axum::Router {
+    router.layer(middleware::from_fn_with_state(
+        owner_cookie,
+        attach_owner_session,
+    ))
+}
+
+async fn attach_owner_session(
+    axum::extract::State(owner_cookie): axum::extract::State<axum::http::HeaderValue>,
+    mut request: axum::extract::Request,
+    next: middleware::Next,
+) -> axum::response::Response {
+    if !request.headers().contains_key(axum::http::header::COOKIE) {
+        request
+            .headers_mut()
+            .insert(axum::http::header::COOKIE, owner_cookie);
+    }
+    next.run(request).await
 }
 
 /// Bind `routes::router(state)` (already layered) on `127.0.0.1:0`.
