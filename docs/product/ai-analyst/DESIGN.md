@@ -651,3 +651,62 @@ Stress section on Research → Markets and its inputs (the OFR Financial Stress 
 futures `1170E1` in `cftc.rs`) ship ahead of Phase 2, as the Treasury curve and the calendar did;
 `get_stress_gauge` and the Q5 eval stay in Phase 2, and no model reads the gauge until that eval
 passes.** §7's "New sources come only after that" still governs what a model may read.
+
+### 2026-10-26: the owner gate shipped (slice 0b, the gate only)
+
+Source: SEC-1 ([site audit 2026-10-25](../../quality/2026-10-25/SITE-AUDIT.md), commits `9d483d4d`
+and `0fa92e31`) made the scan reads signed-in only. That still let any signed-in account read the
+levels, and production may hold demo or QA accounts besides the owner's (from conformance
+`--auth-signup` runs before the loopback guard). §6 "Licence compliance: the owner gate (Phase 0)"
+says "signed in" is not "owner", so this builds the owner role and the gate. The rest of slice 0b
+(`context_packages`, `analyst_answers`) stays gated, as amendment 2026-10-25 item 1 says.
+
+1. **The role.** `OWNER_EMAILS` (`apps/api/src/config.rs`, `OwnerEmails`) is a comma-separated
+   allowlist. Each entry is trimmed and compared case-insensitively with the signed-in user's
+   stored email. Absent or empty means no owner, and every owner-only route refuses everyone: the
+   gate fails closed. Only the count is logged, never an address. `serve` logs the count at boot
+   and never refuses to start; the owner sets the variable on Railway.
+2. **The gate.** `OwnerUser` (`apps/api/src/routes/auth.rs`) sits beside `AuthUser` and runs before
+   the handler, the path and the query. Signed out or with a forged cookie, the caller gets the
+   existing 403 `auth_required`. Signed in but not the owner, it gets 403 `owner_only` ("Only the
+   site owner's account can see this data."). The owner gets the data.
+   `POST /api/recommendation/{ticker}` parses its body first, so it calls `require_owner` inline.
+3. **The routes it guards.** These are the 14 operations in `OWNER_ONLY_OPERATIONS`
+   (`apps/api/src/routes/mod.rs`). Each can return dealer levels or other values computed from the
+   licensed options feed:
+   - `GET /api/scan`, `/api/scan/all` and `/api/scan/{symbol}/history`;
+   - `GET /api/ticker/{ticker}` and `/api/ticker/{ticker}/progressive`;
+   - `GET /api/market-data`, `/api/signals` and `/api/strike-profile`;
+   - `GET /api/contract/{ticker}` and `/api/candidates/{ticker}`;
+   - `GET /api/stream/{ticker}`;
+   - `POST /api/recommendation/{ticker}`, `GET /api/recommendation/export/{ticker}` and
+     `GET /api/recommendation/status/{ticker}`.
+
+   The contract documents each as `session` plus `x-convexa-access: owner`, with a 403 that names
+   both refusals. A test walks the OpenAPI document and fails if any operation declaring a level
+   field is neither owner-only nor behind the operator token.
+4. **What stays open, and why.**
+   - The scan universe is ticker names, and the scan view is the caller's saved layout.
+   - Prices and the price stream are stock quotes; they never touch the options chain.
+   - Personas are static. Public data comes from public-domain sources with credit lines.
+   - Health stays open.
+   - The caller's own book, broker and auth surfaces keep their session gates, and the sim-trade
+     gate is a yes or no.
+   - The demo page is static HTML.
+   - The operator-token research and metrics routes keep the operator token.
+   - Stock quotes from Massive are licensed too (§0, point 2). They stay out because this gate
+     covers options-derived data, and production has no Massive key today, so they serve nothing
+     live. If a live key returns, they need the same decision.
+5. **Sign-up is part of the gate.** An allowlisted address is only as strong as sign-up. With
+   `AUTH_REGISTRATION_OPEN` on, anyone could register an owner address nobody holds yet. Production
+   keeps sign-ups closed, and boot warns when both are set.
+6. **Local constructs.** The capacity harness serves synthetic fixture data. It provisions its own
+   owner on its in-memory store and sends that session, so it still measures the router with the
+   gate in place. The session-day replay serves recorded licensed data and reads `OWNER_EMAILS`
+   like `serve` does. If the variable is unset, its ticker stream refuses everyone.
+7. **§7 Phase 0's exit gate** says "Owner-only routes refuse other sessions (test)". For the gate,
+   `api_contract_runtime_auth_research.rs` meets it with two tests:
+   - `owner_only_routes_answer_the_owner_alone` covers every route listed in item 3. Signed out
+     and forged cookies get `auth_required`, a non-owner gets `owner_only`, and the owner gets 200
+     with the levels.
+   - `owner_only_routes_fail_closed_without_owner_emails` covers the unset case.
