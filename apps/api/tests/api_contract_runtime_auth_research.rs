@@ -1835,15 +1835,17 @@ async fn owner_gate_call(
 
 /// The owner gate's risk test (auth is a test floor). For every owner-only operation: signed out
 /// and with a forged cookie it is 403 `auth_required`; signed in as anyone but the owner it is 403
-/// `owner_only`; signed in as the owner (named in `OWNER_EMAILS` with stray case and whitespace)
-/// it is 200, and the reads that carry dealer levels carry them. No refusal carries a level or
-/// sets a cookie. The list under test is the contract's own (`OWNER_ONLY_OPERATIONS`, which also
-/// marks the OpenAPI document), so a route cannot be gated in one place and open in the other.
+/// `owner_only`, a lookalike account included (the owner's address with KELVIN SIGN U+212A for its
+/// 'k': the account store keys it apart, so it is someone else's account); signed in as the owner
+/// (named in `OWNER_EMAILS` with stray case and whitespace) it is 200, and the reads that carry
+/// dealer levels carry them. No refusal carries a level or sets a cookie. The list under test is
+/// the contract's own (`OWNER_ONLY_OPERATIONS`, which also marks the OpenAPI document), so a route
+/// cannot be gated in one place and open in the other.
 #[tokio::test]
 async fn owner_only_routes_answer_the_owner_alone() {
-    let owner_email = "runtime-owner@example.test";
+    let owner_email = "runtime-desk-owner@example.test";
     let (state, router) = owner_gate_router(Some(
-        "  Runtime-Owner@Example.TEST , second-owner@example.test ,",
+        "  Runtime-Desk-Owner@Example.TEST , second-owner@example.test ,",
     ))
     .await;
     let requests = owner_gate_requests();
@@ -1862,8 +1864,20 @@ async fn owner_only_routes_answer_the_owner_alone() {
         "every owner-only operation is exercised"
     );
 
-    let (owner_cookie, _) = signup(&state, &router, owner_email, false).await;
+    let (owner_cookie, owner_id) = signup(&state, &router, owner_email, false).await;
     let (other_cookie, _) = signup(&state, &router, "runtime-not-owner@example.test", false).await;
+    // The lookalike signs up after the owner, and the store accepts it as a new account.
+    let (lookalike_cookie, lookalike_id) = signup(
+        &state,
+        &router,
+        "runtime-des\u{212a}-owner@example.test",
+        false,
+    )
+    .await;
+    assert_ne!(
+        lookalike_id, owner_id,
+        "the lookalike is a distinct account"
+    );
     let forged = format!("{COOKIE_NAME}=forged-session-id.forged-signature");
     for (method, path, uri, carries_levels) in requests {
         for (case, cookie, code) in [
@@ -1872,6 +1886,11 @@ async fn owner_only_routes_answer_the_owner_alone() {
             (
                 "signed in, not the owner",
                 Some(other_cookie.as_str()),
+                "owner_only",
+            ),
+            (
+                "signed in as the owner's KELVIN SIGN lookalike",
+                Some(lookalike_cookie.as_str()),
                 "owner_only",
             ),
         ] {

@@ -1098,8 +1098,9 @@ impl FromRequestParts<AppState> for AuthUser {
     }
 }
 
-/// True when `user` is the owner: its stored email is on `OWNER_EMAILS` (trimmed, any case). No
-/// owner configured ⇒ false for everyone (fail closed).
+/// True when `user` is the owner: its stored email is on `OWNER_EMAILS` (trimmed, ASCII case
+/// ignored: the account store's own key, so a lookalike account is not the owner). No owner
+/// configured ⇒ false for everyone (fail closed).
 pub fn is_owner(state: &AppState, user: &UserRecord) -> bool {
     state.config.owner_emails.contains(&user.email)
 }

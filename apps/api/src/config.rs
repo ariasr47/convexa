@@ -72,9 +72,11 @@ pub struct Config {
     /// data (dealer levels and everything else computed from the paid options feed, "Derived
     /// Works") reaches these accounts alone, through the `OwnerUser` extractor
     /// (`routes/auth.rs`); "signed in" is not "owner" (docs/product/ai-analyst/DESIGN.md, "Licence
-    /// compliance: the owner gate"). Each entry is trimmed and compared case-insensitively against
-    /// the signed-in user's stored email. Absent or empty means no owner, and every owner-only
-    /// route refuses every caller (fail closed). Only the count is ever logged, never an address.
+    /// compliance: the owner gate"). Each entry is trimmed and compared against the signed-in
+    /// user's stored email ignoring ASCII case only (the account store's own `email_lower` key),
+    /// so a lookalike account (KELVIN SIGN for 'k', a non-ASCII capital) is never the owner.
+    /// Absent or empty means no owner, and every owner-only route refuses every caller (fail
+    /// closed). Only the count is ever logged, never an address.
     /// An allowlisted address is only as strong as sign-up: with `AUTH_REGISTRATION_OPEN` on, an
     /// owner address nobody has registered yet could be claimed, so production keeps sign-ups
     /// closed.
@@ -192,7 +194,8 @@ impl std::fmt::Debug for SecUserAgent {
 }
 
 /// `OWNER_EMAILS`: the owner allowlist (see [`Config::owner_emails`]). Entries are stored trimmed
-/// and lowercased; empty entries are dropped, so an unset, empty or all-comma value is no owner.
+/// and ASCII-lowercased (the account store's key); empty entries are dropped, so an unset, empty
+/// or all-comma value is no owner.
 /// The addresses identify the owner, so `Debug` prints only the count: a `{config:?}` in a log
 /// line must never print one.
 #[derive(Clone, Default, PartialEq, Eq)]
@@ -217,8 +220,9 @@ impl OwnerEmails {
         Self::from_raw(env::var("OWNER_EMAILS").ok().as_deref())
     }
 
-    /// True when `email` (a signed-in user's stored email) is on the list. Trim and case do not
-    /// matter on either side. No owner configured ⇒ always false (fail closed).
+    /// True when `email` (a signed-in user's stored email) is on the list. Trim and ASCII case do
+    /// not matter on either side; any other difference is a different account, as in the store.
+    /// No owner configured ⇒ always false (fail closed).
     pub fn contains(&self, email: &str) -> bool {
         let email = normalize_owner_email(email);
         !email.is_empty() && self.0.iter().any(|owner| *owner == email)
@@ -234,8 +238,13 @@ impl OwnerEmails {
     }
 }
 
+/// The account store's own key (`email_lower`: trim, then ASCII lowercase, in
+/// `services/auth/store.rs` and `db/pg_auth.rs`), so an entry matches exactly the one account the
+/// store keys to it. Not Unicode `to_lowercase`: that folds KELVIN SIGN (U+212A) to ASCII 'k' and a
+/// non-ASCII capital to its small letter, which the store keeps as separate, registrable accounts,
+/// so a lookalike account would pass as the owner.
 fn normalize_owner_email(raw: &str) -> String {
-    raw.trim().to_lowercase()
+    raw.trim().to_ascii_lowercase()
 }
 
 impl std::fmt::Debug for OwnerEmails {
@@ -765,8 +774,8 @@ mod tests {
     use super::*;
 
     /// The owner gate's allowlist: unset, empty, blank or all-comma is no owner (every owner-only
-    /// route refuses); entries are trimmed and case-insensitive on both sides; `Debug` never
-    /// prints an address.
+    /// route refuses); entries are trimmed and ASCII-case-insensitive on both sides, keyed like the
+    /// account store; `Debug` never prints an address.
     #[test]
     fn owner_emails_trim_ignore_case_fail_closed_and_never_print_an_address() {
         for raw in [None, Some(""), Some("   "), Some(","), Some(" , ,, ")] {
@@ -798,6 +807,35 @@ mod tests {
             "owner@example.test,second@example.test",
         ] {
             assert!(!owners.contains(email), "{email:?} is not an owner");
+        }
+
+        // The match key is the account store's own `email_lower` (trim, then ASCII lowercase:
+        // services/auth/store.rs and db/pg_auth.rs), so the gate names exactly the accounts the
+        // store keeps apart. Unicode lowercasing would let a separate account pass as the owner:
+        // KELVIN SIGN (U+212A) lowercases to ASCII 'k', and a non-ASCII capital to its small
+        // letter, yet the store keys each as a distinct, registrable address. Escapes, not
+        // literals, so an editor's Unicode normalization cannot change what is tested.
+        let store_keyed =
+            OwnerEmails::from_raw(Some(" kate@example.test , jos\u{e9}@example.test "));
+        assert_eq!(store_keyed.len(), 2);
+        for email in [
+            "kate@example.test",
+            " KATE@Example.TEST ",
+            "jos\u{e9}@example.test",
+            "JOS\u{e9}@EXAMPLE.TEST",
+        ] {
+            assert!(store_keyed.contains(email), "{email:?} is an owner");
+        }
+        for email in [
+            "\u{212a}ate@example.test",
+            " \u{212a}ATE@Example.TEST ",
+            "jos\u{c9}@example.test",
+            "JOS\u{c9}@EXAMPLE.TEST",
+        ] {
+            assert!(
+                !store_keyed.contains(email),
+                "{email:?} is a distinct account in the store, so it is not an owner"
+            );
         }
 
         let printed = format!("{owners:?}");
