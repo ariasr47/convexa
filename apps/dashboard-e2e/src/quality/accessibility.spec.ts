@@ -34,9 +34,10 @@ for (const scenario of accessibilityScenarios) {
     // background, which axe correctly, but misleadingly, reports as a wall of color-contrast
     // violations (confirmed by direct DOM inspection, not guessed). Waiting for the CONTAINER's
     // opacity to actually settle at 1 is what makes this scan measure the dialog's real, at-rest
-    // state.
+    // state. The opener is the nav's “Log in”: since `c201518c` the CTA band's secondary is a link
+    // to the Ticker (sign-ups are closed), so it no longer opens the dialog.
     if (scenario.id === 'A11Y-23' || scenario.id === 'A11Y-24') {
-      await page.getByTestId('cta-band-secondary').click();
+      await page.getByTestId('account-signin').click();
       await expect(page.getByTestId('auth-dialog')).toBeVisible();
       await page.waitForFunction(() => {
         const el = document.querySelector('.MuiDialog-container');

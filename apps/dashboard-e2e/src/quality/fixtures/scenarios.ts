@@ -217,6 +217,78 @@ const session = (signed: boolean) => ({
   google_available: false,
   settings: signed ? { active_persona_id: null, default_ticker: null, theme: 'dark' } : null,
 });
+/** GET /api/health as the paused production API answers it. A live build reads it once per page
+ *  load (`getMarketDataMode`, libs/api; since `de6aa430`), so every scan sends it. The keys are the
+ *  closed `HealthWire` that `health()` builds (apps/api/src/routes/health.rs), and every value is
+ *  what production served on 2026-10-25 (docs/quality/2026-10-25/SITE-AUDIT.md, SEC-4). Production
+ *  is paused with no vendor key, so `market_data` is `not_live` (`Config::market_data_state`,
+ *  apps/api/src/config.rs). The dashboard reads `market_data` alone. */
+const pausedProductionHealth = {
+  status: 'ok',
+  service: 'api-rust',
+  release: '7810a87ba81f527f8a2978c70a44f2daa275136f',
+  price_cache: 'memory',
+  durable_store: 'postgres',
+  data_feed: 'realtime',
+  gex_kernel: 'avx2-f64x4',
+  scanner: {
+    enabled: false,
+    embedded: true,
+    market_hours_only: true,
+    universe_size: 69,
+    board: {
+      rows: 69,
+      by_status: { error: 69 },
+      priced: 69,
+      scored: 69,
+      history_samples: 39744,
+      history_backend: 'postgres',
+      history_symbols: 12,
+      history_top: [
+        'AAPL',
+        'ADBE',
+        'AMD',
+        'AMZN',
+        'ARM',
+        'AVGO',
+        'BA',
+        'BABA',
+        'BAC',
+        'COIN',
+        'COST',
+        'CRM',
+      ].map((symbol) => ({ symbol, n: 576 })),
+      sweep_last_completed: 1790280078.472,
+      heartbeat_updated_at: 1790280078.472,
+    },
+  },
+  rate_limit: { public_per_min: 30, enabled: true },
+  ai_meter: {
+    scope: 'process_local_with_postgres',
+    daily_cap: 50,
+    note: 'Process-local daily AI-rec cap; correct for a single api replica',
+  },
+  metrics_auth: 'required',
+  warm: { enabled: false, symbols: ['SPY', 'QQQ', 'NVDA'], interval_secs: 25, concurrency: 2 },
+  gex_cache: {
+    hits: 0,
+    misses: 0,
+    sets: 0,
+    expirations: 0,
+    warm_refreshes: 0,
+    warm_errors: 0,
+    hit_rate: 0.0,
+    entries: 0,
+    warm_symbols: ['SPY', 'QQQ', 'NVDA'],
+    ttl_default_secs: 10,
+    ttl_liquid_secs: 20,
+  },
+  market_data: 'not_live',
+};
+/** The same server with its feed on (`MARKET_DATA_MODE=live`). `market_data` is the field the mode
+ *  sets. `scanner.enabled` and `warm.enabled` are each `flag && is_live()` in `health()`, and stay
+ *  false here, as they do with SCAN_ENABLED and WARM_ENABLED off. */
+const liveFeedHealth = { ...pausedProductionHealth, market_data: 'live' };
 const scanRows = ['SPY', 'QQQ', 'NVDA'].map((symbol, i) => ({
   symbol,
   price: 500 - i * 10,
@@ -322,6 +394,7 @@ const base = (
   },
   stream: 'connected',
   rest: {
+    'GET /api/health': response(pausedProductionHealth),
     'GET /api/auth/session': response(session(auth === 'authenticated')),
     'POST /api/auth/login': errorResponse(401, {
       error: 'bad_credentials',
@@ -438,11 +511,24 @@ function withSessionFault(scenario: Scenario): Scenario {
     },
   };
 }
+/** A scenario whose surface only a server with its feed on serves: the full ticker desk (with its
+ *  cold-load failure, offline tape and paused-bundle panel) and the scanner board. A live build
+ *  mounts those only when /api/health does not report the feed off. On `not_live` it mounts the
+ *  public desk and the scanner's explain page instead (app.tsx `TickerDeskRoute`, `ScannerRoute`). */
+function withLiveFeed(scenario: Scenario): Scenario {
+  return {
+    ...scenario,
+    rest: { ...scenario.rest, 'GET /api/health': response(liveFeedHealth) },
+  };
+}
 export const journeys = [
-  base('landing-ticker-navigation', '/', 'anonymous', { width: 1280, height: 900 }, 'dark', [
-    { selector: '[data-testid="landing"]' },
-  ]),
-  {
+  // Lands on `/`, then reaches the full desk: the server has its feed on.
+  withLiveFeed(
+    base('landing-ticker-navigation', '/', 'anonymous', { width: 1280, height: 900 }, 'dark', [
+      { selector: '[data-testid="landing"]' },
+    ]),
+  ),
+  withLiveFeed({
     ...base(
       'ticker-stream-loss',
       '/ticker/SPY',
@@ -452,19 +538,31 @@ export const journeys = [
       [{ selector: '[data-testid="command-deck"]' }, { selector: '[data-testid="widget-bento"]' }],
     ),
     stream: 'payload-gap' as const,
-  },
+  }),
   base('signed-out-auth-dialog', '/positions', 'anonymous', { width: 1280, height: 900 }, 'dark', [
     { selector: '[data-testid="require-auth-wall"]' },
   ]),
-  base('dense-positions', '/positions', 'authenticated', { width: 393, height: 852 }, 'dark', [
-    { selector: '[data-testid="portfolio-panel"]' },
-  ]),
-  base('dense-scanner', '/scanner', 'authenticated', { width: 393, height: 852 }, 'dark', [
-    { selector: '[data-testid="scanner-page"]' },
-  ]),
-  base('ai-recommendation', '/ticker/SPY', 'authenticated', { width: 393, height: 852 }, 'light', [
-    { selector: '[data-testid="widget-bento"]' },
-  ]),
+  // Walks on from the book to the scanner board: the server has its feed on.
+  withLiveFeed(
+    base('dense-positions', '/positions', 'authenticated', { width: 393, height: 852 }, 'dark', [
+      { selector: '[data-testid="portfolio-panel"]' },
+    ]),
+  ),
+  withLiveFeed(
+    base('dense-scanner', '/scanner', 'authenticated', { width: 393, height: 852 }, 'dark', [
+      { selector: '[data-testid="scanner-page"]' },
+    ]),
+  ),
+  withLiveFeed(
+    base(
+      'ai-recommendation',
+      '/ticker/SPY',
+      'authenticated',
+      { width: 393, height: 852 },
+      'light',
+      [{ selector: '[data-testid="widget-bento"]' }],
+    ),
+  ),
 ];
 export const accessibilityScenarios = [
   base('A11Y-1', '/', 'anonymous', { width: 1280, height: 900 }, 'dark', [
@@ -477,11 +575,13 @@ export const accessibilityScenarios = [
     { selector: '[data-testid="landing"]' },
     { selector: '[data-testid="cta-primary"]' },
   ]),
-  base('A11Y-3', '/ticker/SPY', 'anonymous', { width: 1280, height: 900 }, 'dark', [
-    { selector: '[data-testid="command-deck"]' },
-    { selector: '[data-testid="widget-bento"]' },
-    { selector: '[data-testid="freshness-line"]' },
-  ]),
+  withLiveFeed(
+    base('A11Y-3', '/ticker/SPY', 'anonymous', { width: 1280, height: 900 }, 'dark', [
+      { selector: '[data-testid="command-deck"]' },
+      { selector: '[data-testid="widget-bento"]' },
+      { selector: '[data-testid="freshness-line"]' },
+    ]),
+  ),
   base('A11Y-4', '/settings', 'authenticated', { width: 1280, height: 900 }, 'dark', [
     { selector: '[data-testid="settings-page"]' },
     { selector: '[data-testid="settings-account-signed-in"]' },
@@ -503,31 +603,37 @@ export const accessibilityScenarios = [
       { selector: '[data-testid="empty-faulted"]' },
     ],
   ),
-  base('A11Y-6', '/scanner', 'authenticated', { width: 393, height: 852 }, 'dark', [
-    { selector: '[data-testid="scanner-page"]' },
-    { selector: '[data-testid="scan-cards"]' },
-  ]),
-  base('A11Y-7', '/scanner', 'authenticated', { width: 393, height: 852 }, 'dark', [
-    { selector: '[data-testid="scanner-page"]' },
-    { selector: '[data-testid="scan-empty-view"]', text: 'No tickers in your view.' },
-  ]),
-  base(
-    'A11Y-8',
-    '/ticker/SPY',
-    'anonymous',
-    { width: 1280, height: 900 },
-    'dark',
-    // Fidelity repair 2, N7 — the design's cold-start-failure sentence, never the raw client
-    // status string (the status itself is kept, as a Mono detail line — `HTTP 503` — so this
-    // substring match still proves nothing is hidden).
-    [{ selector: '[role="alert"]', text: "Couldn't load SPY." }],
-    [
-      { selector: '[data-testid="cold-load"]' },
-      { selector: '[data-testid="command-deck"]' },
-      { selector: '[data-testid="widget-bento"]' },
-    ],
+  withLiveFeed(
+    base('A11Y-6', '/scanner', 'authenticated', { width: 393, height: 852 }, 'dark', [
+      { selector: '[data-testid="scanner-page"]' },
+      { selector: '[data-testid="scan-cards"]' },
+    ]),
   ),
-  {
+  withLiveFeed(
+    base('A11Y-7', '/scanner', 'authenticated', { width: 393, height: 852 }, 'dark', [
+      { selector: '[data-testid="scanner-page"]' },
+      { selector: '[data-testid="scan-empty-view"]', text: 'No tickers in your view.' },
+    ]),
+  ),
+  withLiveFeed(
+    base(
+      'A11Y-8',
+      '/ticker/SPY',
+      'anonymous',
+      { width: 1280, height: 900 },
+      'dark',
+      // Fidelity repair 2, N7 — the design's cold-start-failure sentence, never the raw client
+      // status string (the status itself is kept, as a Mono detail line — `HTTP 503` — so this
+      // substring match still proves nothing is hidden).
+      [{ selector: '[role="alert"]', text: "Couldn't load SPY." }],
+      [
+        { selector: '[data-testid="cold-load"]' },
+        { selector: '[data-testid="command-deck"]' },
+        { selector: '[data-testid="widget-bento"]' },
+      ],
+    ),
+  ),
+  withLiveFeed({
     ...base('A11Y-9', '/ticker/SPY', 'anonymous', { width: 1280, height: 900 }, 'dark', [
       { selector: '[data-testid="command-deck"]' },
       { selector: '[data-testid="widget-bento"]' },
@@ -540,7 +646,7 @@ export const accessibilityScenarios = [
       { selector: '[data-testid="last-trade"]', text: '⏸ Last trade' },
     ]),
     stream: 'payload-gap' as const,
-  },
+  }),
   // (curvature-v2-landing-and-site F15, AC-G1) three new public surfaces. A11Y-1/A11Y-2 already
   // scan `/` in dark and light and pick up the footer mount; every scan below picks up the footer
   // for free.
@@ -617,8 +723,9 @@ export const accessibilityScenarios = [
     ]),
   ),
   // The open sign-in dialog: loaded at `/` (anonymous), then `accessibility.spec.ts` opens it
-  // (via `cta-band-secondary`) before the axe scan — same special-case mechanism A11Y-9 already
-  // uses. `ready` only requires the landing shell; the dialog's own presence is asserted there.
+  // (via the nav's “Log in”, `account-signin`) before the axe scan — same special-case mechanism
+  // A11Y-9 already uses. `ready` only requires the landing shell; the dialog's own presence is
+  // asserted there.
   base('A11Y-23', '/', 'anonymous', { width: 393, height: 852 }, 'dark', [
     { selector: '[data-testid="landing"]' },
   ]),
@@ -629,57 +736,67 @@ export const accessibilityScenarios = [
   // both color schemes. `strict-fixture.ts` special-cases these four ids (mirrors A11Y-8's own
   // ticker-failure override) to answer every `GET /api/ticker/SPY*` with the exact paused 503 — a
   // prefix match, not an exact `rest` key, because the query string a fresh anonymous /ticker/SPY
-  // visit sends (`dark_pool=true`) is an FE default, not a value worth pinning here.
-  base(
-    'A11Y-25',
-    '/ticker/SPY',
-    'anonymous',
-    { width: 393, height: 852 },
-    'dark',
-    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
-    [
-      { selector: '[data-testid="cold-load"]' },
-      { selector: '[data-testid="command-deck"]' },
-      { selector: '[role="alert"]' },
-    ],
+  // visit sends (`dark_pool=true`) is an FE default, not a value worth pinning here. The panel is
+  // the full desk's own cold start, so health says the feed is on (`withLiveFeed`): on `not_live` a
+  // live build mounts the public desk, which never reads the bundle.
+  withLiveFeed(
+    base(
+      'A11Y-25',
+      '/ticker/SPY',
+      'anonymous',
+      { width: 393, height: 852 },
+      'dark',
+      [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+      [
+        { selector: '[data-testid="cold-load"]' },
+        { selector: '[data-testid="command-deck"]' },
+        { selector: '[role="alert"]' },
+      ],
+    ),
   ),
-  base(
-    'A11Y-26',
-    '/ticker/SPY',
-    'anonymous',
-    { width: 393, height: 852 },
-    'light',
-    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
-    [
-      { selector: '[data-testid="cold-load"]' },
-      { selector: '[data-testid="command-deck"]' },
-      { selector: '[role="alert"]' },
-    ],
+  withLiveFeed(
+    base(
+      'A11Y-26',
+      '/ticker/SPY',
+      'anonymous',
+      { width: 393, height: 852 },
+      'light',
+      [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+      [
+        { selector: '[data-testid="cold-load"]' },
+        { selector: '[data-testid="command-deck"]' },
+        { selector: '[role="alert"]' },
+      ],
+    ),
   ),
-  base(
-    'A11Y-27',
-    '/ticker/SPY',
-    'anonymous',
-    { width: 1280, height: 900 },
-    'dark',
-    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
-    [
-      { selector: '[data-testid="cold-load"]' },
-      { selector: '[data-testid="command-deck"]' },
-      { selector: '[role="alert"]' },
-    ],
+  withLiveFeed(
+    base(
+      'A11Y-27',
+      '/ticker/SPY',
+      'anonymous',
+      { width: 1280, height: 900 },
+      'dark',
+      [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+      [
+        { selector: '[data-testid="cold-load"]' },
+        { selector: '[data-testid="command-deck"]' },
+        { selector: '[role="alert"]' },
+      ],
+    ),
   ),
-  base(
-    'A11Y-28',
-    '/ticker/SPY',
-    'anonymous',
-    { width: 1280, height: 900 },
-    'light',
-    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
-    [
-      { selector: '[data-testid="cold-load"]' },
-      { selector: '[data-testid="command-deck"]' },
-      { selector: '[role="alert"]' },
-    ],
+  withLiveFeed(
+    base(
+      'A11Y-28',
+      '/ticker/SPY',
+      'anonymous',
+      { width: 1280, height: 900 },
+      'light',
+      [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+      [
+        { selector: '[data-testid="cold-load"]' },
+        { selector: '[data-testid="command-deck"]' },
+        { selector: '[role="alert"]' },
+      ],
+    ),
   ),
 ];
