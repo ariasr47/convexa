@@ -567,8 +567,7 @@ impl PublicDataService {
                 // date, so Positioning keeps exactly the reports the old 1,096-day request
                 // returned, whatever the hour (never `today_eastern()`, which turns at 20:00 ET).
                 let fetched_on = Utc::now().date_naive();
-                let since = fetched_on - chrono::Duration::days(cftc::FETCH_DAYS);
-                let url = url::Url::parse_with_params(cftc::ENDPOINT, cftc::query(since))
+                let url = url::Url::parse_with_params(cftc::ENDPOINT, cftc::query(fetched_on))
                     .map_err(|_| FetchError::new(cftc::SOURCE, "query"))?;
                 let body = required(
                     cftc::SOURCE,

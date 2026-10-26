@@ -37,8 +37,11 @@ pub(crate) const POSITIONING_DAYS: i64 = 3 * 365 + 1;
 /// window, three calendar years ending at its own newest report, is always full.
 pub(crate) const FETCH_DAYS: i64 = POSITIONING_DAYS + 21;
 
-/// The Socrata query parameters for reports on or after `since`.
-pub(crate) fn query(since: NaiveDate) -> Vec<(&'static str, String)> {
+/// The Socrata query parameters for a request made on `fetched_on`: reports on or after
+/// `fetched_on − FETCH_DAYS`. The same `fetched_on` goes to `build()`, so the reach and
+/// Positioning's window are counted from one date.
+pub(crate) fn query(fetched_on: NaiveDate) -> Vec<(&'static str, String)> {
+    let since = fetched_on - chrono::Duration::days(FETCH_DAYS);
     let codes = FETCH_CODES
         .iter()
         .map(|code| format!("'{code}'"))
@@ -384,9 +387,10 @@ mod tests {
         );
         assert!(summary.vol_positioning.is_empty());
 
-        // The request reaches 21 days past Positioning, for all four codes, with open interest.
+        // The request reaches 21 days past Positioning, for all four codes, with open interest:
+        // `query` counts its reach from the same `fetched_on` that `build` took above.
         assert_eq!((POSITIONING_DAYS, FETCH_DAYS), (1_096, 1_117));
-        let query = query(fetched_on - chrono::Duration::days(FETCH_DAYS));
+        let query = query(fetched_on);
         let select = &query.iter().find(|(k, _)| *k == "$select").unwrap().1;
         assert!(select.ends_with(",open_interest_all"), "{select}");
         let filter = &query.iter().find(|(k, _)| *k == "$where").unwrap().1;
