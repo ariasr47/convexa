@@ -7,6 +7,8 @@
 //! Pure: no I/O and no clock. The caller passes the Eastern date freshness is judged on. Nothing
 //! here rounds a percentile, a score or the mean: the gauge integer is the unrounded mean rounded
 //! half up, its band comes from that integer, and only display ([`display`]) rounds the rest.
+//! The gauge is computed from exact fractions ([`Share`]), not from f64 sums: a mean of exactly
+//! 44.5 must publish 45, and an f64 sum of the five or seven scores can land just below the half.
 
 use super::sources;
 use super::types::{
@@ -70,6 +72,21 @@ pub(crate) const INPUTS: [(StressInput, &str, Cadence, Leaning); 7] = [
     ),
 ];
 
+/// A percentile or a score held exactly, `100 × num ÷ den` (`num ≤ den`, `den > 0`). The gauge's
+/// mean and integer come from these; [`Share::value`] is the f64 a component carries for display.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Share {
+    num: u64,
+    den: u64,
+}
+
+impl Share {
+    /// The 0–100 value as f64.
+    pub(crate) fn value(self) -> f64 {
+        100.0 * self.num as f64 / self.den as f64
+    }
+}
+
 /// Where a series' newest value sits in its window.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Ranked {
@@ -79,7 +96,7 @@ pub(crate) struct Ranked {
     pub window: u32,
     pub window_from: NaiveDate,
     /// `None` when the window reaches back less than a year (rule 3).
-    pub percentile: Option<f64>,
+    pub percentile: Option<Share>,
 }
 
 /// `date` minus `years` calendar years; Feb 29 becomes Feb 28.
@@ -106,8 +123,11 @@ pub(crate) fn rank(series: &[(NaiveDate, f64)]) -> Option<Ranked> {
     let below = window.iter().filter(|(_, v)| *v < raw).count();
     // The as-of observation itself is not one of the others.
     let equal = window.iter().filter(|(_, v)| *v == raw).count() - 1;
-    let percentile = (window_from <= years_before(as_of, 1) && others > 0)
-        .then(|| 100.0 * (below as f64 + 0.5 * equal as f64) / others as f64);
+    // 100 × (below + ½ × equal) ÷ others, held as 100 × (2 × below + equal) ÷ (2 × others).
+    let percentile = (window_from <= years_before(as_of, 1) && others > 0).then(|| Share {
+        num: (2 * below + equal) as u64,
+        den: 2 * others as u64,
+    });
     Some(Ranked {
         as_of,
         raw,
@@ -121,6 +141,17 @@ pub(crate) fn rank(series: &[(NaiveDate, f64)]) -> Option<Ranked> {
 pub(crate) fn score(percentile: f64, higher_means: Leaning) -> f64 {
     match higher_means {
         Leaning::Fear => 100.0 - percentile,
+        Leaning::Greed => percentile,
+    }
+}
+
+/// Rule 4 on the exact percentile: `100 − p` is `den − num` over the same `den`.
+fn exact_score(percentile: Share, higher_means: Leaning) -> Share {
+    match higher_means {
+        Leaning::Fear => Share {
+            num: percentile.den - percentile.num,
+            den: percentile.den,
+        },
         Leaning::Greed => percentile,
     }
 }
@@ -149,10 +180,51 @@ fn fresh(cadence: Cadence, age: u32) -> bool {
     }
 }
 
-/// Rule 6: the gauge integer, the unrounded mean rounded half up (`f64::round` rounds half away
-/// from zero, which is half up on 0–100).
-pub(crate) fn gauge_of(mean: f64) -> u32 {
-    mean.round() as u32
+/// Rule 6: the gauge integer, the exact mean `num ÷ den` (`den > 0`) rounded half up in integer
+/// arithmetic, so a mean of exactly k + ½ is k + 1.
+pub(crate) fn gauge_of(num: u128, den: u128) -> u32 {
+    let rest = num % den;
+    (num / den + u128::from(rest >= den - rest)) as u32
+}
+
+fn gcd(mut a: u128, mut b: u128) -> u128 {
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    a
+}
+
+/// Rule 6 exactly: the plain mean of `scores` as `(num, den)` in lowest terms, the mean being
+/// `num ÷ den`. `None` for no scores, or if the common denominator overflows u128, which real
+/// inputs cannot do: a window holds at most 1,096 observations (one per date in three years), so
+/// each `den` is at most 2,190 and seven of them stay under 10^24.
+fn exact_mean(scores: &[Share]) -> Option<(u128, u128)> {
+    if scores.is_empty() {
+        return None;
+    }
+    let common = scores.iter().try_fold(1u128, |acc, s| {
+        let den = u128::from(s.den);
+        acc.checked_mul(den / gcd(acc, den))
+    })?;
+    let sum = scores.iter().try_fold(0u128, |acc, s| {
+        acc.checked_add(u128::from(s.num).checked_mul(common / u128::from(s.den))?)
+    })?;
+    let num = sum.checked_mul(100)?;
+    let den = common.checked_mul(scores.len() as u128)?;
+    let divisor = gcd(num, den);
+    Some((num / divisor, den / divisor))
+}
+
+/// Rule 6: the mean of the counted scores, as f64 for the wire, and the gauge integer it rounds
+/// to. Both come from [`exact_mean`]; only past its (unreachable) overflow does the f64 mean decide.
+fn mean_and_gauge(scores: &[Share]) -> (f64, u32) {
+    match exact_mean(scores) {
+        Some((num, den)) => (num as f64 / den as f64, gauge_of(num, den)),
+        None => {
+            let mean = scores.iter().map(|s| s.value()).sum::<f64>() / scores.len() as f64;
+            (mean, mean.round() as u32)
+        }
+    }
 }
 
 /// Rule 7, on the published integer; each edge belongs to the calmer band.
@@ -172,13 +244,14 @@ pub(crate) fn display(value: f64) -> f64 {
     (value * 10.0).round() / 10.0
 }
 
+/// One input as scored, and its exact score when it has one.
 fn component(
     (input, source, cadence, higher_means): (StressInput, &'static str, Cadence, Leaning),
     series: Option<&[(NaiveDate, f64)]>,
     today: NaiveDate,
-) -> StressComponent {
+) -> (StressComponent, Option<Share>) {
     let Some(ranked) = series.and_then(rank) else {
-        return StressComponent {
+        let component = StressComponent {
             input,
             source,
             cadence,
@@ -193,6 +266,7 @@ fn component(
             reason: Some(NotCounted::NoData),
             age: None,
         };
+        return (component, None);
     };
     let age = age(cadence, ranked.as_of, today);
     let reason = if ranked.percentile.is_none() {
@@ -202,7 +276,8 @@ fn component(
     } else {
         None
     };
-    StressComponent {
+    let percentile = ranked.percentile.map(Share::value);
+    let component = StressComponent {
         input,
         source,
         cadence,
@@ -211,12 +286,14 @@ fn component(
         as_of: Some(ranked.as_of),
         window: ranked.window,
         window_from: Some(ranked.window_from),
-        percentile: ranked.percentile,
-        score: ranked.percentile.map(|p| score(p, higher_means)),
+        percentile,
+        score: percentile.map(|p| score(p, higher_means)),
         counted: reason.is_none(),
         reason,
         age: Some(age),
-    }
+    };
+    let exact = ranked.percentile.map(|p| exact_score(p, higher_means));
+    (component, exact)
 }
 
 /// The gauge from whatever is cached: `None` for a source with no copy (its inputs read
@@ -236,20 +313,25 @@ pub(crate) fn build(
         cftc.map(|c| c.vol_positioning.as_slice()),
         cftc.map(|c| c.equity_positioning.as_slice()),
     ];
-    let components: Vec<StressComponent> = INPUTS
+    let (components, exact): (Vec<StressComponent>, Vec<Option<Share>>) = INPUTS
         .into_iter()
         .zip(series)
         .map(|(input, series)| component(input, series, today))
-        .collect();
-    let scores: Vec<f64> = components
+        .unzip();
+    let scores: Vec<Share> = components
         .iter()
-        .filter(|c| c.counted)
-        .filter_map(|c| c.score)
+        .zip(exact)
+        .filter(|(c, _)| c.counted)
+        .filter_map(|(_, score)| score)
         .collect();
     let counted = scores.len() as u32;
     let published = counted >= MIN_COUNTED;
-    let mean = published.then(|| scores.iter().sum::<f64>() / counted as f64);
-    let gauge = mean.map(gauge_of);
+    let (mean, gauge) = if published {
+        let (mean, gauge) = mean_and_gauge(&scores);
+        (Some(mean), Some(gauge))
+    } else {
+        (None, None)
+    };
     // Rule 9: never newer than the oldest counted OFR input.
     let as_of = components
         .iter()
@@ -320,6 +402,18 @@ mod tests {
         series
     }
 
+    /// 780 others valued 0..779, one a day, then the as-of value placed so that 2 × (count below)
+    /// + (count equal) is `t`: its percentile is exactly 100 × t ÷ 1,560.
+    fn twice_ranked(as_of: NaiveDate, t: i64) -> Vec<(NaiveDate, f64)> {
+        let mut series: Vec<(NaiveDate, f64)> = (0..780)
+            .map(|i| (as_of - Duration::days(780 - i), i as f64))
+            .collect();
+        // Odd t ties one other with t ÷ 2 below it; even t sits between two, t ÷ 2 below it.
+        let half = (t / 2) as f64;
+        series.push((as_of, if t % 2 == 1 { half } else { half - 0.5 }));
+        series
+    }
+
     #[test]
     fn stress_percentile_ranks_the_as_of_value_against_its_own_last_three_years() {
         let as_of = day("2026-10-19");
@@ -338,16 +432,17 @@ mod tests {
             (ranked.as_of, ranked.raw, ranked.window, ranked.window_from),
             (as_of, 3.0, 9, day("2023-10-20"))
         );
-        // Two below and one tie, counted half, of eight others.
-        assert_eq!(ranked.percentile, Some(100.0 * 2.5 / 8.0));
+        // Two below and one tie, counted half, of eight others: 100 × (2 × 2 + 1) ÷ (2 × 8).
+        assert_eq!(ranked.percentile, Some(Share { num: 5, den: 16 }));
+        assert_eq!(ranked.percentile.map(Share::value), Some(100.0 * 2.5 / 8.0));
         // Mirrored, five lie below and the tie still counts half: exactly 100 − p.
         let mirrored: Vec<(NaiveDate, f64)> = series.iter().map(|&(d, v)| (d, -v)).collect();
         assert_eq!(
-            rank(&mirrored).unwrap().percentile,
+            rank(&mirrored).unwrap().percentile.map(Share::value),
             Some(100.0 - 100.0 * 2.5 / 8.0)
         );
         // The flip is exactly 100 − p, nothing rounded.
-        let p = ranked.percentile.unwrap();
+        let p = ranked.percentile.unwrap().value();
         assert_eq!(score(p, Leaning::Fear), 100.0 - p);
         assert_eq!(score(p, Leaning::Greed), p);
         assert!(rank(&[]).is_none());
@@ -361,7 +456,11 @@ mod tests {
         let two_years = daily(as_of, 731, rising);
         let ranked = rank(&two_years).unwrap();
         assert_eq!(
-            (ranked.window, ranked.window_from, ranked.percentile),
+            (
+                ranked.window,
+                ranked.window_from,
+                ranked.percentile.map(Share::value)
+            ),
             (731, day("2024-10-19"), Some(100.0))
         );
         // Exactly a year back is enough; a day less is not.
@@ -420,13 +519,16 @@ mod tests {
             ]
         );
         // Every as-of value is its window's maximum (p = 100): inputs 1 to 6 score 0 (extreme
-        // fear), input 7 scores 100 (extreme greed).
+        // fear), input 7 scores 100 (extreme greed). The two CFTC series differ, so each row's raw
+        // value shows it ranked its own series: VIX futures end at 0.159, E-mini S&P at 0.459.
         let as_of = day("2026-10-19");
+        let tuesday = day("2026-10-13");
         let daily_max = daily(as_of, 800, |i| i as f64);
-        let weekly_max = weekly(day("2026-10-13"), 160, |i| i as f64 / 1000.0);
+        let vix_max = weekly(tuesday, 160, |i| i as f64 / 1000.0);
+        let emini_max = weekly(tuesday, 160, |i| (300 + i) as f64 / 1000.0);
         let stress = build(
             Some(&ofr_of(std::array::from_fn(|_| daily_max.clone()))),
-            Some(&cftc_of(weekly_max.clone(), weekly_max)),
+            Some(&cftc_of(vix_max.clone(), emini_max)),
             as_of,
         );
         let scores: Vec<Option<f64>> = stress.components.iter().map(|c| c.score).collect();
@@ -448,6 +550,18 @@ mod tests {
             .all(|c| c.counted && c.percentile == Some(100.0)));
         let sources: Vec<&str> = stress.components.iter().map(|c| c.source).collect();
         assert_eq!(sources, ["ofr", "ofr", "ofr", "ofr", "ofr", "cftc", "cftc"]);
+        let raws: Vec<Option<f64>> = stress.components[5..].iter().map(|c| c.raw).collect();
+        assert_eq!(raws, [Some(0.159), Some(0.459)]);
+
+        // E-mini S&P at its window's minimum (p = 0) scores 0 as well, beside VIX futures' 0.
+        // Ranked against each other's series, both rows would score 100.
+        let emini_min = weekly(tuesday, 160, |i| -(i as f64) / 1000.0);
+        let stress = build(None, Some(&cftc_of(vix_max, emini_min)), as_of);
+        let rows: Vec<(Option<f64>, Option<f64>)> = stress.components[5..]
+            .iter()
+            .map(|c| (c.raw, c.score))
+            .collect();
+        assert_eq!(rows, [(Some(0.159), Some(0.0)), (Some(-0.159), Some(0.0))]);
     }
 
     #[test]
@@ -582,8 +696,29 @@ mod tests {
         ] {
             assert_eq!(band(gauge), expected, "{gauge}");
         }
-        assert_eq!((gauge_of(44.5), band(gauge_of(44.5))), (45, Neutral));
-        assert_eq!((gauge_of(55.49), band(gauge_of(55.49))), (55, Neutral));
+        assert_eq!((gauge_of(89, 2), band(gauge_of(89, 2))), (45, Neutral));
+        assert_eq!(
+            (gauge_of(5549, 100), band(gauge_of(5549, 100))),
+            (55, Neutral)
+        );
+
+        // The same through build(): five OFR inputs whose exact mean is k + ½ publish k + 1 and
+        // its band. With 780 others each, the mean is 100 − (sum of the five t) ÷ 78; summed as
+        // f64 scores, the first lands on 44.49999999999999 and would publish 44, Fear.
+        let as_of = day("2026-10-19");
+        for (twice_ranks, mean, gauge, words) in [
+            ([871, 875, 866, 857, 860], 44.5, 45, Neutral),
+            ([695, 694, 694, 694, 694], 55.5, 56, Greed),
+            ([383, 382, 382, 382, 382], 75.5, 76, ExtremeGreed),
+        ] {
+            let ofr = ofr_of(twice_ranks.map(|t| twice_ranked(as_of, t)));
+            let stress = build(Some(&ofr), None, as_of);
+            assert_eq!(
+                (stress.counted, stress.mean, stress.gauge, stress.band),
+                (5, Some(mean), Some(gauge), Some(words)),
+                "{twice_ranks:?}"
+            );
+        }
     }
 
     #[test]
@@ -616,8 +751,8 @@ mod tests {
             "{:?}",
             stress.mean
         );
-        // Averaging the displayed scores would have published 45, Neutral.
-        assert_eq!(gauge_of(display(100.0 - p)), 45);
+        // Averaging the displayed scores (44.5 each) would have published 45, Neutral.
+        assert_eq!(gauge_of(445, 10), 45);
     }
 
     #[test]
