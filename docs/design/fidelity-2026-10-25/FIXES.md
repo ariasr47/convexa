@@ -1467,3 +1467,26 @@ scanned 11 commits. A third run, at `3772bf18` (this section's own commit, on to
 | `npm run verify` (run 3, at `3772bf18`) | 0 | 172 s | Base `b45b4af0`, 542 changed files. gitleaks: 13 commits, no leaks. Task graph check skipped. `nx affected` lint, typecheck and test exit 0 (78 s). `test:tools` 0. `check-filings` 0. |
 
 Log: `tmp/fidelity/integ4/gates/verify-run3.log`.
+
+## SHA map after the spec 08 fold (2026-10-26)
+
+Before the first push of this batch, the owner approved folding spec 08's first draft (`342c7c8a`)
+into its revision, because the draft quoted the owner's request and this repository is public. The
+commits from the draft on were rebuilt with `git commit-tree`, so every SHA from `342c7c8a` on
+changed. The old SHAs cited above, in `docs/quality/2026-10-25/SITE-AUDIT.md` and in the spec 08
+file were never pushed. Read them through this map:
+
+| Cited above | Now | What changed |
+| --- | --- | --- |
+| `342c7c8a` (spec 08 draft) | `e0236051` | Folded: the spec lands once, in its revised form |
+| `4ffdc525` | `dd188ee4` | Tree minus the draft spec file; nothing else |
+| `48deb0d2` | `421fcbc7` | Tree minus the draft spec file; nothing else |
+| `e5a95b50` | `e0236051` | Same tree; message carries the draft's overview and says why it was folded |
+| `3772bf18` | `c5afcec2` | Same tree; SHAs in its message updated |
+| `095522e5` | `5d02ce82` | Same tree; SHAs in its message updated |
+| `6d3bf492` | `4cc60fc5` | Same tree |
+
+The round 4 gate ran at `48deb0d2`. Its tree differs from `421fcbc7` only by the draft spec file,
+a document no gate reads. The final tree before and after the fold is the same object
+(`21a10e54`). A scan of every commit and message in `b45b4af0..4cc60fc5` finds neither the
+request's wording nor its figure.

@@ -553,3 +553,6 @@ Evidence is in `tmp/fidelity/integ4/perf/summary.json`.
 **What is pushed:** the local `origin/main` ref is `b45b4af0`, pushed at 02:05:45. It contains `730a8dec`, `673dd755`,
 `96bf67c8` and `9d483d4d` (SEC-1). It does not contain B1, B2 or the owner gate (`c6b003bd`, `811ccd71`, `b3fbc065`,
 `d1f6ed0d`). Whether production has deployed `b45b4af0` was not checked.
+
+`48deb0d2` above is `421fcbc7` after the spec 08 fold (2026-10-26); the map is in
+`docs/design/fidelity-2026-10-25/FIXES.md`, "SHA map after the spec 08 fold".
