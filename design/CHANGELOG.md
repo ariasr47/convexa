@@ -452,3 +452,20 @@ edited. Each item was measured on the regenerated boards against HEAD `18379b60`
   against 41 in the app at 768. Another lane is editing `MarketDataNotice.tsx` this round, so the board waits.
   The note's "This note comes due" eyebrow measures 11/600 on the board and 11/400 in the app, at 1440 and 390;
   no lane was asked to change it.
+
+## 2026-10-25 · Fidelity round 3, lane R3-B fix-up: trade-entry toggles at 44 under 600px
+
+Supersedes nothing above; repairs one regression a review found in the R3-B boards (ddda3850).
+
+- **Toggle buttons fill their row (R3-B-REV-1):** the trade-entry toggles drew their 1px outline as a border on
+  the group, so each button box was 42 tall inside a 44 row under 600px (the canon's coarse floor is 44; the app's
+  ToggleButtons and the board before this round were 44). The group's outline is now an inset shadow (`.te-tg`, no
+  border), and the buttons take the full row: 38.8 at desktop, 44 under 600px. At 390 under a coarse pointer the
+  fill toggle (Manual price, Market, Limit) is 117.3×44 and Call / Put 85.5×44 on `final-dialogs-trade-entry` and
+  `final-dialogs-phone` (were 116.7×42 and 84.5×42; app 118×44 and 86×44), and 108×44 on `final-dialogs-states`
+  (was 107.3×42). Sub-44 targets across the 246 board pages the round changed: 1867 → 1854, and 0 boards gain any
+  against the boards before the round. The visible groups stay 38.8 and 44 tall; every other element in the three
+  boards keeps its box to 0.05px at 390, 768 and 1440.
+- **Heights:** 202 boards measured, 0 changed, none overflows; `heights.json` is unchanged. Checked:
+  `node design/src/build.mjs` 0 (a second run is byte-identical), `node design/src/verify-tokens.mjs` 0, NUL
+  bytes 0 in all changed files. Not published to the canvas artifact.

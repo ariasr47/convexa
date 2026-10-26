@@ -535,15 +535,17 @@
   .ac-fill { display: flex; flex-wrap: wrap; gap: 6px; }
   /* Trade entry as shipped (TradeEntryDialogView.tsx; owner, 2026-10-25, after fidelity round 2): caps field labels
      (FieldLabel: 11/700, 0.07em; steel here, AA on the panel), 36px fields on the page ink, full-width toggle groups,
-     the leg on one row of four (two by two under 600px, LegFields.tsx), 44px controls under 600px. */
+     the leg on one row of four (two by two under 600px, LegFields.tsx), 44px controls under 600px. The toggle group's
+     outline is an inset shadow, not a border, so each button box is the full row height, as the app's ToggleButtons are
+     (44 under 600px, not 42 inside a 1px border). */
   .v4dlg.te .dh h2 { line-height: 1.4; text-wrap: wrap; }
   .te-l { display: block; margin: 0 0 4px; font: 700 11px/1.65 'IBM Plex Sans', sans-serif; letter-spacing: 0.07em; text-transform: uppercase; color: var(--steel); }
   .te-in { box-sizing: border-box; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ink); font: 400 13px 'IBM Plex Sans', sans-serif; color: var(--phosphor); }
   .te-in.ro { border-style: dashed; background: transparent; color: var(--steel); }
   .te-in > span:first-child { flex: 1 1 auto; min-width: 0; }
   .te-caret { flex: 0 0 auto; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid var(--steel); }
-  .te-tg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .te-tg > button { min-height: 36.8px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--steel); font: 600 13px/1.75 'IBM Plex Sans', sans-serif; }
+  .te-tg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border: 0; box-shadow: inset 0 0 0 1px var(--line); border-radius: 8px; overflow: hidden; }
+  .te-tg > button { min-height: 38.8px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--steel); font: 600 13px/1.75 'IBM Plex Sans', sans-serif; }
   .te-tg > button:first-child { border-left: 0; }
   .te-tg > button[aria-pressed="true"] { background: color-mix(in srgb, var(--phosphor) 16%, transparent); color: var(--phosphor); }
   .te-g4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: start; }
@@ -553,7 +555,7 @@
   .te-net .stag { font-weight: 500; }
   .te .hd-fig .v.nan { font-family: 'IBM Plex Sans', sans-serif; }
   .btn.te-off { background: color-mix(in srgb, var(--phosphor) 12%, transparent); color: color-mix(in srgb, var(--phosphor) 30%, transparent); cursor: not-allowed; }
-  @media (max-width: 599px) { .te-g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .te-in { height: 44px; } .te-tg > button { min-height: 42px; } .te .hd-fig .v { font-size: 16px; } }
+  @media (max-width: 599px) { .te-g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .te-in { height: 44px; } .te-tg > button { min-height: 44px; } .te .hd-fig .v { font-size: 16px; } }
 
   [hidden] { display: none !important; }
   .site-bar { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line-2); box-shadow: var(--e4); font-size: 12px; color: var(--steel); flex-wrap: wrap; max-width: calc(100vw - 32px); }
