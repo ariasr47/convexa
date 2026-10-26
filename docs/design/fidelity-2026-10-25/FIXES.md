@@ -810,3 +810,321 @@ The owner took every recommendation ("all recommended"):
 - **Dark info TintChip:** fix it to AA (the "MEDIUM" conviction chip measured 4.01:1), which changes dark.
 - **Test plan batches 15, 16, 22, 23, 25 and 25a:** approved (recorded in docs/testing/2026-10-22/PROGRESS.md).
 
+## Round 3 · integration gate at `31b0011a`
+
+Round 3 ran four lanes and landed 24 commits on `main`: R3-A (10), TB (7), R3-B (2) and S2 (5). The range
+`7810a87b..31b0011a` holds 30 commits; the other six are two docs commits (`a1b93edc`, `02a0b793`) and spec 07's
+first four (`f27fb912`, `c9467409`, `ea80a6c4`, `13d603f4`). This section is the gate run at `31b0011a`. It is
+appended: where it gives a newer state than a row above, it supersedes that row, and nothing above was edited.
+
+`main` moved while the gate ran: four spec 07 commits (`8ba53e98`, `6f59855c`, `83233ae2`, `1025ce49`) landed at
+00:39–00:59, and they change only `apps/api/src/services/public_data/` and `apps/api/src/routes/public_data.rs`. This
+gate does not cover them: no dashboard or design file changed, but `cargo test -p api-rust` and `npm run verify` have
+not run at that HEAD here. The spec 07 session's work sat uncommitted in the shared tree while I measured, but only
+after the gates: `git status --porcelain` was empty before the gates, after the design build and after the gates.
+The builds and the sweep used the `git archive` export of `31b0011a`, so that work never reached them.
+
+### The answer
+
+1. **Every gate exits 0 at `31b0011a` except two of spec 02's checks, which fail only on work that has not landed.**
+   - The tap probe (`tap.mjs`) exits 1. All 830 sub-44 entries and all 656 covered entries are the insider chart's
+     9×9 dot links (step 5a). That is the S2 lane's final result, entry for entry.
+   - The accessibility browser gate exits 1: 7 passed, 28 failed. 22 fail on "rejected unexpected traffic: GET
+     /api/health", and 6 (A11Y-23 to 28) on readiness or dialog waits. 0 fail on blocking axe findings. This is
+     the S2 lane's result on both its builds.
+   - `npm run verify` passed on its first run (198 s), unlike round 2's. None of my own processes ran beside it.
+     At step boundaries the machine's load average was 4.8–20.2, from another session's spec 07 mutation runs.
+2. **Every round 3 fix measures as done on these builds.** That is all 10 R3-A items, R3-B's six items and its
+   review fix, TB's seven batch commits, and S2's steps 3, 4, 8 and 9. Each R3-A item equals its board at the widths
+   the lane named. Two exceptions:
+   - The production desk h1 at 390 is now 118 against the board's 114 (R3-A had 114). S2's step 3 made the bar's
+     "What's live" link 44 tall under a coarse pointer, so the bar is 44 tall; the board draws it 24.
+   - The landing h1 still breaks differently from the boards at 768 and 1024.
+3. **The sweep matches round 2 cell for cell and adds two checks.** It loaded 230 pages, the same set as round 2:
+   - every column is on the formula, and the column table diffs empty against round 2's;
+   - 0 pages overflow;
+   - 0 text runs under 11px, by computed size and by on-screen size (the transform-aware pass now runs on every
+     page, not 98);
+   - 0 axe `color-contrast` nodes on all 230 pages (new this round);
+   - the same 23 ink-past-the-column notes.
+4. **The sweep found three things no lane filed:**
+   - The trade-entry boards draw the selected Call as a neutral 16% phosphor tint. Since `31b0011a` the app fills it
+     green, and fills the selected Put red. R3-B drew the board before S2's fix landed.
+   - The production desk h1 at 390 is 4px low (item 2).
+   - Round 2's "1440 light" pass of the three signed-in pages rendered dark, because the fake session's account theme
+     was `dark`. This harness now sets the account theme to match the pass, and 46 of 46 light shots are light. The
+     re-run in light found nothing either.
+
+### How this was checked
+
+- **Builds:** `git archive 31b0011a` was exported to `/private/tmp/claude-501/integ3-src`, with `node_modules`
+  linked as in rounds 1 and 2. `vite build --mode production` ran twice from the export: demo into `integ3-demo`
+  (exit 0, 0.8 s) and live into `integ3-live` (exit 0, 0.6 s).
+- **Servers**, all `serve-dist.mjs` on `localhost`, started by this gate and stopped afterwards:
+  - demo on :4900 and live on :4901;
+  - the export's `design/site` on :4902;
+  - round 2's live build on :4903, for one attribution check;
+  - :4904 and :4905, which S2's scripts serve themselves.
+- **The live build's `/api`** is round 1's local fake, with one change: a signed-in session's account theme follows
+  the pass's scheme. The sweep logged 0 blocked hosts, 0 `/api` calls from the demo build and 0 uncaught page errors.
+  The console 404s are round 2's, from the fake's gaps: 10 on signed-in settings, 5 on signed-in scanner and 5 on
+  live credits.
+- **Sweep:** round 2's `sweep.mjs`, `analyze.py` and `sheet.mjs`, plus two checks on every page:
+  - **On-screen size:** font size times the element's on-screen scale. A run counts when it is under 10.95px, by
+    computed size or, when the scale is under 0.9, by on-screen size.
+  - **Contrast:** axe-core's `color-contrast` rule, excluding iframes and TradingView's attribution, as spec 02's
+    `contrast.mjs` does.
+- **Lane acceptance:** each round 3 reviewer's harness, re-pointed at these builds and otherwise unchanged:
+  - R3-A: `m.mjs`, all nine sections;
+  - R3-B: `footer.mjs`, `followups.mjs`, `chips.mjs` and `te.mjs`;
+  - S2: `tap`, `extra`, `contrast`, `titles`, `c23`, `perf`, `c10` and `c14.py`.
+
+  I also re-ran round 2's `accept.mjs` for the headline values.
+- **Looked at:**
+  - every contact sheet: 1440 dark (8), 1440 light (6), 390 (4), 1440 full page (8) and 390 full page (6);
+  - side-by-sides with round 2's shots: demo desk 1440, live desk 390, demo desk 390 full page, demo methodology
+    1920 and live markets 390 full page.
+- **Pixel diff:** all 230 first screens against round 2's. 64 are identical. The other 166 change in rows that trace
+  to round 3 commits:
+  - the live nav's "Full demo" (rows 52–85);
+  - the 44px bar link and the centred wordmark at 390, which shift live phone pages by 4px;
+  - the desk masthead, the tab weight, the landing h1 and the walls' new button;
+  - the S2 link floors on credits, methodology and the blog post.
+- **NUL bytes:** 0 in all 564 files changed in `7810a87b..31b0011a`, by byte scan.
+- **Evidence** is gitignored scratch in `tmp/fidelity/integ3/`:
+  - `gates/`, with `exit-codes.tsv`, one log per command and the `status-*.txt` checkpoints;
+  - `s2/`, with `exit-codes.tsv`, `logs/` and one JSON per script;
+  - `sweep.json`, `analysis.json`, `table.md`, `accept.json` and `shotdiff.json`;
+  - the harness re-runs in `r3a/` and `r3b/`;
+  - 322 PNGs in `shots/`, plus `sheet-*.png` and `crops/`.
+
+### Gates
+
+Each command ran from the repository root with `NX_SKIP_NX_CACHE=true`. `git status --porcelain` was empty before the
+gates, after the design build and after the gates.
+
+| Command | Exit | Time | What it covered |
+| --- | --- | --- | --- |
+| `npm run typecheck` | 0 | 13 s | 3 projects and the 2 tasks they depend on |
+| `npm run lint` | 0 | 13 s | 3 projects, 0 errors, 40 warnings (3 + 34 + 3), as round 2 |
+| `npm exec nx test @convexa/dashboard` | 0 | 54 s | 236 files, 2063 tests |
+| `npm exec nx test @convexa/api` | 0 | 11 s | 12 files, 87 tests |
+| `cargo test -p api-rust` | 0 | 155 s | 1,160 passed in 54 binaries: TB's 1,150 plus the 10 `#[test]`s spec 07 added since `7479b613`. The per-binary "finished in" times sum to 27.5 s. |
+| `node tools/test-tools.mjs` | 0 | 98 s | 210 tests, 3 suites (TB's 217 → 210) |
+| `node design/src/build.mjs` | 0 | 1 s | 207 artboards, 308 pages; `git status` empty afterwards |
+| `node design/src/verify-tokens.mjs` | 0 | 0 s | "All shared tokens match tokens.ts." |
+| `npm run verify` | 0 | 198 s | Base `7810a87b`, 568 changed files. `tsc` for `libs/api` 0. gitleaks scanned 29 of the 30 commits (`09a2ed2b` has no diff) and found no leaks. Task graph check 0. `nx affected` lint, typecheck and test on 4 projects: Rust `api` with `api:api-contract-check` (1,237 Rust tests with quant-engine) and the 2063 dashboard tests. `test:tools` 0. `check-filings` 0. |
+| Integration builds (`vite build`, demo / live) | 0 / 0 | 0.8 s / 0.6 s | exported `31b0011a` |
+| Spec 02 Verification step 3: `tap.mjs` | **1** | 73 s | 102 loads, 4,088 targets. Totals: 830 sub-44, 656 covered, 0 bad selects. Every entry is an insider-chart dot (step 5a). The failure list is identical to the lane's `tap-final.json`. |
+| `extra.mjs` (criteria 6, 7, 8, overflow) | 0 | 158 s | 0 failures; 132 overflow checks at 390, 1440 and 1920 |
+| `contrast.mjs` (criteria 9–12, route sweep) | 0 | 184 s | 24 criterion-9 runs with 0 `color-contrast` nodes. The sweep's 176 runs (22 routes, both builds, both schemes, both viewports): 0 `color-contrast` nodes, 24 `heading-order` nodes outside criterion 12. `/positions` `heading-order` 0. |
+| `titles.mjs` (criterion 22) | 0 | 113 s | 19 titles per build, pairwise distinct |
+| `c23.mjs` (criterion 23, local) | 0 | 35 s | 0 failures |
+| `perf.mjs` (NVDA note, 390) | 0 | 10 s | DOM 3,567, first h1 504 ms, height 40,128 px |
+| `c10.mjs` (criterion 10 fills) | 0 | — | 0 failures at 390 touch, 1440 and 1920, both schemes |
+| `c14.py` (criterion 14 grep) | 0 | — | 2 colour uses of `text.disabled` (NewAlertDialog's disabled option, Widget's grip), 4 border uses |
+| `run-gate.mjs accessibility` (`BASE_URL` live :4901) | **1** | 23 s | 7 passed, 28 failed. 22 "rejected unexpected traffic: GET /api/health". A11Y-23 and 24 on `toBeVisible`. A11Y-25 to 28 on readiness `[role="status"]`. 0 blocking axe findings. Same as the S2 lane at `730a8dec` and on the pre-lane build. |
+
+I did not run Verification step 3's earlier-step scripts (`tmp/ux-audit/build-a11y-touch-floor/step*.mjs`). They pick
+random free ports, and this gate kept to :4900–4905. Step 4, criterion 23 on production, was not run: this gate made
+no request to a deployed host.
+
+### Per lane
+
+#### R3-A · app leftovers
+
+The lane reported "partial" only because of its outside requests. All ten fixes are done.
+
+| Fix | Commit | Status | At HEAD | Board |
+| --- | --- | --- | --- | --- |
+| R3-A-1 `/_ops/metrics` select labels | `e6840917` | done | 13px at scale 0.875 = 11.38px on all five labels, at 390, 1280, 1440, 1920 and 1024 touch. Each label clears its notch by 5px on both sides. | board draws none |
+| R3-A-2 production desk h1 | `3be9a42d` | done from 1024; 390 +4 | h1 y 118 / 145.9 / 131.7 / 130.7 / 130.7 at 390 / 1024 / 1280 / 1440 / 1920. Round 2 had 122 at 390, 1280, 1440 and 1920. | 114 / 144 / 130.5 / 130.3 / 130.3 |
+| R3-A-2 NoteCard title | `3be9a42d` | done | `p`, Archivo 600 17px/22.1, one h3 in the card (was two) | equal |
+| R3-A-3 tab weight | `3be9a42d` | done | unselected 13/500, current 13/600 on the demo desk, its Research and Technical tabs, and the live desk, at 390 and 1440 | equal on `final-desk-staging`, `-production` and `final-note-production` |
+| R3-A-4 "Full demo" sides | `16db4522` | done | 89.08×30 with 10px sides; search box x 823.83 / 942.22 / 1282.22 at 1280 / 1440 / 1920 | equal, Δ 0 (round 2: 2.0px left) |
+| R3-A-5 "Filed since this note", "comes due" rows | `367da419` | done | Head: h2 14/600, sentence case, phosphor, 21 tall. Rows 31 tall with a 1px rule, padding 6/6, 12px. | Head: h3 14/600. Rows: 31. |
+| R3-A-6 dark info TintChip | `cac55258` | done | "MEDIUM" rgb(140,176,222): 6.30 on panel, 6.87 on well, 7.08 on ink. Light unchanged: 6.31 / 5.87 / 5.63. | library dark `chip.live` 6.30–7.08 |
+| R3-A-7 desk masthead | `ec5c603a`, `18379b60`, `a08b3fc2` | done | Structure label, app − board: +5.2 / +4.8 / +2.9 / +4.1 / +4.1 / +2.9 at 390 / 768 / 1024 / 1280 / 1440 / 1920. Tabs and CTA within 1.9 at 768–1920. h1 Δ 0 from 1024. First zone label at full opacity. | Round 2: +5.2 / +48.5 / — / +26.1 / −1.4 / +22.0 |
+| R3-A-8 landing h1 | `934d2a13` | done at 390, 1280, 1440, 1920 | "See the dealer / positioning / behind the price." at 1280–1920; "… / behind / the price." at 390; 56/59.36 | equal on the production and staging boards |
+| R3-A-9 "Copy all" | `39abe873` | done | 102.06×36 with a 16px glyph at 1440; 353×44 at 390 | equal |
+
+#### R3-B · boards and canon
+
+Commits: `ddda3850` and `308fe990`. All measured on the boards regenerated at HEAD.
+
+| Fix | Status | At HEAD |
+| --- | --- | --- |
+| R3-B-1 footer seam | done | Board = app on every page and width measured. Staging is 196 / 196 / 164 / 386 and production 170 / 170 / 138 / 334 at 1440 / 1280 / 1920 / 390. Every seam is `M 0 17 Q 600 9 1200 17`, with no top border and 0 overflow. |
+| R3-B-2 trade entry | done, then overtaken | Dialog 760×574.1 (board) against 573.9 (app) at 1280, 1440 and 1920, both schemes. Manual is selected, no "within" verdict, and the price, net and cap lines are within 0.2. But the board's selected Call is `color-mix(phosphor 16%)`, and since `31b0011a` the app fills it rgb(46,204,113) in dark (see "Still different", item 2). |
+| R3-B-3 tracker | done | not re-measured (text only) |
+| R3-B-4 chips | done | `library.html` (63 chips) and `components-sheet.html` (24): 0 under 4.5 in either scheme. Light `chip.emph` 4.65–5.00; dark `chip.live` 6.30–7.08. |
+| R3-B-5 follow-ups | done | `followups.mjs`: tabs, nav, note, h1, landing, Structure and export as in the R3-A table |
+| R3-B-6 regen | done | this gate's `build.mjs`: exit 0, no diff |
+| R3-B-REV-1 toggles | done (lane and reviewer) | not re-measured by this gate |
+
+#### TB · test batches 15–25a
+
+| Batch | Commit | Change | Cases | Ledger |
+| --- | --- | --- | --- | --- |
+| 15 | `e20383b6` | retire `artifact-safety.spec.mjs` and its tool (risk-gone) | tools −2 | `RETIRED:` line; `TRIMS.md` created |
+| 16 | `32d96583` | 2 Rust cases that read `ci.yml` (risk-gone) | Rust −2 | 2 `TRIMS.md` rows |
+| 22 | `8abb77aa` | retire `write-blog-heads.spec.mjs` (structure) | tools −5 | `RETIRED:` line |
+| 23 | `36ca6b13` | retire `api_contract_gate_isolation.rs`; `tools/verify.mjs` gains the task-graph check | Rust −4, +1 verify check | `RETIRED:` line |
+| 23 fix | `68522f1f` | the check also pins the command, executor, options and configurations of `api:api-contract-check` | 0 | — |
+| 25 | `b7f34ebc` | the in-file test modules of `routes/book.rs`, `broker.rs` and `price.rs` | Rust −8 | 3 `TRIMS.md` rows |
+| 25a | `7479b613` | `capacity_self_tests.rs` 4 → 1 | Rust −3 | 1 `TRIMS.md` row |
+
+Totals:
+
+- **Cases:** Rust −17 (1,167 → 1,150, by the lane's `--list`), tools −7 (217 → 210).
+- **Ledgers:** 3 `RETIRED:` lines and 6 `TRIMS.md` rows.
+- **Rust time:**
+  - The lane measured `capacity_self_tests` at 19.5 s → 0.00 s per run. The sum of per-binary "finished in" times
+    went from 44.7 s to 25.3–25.9 s: −19 s, or −42%.
+  - This gate measured, at HEAD and with spec 07's 10 new tests: `capacity_self_tests` 0.00 s, `capacity_isolation`
+    0.01 s, a per-binary sum of 27.5 s, and 155 s wall for `cargo test -p api-rust` including the build.
+- **The task-graph check** ran inside `verify`: exit 0 in 5.0 s.
+
+#### S2 · spec 02 steps 3, 4, 8 and 9
+
+"Before" is the lane's run on its parent build. "HEAD" is this gate's run on the integration builds.
+
+| Step | Commit | Before | HEAD |
+| --- | --- | --- | --- |
+| 3 touch floor | `96bf67c8` | tap totals: 1,032 sub-44, 658 covered. 202 sub-44 outside the insider chart. | 830 sub-44 and 656 covered, all on the insider chart. 0 outside it. 0 bad selects. The verdict chip passes its hit test on all 6 desk loads. |
+| 4 contrast | `673dd755`, `31b0011a` | axe `color-contrast`: 50 nodes in the criterion-9 places, 71 across the route sweep. 33 colour uses of `text.disabled`. | 0 and 0. 2 colour uses. Unselected toggles 6.19 dark / 5.42 light. Selected Call: rgb(46,204,113) with ink, 9.13, in dark; rgb(30,158,87) with ink, 5.56, in light. Selected Put: rgb(255,92,92) with ink, 6.34, in dark; rgb(210,59,59) with white, 4.74, in light. Hover equals rest. |
+| 8 titles | `730a8dec` | the 11 non-landing routes all read the shell's title | 19 distinct titles per build, 0 failures |
+| 9 verify record | `09a2ed2b` | — | this gate's re-run is the table above |
+| Performance (spec budget) | — | lane: DOM 3,561 → 3,567, height 40,125 → 40,128 | DOM 3,567 against the budget's 3,527, which assumes step 5a removes the 194 `<a>`. First h1 504 ms. Height 40,128 against 40,038 plus the listed in-flow lifts. |
+
+### Round 2 rows this supersedes
+
+- **Waiting on the owner:** both answered on 2026-10-25.
+  - **Footer seam:** kept, and the boards now draw it (R3-B-1, board = app).
+  - **Dark info TintChip:** fixed (`cac55258`, 6.30:1).
+- **Blocked:**
+  - **L10 ACC-11:** closed by the owner's Manual answer; the board follows the shipped dialog (R3-B-2).
+  - **Still blocked:** L5 NO-1-A, L6 R-06 phone and L7 NO-4 A 1500px. The note's "Filed since this note" head now
+    sits at y1825.5, against round 2's 1810.8, below R3-A-5's taller ruled "comes due" rows; the head itself grew from
+    16.5 to 21.
+- **Round 2's outside-lane requests:**
+  - **Now done:** small outlined button sides (`16db4522`), `PublicDesk.tsx:75` top (`3be9a42d`) and the NoteCard's
+    second h3 (`3be9a42d`).
+  - **Still not done:** the optional `charts/frame/index.ts` re-exports.
+- **Round 2's "Still different" list:**
+  - **Done:**
+    - item 2 (`/_ops/metrics` labels);
+    - item 4 (masthead, apart from the 390 bar);
+    - item 5 (footer, by owner answer);
+    - item 6 (tab weight);
+    - item 7 (dark info chip, and the boards' `chip.emph`);
+    - item 8 (search box);
+    - item 10 (landing h1 at 390, 1280, 1440 and 1920);
+    - item 11's "Copy all", NoteCard h3s and tracker line.
+  - **Partly done:** item 3. The head and the rows are done; the card's place is still blocked, and the "comes due"
+    label differs.
+  - **Unchanged:** items 1 and 9, and the three optional round-1 items.
+
+### Round 3's outside-lane requests: state at HEAD
+
+| Request (from lane) | State at HEAD |
+| --- | --- |
+| `TickerHeader.tsx:322` gap 32 and `:528` 600px basis at 1440 (R3-A) | **done another way:** `18379b60` gives the row the board's `.tk-mast` geometry through `CommandDeck`'s scoped `MAST_GEOMETRY_SX`, and `TickerHeader.tsx` is untouched. At 1440 here: Structure +4.1, tabs +1.2; the lane measured the anchor at 648, as the board. Moving the geometry into `TickerHeader` itself is still optional. |
+| Tablet masthead stacking, 768 (R3-A, optional) | done by `18379b60`: Structure +4.8, tabs +1.9 (was +28.5) |
+| Foot-aligned masthead columns (R3-A, optional) | done by `18379b60`: tabs y214 against the board's 212.8 at 1440 |
+| `account-dialogs.mjs:66` copy glyph 14 → 16 (R3-A) | done in `ddda3850` (`account-dialogs.mjs:97`, `deep-read.mjs:182`) |
+| `FieldLabel.tsx:19` `text.disabled` → `text.secondary` (R3-B) | done in `673dd755` (`FieldLabel.tsx:17`) |
+| Spec 02 step 5a: insider dots as `aria-hidden` circles, `role=img` svg, twin tables (S2) | **not done:** criteria 15 and 16 fail, and the tap probe and the DOM budget wait on it |
+| `DESIGN_SYSTEM.md` Amendments row for rule-7 mechanics and the `text.disabled` rule (S2) | **not done:** `coarseFloor` and `selectCoarseFloorSx` appear 0 times in the canon, and no commit since `673dd755` touches it |
+| Wall boards: "See it on the demo →" as a neutral outlined 44px button (S2) | **not done:** `account-pages.mjs:119` and `:168` keep the link in the closing sentence |
+| Light research pills with a `text.primary` label; the "Simulated orders" chip; no 0.96 card opacity, on the boards (S2) | **not done:** no board commit after `673dd755` except `308fe990`, which touches the trade-entry toggles only |
+| `strict-fixture.ts` answers `GET /api/health` (S2) | **not done:** the accessibility gate still fails 22 scenarios on it |
+
+### Sweep
+
+Every cell of round 2's table is unchanged at `31b0011a`. That covers columns, `scrollWidth` and the ink notes, on
+all 230 pages; `table.md` diffs empty against round 2's.
+
+- **Small text:** 0 runs under 11px on all 230 pages, by computed size and by on-screen size. The `/_ops/metrics`
+  labels that round 2's scaled pass caught now draw at 11.38px.
+- **Contrast:**
+  - **axe `color-contrast`:** 0 violations on all 230 pages, both schemes. axe left 7,200 nodes "incomplete" (it
+    could not decide over images, gradients or overlaps). They are recorded in `sweep.json`, not counted as failures.
+  - **Boards:** `library.html` and `components-sheet.html` have 0 chips under 4.5 in either scheme.
+- **Footer:**
+  - heights are as round 2's: demo 196 / 164 / 386 and live 170 / 138 / 334 at 1440 and 1280 / 1920 / 390;
+  - "GitHub ↗" is on the demo footers only;
+  - the boards now draw the same (R3-B-1).
+- **Light pass:** 46 of 46 shots at 1440 light are light, after the harness fix above.
+- **Page heights:** 50 of 230 pages changed height against round 2.
+  - **Traced to S2's coarse link floors:**
+    - credits +368 (demo) and +345 (live) at 390, and +9 to +10 from 1280;
+    - methodology +73 (live) and +21 (demo) at 390, and +26 (live) from 1280;
+    - the scanner and positions walls +55 at 390;
+    - +4 on most other live phone pages, from the bar.
+  - **Traced to the masthead:** the demo desk, −21 / +5 / −19 at 1280 / 1440 / 1920.
+  - **Live `/research/markets` at 390, −139:** a date effect, not a code change. Round 2's own build, served today,
+    measures 10,432 against its 10,587 on 2026-10-25, and HEAD measures 10,448.
+- **Pass on the sweep:** 0 failures on columns, overflow, small text (computed and on-screen), contrast and footer.
+
+### Still different from the boards
+
+Most important first. Every number is from these builds at `HEAD`.
+
+1. **The insider chart's 9×9 dot links (spec 02 step 5a, not landed).** There are 194 on each production NVDA load
+   and on its open insider twin, and 9 on the staging NVDA note and on each MSFT note. Together they are all 830 tap
+   entries. Criteria 15 and 16 fail, and the NVDA note's DOM (3,567) is over the 3,527 budget.
+2. **The trade-entry boards lag `31b0011a`.** `final-dialogs-trade-entry` and the states board draw a selected Call
+   as `color-mix(phosphor 16%)` with a phosphor label (`account-dialogs.mjs:39`). The app fills it:
+   - selected Call: rgb(46,204,113) with ink in dark, rgb(30,158,87) with ink in light;
+   - selected Put: rgb(255,92,92) with ink in dark, rgb(210,59,59) with white in light.
+3. **The accessibility browser gate fails 28 of 35.** The strict fixture has no `GET /api/health` answer: the live
+   build has called it since `de6aa430`. A11Y-23 to 28 also fail their readiness and dialog waits. No failure is an
+   axe finding.
+4. **Desk context band** (L5 NO-1-A, blocked): 735 tall against the board's 710. Row 1 spreads 88 against 53:
+   straddle-move is 266.5 and term-structure 354.3. Unchanged.
+5. **The production desk h1:**
+   - At 390 on a coarse pointer it is 118 against 114, because the live bar is 44 tall (S2's coarse "What's live"
+     link) and the board draws 24.
+   - At 768 it is 122 against 184. The board's bar wraps its sentence to 86 tall, and the app hides that sentence
+     below 900. This predates round 3.
+6. **The note's side column:**
+   - "This note comes due" is an 11px IBM Plex Mono 400 label; the board draws IBM Plex Sans 600.
+   - The "Filed since this note" card sits at y1825.5 against the plan's 1500 (L7 NO-4 A, blocked).
+7. **The landing h1 at 768 and 1024** takes three lines in its 600px measure: "See the dealer / positioning / behind
+   the price." The boards draw two lines across 721.9 and 962.6. At 390 and from 1280 the app and boards match.
+8. **The canon and the boards behind spec 02:** the rule-7 Amendments row, the wall buttons, and the light research
+   pills and chips (the outside-lane table above).
+9. **Heading order outside criterion 12:** axe finds 24 `heading-order` nodes across schemes and viewports. They are
+   on `/credits` (the first source-card h3 under the h1), staging `/terms`, staging Technical, and the note's
+   `Valuation` figcaption h3.
+10. **Research density** (not re-measured this round): production note cards 295.5–329 against 301–323. The phone
+    Coming up panel is 384.1 against 331.3 (L6 R-06, blocked).
+11. **Smaller:**
+    - The three optional round-1 items (DESK-10 cents, R-10 built date, neutral COPY buttons) are still open.
+    - Full-page captures at 390 show the desk's lazily mounted widgets as empty frames. This is a capture artefact,
+      the same in round 2's shots; the measuring pass scrolls them in first.
+
+### Evidence
+
+- **Gate logs:** `tmp/fidelity/integ3/gates/`: `exit-codes.tsv`, `progress.log` (load average per step), one log per
+  command, and `status-before.txt`, `status-after-design-build.txt` and `status-after-gates.txt` (all empty).
+- **Spec 02:** `tmp/fidelity/integ3/s2/`:
+  - `exit-codes.tsv` and `logs/`;
+  - `tap.json`, `extra.json`, `contrast.json`, `titles.json`, `c23.json`, `perf.json` and `c10.json`;
+  - `c14.log`;
+  - the accessibility gate's summary in `apps/dashboard-e2e/test-output/playwright/accessibility/summary.json`.
+- **Sweep:**
+  - `sweep.json` (230 pages, with `scaled` and `contrast` per page);
+  - `analysis.json` (0 flags, 23 ink notes) and `table.md`;
+  - `shotdiff.json`.
+- **Acceptance:**
+  - `accept.json`;
+  - `r3a/m.log` and `r3a/tabsy.mjs`;
+  - `r3b/{footer,followups,chips,te}.log`;
+  - `te-call.mjs`, the board's Call and Put fills;
+  - `mk.mjs`, the markets date check.
+- **Screenshots:**
+  - `shots/<route>-<build>[-signedin]-<width>[-light].png`;
+  - `sheet-{1440,1440light,390,1440full,390full}-NN.png`;
+  - `crops/pair-*.png`, round 2 against round 3.
