@@ -14,7 +14,13 @@
  * `textAmber` 4.79), and the two tones with no text-grade token, `neutral` and `warning`, take
  * `text.primary` on their tint (13.3 and 13.2), as `DataStateTag`'s quiet and warn tags do (the
  * boards' `.stag.k-quiet`, and `.dwarn .dline`'s "steel on the warn tint measured 4.25:1 in light").
- * The fills keep their hue, and `warning` keeps its glyph. Dark is unchanged.
+ * The fills keep their hue, and `warning` keeps its glyph.
+ *
+ * Dark info (owner, 2026-10-25, after fidelity round 2): `info.main` on its own 16% tint measured
+ * 4.01:1 over the panel (Setups' "MEDIUM" conviction chip; 4.37 over the well, 4.50 over ink), under
+ * AA. Dark info labels take `textInfo` too, the text-grade blue `token-contrast.spec.ts` already
+ * pins on that tint over every dark surface (6.3–7.1:1). The other dark tones clear AA as they are
+ * (neutral 4.80, warning 4.69) and are unchanged.
  */
 import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
@@ -22,8 +28,8 @@ import { alpha, type Theme } from '@mui/material/styles';
 
 type Tone = 'success' | 'error' | 'info' | 'warning' | 'neutral' | 'emphasis';
 
-/** The label colour: the fill's own hue in dark; in light, a text-grade colour that clears AA on
- *  the tint (see the header). */
+/** The label colour: the fill's own hue in dark (info excepted); in light, a text-grade colour
+ *  that clears AA on the tint (see the header). */
 function labelColor(t: Theme, tone: Tone): string {
   const x = extrasFor(t);
   if (t.palette.mode === 'light') {
@@ -45,7 +51,9 @@ function labelColor(t: Theme, tone: Tone): string {
     ? t.palette.text.secondary
     : tone === 'emphasis'
       ? x.textAmber
-      : t.palette[tone].main;
+      : tone === 'info'
+        ? x.textInfo
+        : t.palette[tone].main;
 }
 
 export function TintChip({ tone, label }: { tone: Tone; label: string }) {
