@@ -383,9 +383,11 @@ export function StateExportDrawer({
                 fontWeight: 600,
                 color: 'text.primary',
                 borderColor: extrasFor(t).lineStrong,
-                // The board's 14px glyph with an 8px gap (MUI's start icon defaults to 20px).
+                // The board's glyph with an 8px gap (MUI's start icon defaults to 20px). The board
+                // asks `icon('copy', 14)`, but its `.ico` rule (`design/src/lib.mjs:189`) draws every
+                // icon at 16, so the button measures 102.1 there; at 14 this one was 100.1 (fidelity R3).
                 '& .MuiButton-startIcon': { ml: 0, mr: 1 },
-                '& .MuiButton-startIcon > svg': { fontSize: 14 },
+                '& .MuiButton-startIcon > svg': { fontSize: 16 },
               }),
               coarseFloor,
             ]}
