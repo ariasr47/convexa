@@ -4,6 +4,58 @@
   "feature": "auth-gated sweep (tech-debt #12)",
   "endpoints": [
     {
+      "id": "scan_default_view_signed_in",
+      "_note": "SEC-1 (2026-10-26): a signed-in read, since its rows carry dealer levels derived from the licensed options feed; signed out is the 403 public-surface.json asserts. Envelope only: rows may be [] and sweep null on a fresh or pre-worker boot.",
+      "method": "GET",
+      "path": "/api/scan",
+      "auth": true,
+      "required": {
+        "view": "object",
+        "view.source": "string",
+        "view.symbols": "array",
+        "view.sort": "object",
+        "view.density": "string",
+        "view.authenticated": "boolean",
+        "rows": "array",
+        "sweep": "object|null",
+        "market_data": "string"
+      }
+    },
+    {
+      "id": "scan_all_signed_in",
+      "_note": "SEC-1 (2026-10-26): the whole universe ranked by score, signed in only. Envelope only, as scan_default_view_signed_in.",
+      "method": "GET",
+      "path": "/api/scan/all",
+      "auth": true,
+      "required": {
+        "view": "object",
+        "view.source": "string",
+        "view.symbols": "array",
+        "view.sort": "object",
+        "view.density": "string",
+        "view.authenticated": "boolean",
+        "rows": "array",
+        "sweep": "object|null",
+        "market_data": "string"
+      }
+    },
+    {
+      "id": "structure_history_signed_in",
+      "_note": "SEC-1 (2026-10-26): each sample carries the flip, the walls and net GEX, so the structure path is signed in only. samples may be [] on a cold store.",
+      "method": "GET",
+      "path": "/api/scan/{symbol}/history",
+      "path_params": { "symbol": "SPY" },
+      "query": { "limit": 3 },
+      "auth": true,
+      "required": {
+        "symbol": "string",
+        "samples": "array",
+        "basis": "string",
+        "stored_count": "number",
+        "backend": "string"
+      }
+    },
+    {
       "id": "settings_read_signed_in",
       "_note": "INTERFACE user-accounts §2.6 — 401 anonymous, 200 bag signed-in. Default-created on first read; all three prefs nullable.",
       "method": "GET",

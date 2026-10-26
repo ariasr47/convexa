@@ -82,53 +82,25 @@ jobs:
             grep -q market_state /tmp/ticker.json
           fi
 
-      - name: Scan envelope
+      - name: Scan reads refuse a signed-out caller (SEC-1)
         if: steps.origin.outputs.skip != 'true'
         run: |
           set -euo pipefail
-          code=$(curl -sS -o /tmp/scan.json -w "%{http_code}" \
-            "${{ steps.origin.outputs.api }}/api/scan")
-          test "$code" = "200"
-          grep -q '"rows"' /tmp/scan.json
-          # At least one non-building row when the board is live.
-          python3 - <<'PY'
-          import json, sys
-          scan = json.load(open("/tmp/scan.json"))
-          rows = scan.get("rows") or []
-          okish = [r for r in rows if r.get("status") in ("ok", "stale") or r.get("score") is not None]
-          print(f"scan rows={len(rows)} okish={len(okish)}")
-          if rows and not okish:
-              print("::error::/api/scan rows present but all building/unscored")
-              sys.exit(1)
-          PY
-
-      - name: Structure history endpoint
-        if: steps.origin.outputs.skip != 'true'
-        run: |
-          set -euo pipefail
-          code=$(curl -sS -o /tmp/hist.json -w "%{http_code}" \
-            "${{ steps.origin.outputs.api }}/api/scan/SPY/history?limit=3")
-          test "$code" = "200"
-          grep -q '"samples"' /tmp/hist.json
-          grep -q '"basis"' /tmp/hist.json
-          python3 - <<'PY'
-          import json, sys
-          hist = json.load(open("/tmp/hist.json"))
-          n = len(hist.get("samples") or [])
-          print(f"SPY history samples={n}")
-          # Soft: history may lag first full pass by a few minutes after deploy.
-          # Hard-fail only when health says history_samples>0 but this path is empty.
-          try:
-              h = json.load(open("/tmp/health.json"))
-              total = ((h.get("scanner") or {}).get("board") or {}).get("history_samples")
-          except Exception:
-              total = None
-          if total is not None and int(total) > 0 and n == 0:
-              print("::error::health reports history samples but SPY history is empty")
-              sys.exit(1)
-          if n == 0:
-              print("::notice::SPY history empty (cold or first pass still running)")
-          PY
+          # Since 2026-10-26 these three are signed-in reads: their dealer levels derive from the
+          # licensed options feed (owner rule 2026-10-18). The smoke has no session, so it asserts
+          # the refusal, which also proves the route is up behind the proxy. The signed-in
+          # envelopes are checked by .spire/clusters/tech/state/conformance/auth-gated.json.
+          for route in /api/scan /api/scan/all "/api/scan/SPY/history?limit=3"; do
+            code=$(curl -sS -o /tmp/scan.json -w "%{http_code}" \
+              "${{ steps.origin.outputs.api }}${route}")
+            echo "GET ${route} -> ${code}"
+            test "$code" = "403"
+            grep -q '"error":"auth_required"' /tmp/scan.json
+            if grep -qE '"(flip|call_wall|put_wall|net_gex)"' /tmp/scan.json; then
+              echo "::error::signed-out GET ${route} carries a dealer level"
+              exit 1
+            fi
+          done
 
       - name: Pages SPA (optional)
         if: steps.origin.outputs.skip != 'true' && vars.SMOKE_PAGES_ORIGIN != ''

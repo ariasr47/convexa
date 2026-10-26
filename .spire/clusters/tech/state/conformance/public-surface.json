@@ -1,5 +1,5 @@
 {
-  "_comment": "Anonymous public surface for CI / post-deploy smoke. Environment-independent envelope shapes only — never assert live scores or prices (vendor/time dependent). Auth-gated endpoints live in auth-gated.json.",
+  "_comment": "Anonymous public surface for CI / post-deploy smoke. Environment-independent envelope shapes only — never assert live scores or prices (vendor/time dependent). Auth-gated endpoints live in auth-gated.json. Since SEC-1 (2026-10-26) GET /api/scan, GET /api/scan/all and GET /api/scan/{symbol}/history are signed-in reads, because their dealer levels derive from the licensed options feed: this sweep asserts their signed-out 403 auth_required refusal, and their signed-in envelopes are in auth-gated.json.",
   "version": "1.0",
   "feature": "public-surface",
   "endpoints": [
@@ -17,17 +17,23 @@
       }
     },
     {
-      "id": "scan_default_view_envelope",
+      "id": "scan_signed_out_refused",
       "method": "GET",
       "path": "/api/scan",
+      "expect_status": 403,
       "required": {
-        "view": "object",
-        "view.source": "string",
-        "view.symbols": "array",
-        "view.sort": "object",
-        "view.density": "string",
-        "rows": "array",
-        "sweep": "object|null"
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "scan_all_signed_out_refused",
+      "method": "GET",
+      "path": "/api/scan/all",
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
       }
     },
     {
@@ -40,15 +46,15 @@
       }
     },
     {
-      "id": "structure_history_envelope",
+      "id": "structure_history_signed_out_refused",
       "method": "GET",
       "path": "/api/scan/{symbol}/history",
       "path_params": { "symbol": "SPY" },
       "query": { "limit": 3 },
+      "expect_status": 403,
       "required": {
-        "symbol": "string",
-        "samples": "array",
-        "basis": "string"
+        "error": "string",
+        "message": "string"
       }
     },
     {

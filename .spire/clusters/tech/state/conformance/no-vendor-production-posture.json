@@ -1,5 +1,5 @@
 {
-  "_comment": "Promoted at GATE S (2026-09-24) from contracts/_archive/no-vendor-production-posture/INTERFACE_CONTRACT.md. PAUSED-MODE contract: run ONLY against a backend booted with MARKET_DATA_MODE=paused (no MASSIVE_API_KEY needed). Every vendor-backed route answers 503 {detail:\"Market data is paused.\",code:\"market_data_paused\"}; health and scan report market_data. NOT part of the nightly production set (conformance.yml names its specs explicitly) - production mode can be flipped back to live.",
+  "_comment": "Promoted at GATE S (2026-09-24) from contracts/_archive/no-vendor-production-posture/INTERFACE_CONTRACT.md. PAUSED-MODE contract: run ONLY against a backend booted with MARKET_DATA_MODE=paused (no MASSIVE_API_KEY needed). Every vendor-backed route answers 503 {detail:\"Market data is paused.\",code:\"market_data_paused\"}; health and scan report market_data. NOT part of the nightly production set (conformance.yml names its specs explicitly) - production mode can be flipped back to live. Since SEC-1 (2026-10-26) the two scan reads are signed-in only, so they are marked auth and this spec runs with --auth-signup (or --auth-cookie).",
   "endpoints": [
     {
       "method": "GET",
@@ -15,6 +15,7 @@
     {
       "method": "GET",
       "path": "/api/scan",
+      "auth": true,
       "expect_status": 200,
       "required": {
         "market_data": "string",
@@ -32,6 +33,7 @@
       "query": {
         "limit": 3
       },
+      "auth": true,
       "expect_status": 200,
       "required": {
         "samples": "array",

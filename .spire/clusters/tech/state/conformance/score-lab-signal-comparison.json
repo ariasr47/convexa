@@ -2,9 +2,11 @@
   "endpoints": [
     {
       "method": "GET",
+      "_note": "SEC-1 (2026-10-26): the structure path is a signed-in read; run with --auth-signup.",
       "path": "/api/scan/{symbol}/history",
       "path_params": { "symbol": "SPY" },
       "query": { "limit": 5 },
+      "auth": true,
       "required": {
         "symbol": "string",
         "basis": "string",
