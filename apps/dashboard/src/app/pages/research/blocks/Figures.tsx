@@ -122,7 +122,12 @@ export function DeltaPill({ dir, children }: { dir: Direction; children: string 
           borderRadius: '10px',
           fontSize: 12,
           fontWeight: 500,
-          color: dir === 'flat' ? t.palette.text.secondary : t.palette.text.primary,
+          // A flat delta's steel on its own 16% steel tint measured 4.37:1 in light, so light
+          // takes text.primary (spec 2026-10-21/02, part (c)); dark keeps steel.
+          color:
+            dir === 'flat' && t.palette.mode === 'dark'
+              ? t.palette.text.secondary
+              : t.palette.text.primary,
           bgcolor: alpha(t.palette.text.secondary, 0.16),
         };
       }}

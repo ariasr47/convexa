@@ -88,7 +88,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       variant="caption"
       sx={{
         display: 'block',
-        color: 'text.disabled',
+        color: 'text.secondary',
         textTransform: 'uppercase',
         letterSpacing: '0.06em',
         fontSize: 11,
@@ -388,7 +388,7 @@ export function ReasoningSection({
           <Stack spacing={0.5}>
             {reengage.map((r, i) => (
               <Stack key={i} direction="row" spacing={0.75} sx={{ alignItems: 'flex-start' }}>
-                <Box component="span" aria-hidden sx={{ color: 'text.disabled', lineHeight: 1.6 }}>
+                <Box component="span" aria-hidden sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
                   →
                 </Box>
                 <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>

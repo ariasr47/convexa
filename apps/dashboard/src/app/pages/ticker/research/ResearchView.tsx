@@ -198,7 +198,12 @@ function SampleRail({ active, strip = false }: { active: string; strip?: boolean
               whiteSpace: 'nowrap',
               fontSize: 13,
               fontWeight: current ? 600 : 400,
-              color: current ? 'text.primary' : 'text.secondary',
+              // On the phone strip's 10% steel tint, steel measured 4.4:1 in light: text.primary
+              // there (spec 2026-10-21/02, part (c)).
+              color:
+                current || (strip && t.palette.mode === 'light')
+                  ? 'text.primary'
+                  : 'text.secondary',
               bgcolor: current
                 ? 'action.selected'
                 : strip

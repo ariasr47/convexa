@@ -56,7 +56,7 @@ const REGIME_TIP =
 /** A dim `·` divider between second-line meta items (design: `desk.mjs`'s `<span class="dim">·`). */
 function MetaDot() {
   return (
-    <Typography component="span" variant="body2" aria-hidden sx={{ color: 'text.disabled' }}>
+    <Typography component="span" variant="body2" aria-hidden sx={{ color: 'text.secondary' }}>
       ·
     </Typography>
   );

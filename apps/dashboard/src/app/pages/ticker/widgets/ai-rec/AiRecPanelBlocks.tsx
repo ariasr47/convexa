@@ -149,7 +149,7 @@ export function QuietGateNote({
       {includeStanceLine && (
         <Typography
           data-testid="ai-rec-quiet-gate-stance"
-          sx={{ fontFamily: MONO, fontSize: 12, color: 'text.disabled', mb: 0.5 }}
+          sx={{ fontFamily: MONO, fontSize: 12, color: 'text.secondary', mb: 0.5 }}
         >
           no_trade
         </Typography>

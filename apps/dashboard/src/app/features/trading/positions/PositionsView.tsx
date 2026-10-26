@@ -443,7 +443,8 @@ function GroupRows({
                 component="span"
                 sx={{
                   display: 'inline-flex',
-                  color: 'text.disabled',
+                  // Offline: `textDim` (rule 13), not `text.disabled` (a disabled control).
+                  color: (t) => extrasFor(t).textDim,
                   ml: '6px',
                   verticalAlign: 'middle',
                 }}

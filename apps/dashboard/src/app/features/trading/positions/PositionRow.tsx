@@ -37,7 +37,7 @@ import { MARK_BASIS_META } from '@/features/trading/model/mark';
 import type { MarkBasis } from '@/features/trading/model/types';
 import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
-import { downText, upText } from '@/shared/theme/tokens';
+import { downText, extrasFor, upText } from '@/shared/theme/tokens';
 import { coarseFloor } from '@/shared/ui/touch';
 import { appNowMs } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -184,7 +184,8 @@ function statusChipColor(status: string): 'default' | 'info' {
 
 /**
  * The four not-a-number literals share IDENTICAL treatment — `variant="body2"`,
- * `color: 'text.disabled'`, the same `Tooltip arrow` — and differ BY TEXT AND TESTID ONLY. They are
+ * `color: 'text.secondary'` (not `text.disabled`, which marks a disabled control: 2.53:1 dark; spec
+ * 2026-10-21/02, part (c)), the same `Tooltip arrow` — and differ BY TEXT AND TESTID ONLY. They are
  * built here, once, so "let's shorten the unavailable cell" cannot quietly collapse two of them into
  * one (SPEC §4, AC-31). A degraded state is NEVER directional, so none of them is ever tinted.
  *
@@ -200,7 +201,7 @@ function literal(text: string, tip: string, testid?: string, helpId?: string) {
   if (!testid || !helpId) {
     return (
       <Tooltip arrow title={tip}>
-        <Typography variant="body2" sx={{ color: 'text.disabled' }} data-testid={testid}>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid={testid}>
           {text}
         </Typography>
       </Tooltip>
@@ -227,7 +228,7 @@ function literal(text: string, tip: string, testid?: string, helpId?: string) {
         <Typography
           component="span"
           variant="body2"
-          sx={{ color: 'text.disabled' }}
+          sx={{ color: 'text.secondary' }}
           data-testid={testid}
         >
           {text}
@@ -367,7 +368,8 @@ function offlineDecoration(caption: string | null, testid: string) {
           component="span"
           variant="caption"
           data-testid={testid}
-          sx={{ color: 'text.disabled', flexBasis: '100%', lineHeight: 1.2 }}
+          // Offline caption beside the pause mark: `textDim` (rule 13), not `text.disabled`.
+          sx={{ color: (t) => extrasFor(t).textDim, flexBasis: '100%', lineHeight: 1.2 }}
         >
           {caption}
         </Typography>
@@ -912,7 +914,7 @@ export function cellContent(
           <Typography
             component="span"
             variant="body2"
-            sx={{ color: 'text.disabled' }}
+            sx={{ color: 'text.secondary' }}
             data-testid="cell-max-loss"
           >
             {MAX_LOSS_WITHHELD_META[ml.reason].label}
@@ -952,7 +954,7 @@ export function PendingAffordance({ ctx }: { ctx: RowContext }) {
     >
       {streamOffline ? (
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+          <Typography variant="caption" sx={{ color: (t) => extrasFor(t).textDim }}>
             Paused — resumes pricing when the live feed returns.
           </Typography>
           <PauseMark />

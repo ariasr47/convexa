@@ -446,7 +446,7 @@ export const AiRecPanel = memo(function AiRecPanel({
                 variant="caption"
                 sx={{
                   display: 'block',
-                  color: 'text.disabled',
+                  color: 'text.secondary',
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
                   fontSize: 11,
@@ -496,7 +496,7 @@ export const AiRecPanel = memo(function AiRecPanel({
                 variant="caption"
                 sx={{
                   display: 'block',
-                  color: 'text.disabled',
+                  color: 'text.secondary',
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
                   fontSize: 11,

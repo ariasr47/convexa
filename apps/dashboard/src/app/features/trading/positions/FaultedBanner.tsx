@@ -205,7 +205,7 @@ export function FaultedBanner({ onReload }: { onReload?: () => void }) {
             aria-hidden
             sx={{
               fontSize: '0.78rem',
-              color: 'text.disabled',
+              color: 'text.secondary',
               display: { xs: 'none', sm: 'inline' },
             }}
           >

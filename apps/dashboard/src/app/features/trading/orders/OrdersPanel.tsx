@@ -9,6 +9,7 @@
  */
 import { SIMULATED_TIP } from '@/features/trading/positions/labels';
 import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
+import { extrasFor } from '@/shared/theme/tokens';
 import { coarseFloor } from '@/shared/ui/touch';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -18,6 +19,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import type { Theme } from '@mui/material/styles';
 import { useState } from 'react';
 import { OrderDetailDialog } from './OrderDetailDialog';
 import { OrderRow } from './OrderRow';
@@ -33,6 +35,16 @@ import {
 import { exportFilename } from './store';
 import { isTerminal } from './types';
 import { deriveEval, LiveCoverage, useOrders } from './useOrders';
+
+/** The trade dialog's neutral SIMULATED tag (`TradeEntryDialogView.tsx`, fidelity ACC-12): text
+ *  primary on a `lineStrong` outline, weight 600. MUI's default outlined chip drew a grey #616161
+ *  border here, so the two chips differed (spec 2026-10-21/02, criterion 11). */
+const SIMULATED_CHIP_SX = (t: Theme) => ({
+  color: 'text.primary',
+  borderColor: extrasFor(t).lineStrong,
+  fontWeight: 600,
+  letterSpacing: '0.04em',
+});
 
 interface Props {
   /** The page's live coverage (the focused/streamed ticker). Null ⇒ every row not-evaluated. */
@@ -93,11 +105,18 @@ export function OrdersPanel({ coverage, openDetailOrderId, onDetailClose, onView
         sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
       >
         {/* The board's panel title (`.hd-p .ph h3`): 14px/600. */}
-        <Typography variant="subtitle1" sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
+        {/* h2: it sits straight under the page's h1 (axe heading-order; spec 2026-10-21/02). */}
+        <Typography
+          variant="subtitle1"
+          component="h2"
+          sx={{ fontSize: '0.875rem', fontWeight: 600 }}
+        >
           {PANEL_TITLE}
         </Typography>
         <Tooltip arrow title={SIMULATED_TIP}>
-          <Chip size="small" variant="outlined" label="SIMULATED" />
+          {/* The trade dialog's neutral SIMULATED tag (ACC-12), so the two read as one chip
+              (spec 2026-10-21/02, criterion 11). */}
+          <Chip size="small" variant="outlined" label="SIMULATED" sx={SIMULATED_CHIP_SX} />
         </Tooltip>
         <Box sx={{ flexGrow: 1 }} />
         <Button

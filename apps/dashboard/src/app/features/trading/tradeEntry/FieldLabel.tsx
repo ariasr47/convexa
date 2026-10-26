@@ -14,7 +14,7 @@ export function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: 
         fontWeight: 700,
         letterSpacing: '0.07em',
         textTransform: 'uppercase',
-        color: 'text.disabled',
+        color: 'text.secondary',
       }}
     >
       {children}

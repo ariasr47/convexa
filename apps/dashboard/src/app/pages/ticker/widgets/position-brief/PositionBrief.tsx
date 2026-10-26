@@ -252,7 +252,7 @@ function SingleBrief({ view }: { view: PositionView }) {
           <Typography
             component="span"
             data-testid="position-brief-pl"
-            sx={{ fontSize: '0.86rem', color: 'text.disabled' }}
+            sx={{ fontSize: '0.86rem', color: 'text.secondary' }}
           >
             {BRIEF_COPY.plUnavailable}
           </Typography>

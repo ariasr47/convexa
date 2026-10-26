@@ -233,7 +233,12 @@ export function ArchiveBlock({
         spacing={1.5}
         sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.75 }}
       >
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
+        {/* h3 under the Track record's h2 (axe heading-order; spec 2026-10-21/02). */}
+        <Typography
+          variant="subtitle2"
+          component="h3"
+          sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}
+        >
           {TR_ARCHIVE_HEADING}
         </Typography>
         <Typography

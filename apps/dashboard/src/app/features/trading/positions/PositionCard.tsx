@@ -33,7 +33,7 @@
  * treatment are the identical facts the row renders.
  */
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
-import { downText, upText } from '@/shared/theme/tokens';
+import { downText, extrasFor, upText } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useId, useState } from 'react';
@@ -58,6 +58,9 @@ import {
 } from './PositionRow';
 import { STRUCTURE_LABELS } from './structure';
 import type { PositionView } from './view';
+
+/** A paused or stale value's text (rule 13): `textDim`, never `text.disabled` (a disabled control). */
+const dimText = (t: Parameters<typeof extrasFor>[0]) => extrasFor(t).textDim;
 
 const dollars = (n: number) => `$${Math.abs(Math.round(n))}`;
 
@@ -222,7 +225,7 @@ export function PositionCard({
               ...faceFor(isOpen ? plState.mono : true),
               fontWeight: 700,
               fontSize: '1.5rem',
-              color: isOpen && !plState.mono ? 'text.disabled' : plColor,
+              color: isOpen && !plState.mono ? dimText : plColor,
             }}
           >
             {isOpen && !plNotLive ? plFig.text : '—'}
@@ -232,7 +235,7 @@ export function PositionCard({
             sx={{
               ...faceFor(isOpen ? plState.mono : true),
               fontSize: '0.85rem',
-              color: isOpen && !plState.mono ? 'text.disabled' : plColor,
+              color: isOpen && !plState.mono ? dimText : plColor,
             }}
           >
             {isOpen && !plNotLive ? pctFig.text : ''}
@@ -245,7 +248,7 @@ export function PositionCard({
                   component="span"
                   variant="caption"
                   data-testid="card-pl-caption"
-                  sx={{ color: 'text.disabled' }}
+                  sx={{ color: dimText }}
                 >
                   {plState.caption}
                 </Typography>
@@ -306,11 +309,17 @@ export function PositionCard({
           <Box
             component="span"
             sx={{
-              // The terminal dash is a not-a-number literal: Sans and disabled, like the row's.
+              // The terminal dash is a not-a-number literal: Sans and secondary, like the row's. A
+              // paused or stale mark reads `textDim` (rule 13); `text.disabled` marks a disabled
+              // control only (2026-09-09 Amendments row; spec 2026-10-21/02, part (c)).
               ...faceFor(markState ? markState.mono : !isTerminal),
               fontWeight: 700,
               color:
-                (markState && !markState.mono) || isTerminal ? 'text.disabled' : 'text.primary',
+                markState && !markState.mono
+                  ? dimText
+                  : isTerminal
+                    ? 'text.secondary'
+                    : 'text.primary',
             }}
             data-testid="card-mark-value"
           >
@@ -324,7 +333,7 @@ export function PositionCard({
                 <Box
                   component="span"
                   data-testid="card-mark-caption"
-                  sx={{ fontSize: '0.7rem', color: 'text.disabled', flexBasis: '100%' }}
+                  sx={{ fontSize: '0.7rem', color: dimText, flexBasis: '100%' }}
                 >
                   {markState.caption}
                 </Box>

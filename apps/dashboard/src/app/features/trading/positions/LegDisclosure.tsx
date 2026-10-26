@@ -172,7 +172,7 @@ export function LegDisclosurePanel({ id, view, expanded }: LegDisclosurePanelPro
               </Box>
               {l.unavailable || l.mark == null ? (
                 <Tooltip arrow title={ROW_UNAVAILABLE_TIP}>
-                  <Box component="span" data-testid="leg-mark" sx={{ color: 'text.disabled' }}>
+                  <Box component="span" data-testid="leg-mark" sx={{ color: 'text.secondary' }}>
                     unavailable
                   </Box>
                 </Tooltip>

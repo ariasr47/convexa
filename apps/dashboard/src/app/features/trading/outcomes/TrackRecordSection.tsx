@@ -91,7 +91,7 @@ import { Cell, CellFamily, EXCLUSION_PRECEDENCE, LedgerRead, N_MIN } from './typ
 function InfoTip({ title, testid }: { title: string; testid?: string }) {
   return (
     <Tooltip title={title} arrow placement="top">
-      <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} data-testid={testid} />
+      <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.secondary' }} data-testid={testid} />
     </Tooltip>
   );
 }
@@ -174,7 +174,8 @@ function FamilyView({ family, sourcesComplete }: { family: CellFamily; sourcesCo
   return (
     <Box sx={familyCardSx} data-testid={`tr-family-${family.key}`}>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 0.25 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+        {/* h3 under the section's h2 (axe heading-order; spec 2026-10-21/02). */}
+        <Typography variant="subtitle2" component="h3" sx={{ fontWeight: 700 }}>
           {TR_FAMILY_HEADING[family.key]}
         </Typography>
         <InfoTip title={TR_TIP_FAMILY[family.key]} testid={`tr-family-info-${family.key}`} />

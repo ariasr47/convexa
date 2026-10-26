@@ -171,7 +171,7 @@ function ScopeView({ scope }: { scope: MetricsScope }) {
       </Box>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mt: 1, flexWrap: 'wrap' }}>
         <Tooltip arrow title={CACHE_TIP}>
-          <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+          <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
         </Tooltip>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Cache: hits {num(c.hits)} · misses {num(c.misses)} · hit ratio {ratioPct}% · current data
@@ -180,7 +180,7 @@ function ScopeView({ scope }: { scope: MetricsScope }) {
       </Stack>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         <Tooltip arrow title={HEADROOM_TIP}>
-          <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+          <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
         </Tooltip>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Vendor: calls {num(v.call_count)} · latency p50 {fmtMs(v.latency_p50_ms)} / p95{' '}
@@ -232,7 +232,7 @@ function TraceRow({ t }: { t: RecentTrace }) {
                 trace {t.trace_id} · {t.ticker} · {dimsLabel(t.dims)} · cache age{' '}
                 {Math.round(t.cache_age_seconds)}s · total {fmtMs(t.total_ms)}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                 Per-stage timings + vendor calls for a single request travel in that request's
                 verbose <code>meta.timings</code> (default-off), not in this rolling readout.
               </Typography>
@@ -315,7 +315,7 @@ export function OperatorMetrics() {
           <>
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
               <Tooltip arrow title={WINDOW_TIP}>
-                <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
               </Tooltip>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 {/* `size_desc` already reads "last ~500 req" — no hardcoded prefix (the "last last"
@@ -392,7 +392,7 @@ export function OperatorMetrics() {
                       </Card>
                     ))}
                     {Object.keys(data.per_ticker).length === 0 && (
-                      <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                         —
                       </Typography>
                     )}
@@ -405,7 +405,7 @@ export function OperatorMetrics() {
                       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1 }}>
                         <Typography variant="subtitle1">Recent traces</Typography>
                         <Tooltip arrow title={TRACE_TIP}>
-                          <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                          <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                         </Tooltip>
                       </Stack>
                       {/* Scrolls inside its card on a phone, so cache, total and the inspect

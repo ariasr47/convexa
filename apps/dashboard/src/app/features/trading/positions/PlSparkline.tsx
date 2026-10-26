@@ -137,7 +137,7 @@ export function PlSparkline({ samples, offline }: { samples: PlSample[]; offline
 
   if (!geo || geo.segments.length === 0) {
     return (
-      <Typography variant="caption" sx={{ color: 'text.disabled' }} data-testid="trend-empty">
+      <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="trend-empty">
         —
       </Typography>
     );

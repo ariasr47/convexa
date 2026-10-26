@@ -117,7 +117,11 @@ export function Pill({
           fontWeight: 500,
           lineHeight: 1.5,
           whiteSpace: 'nowrap',
-          color: variant === 'quiet' ? 'text.secondary' : 'text.primary',
+          // A quiet pill's steel label on its own 16% steel tint measured 4.08:1 on paper and 4.37:1
+          // on a white panel in light, under the 4.5:1 floor; light takes text.primary there, as
+          // TintChip's neutral tone does (LTXT tint chip). Dark keeps steel (spec 2026-10-21/02, c).
+          color:
+            variant === 'quiet' && t.palette.mode === 'dark' ? 'text.secondary' : 'text.primary',
           bgcolor:
             variant === 'quiet'
               ? alpha(t.palette.text.secondary, 0.16)

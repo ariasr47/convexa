@@ -501,9 +501,14 @@ function PartChips({ note, active }: { note: ResearchNote; active: string }) {
                   borderRadius: '999px',
                   fontSize: 13,
                   whiteSpace: 'nowrap',
+                  // Light: steel on its own 16% steel tint measured 4.08:1, so the resting pill
+                  // label is text.primary there (spec 2026-10-21/02, part (c)).
                   ...(i === activePart
                     ? { bgcolor: 'text.primary', color: 'background.default', fontWeight: 600 }
-                    : { bgcolor: alpha(t.palette.text.secondary, 0.16), color: 'text.secondary' }),
+                    : {
+                        bgcolor: alpha(t.palette.text.secondary, 0.16),
+                        color: t.palette.mode === 'light' ? 'text.primary' : 'text.secondary',
+                      }),
                 })}
               >
                 {chipLabel(p.title)}

@@ -462,7 +462,9 @@ export function Widget({
           // Resting depth matches Command Deck (`elevationFor.e1`) — one material language.
           // Quiet (context band): same e1, no hover lift — tertiary claim.
           boxShadow: elevationFor(theme).e1,
-          opacity: quiet ? 0.96 : 1,
+          // No opacity on a quiet card: it composited the card's text too, and steel on a sample
+          // frame fell to 4.39:1 in light (text is never dimmed by opacity, 2026-09-09 Amendments;
+          // spec 2026-10-21/02, part (c)).
           overflow: 'clip',
           outline: 'none',
           '&:focus-visible': {

@@ -345,7 +345,7 @@ export function OrderRow({ order: o, evalState, onDetails, onCancel, compact }: 
         spacing={1.5}
         sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5, mt: 0.5 }}
       >
-        <Typography variant="caption" sx={{ color: 'text.disabled' }} data-testid="order-source">
+        <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="order-source">
           {o.provenance.source === 'ai_scenario'
             ? sourceScripted(o.provenance.scenario_name ?? o.provenance.scenario_id ?? 'scenario')
             : sourceAiRead(o.provenance.persona?.name ?? 'Default (no persona)')}
