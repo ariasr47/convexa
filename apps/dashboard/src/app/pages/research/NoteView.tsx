@@ -6,6 +6,7 @@
  * Freshness is worked out HERE, in the reader's browser, from the note's own dates: the site isn't
  * rebuilt after it deploys, so a build-time answer would say "current" forever.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
 import { coarseFloor } from '@/shared/ui/touch';
 import ScheduleOutlined from '@mui/icons-material/ScheduleOutlined';
 import Box from '@mui/material/Box';
@@ -573,7 +574,14 @@ function SideCards({
   ]
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5);
-  const label = { fontSize: 11 } as const;
+  // The board's `.side-k` (final/ticker-note.mjs:48): 11px IBM Plex Sans 600 caps at 0.08em, not
+  // the mono eyebrow (fidelity round 4).
+  const label = {
+    fontFamily: typographyTokens.fontFamily,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: '0.08em',
+  } as const;
   return (
     <>
       {next && (
