@@ -1,10 +1,10 @@
 //! Public market and filing data from keyless public sources — U.S. Treasury (yield curves), CFTC
-//! (Traders in Financial Futures), FINRA (daily short volume, short interest), SEC EDGAR
-//! (filings, Form 4, XBRL facts), the Fed/Treasury/NY Fed liquidity inputs and the Fed, BLS, BEA
-//! and Treasury release schedules. Read-only, cached server-side, and never fatal: every answer
-//! carries a state, and a failing source degrades to its last good copy or to `unavailable`.
-//! Each answer also lists its sources with their P-2 state, which tells a fresh fetch from a last
-//! good copy.
+//! (Traders in Financial Futures), the OFR (Financial Stress Index), FINRA (daily short volume,
+//! short interest), SEC EDGAR (filings, Form 4, XBRL facts), the Fed/Treasury/NY Fed liquidity
+//! inputs and the Fed, BLS, BEA and Treasury release schedules. Read-only, cached server-side, and
+//! never fatal: every answer carries a state, and a failing source degrades to its last good copy
+//! or to `unavailable`. Each answer also lists its sources with their P-2 state, which tells a
+//! fresh fetch from a last good copy.
 //!
 //! `PUBLIC_DATA=off` makes every answer `off` without contacting anything (tests run this way).
 //! FINRA has its own switch, [`finra::FINRA_DISPLAY_APPROVED`]: while it is off, the FINRA parts
@@ -20,6 +20,7 @@ pub(crate) mod filed_figures;
 pub(crate) mod finra;
 pub(crate) mod insider_trades;
 pub(crate) mod liquidity;
+pub(crate) mod ofr;
 pub(crate) mod sources;
 pub(crate) mod treasury;
 pub mod types;
@@ -137,6 +138,7 @@ struct Inner {
     sec_gate: SecGate,
     rates: TtlCache<(), RatesSeries>,
     futures: TtlCache<(), FuturesSummary>,
+    ofr: TtlCache<(), OfrSeries>,
     liquidity: TtlCache<(), LiquiditySeries>,
     schedules: TtlCache<&'static str, Vec<Release>>,
     marked: std::sync::Mutex<HashMap<&'static str, ScheduleCopy>>,
@@ -173,6 +175,8 @@ impl PublicDataService {
                 sec_gate: SecGate::new(SEC_SPACING),
                 rates: TtlCache::new(|_| 6 * HOUR, RETRY_AFTER_FAILURE, 1),
                 futures: TtlCache::new(|_| 12 * HOUR, RETRY_AFTER_FAILURE, 1),
+                // The OFR writes one file a day, about two business days late.
+                ofr: TtlCache::new(|_| 6 * HOUR, RETRY_AFTER_FAILURE, 1),
                 // Weekly data, released Thursdays: six hours keeps a Thursday release same-evening.
                 liquidity: TtlCache::new(|_| 6 * HOUR, RETRY_AFTER_FAILURE, 1),
                 // Agencies set their schedules months ahead and move a date rarely: twice a day
@@ -227,6 +231,7 @@ impl PublicDataService {
             let sources = [
                 sources::TREASURY,
                 sources::CFTC,
+                sources::OFR,
                 sources::FED_H41,
                 sources::TREASURY_DTS,
                 sources::NYFED_RRP,
@@ -245,9 +250,10 @@ impl PublicDataService {
                 sources,
             };
         }
-        let (rates, futures, liquidity, schedules) = tokio::join!(
+        let (rates, futures, ofr, liquidity, schedules) = tokio::join!(
             self.rates_lookup(),
             self.futures_lookup(),
+            self.ofr_lookup(),
             self.liquidity_lookup(),
             self.schedules(),
         );
@@ -266,6 +272,15 @@ impl PublicDataService {
                 true,
                 futures.cached().map(|c| c.value.report_date),
                 cftc::SOURCE,
+            ),
+            // The OFR publishes about two business days late by design, so a fresh read is
+            // Delayed by source, as the CFTC's is. As of: the newest date in the file.
+            sources::from_lookup(
+                sources::OFR,
+                &ofr,
+                true,
+                ofr.cached().map(|c| c.value.latest),
+                ofr::SOURCE,
             ),
         ];
         // The three liquidity inputs are fetched and kept together (never a net from two of
@@ -318,6 +333,7 @@ impl PublicDataService {
         let notes: Vec<String> = [
             rates.note(treasury::SOURCE),
             futures.note(cftc::SOURCE),
+            ofr.note(ofr::SOURCE),
             liquidity.note("Liquidity"),
         ]
         .into_iter()
@@ -510,6 +526,24 @@ impl PublicDataService {
                 }
                 treasury::build(&treasury::merge(&nominal, &real))
                     .ok_or_else(|| FetchError::new(treasury::SOURCE, "no 10-year observations"))
+            })
+            .await
+    }
+
+    /// The OFR Financial Stress Index file (one request; the five categories the gauge reads).
+    async fn ofr_lookup(&self) -> Lookup<OfrSeries> {
+        let http = &self.inner.http;
+        self.inner
+            .ofr
+            .get((), || async move {
+                let body = required(
+                    ofr::SOURCE,
+                    http.get(ofr::SOURCE, ofr::URL, ofr::MAX_BYTES, &[]).await?,
+                )?;
+                let text = String::from_utf8(body)
+                    .map_err(|_| FetchError::new(ofr::SOURCE, "CSV is not UTF-8"))?;
+                ofr::parse_csv(&text)
+                    .map_err(|e| FetchError::new(ofr::SOURCE, format!("parse: {e}")))
             })
             .await
     }
@@ -1399,6 +1433,7 @@ mod tests {
             [
                 "treasury",
                 "cftc",
+                "ofr",
                 "fed-h41",
                 "treasury-dts",
                 "nyfed-rrp",

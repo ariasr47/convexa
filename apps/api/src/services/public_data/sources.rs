@@ -7,6 +7,7 @@ use chrono::NaiveDate;
 
 pub(crate) const TREASURY: (&str, &str) = ("treasury", "U.S. Treasury daily yield curves");
 pub(crate) const CFTC: (&str, &str) = ("cftc", "CFTC Traders in Financial Futures");
+pub(crate) const OFR: (&str, &str) = ("ofr", "OFR Financial Stress Index");
 pub(crate) const FED_H41: (&str, &str) = ("fed-h41", "Fed H.4.1 total assets");
 pub(crate) const TREASURY_DTS: (&str, &str) = (
     "treasury-dts",

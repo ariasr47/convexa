@@ -131,6 +131,16 @@ pub struct FuturesSummary {
     pub equity_positioning: Vec<(NaiveDate, f64)>,
 }
 
+/// The OFR Financial Stress Index's five category series the fear–greed gauge reads, each oldest
+/// first with only the days whose cell parsed, kept from three years and a month before `latest`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct OfrSeries {
+    /// The newest date in the file.
+    pub latest: NaiveDate,
+    /// In the gauge's table order: volatility, credit, safe assets, equity valuation, funding.
+    pub categories: [Vec<(NaiveDate, f64)>; 5],
+}
+
 #[derive(Debug, Clone)]
 pub struct Futures {
     pub fetched_at: DateTime<Utc>,
