@@ -351,14 +351,16 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
 
             {/* Production's front door (owner, 2026-10-16): the full demo, one neutral click away on
               every page. Most of the desk needs a paid options feed this site doesn't have; the
-              demo runs all of it on a sample day. Not on the demo build itself. */}
+              demo runs all of it on a sample day. Not on the demo build itself. Its sides are the
+              board's `.btn.sm` 10px (MUI's small outlined button has 9), which puts the search box
+              on the board's x at 1280, 1440 and 1920 (fidelity R3; it sat 2px right). */}
             {dataMode !== 'demo' && (
               <Button
                 href={STAGING_DEMO_URL}
                 variant="outlined"
                 size="small"
                 data-testid="nav-full-demo"
-                sx={{ display: { xs: 'none', md: 'inline-flex' }, whiteSpace: 'nowrap' }}
+                sx={{ display: { xs: 'none', md: 'inline-flex' }, whiteSpace: 'nowrap', px: 1.25 }}
               >
                 Full demo ↗
               </Button>
