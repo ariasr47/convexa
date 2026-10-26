@@ -489,7 +489,15 @@ function ExportSection({
             amber text binds `textAmber` via extrasFor (light-mode contrast gate §5.2). */}
         <Button
           onClick={() => onCopy(text)}
-          sx={(t) => ({ minWidth: 0, p: 0.25, fontSize: 11, color: extrasFor(t).textAmber })}
+          // `minWidth: 0` beats the theme's coarse 44 (a class over an element selector), so the
+          // coarse width comes back here: 33x44 at 390 before (spec 2026-10-21/02, part (b)).
+          sx={(t) => ({
+            minWidth: 0,
+            '@media (pointer: coarse)': { minWidth: 44 },
+            p: 0.25,
+            fontSize: 11,
+            color: extrasFor(t).textAmber,
+          })}
         >
           COPY
         </Button>

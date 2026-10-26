@@ -28,6 +28,7 @@ import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
+import { selectCoarseFloorSx } from '@/shared/ui/touch';
 import { dataMode, resetDemoWorkspace, type ThemePref } from '@convexa/api';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
@@ -598,17 +599,10 @@ export function SettingsPage() {
                   disabled={!auth.ready}
                   inputProps={{ 'data-testid': 'settings-persona' }}
                   // GATE Z, finding 3 (criterion 66): MUI `Select` self-duplicates its own class
-                  // (`&.${selectClasses.select}`, `Select/SelectInput.js`) to "win specificity
-                  // over the input base" at (0,2,0) — `theme.ts`'s coarse-pointer floor (a bare
-                  // `[role="combobox"]`, (0,1,0)) cannot reach it; a scoped `sx` descendant
-                  // selector tied at (0,2,0) loses too (confirmed by measuring computed
-                  // `min-height` in a real browser). Doubling the same class here reaches
-                  // (0,3,0), which wins unconditionally.
-                  sx={{
-                    '@media (pointer: coarse)': {
-                      '& .MuiSelect-select.MuiSelect-select': { minHeight: 44 },
-                    },
-                  }}
+                  // at (0,2,0), which the theme's coarse floor cannot reach; the shared helper
+                  // doubles it to (0,3,0), border-box, so this select is 44px under a coarse
+                  // pointer, not 61 (spec 2026-10-21/02, part (b)).
+                  sx={selectCoarseFloorSx}
                 >
                   {personaOptions.map((p) => (
                     <MenuItem key={p.id} value={p.id}>

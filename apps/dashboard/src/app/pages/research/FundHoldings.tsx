@@ -8,6 +8,7 @@
  */
 import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
+import { coarseFloor } from '@/shared/ui/touch';
 import { dataMode, type PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha, useTheme } from '@mui/material/styles';
@@ -399,7 +400,7 @@ function BarList({ rows, receipts }: { rows: PublicHolder[]; receipts: boolean }
 function OperatorNote() {
   return (
     <Box component="details" sx={{ fontSize: 12, color: 'text.secondary' }}>
-      <Box component="summary" sx={{ cursor: 'pointer', minHeight: 24 }}>
+      <Box component="summary" sx={{ cursor: 'pointer', minHeight: 24, ...coarseFloor }}>
         For the site’s operator
       </Box>
       <Box component="span" sx={{ ...MONO, fontSize: 11 }}>

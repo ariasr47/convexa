@@ -11,6 +11,7 @@
  * callout on the panel (fidelity audit 2026-10-25, SITE-11).
  */
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { proseLinkSx, standaloneLinkSx } from '@/shared/ui/touch';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Table from '@mui/material/Table';
@@ -26,7 +27,6 @@ import { parseInline, type Block } from './markdown';
 import { BLOG_ARTICLES, postBlocks, postPath, postSlugOf } from './posts';
 import { Schematic } from './Schematics';
 
-const linkSx = { color: (t: Parameters<typeof extrasFor>[0]) => extrasFor(t).textInfo } as const;
 const DISPLAY = {
   fontFamily: typographyTokens.displayFontFamily,
   fontStretch: typographyTokens.displayFontStretch,
@@ -87,11 +87,11 @@ function Inline({ text }: { text: string }) {
             return <em key={i}>{part.text}</em>;
           case 'link':
             return part.href.startsWith('/') ? (
-              <Link key={i} component={RouterLink} to={part.href} sx={linkSx}>
+              <Link key={i} component={RouterLink} to={part.href} sx={proseLinkSx}>
                 {part.text}
               </Link>
             ) : (
-              <Link key={i} href={part.href} sx={linkSx}>
+              <Link key={i} href={part.href} sx={proseLinkSx}>
                 {part.text}
               </Link>
             );
@@ -246,15 +246,9 @@ export function BlogPostPage({ file, notFound }: { file: string; notFound: React
       <Link
         component={RouterLink}
         to="/blog"
-        sx={{
-          ...linkSx,
-          alignSelf: 'flex-start',
-          display: 'inline-flex',
-          alignItems: 'center',
-          minHeight: 24,
-          fontSize: 14,
-          textDecoration: 'none',
-        }}
+        // Standalone: 24px at a fine pointer, 44px under a coarse one (70x24 at 390 before; spec
+        // 2026-10-21/02, part (b)).
+        sx={{ ...standaloneLinkSx, alignSelf: 'flex-start', fontSize: 14, textDecoration: 'none' }}
         data-testid="blog-post-back"
       >
         ← All posts

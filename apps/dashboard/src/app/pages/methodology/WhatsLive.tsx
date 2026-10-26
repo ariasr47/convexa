@@ -19,6 +19,7 @@ import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { LIVE_SITE_URL, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
+import { standaloneLinkSx } from '@/shared/ui/touch';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Table from '@mui/material/Table';
@@ -165,8 +166,6 @@ function Words({ words }: { words: readonly StateWordRow[] }) {
   );
 }
 
-const linkSx = { color: (t: Parameters<typeof extrasFor>[0]) => extrasFor(t).textInfo } as const;
-
 function Production() {
   const c = WHATS_LIVE.production;
   return (
@@ -246,7 +245,13 @@ function Production() {
                       <Link
                         href={`${STAGING_DEMO_URL}${path}`}
                         aria-label={`${what}: on the demo`}
-                        sx={{ ...linkSx, whiteSpace: 'nowrap' }}
+                        // A standalone link in its own cell: 44px under a coarse pointer (it
+                        // measured 89x17 at 390 before; spec 2026-10-21/02, part (b)). Its text
+                        // stays on the label's first line; the taller box runs down the row.
+                        sx={[
+                          { ...standaloneLinkSx, whiteSpace: 'nowrap' },
+                          { '@media (pointer: coarse)': { alignItems: 'flex-start' } },
+                        ]}
                       >
                         {c.onDemo}
                       </Link>
@@ -301,7 +306,7 @@ function Staging() {
             {c.liveBody}
           </Typography>
           <Typography component="p" sx={{ ...NOTE_SX, fontWeight: 600 }}>
-            <Link href={`${LIVE_SITE_URL}/methodology#data`} sx={linkSx}>
+            <Link href={`${LIVE_SITE_URL}/methodology#data`} sx={standaloneLinkSx}>
               {c.liveLink} →
             </Link>
           </Typography>

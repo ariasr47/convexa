@@ -11,6 +11,7 @@
  */
 import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
+import { coarseFloor } from '@/shared/ui/touch';
 import { dataMode, type PublicAnnualRevenue, type PublicTicker } from '@convexa/api';
 import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
@@ -203,7 +204,7 @@ function CheckFrame({ d }: { d: PublicTicker }) {
       'SEC filings aren’t set up on this site yet.',
       NOT_SET_UP_CAUSE,
       <Box component="details" sx={{ fontSize: 12, color: 'text.secondary' }}>
-        <Box component="summary" sx={{ cursor: 'pointer', minHeight: 24 }}>
+        <Box component="summary" sx={{ cursor: 'pointer', minHeight: 24, ...coarseFloor }}>
           For the site’s operator
         </Box>
         <Box component="span" sx={{ ...MONO, fontSize: 11 }}>

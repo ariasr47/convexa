@@ -23,6 +23,7 @@ import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { Refused } from '@/shared/ui/Refused';
+import { coarseFloor } from '@/shared/ui/touch';
 import { dayChange, type LiveUpdate, type MarketState, type Signals } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -412,6 +413,26 @@ export function TickerHeader({
                     fontSize: 12,
                     fontWeight: 600,
                     whiteSpace: 'nowrap',
+                    // Coarse pointer: a 44px hit area from a pseudo-element, 10px above and below
+                    // the 24px chip. It takes no space, so the chip and its row keep their size;
+                    // a 44px box in the flow grew the wrapped row from 62 to 82px (spec
+                    // 2026-10-21/02, part (b), the verdict chip's mechanism).
+                    // `zIndex: 1`: the row under the chip starts 8px below it and paints later, so
+                    // without it a tap 9-10px below the chip landed on that row's text.
+                    '@media (pointer: coarse)': {
+                      position: 'relative',
+                      zIndex: 1,
+                      // -11: the offsets run from the padding edge, inside the 1px border, so
+                      // this is 10px past the chip's outer edge.
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: -11,
+                        bottom: -11,
+                        left: 0,
+                        right: 0,
+                      },
+                    },
                   }}
                 >
                   {verdict}
@@ -580,12 +601,17 @@ export function TickerHeader({
                           size="small"
                           onClick={onOpenTrade}
                           data-testid="open-sim-trade"
-                          sx={{
-                            flexShrink: 0,
-                            whiteSpace: 'nowrap',
-                            minHeight: { xs: 44, sm: 36 },
-                            width: { xs: '100%', sm: 'auto' },
-                          }}
+                          // 36 at a fine pointer from 600px; 44 under a coarse one at any width
+                          // (a coarse tablet too), last in the array so it follows the 36.
+                          sx={[
+                            {
+                              flexShrink: 0,
+                              whiteSpace: 'nowrap',
+                              minHeight: { xs: 44, sm: 36 },
+                              width: { xs: '100%', sm: 'auto' },
+                            },
+                            coarseFloor,
+                          ]}
                         >
                           + Open simulated trade
                         </Button>

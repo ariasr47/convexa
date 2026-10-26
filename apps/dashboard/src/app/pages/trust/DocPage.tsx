@@ -21,6 +21,7 @@
  */
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
+import { proseLinkSx } from '@/shared/ui/touch';
 import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
@@ -46,7 +47,9 @@ const DOC_BODY = {
   '& strong': { color: 'text.primary', fontWeight: 600 },
 } as const;
 
-export const linkSx = { color: (t: Theme) => extrasFor(t).textInfo } as const;
+/** A link inside a sentence (colour only). A link on its own line or in a row of links takes
+ *  `standaloneLinkSx` instead, 44px under a coarse pointer (`shared/ui/touch.ts`). */
+export const linkSx = proseLinkSx;
 
 export function DocPage({
   path,

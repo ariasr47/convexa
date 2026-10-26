@@ -39,6 +39,7 @@ import { faceFor } from '@/shared/figure';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
+import { coarseFloor } from '@/shared/ui/touch';
 import { dataMode, getScan } from '@convexa/api';
 import AddIcon from '@mui/icons-material/Add';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -714,7 +715,17 @@ export function AlertsPage() {
               </Typography>
               <Link
                 href={`${STAGING_DEMO_URL}/alerts`}
-                sx={{ fontSize: 13, fontWeight: 600, minHeight: 24, alignSelf: 'flex-start' }}
+                // 24px at a fine pointer, 44px under a coarse one (126x24 at 390 before; spec
+                // 2026-10-21/02, part (b)).
+                sx={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  minHeight: 24,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  ...coarseFloor,
+                  alignSelf: 'flex-start',
+                }}
               >
                 See it on the demo →
               </Link>
@@ -942,7 +953,13 @@ function FireRow({ e }: { e: AlertEvent }) {
               href={e.link.href}
               target="_blank"
               rel="noopener noreferrer"
-              sx={{ fontSize: 13, minHeight: 24, display: 'inline-flex', alignItems: 'center' }}
+              sx={{
+                fontSize: 13,
+                minHeight: 24,
+                display: 'inline-flex',
+                alignItems: 'center',
+                ...coarseFloor,
+              }}
             >
               {`${e.link.label} →`}
             </Link>
@@ -950,7 +967,13 @@ function FireRow({ e }: { e: AlertEvent }) {
             <Link
               component={RouterLink}
               to={e.link.href}
-              sx={{ fontSize: 13, minHeight: 24, display: 'inline-flex', alignItems: 'center' }}
+              sx={{
+                fontSize: 13,
+                minHeight: 24,
+                display: 'inline-flex',
+                alignItems: 'center',
+                ...coarseFloor,
+              }}
             >
               {`${e.link.label} →`}
             </Link>

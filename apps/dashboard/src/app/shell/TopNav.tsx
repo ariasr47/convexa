@@ -174,10 +174,14 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
             component={RouterLink}
             to="/"
             data-testid="shell-brand"
+            // `alignItems: 'center'`: under a coarse pointer the theme's 44px floor stretches the
+            // link, and the mark sat at its top, 13px above the menu icon's centre on production
+            // /scanner at 390 (spec 2026-10-21/02, part (b) and criterion 7).
             sx={{
               color: 'text.primary',
               textDecoration: 'none',
               display: 'inline-flex',
+              alignItems: 'center',
               opacity: 0.95,
               transition: 'opacity 160ms ease',
               '&:hover': { opacity: 1 },

@@ -464,7 +464,16 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
             'aria-autocomplete': 'list',
             'aria-label': 'Jump to a ticker or note',
           }}
-          sx={{ fontSize: '1rem', p: 0 }}
+          // The input box is MUI's 1.4375em line (32px here), a class the theme's coarse `input`
+          // floor cannot beat, so it carries its own 44 under a coarse pointer, border-box so the
+          // row keeps its height (spec 2026-10-21/02, part (b); 224x32 at 390 before).
+          sx={{
+            fontSize: '1rem',
+            p: 0,
+            '@media (pointer: coarse)': {
+              '& .MuiInputBase-input': { minHeight: 44, boxSizing: 'border-box' },
+            },
+          }}
         />
         {/* Escape closes through the Dialog's own `onClose`, so the key it names performs it. */}
         <Box

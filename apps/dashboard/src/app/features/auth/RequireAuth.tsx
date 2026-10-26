@@ -15,12 +15,11 @@
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
-import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
@@ -150,6 +149,19 @@ export function RequireAuth({ children, surface, demoPath }: Props) {
               {AUTH_COPY.gate.retry}
             </Button>
           )}
+          {/* The demo is the wall's real next step for every visitor but the owner, so it comes
+              second: a neutral outlined 44px button, not a 24px inline link at the foot (spec
+              2026-10-21/02, part (b); 126x24 at 390 before). After Try again when that shows. */}
+          {demoPath && (
+            <Button
+              href={`${STAGING_DEMO_URL}${demoPath}`}
+              variant="outlined"
+              data-testid="require-auth-demo-link"
+              sx={{ ...outlinedSx, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}
+            >
+              See it on the demo →
+            </Button>
+          )}
           <Button
             component={RouterLink}
             to="/ticker"
@@ -182,20 +194,7 @@ export function RequireAuth({ children, surface, demoPath }: Props) {
               width: '100%',
             }}
           >
-            {copy.demo}{' '}
-            <Link
-              href={`${STAGING_DEMO_URL}${demoPath}`}
-              underline="always"
-              sx={{
-                color: (theme) => extrasFor(theme).textInfo,
-                display: 'inline-flex',
-                minHeight: 24,
-                alignItems: 'center',
-                fontWeight: 600,
-              }}
-            >
-              See it on the demo →
-            </Link>
+            {copy.demo}
           </Typography>
         )}
       </Paper>

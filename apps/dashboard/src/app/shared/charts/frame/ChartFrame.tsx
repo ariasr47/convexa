@@ -532,7 +532,9 @@ function SourceChip({
       target="_blank"
       rel="noopener noreferrer"
       underline="none"
-      sx={{ maxWidth: '100%' }}
+      // Under a coarse pointer the theme's floor makes this link 44px; inline-flex with centred
+      // content keeps the chip in its middle (spec 2026-10-21/02, part (b) and criterion 7).
+      sx={{ maxWidth: '100%', display: 'inline-flex', alignItems: 'center' }}
     >
       {chip}
     </Link>

@@ -773,7 +773,14 @@ export function cellContent(
             // below (`position: 'absolute'`) escapes to the initial containing block — invisible
             // to the eye but not clipped by `positions-table-frame`'s `overflow-x: auto`. Same
             // fix idiom as `:181` above.
-            sx={{ display: 'inline-flex', position: 'relative' }}
+            // Under a coarse pointer the trigger is 44px tall with the sparkline centred (72x24 at
+            // 390 before; spec 2026-10-21/02, part (b)). A focusable span gets no theme floor.
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              position: 'relative',
+              ...coarseFloor,
+            }}
           >
             <PlSparkline samples={ctx.trend} offline={streamOffline} />
             <Box component="span" id={`trend-help-description-${p.id}`} sx={visuallyHidden}>

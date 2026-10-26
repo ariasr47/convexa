@@ -6,6 +6,7 @@
  * Freshness is worked out HERE, in the reader's browser, from the note's own dates: the site isn't
  * rebuilt after it deploys, so a build-time answer would say "current" forever.
  */
+import { coarseFloor } from '@/shared/ui/touch';
 import ScheduleOutlined from '@mui/icons-material/ScheduleOutlined';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
@@ -351,6 +352,7 @@ function Rail({ note, active }: { note: ResearchNote; active: string }) {
                   alignItems: 'center',
                   gap: 1,
                   minHeight: 36,
+                  ...coarseFloor,
                   px: 1.25,
                   borderRadius: '8px',
                   textDecoration: 'none',
@@ -456,6 +458,10 @@ function PartChips({ note, active }: { note: ResearchNote; active: string }) {
         mx: -2,
         px: 2,
         py: 1.25,
+        // The padding trade: under a coarse pointer each pill's link is 44px tall around its 32px
+        // fill, so the bar's padding drops from 10px to 4px and the bar keeps its height (spec
+        // 2026-10-21/02, part (b)).
+        '@media (pointer: coarse)': { py: 0.5 },
         gap: 1,
         bgcolor: alpha(t.palette.background.default, 0.94),
         borderTop: 1,
@@ -466,26 +472,42 @@ function PartChips({ note, active }: { note: ResearchNote; active: string }) {
       <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', scrollbarWidth: 'none' }}>
         {note.parts.map((p, i) =>
           p.sections[0] ? (
+            // The link is the target: transparent, 44px under a coarse pointer; the span inside
+            // draws the 32px pill. The row scrolls sideways (overflowX), which would clip a
+            // pseudo-element hit area, hence the padding trade above.
             <Box
               key={i}
               component="a"
               href={`#${p.sections[0].id}`}
-              sx={(t) => ({
-                flexShrink: 0,
-                px: 1.5,
-                minHeight: 32,
-                display: 'inline-flex',
-                alignItems: 'center',
-                borderRadius: '999px',
-                textDecoration: 'none',
-                fontSize: 13,
-                whiteSpace: 'nowrap',
-                ...(i === activePart
-                  ? { bgcolor: 'text.primary', color: 'background.default', fontWeight: 600 }
-                  : { bgcolor: alpha(t.palette.text.secondary, 0.16), color: 'text.secondary' }),
-              })}
+              sx={[
+                {
+                  flexShrink: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  borderRadius: '999px',
+                  textDecoration: 'none',
+                  minHeight: 32,
+                },
+                coarseFloor,
+              ]}
             >
-              {chipLabel(p.title)}
+              <Box
+                component="span"
+                sx={(t) => ({
+                  px: 1.5,
+                  minHeight: 32,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  borderRadius: '999px',
+                  fontSize: 13,
+                  whiteSpace: 'nowrap',
+                  ...(i === activePart
+                    ? { bgcolor: 'text.primary', color: 'background.default', fontWeight: 600 }
+                    : { bgcolor: alpha(t.palette.text.secondary, 0.16), color: 'text.secondary' }),
+                })}
+              >
+                {chipLabel(p.title)}
+              </Box>
             </Box>
           ) : null,
         )}

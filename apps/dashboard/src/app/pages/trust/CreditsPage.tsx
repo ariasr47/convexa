@@ -19,6 +19,7 @@
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord } from '@/shared/dataState/vocabulary';
 import { isDemoBuild, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
+import { coarseFloor, standaloneLinkSx } from '@/shared/ui/touch';
 import type { PublicDataState, PublicSource } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -274,7 +275,7 @@ function SourceCard({ s, state, demo }: { s: Source; state: CardState; demo: boo
         )}
         {!demo && s.operator && state.tag === 'notSetUp' && (
           <Box component="details" sx={{ fontSize: 13, color: 'text.secondary' }}>
-            <Box component="summary" sx={{ cursor: 'pointer', minHeight: 24 }}>
+            <Box component="summary" sx={{ cursor: 'pointer', minHeight: 24, ...coarseFloor }}>
               For the site’s operator
             </Box>
             {s.operator}
@@ -316,15 +317,16 @@ function SourceCard({ s, state, demo }: { s: Source; state: CardState; demo: boo
           borderColor: 'divider',
           fontSize: 13.5,
           fontWeight: 600,
-          '& a': { display: 'inline-flex', alignItems: 'center', minHeight: 24 },
         }}
       >
+        {/* A row of standalone links: 24px at a fine pointer, 44px under a coarse one (spec
+            2026-10-21/02, part (b); each measured 24px tall at 390 before). */}
         <Link
           href={s.link[1]}
           target="_blank"
           rel="noopener noreferrer"
           underline="always"
-          sx={linkSx}
+          sx={standaloneLinkSx}
         >
           {s.link[0]} ↗
         </Link>
@@ -335,13 +337,13 @@ function SourceCard({ s, state, demo }: { s: Source; state: CardState; demo: boo
             target="_blank"
             rel="noopener noreferrer"
             underline="always"
-            sx={linkSx}
+            sx={standaloneLinkSx}
           >
             {label} ↗
           </Link>
         ))}
         {!demo && s.id === 'massive' && (
-          <Link href={`${STAGING_DEMO_URL}/ticker/SPY`} underline="always" sx={linkSx}>
+          <Link href={`${STAGING_DEMO_URL}/ticker/SPY`} underline="always" sx={standaloneLinkSx}>
             See them on the demo →
           </Link>
         )}
@@ -349,7 +351,7 @@ function SourceCard({ s, state, demo }: { s: Source; state: CardState; demo: boo
           <Link
             href="https://convexa.pages.dev/ticker/SPY/technical-analysis"
             underline="always"
-            sx={linkSx}
+            sx={standaloneLinkSx}
           >
             TradingView’s chart on the live site ↗
           </Link>
@@ -454,7 +456,7 @@ export function CreditsPage() {
             variant="outlined"
             color="inherit"
             onClick={live.retry}
-            sx={{ minHeight: 32 }}
+            sx={{ minHeight: 32, ...coarseFloor }}
           >
             Try again
           </Button>
@@ -469,7 +471,7 @@ export function CreditsPage() {
             <Link
               href="https://convexa.pages.dev/credits"
               underline="always"
-              sx={{ ...linkSx, fontWeight: 600 }}
+              sx={{ ...standaloneLinkSx, fontWeight: 600 }}
             >
               The live site’s sources and credits ↗
             </Link>
@@ -495,7 +497,7 @@ export function CreditsPage() {
         rows={TYPEFACES.map(([name, copyright, href]) => [
           name,
           copyright,
-          <Link key={href} href={href} underline="always" sx={linkSx}>
+          <Link key={href} href={href} underline="always" sx={standaloneLinkSx}>
             SIL OFL 1.1
           </Link>,
         ])}

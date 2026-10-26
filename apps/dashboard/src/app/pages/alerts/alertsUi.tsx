@@ -16,6 +16,7 @@ import type { AlertKind, AlertRule } from '@/features/alerts/types';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor } from '@/shared/theme/tokens';
+import { coarseFloor } from '@/shared/ui/touch';
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
 import EventOutlined from '@mui/icons-material/EventOutlined';
 import GpsFixedOutlined from '@mui/icons-material/GpsFixedOutlined';
@@ -274,7 +275,13 @@ export function SecStrip() {
           component="details"
           sx={{
             fontSize: 12,
-            '& summary': { cursor: 'pointer', color: 'info.main', fontWeight: 600, minHeight: 24 },
+            '& summary': {
+              cursor: 'pointer',
+              color: 'info.main',
+              fontWeight: 600,
+              minHeight: 24,
+              ...coarseFloor,
+            },
           }}
         >
           <summary>For the operator</summary>

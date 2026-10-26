@@ -8,6 +8,7 @@
  */
 import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
+import { coarseFloor } from '@/shared/ui/touch';
 import { dataMode, type PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
@@ -102,7 +103,7 @@ function PeersFrame({ d }: { d: PublicTicker }) {
       'SEC filings aren’t set up on this site yet.',
       'Peer figures come from the SEC’s XBRL frames, through EDGAR. EDGAR asks every program that reads it to identify itself with a contact address; this site hasn’t been given one.',
       <Box component="details" sx={{ fontSize: 12, color: 'text.secondary' }}>
-        <Box component="summary" sx={{ cursor: 'pointer', minHeight: 24 }}>
+        <Box component="summary" sx={{ cursor: 'pointer', minHeight: 24, ...coarseFloor }}>
           For the site’s operator
         </Box>
         <Box component="span" sx={{ ...MONO, fontSize: 11 }}>

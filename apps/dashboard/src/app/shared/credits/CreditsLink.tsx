@@ -16,7 +16,15 @@ export function CreditsLink({ text, children }: { text: string; children: ReactN
   const common = {
     underline: 'none' as const,
     title: 'About this source: Data sources and credits',
-    sx: { maxWidth: '100%', color: 'inherit', display: 'inline-flex', borderRadius: '12px' },
+    // `alignItems: 'center'`: under a coarse pointer the theme stretches the link to 44px, and the
+    // chip inside stretched with it to a 44px pill (spec 2026-10-21/02, part (b) and criterion 7).
+    sx: {
+      maxWidth: '100%',
+      color: 'inherit',
+      display: 'inline-flex',
+      alignItems: 'center',
+      borderRadius: '12px',
+    },
     'data-credits': anchor,
   };
   return inRouter ? (

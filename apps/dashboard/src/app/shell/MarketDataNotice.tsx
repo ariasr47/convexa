@@ -23,8 +23,8 @@ import {
 } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
-import { extrasFor } from '@/shared/theme/tokens';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
+import { standaloneLinkSx } from '@/shared/ui/touch';
 import PauseCircleOutlineOutlined from '@mui/icons-material/PauseCircleOutlineOutlined';
 import SensorsOffOutlined from '@mui/icons-material/SensorsOffOutlined';
 import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
@@ -34,13 +34,9 @@ import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
-const linkSx = {
-  color: (theme: Parameters<typeof extrasFor>[0]) => extrasFor(theme).textInfo,
-  minHeight: 24,
-  display: 'inline-flex',
-  alignItems: 'center',
-  whiteSpace: 'nowrap',
-} as const;
+// A standalone link: 24px at a fine pointer, 44px under a coarse one, its text centred in the box
+// (spec 2026-10-21/02, part (b)). It measured 58x24 on every production route at 390 before.
+const linkSx = { ...standaloneLinkSx, whiteSpace: 'nowrap' } as const;
 
 function WhatsLive() {
   return (
@@ -89,8 +85,11 @@ export function MarketDataNotice() {
       aria-label={unknown ? 'Market data status unknown' : 'What is live on this site'}
       data-testid="market-data-notice"
       data-mode={unknown ? 'unknown' : mode}
+      // Under a coarse pointer the 44px links fill the row, so the bar drops its 8px vertical
+      // padding there: 45px with its rule, not 61 (spec 2026-10-21/02, part (b)).
       sx={{
         py: 1,
+        '@media (pointer: coarse)': { py: 0 },
         bgcolor: 'background.paper',
         borderBottom: 1,
         borderColor: 'divider',

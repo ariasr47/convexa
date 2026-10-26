@@ -8,6 +8,7 @@ import type { FrameHeight, FrameReserve } from '@/shared/charts/frame/ChartFrame
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor } from '@/shared/theme/tokens';
+import { coarseFloor } from '@/shared/ui/touch';
 import { FrameDemoTagProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import { dataMode, DEMO_NOTE_PRICED, type PublicMarkets } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -311,10 +312,13 @@ function JumpRail({ liquidity, comingUp }: { liquidity: boolean; comingUp: boole
           key={j.id}
           component="a"
           href={`#${j.id}`}
+          // 44px under a coarse pointer (32 before); the links draw no fill, so nothing visible
+          // changes but the row's height (spec 2026-10-21/02, part (b)).
           sx={{
             display: 'inline-flex',
             alignItems: 'center',
             minHeight: 32,
+            ...coarseFloor,
             px: 1.25,
             borderRadius: '999px',
             fontSize: 13,
