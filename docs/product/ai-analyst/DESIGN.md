@@ -710,3 +710,32 @@ says "signed in" is not "owner", so this builds the owner role and the gate. The
      and forged cookies get `auth_required`, a non-owner gets `owner_only`, and the owner gets 200
      with the levels.
    - `owner_only_routes_fail_closed_without_owner_emails` covers the unset case.
+
+### 2026-10-26: the owner match uses the account store's key (owner-gate review, amends item 1)
+
+Item 1 said each `OWNER_EMAILS` entry is "compared case-insensitively" with the stored email. The
+shipped code did that with Unicode lowercasing (`to_lowercase`), but the account store keys
+addresses with ASCII lowercasing (`email_lower` = trim, then `to_ascii_lowercase`, in
+`services/auth/store.rs` and `db/pg_auth.rs`; unique in Postgres). The two disagree on some
+characters. KELVIN SIGN (U+212A) lowercases to ASCII `k`, and a non-ASCII capital such as `É`
+lowercases to `é`, yet the store treats both as new addresses that anyone can register. **So a
+second account, with the owner's address spelled with a Kelvin sign for its `k`, passed the gate as
+the owner** and read the levels (two reviewers reproduced it: 200 with the flip and walls on
+`GET /api/scan`, `/api/scan/{symbol}/history` and `/api/ticker/{ticker}`). This was not the
+unregistered-address case in item 5; it shadowed an owner who had already registered.
+
+- **The fix:** the gate now uses the store's own key (`normalize_owner_email` in
+  `apps/api/src/config.rs` is trim, then `to_ascii_lowercase`). An entry matches exactly the one
+  account the store keys to it. Trim and ASCII case still do not matter; any other difference is a
+  different account.
+- **Exposure:** it needed open sign-ups (`AUTH_REGISTRATION_OPEN`, or the Google sign-up path, which
+  needs the same flag) and an owner address with a `k` or a non-ASCII letter. Production keeps
+  sign-ups closed, so production was not exposed. Local runs, and `--auth-signup` conformance runs,
+  had sign-ups open.
+- **Proof:** the `owner_emails` unit test in `config.rs` now requires the Kelvin-sign and
+  non-ASCII-capital spellings to be refused. `owner_only_routes_answer_the_owner_alone` signs up a
+  Kelvin-sign lookalike after the owner and requires 403 `owner_only` from it on every owner-only
+  route. Both tests fail (exit 101) with the old `to_lowercase`.
+- **Not done:** sign-up still accepts non-ASCII addresses. Refusing them at sign-up and at Google
+  account creation would be defence in depth; it changes who can register, so it is left for an
+  owner decision.
