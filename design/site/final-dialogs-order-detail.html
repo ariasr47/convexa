@@ -137,6 +137,9 @@
   .cf-tw thead th { font-weight: 600; color: var(--steel); background: var(--ink-2); position: sticky; top: 0; }
   .cf-tw td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
   .cf-tw td.t { font-family: 'IBM Plex Sans', sans-serif; }
+  /* A link cell in a twin (the insider trades' Form 4, ChartFrame TableTwinLink with standaloneLinkSx): 24px, 44 under a
+     coarse pointer, so a row's link is a full target on a phone (spec 02 step 5a: 50x44 coarse, 50x24 fine). */
+  .cf-tw td a { display: inline-flex; align-items: center; min-height: 24px; } @media (pointer: coarse) { .cf-tw td a { min-height: 44px; } }
   .cf-note { font-size: 12px; color: var(--steel); line-height: 1.45; margin: 0; text-wrap: pretty; }
   .cf-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--steel); }
   .cf-legend .k { display: inline-flex; align-items: center; gap: 6px; }
@@ -327,7 +330,7 @@
   .nv-body h2 { margin: 12px 0 0; font-size: 26px; }
   .nv-eyebrow { font: 600 12px 'IBM Plex Mono', monospace; color: var(--steel); }
   .nv-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 80px; }
-  .pillN { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: rgba(138,155,180,0.16); font: 500 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .pillN { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: color-mix(in srgb, var(--steel) 16%, transparent); font: 500 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
   .status { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
   .status.ok { border: 1px solid var(--line-2); } .status.watch { background: rgba(138,155,180,0.20); } .status.broken { background: var(--phosphor); color: var(--ink); }
   .ri-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 16px; }
@@ -511,6 +514,7 @@
   .ac-pills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .ac-wall h1 { margin: 0; font-size: 28px; letter-spacing: -0.01em; }
   .ac-wall p { margin: 0; line-height: 1.6; }
+  .ac-wbtns { display: flex; flex-wrap: wrap; gap: 10px; } .ac-wall .ac-wbtns .btn { min-height: 44px; }
   .ac-acct { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
   .ac-av { width: 40px; height: 40px; border-radius: 50%; background: var(--raised-2); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; flex: 0 0 auto; }
   .ac-fam { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
@@ -534,10 +538,11 @@
   .ac-sheet .v4dlg .df .btn { flex: 1 1 100%; min-height: 44px; }
   .ac-fill { display: flex; flex-wrap: wrap; gap: 6px; }
   /* Trade entry as shipped (TradeEntryDialogView.tsx; owner, 2026-10-25, after fidelity round 2): caps field labels
-     (FieldLabel: 11/700, 0.07em; steel here, AA on the panel), 36px fields on the page ink, full-width toggle groups,
-     the leg on one row of four (two by two under 600px, LegFields.tsx), 44px controls under 600px. The toggle group's
-     outline is an inset shadow, not a border, so each button box is the full row height, as the app's ToggleButtons are
-     (44 under 600px, not 42 inside a 1px border). */
+     (FieldLabel: 11/700, 0.07em, text.secondary since spec 02 step 4, 673dd755: steel, 6.19:1 dark and 5.42:1 light on
+     the dialog), 36px fields on the page ink, full-width toggle groups, the leg on one row of four (two by two under
+     600px, LegFields.tsx), 44px controls under 600px. The toggle group's outline is an inset shadow, not a border, so
+     each button box is the full row height, as the app's ToggleButtons are (44 under 600px, not 42 inside a 1px border).
+     A selected toggle takes MUI's neutral selected tint: phosphor 16% in dark, 8% in light (the app's action.selected). */
   .v4dlg.te .dh h2 { line-height: 1.4; text-wrap: wrap; }
   .te-l { display: block; margin: 0 0 4px; font: 700 11px/1.65 'IBM Plex Sans', sans-serif; letter-spacing: 0.07em; text-transform: uppercase; color: var(--steel); }
   .te-in { box-sizing: border-box; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ink); font: 400 13px 'IBM Plex Sans', sans-serif; color: var(--phosphor); }
@@ -548,6 +553,15 @@
   .te-tg > button { min-height: 38.8px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--steel); font: 600 13px/1.75 'IBM Plex Sans', sans-serif; }
   .te-tg > button:first-child { border-left: 0; }
   .te-tg > button[aria-pressed="true"] { background: color-mix(in srgb, var(--phosphor) 16%, transparent); color: var(--phosphor); }
+  [data-scheme="light"] .te-tg > button[aria-pressed="true"] { background: color-mix(in srgb, var(--phosphor) 8%, transparent); }
+  /* Call and Put keep their fills, with ink labels (owner S2-Q1, 2026-10-25; spec 02 (c) "no"; LegFields.tsx
+     rightSelectedSx, 31b0011a): a selected Call is success.main (--up), a selected Put error.main (--down). The label is
+     the app's ink #0B0F17 on every fill except light Put, which keeps white: 9.13:1 dark Call, 6.34:1 dark Put, 5.56:1
+     light Call, 4.74:1 light Put in white. Hover keeps the fill (no success.dark / error.dark). This closes the 2026-10-13
+     row's white-label item; the board drew a neutral phosphor tint here from fidelity ACC-12 (R3-B), which S2-Q1 reverses. */
+  .te-tg.te-right > button[aria-pressed="true"][data-right="call"] { background: var(--up); color: #0B0F17; }
+  .te-tg.te-right > button[aria-pressed="true"][data-right="put"] { background: var(--down); color: #0B0F17; }
+  [data-scheme="light"] .te-tg.te-right > button[aria-pressed="true"][data-right="put"] { color: #FFFFFF; }
   .te-g4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: start; }
   .te-g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .te-g2.wide { gap: 16px; }
@@ -576,7 +590,7 @@
       <a href="/settings" aria-label="Demo account settings" style="display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--steel); font-size: 13px;"><span class="only-wide">Demo account</span><span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--raised-2); color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', sans-serif;">D</span></a>
       <button type="button" class="v4n-icon menu" aria-label="Open navigation menu" aria-expanded="false"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
     </div>
-  </div></header><div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 16px;"><span class="skel" style="height: 44px; width: 38%;"></span><span class="skel" style="height: 300px; width: 100%;"></span><span class="skel" style="height: 120px; width: 100%;"></span><span class="skel" style="height: 220px; width: 100%;"></span></div></div><div class="v4-over"><div class="v4dlg" role="dialog" aria-modal="true" aria-label="Simulated order · SPY 690 C · Nov 20"><div class="dh"><h2>Simulated order · SPY 690 C · Nov 20</h2><span class="stag k-solid">SIMULATED</span><button class="btn ghost sm" type="button" aria-label="Close"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div class="db"><div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;"><span class="stag k-solid"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Triggered</span><span class="stag k-dashed"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"></rect></svg>Sample tape</span><span class="dline">Waits to fill when the sample mark reaches your limit.</span></div><div class="hd-fig" style="grid-template-columns: repeat(2, minmax(0, 1fr));"><div><span class="caps">Source</span><span class="v" style="font-size: 14px;">Manual</span></div><div><span class="caps">Entry</span><span class="v" style="font-size: 14px;">Limit 4.25</span></div><div><span class="caps">Sample mark</span><span class="v" style="font-size: 14px;">4.47 · 2:30 PM</span></div><div><span class="caps">Good til</span><span class="v" style="font-size: 14px;">Nov 20, 4:00 PM</span></div></div><span class="caps">Lifecycle</span><div class="drows"><div style="grid-template-columns: 110px minmax(0, 1fr);"><span class="mono steel">Oct 7 2:30 PM</span><span>Placed · 1 × SPY 690 C Nov 20</span></div><div style="grid-template-columns: 110px minmax(0, 1fr);"><span class="mono steel">Oct 7 2:30 PM</span><span>Triggered · waiting to fill at limit</span></div><div style="grid-template-columns: 110px minmax(0, 1fr);"><span class="mono steel">—</span><span class="steel">Not filled</span></div></div></div><div class="df"><span class="dline" style="flex: 1 1 240px;">Stored in this browser · never sent to a broker</span><button class="btn secondary" type="button">Cancel order</button><button class="btn ghost" type="button">Close</button></div></div></div></div>
+  </div></header><div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 16px;"><span class="skel" style="height: 44px; width: 38%;"></span><span class="skel" style="height: 300px; width: 100%;"></span><span class="skel" style="height: 120px; width: 100%;"></span><span class="skel" style="height: 220px; width: 100%;"></span></div></div><div class="v4-over"><div class="v4dlg" role="dialog" aria-modal="true" aria-label="Simulated order · SPY 690 C · Nov 20"><div class="dh"><h2>Simulated order · SPY 690 C · Nov 20</h2><span class="stag k-solid" style="letter-spacing: 0.04em;">SIMULATED</span><button class="btn ghost sm" type="button" aria-label="Close"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div class="db"><div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;"><span class="stag k-solid"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Triggered</span><span class="stag k-dashed"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"></rect></svg>Sample tape</span><span class="dline">Waits to fill when the sample mark reaches your limit.</span></div><div class="hd-fig" style="grid-template-columns: repeat(2, minmax(0, 1fr));"><div><span class="caps">Source</span><span class="v" style="font-size: 14px;">Manual</span></div><div><span class="caps">Entry</span><span class="v" style="font-size: 14px;">Limit 4.25</span></div><div><span class="caps">Sample mark</span><span class="v" style="font-size: 14px;">4.47 · 2:30 PM</span></div><div><span class="caps">Good til</span><span class="v" style="font-size: 14px;">Nov 20, 4:00 PM</span></div></div><span class="caps">Lifecycle</span><div class="drows"><div style="grid-template-columns: 110px minmax(0, 1fr);"><span class="mono steel">Oct 7 2:30 PM</span><span>Placed · 1 × SPY 690 C Nov 20</span></div><div style="grid-template-columns: 110px minmax(0, 1fr);"><span class="mono steel">Oct 7 2:30 PM</span><span>Triggered · waiting to fill at limit</span></div><div style="grid-template-columns: 110px minmax(0, 1fr);"><span class="mono steel">—</span><span class="steel">Not filled</span></div></div></div><div class="df"><span class="dline" style="flex: 1 1 240px;">Stored in this browser · never sent to a broker</span><button class="btn secondary" type="button">Cancel order</button><button class="btn ghost" type="button">Close</button></div></div></div></div>
 <div class="site-bar" role="toolbar" aria-label="Design site controls"><a href="index.html">← All screens</a><span class="lbl">Overlays · Order detail · staging</span><button id="scheme-btn" type="button" onclick="toggleScheme()">Light scheme</button></div>
 <script>
 (function () {

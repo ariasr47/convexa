@@ -5,7 +5,7 @@
 // row (10-Q for the quarter to Jul 26, 2026). Staging figures are sample data on the Oct 7 scenario.
 // Blocked tools draw their design target with illustrative values, dashed and hatched.
 import { icon } from '../../lib.mjs';
-import { barList, dataTable, fmt, plot, rangeBar, smallMultiples, sparkline, ticks } from '../../chart-kit.mjs';
+import { barList, dataTable, dataTables, fmt, plot, rangeBar, smallMultiples, sparkline, ticks } from '../../chart-kit.mjs';
 import { rng, wilson } from '../../data/charts.mjs';
 import { frame } from './planned-kit.mjs';
 
@@ -167,7 +167,9 @@ export function clustersChart(e, { compact = false } = {}) {
   const mt = []; for (let m = 0; m < 13; m++) { const d = Date.UTC(new Date(t0).getUTCFullYear(), new Date(t0).getUTCMonth() + m + 1, 1); if (d < t1) mt.push({ v: X(d), label: MON[new Date(d).getUTCMonth()], minor: m % 2 === 1 }); }
   const labelW = compact ? 120 : 170;
   const regions = [...sw, ...bw].map((w) => ({ x0: X(w.t0) - 1.5, x1: X(w.t1) + 1.5 }));
-  const body = plot({ height: n * 30 + 64, pt: 34, pb: 26, pl: labelW, pr: 24, prn: 12, ends: false, x: { min: 0, max: X(t1), ticks: mt }, y: { min: n + 0.5, max: 0.5, ticks: [] }, regions, dots: tx.map(([i, t, k]) => ({ x: X(t), y: i + 1, role: k === 'buy' ? 'emph' : 'ctx', open: k === 'sale', size: k === 'buy' ? 12 : 10 })), events: [...bw.map((w) => ({ x: X(w.t0), label: `Buying cluster · ${w.who} insiders`, keep: true })), ...sw.slice(-2).map((w) => ({ x: X(w.t0), label: `${w.who} insiders sold · plans`, minor: true }))], aria: `${sales.length} sales and ${buys.length} purchases by ${n} insiders; ${bw.length} buying clusters` });
+  // S2-Q3 (owner, 2026-10-25; 907cf98e): the plot is one image with its summary label and no tab stop; the dots are
+  // marks, not links. Every trade and its Form 4 sit in the twin's second table (S2-Q2).
+  const body = plot({ keyboard: false, height: n * 30 + 64, pt: 34, pb: 26, pl: labelW, pr: 24, prn: 12, ends: false, x: { min: 0, max: X(t1), ticks: mt }, y: { min: n + 0.5, max: 0.5, ticks: [] }, regions, dots: tx.map(([i, t, k]) => ({ x: X(t), y: i + 1, role: k === 'buy' ? 'emph' : 'ctx', open: k === 'sale', size: k === 'buy' ? 12 : 10 })), events: [...bw.map((w) => ({ x: X(w.t0), label: `Buying cluster · ${w.who} insiders`, keep: true })), ...sw.slice(-2).map((w) => ({ x: X(w.t0), label: `${w.who} insiders sold · plans`, minor: true }))], aria: `${sales.length} sales and ${buys.length} purchases by ${n} insiders; ${bw.length} buying clusters` });
   const names = ROLES.map((r, i) => `<span style="position: absolute; right: calc(100% + 12px); top: ${(((i + 0.5) / n) * 100).toFixed(2)}%; transform: translateY(-50%); width: ${labelW - 16}px; text-align: right; font-size: 12px; line-height: 1.2; color: var(--steel);">${r}</span>`).join('');
   const planned = sales.filter((s) => s[3]).length;
   const claim = bw.length
@@ -181,8 +183,29 @@ export function clustersChart(e, { compact = false } = {}) {
     asof: e.demo ? '' : 'Filed by Oct 13 · insiders file within 2 business days', tag: ['computed', 'Computed from Form 4'],
     href: 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001045810&type=4',
     note: 'A cluster counts open-market purchases only. Sales under a 10b5-1 plan were scheduled months ahead and never count; option exercises and gifts are left out. Roles, not names: the names stay in the filings.',
-    table: dataTable({ caption: 'Windows with 3 or more insiders trading the same way', cols: ['From', 'To', 'Kind', 'Insiders', 'Trades', 'Under a plan'], rows: [...bw.map((w) => [dl(w.t0), dl(w.t1), { t: 'Purchases' }, w.who, w.n, { t: w.plan ? 'all' : 'none' }]), ...sw.map((w) => [dl(w.t0), dl(w.t1), { t: 'Sales' }, w.who, w.n, { t: w.plan ? 'all' : 'some' }])] }),
+    table: dataTables([
+      { caption: 'Windows with 3 or more insiders trading the same way', cols: ['From', 'To', 'Kind', 'Insiders', 'Trades', 'Under a plan'], rows: [...bw.map((w) => [dl(w.t0), dl(w.t1), { t: 'Purchases' }, w.who, w.n, { t: w.plan ? 'all' : 'none' }]), ...sw.map((w) => [dl(w.t0), dl(w.t1), { t: 'Sales' }, w.who, w.n, { t: w.plan ? 'all' : 'some' }])] },
+      tradesTwin(e, tx),
+    ]),
   });
+}
+/** S2-Q2 (907cf98e): every trade, one row each, under the windows. Production's last column links each row to its Form 4
+ *  on sec.gov, named by the trade's sentence; the demo has no Filing column (its trades are invented, and a link would
+ *  open the company's real EDGAR page). Shares and prices are plausible figures drawn for the design. */
+function tradesTwin(e, tx) {
+  const dy = (t) => { const d = new Date(t); return `${MON[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`; };
+  const SH = [75000, 20000, 15000, 10000, 4000, 5000, 3000];
+  const t0 = e.demo ? U(2026, 4, 8) : U(2025, 10, 14), t1 = e.demo ? U(2026, 10, 7) : U(2026, 10, 14);
+  const p0 = e.demo ? 186.4 : 181.2, p1 = e.demo ? 199.17 : 226.32;
+  const price = (t) => p0 + ((p1 - p0) * (t - t0)) / (t1 - t0);
+  const rows = [...tx].sort((a, b) => a[1] - b[1]).map(([i, t, k, plan]) => {
+    const shares = (k === 'buy' ? 2500 : SH[i]).toLocaleString('en-US');
+    const filed = dl(t + 2 * DAY);
+    const row = [dy(t), { t: ROLES[i] }, { t: k === 'buy' ? 'Purchase' : 'Sale' }, shares, `$${price(t).toFixed(2)}`, { t: plan ? 'yes' : 'no' }, filed];
+    if (!e.demo) row.push({ t: `<a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001045810&amp;type=4" aria-label="Form 4: ${ROLES[i]} ${k === 'buy' ? 'bought' : 'sold'} ${shares} shares on ${dy(t)}${plan ? ' under a 10b5-1 plan' : ''}; filed ${filed}">Form 4 ↗</a>` });
+    return row;
+  });
+  return { caption: 'NVDA Form 4 trades by trade date', cols: ['Trade date', 'Insider', 'Kind', 'Shares', 'Price', 'Under a plan', 'Filed', ...(e.demo ? [] : ['Filing'])], rows };
 }
 
 // =================================================================================================

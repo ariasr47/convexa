@@ -20,7 +20,7 @@ export const ROWS = [
       route: '/scanner',
       job: 'One dense read of the tracked universe, ranked by dealer structure, so a trader knows which ticker deserves the deep-dive right now.',
       env: {
-        production: 'The private-testing wall for visitors: “Sign in to open the scanner”, sign-ups closed, a free path to a ticker desk and a link to the demo scan (owner ruling 2026-10-14). Signed in (the owner), Not live: every column reads the options chain, so the page explains what it would show, why it is off, and links to the same screen on the demo. Below, links to what is live without the feed.',
+        production: 'The private-testing wall for visitors: “Sign in to open the scanner”, sign-ups closed, a free path to a ticker desk and a 44px button to the demo scan, second in the row (owner ruling 2026-10-14; spec 02 (b)). Signed in (the owner), Not live: every column reads the options chain, so the page explains what it would show, why it is off, and links to the same screen on the demo. Below, links to what is live without the feed.',
         staging: 'The sample scan on the Oct 7, 2026 scenario, signed in to the demo account: the six demo names, scores, tiers, flip distance and walls, in a dashed, hatched frame. Price change stays green/red text with ▲/▼ (P-5 rejected). No price flash.',
       },
       widgets: [
@@ -32,7 +32,7 @@ export const ROWS = [
         { name: 'Live on this site (links)', source: '/api/public-data/markets, /filings, /tickers/{t}', production: [['current', 'Updated'], ['delayed', 'Delayed by source'], ['off', 'Off (FINRA)']], staging: '—' },
       ],
       states: [
-        { tag: 'locked', when: 'Production visitor: the wall, the one way in, the demo link.' },
+        { tag: 'locked', when: 'Production visitor: the wall, the one way in, the demo button.' },
         { tag: 'notLive', when: 'Production, signed in: the explain panel, the table’s outline, “See it on the demo →”.' },
         { tag: 'demo', when: 'Staging: the sample scan, chips dashed and “shaped like”.' },
         { tag: 'loading', when: 'Rows held at final height while the sweep answers.' },
@@ -59,6 +59,7 @@ export const ROWS = [
         { status: 'shipped', what: 'Demo scan scores per name: NVDA 81, SPY 74, QQQ 70, AAPL 63, MSFT 52, TSLA 47 (catalog/shared.ts SCORE_OFFSET, 2026-10-14).' },
         { status: 'shipped', what: 'Demo scan change: the scenario’s own close-to-close move (transport.ts closeToClosePct, 2026-10-15): SPY −0.02% (690.75 → 690.62); every change has ▲/▼ before the signed figure.' },
         { status: 'shipped', what: 'The production wall (RequireAuth, kept by owner ruling 2026-10-14) with “See it on the demo →” to staging /scanner (RequireAuth demoPath, 2026-10-14).' },
+        { status: 'shipped', what: 'Spec 02 (b), 2026-10-25 (96bf67c8), on the boards 2026-10-26: “See it on the demo →” is a neutral outlined 44px button, second in the wall’s row after Sign in (after Try again when that shows), and the closing sentence keeps its words without the link. Every wall button is 44px at every width; Open a ticker desk opens /ticker (RequireAuth.tsx).' },
         { status: 'shipped', what: 'Wall copy: the Private testing tag, sign-ups closed, “Open a ticker desk” (RequireAuth, 2026-10-15).' },
         { status: 'shipped', what: 'Signed in on production (not_live): ScannerNotLive, with would show / off because, “See it on the demo →” and the table’s outline; it never calls /api/scan* (app.tsx ScannerRoute). A paused feed keeps the scanner and its banner.' },
         { status: 'shipped', what: 'The “Live on this site” link cards (Treasury, CFTC, FINRA, EDGAR, each with its own state word) and the On this page legend counting them.' },
@@ -88,7 +89,7 @@ export const ROWS = [
       route: '/positions',
       job: 'The trader’s simulated book: what is open, what it is worth at its mark, what is waiting to fill, and how past decisions closed. Paper only.',
       env: {
-        production: 'The private-testing wall for visitors: “Sign in to open your positions”, sign-ups closed, a free path to a ticker desk and a link to the demo book. Signed in (the owner), records and user-entered prices work; option marks say Not live.',
+        production: 'The private-testing wall for visitors: “Sign in to open your positions”, sign-ups closed, a free path to a ticker desk and a 44px button to the demo book, second in the row (spec 02 (b)). Signed in (the owner), records and user-entered prices work; option marks say Not live.',
         staging: 'The demo account’s seeded book: one open SPY Oct 16 690 C (long 1 at 3.00, trigger fill), one waiting SPY Nov 20 690 C limit 4.25, one closed QQQ Oct 9 630 C (+$48). Marks come from the sample chain and say so: 2.47 at 2:30 PM, −$53.',
       },
       widgets: [
@@ -101,7 +102,7 @@ export const ROWS = [
         { name: 'Broker tab', source: '/api/broker/book (read-only Webull) · demo: one authored holding', production: ['notConfigured', 'Not connected'], staging: 'sample' },
       ],
       states: [
-        { tag: 'locked', when: 'Production visitor: the wall, the one way in, the demo link.' },
+        { tag: 'locked', when: 'Production visitor: the wall, the one way in, the demo button.' },
         { tag: ['notLive', 'Mark not live'], when: 'Production, signed in: records persist; option marks need the feed; P&L from user-entered prices only.' },
         { tag: 'sample', when: 'Staging: each mark names the sample chain and its scenario time.' },
         { tag: 'empty', when: '“No simulated positions yet. Open one to start your book.”' },
@@ -122,6 +123,7 @@ export const ROWS = [
         { status: 'shipped', what: 'The book: capital at risk, Net P&L, table and cards, saved views, orders panel, track record, broker tab; the wall (RequireAuth) on production.' },
         { status: 'shipped', what: 'Demo seed (workspace.ts:203-505) and demo order frames, signed in to the demo account.' },
         { status: 'shipped', what: 'The wall’s “See it on the demo →” to staging /positions (RequireAuth demoPath, 2026-10-14).' },
+        { status: 'shipped', what: 'Spec 02 (b), 2026-10-25 (96bf67c8), on the boards 2026-10-26: the wall’s “See it on the demo →” is a neutral outlined 44px button, second in the row, and the closing sentence loses the link (RequireAuth.tsx). Spec 02 (c) (673dd755): the Simulated orders panel is an h2 with the trade dialog’s neutral SIMULATED tag beside its title (criterion 11; it drew MUI’s grey outline).' },
         { status: 'shipped', what: 'Wall copy: the Private testing tag, sign-ups closed, “Open a ticker desk” (RequireAuth, 2026-10-15).' },
         { status: 'shipped', what: 'Marks name their source (positions/markFeed.tsx, 2026-10-15): “Sample mark · <scenario time>” on staging rows and cards; “Mark not live” beside a dash on a signed-in production book; the page lead says which.' },
         { status: 'shipped', what: 'The P/L sparkline on the chart roles: zero line, each run coloured by its own sign and split at the crossing, a text twin (PlSparkline.tsx, 2026-10-15).' },
@@ -314,6 +316,7 @@ export const ROWS = [
         { status: 'shipped', what: 'Sign in says “New sign-ups are closed while Convexa is in private testing.” under its title, as the board draws it (D-10, 2026-10-15). The rest of D-10 followed on 2026-10-16 (next entry).' },
         { status: 'shipped', what: 'D-10, 2026-10-16: the disabled “Continue with Google” is the board’s neutral secondary button, disabled, with no brand mark (it was a white surface at half opacity that read as enabled; enabled, it keeps the branded white button), and signed-out Settings’ Account panel says the same sign-ups-closed sentence (GoogleButton.tsx, SettingsPage.tsx).' },
         { status: 'shipped', what: 'Trade entry as shipped, the board redrawn to it (owner, 2026-10-25, after fidelity round 2): Manual price selected on open, Market and Limit beside it; the leg on one row of four (two by two on a phone), Quantity and the price below, then Stop and Target; “Enter a price — opens at exactly the price you type.” with its user-entered price chip; a Net debit / Max loss / Cap per trade strip and the cap’s source line; the confirm disabled until a price is typed (TradeEntryDialogView.tsx, LegFields.tsx, FillModeToggle.tsx).' },
+        { status: 'shipped', what: 'Spec 02 (c), round 4 on the boards (2026-10-26): a selected Call keeps its success fill and a selected Put its error fill, each with an ink label, white on light Put (owner S2-Q1; LegFields.tsx, 31b0011a): 9.13 / 6.34:1 dark, 5.56 / 4.74:1 light. The field labels are text.secondary (FieldLabel.tsx, 673dd755), and the SIMULATED tag is the neutral outlined tag that Positions’ Simulated orders panel now shares (criterion 11).' },
         { status: 'todo', waits: 'decided', what: 'Not adopted: ACC-11’s Market fill selected by default and its “within” cap verdict in the dialog’s strip (fidelity audit 2026-10-25). Owner, 2026-10-25, after round 2: Manual stays the default, as the specs and eight spec files pin it, and the cap check stays outside the dialog, which renders the cap as received and computes no verdict (tradeable-rec-inputs AC-63).' },
       ],
       rulings: ['P-1', 'P-2', 'P-3', 'P-13', 'Q-5', ...ENV],

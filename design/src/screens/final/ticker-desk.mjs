@@ -17,7 +17,7 @@ export const TK_CSS = `
   [data-scheme="light"] { --c-emph: var(--phosphor); --c-ctx: var(--steel); --c-grid: var(--line); --c-axis: var(--line-2); --c-edge: var(--steel-2); }
   .tk-air { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   .tk-air .t { display: flex; flex-direction: column; gap: 10px; } .tk-air .t p { margin: 0; font-size: 13.5px; }
-  .tk-air .g { display: flex; flex-direction: column; gap: 10px; opacity: 0.9; }
+  .tk-air .g { display: flex; flex-direction: column; gap: 10px; } /* no opacity: AiReadNotLive.tsx draws the outline undimmed, and 0.9 took its light labels to 3.88:1 */
   .tk-air .g i { display: block; border: 1px solid var(--line); border-radius: 8px; }
   .tk-air .f { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .tk-air .f > div { background: var(--ink-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }

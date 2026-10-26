@@ -124,7 +124,10 @@
   .stag.k-solid { border: 1px solid var(--line-2); } .stag.k-solid .ico { color: var(--steel); }
   .stag.k-dashed { border: 1px dashed var(--steel-2); color: var(--steel); }
   .stag.k-warn { border: 1px solid var(--warn); background: var(--warn-tint); } .stag.k-warn .ico { color: var(--warn); }
-  .stag.k-quiet { background: rgba(138,155,180,0.16); } .stag.k-quiet .ico { color: var(--steel); }
+  /* The quiet tag's tint is the app's alpha(text.secondary, 0.16) in each scheme (DataStateTag quiet, TintChip neutral,
+     research Pill quiet): steel at 16%, so light takes its own darker steel (it drew dark steel there). Its label is
+     phosphor in both schemes, as the app's light labels on a steel tint are (spec 02 (c), 673dd755). */
+  .stag.k-quiet { background: color-mix(in srgb, var(--steel) 16%, transparent); } .stag.k-quiet .ico { color: var(--steel); }
   .stag.k-stream { background: var(--signal-tint); color: var(--text-info); } .stag.k-stream .sdot { width: 6px; height: 6px; border-radius: 50%; background: var(--signal); }
   .prov { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-2); font: 500 11px/1.2 'IBM Plex Mono', ui-monospace, monospace; color: var(--phosphor); text-decoration: none; white-space: nowrap; flex: 0 0 auto; }
   a.prov:hover { border-color: var(--steel); text-decoration: none; color: var(--phosphor); }
@@ -136,7 +139,7 @@
   .bstat.s-live { background: rgba(138,155,180,0.16); border-color: transparent; }
   .hatch { background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
   .t-dim { color: var(--text-dim) !important; } .t-info { color: var(--text-info); } .t-up { color: var(--text-up); } .t-down { color: var(--text-down); }
-  .v4 a:not(.btn):not(.prov):not(.v4n a):not(.v4-tabs a):not(.hd-tabs a):not(.nv-rail a):not(.pl-jump a) { color: var(--text-info); } /* tabs and rails keep their own colours (fidelity R-23) */
+  .v4 a:not(.btn):not(.prov):not(.v4n a):not(.v4-tabs a):not(.hd-tabs a):not(.nv-rail a):not(.pl-jump a):not(:where(.rs-chipbar a, .tn-strip a)) { color: var(--text-info); } /* tabs, rails and pill rows keep their own colours (fidelity R-23); the :where() adds no specificity, so the filings kind pills draw their own steel and ink (the current one measured text-info on phosphor, 1.76:1, in round 4) */
   .dcell { box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; overflow: hidden; color: var(--phosphor); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
   .dcell.is-sample { position: relative; border-style: dashed; border-color: var(--steel-2); background-color: var(--panel); }
   .dcell.is-sample::before, .hd-p.is-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; }
@@ -179,6 +182,13 @@
   .v4-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding-top: 8px; padding-bottom: 8px; font-size: 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
   .v4-notice.demo { border-bottom-style: dashed; border-bottom-color: var(--steel-2); }
   .v4-notice .ico { color: var(--steel); }
+  /* The production bar's links as shipped (MarketDataNotice.tsx, spec 02 step 3, 96bf67c8): 24px at a fine pointer, 44px
+     under a coarse one (standaloneLinkSx), and the bar drops its 8px vertical padding there, so it is 45px, not 61. */
+  .v4-notice .nl-a { display: inline-flex; align-items: center; min-height: 24px; } .v4-notice .nl-a + .nl-a { margin-left: 4px; } /* the app's 16px between its two links */
+  /* As MarketDataNotice.tsx shows them: the sentence from 900px (md), the demo link from 600px (sm). */
+  @media (max-width: 899px) { .v4-notice .nl-body { display: none; } }
+  @media (max-width: 599px) { .v4-notice .nl-demo { display: none; } }
+  @media (pointer: coarse) { .v4-notice[aria-label="What is live on this site"] { padding-top: 0; padding-bottom: 0; } .v4-notice .nl-a { min-height: 44px; } }
   .v4-tabs { border-bottom: 1px solid var(--line); }
   .v4-tabs .tabs-in { display: flex; gap: 4px; height: 48px; align-items: stretch; overflow-x: auto; scrollbar-width: none; }
   .v4-tabs a { display: inline-flex; align-items: center; gap: 8px; padding: 0 12px; color: var(--steel); text-decoration: none; font-weight: 500; font-size: 14px; white-space: nowrap; }
@@ -363,6 +373,9 @@
   .cf-tw thead th { font-weight: 600; color: var(--steel); background: var(--ink-2); position: sticky; top: 0; }
   .cf-tw td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
   .cf-tw td.t { font-family: 'IBM Plex Sans', sans-serif; }
+  /* A link cell in a twin (the insider trades' Form 4, ChartFrame TableTwinLink with standaloneLinkSx): 24px, 44 under a
+     coarse pointer, so a row's link is a full target on a phone (spec 02 step 5a: 50x44 coarse, 50x24 fine). */
+  .cf-tw td a { display: inline-flex; align-items: center; min-height: 24px; } @media (pointer: coarse) { .cf-tw td a { min-height: 44px; } }
   .cf-note { font-size: 12px; color: var(--steel); line-height: 1.45; margin: 0; text-wrap: pretty; }
   .cf-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--steel); }
   .cf-legend .k { display: inline-flex; align-items: center; gap: 6px; }
@@ -553,7 +566,7 @@
   .nv-body h2 { margin: 12px 0 0; font-size: 26px; }
   .nv-eyebrow { font: 600 12px 'IBM Plex Mono', monospace; color: var(--steel); }
   .nv-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 80px; }
-  .pillN { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: rgba(138,155,180,0.16); font: 500 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .pillN { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: color-mix(in srgb, var(--steel) 16%, transparent); font: 500 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
   .status { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
   .status.ok { border: 1px solid var(--line-2); } .status.watch { background: rgba(138,155,180,0.20); } .status.broken { background: var(--phosphor); color: var(--ink); }
   .ri-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 16px; }
@@ -802,7 +815,7 @@
 </helmet>
 <div class="v4" data-scheme="dark" style="background: var(--ink); color: var(--phosphor);"><div class="pl-cap" role="note" aria-label="Board note"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span><b>New section in the public-record band under the NVDA note</b>, once SEC_USER_AGENT is set. Figures are the note’s and the 10-Q’s (quarter to Jul 26, 2026), as on the Note and Filings rows. Values are plausible public-record figures drawn for the design; the build fetches them.</span></div></div><div class="v4" data-scheme="dark" style="width: 100%; min-height: 2654px; background: var(--ink); color: var(--phosphor);">
     <a href="#main" class="btn secondary sm" style="position: absolute; left: -9999px;">Skip to main content</a>
-    <div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="8"></circle><path d="M6.6 6.6l10.8 10.8"></path></svg><strong style="font-weight: 600;">Options data isn’t live on this site.</strong><span class="steel only-wide">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, filings, research and TradingView’s daily charts are live.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">What’s live</a><a href="https://staging.convexa.pages.dev" class="t-info only-wide">See the full demo →</a></div></div>
+    <div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="8"></circle><path d="M6.6 6.6l10.8 10.8"></path></svg><strong style="font-weight: 600;">Options data isn’t live on this site.</strong><span class="steel nl-body">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, filings, research and TradingView’s daily charts are live.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info nl-a">What’s live</a><a href="https://staging.convexa.pages.dev" class="t-info nl-a nl-demo">See the full demo →</a></div></div>
     <header class="v4n"><div class="wrap v4n-in">
     <a href="/" aria-label="Convexa home" style="display: inline-flex; text-decoration: none;"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 17px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 12.6px; height: 12.2px; margin: 0 0.8px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span></a>
     <nav aria-label="Primary" class="v4n-links"><a href="/scanner">Scanner</a><a href="/ticker/SPY">Ticker</a><a href="/research" aria-current="page">Research</a><a href="/positions">Positions</a><a href="/alerts">Alerts</a></nav>

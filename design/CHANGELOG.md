@@ -469,3 +469,83 @@ Supersedes nothing above; repairs one regression a review found in the R3-B boar
 - **Heights:** 202 boards measured, 0 changed, none overflows; `heights.json` is unchanged. Checked:
   `node design/src/build.mjs` 0 (a second run is byte-identical), `node design/src/verify-tokens.mjs` 0, NUL
   bytes 0 in all changed files. Not published to the canvas artifact.
+
+## 2026-10-26 · Fidelity round 4, lane R4-D: the boards follow rounds 3 and 4 and the owner's spec 02 answers
+
+Supersedes nothing above except where it names the line it replaces. Measured against local builds of `7eeb7150`
+(demo :4840, live :4841) and the boards (:4842), with the app's bundled fonts; scripts and shots in
+`tmp/fidelity/r4/R4-D-boards-canon/`.
+
+- **Call and Put keep their fills, with ink labels (owner S2-Q1; app `31b0011a`).** The trade-entry boards
+  (`final-dialogs-trade-entry`, `-phone`, and every sheet built from `tradeEntryDemo`) drew a selected Call as phosphor
+  at 16%, from ACC-12 (R3-B). They now fill a selected Call with `--up` and a selected Put with `--down`, with the app's
+  ink `#0B0F17` label, white on light Put. Board = app at 1440 and 390, both schemes: 9.13 / 6.34:1 dark, 5.56 / 4.74:1
+  light, and unselected 6.19 dark / 5.42 light. The fill toggle's neutral selected tint is 8% in light, as MUI's
+  `action.selected` (rgb(236,237,238), 14.05:1; it drew 16%). The field labels were already `text.secondary`'s steel
+  (6.19 / 5.42:1, `FieldLabel.tsx` since `673dd755`), so only their comment changes. The SIMULATED tag gains the app's
+  0.04em tracking: 83.1 wide, as the app (was 79.1).
+- **The walls' demo button (spec 02 (b); app `96bf67c8`).** `scannerWall` and `positionsWall` draw "See it on the demo
+  →" as a neutral outlined 44px button, second in the row (Sign in, the demo, Open a ticker desk), and the closing
+  sentence keeps its words without the link. Every wall button is 44px at every width (36 at desktop before); Open a
+  ticker desk opens `/ticker`, as shipped. Board = app in order, height and colours at 1440 and 390 on both walls. The
+  wall still sits 28px lower at 1440 and the Sign in button is 2px wider (a transparent border); both predate this round.
+- **Light pills, the jump row and the SIMULATED tag (spec 02 (c); app `673dd755`).**
+  - The board's quiet tag (`.stag.k-quiet`) and delta pill (`.pillN`) took dark steel at 16% in both schemes. They now
+    take `--steel` at 16%, the app's `alpha(text.secondary, 0.16)`. Their labels were already phosphor. On the light
+    note the research pills measure 12.37:1, as the app. Dark is unchanged.
+  - **Below 900px the production note's rail becomes the app's jump row** (`NoteView.tsx` `PartChips`). The board had
+    squeezed the desktop rail into a 228px block beside "On this page". The row is 32px part pills, 44px links under a
+    coarse pointer, with the bar's padding at 4px. Current part filled `text.primary`; the rest on a 16% steel tint, steel
+    in dark and `text.primary` in light. A 3px progress line runs under it. Board = app at 390: pills at x16 / 89.1 / 172
+    at 67.1 / 76.9 / 66 wide, 32 tall; 5.42:1 dark, 12.37:1 light; the Part 1 rule 102px below the pills in both.
+  - **The staging note's section strip** (`ResearchView.tsx` `SampleRail` strip) replaces the boxed rail below 900px:
+    44px pills on a 10% steel tint under the head, `text.primary` in light, the current one on MUI's `action.selected`.
+    Board = app: 63 / 76.9 / 55 wide, 44 tall; 9.62 and 5.98:1 dark.
+  - **Positions' Simulated orders panel** shows the trade dialog's neutral SIMULATED tag beside its title, as the app.
+    The board's "Sample tape" mark stays at the right (D1), so at 390 it takes a second line.
+  - The quiet context-band card's 0.96 opacity was never on the boards; nothing to remove.
+- **Insider trades (owner S2-Q2, S2-Q3; app `907cf98e`).** The plot is one image (`role="img"`, its summary as the
+  label, no tab stop; it was a focusable `role="group"`). "Show the numbers" holds the windows table, then "NVDA Form 4
+  trades by trade date", one row per trade, through `chart-kit.mjs` `dataTables`. On production the last column links
+  each row to its Form 4 ("Form 4 ↗", named by the trade's sentence), and the demo has no Filing column. Link cells are
+  24px, 44 under a coarse pointer (52.9×24 and 52.9×44 here; the app's are 50 wide). Shares and prices are plausible
+  figures drawn for the design. The spec card's acceptance line and a new built entry say the same.
+- **The production bar as shipped (`MarketDataNotice.tsx`, spec 02 step 3).** Its two links are 24px, 44px under a
+  coarse pointer, and the bar drops its 8px padding there. The sentence shows from 900px and the demo link from 600px
+  (both were `only-wide`, 768px). The links sit 16px apart. The production desk h1 now equals the app: 118 at 390
+  coarse (was 114), 122 at 768 (was 184), 114 at 600. This closes round 3's "Still different" item 5. "What's live" and
+  "See the full demo →" sit at the app's x at 768 and 1440.
+- **Text at AA on every Final board.** axe `color-contrast` over 204 Final pages at 1440 and 390 went from 40 nodes to 0:
+  - the filings kind pills: the current "All · 9" drew `text-info` on phosphor (1.76:1). The link rule's exclusions now
+    take `:where(.rs-chipbar a, .tn-strip a)`, which adds no specificity, so the pills draw their own ink and steel
+    (15.10 / 6.78:1 dark, 15.18 / 5.00:1 light, as the app);
+  - the desk's not-live AI read outline lost its 0.9 opacity: light labels 3.88 → 4.78:1, and `AiReadNotLive.tsx` draws
+    no opacity;
+  - the stale read on the AI read states board lost its 0.75 opacity (4.05–4.28 → 6.19:1). The app does not dim a stale
+    read, and text is never dimmed by opacity (the 2026-09-09 row);
+  - the cooldown button carries `aria-disabled`.
+- **Canon:** one Amendments row (2026-10-26): rule 7's coarse mechanics, `text.disabled` for a disabled control only,
+  steel labels on a steel tint in light, and S2-Q1 closed.
+- **Spec cards:** Overlays, Scanner, Positions and Planned · Insider clusters each gain a built entry with its commit.
+  The scanner and positions wall descriptions and states say "button".
+- **Heights:** 11 boards changed, 202 measured, 0 overflow; a second measurement changes 0.
+  - FNotePhone −139 (the jump row replaces the rail);
+  - FScannerPhone and FPositionsPhone +49 (the third button);
+  - FScannerStates and FPositionsStates +3;
+  - FPositionsStagingPhone +30;
+  - FAiReadStates +19 (a longer "when");
+  - FScannerSpec, FPositionsSpec and FDialogsSpec +111, and FPlannedClustersSpec +173 (the new entries).
+  - HEAD's sources measure equal to HEAD's `heights.json`.
+- **Other sweeps against HEAD's boards:**
+  - overflow and small text equal HEAD's cell for cell on 208 pages at 390, 1440 and 1920 (51 flags, all older);
+  - sub-44 tap targets at 390 coarse on 204 Final pages: 1372 → 1284, and no page gains one.
+- **Checked:**
+  - `node design/src/build.mjs` 0, and a second run is byte-identical;
+  - `node design/src/verify-tokens.mjs` 0;
+  - NUL bytes 0 in all 450 changed files.
+- **Not published** to the canvas artifact.
+- **Left as found:**
+  - The production note board's figure strip and the positions page's toolbar still draw an older anatomy than the app.
+  - The filings pills are 32 tall against the app's 36.
+  - The app's wall paragraphs measure `text.primary` (rgb(233,228,214)) though `RequireAuth.tsx` asks for
+    `text.secondary`; the boards keep steel. That is an app question, not a board change.

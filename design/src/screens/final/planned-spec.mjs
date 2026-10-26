@@ -154,13 +154,14 @@ export const CLUSTERS_SPEC = {
   acceptance: [
     'Only open-market purchases count toward a cluster; 10b5-1 plan sales never do, and the note says so.',
     'Dots are placed by trade date, not by index (DB-08).',
-    'Roles, not names, on the chart; each dot links to its filing.',
+    'Roles, not names, on the chart. The plot is one image (role img, its summary as the label) with no tab stop; “Show the numbers” lists the windows, then every trade, and on production each trade links to its Form 4 (owner S2-Q2, S2-Q3).',
     'With SEC_USER_AGENT unset the card says Not set up, not empty.',
   ],
   built: [
     { status: 'partial', what: 'Built behind SEC_USER_AGENT (“switch”), 2026-10-15: per-transaction Form 4 rows and the windows on the ticker wire (InsidersWire.transactions, .clusters, .sale_windows, .roles; insider_trades.rs, the cluster rules tested), and the Insider trades · 12 months section in the public-record band, dots by trade date, rings and filled dots, each linked to its filing (InsiderClusters.tsx). Production shows it since SEC_USER_AGENT was set (2026-10-15). Left: the timeline reads at most 80 Form 4s a year, and says how far back it reaches when a filer files more. Fix round 2026-10-15: one request reads at most 10 new Form 4s in 4 s and the rest is read in the background (W1-02); Form 4s about another issuer’s shares are dropped (W1-12); titles are XML-unescaped and placeholders read Officer (W1-29, W1-30); one purchase reported by related owners counts once toward a cluster (W1-31, conductor ruling, provisional).' },
     { status: 'shipped', what: 'Staging (2026-10-15): the demo research route carries the same section in a “Public record” band under the sample note, on the demo transport’s sample (one buying cluster, three directors in September), dashed and hatched, “Demo · shaped like SEC Form 4”; answered in the browser, no request leaves it. SPY and QQQ say they are funds that file no Form 4s (ResearchView.tsx DemoPublicRecord).' },
     { status: 'shipped', what: 'Insider trades card (90-day sales, buys, plan count) behind SEC_USER_AGENT: “switch”.', host: true },
+    { status: 'shipped', what: 'Spec 02 step 5a (2026-10-26, 907cf98e; owner S2-Q2, S2-Q3): the svg is role img with its summary label and no tab stop; each dot is an aria-hidden mark that keeps its hover title, no link (194 tab stops on the production NVDA note before). “Show the numbers” holds the windows table, then “NVDA Form 4 trades by trade date”, one row per trade, built when opened; on production its Filing column links each row to its Form 4 (“Form 4 ↗”, named by the trade’s sentence, 44px under a coarse pointer); the demo has no Filing column.' },
   ],
   rulings: [...CORE],
   code: ['apps/api/src/services/public_data/edgar.rs (Form 4 transactions)', 'apps/api/src/routes/public_data.rs · InsidersWire.transactions, .clusters (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx · InsidersCard'],

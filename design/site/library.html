@@ -68,6 +68,9 @@
   .cf-tw thead th { font-weight: 600; color: var(--steel); background: var(--ink-2); position: sticky; top: 0; }
   .cf-tw td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
   .cf-tw td.t { font-family: 'IBM Plex Sans', sans-serif; }
+  /* A link cell in a twin (the insider trades' Form 4, ChartFrame TableTwinLink with standaloneLinkSx): 24px, 44 under a
+     coarse pointer, so a row's link is a full target on a phone (spec 02 step 5a: 50x44 coarse, 50x24 fine). */
+  .cf-tw td a { display: inline-flex; align-items: center; min-height: 24px; } @media (pointer: coarse) { .cf-tw td a { min-height: 44px; } }
   .cf-note { font-size: 12px; color: var(--steel); line-height: 1.45; margin: 0; text-wrap: pretty; }
   .cf-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--steel); }
   .cf-legend .k { display: inline-flex; align-items: center; gap: 6px; }

@@ -63,6 +63,28 @@ export const TN_CSS = `${PL_CSS}
   .tn-tldr { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px 14px; align-items: baseline; }
   .tn-tldr .k { font: 500 18px/1.2 'IBM Plex Mono', monospace; }
   .tn-tldr p { font-size: 14.5px !important; line-height: 1.55 !important; }
+  /* Below 900px the rail gives way to the app's jump row (NoteView.tsx PartChips; ResearchView.tsx SampleRail strip).
+     Production: a row of 32px part pills (44px links under a coarse pointer, the bar's padding traded from 10 to 4px so
+     it keeps its height) over a 3px progress line; the current part is filled text.primary, the rest sit on a 16% steel
+     tint with a steel label in dark and text.primary in light, where steel on its own tint measured 4.08:1 (spec 02 (c),
+     673dd755). Staging: a strip of 44px section pills on a 10% steel tint, text.primary in light (steel measured 4.4:1). */
+  .tn-chips, .tn-strip { display: none; }
+  @media (max-width: 899px) {
+    .tn .nv > .nv-rail { display: none; }
+    .tn-chips { display: grid; gap: 8px; margin: 0 -16px 18px; padding: 10px 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--ink) 94%, transparent); }
+    .tn-chips .r { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+    .tn-chips a { flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 32px; border-radius: 999px; text-decoration: none; }
+    .tn-chips a > span { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; line-height: 1.65; white-space: nowrap; background: color-mix(in srgb, var(--steel) 16%, transparent); color: var(--steel); }
+    [data-scheme="light"] .tn-chips a > span { color: var(--phosphor); }
+    .tn-chips a > span.on { background: var(--phosphor); color: var(--ink); font-weight: 600; }
+    .tn-chips .bar { height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--steel) 16%, transparent); } .tn-chips .bar > i { display: block; height: 100%; border-radius: 3px; background: var(--phosphor); }
+    .tn-strip { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+    .tn-strip a { flex: 0 0 auto; display: flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 999px; font-size: 13px; white-space: nowrap; text-decoration: none; background: color-mix(in srgb, var(--steel) 10%, transparent); color: var(--steel); }
+    [data-scheme="light"] .tn-strip a { color: var(--phosphor); }
+    .tn-strip a[aria-current] { background: rgba(255,255,255,0.16); color: var(--phosphor); font-weight: 600; } /* MUI's action.selected */
+    [data-scheme="light"] .tn-strip a[aria-current] { background: rgba(0,0,0,0.08); }
+  }
+  @media (max-width: 899px) and (pointer: coarse) { .tn-chips { padding-top: 4px; padding-bottom: 4px; } .tn-chips a { min-height: 44px; } }
   @media (max-width: 899px) { .tn-sc > div { grid-template-columns: minmax(0, 1fr) auto; } .tn-sc > div > :nth-child(2) { grid-column: 1 / -1; order: 3; } .tn-tldr { grid-template-columns: 1fr; gap: 2px; } .tn .hd-tabs a { min-height: 44px; } }
 `;
 
@@ -130,6 +152,11 @@ export function noteProductionBody({ minHeight = 0, scheme = 'dark', t = 'NVDA',
   // note, the public record: who is positioned how, and the SEC record. Only "Filed since this note" moved
   // to the side, under "This note comes due". The body draws an excerpt of each part, numbered as shipped.
   const PARTS = [['The verdict', 3], ['The evidence', 7], ['The debate', 3], ['Valuation and what’s next', 4], ['The record', 2]];
+  // Below 900px the rail is the jump row of part pills (PartChips, NoteView.tsx), labelled as the app labels them
+  // (chipLabel drops a leading “The”); the line under it fills to the current section (1 of the parts' 19).
+  const chipLabel = (t) => { const x = t.replace(/^The /, ''); return x.charAt(0).toUpperCase() + x.slice(1); };
+  const total = PARTS.reduce((a, [, c]) => a + c, 0);
+  const chips = `<nav class="tn-chips" aria-label="Parts of this note"><div class="r">${PARTS.map(([n], i) => `<a href="#p${i + 1}"><span${i === 0 ? ' class="on"' : ''}>${chipLabel(n)}</span></a>`).join('')}</div><div class="bar"><i style="width: ${((1 / total) * 100).toFixed(2)}%;"></i></div></nav>`;
   const rail = `<nav class="nv-rail" aria-label="On this page"><span class="side-k" style="padding: 0 10px 6px;">On this page</span><span class="dline" style="padding: 0 10px 8px; font-size: 12px;">Part 1 of 5 · about 14 min left</span><div class="tn-rparts">${PARTS.map(([n, c], i) => `<a href="#p${i + 1}"${i === 0 ? ' aria-current="true"' : ''}><span class="c">${i + 1}</span><span>${n}</span><span class="c">${c}</span></a>`).join('')}</div></nav>`;
   const head = `<div class="tn-head"><div class="l"><div class="who"><span class="tk">${t}</span><span style="display: flex; flex-direction: column;"><span style="font-size: 17px; font-weight: 600;">NVIDIA</span><span class="steel" style="font-size: 13px;">Nasdaq · AI accelerators, networking and the CUDA software stack</span></span></div>
     <h1 class="display">A 70% growth guide on a $412B year. What comes after FY2028 is the whole question.</h1>
@@ -141,7 +168,7 @@ export function noteProductionBody({ minHeight = 0, scheme = 'dark', t = 'NVDA',
   const part = (n, title) => `<div class="tn-part" id="p${n}"><span class="n">Part ${n}</span><b>${title}</b><i></i></div>`;
   const sc = `<div class="drows tn-sc">${[['FY2028 grows about 70%', '~70%, supply-limited; consensus $692B', 'ok', '✓ On track'], ['Margins hold near 72%', 'Q3 74%; Q4 71–72%; FY2028 72–73%', 'watch', '! Watch'], ['Customers pay on normal terms', 'DSO 60, up from 45 a quarter earlier', 'watch', '! Watch'], ['Hyperscalers keep buying', '$48.7B, +13% on the quarter', 'ok', '✓ On track'], ['The capex cycle keeps rising', '~$800B in 2026, ~$1.3T expected in 2027', 'ok', '✓ On track']].map(([a, b, k, w]) => `<div><span style="font-weight: 600;">${a}</span><span class="steel">${b}</span><span class="status ${k}">${w}</span></div>`).join('')}</div><span class="dline">Status by glyph, word and weight: on track is outlined, watch is tinted. No direction colour: these are facts about the company.</span>`;
   const forecasts = `<div class="drows">${[['Nov 17', 'Q3 FY2027 revenue is at least $105.84B, the low end of guidance.'], ['Nov 17', 'NVIDIA guides Q4 FY2027 revenue at or above $124.5B, the consensus.'], ['Nov 17', 'NVIDIA keeps or raises its ~70% FY2028 growth outlook.'], ['Nov 17', 'DSO is at or below 60 days at the end of Q3 FY2027.'], ['Feb 2027', 'Q4 FY2027 GAAP gross margin is at least 71.0%.']].map(([d, c]) => `<div style="grid-template-columns: 72px minmax(0, 1fr) auto; padding: 10px 0;"><span class="mono steel">${d}</span><span style="font-size: 14px;">${c}</span><span class="stag k-quiet">P · not set</span></div>`).join('')}</div><span class="dline">Awaiting resolution. A probability set before the date is what the Scorecard scores; none is set yet.</span>`;
-  const body = `<div class="nv-body">
+  const body = `<div class="nv-body">${chips}
     ${part(1, 'The verdict')}
     ${sec(1, 'What the price implies', 'The price needs growth after FY2028 that almost no company this size has kept up.', '<p>Among companies with sales above $50B, real sales growth above 15% a year for five years happened in 3.3% of cases from 1950 to 2015. Today’s operating profit, capitalized with no growth at all, supports well under half of the price.</p>')}
     ${sec(2, 'Margins against history and peers', 'Today’s margin is about double NVIDIA’s own past and above every peer.', marginChart())}
@@ -169,11 +196,13 @@ export function noteStagingBody({ minHeight = 0, scheme = 'dark', t = 'NVDA' } =
   // Evidence with each source line, the side's short-interest bars and Filings, then the "Public record · NVDA"
   // band under the note (shipped 2026-10-15), every section in its sample form.
   const rail = `<nav class="nv-rail" aria-label="On this page">${['Thesis', 'Evidence', 'Risks', 'Invalidation', 'Catalysts', 'Assumptions'].map((s, i) => `<a href="#d${i}"${i === 0 ? ' aria-current="true"' : ''}>${s}</a>`).join('')}</nav>`;
+  // Below 900px: the app's sideways strip of 44px section pills, under the head (ResearchView.tsx SampleRail strip).
+  const strip = `<nav class="tn-strip" aria-label="Sections of this note">${['Thesis', 'Evidence', 'Risks', 'Invalidation', 'Catalysts', 'Assumptions'].map((s, i) => `<a href="#d${i}"${i === 0 ? ' aria-current="location"' : ''}>${s}</a>`).join('')}</nav>`;
   const b = lastBar();
   const src = `<small>Source: portfolio-2026-10-07-v1:NVDA:${b.date}</small>`;
   const ul = (items) => `<ul class="tn-ul">${items.map((x) => `<li>${x}</li>`).join('')}</ul>`;
   const body = `<div class="nv-body">
-    <div style="display: flex; flex-direction: column; gap: 12px;"><span class="caps">Sample research note · authored for this scenario</span><h1 class="display" style="margin: 0; font-size: clamp(28px, 2.8vw, 38px); line-height: 1.15;">NVDA higher-variation case</h1><div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">${stateTag('sample', 'Sample note')}${provChip('Authored scenario · Oct 7, 2026 · portfolio-2026-10-07-v1 · advisory context', 'dashed')}</div></div>
+    <div style="display: flex; flex-direction: column; gap: 12px;"><span class="caps">Sample research note · authored for this scenario</span><h1 class="display" style="margin: 0; font-size: clamp(28px, 2.8vw, 38px); line-height: 1.15;">NVDA higher-variation case</h1><div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">${stateTag('sample', 'Sample note')}${provChip('Authored scenario · Oct 7, 2026 · portfolio-2026-10-07-v1 · advisory context', 'dashed')}</div></div>${strip}
     <h2 id="d0" class="display">Thesis</h2><p>The NVDA example pairs a rising close path with visibly larger authored bars to frame a higher-variation scenario.</p>
     <h2 id="d1" class="display">Evidence</h2>
     ${ul([`The final close is the price anchor for this higher-variation case. Close: ${b.close.toFixed(2)} USD on ${b.date}. ${src}`, `The latest bar high-low span supplies its authored range evidence. High ${b.high.toFixed(2)} USD; low ${b.low.toFixed(2)} USD on ${b.date}. ${src}`])}

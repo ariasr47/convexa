@@ -23,10 +23,11 @@ export const DLG_CSS = `
   .ac-sheet .v4dlg .df .btn { flex: 1 1 100%; min-height: 44px; }
   .ac-fill { display: flex; flex-wrap: wrap; gap: 6px; }
   /* Trade entry as shipped (TradeEntryDialogView.tsx; owner, 2026-10-25, after fidelity round 2): caps field labels
-     (FieldLabel: 11/700, 0.07em; steel here, AA on the panel), 36px fields on the page ink, full-width toggle groups,
-     the leg on one row of four (two by two under 600px, LegFields.tsx), 44px controls under 600px. The toggle group's
-     outline is an inset shadow, not a border, so each button box is the full row height, as the app's ToggleButtons are
-     (44 under 600px, not 42 inside a 1px border). */
+     (FieldLabel: 11/700, 0.07em, text.secondary since spec 02 step 4, 673dd755: steel, 6.19:1 dark and 5.42:1 light on
+     the dialog), 36px fields on the page ink, full-width toggle groups, the leg on one row of four (two by two under
+     600px, LegFields.tsx), 44px controls under 600px. The toggle group's outline is an inset shadow, not a border, so
+     each button box is the full row height, as the app's ToggleButtons are (44 under 600px, not 42 inside a 1px border).
+     A selected toggle takes MUI's neutral selected tint: phosphor 16% in dark, 8% in light (the app's action.selected). */
   .v4dlg.te .dh h2 { line-height: 1.4; text-wrap: wrap; }
   .te-l { display: block; margin: 0 0 4px; font: 700 11px/1.65 'IBM Plex Sans', sans-serif; letter-spacing: 0.07em; text-transform: uppercase; color: var(--steel); }
   .te-in { box-sizing: border-box; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ink); font: 400 13px 'IBM Plex Sans', sans-serif; color: var(--phosphor); }
@@ -37,6 +38,15 @@ export const DLG_CSS = `
   .te-tg > button { min-height: 38.8px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--steel); font: 600 13px/1.75 'IBM Plex Sans', sans-serif; }
   .te-tg > button:first-child { border-left: 0; }
   .te-tg > button[aria-pressed="true"] { background: color-mix(in srgb, var(--phosphor) 16%, transparent); color: var(--phosphor); }
+  [data-scheme="light"] .te-tg > button[aria-pressed="true"] { background: color-mix(in srgb, var(--phosphor) 8%, transparent); }
+  /* Call and Put keep their fills, with ink labels (owner S2-Q1, 2026-10-25; spec 02 (c) "no"; LegFields.tsx
+     rightSelectedSx, 31b0011a): a selected Call is success.main (--up), a selected Put error.main (--down). The label is
+     the app's ink #0B0F17 on every fill except light Put, which keeps white: 9.13:1 dark Call, 6.34:1 dark Put, 5.56:1
+     light Call, 4.74:1 light Put in white. Hover keeps the fill (no success.dark / error.dark). This closes the 2026-10-13
+     row's white-label item; the board drew a neutral phosphor tint here from fidelity ACC-12 (R3-B), which S2-Q1 reverses. */
+  .te-tg.te-right > button[aria-pressed="true"][data-right="call"] { background: var(--up); color: #0B0F17; }
+  .te-tg.te-right > button[aria-pressed="true"][data-right="put"] { background: var(--down); color: #0B0F17; }
+  [data-scheme="light"] .te-tg.te-right > button[aria-pressed="true"][data-right="put"] { color: #FFFFFF; }
   .te-g4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: start; }
   .te-g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .te-g2.wide { gap: 16px; }
@@ -53,7 +63,9 @@ export function overDemo({ scheme = 'dark', minHeight = 900, active = '', dialog
   return `<div class="v4" data-scheme="${scheme}" style="position: relative; width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor); overflow: hidden;">${behind}<div class="v4-over${right ? ' right' : ''}">${dialog}</div></div>`;
 }
 
-const SIM = '<span class="stag k-solid">SIMULATED</span>';
+/** The neutral SIMULATED tag, as the trade dialog and the Positions "Simulated orders" panel draw it (fidelity
+ *  ACC-12; 673dd755, spec 02 criterion 11): text.primary 600 on a lineStrong outline, 0.04em tracking. */
+export const SIM = '<span class="stag k-solid" style="letter-spacing: 0.04em;">SIMULATED</span>';
 const DISCLAIMER = 'Paper trade — no broker, no real money. Filled at the option mid; fees, slippage, taxes and assignment are not modeled.';
 const D8_1 = (t) => `Simulated only — no real order is ever placed. Once confirmed, this order can trigger and fill unattended whenever a live stream for ${t} is open in this browser. Orders are stored in this browser — not synced to your account.`;
 
@@ -64,7 +76,7 @@ const D8_1 = (t) => `Simulated only — no real order is ever placed. Once confi
  *  fidelity round 2: ACC-11's Market default and its “within” cap verdict are not adopted; this board follows the app.
  *  The confirm stays disabled until a price is typed. */
 const teField = (label, value, { ro = false, caret = false } = {}) => `<div><span class="te-l">${label}</span><span class="te-in${ro ? ' ro' : ''}"><span>${value}</span>${caret ? '<span class="te-caret" aria-hidden="true"></span>' : ''}</span></div>`;
-export const teToggle = (opts, on, label) => `<div class="te-tg" role="group" aria-label="${label}">${opts.map((o) => { const [t, off] = Array.isArray(o) ? o : [o, false]; return `<button type="button" aria-pressed="${t === on}"${off ? ' aria-disabled="true"' : ''}>${t}</button>`; }).join('')}</div>`;
+export const teToggle = (opts, on, label) => { const right = label === 'Right'; return `<div class="te-tg${right ? ' te-right' : ''}" role="group" aria-label="${label}">${opts.map((o) => { const [t, off] = Array.isArray(o) ? o : [o, false]; return `<button type="button" aria-pressed="${t === on}"${right ? ` data-right="${t.toLowerCase()}"` : ''}${off ? ' aria-disabled="true"' : ''}>${t}</button>`; }).join('')}</div>`; };
 export const teStrip = (net, loss, cap) => `<div class="hd-fig" style="grid-template-columns: repeat(3, minmax(0, 1fr));">${[['Net debit', net], ['Max loss', loss], ['Cap per trade', cap]].map(([l, v]) => `<div><span class="caps">${l}</span><span class="v${/^[$\d]/.test(v) ? '' : ' nan'}">${v}</span></div>`).join('')}</div>`;
 const CAP_LINE = '<span class="dline" style="font-size: 12px;">Your cap: $25,000 sample account × 2% = $500 per trade (<a href="/settings" style="text-decoration: underline;">Settings · Risk inputs</a>).</span>';
 export function tradeEntryDemo() {

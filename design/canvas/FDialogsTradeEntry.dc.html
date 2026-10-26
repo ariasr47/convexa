@@ -124,7 +124,10 @@
   .stag.k-solid { border: 1px solid var(--line-2); } .stag.k-solid .ico { color: var(--steel); }
   .stag.k-dashed { border: 1px dashed var(--steel-2); color: var(--steel); }
   .stag.k-warn { border: 1px solid var(--warn); background: var(--warn-tint); } .stag.k-warn .ico { color: var(--warn); }
-  .stag.k-quiet { background: rgba(138,155,180,0.16); } .stag.k-quiet .ico { color: var(--steel); }
+  /* The quiet tag's tint is the app's alpha(text.secondary, 0.16) in each scheme (DataStateTag quiet, TintChip neutral,
+     research Pill quiet): steel at 16%, so light takes its own darker steel (it drew dark steel there). Its label is
+     phosphor in both schemes, as the app's light labels on a steel tint are (spec 02 (c), 673dd755). */
+  .stag.k-quiet { background: color-mix(in srgb, var(--steel) 16%, transparent); } .stag.k-quiet .ico { color: var(--steel); }
   .stag.k-stream { background: var(--signal-tint); color: var(--text-info); } .stag.k-stream .sdot { width: 6px; height: 6px; border-radius: 50%; background: var(--signal); }
   .prov { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-2); font: 500 11px/1.2 'IBM Plex Mono', ui-monospace, monospace; color: var(--phosphor); text-decoration: none; white-space: nowrap; flex: 0 0 auto; }
   a.prov:hover { border-color: var(--steel); text-decoration: none; color: var(--phosphor); }
@@ -136,7 +139,7 @@
   .bstat.s-live { background: rgba(138,155,180,0.16); border-color: transparent; }
   .hatch { background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
   .t-dim { color: var(--text-dim) !important; } .t-info { color: var(--text-info); } .t-up { color: var(--text-up); } .t-down { color: var(--text-down); }
-  .v4 a:not(.btn):not(.prov):not(.v4n a):not(.v4-tabs a):not(.hd-tabs a):not(.nv-rail a):not(.pl-jump a) { color: var(--text-info); } /* tabs and rails keep their own colours (fidelity R-23) */
+  .v4 a:not(.btn):not(.prov):not(.v4n a):not(.v4-tabs a):not(.hd-tabs a):not(.nv-rail a):not(.pl-jump a):not(:where(.rs-chipbar a, .tn-strip a)) { color: var(--text-info); } /* tabs, rails and pill rows keep their own colours (fidelity R-23); the :where() adds no specificity, so the filings kind pills draw their own steel and ink (the current one measured text-info on phosphor, 1.76:1, in round 4) */
   .dcell { box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; overflow: hidden; color: var(--phosphor); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
   .dcell.is-sample { position: relative; border-style: dashed; border-color: var(--steel-2); background-color: var(--panel); }
   .dcell.is-sample::before, .hd-p.is-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; }
@@ -179,6 +182,13 @@
   .v4-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding-top: 8px; padding-bottom: 8px; font-size: 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
   .v4-notice.demo { border-bottom-style: dashed; border-bottom-color: var(--steel-2); }
   .v4-notice .ico { color: var(--steel); }
+  /* The production bar's links as shipped (MarketDataNotice.tsx, spec 02 step 3, 96bf67c8): 24px at a fine pointer, 44px
+     under a coarse one (standaloneLinkSx), and the bar drops its 8px vertical padding there, so it is 45px, not 61. */
+  .v4-notice .nl-a { display: inline-flex; align-items: center; min-height: 24px; } .v4-notice .nl-a + .nl-a { margin-left: 4px; } /* the app's 16px between its two links */
+  /* As MarketDataNotice.tsx shows them: the sentence from 900px (md), the demo link from 600px (sm). */
+  @media (max-width: 899px) { .v4-notice .nl-body { display: none; } }
+  @media (max-width: 599px) { .v4-notice .nl-demo { display: none; } }
+  @media (pointer: coarse) { .v4-notice[aria-label="What is live on this site"] { padding-top: 0; padding-bottom: 0; } .v4-notice .nl-a { min-height: 44px; } }
   .v4-tabs { border-bottom: 1px solid var(--line); }
   .v4-tabs .tabs-in { display: flex; gap: 4px; height: 48px; align-items: stretch; overflow-x: auto; scrollbar-width: none; }
   .v4-tabs a { display: inline-flex; align-items: center; gap: 8px; padding: 0 12px; color: var(--steel); text-decoration: none; font-weight: 500; font-size: 14px; white-space: nowrap; }
@@ -363,6 +373,9 @@
   .cf-tw thead th { font-weight: 600; color: var(--steel); background: var(--ink-2); position: sticky; top: 0; }
   .cf-tw td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
   .cf-tw td.t { font-family: 'IBM Plex Sans', sans-serif; }
+  /* A link cell in a twin (the insider trades' Form 4, ChartFrame TableTwinLink with standaloneLinkSx): 24px, 44 under a
+     coarse pointer, so a row's link is a full target on a phone (spec 02 step 5a: 50x44 coarse, 50x24 fine). */
+  .cf-tw td a { display: inline-flex; align-items: center; min-height: 24px; } @media (pointer: coarse) { .cf-tw td a { min-height: 44px; } }
   .cf-note { font-size: 12px; color: var(--steel); line-height: 1.45; margin: 0; text-wrap: pretty; }
   .cf-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--steel); }
   .cf-legend .k { display: inline-flex; align-items: center; gap: 6px; }
@@ -553,7 +566,7 @@
   .nv-body h2 { margin: 12px 0 0; font-size: 26px; }
   .nv-eyebrow { font: 600 12px 'IBM Plex Mono', monospace; color: var(--steel); }
   .nv-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 80px; }
-  .pillN { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: rgba(138,155,180,0.16); font: 500 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .pillN { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: color-mix(in srgb, var(--steel) 16%, transparent); font: 500 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
   .status { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
   .status.ok { border: 1px solid var(--line-2); } .status.watch { background: rgba(138,155,180,0.20); } .status.broken { background: var(--phosphor); color: var(--ink); }
   .ri-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 16px; }
@@ -737,6 +750,7 @@
   .ac-pills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .ac-wall h1 { margin: 0; font-size: 28px; letter-spacing: -0.01em; }
   .ac-wall p { margin: 0; line-height: 1.6; }
+  .ac-wbtns { display: flex; flex-wrap: wrap; gap: 10px; } .ac-wall .ac-wbtns .btn { min-height: 44px; }
   .ac-acct { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
   .ac-av { width: 40px; height: 40px; border-radius: 50%; background: var(--raised-2); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; flex: 0 0 auto; }
   .ac-fam { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
@@ -760,10 +774,11 @@
   .ac-sheet .v4dlg .df .btn { flex: 1 1 100%; min-height: 44px; }
   .ac-fill { display: flex; flex-wrap: wrap; gap: 6px; }
   /* Trade entry as shipped (TradeEntryDialogView.tsx; owner, 2026-10-25, after fidelity round 2): caps field labels
-     (FieldLabel: 11/700, 0.07em; steel here, AA on the panel), 36px fields on the page ink, full-width toggle groups,
-     the leg on one row of four (two by two under 600px, LegFields.tsx), 44px controls under 600px. The toggle group's
-     outline is an inset shadow, not a border, so each button box is the full row height, as the app's ToggleButtons are
-     (44 under 600px, not 42 inside a 1px border). */
+     (FieldLabel: 11/700, 0.07em, text.secondary since spec 02 step 4, 673dd755: steel, 6.19:1 dark and 5.42:1 light on
+     the dialog), 36px fields on the page ink, full-width toggle groups, the leg on one row of four (two by two under
+     600px, LegFields.tsx), 44px controls under 600px. The toggle group's outline is an inset shadow, not a border, so
+     each button box is the full row height, as the app's ToggleButtons are (44 under 600px, not 42 inside a 1px border).
+     A selected toggle takes MUI's neutral selected tint: phosphor 16% in dark, 8% in light (the app's action.selected). */
   .v4dlg.te .dh h2 { line-height: 1.4; text-wrap: wrap; }
   .te-l { display: block; margin: 0 0 4px; font: 700 11px/1.65 'IBM Plex Sans', sans-serif; letter-spacing: 0.07em; text-transform: uppercase; color: var(--steel); }
   .te-in { box-sizing: border-box; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ink); font: 400 13px 'IBM Plex Sans', sans-serif; color: var(--phosphor); }
@@ -774,6 +789,15 @@
   .te-tg > button { min-height: 38.8px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--steel); font: 600 13px/1.75 'IBM Plex Sans', sans-serif; }
   .te-tg > button:first-child { border-left: 0; }
   .te-tg > button[aria-pressed="true"] { background: color-mix(in srgb, var(--phosphor) 16%, transparent); color: var(--phosphor); }
+  [data-scheme="light"] .te-tg > button[aria-pressed="true"] { background: color-mix(in srgb, var(--phosphor) 8%, transparent); }
+  /* Call and Put keep their fills, with ink labels (owner S2-Q1, 2026-10-25; spec 02 (c) "no"; LegFields.tsx
+     rightSelectedSx, 31b0011a): a selected Call is success.main (--up), a selected Put error.main (--down). The label is
+     the app's ink #0B0F17 on every fill except light Put, which keeps white: 9.13:1 dark Call, 6.34:1 dark Put, 5.56:1
+     light Call, 4.74:1 light Put in white. Hover keeps the fill (no success.dark / error.dark). This closes the 2026-10-13
+     row's white-label item; the board drew a neutral phosphor tint here from fidelity ACC-12 (R3-B), which S2-Q1 reverses. */
+  .te-tg.te-right > button[aria-pressed="true"][data-right="call"] { background: var(--up); color: #0B0F17; }
+  .te-tg.te-right > button[aria-pressed="true"][data-right="put"] { background: var(--down); color: #0B0F17; }
+  [data-scheme="light"] .te-tg.te-right > button[aria-pressed="true"][data-right="put"] { color: #FFFFFF; }
   .te-g4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: start; }
   .te-g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .te-g2.wide { gap: 16px; }
@@ -793,8 +817,8 @@
       <a href="/settings" aria-label="Demo account settings" style="display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--steel); font-size: 13px;"><span class="only-wide">Demo account</span><span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--raised-2); color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', sans-serif;">D</span></a>
       <button type="button" class="v4n-icon menu" aria-label="Open navigation menu" aria-expanded="false"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
     </div>
-  </div></header><div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 16px;"><span class="skel" style="height: 44px; width: 38%;"></span><span class="skel" style="height: 300px; width: 100%;"></span><span class="skel" style="height: 120px; width: 100%;"></span><span class="skel" style="height: 220px; width: 100%;"></span></div></div><div class="v4-over"><div class="v4dlg wide te" role="dialog" aria-modal="true" aria-label="Open simulated position · SPY"><div class="dh"><h2>Open simulated position · SPY</h2><span class="stag k-solid">SIMULATED</span><button class="btn ghost sm" type="button" aria-label="Close"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div class="db"><div class="te-tg" role="group" aria-label="fill mode"><button type="button" aria-pressed="true">Manual price</button><button type="button" aria-pressed="false">Market</button><button type="button" aria-pressed="false">Limit</button></div>
-    <div class="te-g4"><div><span class="te-l">Side</span><span class="te-in ro"><span>Long</span></span></div><div><span class="te-l">Expiration</span><span class="te-in"><span>2026-10-09</span><span class="te-caret" aria-hidden="true"></span></span></div><div><span class="te-l">Strike</span><span class="te-in"><span>$690</span><span class="te-caret" aria-hidden="true"></span></span></div><div><span class="te-l">Right</span><div class="te-tg" role="group" aria-label="Right"><button type="button" aria-pressed="true">Call</button><button type="button" aria-pressed="false">Put</button></div></div></div>
+  </div></header><div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 16px;"><span class="skel" style="height: 44px; width: 38%;"></span><span class="skel" style="height: 300px; width: 100%;"></span><span class="skel" style="height: 120px; width: 100%;"></span><span class="skel" style="height: 220px; width: 100%;"></span></div></div><div class="v4-over"><div class="v4dlg wide te" role="dialog" aria-modal="true" aria-label="Open simulated position · SPY"><div class="dh"><h2>Open simulated position · SPY</h2><span class="stag k-solid" style="letter-spacing: 0.04em;">SIMULATED</span><button class="btn ghost sm" type="button" aria-label="Close"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div class="db"><div class="te-tg" role="group" aria-label="fill mode"><button type="button" aria-pressed="true">Manual price</button><button type="button" aria-pressed="false">Market</button><button type="button" aria-pressed="false">Limit</button></div>
+    <div class="te-g4"><div><span class="te-l">Side</span><span class="te-in ro"><span>Long</span></span></div><div><span class="te-l">Expiration</span><span class="te-in"><span>2026-10-09</span><span class="te-caret" aria-hidden="true"></span></span></div><div><span class="te-l">Strike</span><span class="te-in"><span>$690</span><span class="te-caret" aria-hidden="true"></span></span></div><div><span class="te-l">Right</span><div class="te-tg te-right" role="group" aria-label="Right"><button type="button" aria-pressed="true" data-right="call">Call</button><button type="button" aria-pressed="false" data-right="put">Put</button></div></div></div>
     <div class="te-g2"><div><span class="te-l">Quantity</span><span class="te-in"><span>1</span></span></div><div><span class="te-l">Manual price</span><span class="te-in"><span></span></span></div></div>
     <div class="te-g2 wide"><div><span class="te-l">Stop (optional)</span><span class="te-in"><span></span></span></div><div><span class="te-l">Target (optional)</span><span class="te-in"><span></span></span></div></div>
     <div class="te-net"><span class="dline" style="font-size: 13px;">Enter a price — opens at exactly the price you type.</span><span class="stag k-solid">user-entered price</span></div>

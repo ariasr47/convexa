@@ -48,6 +48,9 @@ export const CHART_CSS = `
   .cf-tw thead th { font-weight: 600; color: var(--steel); background: var(--ink-2); position: sticky; top: 0; }
   .cf-tw td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
   .cf-tw td.t { font-family: 'IBM Plex Sans', sans-serif; }
+  /* A link cell in a twin (the insider trades' Form 4, ChartFrame TableTwinLink with standaloneLinkSx): 24px, 44 under a
+     coarse pointer, so a row's link is a full target on a phone (spec 02 step 5a: 50x44 coarse, 50x24 fine). */
+  .cf-tw td a { display: inline-flex; align-items: center; min-height: 24px; } @media (pointer: coarse) { .cf-tw td a { min-height: 44px; } }
   .cf-note { font-size: 12px; color: var(--steel); line-height: 1.45; margin: 0; text-wrap: pretty; }
   .cf-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--steel); }
   .cf-legend .k { display: inline-flex; align-items: center; gap: 6px; }
@@ -272,10 +275,17 @@ export function plot({ height = 220, pl = 46, pr = 120, prn = 64, pt = 18, pb = 
 }
 
 /** The data table twin of a chart: native <details>, a labelled focusable scroll box, header cells. */
-export function dataTable({ caption, cols, rows, summary = 'Show the numbers', open = false }) {
+const twinRegion = ({ caption, cols, rows }) => {
   const head = `<thead><tr>${cols.map((c) => `<th scope="col">${c}</th>`).join('')}</tr></thead>`;
   const body = `<tbody>${rows.map((r) => `<tr>${r.map((c, i) => (i === 0 ? `<th scope="row" class="t" style="font-weight: 500; color: var(--phosphor);">${c}</th>` : typeof c === 'object' && c && c.t ? `<td class="t">${c.t}</td>` : `<td>${c}</td>`)).join('')}</tr>`).join('')}</tbody>`;
-  return `<details class="cf-tab"${open ? ' open' : ''}><summary>${summary}</summary><div class="cf-tw" tabindex="0" role="region" aria-label="${esc(caption)}"><table><caption>${caption}</caption>${head}${body}</table></div></details>`;
+  return `<div class="cf-tw" tabindex="0" role="region" aria-label="${esc(caption)}"><table><caption>${caption}</caption>${head}${body}</table></div>`;
+};
+export function dataTable({ caption, cols, rows, summary = 'Show the numbers', open = false }) {
+  return `<details class="cf-tab"${open ? ' open' : ''}><summary>${summary}</summary>${twinRegion({ caption, cols, rows })}</details>`;
+}
+/** Several twins under one disclosure, in order (ChartFrame's `table` as a list, spec 02 step 5a, 907cf98e). */
+export function dataTables(tables, { summary = 'Show the numbers', open = false } = {}) {
+  return `<details class="cf-tab"${open ? ' open' : ''}><summary>${summary}</summary><div style="display: flex; flex-direction: column; gap: 12px;">${tables.map(twinRegion).join('')}</div></details>`;
 }
 
 /** Legend for ≥ 2 series (dv: a legend is always present past one series; direct labels supplement). */

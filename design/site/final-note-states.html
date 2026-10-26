@@ -137,6 +137,9 @@
   .cf-tw thead th { font-weight: 600; color: var(--steel); background: var(--ink-2); position: sticky; top: 0; }
   .cf-tw td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
   .cf-tw td.t { font-family: 'IBM Plex Sans', sans-serif; }
+  /* A link cell in a twin (the insider trades' Form 4, ChartFrame TableTwinLink with standaloneLinkSx): 24px, 44 under a
+     coarse pointer, so a row's link is a full target on a phone (spec 02 step 5a: 50x44 coarse, 50x24 fine). */
+  .cf-tw td a { display: inline-flex; align-items: center; min-height: 24px; } @media (pointer: coarse) { .cf-tw td a { min-height: 44px; } }
   .cf-note { font-size: 12px; color: var(--steel); line-height: 1.45; margin: 0; text-wrap: pretty; }
   .cf-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--steel); }
   .cf-legend .k { display: inline-flex; align-items: center; gap: 6px; }
@@ -327,7 +330,7 @@
   .nv-body h2 { margin: 12px 0 0; font-size: 26px; }
   .nv-eyebrow { font: 600 12px 'IBM Plex Mono', monospace; color: var(--steel); }
   .nv-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 80px; }
-  .pillN { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: rgba(138,155,180,0.16); font: 500 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .pillN { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: color-mix(in srgb, var(--steel) 16%, transparent); font: 500 12px 'IBM Plex Mono', monospace; color: var(--phosphor); }
   .status { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
   .status.ok { border: 1px solid var(--line-2); } .status.watch { background: rgba(138,155,180,0.20); } .status.broken { background: var(--phosphor); color: var(--ink); }
   .ri-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 16px; }
@@ -477,7 +480,7 @@
   [data-scheme="light"] { --c-emph: var(--phosphor); --c-ctx: var(--steel); --c-grid: var(--line); --c-axis: var(--line-2); --c-edge: var(--steel-2); }
   .tk-air { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   .tk-air .t { display: flex; flex-direction: column; gap: 10px; } .tk-air .t p { margin: 0; font-size: 13.5px; }
-  .tk-air .g { display: flex; flex-direction: column; gap: 10px; opacity: 0.9; }
+  .tk-air .g { display: flex; flex-direction: column; gap: 10px; } /* no opacity: AiReadNotLive.tsx draws the outline undimmed, and 0.9 took its light labels to 3.88:1 */
   .tk-air .g i { display: block; border: 1px solid var(--line); border-radius: 8px; }
   .tk-air .f { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .tk-air .f > div { background: var(--ink-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
@@ -718,6 +721,28 @@
   .tn-tldr { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px 14px; align-items: baseline; }
   .tn-tldr .k { font: 500 18px/1.2 'IBM Plex Mono', monospace; }
   .tn-tldr p { font-size: 14.5px !important; line-height: 1.55 !important; }
+  /* Below 900px the rail gives way to the app's jump row (NoteView.tsx PartChips; ResearchView.tsx SampleRail strip).
+     Production: a row of 32px part pills (44px links under a coarse pointer, the bar's padding traded from 10 to 4px so
+     it keeps its height) over a 3px progress line; the current part is filled text.primary, the rest sit on a 16% steel
+     tint with a steel label in dark and text.primary in light, where steel on its own tint measured 4.08:1 (spec 02 (c),
+     673dd755). Staging: a strip of 44px section pills on a 10% steel tint, text.primary in light (steel measured 4.4:1). */
+  .tn-chips, .tn-strip { display: none; }
+  @media (max-width: 899px) {
+    .tn .nv > .nv-rail { display: none; }
+    .tn-chips { display: grid; gap: 8px; margin: 0 -16px 18px; padding: 10px 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--ink) 94%, transparent); }
+    .tn-chips .r { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+    .tn-chips a { flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 32px; border-radius: 999px; text-decoration: none; }
+    .tn-chips a > span { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; line-height: 1.65; white-space: nowrap; background: color-mix(in srgb, var(--steel) 16%, transparent); color: var(--steel); }
+    [data-scheme="light"] .tn-chips a > span { color: var(--phosphor); }
+    .tn-chips a > span.on { background: var(--phosphor); color: var(--ink); font-weight: 600; }
+    .tn-chips .bar { height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--steel) 16%, transparent); } .tn-chips .bar > i { display: block; height: 100%; border-radius: 3px; background: var(--phosphor); }
+    .tn-strip { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+    .tn-strip a { flex: 0 0 auto; display: flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 999px; font-size: 13px; white-space: nowrap; text-decoration: none; background: color-mix(in srgb, var(--steel) 10%, transparent); color: var(--steel); }
+    [data-scheme="light"] .tn-strip a { color: var(--phosphor); }
+    .tn-strip a[aria-current] { background: rgba(255,255,255,0.16); color: var(--phosphor); font-weight: 600; } /* MUI's action.selected */
+    [data-scheme="light"] .tn-strip a[aria-current] { background: rgba(0,0,0,0.08); }
+  }
+  @media (max-width: 899px) and (pointer: coarse) { .tn-chips { padding-top: 4px; padding-bottom: 4px; } .tn-chips a { min-height: 44px; } }
   @media (max-width: 899px) { .tn-sc > div { grid-template-columns: minmax(0, 1fr) auto; } .tn-sc > div > :nth-child(2) { grid-column: 1 / -1; order: 3; } .tn-tldr { grid-template-columns: 1fr; gap: 2px; } .tn .hd-tabs a { min-height: 44px; } }
 
   [hidden] { display: none !important; }
