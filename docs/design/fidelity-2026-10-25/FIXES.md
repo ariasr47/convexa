@@ -1455,3 +1455,15 @@ All in `tmp/fidelity/integ4/` (gitignored):
   - `r4d/` (`te`, `walls`, `bar`, `twin`, `stack`, `accept4` and `shots/`);
   - `perf/` (`summary.json`, `perf/*/` per run, and `run-perf.sh`).
 - **Builds:** `build.mjs`, `build-result.json` and `build-{demo,live}.log`.
+
+#### Round 4 gate: correction and a third `verify` run
+
+The sentence near the top of this round's section, "The final `npm run verify` below ran at the HEAD that includes
+it", was wrong when committed. Run 2 started at 05:21:34, before `e5a95b50` landed at 05:22:53, and its gitleaks
+scanned 11 commits. A third run, at `3772bf18` (this section's own commit, on top of `e5a95b50`), covers both:
+
+| Command | Exit | Time | What it covered |
+| --- | --- | --- | --- |
+| `npm run verify` (run 3, at `3772bf18`) | 0 | 172 s | Base `b45b4af0`, 542 changed files. gitleaks: 13 commits, no leaks. Task graph check skipped. `nx affected` lint, typecheck and test exit 0 (78 s). `test:tools` 0. `check-filings` 0. |
+
+Log: `tmp/fidelity/integ4/gates/verify-run3.log`.
