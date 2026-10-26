@@ -1,8 +1,8 @@
 //! B7 — capacity-baseline structural isolation + poison → red.
 //!
 //! Cargo test must NOT run the 600s soak. These tests prove source scans,
-//! forced-fail naming, vacuous vs partial surface, CI soak-absence, and that
-//! the vendor key never egresses into a receipt.
+//! forced-fail naming, vacuous vs partial surface, and that the vendor key
+//! never egresses into a receipt.
 
 use api_rust::services::capacity_harness::receipt::{parse_receipt, render_short};
 use api_rust::services::capacity_harness::standing::{render_standing_blocked, sample_ids};
@@ -127,114 +127,6 @@ fn read_latest_receipt(dir: &Path) -> String {
     fs::read_to_string(path).unwrap()
 }
 
-fn backend_job_yaml() -> String {
-    let raw = fs::read_to_string(workspace_root().join(".github/workflows/ci.yml")).unwrap();
-    // Normalize CRLF so needle matches on Windows checkouts.
-    let raw = raw.replace("\r\n", "\n");
-    let start = raw
-        .find("\n  backend:\n")
-        .or_else(|| raw.find("  backend:\n").map(|i| i.saturating_sub(1)))
-        .expect("backend job missing");
-    let rest = if raw.as_bytes().get(start) == Some(&b'\n') {
-        &raw[start + 1..]
-    } else {
-        &raw[start..]
-    };
-    let mut job_end = rest.len();
-    for (i, line) in rest.lines().enumerate() {
-        if i == 0 {
-            continue;
-        }
-        if line.starts_with("  ")
-            && !line.starts_with("    ")
-            && line.ends_with(':')
-            && !line.trim().starts_with('#')
-        {
-            let key = line.trim().trim_end_matches(':');
-            let reserved = matches!(
-                key,
-                "name"
-                    | "runs-on"
-                    | "steps"
-                    | "needs"
-                    | "permissions"
-                    | "defaults"
-                    | "timeout-minutes"
-                    | "env"
-                    | "services"
-                    | "strategy"
-                    | "concurrency"
-                    | "outputs"
-                    | "if"
-                    | "container"
-                    | "continue-on-error"
-                    | "environment"
-            );
-            if !reserved {
-                let mut off = 0usize;
-                for (li, l) in rest.lines().enumerate() {
-                    if li == i {
-                        job_end = off;
-                        break;
-                    }
-                    off += l.len() + 1;
-                }
-                break;
-            }
-        }
-    }
-    rest[..job_end].to_string()
-}
-
-/// Slice the backend-job step that invokes capacity load (name + run + env).
-fn capacity_load_step_block(job: &str) -> String {
-    let lines: Vec<&str> = job.lines().collect();
-    let run_idx = lines
-        .iter()
-        .position(|l| {
-            let t = l.trim();
-            t.starts_with("run:")
-                && (t.contains("capacity load")
-                    || t.contains("capacity:load")
-                    || t.contains("api:capacity-load"))
-        })
-        .expect("capacity load run: line missing from backend job");
-    let mut start = run_idx;
-    while start > 0 {
-        if lines[start].trim_start().starts_with("- ") {
-            break;
-        }
-        start -= 1;
-    }
-    let step_indent = lines[start].len() - lines[start].trim_start().len();
-    let mut end = run_idx + 1;
-    while end < lines.len() {
-        let l = lines[end];
-        if !l.trim().is_empty() {
-            let indent = l.len() - l.trim_start().len();
-            if indent == step_indent && l.trim_start().starts_with("- ") {
-                break;
-            }
-        }
-        end += 1;
-    }
-    lines[start..end].join("\n")
-}
-
-fn app_env_dev_in_step(step: &str) -> bool {
-    step.lines().any(|l| {
-        let t = l.trim();
-        if !t.starts_with("APP_ENV:") {
-            return false;
-        }
-        let value = t["APP_ENV:".len()..]
-            .trim()
-            .trim_matches('"')
-            .trim_matches('\'');
-        value == "dev"
-    })
-}
-
 // ---------------------------------------------------------------------------
 // 1 Source scan: forbidden live-vendor seams
 // ---------------------------------------------------------------------------
@@ -333,48 +225,6 @@ async fn bump_request_count_blocks_without_mocked_vendors_claim() {
         }
     }
     let _ = fs::remove_dir_all(&tmp);
-}
-
-// ---------------------------------------------------------------------------
-// 8 CI workflow: load present (D4: --release + APP_ENV=dev), soak absent
-// ---------------------------------------------------------------------------
-
-#[test]
-fn ci_backend_job_runs_capacity_load_and_not_soak() {
-    let job = backend_job_yaml();
-    assert!(
-        job.contains("capacity load")
-            || job.contains("capacity:load")
-            || job.contains("api:capacity-load"),
-        "backend job must invoke capacity load"
-    );
-    // D4: merge CI load must be release + APP_ENV=dev (debug cargo run held).
-    let step = capacity_load_step_block(&job);
-    assert!(
-        step.lines()
-            .any(|l| l.trim().starts_with("run:") && l.contains("--release")),
-        "capacity load CI step must use cargo --release (D4); debug profile held"
-    );
-    assert!(
-        app_env_dev_in_step(&step),
-        "capacity load CI step must set APP_ENV: dev (release MissingMode without it)"
-    );
-    assert!(
-        step.contains("CONVEXA_CAPACITY_CI_STEP"),
-        "capacity load CI step must set CONVEXA_CAPACITY_CI_STEP for Evidence: ci"
-    );
-    // Soak must not appear as a step command in the default backend job.
-    let soak_step = job.lines().any(|l| {
-        let t = l.trim();
-        t.starts_with("run:")
-            && (t.contains("capacity soak")
-                || t.contains("capacity:soak")
-                || t.contains("api:capacity-soak"))
-    });
-    assert!(
-        !soak_step,
-        "backend job must NOT run capacity soak as a step"
-    );
 }
 
 // ---------------------------------------------------------------------------

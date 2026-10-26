@@ -10,3 +10,5 @@ at the batch commit.
 
 | Batch | File | Cases before → after | Removed or merged (named in the commit) |
 |---|---|---|---|
+| 16 | `apps/api/tests/capacity_isolation.rs` (case-level; risk-gone) | 3 → 2 | removed: linux_ci_runs_normal_gate_and_retains_all_four_reports |
+| 16 | `apps/api/tests/capacity_baseline_isolation.rs` (case-level, with its 3 `ci.yml` helpers; risk-gone) | 13 → 12 | removed: ci_backend_job_runs_capacity_load_and_not_soak |

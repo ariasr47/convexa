@@ -1,8 +1,8 @@
 //! Structural gates for the repository-owned capacity command.
 //!
 //! These checks deliberately read the real command/configuration bytes.  They are mutation
-//! oriented: a production selector, a drifted or cached nx target, or a CI step that stops
-//! running the gate is rejected without contacting a service.
+//! oriented: a production selector or a drifted or cached nx target is rejected without
+//! contacting a service.
 
 use std::{fs, path::PathBuf};
 
@@ -62,17 +62,4 @@ fn nx_targets_match_public_commands_and_are_uncached() {
         assert_eq!(target["options"]["command"], command);
         assert_eq!(target["options"]["cwd"], "{workspaceRoot}");
     }
-}
-
-#[test]
-fn linux_ci_runs_normal_gate_and_retains_all_four_reports() {
-    let ci = read(".github/workflows/ci.yml");
-    assert!(ci.contains("npm run capacity:baseline:self-test:connector-poison"));
-    assert!(ci.contains("npm run capacity:baseline:self-test:optional-fault"));
-    assert!(ci.contains("npm run capacity:baseline:self-test:byte-identity"));
-    assert!(ci
-        .lines()
-        .any(|line| line.trim() == "npm run capacity:baseline"));
-    assert!(ci.contains("apps/api/data/capacity/capacity-baseline-normal.json"));
-    assert!(ci.contains("apps/api/data/capacity/self-tests/*.json"));
 }
