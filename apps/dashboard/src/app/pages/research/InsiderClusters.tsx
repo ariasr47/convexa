@@ -4,9 +4,12 @@
  * sale and a filled dot an open-market purchase: shape carries the kind, never hue (P-11). Shaded
  * spans are ten days with three or more insiders trading the same way; only a buying span outside any
  * 10b5-1 plan is a cluster, which the API works out (apps/api insider_trades.rs) and this draws.
- * Roles, not names: each dot links to its filing, where the names are.
+ * Roles, not names. The plot is one image (role="img", its summary as the label) with no tab stop;
+ * its dots are aria-hidden circles that keep their hover titles. Every trade's detail is in "Show
+ * the numbers": the windows, then one row per trade, and on the live site each row links to its
+ * filing, where the names are (spec 2026-10-21/02, part (d); owner answers S2-Q2 and S2-Q3).
  */
-import { ChartFrame, chartRoles } from '@/shared/charts/frame';
+import { ChartFrame, chartRoles, type TableTwinData } from '@/shared/charts/frame';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { coarseFloor } from '@/shared/ui/touch';
 import {
@@ -59,6 +62,9 @@ const sharesText = (n: number) => n.toLocaleString('en-US', { maximumFractionDig
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const numberWord = (n: number) =>
   ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'][n] ?? String(n);
+/** One trade as a sentence: a dot's hover title, and its Form 4 link's name in the twin. */
+const tradeSentence = (v: PublicInsiderTransaction, roles: string[]) =>
+  `${roles[v.insider] ?? 'Insider'} ${v.kind === 'purchase' ? 'bought' : 'sold'} ${sharesText(v.shares)} shares on ${formatNoteDate(v.trade_date)}${v.planned ? ' under a 10b5-1 plan' : ''}; filed ${formatShortDate(v.filed)}`;
 
 /** The frame's title over data: the latest buying cluster, or why there is none (P-10). */
 export function clustersFinding(
@@ -232,6 +238,34 @@ function InsiderClustersFrame({ d }: { d: PublicTicker }) {
   const windows = [...(ins.clusters ?? []), ...(ins.sale_windows ?? [])].sort((a, b) =>
     a.from.localeCompare(b.from),
   );
+  // Every trade, one row each. On the live site the last column links to the trade's Form 4 on
+  // sec.gov. The sample has no such column: its trades are invented, and their links would open the
+  // company's real EDGAR page.
+  const trades: TableTwinData = {
+    caption: `${d.ticker} Form 4 trades by trade date`,
+    cols: [
+      'Trade date',
+      'Insider',
+      'Kind',
+      'Shares',
+      'Price',
+      'Under a plan',
+      'Filed',
+      ...(demo ? [] : ['Filing']),
+    ],
+    rows: tx.map((t) => [
+      formatNoteDate(t.trade_date),
+      roles[t.insider] ?? 'Insider',
+      t.kind === 'purchase' ? 'Purchase' : 'Sale',
+      sharesText(t.shares),
+      t.price == null ? '—' : `$${t.price.toFixed(2)}`,
+      t.planned ? 'yes' : 'no',
+      formatShortDate(t.filed),
+      ...(demo
+        ? []
+        : [{ text: 'Form 4 ↗', href: t.url, label: `Form 4: ${tradeSentence(t, roles)}` }]),
+    ]),
+  };
   return (
     <ChartFrame
       finding={clustersFinding(ins, demo, days, end)}
@@ -247,38 +281,29 @@ function InsiderClustersFrame({ d }: { d: PublicTicker }) {
           : `Filed by ${formatShortDate(latestFiled)} · insiders file within 2 business days`
       }
       note={`A cluster counts open-market purchases only. Sales under a 10b5-1 plan were scheduled months ahead and never count; option exercises and gifts are left out. Roles, not names: the names stay in the filings.${coverage}`}
-      // "Show the numbers": the windows, as the design's table twin; with none, every trade.
+      // "Show the numbers": the windows, as the design's table twin, then every trade (S2-Q2).
       table={
         windows.length
-          ? {
-              caption: 'Windows with 3 or more insiders trading the same way',
-              cols: ['From', 'To', 'Kind', 'Insiders', 'Trades', 'Under a plan'],
-              rows: windows.map((w) => [
-                formatNoteDate(w.from),
-                formatNoteDate(w.to),
-                (ins.clusters ?? []).includes(w) ? 'Buying cluster' : 'Sales',
-                w.insiders,
-                w.trades,
-                w.planned_trades === 0
-                  ? 'none'
-                  : w.planned_trades === w.trades
-                    ? 'all'
-                    : `${w.planned_trades} of ${w.trades}`,
-              ]),
-            }
-          : {
-              caption: `${d.ticker} Form 4 trades by trade date`,
-              cols: ['Trade date', 'Insider', 'Kind', 'Shares', 'Price', 'Under a plan', 'Filed'],
-              rows: tx.map((t) => [
-                formatNoteDate(t.trade_date),
-                roles[t.insider] ?? 'Insider',
-                t.kind === 'purchase' ? 'Purchase' : 'Sale',
-                sharesText(t.shares),
-                t.price == null ? '—' : `$${t.price.toFixed(2)}`,
-                t.planned ? 'yes' : 'no',
-                formatShortDate(t.filed),
-              ]),
-            }
+          ? [
+              {
+                caption: 'Windows with 3 or more insiders trading the same way',
+                cols: ['From', 'To', 'Kind', 'Insiders', 'Trades', 'Under a plan'],
+                rows: windows.map((w) => [
+                  formatNoteDate(w.from),
+                  formatNoteDate(w.to),
+                  (ins.clusters ?? []).includes(w) ? 'Buying cluster' : 'Sales',
+                  w.insiders,
+                  w.trades,
+                  w.planned_trades === 0
+                    ? 'none'
+                    : w.planned_trades === w.trades
+                      ? 'all'
+                      : `${w.planned_trades} of ${w.trades}`,
+                ]),
+              },
+              trades,
+            ]
+          : trades
       }
       testId="chart-insider-clusters"
     >
@@ -410,10 +435,13 @@ function Timeline({
   return (
     <Box ref={ref} sx={{ height: H, minWidth: 0 }}>
       {W > 0 && (
+        // One image with its summary as the label, and no tab stop on the plot (S2-Q3): the frame's
+        // source chip and "Show the numbers" are the chart's keyboard path, and the twin has every
+        // trade. Inside role="img" the marks are presentational.
         <svg
           width={W}
           height={H}
-          role="group"
+          role="img"
           aria-label={`${count(tx.filter((v) => v.kind === 'sale').length, 'sale')} and ${count(tx.filter((v) => v.kind === 'purchase').length, 'purchase')} by ${count(roles.length, 'insider')}; ${count(clusters.length, 'buying cluster')}`}
           style={{ display: 'block' }}
         >
@@ -505,32 +533,22 @@ function Timeline({
               </text>
             );
           })}
+          {/* A dot is a mark, not a link: aria-hidden, never focusable, its hover title kept. The
+              twin's trades table carries each one's sentence and its Form 4 link. */}
           {tx.map((v, i) => {
             const buy = v.kind === 'purchase';
-            const role = roles[v.insider] ?? 'Insider';
-            const what = `${role} ${buy ? 'bought' : 'sold'} ${sharesText(v.shares)} shares on ${formatNoteDate(v.trade_date)}${v.planned ? ' under a 10b5-1 plan' : ''}; filed ${formatShortDate(v.filed)}`;
             return (
-              <a
+              <circle
                 key={`${v.accession}-${i}`}
-                href={v.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={what}
+                aria-hidden
+                cx={x(v.trade_date)}
+                cy={y(v.insider)}
+                {...(buy
+                  ? { r: 6, fill: c.emph }
+                  : { r: 4.5, fill: t.palette.background.paper, stroke: c.ctx, strokeWidth: 2 })}
               >
-                <title>{what}</title>
-                {buy ? (
-                  <circle cx={x(v.trade_date)} cy={y(v.insider)} r={6} fill={c.emph} />
-                ) : (
-                  <circle
-                    cx={x(v.trade_date)}
-                    cy={y(v.insider)}
-                    r={4.5}
-                    fill={t.palette.background.paper}
-                    stroke={c.ctx}
-                    strokeWidth={2}
-                  />
-                )}
-              </a>
+                <title>{tradeSentence(v, roles)}</title>
+              </circle>
             );
           })}
         </svg>

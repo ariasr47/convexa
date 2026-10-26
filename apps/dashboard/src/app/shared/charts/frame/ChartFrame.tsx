@@ -13,7 +13,9 @@
  *   (P-10, frameTitle.ts). The subtitle holds the metric, the unit and the period.
  * - A state tag sits beside the title (Updated Oct 13, Computed, Demo · sample data…).
  * - The foot carries the source chip, in the frame's provenance, and the as-of line.
- * - "Show the numbers" opens the table twin: the same values as text, for every chart.
+ * - "Show the numbers" opens the table twin: the same values as text, for every chart. A chart may
+ *   give several tables under the one disclosure, and a cell may link out (TableTwinLink). The
+ *   tables are built only while it is open, so a closed twin carries no rows.
  * - In loading and message states the body keeps the chart's final height (no layout shift); a
  *   message sits on a faint ghost grid, a failure marked in the warning colour, never green or red.
  *   Loading draws the same ghost grid (the board's `.cskel`) and keeps the frame's rows, so the frame
@@ -33,12 +35,12 @@ import { CreditsLink } from '@/shared/credits/CreditsLink';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { DATA_STATES, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
-import { coarseFloor } from '@/shared/ui/touch';
+import { coarseFloor, standaloneLinkSx } from '@/shared/ui/touch';
 import { useFrameDemoTag, useWidgetProvenance } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import { alpha, type Breakpoint, type Theme } from '@mui/material/styles';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode, type SyntheticEvent } from 'react';
 import { frameTitle, type ChartStatus } from './frameTitle';
 
 export type Provenance = 'primary' | 'third' | 'sample';
@@ -65,11 +67,25 @@ export interface FrameReserve {
   note?: string;
 }
 
+/**
+ * A twin cell that links out (spec 2026-10-21/02, part (d)): `text` is what shows, `label` the
+ * link's accessible name. It renders as a standalone link, 44px under a coarse pointer. The renderer
+ * treats an object cell as a link only when it has an `href`.
+ */
+export interface TableTwinLink {
+  text: string;
+  href: string;
+  label: string;
+}
+
+/** A figure (a string or number, Mono) or a link cell. */
+export type TableTwinCell = string | number | TableTwinLink;
+
 export interface TableTwinData {
   caption: string;
   cols: string[];
   /** The first cell of each row is its header (a date, a maturity); the rest are figures. */
-  rows: (string | number)[][];
+  rows: TableTwinCell[][];
 }
 
 const MONO = typographyTokens.monoFontFamily;
@@ -117,7 +133,8 @@ export function ChartFrame({
   note?: ReactNode;
   source?: { text: string; href?: string };
   asOf?: string;
-  table?: TableTwinData;
+  /** "Show the numbers": one table, or several under the one disclosure, in the order given. */
+  table?: TableTwinData | TableTwinData[];
   /** A message state's one action (Try again). */
   action?: ReactNode;
   /** Loading only: the ready rows to hold (FrameReserve). */
@@ -144,9 +161,10 @@ export function ChartFrame({
   const title = frameTitle(status, finding, metric);
   const ready = status.kind === 'ready';
   const loading = status.kind === 'loading';
+  const twins = table === undefined ? [] : Array.isArray(table) ? table : [table];
   // A loading frame given no foot holds the standard one (source chip + as-of + table twin) as ghosts.
   const ghostFoot = loading && !source && !asOf;
-  const ghostTwin = loading && (!!table || ghostFoot);
+  const ghostTwin = loading && (twins.length > 0 || ghostFoot);
   const hold = loading ? reserve : undefined;
   // The ready head, laid out invisibly under the loading one: the taller of the two sets the height.
   const holdHead = !!hold && (!!hold.finding || !!hold.sub || !!hold.tag);
@@ -280,7 +298,7 @@ export function ChartFrame({
           )}
         </Box>
       )}
-      {ready && table && <TableTwin {...table} />}
+      {ready && twins.length > 0 && <TwinDisclosure tables={twins} />}
       {ghostTwin && (
         // The summary's own row: 24, and the coarse 44 its `coarseFloor` gives it.
         <Box aria-hidden sx={[{ height: 24, display: 'flex', alignItems: 'center' }, coarseFloor]}>
@@ -544,9 +562,26 @@ function SourceChip({
 }
 
 /** "Show the numbers": the chart's values as a table, for every chart (P-8 to P-13, design table twin). */
-export function TableTwin({ caption, cols, rows }: TableTwinData) {
+export function TableTwin(table: TableTwinData) {
+  return <TwinDisclosure tables={[table]} />;
+}
+
+/**
+ * The one "Show the numbers" disclosure over one or more tables (the insider chart's windows, then
+ * every trade). The tables are built only while it is open, from local state on `toggle`: a closed
+ * twin carries no rows, which keeps a long note's DOM small (the NVDA note's 194 trades would add
+ * about 1,750 nodes; spec 2026-10-21/02, part (d) and its DOM budget).
+ */
+function TwinDisclosure({ tables }: { tables: TableTwinData[] }) {
+  const [open, setOpen] = useState(false);
   return (
-    <Box component="details" sx={{ '& > summary::-webkit-details-marker': { display: 'none' } }}>
+    <Box
+      component="details"
+      onToggle={(e: SyntheticEvent<HTMLElement>) =>
+        setOpen((e.currentTarget as HTMLDetailsElement).open)
+      }
+      sx={{ '& > summary::-webkit-details-marker': { display: 'none' } }}
+    >
       <Box
         component="summary"
         // The local 24px beats the theme's coarse floor (an element selector), so the summary
@@ -574,66 +609,95 @@ export function TableTwin({ caption, cols, rows }: TableTwinData) {
       >
         Show the numbers
       </Box>
+      {open && tables.map((t, i) => <TwinTable key={i} {...t} />)}
+    </Box>
+  );
+}
+
+/** A link cell's link: the standalone link (44px under coarse) in the body Sans, since a link is
+ *  not a figure (Mono is for figures). */
+const LINK_CELL_SX = [
+  standaloneLinkSx,
+  (t: Theme) => ({ fontFamily: t.typography.fontFamily, fontVariantNumeric: 'normal' }),
+] as const;
+
+function cellContent(c: TableTwinCell): ReactNode {
+  if (typeof c !== 'object') return c;
+  if (!c.href) return c.text;
+  return (
+    <Link
+      href={c.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={c.label}
+      sx={LINK_CELL_SX}
+    >
+      {c.text}
+    </Link>
+  );
+}
+
+function TwinTable({ caption, cols, rows }: TableTwinData) {
+  return (
+    <Box
+      role="region"
+      aria-label={caption}
+      tabIndex={0}
+      sx={(t) => ({
+        mt: 1,
+        maxWidth: '100%',
+        overflowX: 'auto',
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: '8px',
+        '&:focus-visible': { outline: `2px solid ${extrasFor(t).textAmber}`, outlineOffset: 2 },
+      })}
+    >
       <Box
-        role="region"
-        aria-label={caption}
-        tabIndex={0}
+        component="table"
         sx={(t) => ({
-          mt: 1,
-          maxWidth: '100%',
-          overflowX: 'auto',
-          border: 1,
-          borderColor: 'divider',
-          borderRadius: '8px',
-          '&:focus-visible': { outline: `2px solid ${extrasFor(t).textAmber}`, outlineOffset: 2 },
+          borderCollapse: 'collapse',
+          width: '100%',
+          fontSize: 12,
+          '& caption': { textAlign: 'left', p: '8px 10px', color: 'text.secondary' },
+          '& th, & td': {
+            p: '6px 10px',
+            textAlign: 'right',
+            borderTop: 1,
+            borderColor: 'divider',
+            whiteSpace: 'nowrap',
+          },
+          '& th:first-of-type, & td:first-of-type': { textAlign: 'left' },
+          '& thead th': { fontWeight: 600, color: 'text.secondary', bgcolor: extrasFor(t).well },
+          '& td': { fontFamily: MONO, fontVariantNumeric: 'tabular-nums' },
+          '& tbody th': { fontWeight: 500, color: 'text.primary' },
         })}
       >
-        <Box
-          component="table"
-          sx={(t) => ({
-            borderCollapse: 'collapse',
-            width: '100%',
-            fontSize: 12,
-            '& caption': { textAlign: 'left', p: '8px 10px', color: 'text.secondary' },
-            '& th, & td': {
-              p: '6px 10px',
-              textAlign: 'right',
-              borderTop: 1,
-              borderColor: 'divider',
-              whiteSpace: 'nowrap',
-            },
-            '& th:first-of-type, & td:first-of-type': { textAlign: 'left' },
-            '& thead th': { fontWeight: 600, color: 'text.secondary', bgcolor: extrasFor(t).well },
-            '& td': { fontFamily: MONO, fontVariantNumeric: 'tabular-nums' },
-            '& tbody th': { fontWeight: 500, color: 'text.primary' },
-          })}
-        >
-          <caption>{caption}</caption>
-          <thead>
-            <tr>
-              {cols.map((c) => (
-                <th key={c} scope="col">
-                  {c}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={i}>
-                {r.map((c, j) =>
-                  j === 0 ? (
-                    <th key={j} scope="row">
-                      {c}
-                    </th>
-                  ) : (
-                    <td key={j}>{c}</td>
-                  ),
-                )}
-              </tr>
+        <caption>{caption}</caption>
+        <thead>
+          <tr>
+            {cols.map((c) => (
+              <th key={c} scope="col">
+                {c}
+              </th>
             ))}
-          </tbody>
-        </Box>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i}>
+              {r.map((c, j) =>
+                j === 0 ? (
+                  <th key={j} scope="row">
+                    {cellContent(c)}
+                  </th>
+                ) : (
+                  <td key={j}>{cellContent(c)}</td>
+                ),
+              )}
+            </tr>
+          ))}
+        </tbody>
       </Box>
     </Box>
   );
