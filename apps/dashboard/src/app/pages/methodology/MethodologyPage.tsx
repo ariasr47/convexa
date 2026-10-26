@@ -60,6 +60,7 @@
  * inversion canon rule 24 exists to prevent.
  */
 import { SANS_FACE } from '@/shared/figure';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { isDemoBuild } from '@/shared/lib/demoSite';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
@@ -204,13 +205,7 @@ function SectionBlocks({ section }: { section: MethodSection }) {
 }
 
 export function MethodologyPage() {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = 'How Convexa works — methodology';
-    return () => {
-      document.title = prev;
-    };
-  }, []);
+  useDocumentTitle('How Convexa works — methodology');
 
   // GATE Z I-1 (AC-M1) — a FRESH `/methodology#id` load: the browser's own scroll-to-fragment
   // step already ran, before React had rendered this lazy route's sections, so it found nothing.

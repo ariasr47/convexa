@@ -12,6 +12,7 @@
  * mono 16px, the headline in display type at clamp(34px, 4vw, 52px), the lead 17/1.6 at 52ch.
  */
 import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
 import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
@@ -19,7 +20,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useEffect, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { NOT_FOUND_COPY } from './copy';
 
@@ -67,13 +68,7 @@ function paletteShortcut(): ReactNode {
 
 export function NotFound() {
   const shortcut = paletteShortcut();
-  useEffect(() => {
-    const prev = document.title;
-    document.title = 'Nothing at this address — Convexa';
-    return () => {
-      document.title = prev;
-    };
-  }, []);
+  useDocumentTitle('Nothing at this address — Convexa');
 
   return (
     <Box data-testid="not-found-page" sx={pageColumnSx}>

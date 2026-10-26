@@ -48,6 +48,7 @@ import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
 import { DemoOperatorUnavailable } from '@/pages/operator-metrics/DemoOperatorUnavailable';
 import { marketDataOff } from '@/shared/dataState/marketData';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
@@ -195,6 +196,8 @@ function DefaultTickerRedirect() {
 function TickerDeskRoute() {
   const { ticker = '' } = useParams();
   const mode = useMarketDataMode();
+  // The route's one title, set before any branch (spec 2026-10-21/02, part (e)).
+  useDocumentTitle(`${ticker.toUpperCase()} — Convexa`);
   if (dataMode === 'demo')
     return (STAGING_DEMO_SYMBOLS as readonly string[]).includes(ticker.toUpperCase()) ? (
       <TickerDashboard />
@@ -223,6 +226,7 @@ function ScannerRoute() {
  *  TradingView's chart, since it has no bar feed licensed for public display. */
 function TechnicalAnalysisRoute() {
   const { symbol = '' } = useParams();
+  useDocumentTitle(`${symbol.toUpperCase()} technical — Convexa`);
   return (
     <PageColumn>
       {dataMode === 'demo' ? (
@@ -316,7 +320,11 @@ export function AppRoutes() {
         <Route
           path="/positions"
           element={
-            <RequireAuth surface="your positions" demoPath="/positions">
+            <RequireAuth
+              surface="your positions"
+              demoPath="/positions"
+              docTitle="Positions — Convexa"
+            >
               {lazyRoute(<PositionsPage />)}
             </RequireAuth>
           }
@@ -324,7 +332,7 @@ export function AppRoutes() {
         <Route
           path="/scanner"
           element={
-            <RequireAuth surface="the scanner" demoPath="/scanner">
+            <RequireAuth surface="the scanner" demoPath="/scanner" docTitle="Scanner — Convexa">
               {lazyRoute(<ScannerRoute />)}
             </RequireAuth>
           }

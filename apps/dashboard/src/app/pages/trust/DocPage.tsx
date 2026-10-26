@@ -19,6 +19,7 @@
  *
  * Design: design/src/screens/final/trust-pages.mjs (docPage, TR_CSS), v4/docs-dialogs.mjs (.doc).
  */
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
 import { proseLinkSx } from '@/shared/ui/touch';
@@ -73,13 +74,7 @@ export function DocPage({
   children: ReactNode;
   testId: string;
 }) {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = docTitle;
-    return () => {
-      document.title = prev;
-    };
-  }, [docTitle]);
+  useDocumentTitle(docTitle);
 
   // The index marks the section being read: the first one in view under the nav.
   const [current, setCurrent] = useState<string | null>(null);

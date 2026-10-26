@@ -7,6 +7,7 @@ import { ChartFrame, chartRoles, type Provenance } from '@/shared/charts/frame';
 import type { FrameHeight, FrameReserve } from '@/shared/charts/frame/ChartFrame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { extrasFor } from '@/shared/theme/tokens';
 import { coarseFloor } from '@/shared/ui/touch';
 import { FrameDemoTagProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
@@ -95,6 +96,7 @@ const pct = (n: number | null | undefined) => (n == null ? '—' : `${n.toFixed(
 /** The shell's demo bar is this page's one "Demo · sample data", so its frames don't repeat it
  *  (FrameDemoTagProvider; owner decision D1, spec 01 step 5). No effect on the live build. */
 export function MarketsPage() {
+  useDocumentTitle('Markets — Convexa');
   return (
     <FrameDemoTagProvider value={false}>
       <MarketsBody />

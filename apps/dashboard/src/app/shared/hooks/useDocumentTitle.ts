@@ -10,9 +10,11 @@
  */
 import { useEffect } from 'react';
 
-export function useDocumentTitle(title: string): void {
+export function useDocumentTitle(title: string | null): void {
   useEffect(() => {
-    if (typeof document === 'undefined') return;
+    // `null`: this render has no title to give (a route that falls through to NotFound, which sets
+    // its own); leave the document's title alone.
+    if (title === null || typeof document === 'undefined') return;
     const prev = document.title;
     document.title = title;
     return () => {

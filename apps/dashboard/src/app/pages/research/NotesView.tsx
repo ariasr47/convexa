@@ -5,6 +5,7 @@
  * (Demo mode keeps the authored sample note in `ticker/research/ResearchView.tsx`, whose figures match
  * the demo scenario.)
  */
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -196,6 +197,17 @@ function OtherNotes({
 export function NotesView({ symbol, slug }: { symbol: string; slug?: string }) {
   const ticker = symbol.toUpperCase();
   const { state, retry } = useTickerNotes(ticker);
+  // The route's one title (spec 2026-10-21/02, part (e)): the note's own once it has loaded, the
+  // ticker's research until then, or when there is no note.
+  const titled =
+    state.phase === 'ready'
+      ? slug
+        ? state.notes.find((n) => n.slug === slug)
+        : state.notes[0]
+      : null;
+  useDocumentTitle(
+    titled ? `${ticker} · ${titled.title} — Convexa` : `${ticker} research — Convexa`,
+  );
   const pub = usePublicTicker(ticker);
   const summary = researchIndex.find((r) => r.ticker === ticker)?.latest ?? null;
   // The release calendar's review triggers for the newest note: FOMC days and the company's

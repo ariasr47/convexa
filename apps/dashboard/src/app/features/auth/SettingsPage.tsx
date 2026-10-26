@@ -25,6 +25,7 @@ import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
@@ -251,6 +252,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function SettingsPage() {
+  useDocumentTitle('Settings — Convexa');
   const auth = useAuth();
   const { openAuth } = useAuthDialog();
   const settings = useSettings();

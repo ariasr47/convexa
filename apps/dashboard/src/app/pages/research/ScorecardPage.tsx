@@ -11,6 +11,7 @@ import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { DATA_STATES, type DataStateKey } from '@/shared/dataState/vocabulary';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { STAGING_DEMO_SYMBOLS, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { FrameDemoTagProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import { dataMode, type SampleSignalGrade } from '@convexa/api';
@@ -152,6 +153,7 @@ function Legend({ counts }: { counts: [DataStateKey, number][] }) {
  *  names the sample once, by its own "Demo · …" source chip (FrameDemoTagProvider; owner decision
  *  D1; fidelity audit 2026-10-25, FND-06a). No effect on the live build. */
 export function ScorecardPage() {
+  useDocumentTitle('Scorecard — Convexa');
   return (
     <FrameDemoTagProvider value={false}>
       <ScorecardBody />

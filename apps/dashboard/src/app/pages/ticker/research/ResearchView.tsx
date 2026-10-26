@@ -6,6 +6,7 @@ import { useActiveSection } from '@/pages/research/useActiveSection';
 import { SampleTaChart } from '@/pages/ticker/technical-analysis/SampleTaChart';
 import { TickerTabs } from '@/pages/ticker/TickerTabs';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import {
   loadSampleBars,
   loadSampleResearch,
@@ -456,6 +457,13 @@ export function ResearchView({ symbol }: { symbol: string }) {
   useEffect(() => {
     void fetchResearch(false);
   }, [fetchResearch]);
+  // The route's one title, before any branch (spec 2026-10-21/02, part (e)); spec 4 step C2 moves
+  // the staging note onto NotesView, whose call then covers both builds.
+  useDocumentTitle(
+    state.phase === 'ready'
+      ? `${symbol.toUpperCase()} · ${state.result.value.title} — Convexa`
+      : `${symbol.toUpperCase()} research — Convexa`,
+  );
 
   if (state.phase === 'loading')
     return (

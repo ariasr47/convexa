@@ -8,6 +8,7 @@ import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { ChartFrame, type ChartStatus } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { STAGING_DEMO_SYMBOLS, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { FrameDemoTagProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import {
@@ -93,6 +94,7 @@ const DEMO_EDGE = (t: Theme) =>
 /** The shell's demo bar is this page's one "Demo · sample data", so its frames don't repeat it
  *  (FrameDemoTagProvider; owner decision D1, spec 01 step 5). No effect on the live build. */
 export function FilingsPage() {
+  useDocumentTitle('Filings — Convexa');
   return (
     <FrameDemoTagProvider value={false}>
       <FilingsBody />

@@ -14,6 +14,7 @@
  * links the same screen on the demo (owner ruling 2026-10-14 (1)).
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
@@ -36,6 +37,9 @@ interface Props {
   /** The same screen on the staging demo, e.g. "/scanner". Sign-ups are closed, so a visitor who
    *  can't sign in still gets to see it working (owner ruling 2026-10-14). */
   demoPath?: string;
+  /** The route's tab title, e.g. "Scanner — Convexa": set here, before the demo's early
+   *  return, so the wall and the page behind it share it (spec 2026-10-21/02, part (e)). */
+  docTitle?: string;
 }
 
 /** Spine-aware unlock copy keyed by the `surface` prop passed from the route table
@@ -65,7 +69,9 @@ function wallCopy(surface: string): { unlocks: string; demo: string } {
 export const WALL_POLICY =
   'Invited accounts only; new sign-ups are closed while Convexa is in private testing. Research, rates, positioning and short data are open to everyone.';
 
-export function RequireAuth({ children, surface, demoPath }: Props) {
+export function RequireAuth({ children, surface, demoPath, docTitle }: Props) {
+  // Before the demo's early return: the wall and the page behind it share one title.
+  useDocumentTitle(docTitle ?? null);
   const { ready, authenticated, subsystemDegraded, refresh } = useAuth();
   const { openAuth } = useAuthDialog();
   const signInRef = useRef<HTMLButtonElement>(null);

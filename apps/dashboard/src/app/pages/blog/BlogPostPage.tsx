@@ -10,6 +10,7 @@
  * rhythm, the H1 at clamp(32px, 3.6vw, 46px) / 1.08, steel body with phosphor emphasis, and the
  * callout on the panel (fidelity audit 2026-10-25, SITE-11).
  */
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { proseLinkSx, standaloneLinkSx } from '@/shared/ui/touch';
 import Box from '@mui/material/Box';
@@ -215,14 +216,8 @@ export function BlogPostPage({ file, notFound }: { file: string; notFound: React
       navigate({ pathname: postPath(slug), search, hash }, { replace: true });
   }, [slug, file, search, hash, navigate]);
 
-  useEffect(() => {
-    if (!article) return;
-    const prev = document.title;
-    document.title = `${article.title} — Convexa`;
-    return () => {
-      document.title = prev;
-    };
-  }, [article]);
+  // An unknown slug renders NotFound, which sets its own title; never nest two calls on one route.
+  useDocumentTitle(article ? `${article.title} — Convexa` : null);
 
   if (!article || !blocks) return <>{notFound}</>;
 

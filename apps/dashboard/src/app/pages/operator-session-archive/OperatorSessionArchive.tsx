@@ -1,4 +1,5 @@
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { OpsBar, OpsTag } from '@/shared/ui/OpsBar';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
@@ -18,7 +19,6 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useEffect } from 'react';
 import { BANNED_ON_SCREEN, COPY, originRejectedBody } from './copy';
 import { lookupCoverageCell } from './occupancy';
 import { TRIO, type TrioSymbol } from './schedule';
@@ -347,13 +347,7 @@ export function OperatorSessionArchive(props: OperatorSessionArchiveProps = {}) 
   const api = useSessionArchive(props);
   const { state } = api;
 
-  useEffect(() => {
-    const prev = document.title;
-    document.title = COPY.documentTitle;
-    return () => {
-      document.title = prev || 'Convexa';
-    };
-  }, []);
+  useDocumentTitle(COPY.documentTitle);
 
   const standing = state.standing;
   const showGate =

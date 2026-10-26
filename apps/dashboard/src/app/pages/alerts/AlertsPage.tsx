@@ -36,6 +36,7 @@ import { NOT_RECORDED } from '@/shared/copy/notANumber';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { faceFor } from '@/shared/figure';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
@@ -379,6 +380,7 @@ function levelValueFor(rule: AlertRule, levels: SampleLevels | null): number | n
 }
 
 export function AlertsPage() {
+  useDocumentTitle('Alerts — Convexa');
   const a = useAlerts();
   const faulted = alertsReadFaulted();
   const marketDataMode = useMarketDataMode();

@@ -11,6 +11,7 @@
  * card a panel padded 24 with a 28px Archivo title and its schematic in the `.ss-schem` frame
  * (fidelity audit 2026-10-25, SITE-12).
  */
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
 import Box from '@mui/material/Box';
@@ -18,7 +19,6 @@ import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { BLOG_COPY } from './copy';
 import { BLOG_ARTICLES, postPath, type BlogArticle } from './posts';
@@ -180,13 +180,7 @@ export function BlogIndex({ articles }: { articles: readonly BlogArticle[] }) {
 }
 
 export function BlogPage() {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = 'Blog — Convexa';
-    return () => {
-      document.title = prev;
-    };
-  }, []);
+  useDocumentTitle('Blog — Convexa');
   return <BlogIndex articles={BLOG_ARTICLES} />;
 }
 
