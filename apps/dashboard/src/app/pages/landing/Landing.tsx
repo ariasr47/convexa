@@ -314,6 +314,9 @@ export function Landing() {
                   '& .MuiChip-label': { whiteSpace: 'normal', px: 1.5, py: 0.5, lineHeight: 1.3 },
                 }}
               />
+              {/* The board's `.ss-hero h1` (`shell-site-kit.mjs:21`): balanced lines at 1.06, so
+                  the heading breaks "See the dealer / positioning / behind the price." as the
+                  boards do, not "… / positioning behind / the price." (fidelity R3). */}
               <Typography
                 component="h1"
                 variant="h1"
@@ -322,7 +325,8 @@ export function Landing() {
                   fontSize: `clamp(${displayScale.minPx}px, 38px + 1.5vw, ${displayScale.maxPx}px)`,
                   fontWeight: displayScale.fontWeight,
                   letterSpacing: '-0.02em',
-                  lineHeight: 1.08,
+                  lineHeight: 1.06,
+                  textWrap: 'balance',
                 }}
               >
                 {LANDING_COPY.hero.h1}
