@@ -72,6 +72,23 @@ function dimsLabel(d: RecentTrace['dims']): string {
     .join(' · ');
 }
 
+/**
+ * The trend's select labels at the 11px floor (fidelity R3, `/_ops/metrics`). A small outlined
+ * field's floating label is the theme's 13px drawn at `scale(0.75)` (`theme.ts` MuiInputLabel), so
+ * Metric, Pctl, Scope, Horizon and Cadence measured 9.7–9.9px on screen. Here the shrunk label draws
+ * at 0.875, 11.4px, one pixel higher so its centre keeps the theme's place just above the outline.
+ * The outline's notch is cut from a hidden legend at 0.75em of the field's font, so it takes the
+ * same 0.875em and the gap still clears the label; `maxWidth` is MUI's `calc(133% - 32px)`
+ * rescaled for the new scale.
+ */
+const LABELS_AT_FLOOR = {
+  '& .MuiInputLabel-sizeSmall.MuiInputLabel-shrink.MuiInputLabel-outlined': {
+    transform: 'translate(14px, -9px) scale(0.875)',
+    maxWidth: 'calc(114% - 32px)',
+  },
+  '& .MuiInputBase-sizeSmall .MuiOutlinedInput-notchedOutline > legend': { fontSize: '0.875em' },
+} as const;
+
 /** Max (5th) and count (6th) leave the stage table under 600px; every row has all seven cells. */
 const NARROW_STAGES = {
   '@media (max-width: 599px)': {
@@ -285,7 +302,7 @@ export function OperatorMetrics() {
   } else if (data) {
     const empty = data.window.request_count === 0;
     body = (
-      <Stack spacing={2}>
+      <Stack spacing={2} sx={LABELS_AT_FLOOR}>
         {/* Latency trend — first child; its poll loop is the page's single fetcher. */}
         <LatencyTrend trend={trend} />
 
