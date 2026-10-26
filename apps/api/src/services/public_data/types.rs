@@ -123,6 +123,12 @@ pub struct FuturesMarket {
 pub struct FuturesSummary {
     pub report_date: NaiveDate,
     pub markets: Vec<FuturesMarket>,
+    /// The fear–greed gauge's weekly inputs, oldest first, each (long − short) ÷ open interest:
+    /// leveraged funds in VIX futures (1170E1) and asset managers in E-mini S&P 500 (13874A). They
+    /// keep every report the request returned, not only Positioning's window; a week without open
+    /// interest is left out. Never on the `futures` wire.
+    pub vol_positioning: Vec<(NaiveDate, f64)>,
+    pub equity_positioning: Vec<(NaiveDate, f64)>,
 }
 
 #[derive(Debug, Clone)]

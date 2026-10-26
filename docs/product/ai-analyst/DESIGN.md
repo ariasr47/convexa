@@ -642,3 +642,12 @@ accepted it, and a package cut in that gap would hold a filing nobody could read
 - **Consequence:** step 0's three header GETs should come before the owner's live run (criterion
   14) and before any eval item is cut near an event. If the headers disagree with `accepted_at`,
   the rule changes, the fixture ids are re-baselined, and a further amendment records the outcome.
+
+### 2026-10-25: §7 sequencing, the public fear–greed gauge before Phase 2 (spec 07)
+
+Source: [spec 07](../specs/2026-10-21/07-stress-gauge.md), open question 4, answered yes by the
+owner on 2026-10-25 ([README](../specs/2026-10-21/README.md), "Owner answers", S7-Q4). **The public
+Stress section on Research → Markets and its inputs (the OFR Financial Stress Index reader and VIX
+futures `1170E1` in `cftc.rs`) ship ahead of Phase 2, as the Treasury curve and the calendar did;
+`get_stress_gauge` and the Q5 eval stay in Phase 2, and no model reads the gauge until that eval
+passes.** §7's "New sources come only after that" still governs what a model may read.

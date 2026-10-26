@@ -519,7 +519,11 @@ impl PublicDataService {
         self.inner
             .futures
             .get((), || async move {
-                let since = Utc::now().date_naive() - chrono::Duration::days(3 * 365 + 1);
+                // One clock: the request and Positioning's window are both counted from this UTC
+                // date, so Positioning keeps exactly the reports the old 1,096-day request
+                // returned, whatever the hour (never `today_eastern()`, which turns at 20:00 ET).
+                let fetched_on = Utc::now().date_naive();
+                let since = fetched_on - chrono::Duration::days(cftc::FETCH_DAYS);
                 let url = url::Url::parse_with_params(cftc::ENDPOINT, cftc::query(since))
                     .map_err(|_| FetchError::new(cftc::SOURCE, "query"))?;
                 let body = required(
@@ -529,7 +533,8 @@ impl PublicDataService {
                 )?;
                 let rows = cftc::parse(&body)
                     .map_err(|e| FetchError::new(cftc::SOURCE, format!("parse: {e}")))?;
-                cftc::build(&rows).ok_or_else(|| FetchError::new(cftc::SOURCE, "no rows"))
+                cftc::build(&rows, fetched_on)
+                    .ok_or_else(|| FetchError::new(cftc::SOURCE, "no rows"))
             })
             .await
     }
