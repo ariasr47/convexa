@@ -223,6 +223,96 @@ pub struct ResultsWindow {
     pub basis_kind: ResultsBasis,
 }
 
+/// One of the fear–greed gauge's seven inputs, in its table order (spec 07, "The method").
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StressInput {
+    Volatility,
+    Credit,
+    SafeAssets,
+    EquityValuation,
+    Funding,
+    VolPositioning,
+    EquityPositioning,
+}
+
+/// How often an input is published: the OFR daily (about two business days late), the CFTC weekly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Cadence {
+    Daily,
+    Weekly,
+}
+
+/// Which way a higher raw value leans.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Leaning {
+    Fear,
+    Greed,
+}
+
+/// The gauge's bands, decided on the published integer; each edge belongs to the calmer band:
+/// 0–24 Extreme Fear, 25–44 Fear, 45–55 Neutral, 56–75 Greed, 76–100 Extreme Greed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StressBand {
+    ExtremeFear,
+    Fear,
+    Neutral,
+    Greed,
+    ExtremeGreed,
+}
+
+/// Why an input is not counted in the gauge.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NotCounted {
+    /// Its newest value is past its freshness limit (5 weekdays daily, 14 days weekly).
+    Stale,
+    /// Its source answered nothing, and no earlier copy is kept.
+    NoData,
+    /// Its window reaches back less than a year.
+    ShortHistory,
+}
+
+/// One input as scored. Percentile and score are unrounded; only display rounds them.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StressComponent {
+    pub input: StressInput,
+    /// The id of its row in the answer's sources list (`ofr` or `cftc`), which carries its state.
+    pub source: &'static str,
+    pub cadence: Cadence,
+    pub higher_means: Leaning,
+    /// The as-of value: OFR index units, or a CFTC net position as a fraction of open interest.
+    pub raw: Option<f64>,
+    pub as_of: Option<NaiveDate>,
+    /// Observations in the window, the as-of value included.
+    pub window: u32,
+    pub window_from: Option<NaiveDate>,
+    /// 0–100 in the raw value's direction; `None` without data or with less than a year of it.
+    pub percentile: Option<f64>,
+    /// 0–100 with 100 = extreme greed for every input; `None` where `percentile` is.
+    pub score: Option<f64>,
+    pub counted: bool,
+    pub reason: Option<NotCounted>,
+    /// Weekdays (daily) or calendar days (weekly) from the as-of date to `Stress::judged_on`.
+    pub age: Option<u32>,
+}
+
+/// The fear–greed gauge: published only when at least 5 of the 7 inputs count.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Stress {
+    pub published: bool,
+    /// 0–100, the unrounded mean rounded half up; `None` unless published.
+    pub gauge: Option<u32>,
+    /// The unrounded mean of the counted scores; `None` unless published.
+    pub mean: Option<f64>,
+    pub band: Option<StressBand>,
+    /// The oldest as-of date among the counted OFR inputs; `None` when none counts.
+    pub as_of: Option<NaiveDate>,
+    pub counted: u32,
+    /// The Eastern date freshness was judged on.
+    pub judged_on: NaiveDate,
+    /// Always seven, in table order.
+    pub components: Vec<StressComponent>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Markets {
     pub state: DataState,

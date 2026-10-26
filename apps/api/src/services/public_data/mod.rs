@@ -22,6 +22,9 @@ pub(crate) mod insider_trades;
 pub(crate) mod liquidity;
 pub(crate) mod ofr;
 pub(crate) mod sources;
+// Spec 07 step 3 lands the scoring alone; step 4 joins it into markets() and drops this allow.
+#[allow(dead_code)]
+pub(crate) mod stress;
 pub(crate) mod treasury;
 pub mod types;
 pub(crate) mod xbrl_frames;
