@@ -21,7 +21,7 @@ import { elevationFor } from '@/shared/theme/tokens';
 import type { Expiration, LiveUpdate, MarketState, Signals } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, type SxProps, type Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -36,6 +36,55 @@ import { TickerToolbar } from './TickerToolbar';
 
 /** Shared with Widget frames — one elevation/radius language for deck ↔ board. */
 const DECK_RADIUS = '12px';
+
+/** `TickerHeader`'s hero row (its root `Box` > the row `Stack`), its anchor column and its right
+ *  column, as reached from the wrapper below. */
+const MAST_ROW = '& > div > div';
+const MAST_WHO = `${MAST_ROW} > div:first-of-type`;
+const MAST_ACT = `${MAST_ROW} > div:nth-of-type(2)`;
+
+/**
+ * From `sm`, the masthead takes `final-desk-staging`'s `.tk-mast` geometry (`final/ticker-desk.mjs`):
+ * one wrapping row, gaps 14px by 32px, the anchor column on a 520px basis that takes the slack, the
+ * right column (tabs, then the controls and the CTA) on a 600px basis, the two aligned at the foot.
+ * So the pair sits side by side only where 520 + 32 + 600 fit (a 1226px viewport and up); below
+ * that the right column stacks under the anchor, as the board's does, and below 900 its contents
+ * stretch and start at the left (`.act` `align-items: stretch`, `.tk-ctl` `flex-start`).
+ * Fidelity R3: `TickerHeader`'s own row kept the right column content-wide (568px) beside the
+ * anchor at every width from `sm`, 16px apart, so at 1440 "Sample last trade" stayed on the chips
+ * line (the anchor 695.7px wide against the board's 648) and the Structure label sat 21.4px above
+ * the board's, and at 768 the tabs and CTA sat beside a 493px anchor, 28.5px low. Scoped here, on
+ * the one parent that composes the masthead, with the row's `Stack` margins zeroed for the gaps;
+ * the phone keeps `TickerHeader`'s own column. Selectors are `div`-qualified so they outrank the
+ * row `Stack`'s spacing rule (0,1,2) and the columns' own `sx`.
+ * With the anchor full width from 600 to 1225, its symbol and price also take the board's fluid
+ * sizes (`.tk-mast .who h1` `clamp(30px, 2.8vw, 36px)`, as `PublicDesk.tsx`'s h1 already does;
+ * `.tk-px .p` `clamp(26px, 2.6vw, 36px)` on a 1.0 line): the fixed 36px symbol and 32px price on
+ * 1.05 stood 13px taller than the board's at 768 and 1024. The phone keeps its own 30 and 26. The
+ * day change takes `.tk-px .c`'s `normal` line, as the phone already does: the body's inherited
+ * 1.65 hung below the price and pushed the chips 2-3px down.
+ * Below `tablet` the controls wrap at the column's full width, so each `.tk-sel` chip takes its
+ * own 44px row, as `TickerToolbar`'s chips are drawn to below `tablet` and as the board's phone
+ * rules (to 767px) draw them; on one row they split 197/197px at 600 and cut the persona short.
+ */
+const MAST_GEOMETRY_SX: SxProps<Theme> = (t) => ({
+  [t.breakpoints.up('sm')]: {
+    [MAST_ROW]: { flexWrap: 'wrap', columnGap: '32px', rowGap: '14px', alignItems: 'flex-end' },
+    [`${MAST_ROW} > div`]: { m: 0 },
+    [MAST_WHO]: { flex: '999 1 520px' },
+    [MAST_ACT]: { flex: '0 1 600px' },
+    '& [data-testid="deck-symbol"]': { fontSize: 'clamp(30px, 2.8vw, 36px)' },
+    '& [data-testid="deck-price"]': { fontSize: 'clamp(26px, 2.6vw, 36px)', lineHeight: 1 },
+    '& [data-testid="deck-change"]': { lineHeight: 'normal' },
+  },
+  [t.breakpoints.between('sm', 'md')]: {
+    [MAST_ACT]: { alignItems: 'stretch' },
+    [`${MAST_ACT} > .MuiStack-root`]: { justifyContent: 'flex-start' },
+  },
+  [t.breakpoints.between('sm', 'tablet')]: {
+    '& [data-testid="ticker-toolbar"]': { flexWrap: 'wrap', width: '100%' },
+  },
+});
 
 interface CommandDeckProps {
   // Hero (TickerHeader) inputs.
@@ -213,12 +262,17 @@ export function CommandDeck(props: CommandDeckProps) {
   // established idiom for this exact kind of width-driven placement switch) — every pre-existing
   // CommandDeck/TickerHeader test keeps exercising the below-1100 (today's) arrangement unless it
   // explicitly stubs `matchMedia`.
-  const controlsJoinHeadline = useMediaQuery(theme.breakpoints.up('laptop'));
+  // Fidelity R3: the join starts at `sm`, not `laptop`. `final-desk-staging`'s `.act` carries the
+  // `.tk-ctl` chips and the CTA at every width; between 600 and 1225 that right column stacks under
+  // the anchor (`MAST_GEOMETRY_SX`), so the controls ride in it there too, where the tier-2 strip
+  // under the header put a 49px row the board does not draw (Structure 28.5px low at 768). The
+  // tier-2 slot now renders only where `matchMedia` is absent.
+  const controlsJoinHeadline = useMediaQuery(theme.breakpoints.up('sm'));
   // A phone (below `sm`, where `TickerHeader` stacks its hero row) takes the board's phone masthead
   // order: tabs, Expirations, Persona, then the CTA (`final/ticker-desk.mjs`'s `.act`: the tabs, then
   // `.tk-ctl` with the two `.tk-sel` chips before the button; fidelity DESK-06). So the SAME toolbar
-  // element goes into `TickerHeader`'s controls slot, ahead of the CTA, as it does from `laptop`, but
-  // as a full-width block (`inline` false), its chips one per row. Never both slots: from `laptop`
+  // element goes into `TickerHeader`'s controls slot, ahead of the CTA, as it does from `sm`, but
+  // as a full-width block (`inline` false), its chips one per row. Never both slots: from `sm`
   // `controlsJoinHeadline` wins. jsdom has no `matchMedia`, so unit tests keep the tier-2 order.
   const phoneOrder = useMediaQuery(theme.breakpoints.down('sm')) && !controlsJoinHeadline;
   // Reveal the condensed bar only once the full deck has scrolled out of view. IntersectionObserver is
@@ -357,30 +411,34 @@ export function CommandDeck(props: CommandDeckProps) {
             only ONE such gap, before `.quick`). Tightened, not removed — the tiers stay three
             visually distinct groups. */}
         <Stack spacing={{ xs: 2, sm: 1.5 }}>
-          {/* Tier 1 — hero identity row (regime + connection chips, anchor, meta line, controls +
-              CTA at ≥ laptop — PASS 2 change 9 — CTA alone below it). */}
-          <TickerHeader
-            m={m}
-            sig={sig}
-            live={live}
-            isLive={isLive}
-            displayActive={displayActive}
-            streamOffline={streamOffline}
-            lastSessionPhase={lastSessionPhase}
-            selected={selected}
-            onOpenTrade={onOpenTrade}
-            storeFaulted={storeFaulted}
-            tradeAllowed={tradeAllowed}
-            onSignIn={onSignIn}
-            freshness={freshness}
-            singleNameCaveat={singleNameCaveat}
-            inlineControls={controlsJoinHeadline || phoneOrder ? toolbar : null}
-            tabs={tabs}
-          />
+          {/* Tier 1 — hero identity row (regime + connection chips, anchor, meta line, then the
+              tabs, the controls and the CTA in the right column from `sm` — PASS 2 change 9, fidelity
+              R3 — on a phone the same order stacked). The wrapper carries `MAST_GEOMETRY_SX`. */}
+          <Box sx={MAST_GEOMETRY_SX}>
+            <TickerHeader
+              m={m}
+              sig={sig}
+              live={live}
+              isLive={isLive}
+              displayActive={displayActive}
+              streamOffline={streamOffline}
+              lastSessionPhase={lastSessionPhase}
+              selected={selected}
+              onOpenTrade={onOpenTrade}
+              storeFaulted={storeFaulted}
+              tradeAllowed={tradeAllowed}
+              onSignIn={onSignIn}
+              freshness={freshness}
+              singleNameCaveat={singleNameCaveat}
+              inlineControls={controlsJoinHeadline || phoneOrder ? toolbar : null}
+              tabs={tabs}
+            />
+          </Box>
 
-          {/* Tier 2 — the segmented control strip (one instrument panel), from `sm` to 1100 only; at
-              ≥ laptop and on a phone the SAME `toolbar` element (see above `const`) renders inside
-              `TickerHeader` instead — never both, the two flags gate each slot exclusively. */}
+          {/* Tier 2 — the segmented control strip (one instrument panel), only where `matchMedia`
+              is absent (jsdom); in a browser, from `sm` and on a phone, the SAME `toolbar` element
+              (see above `const`) renders inside `TickerHeader` instead — never both, the two flags
+              gate each slot exclusively. */}
           {!controlsJoinHeadline && !phoneOrder && toolbar}
 
           {/* Tier 3 — Quick symbols row (pins + durable recents). Not on sticky bar. */}
