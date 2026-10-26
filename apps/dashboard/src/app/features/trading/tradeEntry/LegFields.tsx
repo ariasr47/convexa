@@ -2,12 +2,14 @@
  * One leg's fields for the shared TradeEntryDialog.
  */
 import type { InstrumentKind, LegSide } from '@/features/trading/positions/leg';
+import { ink } from '@/shared/theme/tokens';
 import type { OptionRight } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
+import type { Theme } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
@@ -35,6 +37,28 @@ const PAIR_GRID_SX = {
   gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
   gap: '10px',
 } as const;
+
+/**
+ * The selected Right keeps its fill: a selected Call is `success.main`, a selected Put `error.main`
+ * (spec 2026-10-21/02 (c), the 'no' branch the owner chose in S2-Q1, 2026-10-25: only the label
+ * changes; the canon's 2026-10-13 `textUp`/`textDown` row leaves 'the call/put toggle fill' on the
+ * fill hues). This restores the fills that fidelity ACC-12 had made neutral; ACC-12 was an audit
+ * row, not an owner ruling, and its SIMULATED chip half stands.
+ *
+ * - The label is `ink` on every fill except light Put, which keeps white. WCAG 2, measured on the
+ *   built dialog: dark Call 9.13:1, dark Put 6.34:1, light Call 5.56:1, light Put in white 4.74:1
+ *   (ink on light Put would be 4.05:1).
+ * - Hover keeps the resting fill and label. A selected button in this exclusive group does nothing
+ *   when clicked again (`onChange` ignores `null`), and the old `success.dark`/`error.dark` hover
+ *   fills would take ink to 3.75:1 on light Call and 2.84:1 on light Put.
+ */
+const rightSelectedSx = (right: OptionRight) => (t: Theme) => {
+  const fill = right === 'call' ? t.palette.success.main : t.palette.error.main;
+  const label = right === 'put' && t.palette.mode === 'light' ? t.palette.common.white : ink;
+  return {
+    '&.Mui-selected, &.Mui-selected:hover': { backgroundColor: fill, color: label },
+  };
+};
 
 /** A value the trader cannot change here, drawn as the board's quiet field (`.fld .in.dis`): a
  *  dashed outline, no fill, steel text. Read-only, never `disabled`, so it stays readable and in
@@ -250,9 +274,10 @@ export function LegFields({
               </>
             ))}
 
-          {/* Right. NEUTRAL when selected (fidelity audit 2026-10-25, ACC-12): the canon never
-              colours call against put (ruling #18), so the pressed segment keeps the theme's quiet
-              selected fill, the same as the fill-mode control above it, never green or red. */}
+          {/* Right. A selected Call is green and a selected Put red, with an ink label (white on
+              light Put) and no hover change (`rightSelectedSx`, spec 02 (c), owner answer S2-Q1).
+              Ruling #18 bars call-vs-put tint on position and P&L surfaces; this is the instrument
+              control, where Call or Put is the contract being picked. */}
           {isOption && (
             <Box sx={{ minWidth: 0 }}>
               <FieldLabel>Right</FieldLabel>
@@ -264,8 +289,12 @@ export function LegFields({
                 fullWidth
                 aria-label={`Right${suffix}`}
               >
-                <ToggleButton value="call">Call</ToggleButton>
-                <ToggleButton value="put">Put</ToggleButton>
+                <ToggleButton value="call" sx={rightSelectedSx('call')}>
+                  Call
+                </ToggleButton>
+                <ToggleButton value="put" sx={rightSelectedSx('put')}>
+                  Put
+                </ToggleButton>
               </ToggleButtonGroup>
             </Box>
           )}
