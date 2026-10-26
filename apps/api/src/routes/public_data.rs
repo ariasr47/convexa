@@ -2072,4 +2072,188 @@ mod tests {
         .unwrap_err();
         assert_eq!(error.status_code(), StatusCode::UNPROCESSABLE_ENTITY);
     }
+
+    /// The gauge reaches the wire field for field: each row's id, source, cadence and leaning in
+    /// table order, its raw value with its sign, percentile and score rounded to one decimal, the
+    /// unrounded mean beside the gauge and band, and every band and reason word.
+    #[test]
+    fn the_gauge_reaches_the_wire_field_for_field() {
+        use serde_json::{json, Value};
+        let day = |s: &str| NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap();
+        let ofr = |input, raw, percentile, score| service::StressComponent {
+            input,
+            source: sources::OFR.0,
+            cadence: service::Cadence::Daily,
+            higher_means: service::Leaning::Fear,
+            raw: Some(raw),
+            as_of: Some(day("2026-10-19")),
+            window: 781,
+            window_from: Some(day("2023-10-20")),
+            percentile: Some(percentile),
+            score: Some(score),
+            counted: true,
+            reason: None,
+            age: Some(3),
+        };
+        let vix = service::StressComponent {
+            input: service::StressInput::VolPositioning,
+            source: sources::CFTC.0,
+            cadence: service::Cadence::Weekly,
+            higher_means: service::Leaning::Fear,
+            raw: Some(0.0025),
+            as_of: Some(day("2026-10-06")),
+            window: 157,
+            window_from: Some(day("2023-10-10")),
+            percentile: Some(91.04),
+            score: Some(8.96),
+            counted: false,
+            reason: Some(service::NotCounted::Stale),
+            age: Some(16),
+        };
+        let emini = service::StressComponent {
+            input: service::StressInput::EquityPositioning,
+            higher_means: service::Leaning::Greed,
+            raw: Some(0.4741),
+            as_of: Some(day("2026-10-13")),
+            window_from: Some(day("2023-10-17")),
+            percentile: Some(69.24),
+            score: Some(69.24),
+            counted: true,
+            reason: None,
+            age: Some(9),
+            ..vix.clone()
+        };
+        let stress = service::Stress {
+            published: true,
+            gauge: Some(50),
+            mean: Some(50.15567765567766),
+            band: Some(service::StressBand::Neutral),
+            as_of: Some(day("2026-10-19")),
+            counted: 6,
+            judged_on: day("2026-10-22"),
+            components: vec![
+                ofr(service::StressInput::Volatility, -0.007, 70.04, 29.96),
+                ofr(service::StressInput::Credit, -0.947, 50.46, 49.54),
+                ofr(service::StressInput::SafeAssets, 0.294, 36.64, 63.36),
+                ofr(service::StressInput::EquityValuation, -0.503, 19.94, 80.06),
+                ofr(service::StressInput::Funding, -0.142, 41.46, 58.54),
+                vix,
+                emini,
+            ],
+        };
+
+        let mut wire = serde_json::to_value(StressWire::from(stress.clone())).unwrap();
+        let rows = wire.as_object_mut().unwrap().remove("components").unwrap();
+        assert_eq!(
+            wire,
+            json!({
+                "published": true, "gauge": 50, "mean": 50.15567765567766, "band": "neutral",
+                "as_of": "2026-10-19", "counted": 6, "judged_on": "2026-10-22"
+            })
+        );
+        let column = |key: &str| {
+            Value::Array(
+                rows.as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|row| row[key].clone())
+                    .collect(),
+            )
+        };
+        assert_eq!(
+            column("id"),
+            json!([
+                "volatility",
+                "credit",
+                "safe_assets",
+                "equity_valuation",
+                "funding",
+                "vol_positioning",
+                "equity_positioning"
+            ])
+        );
+        assert_eq!(
+            column("source"),
+            json!(["ofr", "ofr", "ofr", "ofr", "ofr", "cftc", "cftc"])
+        );
+        assert_eq!(
+            column("cadence"),
+            json!(["daily", "daily", "daily", "daily", "daily", "weekly", "weekly"])
+        );
+        assert_eq!(
+            column("higher_means"),
+            json!(["fear", "fear", "fear", "fear", "fear", "fear", "greed"])
+        );
+        assert_eq!(
+            column("raw"),
+            json!([-0.007, -0.947, 0.294, -0.503, -0.142, 0.0025, 0.4741])
+        );
+        assert_eq!(
+            column("as_of"),
+            json!([
+                "2026-10-19",
+                "2026-10-19",
+                "2026-10-19",
+                "2026-10-19",
+                "2026-10-19",
+                "2026-10-06",
+                "2026-10-13"
+            ])
+        );
+        assert_eq!(column("window"), json!([781, 781, 781, 781, 781, 157, 157]));
+        assert_eq!(
+            column("window_from"),
+            json!([
+                "2023-10-20",
+                "2023-10-20",
+                "2023-10-20",
+                "2023-10-20",
+                "2023-10-20",
+                "2023-10-10",
+                "2023-10-17"
+            ])
+        );
+        assert_eq!(
+            column("percentile"),
+            json!([70.0, 50.5, 36.6, 19.9, 41.5, 91.0, 69.2])
+        );
+        assert_eq!(
+            column("score"),
+            json!([30.0, 49.5, 63.4, 80.1, 58.5, 9.0, 69.2])
+        );
+        assert_eq!(
+            column("counted"),
+            json!([true, true, true, true, true, false, true])
+        );
+        assert_eq!(
+            column("reason"),
+            json!([null, null, null, null, null, "stale", null])
+        );
+        assert_eq!(column("age"), json!([3, 3, 3, 3, 3, 16, 9]));
+
+        for (band, word) in [
+            (service::StressBand::ExtremeFear, "extreme_fear"),
+            (service::StressBand::Fear, "fear"),
+            (service::StressBand::Neutral, "neutral"),
+            (service::StressBand::Greed, "greed"),
+            (service::StressBand::ExtremeGreed, "extreme_greed"),
+        ] {
+            let wire = StressWire::from(service::Stress {
+                band: Some(band),
+                ..stress.clone()
+            });
+            assert_eq!(serde_json::to_value(wire.band).unwrap(), word);
+        }
+        for (reason, word) in [
+            (service::NotCounted::Stale, "stale"),
+            (service::NotCounted::NoData, "no_data"),
+            (service::NotCounted::ShortHistory, "short_history"),
+        ] {
+            let wire = StressComponentWire::from(service::StressComponent {
+                reason: Some(reason),
+                ..stress.components[5].clone()
+            });
+            assert_eq!(serde_json::to_value(wire.reason).unwrap(), word);
+        }
+    }
 }
