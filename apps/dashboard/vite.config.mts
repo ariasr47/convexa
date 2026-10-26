@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
   let bootstrapFileName: string;
   let bootstrapUrl: string;
   let isBuild = false;
+  let appGraphBase = '/';
 
   const plugins: PluginOption[] = [
     react(),
@@ -67,6 +68,53 @@ export default defineConfig(({ mode }) => {
               injectTo: 'head',
             },
           ];
+        },
+      },
+    },
+    {
+      // The app graph's chunks are a second wave: main.tsx imports ./mountApp only after the entry
+      // has run, so on a phone the 28 chunks behind it started at 2.5 s and nothing painted until
+      // 4.5 s (site audit 2026-10-25, PERF-01; injecting these links measured 3980 -> 3392 ms LCP).
+      // One <link rel="modulepreload"> per chunk of mountApp's static graph lets the browser fetch
+      // them with the entry. modulepreload fetches and compiles but never evaluates, so main.tsx's
+      // rule holds: no app module runs before the build-selected workspace is initialised.
+      name: 'convexa-preload-app-graph',
+      configResolved(config) {
+        appGraphBase = config.base;
+      },
+      transformIndexHtml: {
+        order: 'post',
+        handler(_html, ctx) {
+          const bundle = ctx.bundle;
+          if (!bundle) return; // dev server: modules load on demand
+          const chunks = new Map(
+            Object.values(bundle).flatMap((c) => (c.type === 'chunk' ? [[c.fileName, c]] : [])),
+          );
+          const app = [...chunks.values()].find((c) =>
+            c.facadeModuleId?.replace(/\\/g, '/').endsWith('/src/mountApp.tsx'),
+          );
+          if (!app) {
+            throw new Error('[convexa-preload-app-graph] no output chunk for src/mountApp.tsx');
+          }
+          // Everything the entry already loads statically is in the HTML (Vite's own preloads).
+          const staticGraph = (fileName: string, seen = new Set<string>()) => {
+            if (seen.has(fileName)) return seen;
+            seen.add(fileName);
+            for (const dep of chunks.get(fileName)?.imports ?? []) staticGraph(dep, seen);
+            return seen;
+          };
+          const loaded = ctx.chunk ? staticGraph(ctx.chunk.fileName) : new Set<string>();
+          return [...staticGraph(app.fileName)]
+            .filter((fileName) => !loaded.has(fileName))
+            .map((fileName) => ({
+              tag: 'link',
+              attrs: {
+                rel: 'modulepreload',
+                crossorigin: true,
+                href: `${appGraphBase}${fileName}`,
+              },
+              injectTo: 'head' as const,
+            }));
         },
       },
     },
