@@ -337,13 +337,17 @@ export function CommandDeck(props: CommandDeckProps) {
           (`TickerDashboard.tsx`) is the whole gap above the h1, as the board's `.tk-mast` has no
           padding of its own (20px more put the h1 at y138 against the board's 118 at 390), and the
           quick symbols sit 16px under the CTA and 16px over the first zone label (`.tkd` gap 16;
-          they were 12 and 24). From `sm` the deck keeps its 20px/12px padding and 12px gaps. */}
+          they were 12 and 24). From `sm` the deck keeps its 12px bottom and 12px gaps. Its 20px top
+          went at every width (fidelity R3): it was `desk.mjs`'s older `.mast`, and the Final board's
+          `.tk-mast` has none, so the page column's 24px is the whole gap above the h1 from 768,
+          as on the board (the h1 sat at y162 against `final-desk-staging`'s 142 from 1024 up, and
+          the Structure label 22.0px low at 1920 and 26.1 at 1280). */}
       <Box
         data-testid="command-deck"
         sx={{
           position: 'relative',
           mb: { xs: 2, sm: 1.5 },
-          pt: { xs: 0, sm: 2.5 },
+          pt: 0,
           pb: { xs: 0, sm: 1.5 },
         }}
       >
