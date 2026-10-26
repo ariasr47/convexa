@@ -800,3 +800,13 @@ Most important first. Every number is from these builds at `HEAD`.
   - `shots/<route>-<build>[-signedin]-<width>[-light].png`;
   - `sheet-{1440,390,1440full,390full}-NN.png`;
   - `crops/note-{live,board}-side.png`.
+
+## Owner answers after round 2 (2026-10-25)
+
+The owner took every recommendation ("all recommended"):
+
+- **Footer seam:** keep the canon's 20px arc divider; the boards are redrawn to the app (footer 196 demo / 170 live at 1440).
+- **Trade entry default:** keep Manual, as the specs and tests pin it, with the cap check outside the dialog (tradeable-rec-inputs AC-63); the trade-entry board is redrawn to the shipped dialog. ACC-11's Market default and "within" verdict are closed as not adopted.
+- **Dark info TintChip:** fix it to AA (the "MEDIUM" conviction chip measured 4.01:1), which changes dark.
+- **Test plan batches 15, 16, 22, 23, 25 and 25a:** approved (recorded in docs/testing/2026-10-22/PROGRESS.md).
+
