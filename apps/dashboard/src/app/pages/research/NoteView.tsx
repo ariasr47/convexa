@@ -566,9 +566,12 @@ function SideCards({
       {f.state !== 'archived' && due.length > 0 && (
         <Panel sx={{ display: 'grid', gap: 1 }}>
           <Eyebrow sx={label}>This note comes due</Eyebrow>
+          {/* The board's `.drows` (`final-note-production`, `design/src/lib.mjs:55-56`): each date a
+              12px row at 1.5 between hairline rules, 6px above and below, the date in steel Mono
+              (fidelity R3; the rows had no rules and sat 6px apart at 13px). */}
           <Box
             component="ol"
-            sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gap: 0.75, fontSize: 13 }}
+            sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', fontSize: 12, lineHeight: 1.5 }}
           >
             {due.map((d) => (
               <Box
@@ -579,9 +582,12 @@ function SideCards({
                   gridTemplateColumns: '56px minmax(0, 1fr)',
                   gap: 1,
                   alignItems: 'baseline',
+                  py: '6px',
+                  borderTop: 1,
+                  borderColor: 'divider',
                 }}
               >
-                <Box component="span" sx={{ ...MONO, fontSize: 12 }}>
+                <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
                   {formatShortDate(d.date)}
                 </Box>
                 <span>{d.label}</span>

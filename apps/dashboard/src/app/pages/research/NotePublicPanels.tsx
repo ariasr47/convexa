@@ -27,7 +27,7 @@ import { ProvenanceChip, SourceProblem } from './publicUi';
 import { SecRecordSections, SECTION_TITLE } from './SecRecordSections';
 import { notSecFiler, tickerSecStale } from './secState';
 import type { Aging } from './types';
-import { DISPLAY, Eyebrow, MONO, Panel, PANEL_SX } from './ui';
+import { DISPLAY, MONO, Panel, PANEL_SX } from './ui';
 import { useWidth } from './useWidth';
 
 const big = (n: number) =>
@@ -328,20 +328,11 @@ export function FiledSinceCard({ ticker }: { ticker: string }) {
       aria-label="Filed since this note"
       sx={{ display: 'grid', gap: 1, alignContent: 'start' }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '6px 10px',
-        }}
-      >
-        <Eyebrow component="h2" sx={{ m: 0, fontWeight: 400 }}>
-          Filed since this note
-        </Eyebrow>
-        {tag}
-      </Box>
+      {/* The board's card head (`final-note-production`, `ticker-note.mjs:121`): 14/600 in
+          sentence case, like every card in the side column's public record (fidelity R3; it was an
+          11px caps eyebrow). It stays an h2: in the app this card is a section of the note's
+          page, a peer of "Who is positioned how", not a part of the body section before it. */}
+      <CardHead label="Filed since this note" tag={tag} component="h2" />
       {body}
       {sourced && (
         <Box sx={{ justifySelf: 'start', maxWidth: '100%' }}>
@@ -357,7 +348,16 @@ export function FiledSinceCard({ ticker }: { ticker: string }) {
  * (`design/src/lib.mjs:93-94`): a 14px/600 heading in sentence case, in the text colour, taking the
  * row's free width so the tag sits at its end (fidelity DESK-22; it was an 11px caps label).
  */
-export function CardHead({ label, tag }: { label: string; tag: React.ReactNode }) {
+export function CardHead({
+  label,
+  tag,
+  component = 'h3',
+}: {
+  label: string;
+  tag: React.ReactNode;
+  /** The heading level; the look is the same at either. */
+  component?: 'h2' | 'h3';
+}) {
   return (
     <Box
       sx={{
@@ -369,7 +369,7 @@ export function CardHead({ label, tag }: { label: string; tag: React.ReactNode }
       }}
     >
       <Box
-        component="h3"
+        component={component}
         sx={{ m: 0, fontSize: 14, fontWeight: 600, lineHeight: 1.5, flex: '1 1 auto', minWidth: 0 }}
       >
         {label}
