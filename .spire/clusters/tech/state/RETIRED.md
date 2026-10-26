@@ -106,3 +106,4 @@ RETIRED: apps/dashboard/src/app/session-day-tape-capture.structural.spec.ts; par
 RETIRED: apps/dashboard/src/app/shared/theme/steel2-contrast.spec.ts; parent 3ea59d2bae1d94ee903ee99dec07f27d84844a31; duplicate; 6 tests
 RETIRED: apps/dashboard/src/app/shared/theme/text-dim-contrast.spec.ts; parent 3ea59d2bae1d94ee903ee99dec07f27d84844a31; duplicate; 4 tests
 RETIRED: apps/dashboard/src/app/shared/theme/text-info-contrast.spec.ts; parent 3ea59d2bae1d94ee903ee99dec07f27d84844a31; duplicate; 6 tests
+RETIRED: apps/dashboard-e2e/tools/artifact-safety.spec.mjs; parent a1b93edca0c384c49a2a9b8fcd58310cf759466a; risk-gone; 2 tests
