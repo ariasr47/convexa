@@ -8,8 +8,9 @@
  * - `unknown` (/api/health failed or answered nothing we recognise): “Couldn’t check what’s live
  *   right now.” — the bar claims nothing either way, and each panel keeps its own tag.
  *
- * Nothing renders while the read is in flight or when the feed is live. It claims no liveness
- * (rule 18's connection chip is untouched).
+ * While the read is in flight the bar's empty chrome holds its place (`NoticePlaceholder`, hidden
+ * from assistive tech), so the page under it never moves when the answer lands; a live feed removes
+ * it. It claims no liveness (rule 18's connection chip is untouched).
  *
  * Design: design/src/lib.mjs v4Notice, design/src/screens/final/shell-site-front.mjs (unknownBar).
  * The bar's row sits on the one page column (`pageColumnSx`), as the board's `.wrap` does, so its
@@ -38,6 +39,30 @@ import { Link as RouterLink } from 'react-router-dom';
 // (spec 2026-10-21/02, part (b)). It measured 58x24 on every production route at 390 before.
 const linkSx = { ...standaloneLinkSx, whiteSpace: 'nowrap' } as const;
 
+// Under a coarse pointer the 44px links fill the row, so the bar drops its 8px vertical padding
+// there: 45px with its rule, not 61 (spec 2026-10-21/02, part (b)).
+const barSx = {
+  py: 1,
+  '@media (pointer: coarse)': { py: 0 },
+  bgcolor: 'background.paper',
+  borderBottom: 1,
+  borderColor: 'divider',
+} as const;
+
+const rowSx = {
+  ...pageColumnSx,
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  columnGap: 1.5,
+  rowGap: 0.5,
+} as const;
+
+// The not-live sentence names what is live; on a phone the title and “What’s live” say it.
+const notLiveBodySx = { display: { xs: 'none', md: 'inline' } } as const;
+// The phone bar keeps its title and “What’s live”; the demo link joins from 600px.
+const demoLinkSx = { ...linkSx, display: { xs: 'none', sm: 'inline-flex' } } as const;
+
 function WhatsLive() {
   return (
     <Link
@@ -55,21 +80,48 @@ function WhatsLive() {
 
 function DemoLink({ children }: { children: ReactNode }) {
   return (
-    <Link
-      href={STAGING_DEMO_URL}
-      variant="caption"
-      underline="always"
-      // The phone bar keeps its title and “What’s live”; the demo link joins from 600px.
-      sx={{ ...linkSx, display: { xs: 'none', sm: 'inline-flex' } }}
-    >
+    <Link href={STAGING_DEMO_URL} variant="caption" underline="always" sx={demoLinkSx}>
       {children}
     </Link>
   );
 }
 
+/**
+ * While /api/health is in flight: the not-live bar's chrome at its exact size (the same row, words
+ * and link boxes, laid out and wrapped as the bar is at every width and pointer, but invisible and
+ * hidden from assistive tech, with no links in it). Production answers `not_live`, so the bar fills
+ * in where it stands. Before, the bar mounted on the answer and pushed every page down 41-45px
+ * (site audit 2026-10-25, PERF-03: CLS 0.046 on the phone landing).
+ */
+function NoticePlaceholder() {
+  return (
+    <Box aria-hidden data-testid="market-data-notice-placeholder" sx={barSx}>
+      <Box sx={{ ...rowSx, visibility: 'hidden' }}>
+        <SensorsOffOutlined sx={{ fontSize: 14, flex: 'none' }} />
+        <Typography variant="caption" sx={{ fontWeight: 700 }}>
+          {NOT_LIVE_COPY.title}
+        </Typography>
+        <Typography variant="caption" sx={notLiveBodySx}>
+          {NOT_LIVE_COPY.body}
+        </Typography>
+        <Box sx={{ flexGrow: 1 }} />
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Typography variant="caption" sx={linkSx}>
+            What’s live
+          </Typography>
+          <Typography variant="caption" sx={demoLinkSx}>
+            See the full demo →
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 export function MarketDataNotice() {
   const mode = useMarketDataMode();
-  if (mode === null || mode === 'live') return null;
+  if (mode === null) return <NoticePlaceholder />;
+  if (mode === 'live') return null;
 
   const unknown = !marketDataOff(mode);
   const copy = unknown ? UNKNOWN_COPY : mode === 'not_live' ? NOT_LIVE_COPY : PAUSED_COPY;
@@ -85,26 +137,9 @@ export function MarketDataNotice() {
       aria-label={unknown ? 'Market data status unknown' : 'What is live on this site'}
       data-testid="market-data-notice"
       data-mode={unknown ? 'unknown' : mode}
-      // Under a coarse pointer the 44px links fill the row, so the bar drops its 8px vertical
-      // padding there: 45px with its rule, not 61 (spec 2026-10-21/02, part (b)).
-      sx={{
-        py: 1,
-        '@media (pointer: coarse)': { py: 0 },
-        bgcolor: 'background.paper',
-        borderBottom: 1,
-        borderColor: 'divider',
-      }}
+      sx={barSx}
     >
-      <Box
-        sx={{
-          ...pageColumnSx,
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          columnGap: 1.5,
-          rowGap: 0.5,
-        }}
-      >
+      <Box sx={rowSx}>
         <Glyph
           aria-hidden
           sx={{ fontSize: 14, color: unknown ? 'warning.main' : 'text.secondary', flex: 'none' }}
@@ -115,8 +150,7 @@ export function MarketDataNotice() {
         <Typography
           variant="caption"
           color="text.secondary"
-          // The not-live sentence names what is live; on a phone the title and “What’s live” say it.
-          sx={{ display: mode === 'not_live' ? { xs: 'none', md: 'inline' } : 'inline' }}
+          sx={mode === 'not_live' ? notLiveBodySx : { display: 'inline' }}
         >
           {copy.body}
         </Typography>
