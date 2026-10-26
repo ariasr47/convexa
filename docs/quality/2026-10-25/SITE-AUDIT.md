@@ -488,3 +488,68 @@ Cross-batch notes:
 - **Accessibility beyond Lighthouse.** Lighthouse surfaced link contrast 3.82:1 on prod /ticker/SPY, plus 2.53:1 on staging /positions order-source text and an h6 heading-order issue. Commit 673dd755 ("text clears 4.5:1 in both schemes") is at HEAD but not deployed, so whether it resolves these is unverified.
 - **TradingView's embedding terms** (a precondition of SEC-3).
 - **The working tree at HEAD as a site.** Every live finding describes release 7810a87b. HEAD (`ea80a6c4`) is 26 commits ahead, and only SEO-3 was confirmed as fixed there.
+
+## Fixed so far (2026-10-26, round 4 integration gate at `48deb0d2`)
+
+This note is appended; nothing above was edited.
+
+Batches B1, B2 and B4 are in `main`. These numbers are local measurements, not readings of the deployed sites: this note
+made no request to either host. The audit's own figures, the first column below, describe production at `7810a87b` and
+staging.
+
+The two local columns measure builds of `b45b4af0` (before, the parent of B1 and B2) and `48deb0d2` (after):
+
+- with the audit's Lighthouse throttling;
+- 2 runs per URL, medians, before and after interleaved;
+- served production-shaped (h2, TLS, brotli, Pages' pretty URLs);
+- with the live build's `/api` faked: health `not_live`, about 580 ms on the phone.
+
+Evidence is in `tmp/fidelity/integ4/perf/summary.json`.
+
+| Finding (batch, commit) | Route, form | Audit | Local before | Local after |
+| --- | --- | --- | --- | --- |
+| PERF-02 and PERF-03 (B1, `c6b003bd`, `811ccd71`): CLS | prod /credits, mobile | 0.501 | 0.4542 | **0.1286** |
+| | prod /ticker/SPY, mobile | 0.456 | 0.4140 | 0.0852 |
+| | staging /credits, mobile | 0.352 | 0.3519 | 0.0761 |
+| | staging /ticker/SPY, mobile | 0.279 | 0.2761 | 0.0010 |
+| | prod /credits, desktop | 0.267 | 0.2935 | 0.0866 |
+| | prod /ticker/SPY, desktop | 0.209 | 0.2091 | 0.0030 |
+| | staging /credits, desktop | 0.210 | 0.2104 | 0.0011 |
+| | staging /ticker/SPY, desktop | 0.151 | 0.1506 | 0.0012 |
+| PERF-03 (B1, `811ccd71`): landing CLS | prod /, mobile | 0.052 | 0.0512 | 0.0082 |
+| | prod /, desktop | 0.034 | 0.0340 | 0.0063 |
+| PERF-01 (B2, `b3fbc065`): landing LCP, ms | prod /, mobile | 4606 | 4004 | 3390 |
+| | staging /, mobile | 4544 | 3922 | 3378 |
+
+- **PERF-02:**
+  - The footer's shift is 0 in every "after" run. Before, it was 0.2758 to 0.2790 on the phone and 0.1487 to 0.2085
+    on the laptop.
+  - Short pages (the sign-in walls, the 404) keep the footer at the screen's bottom.
+- **PERF-03:** with `/api/health` held 2.5 s, the bar's placeholder stands at the bar's own height (41 at 1440, 45 at
+  390), and `<main>` moves 0px when the answer lands.
+- **PERF-01:** `index.html` modulepreloads go from 5 to 34, on both builds.
+- **SEC-1 (B4, `9d483d4d`, with the owner gate `d1f6ed0d` and `c9e8ebeb`):**
+  - A signed-out `GET` of `/api/scan`, `/api/scan/all` or `/api/scan/{symbol}/history` now gets 403 `auth_required`.
+    The audit had 200, with 69 rows carrying flip, call_wall and put_wall.
+  - Signed in but not the owner, these and the other options-derived routes get 403 `owner_only`.
+  - Proved by `cargo test -p api-rust` (exit 0):
+    - `scan_reads_with_dealer_levels_refuse_a_signed_out_caller`;
+    - `owner_only_routes_answer_the_owner_alone`;
+    - `owner_only_routes_fail_closed_without_owner_emails`;
+    - `every_operation_that_declares_a_dealer_level_is_owner_only_or_operator`.
+  - Not curl-checked on production.
+- **SEO-3 (`730a8dec`):** 19 distinct titles on each local build (spec 02's `titles.mjs`).
+
+**Still open:**
+
+- **Phone live `/credits` is over 0.1 (0.1286).** The remainder belongs to B3 and B6:
+  - PERF-04, the treasury section and source legend reflowing when the data lands (the top shift is
+    `section#treasury`, 0.0648);
+  - PERF-09, the Plex 700 and Archivo font swap.
+- **Mobile LCP is over 2.5 s on every route measured,** 3.4 to 6.4 s locally.
+- **Laptop staging `/ticker/SPY` LCP went from 486 to 938 ms,** because the LCP element changed. Before, it was the
+  footer disclaimer, painted inside the 60vh fill; now it is the desk's h2. FCP fell, 486 → 436 ms.
+
+**What is pushed:** the local `origin/main` ref is `b45b4af0`, pushed at 02:05:45. It contains `730a8dec`, `673dd755`,
+`96bf67c8` and `9d483d4d` (SEC-1). It does not contain B1, B2 or the owner gate (`c6b003bd`, `811ccd71`, `b3fbc065`,
+`d1f6ed0d`). Whether production has deployed `b45b4af0` was not checked.

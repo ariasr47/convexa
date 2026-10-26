@@ -1128,3 +1128,330 @@ Most important first. Every number is from these builds at `HEAD`.
   - `shots/<route>-<build>[-signedin]-<width>[-light].png`;
   - `sheet-{1440,1440light,390,1440full,390full}-NN.png`;
   - `crops/pair-*.png`, round 2 against round 3.
+
+## Round 4 · integration gate at `48deb0d2`
+
+Round 4 ran five lanes and landed 10 commits on `main`: R4-A (1), R4-B (1), R4-C (3), R4-D (2) and R4-E (3). The range
+`31b0011a..48deb0d2` holds 23 commits. The other 13 are:
+
+- spec 07's four (`8ba53e98`, `6f59855c`, `83233ae2`, `1025ce49`), which round 3's gate did not cover;
+- round 3's gate record (`b9ca4c50`);
+- SEC-1's two (`9d483d4d`, `0fa92e31`);
+- the owner gate's five (`d1f6ed0d`, `1a99a26e`, `6ff1b38f`, `c9e8ebeb`, `7eeb7150`);
+- spec 08's first draft (`342c7c8a`).
+
+This section is the gate run at `48deb0d2`. It is appended: where it gives a newer state than a row above, it
+supersedes that row, and nothing above was edited.
+
+`main` moved once while the gate ran. `e5a95b50` (05:22:53, spec 08) changes one file,
+`docs/product/specs/2026-10-26/08-trade-journal.md`. No build input, test or gate reads that file, so every result here
+holds for `e5a95b50`. The final `npm run verify` below ran at the HEAD that includes it.
+
+Two files sat modified in the shared tree, from another session, and neither is mine:
+
+- `apps/api/.env.example`, the whole time;
+- the spec 08 file, until `e5a95b50` committed it.
+
+`git status --porcelain` listed exactly those two before the gates, after the design build and after the gates. The
+builds and the sweep used a `git archive` export of `48deb0d2`, so neither file reached them.
+
+### The answer
+
+1. **Every gate exits 0 at `48deb0d2`, but `npm run verify` needed a second run.**
+   - The first run exited 1 after 108 s. Nx's `@nx/vitest` plugin worker ran out of heap (4,067 MB at 20 s) while it
+     built the project graph for `nx affected`, so no lint, typecheck or test task ran. The other steps passed in that
+     run: `tsc` for `libs/api`, gitleaks and `test:tools`.
+   - Run alone, the second run exited 0 in 183 s.
+   - The failure did not reproduce, and I did not find its cause. None of my processes ran beside the first run. The
+     machine's load average was 15.5 when it started, from other sessions.
+2. **Both of spec 02's checks that failed in round 3 now pass.**
+   - The tap probe exits 0, with 0 sub-44 and 0 covered entries on 102 loads and 3,648 targets. Round 3 had 830 and
+     656 on 4,088 targets, all of them the insider chart's dots.
+   - The accessibility browser gate passes 35 of 35 with exit 0, against a fresh live build of `48deb0d2`. Round 3
+     passed 7.
+   - Criteria 15 and 16 pass (`c1516.mjs`, 0 failures).
+   - The production NVDA note's DOM is 2,950 nodes against the 3,527 budget. Round 3 had 3,567.
+3. **Every round 4 fix measures as done except R4-E's REV-1.**
+   - R4-E's REV-1 is blocked by the lane: phone live `/credits` CLS is 0.1286 against the 0.1 threshold.
+   - The lanes reported R4-C-1 (FieldLabel) and R4-A's "real defects" item as skipped. The gate found no axe finding
+     that R4-A's item would have covered.
+4. **The sweep matches round 3 cell for cell.** It loaded the same 230 pages:
+   - the column table diffs empty against round 3's;
+   - 0 pages overflow;
+   - 0 text runs are under 11px, by computed size or by on-screen size;
+   - axe finds 0 `color-contrast` nodes;
+   - the 23 ink notes are the same;
+   - 0 page heights changed.
+
+   25 of the 230 first screens differ in pixels from round 3's. 20 are the sticky footer reaching the bottom of short
+   pages (B1). 4 are the alerts page's "checked" clock time. One is a 2-pixel difference.
+5. **The gate found five things no lane filed.** Item 1 is a measurement of a lane's outside request. Items 2 to 5 are
+   from the R4-D reviewer's harness, re-run here at the same SHA, with the same output.
+   - The sign-in walls' paragraphs render `text.primary` in the app. They read rgb(233,228,214) in dark and
+     rgb(23,32,43) in light, on `/scanner` and `/positions` at 390 and 1440. The boards draw them steel
+     (`account-pages.mjs`, `class="steel"`). This is R4-D's outside request (`color="text.secondary"` on MUI 9.2.0
+     Typography), measured.
+   - The wall card sits 28px higher in the app than on the boards. Its top is at y126 against 154 at 390, and 154
+     against 182 at 1440.
+   - The phone trade-entry sheet is 776.5 tall in the app and 819.2 on the boards. At 1440 the two match (573.9 against
+     574.1).
+   - The staging insider board reads "1 buying clusters"; the app reads "1 buying cluster".
+   - At exactly 900 wide, the production bar wraps to 88.8 in the app and 91 on the board. The desk h1 is therefore at
+     169.8 against 172. From 390 to 899 they are equal.
+
+### How this was checked
+
+- **Builds:** `git archive 48deb0d2` was exported to `/private/tmp/claude-501/integ4-src`, with `node_modules`
+  symlinked as in rounds 1 to 3. The demo and live builds then ran the production target's steps: `vite build --mode
+  production`, `write-dashboard-routes`, `write-blog-heads` and `precompress`. Both exited 0 in about 4.7 s, into
+  `integ4-demo` and `integ4-live`.
+- **Servers:** all on `localhost`, started and stopped by this gate.
+  - The sweep's servers are the export's `serve-dist.mjs`: demo on :4900, live on :4901 and the export's
+    `design/site` on :4902.
+  - The accessibility gate's server is `serve-dist.mjs` on :4901.
+  - Spec 02's scripts serve themselves on :4904 and :4905.
+  - The R4-C reviewer harness used :4900–4904, with round 3's `integ3` builds as "before".
+  - The throttled perf run used `serve-prodlike.mjs` (h2, TLS, brotli) on :4902–4905.
+- **Live `/api`:** the local fake (`tmp/fidelity/integ/fake-api.mjs`), with health `not_live`. The sweep logged:
+  - 0 blocked hosts;
+  - 0 `/api` calls from the demo build;
+  - 0 uncaught page errors;
+  - the same console 404s as round 3: 10 on signed-in settings, 5 on signed-in scanner and 5 on live credits.
+- **Gates:** each ran from the repository root with `NX_SKIP_NX_CACHE=true`, `NX_DAEMON=false`.
+- **The sweep:** round 3's `sweep.mjs`, `analyze.py` and `sheet.mjs`, re-pointed and otherwise unchanged. The checks
+  are the column edges, overflow, text under 11px by computed and by on-screen size, axe `color-contrast`, and the
+  footer.
+- **Lane acceptance:** I re-ran these reviewer harnesses on these builds:
+  - R4-C's `run.mjs` (sections `ho`, `fl`, `due`, `land` and `ovf`), with round 3's builds as "before";
+  - R4-D's `te`, `walls`, `bar`, `twin` and `stack`, whose output is identical to the reviewer's run at the same SHA;
+  - R4-E's `perf.mjs`.
+
+  I also wrote one small probe, `r4d/accept4.mjs`. It covers the Not-live placeholder with `/api/health` held for
+  2.5 s, the footer on short pages, the modulepreload count, and the walls' paragraph colour.
+- **Looked at:**
+  - every contact sheet: 1440 dark (8), 1440 light (6), 390 (4), 1440 full page (8) and 390 full page (6);
+  - side-by-sides with round 3 for `not-found-live-1440`, `not-found-live-390` and `alerts-live-1440`.
+
+  Every short page now ends with its footer at the screen's bottom. The phone desk's lazily mounted widgets are empty
+  frames in full-page captures, the same capture artefact as in rounds 2 and 3.
+- **NUL bytes:** 0 in all 558 blobs changed in `31b0011a..e5a95b50`, by byte scan of the committed blobs.
+
+### Gates
+
+| Command | Exit | Time | What it covered |
+| --- | --- | --- | --- |
+| `npm run typecheck` | 0 | 12 s | 3 projects and the 2 tasks they depend on |
+| `npm run lint` | 0 | 7 s | 3 projects, 0 errors, 40 warnings (3 + 34 + 3), as round 3 |
+| `npm exec nx test @convexa/dashboard` | 0 | 53 s | 236 files, 2063 tests |
+| `npm exec nx test @convexa/api` | 0 | 10 s | 12 files, 87 tests |
+| `cargo test -p api-rust` | 0 | 301 s | 1,177 passed in 54 binaries, 0 failed. Round 3 had 1,160. The difference is SEC-1's test, the owner-gate tests and spec 07's tests. The four that guard licensed data pass: `scan_reads_with_dealer_levels_refuse_a_signed_out_caller`, `owner_only_routes_answer_the_owner_alone`, `owner_only_routes_fail_closed_without_owner_emails` and `every_operation_that_declares_a_dealer_level_is_owner_only_or_operator`. The per-binary "finished in" times sum to 30.3 s. |
+| `node tools/test-tools.mjs` | 0 | 86 s | 210 tests |
+| `npm run api:contract:check` | 0 | 7 s | "generated artifacts match the Rust API contract" |
+| `node design/src/build.mjs` | 0 | 1 s | 207 artboards, 308 pages; `git status` unchanged afterwards |
+| `node design/src/verify-tokens.mjs` | 0 | 0 s | "All shared tokens match tokens.ts." |
+| `npm run verify` (run 1) | **1** | 108 s | The `@nx/vitest` plugin worker ran out of heap (4,067 MB) while Nx built the project graph, so `nx affected` exited 1 before any task ran. In the same run, `tsc` for `libs/api`, gitleaks (11 commits, no leaks), `test:tools` and `check-filings` exited 0. |
+| `npm run verify` (run 2) | 0 | 183 s | Base `b45b4af0` (merge base with `origin/main`), 540 changed files. gitleaks: 11 commits, no leaks. Task graph check skipped (no project, package, nx or verify file changed). `nx affected` lint, typecheck and test on 4 projects and 2 dependencies: 1,254 Rust tests with quant-engine, 2063 dashboard tests and 87 API-library tests. `test:tools` 0. `check-filings` 0 (35 figures). |
+| Integration builds (demo / live) | 0 / 0 | 4.7 s / 4.8 s | exported `48deb0d2`, production steps |
+| `run-gate.mjs accessibility` (live build, :4901) | 0 | 13 s of tests | 35 of 35 passed, 0 flaky. Run twice: run 1's summary names `e5a95b50` because it read HEAD at run time; run 2 names the build's `48deb0d2`. Both 35/35. |
+| Spec 02 `tap.mjs` | 0 | 74 s | 102 loads, 3,648 targets; 0 sub-44, 0 covered, 0 bad selects |
+| `extra.mjs` (criteria 6, 7, 8, overflow) | 0 | 159 s | 0 failures; 132 overflow checks at 390, 1440 and 1920 |
+| `contrast.mjs` (criteria 9–12, route sweep) | 0 | 186 s | 24 criterion-9 runs and 176 sweep runs. The sweep found 0 `color-contrast` and 0 `heading-order` nodes; round 3 had 24 `heading-order`. |
+| `titles.mjs` (criterion 22) | 0 | 109 s | 19 titles per build, pairwise distinct |
+| `c23.mjs` (criterion 23, local) | 0 | 35 s | 0 failures |
+| `perf.mjs` (NVDA note, 390) | 0 | 10 s | DOM 2,950 (budget 3,527), first h1 475 ms, height 40,128 (unchanged) |
+| `c10.mjs` (criterion 10 fills) | 0 | 54 s | 0 failures at 390 touch, 1440 and 1920, both schemes |
+| `c1516.mjs` (criteria 15, 16; R4-B's script) | 0 | 42 s | 0 failures on 7 loads (production NVDA and MSFT, staging NVDA and MSFT) |
+| `c14.py` (criterion 14 grep, in the export) | 0 | 1 s | 2 colour uses of `text.disabled` (`Widget.tsx:281`, `NewAlertDialog.tsx:573`), 4 border uses, as round 3 |
+
+As in round 3, I did not run Verification step 4 (criterion 23 on production). This gate made no request to a
+deployed host.
+
+### Per lane
+
+#### R4-A · accessibility gate (`5b47d841`)
+
+| Fix | Lane | At HEAD |
+| --- | --- | --- |
+| Strict fixture answers `GET /api/health` | done | 0 "rejected unexpected traffic" (round 3: 22) |
+| A11Y-23/24 open the dialog from Log in | done | both pass |
+| A11Y-25 to 28 readiness | done | all four pass |
+| Real a11y defects | skipped | the gate finds 0 blocking axe findings, so there was nothing to fix |
+
+The gate result: 35/35, exit 0.
+
+#### R4-B · spec 02 step 5a (`907cf98e`)
+
+| Check | Round 3 | HEAD |
+| --- | --- | --- |
+| Insider plot (production NVDA, 390) | 194 `<a>` dots, each a tab stop | one `svg role="img"`, label "194 sales and 0 purchases by 12 insiders; 0 buying clusters"; 194 circles, all `aria-hidden`, each with a `<title>`; 0 anchors and 0 focusables inside |
+| Its twin, opened | — | 2 tables, each a labelled region: 4 window rows, and 194 trade rows with 194 Form 4 links, 44 tall at 390 coarse and 24 at 1440. Staging NVDA and MSFT: 1 and 9 rows, no links. |
+| Tab stops, production NVDA phone | — | 79 with the twin closed, 275 open; 87 closed at 1440 |
+| Tap probe | 830 sub-44, 656 covered | 0 and 0 |
+| NVDA note DOM (budget 3,527) | 3,567 | 2,950 (2,961 at 1440) |
+| axe on the insider frame | — | 0 `color-contrast` in the route sweep |
+
+#### R4-C · headings and AA (`89b4ebc9`, `d0a6a7cb`, `b45b4af0`)
+
+"Before" is round 3's builds of `31b0011a`, served beside these.
+
+| Fix | Lane | Before → HEAD | Board |
+| --- | --- | --- | --- |
+| R4-C-1 FieldLabel `text.secondary` | skipped | trade entry labels unchanged: steel 11/700, 6.19 dark, 5.42 light; 0 axe `color-contrast` in the dialog | — |
+| R4-C-2 heading order | done | axe `heading-order`: 24 → 0 on the reviewer's 5 routes, and 4 → 0 on its 6 extra routes. The `contrast.mjs` sweep: 24 → 0. | the boards keep their h3s (an optional request, below) |
+| R4-C-3 note side labels | done | "This note comes due": IBM Plex Mono 400 → IBM Plex Sans 600, 11px, steel 6.19 dark, 5.42 light; live note at 390 and 1440 | equal on `final-note-production` and `final-note-light` |
+| R4-C-4 landing h1 at 768 and 1024 | done | 3 lines in 600 → 2 lines across 721.9 (768) and 962.6 (1024), both builds; 390 (4 lines) and 1280–1920 (3 lines) unchanged | equal at every width |
+| Overflow and small text | — | 84 loads (`ovf`): 0 overflow, 0 text under 11px, 0 regressions | — |
+
+The harness exits 1, on 9 "due label missing" notes, the same 9 as the reviewer's run. The staging note has no "comes
+due" label in the app or on `final-note-staging`, by design.
+
+#### R4-D · boards and canon (`4ffdc525`, `48deb0d2`)
+
+| Fix | Lane | At HEAD, app against board |
+| --- | --- | --- |
+| R4-D-1 trade entry Call/Put | done | The fills and labels are equal at 1440 and 390, in both schemes. Dark: Call rgb(46,204,113) with ink, 9.13; Put rgb(255,92,92) with ink, 6.34. Light: Call rgb(30,158,87) with ink, 5.56; Put rgb(210,59,59) with white, 4.74. The dialog is 573.9 against 574.1 at 1440; the phone sheet is 776.5 against 819.2 (see "Still different"). |
+| R4-D-2 wall "See it on the demo →" button | done | The same three buttons in the same order, 44 tall, at 390 and 1440 in both schemes, and on the states boards: Sign in amber, then two neutral outlined buttons at 13.77:1 dark and 16.43:1 light. The board buttons are 2px wider (a 1px transparent border); the board card sits 28px lower. |
+| R4-D-3 light pills, Simulated chip | done | not re-measured by this gate |
+| R4-D-4 canon Amendments row | done | `DESIGN_SYSTEM.md:293`, the 2026-10-26 row: rule 7's coarse mechanics (`coarseFloor`, `selectCoarseFloorSx`), `text.disabled` for a disabled control only, and S2-Q1 closed |
+| R4-D-5 lane-reported board changes | done | Production desk h1: 118 / 114 / 114 / 122 / 122 at 390 / 599 / 600 / 768 / 899, equal to the boards. At 900 it is 169.8 against 172. |
+| R4-D-6 regen, heights, changelog | done | `build.mjs` exit 0 with no diff; `verify-tokens` 0 |
+| R4-D-AA board contrast | done | not re-measured by this gate |
+
+The twin boards draw the insider plot as a `role="img"` with 0 focusables, and the same two tables as the app.
+
+#### R4-E · site B1 and B2 (`c6b003bd`, `811ccd71`, `b3fbc065`)
+
+The perf run used R4-E's reviewer harness: the audit's Lighthouse throttling, 2 runs per URL, medians, with "before" and
+"after" interleaved. "Before" is the reviewer's `b45b4af0` builds (the lane's parent) and "after" is `48deb0d2`. Both
+were served production-shaped (h2, TLS, brotli). The live build's `/api` is faked, with the audit's measured delays
+(health about 580 ms on the phone).
+
+| Fix | Lane | At HEAD |
+| --- | --- | --- |
+| PERF-02 full-screen route fill, sticky footer | done | The footer shift is 0 in every "after" run on the 12 route medians (before: 0.2758 to 0.2790 on the phone, 0.1487 to 0.2085 on the laptop). On short pages the footer ends at the page's bottom, which is at or below the screen's: live `/scanner` 900 of 900 at 1440 and 1017 of 844 at 390; the 404 900 of 900 and 844 of 844 (live), 900 of 900 and 891 of 844 (demo). |
+| PERF-03 Not-live placeholder | done | With `/api/health` held 2.5 s, the placeholder is 41 tall at 1440 and 45 at 390, equal to the bar, and `main` moves 0px when the answer lands |
+| PERF-01 modulepreload | done | `index.html` modulepreloads 5 → 34, mountApp included, on both builds |
+| REV-1 phone live `/credits` CLS ≤ 0.1 | blocked | 0.1286. The rest is PERF-04 (data reflow, `CreditsPage.tsx`) and PERF-09 (font swap), outside B1 and B2. |
+
+| Route | Before CLS → after | Before LCP → after (ms) |
+| --- | --- | --- |
+| phone live `/` | 0.0512 → 0.0082 | 4004 → 3390 |
+| phone live `/credits` | 0.4542 → **0.1286** | 4668 → 4158 |
+| phone live `/ticker/SPY` | 0.4140 → 0.0852 | 5530 → 4964 |
+| phone demo `/` | 0.0083 → 0.0083 | 3922 → 3378 |
+| phone demo `/credits` | 0.3519 → 0.0761 | 4568 → 4004 |
+| phone demo `/ticker/SPY` | 0.2761 → 0.0010 | 6978 → 6398 |
+| laptop live `/` | 0.0340 → 0.0063 | 542 → 482 |
+| laptop live `/credits` | 0.2935 → 0.0866 | 770 → 736 |
+| laptop live `/ticker/SPY` | 0.2091 → 0.0030 | 914 → 860 |
+| laptop demo `/` | 0.0049 → 0.0053 | 526 → 472 |
+| laptop demo `/credits` | 0.2104 → 0.0011 | 806 → 740 |
+| laptop demo `/ticker/SPY` | 0.1506 → 0.0012 | 486 → 938 |
+
+Laptop demo `/ticker/SPY` LCP rises because the LCP element changed. Before, it was the footer disclaimer, painted
+inside the 60vh fill; now it is the desk's h2. FCP fell (486 → 436 ms). The lane's commit message records the same
+explanation.
+
+### Round 3 rows this supersedes
+
+- **Round 3's "Still different" list:**
+  - **Done:**
+    - item 1 (the insider dots, R4-B);
+    - item 2 (the trade-entry boards, R4-D-1);
+    - item 3 (the accessibility gate, R4-A);
+    - item 5 (the production desk h1 at 390 and 768, which the boards now draw as the app);
+    - item 6's label (R4-C-3);
+    - item 7 (the landing h1, R4-C-4);
+    - item 8 (the canon and the boards behind spec 02, R4-D);
+    - item 9 (heading order, R4-C-2).
+  - **Unchanged and not re-measured:**
+    - item 4 (L5 NO-1-A, blocked);
+    - item 6's card place (L7 NO-4 A, blocked);
+    - item 10 (research density, L6 R-06, blocked);
+    - item 11 (the three optional round-1 items).
+- **Round 3's outside-lane requests:**
+  - **Now done:**
+    - spec 02 step 5a (`907cf98e`);
+    - the `DESIGN_SYSTEM.md` Amendments row (`48deb0d2`);
+    - the wall boards' button (`4ffdc525`);
+    - the light research pills and the Simulated chip on the boards (`4ffdc525`; the 0.96 opacity was never on the
+      boards);
+    - `strict-fixture.ts` answering `GET /api/health` (`5b47d841`, through the scenarios' rest map).
+  - **Still optional:** moving the masthead geometry into `TickerHeader`.
+
+### Round 4's outside-lane requests: state at HEAD
+
+| Request (from lane) | State at HEAD |
+| --- | --- |
+| Paused panel link row `useFlexGap` (R4-A) | **not done:** `TickerDashboard.tsx:864` is unchanged (`<Stack direction="row" spacing={2} sx={{ mt: 1, rowGap: 0.5, flexWrap: 'wrap' }}>`). Not measured here: the panel needs a signed-in live desk with market data paused. |
+| FIXES.md: the strict-fixture row is done (R4-A) | recorded in this section |
+| Board heading outline, optional (R4-C) | **not done:** `trust-pages.mjs:226` still draws the source card's `<h3>` |
+| `SampleTaChart` `headingLevel`, optional (R4-C) | not done, and not needed |
+| `CreditsPage.tsx` legend and treasury at their settled size, PERF-04 (R4-E) | **not done:** phone live `/credits` CLS 0.1286. The top "after" shift is `section#treasury`, 0.0648. |
+| Preload Plex 700 and Archivo, PERF-09 (R4-E) | not done |
+| `ResearchIndexPage.tsx` skeleton cards (R4-E, informational) | not done; not measured here |
+| `color="text.secondary"` on MUI 9.2.0 Typography (R4-D) | **not done:** 35 lines in 11 files at HEAD. Measured on the walls: text.primary in both schemes (see "Still different", item 1). |
+| FIXES.md: round 3's outside-lane rows that are now done (R4-D) | recorded in "Round 3 rows this supersedes" |
+
+### Sweep
+
+Every cell of round 3's table is unchanged at `48deb0d2`. That covers columns, `scrollWidth` and the ink notes, on all
+230 pages; `table.md` diffs empty against round 3's.
+
+- **Small text:** 0 runs under 11px, by computed size and by on-screen size.
+- **Contrast:** 0 axe `color-contrast` violations on all 230 pages, in both schemes. axe left 7,200 nodes "incomplete",
+  as in round 3.
+- **Light pass:** 46 of 46 shots at 1440 light are light.
+- **Page heights:** 0 of 230 changed against round 3.
+- **First screens:** 25 of 230 differ from round 3's (`shotdiff.json`).
+  - **20 are B1's sticky footer**, which now sits at the screen's bottom on short pages:
+    - the 404 on both builds (9);
+    - the live scanner and positions walls (8);
+    - the blog index at 1920 (2);
+    - the signed-in scanner at 1920 (1).
+  - **4 are the clock:** the live alerts page's "Updated · checked" time (12:24 AM in round 3, 5:29 AM now).
+  - **1 is a 2-pixel difference:** `positions-demo-1440-light`.
+- **Pass on the sweep:** 0 failures on columns, overflow, small text (computed and on-screen), contrast and footer.
+
+### Still different from the boards
+
+Most important first. Every number is from these builds at `HEAD`.
+
+1. **The sign-in walls' paragraphs draw `text.primary`, not steel.**
+   - The app renders rgb(233,228,214) in dark and rgb(23,32,43) in light, on all three paragraphs of `/scanner` and
+     `/positions`, at 390 and 1440. The boards draw them steel.
+   - The cause is R4-D's outside finding: MUI 9.2.0's Typography takes only `textSecondary` as a colour value, so
+     `color="text.secondary"` is dropped (`RequireAuth.tsx:131`, `:135`, `:183`, `:192`).
+   - The same prop is on 35 lines in 11 files. Only the wall is measured.
+2. **The wall card is 28px higher in the app.** Its top is at y126 against the board's 154 at 390, and y154 against
+   182 at 1440, with the bar and nav equal above it. The board's card carries a top margin (24 at 390, 56 at 1440)
+   that the app's does not; the net offset is 28 at both widths. The card is 533 tall against 524.9 at 390, and 349.8
+   against 345 at 1440.
+3. **The phone trade-entry sheet** is 776.5 tall in the app and 819.2 on `final-dialogs-phone`. Fills, labels and
+   toggles are equal.
+4. **Phone live `/credits` jumps 0.1286.** This is a CLS gap, not a board difference: PERF-04's data reflow and
+   PERF-09's font swap (above).
+5. **Smaller:**
+   - At exactly 900 wide, the production bar wraps to 88.8 against the board's 91.
+   - The staging insider board reads "1 buying clusters"; the app reads "1 buying cluster".
+   - The paused panel's link indent at 393 (R4-A's request) is not measured here.
+6. **Unchanged and blocked:** L5 NO-1-A (desk context band), L6 R-06 (phone Coming up), L7 NO-4 A ("Filed since this
+   note" place), and the three optional round-1 items.
+
+### Evidence
+
+All in `tmp/fidelity/integ4/` (gitignored):
+
+- **Gates:** `gates/`, with `exit-codes.tsv`, `progress.log`, one log per command (`verify.log` is run 1,
+  `verify-run2.log` run 2) and the `status-*.txt` checkpoints.
+- **Accessibility gate:** `a11y/`, with `gate-run{1,2}.log`, `summary-run{1,2}.json` and `gate.sh`.
+- **Spec 02:** `s2/`, with `exit-codes.tsv`, `logs/`, one JSON per script, and `c1516shots/` and `c10shots/`.
+- **Sweep:**
+  - `sweep.json`, `analysis.json`, `table.md` and `table.diff` (empty);
+  - `shotdiff.json`;
+  - 322 PNGs in `shots/`, plus `sheet-*.png` and `crops/pair-*.png` (round 3 against round 4).
+- **Lane acceptance:**
+  - `r4c/` (R4-C reviewer harness: `ho`, `fl`, `due`, `land` and `run.log`);
+  - `r4d/` (`te`, `walls`, `bar`, `twin`, `stack`, `accept4` and `shots/`);
+  - `perf/` (`summary.json`, `perf/*/` per run, and `run-perf.sh`).
+- **Builds:** `build.mjs`, `build-result.json` and `build-{demo,live}.log`.
