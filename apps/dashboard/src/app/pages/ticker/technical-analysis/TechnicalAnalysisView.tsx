@@ -52,6 +52,20 @@ type RequestState =
 const linkSx = { color: (theme: Parameters<typeof extrasFor>[0]) => extrasFor(theme).textInfo };
 const linkBox = { ...linkSx, display: 'inline-flex', alignItems: 'center', minHeight: 44 };
 
+/**
+ * "Technical analysis · SPY" is the tab's h2, drawn as the `Caps` label it was (publicUi.tsx): the
+ * chart's finding and the readings are h3s under it, as the board draws them, so nothing skips
+ * from the h1 to an h3 (axe heading-order, fidelity round 4).
+ */
+const TAB_HEADING_SX = {
+  m: 0,
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  color: 'text.secondary',
+} as const;
+
 function Masthead({ symbol }: { symbol: string }) {
   // "SPDR S&P 500 ETF · NYSE Arca": the demo's own name for the symbol, else a note's, then its
   // exchange (fidelity DESK-23, board `ticker-tech.mjs:64`).
@@ -95,7 +109,7 @@ function Masthead({ symbol }: { symbol: string }) {
         <TickerTabs ticker={symbol} current="technical" />
       </Box>
       <Box sx={{ display: 'grid', gap: 1 }}>
-        <Caps>{`Technical analysis · ${symbol}`}</Caps>
+        <Box component="h2" sx={TAB_HEADING_SX}>{`Technical analysis · ${symbol}`}</Box>
         <Box
           component="p"
           sx={{ m: 0, maxWidth: '72ch', fontSize: 14, lineHeight: 1.55, color: 'text.secondary' }}
@@ -319,7 +333,7 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
       <SampleTaChart symbol={ticker} view={view} selected={sel} onSelect={setSelected} />
       <SamplePanel label="Readings, sample">
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 10px' }}>
-          <Box component="h2" sx={{ m: 0, flex: '1 1 auto', fontSize: 15, fontWeight: 600 }}>
+          <Box component="h3" sx={{ m: 0, flex: '1 1 auto', fontSize: 15, fontWeight: 600 }}>
             {isLast
               ? `Readings on the last bar · ${shortDate(bar.date)}`
               : `Readings on ${shortDate(bar.date)} · bar ${sel + 1} of ${view.bars.length}`}

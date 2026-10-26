@@ -244,7 +244,10 @@ function SourceCard({ s, state, demo }: { s: Source; state: CardState; demo: boo
         }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Box component="h3" id={`${s.id}-h`} sx={{ m: 0, fontSize: 17, lineHeight: 1.3 }}>
+          {/* An h2: each card is a top-level section of the page, listed in the contents beside
+              Typefaces and What Convexa makes, and nothing sits between it and the h1 (axe
+              heading-order, fidelity round 4). Drawn at the card's own 17px, not the H2's 24. */}
+          <Box component="h2" id={`${s.id}-h`} sx={{ m: 0, fontSize: 17, lineHeight: 1.3 }}>
             {s.name}
           </Box>
           <Box

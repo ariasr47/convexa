@@ -12,7 +12,6 @@
  * Design: design/src/screens/final/ticker-tech.mjs (techProductionBody).
  */
 import { formatShortDate } from '@/pages/research/format';
-import { Caps } from '@/pages/research/publicUi';
 import { DISPLAY, PANEL_SX } from '@/pages/research/ui';
 import { listingLine, TickerTabs } from '@/pages/ticker/TickerTabs';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
@@ -27,6 +26,20 @@ import { TradingViewDaily } from './TradingViewDaily';
 
 const linkSx = { color: (theme: Parameters<typeof extrasFor>[0]) => extrasFor(theme).textInfo };
 const linkBox = { ...linkSx, display: 'inline-flex', alignItems: 'center', minHeight: 44 };
+
+/**
+ * "Technical analysis · NVDA" is the tab's h2, drawn as the `Caps` label it was (publicUi.tsx), as on
+ * the demo's tab: TradingView's chart and the panels beside it are h3s under it, as the board draws
+ * them, not panels under the chart's h2 (fidelity round 4).
+ */
+const TAB_HEADING_SX = {
+  m: 0,
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  color: 'text.secondary',
+} as const;
 
 function Panel({
   label,
@@ -117,7 +130,7 @@ export function TechnicalAnalysisLive({ symbol }: { symbol: string }) {
       </Box>
 
       <Box sx={{ display: 'grid', gap: 1 }}>
-        <Caps>{`Technical analysis · ${ticker}`}</Caps>
+        <Box component="h2" sx={TAB_HEADING_SX}>{`Technical analysis · ${ticker}`}</Box>
         <Box
           component="p"
           sx={{ m: 0, maxWidth: '72ch', fontSize: 14, lineHeight: 1.55, color: 'text.secondary' }}
@@ -135,7 +148,7 @@ export function TechnicalAnalysisLive({ symbol }: { symbol: string }) {
           alignItems: 'start',
         }}
       >
-        <TradingViewDaily ticker={ticker} height={620} headingLevel="h2" />
+        <TradingViewDaily ticker={ticker} height={620} />
         <Box sx={{ display: 'grid', gap: 2, minWidth: 0 }}>
           <Panel
             label="Readings, not live"

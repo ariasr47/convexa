@@ -57,8 +57,10 @@ export function TermsPage() {
     >
       {demo && (
         <DocBox demo>
+          {/* An h2: the box comes straight after the h1, before the first section (axe
+              heading-order, fidelity round 4). Drawn at 15px, as before. */}
           <Box
-            component="h3"
+            component="h2"
             sx={{
               m: 0,
               fontSize: 15,

@@ -166,6 +166,9 @@ export function PriceValueFrame({
     <ChartFrame
       {...frame}
       testId="note-price-value"
+      // An h2: the frame comes straight after the note's h1, before its first section (axe
+      // heading-order, fidelity round 4). The frame draws its title the same at either level.
+      headingLevel="h2"
       finding={finding}
       metric="Price against the value range"
       // The board's tag (ticker-note.mjs valueRange): the range is computed when the site is built
