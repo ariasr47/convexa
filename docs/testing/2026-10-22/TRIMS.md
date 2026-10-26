@@ -12,3 +12,6 @@ at the batch commit.
 |---|---|---|---|
 | 16 | `apps/api/tests/capacity_isolation.rs` (case-level; risk-gone) | 3 → 2 | removed: linux_ci_runs_normal_gate_and_retains_all_four_reports |
 | 16 | `apps/api/tests/capacity_baseline_isolation.rs` (case-level, with its 3 `ci.yml` helpers; risk-gone) | 13 → 12 | removed: ci_backend_job_runs_capacity_load_and_not_soak |
+| 25 | `apps/api/src/routes/book.rs` (in-file test module `schema_tests`; duplicate of `tests/api_contract_parity.rs` boundary evidence) | 3 → 0 | removed: book_schema_is_not_empty, every_book_enum_variant_matches_its_into_responses_envelope, book_registry_rejects_unknown_keys_and_never_serializes_boundary_labels |
+| 25 | `apps/api/src/routes/broker.rs` (in-file test module `schema_tests`; duplicate of `tests/api_contract_parity.rs` boundary evidence) | 3 → 0 | removed: broker_schema_is_not_empty, every_broker_enum_variant_matches_its_into_responses_envelope, broker_registry_rejects_unknown_keys_and_never_serializes_boundary_labels |
+| 25 | `apps/api/src/routes/price.rs` (in-file test module `response_conversion_tests`; duplicate of `tests/api_contract_parity.rs` and `tests/market_data_paused_no_vendor_contact.rs`) | 2 → 0 | removed: price_boundaries_use_distinct_typed_variants_and_app_errors, get_price_cold_path_uses_fixture_aware_quick_live_price |
