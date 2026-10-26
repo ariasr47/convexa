@@ -390,3 +390,65 @@ places the board was the one behind. Each item was measured on the board and on 
   board page at 390, 1440 and 1920 equals HEAD's. Those are 135 checks, and the 13 flags are already at HEAD: the
   760-wide spec cards at 390, `components-sheet`, and the library's 19 small labels. Checked: `node
   design/src/build.mjs` 0, `node design/src/verify-tokens.mjs` 0. Not published to the canvas artifact.
+
+## 2026-10-25 · Fidelity round 3, lane R3-B: the boards follow the owner's answers after round 2 and what round 3 shipped
+
+Supersedes the round 2 entry's "Emph stays amber-text at 3.96:1 on the library's raised surface"; nothing above is
+edited. Each item was measured on the regenerated boards against HEAD `18379b60`'s demo and live builds (live
+`/api` faked); evidence in `tmp/fidelity/r3/R3-B-boards-canon/`.
+
+- **Footer seam (owner: keep the arc; the boards follow the app):** every Final board's footer now opens with the
+  canon's 20px arc divider, the app's `ArcDivider` path (`M 0 17 Q 600 9 1200 17` in a 1200×20 box, 1px `line`
+  stroke, non-scaling), in place of the v4 1px border-top (`lib.mjs` `FINAL_ARC_SEAM`, `withFinalFooter`,
+  `finalFooter`). Production boards built on `finalPage` also gain the copyright line the app draws in both builds
+  (they had none, so their footer was 125 tall at 1440 against the app's 170), the disclaimer's **simulated** is
+  bold as in `DisclaimerCopy`, and the footer links take 44px under a coarse pointer (canon rule 7). Footer height,
+  board and app equal on 7 boards and 4 app pages: staging 196 / 196 / 164 / 386 and production 170 / 170 / 138 /
+  334 at 1440 / 1280 / 1920 / 390 (coarse). It was 177 / 151 / 125 at 1440. The shell states board's two footer
+  cards use the same footer. The v4 boards keep the border they were drawn with.
+- **Trade entry (owner: Manual default, the cap check outside the dialog, ACC-11 not adopted):**
+  `final-dialogs-trade-entry` and the phone sheet are redrawn to the shipped dialog as it opens on the demo desk:
+  Manual price selected, Market and Limit beside it; the leg on one row of four (two by two under 600px); Quantity
+  and Manual price, then Stop and Target; "Enter a price — opens at exactly the price you type." with its
+  user-entered price chip; a Net debit / Max loss / Cap per trade strip (`—`, `—`, `$500`) with no verdict; the
+  cap's source line; the confirm disabled. Board 760×574.1 against the app's 760×573.9 at 1440 (was 760×540.9 with
+  Market, a sample-mid field and "Cap check: within $500"); the price line, strip and cap line sit within 0.2px of
+  the app's offsets, and within 1.9px at 390. The field labels draw in steel (6.19:1 dark, 5.42:1 light): the app's
+  `FieldLabel` uses `text.disabled`, 2.52:1, so the board does not copy that. The states board follows: the
+  not-live fill control in the app's order; "over the cap" becomes the strip with max loss beside the cap and no
+  verdict, plus the read's own pinned cap check (`CapAnnotation`) as received; "cap not set" takes the app's words.
+  The Overlays spec card records the shipped dialog and marks ACC-11's Market default and "within" verdict
+  "Designed, not built · Left out on purpose". The state matrix's not-set dialog cell says "Cap per trade".
+- **Tracker:** `Q-GITHUB-HREF`'s `why` no longer says the footer ships without the link; it records that the link
+  shipped in `1ded978b`. The entry stays.
+- **Chips at AA in both schemes:** light `chip.emph` measured 3.96:1 because the palette drawings on the library
+  and components sheet put it on light raised-2. Their selected row now takes `--pal-sel`, which is the panel in
+  light (the app's row, SITE-03b), so the chip measures 4.65:1 or more. `--pal-sel` moved from
+  `v4/shell-landing.mjs` to `lib.mjs`, so every palette board shares one definition: raised-2 in dark, white in
+  light on all six palette boards. Dark `chip.live` follows the app's dark info TintChip (`cac55258`): text-info,
+  6.30–7.07:1 (was signal, 4.01). Library and components sheet: 0 chips under 4.5:1 in either scheme (were 6 and 4).
+- **Round 3's app changes, checked on the boards:** R3-A's harness, re-pointed at these boards, finds them equal
+  to the app on unselected tabs (13/500, current 600), "Full demo ↗" (89.08 wide, 10px sides; search box at 823.83
+  / 942.22 / 1282.22), the landing H1's breaks at 1280, 1440, 1920 and 390, and "Copy all" (102.06×36, glyph 16).
+  The production desk h1 is within 1.2px. The note's "Filed since this note" head (14/600) and the comes-due rows
+  (31 tall, hairline rules) are equal. The desk Structure label sits 2.9–5.2px below the board's at 390, 768,
+  1024, 1280, 1440 and 1920. R3-A found that offset on the app side, not a stale board, so no board change. The
+  Copy all glyphs now ask for 16, the size the `.ico` rule already drew. The spec cards (shell, landing, operator,
+  AI read, desk, note, foundations) each gain a round 3 entry with its commits.
+- **Canon:** no Amendments row. No ruling this round changes `DESIGN_SYSTEM.md`: the arc seam is already one of
+  the arc's three spends, info as text already binds `textInfo` (the 2026-09-09 row), and ACC-11 was never canon.
+- **Heights:** 113 boards changed. +19 on 52: every staging board with a footer, the site-page production boards
+  that already drew the copyright, and the tracker, whose list gains the ACC-11 row. +45 on the 50 production boards
+  that gain both the seam and the copyright. The dialogs spec +409, its states +124, the phone sheets −14, seven
+  other spec cards +48 to +173, the shell states +38. 202 measured, none overflows, and a second measurement
+  changes 0. Measured with the app's bundled fonts; HEAD's sources measure equal to HEAD's heights.json that way.
+  The overflow and small-text sweep (208 pages × 390 / 1440 / 1920) equals HEAD's cell for cell. Its 51 flags all
+  predate this round: the 760-wide spec cards at 390, the 3220-wide state matrix, `components-sheet` at 1440, and
+  the library's 19 small labels. Checked: `node design/src/build.mjs` 0, `node design/src/verify-tokens.mjs` 0,
+  NUL bytes 0 in all changed files. Not published to the canvas artifact.
+- **Left as found:** the September trade-entry page (`dialogs.mjs`) and the components sheet's mini dialog still
+  draw a "within" cap line; they are v2 history that the Final boards supersede. The production boards draw the
+  not-live bar's sentence from 768 to 899px. The live build drops it under 900, so the bar is 103 tall on the board
+  against 41 in the app at 768. Another lane is editing `MarketDataNotice.tsx` this round, so the board waits.
+  The note's "This note comes due" eyebrow measures 11/600 on the board and 11/400 in the app, at 1440 and 390;
+  no lane was asked to change it.

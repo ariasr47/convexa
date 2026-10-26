@@ -43,9 +43,12 @@
   /* A tint chip's label: its fill's hue in dark; in light, a text-grade colour that clears AA on its own tint, as the
      app's TintChip (eb07b0f5): steel on the neutral tint measured 4.11 to 4.45:1, signal 4.12, warn 4.19. Neutral and
      warn take phosphor, live takes text-info; up, down and emph already use text-grade tokens. Set per scheme, so the
-     nearest data-scheme wins. */
-  :root, [data-scheme="dark"] { --chip-label: var(--steel); --chip-live: var(--signal); --chip-warn: var(--warn); }
-  [data-scheme="light"] { --chip-label: var(--phosphor); --chip-live: var(--text-info); --chip-warn: var(--phosphor); }
+     nearest data-scheme wins. Dark live takes text-info too (owner, 2026-10-25, after fidelity round 2; app cac55258):
+     signal on its own tint measured 4.01:1 over the panel; text-info 6.30. The dot stays signal.
+     --pal-sel is the palette's selected row: raised-2 in dark, the panel in light, where raised-2 measured 4.20:1 under
+     steel and 3.96:1 under the emph chip's label (the app's row, fidelity SITE-03b, 46972f63). */
+  :root, [data-scheme="dark"] { --chip-label: var(--steel); --chip-live: var(--text-info); --chip-warn: var(--warn); --pal-sel: var(--raised-2); }
+  [data-scheme="light"] { --chip-label: var(--phosphor); --chip-live: var(--text-info); --chip-warn: var(--phosphor); --pal-sel: var(--panel); }
   .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--chip-label); background: rgba(138,155,180,0.14); }
   .chip.up { color: var(--text-up); background: var(--up-tint); } .chip.down { color: var(--text-down); background: var(--down-tint); }
   .chip.live { color: var(--chip-live); background: var(--signal-tint); } .chip.warn { color: var(--chip-warn); background: var(--warn-tint); }
@@ -185,6 +188,11 @@
   .v4-foot-in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding-top: 24px; padding-bottom: 32px; }
   .v4-foot-in nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
   .v4-foot-in nav a { color: var(--steel); font-size: 13px; text-decoration: none; min-height: 24px; display: inline-flex; align-items: center; }
+  /* The Final footer (finalFooter): the canon's 20px arc seam in place of the v4 border, and the app's 44px links
+     under a coarse pointer (canon rule 7). */
+  .v4-foot.fd-foot { border-top: 0; }
+  .fd-arc { height: 20px; width: 100%; color: var(--line); flex-shrink: 0; } .fd-arc svg { display: block; width: 100%; height: 100%; }
+  @media (pointer: coarse) { .fd-foot .v4-foot-in nav a { min-height: 44px; } }
   .claim { font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 112.5%; font-weight: 600; font-size: 18px; line-height: 1.25; text-wrap: balance; margin: 0; }
   .sub { font-size: 12.5px; color: var(--steel); margin: 2px 0 0; line-height: 1.45; }
   .srcline { font-size: 11.5px; color: var(--steel); margin: 0; }
@@ -570,8 +578,6 @@
   .pal .grp { padding: 8px 8px 4px; }
   .pal .grp > span.caps { display: block; padding: 6px 8px; }
   .pal .opt { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 40px; padding: 6px 8px; border-radius: 8px; font-size: 13.5px; }
-  :root, [data-scheme="dark"] { --pal-sel: var(--raised-2); }
-  [data-scheme="light"] { --pal-sel: var(--panel); } /* light raised-2 under steel is 4.20:1, the panel 5.42:1: the app's row (fidelity SITE-03b, 46972f63) */
   .pal .opt[aria-selected="true"] { background: var(--pal-sel); box-shadow: inset 0 0 0 1px var(--line-2); }
   .pal .pf { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--steel); }
   .drawer-p { position: absolute; top: 0; right: 0; bottom: 0; width: min(320px, 82%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--e4); padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
@@ -752,8 +758,28 @@
   .ac-sheet .v4dlg .dh::before { content: ''; position: absolute; top: 8px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line-2); }
   .ac-sheet .v4dlg .dh .btn { flex: 0 0 auto; }
   .ac-sheet .v4dlg .df .btn { flex: 1 1 100%; min-height: 44px; }
-  .ac-sheet .ac-g4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   .ac-fill { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* Trade entry as shipped (TradeEntryDialogView.tsx; owner, 2026-10-25, after fidelity round 2): caps field labels
+     (FieldLabel: 11/700, 0.07em; steel here, AA on the panel), 36px fields on the page ink, full-width toggle groups,
+     the leg on one row of four (two by two under 600px, LegFields.tsx), 44px controls under 600px. */
+  .v4dlg.te .dh h2 { line-height: 1.4; text-wrap: wrap; }
+  .te-l { display: block; margin: 0 0 4px; font: 700 11px/1.65 'IBM Plex Sans', sans-serif; letter-spacing: 0.07em; text-transform: uppercase; color: var(--steel); }
+  .te-in { box-sizing: border-box; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ink); font: 400 13px 'IBM Plex Sans', sans-serif; color: var(--phosphor); }
+  .te-in.ro { border-style: dashed; background: transparent; color: var(--steel); }
+  .te-in > span:first-child { flex: 1 1 auto; min-width: 0; }
+  .te-caret { flex: 0 0 auto; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid var(--steel); }
+  .te-tg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .te-tg > button { min-height: 36.8px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--steel); font: 600 13px/1.75 'IBM Plex Sans', sans-serif; }
+  .te-tg > button:first-child { border-left: 0; }
+  .te-tg > button[aria-pressed="true"] { background: color-mix(in srgb, var(--phosphor) 16%, transparent); color: var(--phosphor); }
+  .te-g4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: start; }
+  .te-g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .te-g2.wide { gap: 16px; }
+  .te-net { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .te-net .stag { font-weight: 500; }
+  .te .hd-fig .v.nan { font-family: 'IBM Plex Sans', sans-serif; }
+  .btn.te-off { background: color-mix(in srgb, var(--phosphor) 12%, transparent); color: color-mix(in srgb, var(--phosphor) 30%, transparent); cursor: not-allowed; }
+  @media (max-width: 599px) { .te-g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .te-in { height: 44px; } .te-tg > button { min-height: 42px; } .te .hd-fig .v { font-size: 16px; } }
 </style>
 </helmet>
 <div class="v4" data-scheme="dark" style="position: relative; width: 100%; min-height: 920px; background: var(--ink); color: var(--phosphor); overflow: hidden;"><div class="v4-behind" aria-hidden="true"><div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="8"></circle><path d="M6.6 6.6l10.8 10.8"></path></svg><strong style="font-weight: 600;">Options data isn’t live on this site.</strong><span class="steel only-wide">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, filings, research and TradingView’s daily charts are live.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">What’s live</a><a href="https://staging.convexa.pages.dev" class="t-info only-wide">See the full demo →</a></div></div><header class="v4n"><div class="wrap v4n-in">

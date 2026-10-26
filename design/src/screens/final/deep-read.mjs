@@ -179,7 +179,7 @@ function exportDrawer() {
       ${sent('Persona prompt', '—', { caption: 'The demo builds no persona prompt; the sample read is authored.' })}
       ${sent('Field glossary', EXPORT_GLOSSARY)}
     </div>
-    <div class="df"><button class="btn secondary" type="button">${icon('copy', 14)}Copy all</button><span class="dr-xl">Copies the sample, labelled as one.</span></div></aside>`;
+    <div class="df"><button class="btn secondary" type="button">${icon('copy', 16)}Copy all</button><span class="dr-xl">Copies the sample, labelled as one.</span></div></aside>`;
 }
 export const exportBody = ({ minHeight = 0, scheme = 'dark' } = {}) =>
   `<div class="v4 dr-wrap" data-scheme="${scheme}" style="height: ${Math.max(minHeight, 1220)}px;">${behindDesk(scheme)}${exportDrawer()}</div>`;

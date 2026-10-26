@@ -277,7 +277,7 @@ export const ROWS = [
       job: 'The decisions that happen over a page: signing in, opening a simulated position, reading an order, tuning the AI persona, editing the scan view, seeing exactly what an AI read sends, and setting up an alert.',
       env: {
         production: 'Sign in exists only here (sign-ups closed). Trade entry offers Manual price only; order detail says Not evaluated; what’s sent says nothing is sent; persona saves and waits. Each links to the demo where the feed is needed.',
-        staging: 'No sign in. Every overlay works on the sample chain and the demo account’s seed: Market, Limit and Manual fills, orders that trigger on the sample tape, a labelled sample export, saved persona and view in this browser.',
+        staging: 'No sign in. Every overlay works on the sample chain and the demo account’s seed: Manual price (selected when trade entry opens), Market and Limit fills, orders that trigger on the sample tape, a labelled sample export, saved persona and view in this browser.',
       },
       widgets: [
         { name: 'Sign in', source: '/api/auth/login · SIGNUPS_OPEN = false', production: 'locked', staging: '— (none)' },
@@ -293,8 +293,8 @@ export const ROWS = [
         { tag: 'error', when: 'Wrong credentials; chain didn’t load; persona, view or alert save failed. Inline, input kept.' },
         { tag: 'unavailable', when: 'Sign-in service or the tracked universe is down.' },
         { tag: 'notLive', when: 'Production: fills, order triggers, AI export and the scan view need the feed.' },
-        { tag: ['notConfigured', 'Not set'], when: 'No risk inputs: the cap check reads “not set”.' },
-        { tag: 'computed', when: 'Cap check: max loss against the per-trade cap; over the cap warns and still allows.' },
+        { tag: ['notConfigured', 'Not set'], when: 'No risk inputs: Cap per trade reads “not set”, with Set risk inputs →.' },
+        { tag: 'computed', when: 'Trade entry’s strip: the entry’s max loss beside the per-trade cap, as received; the dialog states no verdict (tradeable-rec-inputs AC-63). From a read’s Accept, the read’s own pinned cap check shows under it, within or above, with the warning glyph.' },
         { tag: 'demo', when: 'Staging: every overlay on the sample chain; the D8-1 disclosure above every order confirm.' },
       ],
       phone: 'Under 600px every dialog and the drawer become bottom sheets: full width, a grab handle, actions stacked at 44px, field grids at two columns, the page behind dimmed (one board shows all six; the alert steps are on the flow board).',
@@ -313,6 +313,8 @@ export const ROWS = [
         { status: 'shipped', what: 'Demo links from production Not live overlays: order detail says Not evaluated and links the demo; trade entry links it from the fill control (2026-10-15). What’s sent: production reaches it from the public desk’s AI read (“What a read sends →”, a drawer tagged Nothing sent that lists what a read would send), and the drawer links the demo (AiReadNotLive.tsx, 2026-10-15).' },
         { status: 'shipped', what: 'Sign in says “New sign-ups are closed while Convexa is in private testing.” under its title, as the board draws it (D-10, 2026-10-15). The rest of D-10 followed on 2026-10-16 (next entry).' },
         { status: 'shipped', what: 'D-10, 2026-10-16: the disabled “Continue with Google” is the board’s neutral secondary button, disabled, with no brand mark (it was a white surface at half opacity that read as enabled; enabled, it keeps the branded white button), and signed-out Settings’ Account panel says the same sign-ups-closed sentence (GoogleButton.tsx, SettingsPage.tsx).' },
+        { status: 'shipped', what: 'Trade entry as shipped, the board redrawn to it (owner, 2026-10-25, after fidelity round 2): Manual price selected on open, Market and Limit beside it; the leg on one row of four (two by two on a phone), Quantity and the price below, then Stop and Target; “Enter a price — opens at exactly the price you type.” with its user-entered price chip; a Net debit / Max loss / Cap per trade strip and the cap’s source line; the confirm disabled until a price is typed (TradeEntryDialogView.tsx, LegFields.tsx, FillModeToggle.tsx).' },
+        { status: 'todo', waits: 'decided', what: 'Not adopted: ACC-11’s Market fill selected by default and its “within” cap verdict in the dialog’s strip (fidelity audit 2026-10-25). Owner, 2026-10-25, after round 2: Manual stays the default, as the specs and eight spec files pin it, and the cap check stays outside the dialog, which renders the cap as received and computes no verdict (tradeable-rec-inputs AC-63).' },
       ],
       rulings: ['P-1', 'P-2', 'P-3', 'P-13', 'Q-5', ...ENV],
       code: ['apps/dashboard/src/app/features/auth/AuthDialog.tsx', 'apps/dashboard/src/app/features/trading/tradeEntry/TradeEntryDialogView.tsx', 'apps/dashboard/src/app/features/trading/orders/{OrderDetailDialog.tsx,copy.ts}', 'apps/dashboard/src/app/features/personas/components.tsx', 'apps/dashboard/src/app/pages/scanner/ViewEditorDialog.tsx', 'apps/dashboard/src/app/pages/ticker/widgets/ai-rec/StateExportDrawer.tsx'],

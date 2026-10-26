@@ -67,7 +67,7 @@ export const OPEN_QUESTIONS = [
     answered: '2026-10-25',
     answer: 'The repository, https://github.com/ariasr47/convexa',
     ask: 'The staging footer’s “GitHub ↗” link (spec 01, Q3): your GitHub profile, or the public repository?',
-    why: 'docs/product/specs/2026-10-21/README.md, Owner decisions (S1-Q3). The footer ships without the link until you choose.',
+    why: 'docs/product/specs/2026-10-21/README.md, Owner decisions (S1-Q3). Asked while the staging footer shipped without the link; since 1ded978b (2026-10-25) it ships “GitHub ↗” to the repository.',
   },
   {
     id: 'Q-HOOD-NI',

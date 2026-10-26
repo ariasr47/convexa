@@ -134,13 +134,12 @@ export const SS_CSS = `
 `;
 
 // ---- page wrapper per environment --------------------------------------------------------------
-const COPYRIGHT = '<p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p>';
 /** A page in one environment. production: the not-live bar, signed out ("Log in", sign-ups closed so no
- *  "Sign up"). staging: the demo bar and the demo account. The footer gains the shipped copyright line. */
+ *  "Sign up"). staging: the demo bar and the demo account. The footer (finalPage's, with its arc seam and the
+ *  shipped copyright line) is the same on every Final board since 2026-10-25. */
 export function sitePage({ env = 'production', scheme = 'dark', minHeight = 0, active = '', label = '', main = '', tabs = '', footer = true }) {
-  let html = finalPage({ scheme, minHeight, demo: env === 'staging', notice: 'hybrid', active, label, main, tabs, footer });
-  if (env !== 'staging') html = html.replace('class="v4n-signin">Sign in</a>', 'class="v4n-signin">Log in</a>');
-  return html.replace('Not investment advice.</p></div></footer>', `Not investment advice.</p>${COPYRIGHT}</div></footer>`);
+  const html = finalPage({ scheme, minHeight, demo: env === 'staging', notice: 'hybrid', active, label, main, tabs, footer });
+  return env !== 'staging' ? html.replace('class="v4n-signin">Sign in</a>', 'class="v4n-signin">Log in</a>') : html;
 }
 export const demoUrl = (path = '') => `${STAGING_DEMO_URL}${path}`;
 export const demoLink = (path = '', text = 'See it on the demo') => `<a class="ss-demo t-info" href="${demoUrl(path)}">${text} ${icon('arrow', 14)}</a>`;

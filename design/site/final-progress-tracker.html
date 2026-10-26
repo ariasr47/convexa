@@ -352,8 +352,6 @@
   .pal .grp { padding: 8px 8px 4px; }
   .pal .grp > span.caps { display: block; padding: 6px 8px; }
   .pal .opt { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 40px; padding: 6px 8px; border-radius: 8px; font-size: 13.5px; }
-  :root, [data-scheme="dark"] { --pal-sel: var(--raised-2); }
-  [data-scheme="light"] { --pal-sel: var(--panel); } /* light raised-2 under steel is 4.20:1, the panel 5.42:1: the app's row (fidelity SITE-03b, 46972f63) */
   .pal .opt[aria-selected="true"] { background: var(--pal-sel); box-shadow: inset 0 0 0 1px var(--line-2); }
   .pal .pf { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--steel); }
   .drawer-p { position: absolute; top: 0; right: 0; bottom: 0; width: min(320px, 82%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--e4); padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
@@ -579,12 +577,12 @@
       </header>
       <div class="tiles">
       <div class="tile"><span class="h">Screens · 33</span><div class="nums">
-        <div class="row"><span><span class="st built">Built</span></span><span class="n">18</span></div>
-        <div class="row"><span><span class="st progress">In progress</span></span><span class="n">12</span></div>
+        <div class="row"><span><span class="st built">Built</span></span><span class="n">17</span></div>
+        <div class="row"><span><span class="st progress">In progress</span></span><span class="n">13</span></div>
         <div class="row"><span><span class="st designed">Designed</span></span><span class="n">3</span></div>
       </div></div>
-      <div class="tile"><span class="h">Open items · 15</span><div class="nums">
-        <div class="row"><span><span class="chip w-build">To build</span></span><span class="n">4</span></div><div class="row"><span><span class="chip w-owner">Waiting on you</span></span><span class="n">1</span></div><div class="row"><span><span class="chip w-parked">Parked by you</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-spend">Needs paid data</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-decided">Left out on purpose</span></span><span class="n">4</span></div>
+      <div class="tile"><span class="h">Open items · 16</span><div class="nums">
+        <div class="row"><span><span class="chip w-build">To build</span></span><span class="n">4</span></div><div class="row"><span><span class="chip w-owner">Waiting on you</span></span><span class="n">1</span></div><div class="row"><span><span class="chip w-parked">Parked by you</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-spend">Needs paid data</span></span><span class="n">3</span></div><div class="row"><span><span class="chip w-decided">Left out on purpose</span></span><span class="n">5</span></div>
       </div></div>
       <div class="tile"><span class="h">Known issues open · 0</span><div class="nums">
         <div class="row"><span><span class="chip sv-high">High</span></span><span class="n">0</span></div><div class="row"><span><span class="chip sv-medium">Medium</span></span><span class="n">0</span></div><div class="row"><span><span class="chip sv-low">Low</span></span><span class="n">0</span></div>
@@ -612,12 +610,12 @@
           <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Ticker desk</strong><span class="route">/ticker/:ticker · Overview</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="20 shipped, 0 partly built, 0 designed, of 20"><i class="s" style="width: 100%;"></i></div><div class="counts">20/20 shipped</div></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="21 shipped, 0 partly built, 0 designed, of 21"><i class="s" style="width: 100%;"></i></div><div class="counts">21/21 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
             <td><span class="none">None open · 4 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>AI read</strong><span class="route">/ticker/:ticker · the read panel, its drawers and the phone sheet</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="7 shipped, 0 partly built, 0 designed, of 7"><i class="s" style="width: 100%;"></i></div><div class="counts">7/7 shipped</div></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="8 shipped, 0 partly built, 0 designed, of 8"><i class="s" style="width: 100%;"></i></div><div class="counts">8/8 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
             <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
@@ -627,7 +625,7 @@
             <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Research tab · note</strong><span class="route">/ticker/:symbol/research · /ticker/:symbol/research/:slug</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="14 shipped, 0 partly built, 0 designed, of 14"><i class="s" style="width: 100%;"></i></div><div class="counts">14/14 shipped</div></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="15 shipped, 0 partly built, 0 designed, of 15"><i class="s" style="width: 100%;"></i></div><div class="counts">15/15 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
             <td><span class="none">None open · 2 fixed or closed</span></td>
           </tr></tbody>
@@ -687,14 +685,14 @@
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Dialogs & overlays</h2><span class="c">2 screens · 1 open item · 0 known issues open</span></div>
+        <div class="grp-h"><h2>Dialogs & overlays</h2><span class="c">2 screens · 2 open items · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
           <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Overlays</strong><span class="route">dialogs, drawer and sheets on every route</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
-            <td><span class="none">Nothing open</span></td>
+            <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="7 shipped, 0 partly built, 1 designed, of 8"><i class="s" style="width: 87.5%;"></i><i class="t" style="width: 12.5%;"></i></div><div class="counts">7/8 shipped</div></td>
+            <td><ul><li><span class="chip w-decided">Left out on purpose</span><span class="t">Not adopted: ACC-11’s Market fill selected by default and its “within” cap verdict in the dialog’s strip (fidelity audit 2026-10-25). Owner, 2026-10-25, after round 2: Manual stays the default, as the specs and eight spec files …</span></li></ul></td>
             <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>More overlays</strong><span class="route">dialogs on /positions, /ticker/:ticker, /alerts; /account/reset and /account/invite (proposed)</span></td>
@@ -710,12 +708,12 @@
           <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Global shell</strong><span class="route">every route inside the shell</span></td>
-            <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="16 shipped, 0 partly built, 1 designed, of 17"><i class="s" style="width: 94.11764705882352%;"></i><i class="t" style="width: 5.88235294117647%;"></i></div><div class="counts">16/17 shipped</div></td>
+            <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="17 shipped, 0 partly built, 1 designed, of 18"><i class="s" style="width: 94.44444444444444%;"></i><i class="t" style="width: 5.555555555555555%;"></i></div><div class="counts">17/18 shipped</div></td>
             <td><ul><li><span class="chip w-decided">Left out on purpose</span><span class="t">Company names on production ⌘K rows for tickers without a note (D-13, checked 2026-10-16): apps/api/config/universe.json lists symbols only, and no other file the API reads carries names. The one name-bearing source the API … <span class="ask">Q-PALETTE-NAMES</span></span></li></ul></td>
             <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Landing</strong><span class="route">/</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="11 shipped, 0 partly built, 0 designed, of 11"><i class="s" style="width: 100%;"></i></div><div class="counts">11/11 shipped</div></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="12 shipped, 0 partly built, 0 designed, of 12"><i class="s" style="width: 100%;"></i></div><div class="counts">12/12 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
             <td><span class="none">None open · 3 fixed or closed</span></td>
           </tr><tr>
@@ -750,7 +748,7 @@
             <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
             <td class="name"><strong>Operator</strong><span class="route">/_ops/metrics and /_ops/research (unlinked)</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
             <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr></tbody>
@@ -762,7 +760,7 @@
           <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Foundations</strong><span class="route">every route</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="6 shipped, 0 partly built, 0 designed, of 6"><i class="s" style="width: 100%;"></i></div><div class="counts">6/6 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
             <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr></tbody>

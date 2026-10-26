@@ -4,7 +4,7 @@
 // Not live state live on the states board. Copy reuses the shipped strings (features/trading/orders/
 // copy.ts D8 disclosures, features/trading/positions/labels.ts DISCLAIMER, pages/scanner/labels.ts).
 import { STAGING_DEMO_URL, icon, v4Nav, finalDemoNotice } from '../../lib.mjs';
-import { dataCell, provChip, stateTag } from '../../components/data-states.mjs';
+import { dataCell, stateTag } from '../../components/data-states.mjs';
 import { dlg, fld, overPage, seg, statesBoard } from '../v4/kit.mjs';
 import { signInDlg } from '../v4/docs-dialogs.mjs';
 
@@ -21,8 +21,28 @@ export const DLG_CSS = `
   .ac-sheet .v4dlg .dh::before { content: ''; position: absolute; top: 8px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line-2); }
   .ac-sheet .v4dlg .dh .btn { flex: 0 0 auto; }
   .ac-sheet .v4dlg .df .btn { flex: 1 1 100%; min-height: 44px; }
-  .ac-sheet .ac-g4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   .ac-fill { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* Trade entry as shipped (TradeEntryDialogView.tsx; owner, 2026-10-25, after fidelity round 2): caps field labels
+     (FieldLabel: 11/700, 0.07em; steel here, AA on the panel), 36px fields on the page ink, full-width toggle groups,
+     the leg on one row of four (two by two under 600px, LegFields.tsx), 44px controls under 600px. */
+  .v4dlg.te .dh h2 { line-height: 1.4; text-wrap: wrap; }
+  .te-l { display: block; margin: 0 0 4px; font: 700 11px/1.65 'IBM Plex Sans', sans-serif; letter-spacing: 0.07em; text-transform: uppercase; color: var(--steel); }
+  .te-in { box-sizing: border-box; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ink); font: 400 13px 'IBM Plex Sans', sans-serif; color: var(--phosphor); }
+  .te-in.ro { border-style: dashed; background: transparent; color: var(--steel); }
+  .te-in > span:first-child { flex: 1 1 auto; min-width: 0; }
+  .te-caret { flex: 0 0 auto; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid var(--steel); }
+  .te-tg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .te-tg > button { min-height: 36.8px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--steel); font: 600 13px/1.75 'IBM Plex Sans', sans-serif; }
+  .te-tg > button:first-child { border-left: 0; }
+  .te-tg > button[aria-pressed="true"] { background: color-mix(in srgb, var(--phosphor) 16%, transparent); color: var(--phosphor); }
+  .te-g4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: start; }
+  .te-g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .te-g2.wide { gap: 16px; }
+  .te-net { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .te-net .stag { font-weight: 500; }
+  .te .hd-fig .v.nan { font-family: 'IBM Plex Sans', sans-serif; }
+  .btn.te-off { background: color-mix(in srgb, var(--phosphor) 12%, transparent); color: color-mix(in srgb, var(--phosphor) 30%, transparent); cursor: not-allowed; }
+  @media (max-width: 599px) { .te-g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .te-in { height: 44px; } .te-tg > button { min-height: 42px; } .te .hd-fig .v { font-size: 16px; } }
 `;
 
 /** A staging page with an overlay: the demo bar and the demo account behind the scrim (never "Sign in"). */
@@ -35,16 +55,25 @@ const SIM = '<span class="stag k-solid">SIMULATED</span>';
 const DISCLAIMER = 'Paper trade — no broker, no real money. Filled at the option mid; fees, slippage, taxes and assignment are not modeled.';
 const D8_1 = (t) => `Simulated only — no real order is ever placed. Once confirmed, this order can trigger and fill unattended whenever a live stream for ${t} is open in this browser. Orders are stored in this browser — not synced to your account.`;
 
-export function tradeEntryDemo({ order = false } = {}) {
-  const fill = order
-    ? `<div class="fld">Entry${seg(['Market on trigger', 'Limit'], 'Limit')}<span class="help">A resting order on the sample tape. It fills only when the sample mark reaches your limit.</span></div>`
-    : `<div class="fld">Fill${seg(['Market', 'Limit', 'Manual price'], 'Market')}<span class="help">Market fills at the sample chain’s mid. Limit waits for the sample mark. Manual price opens at a price you type.</span></div>`;
-  const body = `<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">${provChip('Sample chain · shaped like an options chain', 'dashed')}<span class="dline">Oct 7 scenario · SPY 690.62</span></div>${fill}
-    <div class="ac-g4" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">${fld('Side', 'Long')}${fld('Expiration', 'Oct 16 · 9d', { mono: true })}${fld('Strike', '690', { mono: true })}${fld('Right', 'Call')}</div>
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">${fld('Quantity', '1', { mono: true, focus: true })}${fld(order ? 'Limit price' : 'Sample mid', order ? '2.40' : '2.47', { mono: true, dis: !order })}</div>
-    <div class="hd-fig" style="grid-template-columns: repeat(3, minmax(0, 1fr));"><div><span class="caps">Net debit</span><span class="v">${order ? '$240' : '$247'}</span></div><div><span class="caps">Max loss</span><span class="v">${order ? '$240' : '$247'}</span></div><div><span class="caps">Cap check</span><span class="v" style="font-size: 15px;">within $500</span></div></div>
-    <span class="dline" style="font-size: 12px;">Your cap: $25,000 sample account × 2% = $500 per trade (Settings · Risk inputs).</span>`;
-  return dlg({ title: `${order ? 'Place simulated order' : 'Open simulated position'} · SPY`, chip: SIM, wide: true, body, foot: `<span class="dline" style="flex: 1 1 300px; font-size: 12px;">${order ? D8_1('SPY') : DISCLAIMER}</span><button class="btn ghost" type="button">Cancel</button><button class="btn primary" type="button">${order ? 'Place simulated order' : 'Open simulated position'}</button>` });
+/** Trade entry as shipped (TradeEntryDialogView.tsx), the way it opens from the desk on staging: Manual price selected
+ *  (the specs and tests pin it), Market and Limit beside it; the leg on one row of four, Quantity and the price below,
+ *  then Stop and Target; the price line with its basis chip; the Net debit / Max loss / Cap per trade strip, with the cap
+ *  as received and no verdict: the dialog computes no cap check (tradeable-rec-inputs AC-63). Owner, 2026-10-25, after
+ *  fidelity round 2: ACC-11's Market default and its “within” cap verdict are not adopted; this board follows the app.
+ *  The confirm stays disabled until a price is typed. */
+const teField = (label, value, { ro = false, caret = false } = {}) => `<div><span class="te-l">${label}</span><span class="te-in${ro ? ' ro' : ''}"><span>${value}</span>${caret ? '<span class="te-caret" aria-hidden="true"></span>' : ''}</span></div>`;
+export const teToggle = (opts, on, label) => `<div class="te-tg" role="group" aria-label="${label}">${opts.map((o) => { const [t, off] = Array.isArray(o) ? o : [o, false]; return `<button type="button" aria-pressed="${t === on}"${off ? ' aria-disabled="true"' : ''}>${t}</button>`; }).join('')}</div>`;
+export const teStrip = (net, loss, cap) => `<div class="hd-fig" style="grid-template-columns: repeat(3, minmax(0, 1fr));">${[['Net debit', net], ['Max loss', loss], ['Cap per trade', cap]].map(([l, v]) => `<div><span class="caps">${l}</span><span class="v${/^[$\d]/.test(v) ? '' : ' nan'}">${v}</span></div>`).join('')}</div>`;
+const CAP_LINE = '<span class="dline" style="font-size: 12px;">Your cap: $25,000 sample account × 2% = $500 per trade (<a href="/settings" style="text-decoration: underline;">Settings · Risk inputs</a>).</span>';
+export function tradeEntryDemo() {
+  const body = `${teToggle(['Manual price', 'Market', 'Limit'], 'Manual price', 'fill mode')}
+    <div class="te-g4">${teField('Side', 'Long', { ro: true })}${teField('Expiration', '2026-10-09', { caret: true })}${teField('Strike', '$690', { caret: true })}<div><span class="te-l">Right</span>${teToggle(['Call', 'Put'], 'Call', 'Right')}</div></div>
+    <div class="te-g2">${teField('Quantity', '1')}${teField('Manual price', '')}</div>
+    <div class="te-g2 wide">${teField('Stop (optional)', '')}${teField('Target (optional)', '')}</div>
+    <div class="te-net"><span class="dline" style="font-size: 13px;">Enter a price — opens at exactly the price you type.</span><span class="stag k-solid">user-entered price</span></div>
+    ${teStrip('—', '—', '$500')}
+    ${CAP_LINE}`;
+  return dlg({ title: 'Open simulated position · SPY', chip: SIM, wide: true, body, foot: `<span class="dline" style="flex: 1 1 300px; font-size: 12px;">${DISCLAIMER}</span><button class="btn ghost" type="button">Cancel</button><button class="btn te-off" type="button" aria-disabled="true">Open simulated position</button>` }).replace('class="v4dlg wide"', 'class="v4dlg wide te"');
 }
 export function orderDetailDemo() {
   return dlg({ title: 'Simulated order · SPY 690 C · Nov 20', chip: SIM, body: `<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;"><span class="stag k-solid">${icon('clock', 12)}Triggered</span>${stateTag('sample', 'Sample tape')}<span class="dline">Waits to fill when the sample mark reaches your limit.</span></div><div class="hd-fig" style="grid-template-columns: repeat(2, minmax(0, 1fr));"><div><span class="caps">Source</span><span class="v" style="font-size: 14px;">Manual</span></div><div><span class="caps">Entry</span><span class="v" style="font-size: 14px;">Limit 4.25</span></div><div><span class="caps">Sample mark</span><span class="v" style="font-size: 14px;">4.47 · 2:30 PM</span></div><div><span class="caps">Good til</span><span class="v" style="font-size: 14px;">Nov 20, 4:00 PM</span></div></div><span class="caps">Lifecycle</span><div class="drows"><div style="grid-template-columns: 110px minmax(0, 1fr);"><span class="mono steel">Oct 7 2:30 PM</span><span>Placed · 1 × SPY 690 C Nov 20</span></div><div style="grid-template-columns: 110px minmax(0, 1fr);"><span class="mono steel">Oct 7 2:30 PM</span><span>Triggered · waiting to fill at limit</span></div><div style="grid-template-columns: 110px minmax(0, 1fr);"><span class="mono steel">—</span><span class="steel">Not filled</span></div></div>`, foot: `<span class="dline" style="flex: 1 1 240px;">Stored in this browser · never sent to a broker</span><button class="btn secondary" type="button">Cancel order</button><button class="btn ghost" type="button">Close</button>` });
@@ -63,7 +92,7 @@ export function viewEditorDemo() {
 export function whatsSentDemo() {
   const sec = (t, inner, open = false) => `<details class="hd-p is-sample" style="gap: 6px;"${open ? ' open' : ''}><summary style="cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center;">${t}</summary>${inner}</details>`;
   const pre = (s) => `<pre class="mono" style="margin: 0; font-size: 11.5px; color: var(--steel); white-space: pre-wrap;">${s}</pre>`;
-  return dlg({ title: 'Sample analysis export · SPY', drawer: true, chip: stateTag('sample'), body: `<p class="dline" style="margin: 0;">Exactly what a read would send, on the Oct 7 scenario. Sample analysis · authored for this scenario. Nothing here is market data and nothing leaves this browser.</p>${sec('Computed snapshot (context)', pre('ticker: SPY (sample)\nspot: 690.62 · as of 2026-10-07 18:30 UTC\nlevels: call_wall 704.02 · gamma_flip 683.92 · put_wall 652.22\nregime: positive_gamma · score 74 · tier actionable'), true)}${sec('Candidate contracts', '<span class="dline">Not sent: the sample chain hands no candidates to a read.</span>')}${sec('Your risk inputs · what the next request will send', pre('account_size: 25000\nper_trade_cap: 2% → $500'), true)}${sec('Open positions', pre('SPY 690 C 2026-10-16 · long 1 · entry 3.00'))}${sec('Persona prompt', pre('Careful sample reader · conservative · lean exit or trim'))}${sec('Field glossary', '<span class="dline">What each field above means, in plain words.</span>')}`, foot: `<button class="btn secondary" type="button">${icon('copy', 14)}Copy all</button><span class="dline">Copies the sample, labelled as one.</span>` });
+  return dlg({ title: 'Sample analysis export · SPY', drawer: true, chip: stateTag('sample'), body: `<p class="dline" style="margin: 0;">Exactly what a read would send, on the Oct 7 scenario. Sample analysis · authored for this scenario. Nothing here is market data and nothing leaves this browser.</p>${sec('Computed snapshot (context)', pre('ticker: SPY (sample)\nspot: 690.62 · as of 2026-10-07 18:30 UTC\nlevels: call_wall 704.02 · gamma_flip 683.92 · put_wall 652.22\nregime: positive_gamma · score 74 · tier actionable'), true)}${sec('Candidate contracts', '<span class="dline">Not sent: the sample chain hands no candidates to a read.</span>')}${sec('Your risk inputs · what the next request will send', pre('account_size: 25000\nper_trade_cap: 2% → $500'), true)}${sec('Open positions', pre('SPY 690 C 2026-10-16 · long 1 · entry 3.00'))}${sec('Persona prompt', pre('Careful sample reader · conservative · lean exit or trim'))}${sec('Field glossary', '<span class="dline">What each field above means, in plain words.</span>')}`, foot: `<button class="btn secondary" type="button">${icon('copy', 16)}Copy all</button><span class="dline">Copies the sample, labelled as one.</span>` });
 }
 
 /** The dialog boards. Each staging board puts the overlay over the demo page it opens from. */
@@ -92,10 +121,11 @@ export function dialogsStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const items = [
     { name: 'Sign in · wrong credentials', tag: ['error', 'Check and retry'], id: 'DLG-04', when: 'Production. Inline under the form, saying what to check.', html: dlg({ title: 'Welcome back', body: `${fld('Email', 'owner@…', {})}${fld('Password', '••••••', { err: 'Those credentials didn’t match. Check your email and password and try again.' })}<button class="btn primary" type="button" style="width: 100%;">Sign in</button>` }) },
     { name: 'Sign in · service down', tag: ['unavailable'], when: 'Production. Says the service is down, not the password; sign-ups stay closed either way.', html: `${warn('Couldn’t reach sign-in right now. Please try again in a moment.')}<button class="btn primary lg" type="button" disabled style="width: 100%; opacity: 1;"><span class="skel" style="width: 14px; height: 14px; border-radius: 50%;"></span>Signing in…</button>` },
-    { name: 'Trade entry · fills not live', tag: ['notLive'], id: 'DLG-01', when: 'Production, signed in: Market and Limit need a live quote, so only Manual price is offered, with the reason on the control.', html: `<div class="fld">Fill${seg([['Market', true], ['Limit', true], 'Manual price'], 'Manual price')}<span class="help">Market and Limit fill at a live quote, which needs the options feed. Manual price opens at your price: user-entered, not a market quote.</span></div>${demoNote()}` },
+    { name: 'Trade entry · fills not live', tag: ['notLive'], id: 'DLG-01', when: 'Production, signed in: Market and Limit need a live quote, so only Manual price fills; the two stay in the control, refused with the reason under it (FillModeToggle.tsx).', html: `<div class="te-net" style="align-items: stretch;">${teToggle(['Manual price', ['Market', true], ['Limit', true]], 'Manual price', 'fill mode')}<span class="dline" style="font-size: 12px;">Market and Limit fill at a live quote, which needs the options feed. Manual price opens at your price: user-entered, not a market quote. On the demo, all three fill modes work against the sample chain. <a href="${STAGING_DEMO_URL}/ticker/SPY" style="font-weight: 600; text-decoration: underline;">See it on the demo →</a></span></div>` },
     { name: 'Trade entry · order variant', tag: ['demo'], when: 'Placing an order from an AI read (staging): the D8-1 disclosure always sits above the confirm.', html: `<span class="dline" style="font-size: 12.5px;">${D8_1('SPY')}</span><button class="btn primary" type="button" style="align-self: flex-start;">Place simulated order</button>` },
-    { name: 'Trade entry · over the cap', tag: ['computed', 'Cap check'], when: 'Max loss above the per-trade cap: the dialog says so and still lets you open it; the book flags it.', html: `<div class="dwarn">${icon('warn', 14)}<span class="dline" style="font-size: 12.5px;">Max loss $680 is above your $500 per-trade cap. You can still open it; the book will flag it.</span></div>` },
-    { name: 'Trade entry · cap not set', tag: ['notConfigured', 'Not set'], when: 'No risk inputs saved: the cap check reads “not set” and links to Settings.', html: `<div class="hd-fig" style="grid-template-columns: repeat(3, minmax(0, 1fr));"><div><span class="caps">Net debit</span><span class="v">$247</span></div><div><span class="caps">Max loss</span><span class="v">$247</span></div><div><span class="caps">Cap check</span><span class="v" style="font-size: 15px;">not set</span></div></div><span class="dline">Set an account size and a per-trade cap to check sizing against your cap. <a href="/settings#risk-inputs">Set risk inputs →</a></span>` },
+    { name: 'Trade entry · max loss over the cap', tag: ['computed', 'Cap per trade'], when: 'The strip puts the entry’s max loss beside your per-trade cap, as received, and states no verdict: the dialog computes no cap check (tradeable-rec-inputs AC-63). You compare; the position still opens.', html: `<div class="te">${teStrip('$680', '$680', '$500')}</div>${CAP_LINE}` },
+    { name: 'Trade entry · from an AI read', tag: ['computed', 'The read’s cap check'], when: 'Opened from a read’s Accept, the read’s own cap check, computed once on the server and pinned to the read, shows under the strip as received: within or above, both with the warning glyph, never green (AC-60, AC-63; CapAnnotation.tsx).', html: `<div style="display: flex; align-items: flex-start; gap: 4px; color: var(--warn);">${icon('warn', 16)}<span style="font-size: 12px; line-height: 1.66;">$680 is above your cap of $500.</span></div>` },
+    { name: 'Trade entry · cap not set', tag: ['notConfigured', 'Not set'], when: 'No risk inputs saved: Cap per trade reads “not set” and the line under the strip links to Settings.', html: `<div class="te">${teStrip('$247', '$247', 'not set')}</div><span class="dline" style="font-size: 12px;">Set an account size and a per-trade cap to see your cap here. <a href="/settings" style="text-decoration: underline;">Set risk inputs →</a></span>` },
     { name: 'Trade entry · chain didn’t load', tag: ['error'], when: 'The contract list failed; the dialog keeps your fields and offers a retry.', html: dataCell({ fam: 'dialog', state: 'error', w: '100%', h: 'auto' }) },
     { name: 'Order detail · not evaluated', tag: ['notLive', 'Not evaluated'], id: 'DLG-02', when: 'Production: no live stream, so the order can’t trigger. The plan stays as placed; it can still expire or be cancelled.', html: `<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">${stateTag('notLive', 'Not evaluated')}<span class="dline">Waiting for live data — not currently evaluated</span></div>` },
     { name: 'Order detail · filled', tag: ['local', 'Filled'], when: 'Links to the position the fill opened.', html: `<div class="drows"><div style="grid-template-columns: 110px minmax(0, 1fr) auto;"><span class="mono steel">Oct 7 2:25 PM</span><span>Filled at 3.00 · trigger fill</span><a href="/positions">View position</a></div></div>` },
@@ -106,7 +136,4 @@ export function dialogsStates({ minHeight = 0, scheme = 'dark' } = {}) {
     { name: 'Copied', tag: null, when: 'Copy all confirms for 1.5 s, announced politely.', html: `<button class="btn secondary" type="button" aria-live="polite" style="align-self: flex-start;">${icon('check', 14)}Copied</button>` },
   ];
   return statesBoard({ scheme, minHeight, title: 'Overlays · states', lead: 'Every state the overlays reach that their boards don’t show: production’s Not live words, the sign-in failures, the cap and chain states, and the save failures. The new-alert flow’s states are on the alerts row.', trace: 'DLG-01–DLG-06 · POS-03 · P-1, P-2', items });
-}
-function demoNote() {
-  return `<span class="dline" style="font-size: 12px;">On the demo, all three fill modes work against the sample chain. <a href="${STAGING_DEMO_URL}/ticker/SPY">See it on the demo →</a></span>`;
 }

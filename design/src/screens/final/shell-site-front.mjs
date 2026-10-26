@@ -1,5 +1,5 @@
 // Final · Convexa v1 — shell-site group: the global shell and the landing page, per environment.
-import { FINAL_AUTHOR, FINAL_COPYRIGHT, finalDemoNotice, icon, v4Footer, v4Nav, v4Notice } from '../../lib.mjs';
+import { finalDemoNotice, finalFooter, icon, v4Nav, v4Notice } from '../../lib.mjs';
 import { statesBoard } from '../v4/kit.mjs';
 import { signInDlg } from '../v4/docs-dialogs.mjs';
 import { HERO_CURVE, aiIll, drawerF, fieldIll, heroPanel, paletteF, scoreIll, sitePage } from './shell-site-kit.mjs';
@@ -52,8 +52,8 @@ export function shellStates({ minHeight = 0, scheme = 'dark' } = {}) {
     { name: '⌘K · ticker list failed', tag: ['error', 'Couldn’t search'], when: 'Says what still works; the next open tries again.', html: paletteF({ state: 'failed' }) },
     { name: 'Skip link, focused', tag: null, when: 'The first tab stop on every page; jumps to main. The focus ring is text-grade amber.', html: `<a href="#main" class="btn primary" style="align-self: flex-start; outline: 2px solid var(--amber-text); outline-offset: 2px;">Skip to main content</a>` },
     { name: 'Keyboard shortcuts', tag: null, when: 'Opened with ?. ⌘K and / are ignored while typing in a field.', html: `<div class="v4dlg" style="width: 100%;"><div class="dh"><h2>Keyboard shortcuts</h2></div><div class="db" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; font-size: 13px;">${[['⌘K or /', 'Jump to a ticker or note'], ['g then s · t · r · p · a', 'Scanner · Ticker · Research · Positions · Alerts'], ['j · k', 'Next · previous row'], ['?', 'This sheet'], ['esc', 'Close a dialog or sheet']].map(([k, v]) => `<span class="mono">${k}</span><span class="steel">${v}</span>`).join('')}</div></div>` },
-    { name: 'Footer', tag: null, wide: true, when: 'On every page in the shell, including the ticker desk: five links (Settings among them), the disclaimer and the copyright.', html: v4Footer().replace('Not investment advice.</p></div></footer>', `Not investment advice.</p>${FINAL_COPYRIGHT}</div></footer>`) },
-    { name: 'Footer · staging', tag: ['demo'], wide: true, when: 'Staging only: “Built by Rodrigo Arias · How it’s built · GitHub ↗” above the copyright; “How it’s built” opens the engineering post, “GitHub ↗” the public repository in a new tab (owner S1-Q3). Production has no author line.', html: v4Footer().replace('Not investment advice.</p></div></footer>', `Not investment advice.</p>${FINAL_AUTHOR}${FINAL_COPYRIGHT}</div></footer>`) },
+    { name: 'Footer', tag: null, wide: true, when: 'On every page in the shell, including the ticker desk: under the canon’s 20px arc seam, seven links (Settings among them), the disclaimer and the copyright.', html: finalFooter() },
+    { name: 'Footer · staging', tag: ['demo'], wide: true, when: 'Staging only: “Built by Rodrigo Arias · How it’s built · GitHub ↗” above the copyright; “How it’s built” opens the engineering post, “GitHub ↗” the public repository in a new tab (owner S1-Q3). Production has no author line.', html: finalFooter({ demo: true }) },
   ];
   return statesBoard({ scheme, minHeight, title: 'Global shell · every state', lead: 'The bar in each environment and its failure, the demo bar’s playback states and reset, the account control in each session, the jump-to box in each state, the skip link, the shortcuts sheet and the footer.', trace: 'SHL-01–SHL-05, X-01, Env 2026-10-14', items });
 }

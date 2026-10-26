@@ -85,6 +85,11 @@ const V4_CSS = `
   .v4-foot-in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding-top: 24px; padding-bottom: 32px; }
   .v4-foot-in nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
   .v4-foot-in nav a { color: var(--steel); font-size: 13px; text-decoration: none; min-height: 24px; display: inline-flex; align-items: center; }
+  /* The Final footer (finalFooter): the canon's 20px arc seam in place of the v4 border, and the app's 44px links
+     under a coarse pointer (canon rule 7). */
+  .v4-foot.fd-foot { border-top: 0; }
+  .fd-arc { height: 20px; width: 100%; color: var(--line); flex-shrink: 0; } .fd-arc svg { display: block; width: 100%; height: 100%; }
+  @media (pointer: coarse) { .fd-foot .v4-foot-in nav a { min-height: 44px; } }
   .claim { font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 112.5%; font-weight: 600; font-size: 18px; line-height: 1.25; text-wrap: balance; margin: 0; }
   .sub { font-size: 12.5px; color: var(--steel); margin: 2px 0 0; line-height: 1.45; }
   .srcline { font-size: 11.5px; color: var(--steel); margin: 0; }
@@ -162,9 +167,12 @@ export const TOKENS_CSS = `
   /* A tint chip's label: its fill's hue in dark; in light, a text-grade colour that clears AA on its own tint, as the
      app's TintChip (eb07b0f5): steel on the neutral tint measured 4.11 to 4.45:1, signal 4.12, warn 4.19. Neutral and
      warn take phosphor, live takes text-info; up, down and emph already use text-grade tokens. Set per scheme, so the
-     nearest data-scheme wins. */
-  :root, [data-scheme="dark"] { --chip-label: var(--steel); --chip-live: var(--signal); --chip-warn: var(--warn); }
-  [data-scheme="light"] { --chip-label: var(--phosphor); --chip-live: var(--text-info); --chip-warn: var(--phosphor); }
+     nearest data-scheme wins. Dark live takes text-info too (owner, 2026-10-25, after fidelity round 2; app cac55258):
+     signal on its own tint measured 4.01:1 over the panel; text-info 6.30. The dot stays signal.
+     --pal-sel is the palette's selected row: raised-2 in dark, the panel in light, where raised-2 measured 4.20:1 under
+     steel and 3.96:1 under the emph chip's label (the app's row, fidelity SITE-03b, 46972f63). */
+  :root, [data-scheme="dark"] { --chip-label: var(--steel); --chip-live: var(--text-info); --chip-warn: var(--warn); --pal-sel: var(--raised-2); }
+  [data-scheme="light"] { --chip-label: var(--phosphor); --chip-live: var(--text-info); --chip-warn: var(--phosphor); --pal-sel: var(--panel); }
   .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--chip-label); background: rgba(138,155,180,0.14); }
   .chip.up { color: var(--text-up); background: var(--up-tint); } .chip.down { color: var(--text-down); background: var(--down-tint); }
   .chip.live { color: var(--chip-live); background: var(--signal-tint); } .chip.warn { color: var(--chip-warn); background: var(--warn-tint); }
@@ -655,16 +663,34 @@ export function finalDemoNotice({ extra = '', phone = false } = {}) {
  *  Production has no author line. */
 export const FINAL_AUTHOR = '<style>@media (pointer: coarse) { .fd-auth a { display: inline-flex; align-items: center; min-height: 44px; } }</style><p class="fd-auth" style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">Built by Rodrigo Arias · <a href="/blog/how-convexa-is-built" style="color: var(--steel);">How it’s built</a> · <a href="https://github.com/ariasr47/convexa" target="_blank" rel="noopener noreferrer" style="color: var(--steel);">GitHub ↗</a></p>';
 export const FINAL_COPYRIGHT = '<p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p>';
+/** The footer's seam (shell/Footer.tsx, shared/ui/ArcDivider.tsx): the canon's arc section divider, a 20px box whose
+ *  1px `line` stroke bows 8 units over a 1200-wide chord at y17 (apex 4px up), stretched to the page width with a
+ *  non-scaling stroke. Owner, 2026-10-25, after fidelity round 2: keep the arc and draw it on the boards (they had a
+ *  1px border-top), so the footer is 196 tall on staging and 170 on production at 1440, as the app's. */
+export const FINAL_ARC_SEAM = '<div class="fd-arc" role="separator" aria-orientation="horizontal"><svg viewBox="0 0 1200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M 0 17 Q 600 9 1200 17" fill="none" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke"></path></svg></div>';
+const V4_FOOT_END = 'Not investment advice.</p></div></footer>';
+/** The shipped footer (shell/Footer.tsx) on a Final board: the arc seam, the v4 footer's row with the disclaimer's
+ *  <strong>simulated</strong> (shared/copy/disclaimer.tsx), then on staging the author line, and on both the copyright
+ *  (the app draws it in both builds; production boards had none). */
+export const withFinalFooter = (html, { demo = false } = {}) => {
+  const at = html.indexOf('<footer class="v4-foot">');
+  if (at < 0) return html;
+  const foot = html.slice(at)
+    .replace('<footer class="v4-foot">', `<footer class="v4-foot fd-foot">${FINAL_ARC_SEAM}`)
+    .replace('Positions in the sim book are simulated (paper)', 'Positions in the sim book are <strong>simulated</strong> (paper)')
+    .replace(V4_FOOT_END, `Not investment advice.</p>${demo ? FINAL_AUTHOR : ''}${FINAL_COPYRIGHT}</div></footer>`);
+  return html.slice(0, at) + foot;
+};
+export const finalFooter = ({ demo = false } = {}) => withFinalFooter(v4Footer(), { demo });
 
 /** A Final-page board (2026-10-16): a v4 page whose production nav carries “Full demo ↗”. The v4 and v5
  *  pages keep the nav they were drawn with. On staging (`demo`) it wears the shipped demo bar and the
- *  footer's author line above the copyright (2026-10-22, spec 01). */
+ *  footer's author line above the copyright (2026-10-22, spec 01). Both wear the shipped footer
+ *  (withFinalFooter: the arc seam and the copyright). */
 export const finalPage = (o = {}) => {
-  const html = v4Page({ fullDemo: true, ...o });
+  const html = withFinalFooter(v4Page({ fullDemo: true, ...o }), { demo: !!o.demo });
   if (!o.demo) return html;
-  return html
-    .replace(v4Notice('demo'), finalDemoNotice())
-    .replace('Not investment advice.</p></div></footer>', `Not investment advice.</p>${FINAL_AUTHOR}${FINAL_COPYRIGHT}</div></footer>`);
+  return html.replace(v4Notice('demo'), finalDemoNotice());
 };
 /** A v4 page: scheme wrapper + notice + nav (+ research tabs) + main + footer. */
 export function v4Page({ scheme = 'dark', minHeight = 0, notice = 'hybrid', active = '', tabs = '', signedIn = false, demo = false, main = '', footer = true, label = '', fullDemo = false } = {}) {
