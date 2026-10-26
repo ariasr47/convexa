@@ -142,6 +142,21 @@ mod tests {
         assert_eq!(credit[0].1, -0.947);
         assert_eq!(funding[2].1, -0.163);
 
+        // Rows are kept from (latest − 3 years − 31 days) on: with every day from 2022 to Oct 21,
+        // 2026, each column starts on Sep 20, 2023 (Oct 21, 2023 less 31 days), so the gauge's
+        // three-year windows are always whole.
+        let latest = day("2026-10-21");
+        let mut daily =
+            String::from("Date,Volatility,Credit,Safe assets,Equity valuation,Funding\n");
+        for date in day("2022-01-03").iter_days().take_while(|d| *d <= latest) {
+            daily.push_str(&format!("{date},1,2,3,4,5\n"));
+        }
+        let series = parse_csv(&daily).unwrap();
+        for column in &series.categories {
+            let first_and_last = (column.first().unwrap().0, column.last().unwrap().0);
+            assert_eq!(first_and_last, (day("2023-09-20"), latest));
+        }
+
         // Not the CSV: an HTML error page, or a file without one of the five columns.
         assert!(parse_csv("<html><body>Service unavailable</body></html>\n").is_err());
         assert!(parse_csv(
