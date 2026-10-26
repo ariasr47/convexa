@@ -53,8 +53,6 @@
         "{workspaceRoot}/libs/api/src/generated/**/*",
         "{workspaceRoot}/libs/api/package.json",
         "{workspaceRoot}/apps/dashboard/src/**/*",
-        "{workspaceRoot}/.github/workflows/ci.yml",
-        "{workspaceRoot}/.github/workflows/conformance.yml",
         "{workspaceRoot}/.spire/clusters/tech/contracts/production-runtime-guardrails/conformance-receipt.json",
         "{workspaceRoot}/.spire/clusters/tech/contracts/_archive/production-runtime-guardrails/conformance-receipt.json",
         "{workspaceRoot}/.spire/clusters/tech/state/conformance/production-runtime-guardrails-transport.json",

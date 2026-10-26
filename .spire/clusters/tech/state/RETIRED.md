@@ -108,3 +108,4 @@ RETIRED: apps/dashboard/src/app/shared/theme/text-dim-contrast.spec.ts; parent 3
 RETIRED: apps/dashboard/src/app/shared/theme/text-info-contrast.spec.ts; parent 3ea59d2bae1d94ee903ee99dec07f27d84844a31; duplicate; 6 tests
 RETIRED: apps/dashboard-e2e/tools/artifact-safety.spec.mjs; parent a1b93edca0c384c49a2a9b8fcd58310cf759466a; risk-gone; 2 tests
 RETIRED: tools/write-blog-heads.spec.mjs; parent 32d96583ec82bf73df400951f612141b7e28372f; structure; 5 tests
+RETIRED: apps/api/tests/api_contract_gate_isolation.rs; parent 8abb77aaae98c098788dfd3c1b362543f402c23f; structure; 4 tests
