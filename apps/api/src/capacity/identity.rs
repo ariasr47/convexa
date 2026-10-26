@@ -89,6 +89,11 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // `StressWire`, `StressComponentWire` and six enums) and its `sources` doc names the OFR row.
 // Additive schema growth, zero new operations, so `precutover-operation-baseline.json` keeps its
 // hash and four artifacts move (ledger `route-growth-repins-api-artifact-oracle`).
+// Re-pinned 2026-10-26 (SEC-1, site audit 2026-10-25): `GET /api/scan`, `GET /api/scan/all` and
+// `GET /api/scan/{symbol}/history` are signed-in reads, so each is documented `session` with a 403
+// `AuthErrorBody` response (three new boundaries, 219). Zero new operations, so
+// `precutover-operation-baseline.json` keeps its hash and four artifacts move (ledger
+// `route-growth-repins-api-artifact-oracle`).
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -96,19 +101,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "af58a40553b68f16a95e07a450e674f14d37793ec6b25c9c64488b7a46e55634",
+        "e82795a09b5bb2a3eb164d967bd50fcf6a7dcca2059d3f9b9f5fe7be844f2bbc",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "06175191bf282bd9b6776f8bac651387641b877a025e98f93b55c1e710824665",
+        "b3202a0d63ca0762f8527791733b0c4f1c5685add43338121e27a493d08d7c22",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "080ead92ee66c218b348940644a67248668030e325899bc0e6a0580d8aee7d2c",
+        "c285d779082b8de623809646e3048297992610f49b4fd626b140d67516193da2",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "766c655543ed59cd2f4a7d467e4b7f82fff9e8f13c0bdbbd50c1c3f537e87ceb",
+        "f8c7904ef8216051726f4e7ed6b74ec102f848d6177c29ba5f03fd6ed3c75b91",
     ),
 ];
 

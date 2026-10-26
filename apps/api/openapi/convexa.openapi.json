@@ -11003,15 +11003,24 @@
               }
             },
             "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorBody"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
-          {},
           {
             "session-cookie": []
           }
         ],
-        "x-convexa-security": "optional-session",
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },
@@ -11028,15 +11037,24 @@
               }
             },
             "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorBody"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
-          {},
           {
             "session-cookie": []
           }
         ],
-        "x-convexa-security": "optional-session",
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },
@@ -11200,10 +11218,24 @@
               }
             },
             "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorBody"
+                }
+              }
+            },
+            "description": ""
           }
         },
-        "security": [],
-        "x-convexa-security": "public",
+        "security": [
+          {
+            "session-cookie": []
+          }
+        ],
+        "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
     },

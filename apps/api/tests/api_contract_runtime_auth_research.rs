@@ -5,6 +5,8 @@ use api_rust::services::chain_snapshot::wire::{fixture_probe_bundle, serialize_c
 use api_rust::services::day_tape::player::et_hms_to_ts_ns;
 use api_rust::services::day_tape::{PathARecord, SessionDayTape};
 use api_rust::services::market_data::MarketDataSourceKind;
+use api_rust::services::scanner::store::{ScanRow, StructureSample};
+use api_rust::services::scanner::universe::UniverseConfig;
 use api_rust::state::AppState;
 use axum::body::{to_bytes, Body, Bytes};
 use axum::http::{HeaderMap, Request, StatusCode};
@@ -1184,6 +1186,155 @@ async fn scan_runtime_evidence_rejects_unauthenticated_write_and_bad_shape() {
         "session",
         serde_json::json!({"durable":"none","memory":"none","cookie":"none"}),
     );
+}
+
+/// A one-symbol universe whose scan row and structure sample carry real dealer levels, so any
+/// 200 a caller gets from a scan read carries them too.
+async fn scan_levels_router() -> (AppState, axum::Router) {
+    let mut state = AppState::for_runtime_guardrail_tests(OPERATOR_TOKEN.into())
+        .await
+        .expect("hermetic state");
+    state.universe = Some(std::sync::Arc::new(UniverseConfig {
+        universe: vec!["SPY".into()],
+        default_view: vec!["SPY".into()],
+        path: std::path::PathBuf::new(),
+    }));
+    let row = ScanRow {
+        symbol: "SPY".into(),
+        price: Some(580.12),
+        chg_pct: Some(0.41),
+        score: Some(71.0),
+        tier: Some("A".into()),
+        regime: Some("positive_gamma".into()),
+        vol_regime: Some("neutral".into()),
+        flip: Some(574.5),
+        dist_to_flip_pct: Some(0.97),
+        call_wall: Some(590.0),
+        put_wall: Some(565.0),
+        dist_to_wall_pct: Some(-1.7),
+        as_of: 1_758_000_000.0,
+        status: "ok".into(),
+        score_drivers: None,
+    };
+    let mut sample = StructureSample::from_row(&row).expect("a scored ok row is a sample");
+    sample.net_gex = Some(1.2e9);
+    state.scan.upsert_row(row).await;
+    state.scan.append_structure_sample(sample).await;
+    let router = routes::router(state.clone()).expect("valid production contract graph");
+    (state, router)
+}
+
+async fn get_json(router: &axum::Router, uri: &str, cookie: Option<&str>) -> ObservedResponse {
+    let mut request = Request::builder().method("GET").uri(uri);
+    if let Some(cookie) = cookie {
+        request = request.header("cookie", cookie);
+    }
+    let response = router
+        .clone()
+        .oneshot(request.body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    json_response(response).await
+}
+
+/// The scan-read fields derived from the licensed options feed ("Derived Works").
+const DEALER_LEVEL_KEYS: [&str; 4] = ["flip", "call_wall", "put_wall", "net_gex"];
+
+fn carries_dealer_levels(value: &Value) -> bool {
+    match value {
+        Value::Object(map) => map.iter().any(|(key, v)| {
+            (DEALER_LEVEL_KEYS.contains(&key.as_str()) && !v.is_null()) || carries_dealer_levels(v)
+        }),
+        Value::Array(items) => items.iter().any(carries_dealer_levels),
+        _ => false,
+    }
+}
+
+/// SEC-1 (docs/quality/2026-10-25/SITE-AUDIT.md): the scan reads carry the flip, the call and put
+/// walls and net GEX, all derived from the licensed options feed, so by the owner's rule of
+/// 2026-10-18 they reach a signed-in account only. A signed-out or forged-cookie GET gets the same
+/// 403 `auth_required` as the book and broker reads, and no level; a signed-in GET still gets them.
+/// The two scan reads that stay open carry no level: the universe is ticker names, the view is the
+/// caller's saved layout.
+#[tokio::test]
+async fn scan_reads_with_dealer_levels_refuse_a_signed_out_caller() {
+    let (state, router) = scan_levels_router().await;
+    let gated = [
+        "/api/scan",
+        "/api/scan/all",
+        "/api/scan/SPY/history?limit=5",
+    ];
+    let forged = format!("{COOKIE_NAME}=forged-session-id.forged-signature");
+    for uri in gated {
+        for (case, cookie) in [
+            ("no cookie", None),
+            ("forged cookie", Some(forged.as_str())),
+        ] {
+            let observed = get_json(&router, uri, cookie).await;
+            assert_eq!(observed.status, StatusCode::FORBIDDEN, "{case}: GET {uri}");
+            assert_eq!(observed.json["error"], "auth_required", "{case}: GET {uri}");
+            assert!(
+                !carries_dealer_levels(&observed.json),
+                "{case}: GET {uri} carries a dealer level"
+            );
+            assert!(
+                !observed.headers.contains_key("set-cookie"),
+                "{case}: GET {uri}"
+            );
+        }
+    }
+    let email = format!("runtime-scan-levels-{}@example.test", std::process::id());
+    let (cookie, _) = signup(&state, &router, &email, false).await;
+    for uri in gated {
+        let observed = get_json(&router, uri, Some(&cookie)).await;
+        assert_eq!(observed.status, StatusCode::OK, "signed in: GET {uri}");
+        assert!(
+            carries_dealer_levels(&observed.json),
+            "signed in: GET {uri} lost the seeded levels"
+        );
+    }
+    for uri in ["/api/scan/universe", "/api/scan/view"] {
+        let observed = get_json(&router, uri, None).await;
+        assert_eq!(
+            observed.status,
+            StatusCode::OK,
+            "no cookie: GET {uri} stays open"
+        );
+        assert!(
+            !carries_dealer_levels(&observed.json),
+            "no cookie: open GET {uri} carries a dealer level"
+        );
+    }
+
+    // Every scan read in the contract is one of the five above, so a new one cannot ship without
+    // being sorted into gated or open here, and the gated three are documented `session`.
+    let document =
+        serde_json::to_value(routes::openapi().expect("contract graph")).expect("OpenAPI JSON");
+    let mut scan_reads = document["paths"]
+        .as_object()
+        .expect("OpenAPI paths")
+        .iter()
+        .filter(|(path, item)| path.starts_with("/api/scan") && item.get("get").is_some())
+        .map(|(path, item)| {
+            (
+                path.clone(),
+                item["get"]["x-convexa-security"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_owned(),
+            )
+        })
+        .collect::<Vec<_>>();
+    scan_reads.sort();
+    let expected = [
+        ("/api/scan", "session"),
+        ("/api/scan/all", "session"),
+        ("/api/scan/universe", "public"),
+        ("/api/scan/view", "optional-session"),
+        ("/api/scan/{symbol}/history", "session"),
+    ]
+    .map(|(path, mode)| (path.to_owned(), mode.to_owned()));
+    assert_eq!(scan_reads, expected);
 }
 
 #[tokio::test]

@@ -1430,21 +1430,39 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
         false,
     ),
     (
-        "GET /api/scan 200 application/json optional-session",
+        "GET /api/scan 200 application/json session",
         "application/json",
         200,
         false,
     ),
     (
-        "GET /api/scan/{symbol}/history 200 application/json public",
+        "GET /api/scan 403 application/json session",
+        "application/json",
+        403,
+        false,
+    ),
+    (
+        "GET /api/scan/{symbol}/history 200 application/json session",
         "application/json",
         200,
         false,
     ),
     (
-        "GET /api/scan/all 200 application/json optional-session",
+        "GET /api/scan/{symbol}/history 403 application/json session",
+        "application/json",
+        403,
+        false,
+    ),
+    (
+        "GET /api/scan/all 200 application/json session",
         "application/json",
         200,
+        false,
+    ),
+    (
+        "GET /api/scan/all 403 application/json session",
+        "application/json",
+        403,
         false,
     ),
     (
@@ -2164,8 +2182,12 @@ fn apply_route_security(document: &mut OpenApi) {
     set("/api/auth/grok/callback", "get", Vec::new());
     set("/api/recommendation/{ticker}", "post", session());
     set("/api/positions/sim-trade/gate", "post", session());
-    set("/api/scan", "get", optional_session());
-    set("/api/scan/all", "get", optional_session());
+    // SEC-1: the scan board and the structure path carry dealer levels derived from the licensed
+    // options feed, so they are signed-in reads; the universe (ticker names) and the view (the
+    // caller's saved layout) stay as they were.
+    set("/api/scan", "get", session());
+    set("/api/scan/all", "get", session());
+    set("/api/scan/{symbol}/history", "get", session());
 }
 
 /// Closed, source-derived classification for every ordinary operation.  This is deliberately

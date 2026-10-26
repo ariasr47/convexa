@@ -1177,9 +1177,11 @@ function toScanViewBody(view: ScanViewWrite): components['schemas']['ScanViewBod
   return { ...view } as components['schemas']['ScanViewBody'];
 }
 
-/** GET /api/scan — the requested-or-default view as slim rows + sweep metadata. Anonymous-open;
- *  server-side it is best-effort ALWAYS 200 (a store outage degrades CONTENT, never the status), so a
- *  non-2xx here means a TRANSPORT/proxy fault: we reject and the caller keeps its last-known rows. */
+/** GET /api/scan — the requested-or-default view as slim rows + sweep metadata. Signed in only
+ *  (SEC-1, 2026-10-26): the rows carry dealer levels derived from the licensed options feed, so a
+ *  signed-out call is a 403 `auth_required` and rejects here. Signed in, the server is best-effort
+ *  ALWAYS 200 (a store outage degrades CONTENT, never the status), so any other non-2xx is a
+ *  TRANSPORT/proxy fault: we reject and the caller keeps its last-known rows. */
 export async function getScan(): Promise<ScanResponse> {
   const result = await http.GET('/api/scan');
   return dataOf(result, 'Scan read failed');
@@ -1237,8 +1239,10 @@ export type StructureSample = components['schemas']['StructureSampleDto'];
 /** `GET /api/scan/{symbol}/history` — durable structure path for the ticker Structure zone. */
 export type StructureHistoryResponse = components['schemas']['StructureHistoryResponse'];
 
-/** GET /api/scan/{symbol}/history — anonymous-open structure history. Empty samples is honest
- *  cold-start, not an error. Transport faults reject so the caller can keep last-known path. */
+/** GET /api/scan/{symbol}/history — structure history, signed in only (SEC-1, 2026-10-26: each
+ *  sample carries the flip, the walls and net GEX); a signed-out call is a 403 `auth_required` and
+ *  rejects. Empty samples is honest cold-start, not an error. Transport faults reject so the caller
+ *  can keep last-known path. */
 export async function getStructureHistory(
   symbol: string,
   limit = 48,

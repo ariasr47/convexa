@@ -426,7 +426,7 @@ fn every_persisted_boundary_has_explicit_route_source_target() {
         .flat_map(|operation| operation["boundaries"].as_array().unwrap())
         .map(|boundary| boundary["boundary_id"].as_str().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(ids.len(), 216);
+    assert_eq!(ids.len(), 219);
     for id in ids {
         let target = api_rust::routes::response_conversion_registry_source_target(id)
             .unwrap_or_else(|| panic!("missing explicit route source target: {id}"));
@@ -672,6 +672,9 @@ declare_boundary_evidence_tests!(
     boundary_evidence_213,
     boundary_evidence_214,
     boundary_evidence_215,
+    boundary_evidence_216,
+    boundary_evidence_217,
+    boundary_evidence_218,
 );
 /// Exercise the actual Axum router returned by production `routes::router` for every ordinary
 /// operation.  This intentionally uses no handler/facade mocks: status and media are observed at
@@ -688,7 +691,7 @@ fn source_owned_http_catalog() -> Value {
         .iter()
         .map(|row| {
             let key = format!("{} {}", row["method"].as_str().unwrap(), row["path"].as_str().unwrap());
-            let status = if key == "GET /api/health" || key == "GET /health" || key == "GET /" || key == "GET /demo" || key == "POST /api/auth/logout" || key == "GET /api/auth/session" || key == "GET /api/personas" || key.starts_with("GET /api/scan") || key == "GET /api/stream/{ticker}" || key == "GET /api/ticker/{ticker}/progressive" { 200 } else if key.contains("google/callback") || key.contains("grok/callback") { 307 } else if key == "GET /api/auth/google/start" { 409 } else if key == "PUT /api/book" { 422 } else if key == "PUT /api/scan/view" { 403 } else if key.contains("/broker/book") || key.contains("/broker/credential") { 403 } else if key.contains("_metrics") || key.contains("_research") || key.contains("/settings") || key.contains("/credential") || key.contains("/broker/") { 401 } else if (key.contains("/auth/") && key != "POST /api/auth/login" && key != "POST /api/auth/signup") || key.contains("/book") || key.contains("sim-trade") { 403 } else if key == "POST /api/auth/login" || key == "POST /api/auth/signup" || key.contains("recommendation/{ticker}") || key == "GET /api/stream/prices" { 422 } else if key.contains("/prices") || key.contains("/contract/") { 400 } else if key.contains("/candidates/") || key.contains("/price/") || key.contains("/ticker/{ticker}") || key.contains("recommendation/export") || key.contains("recommendation/status") { 502 } else if key.contains("market-data") || key.contains("signals") || key.contains("strike-profile") { 404 } else { 200 };
+            let status = if key == "GET /api/health" || key == "GET /health" || key == "GET /" || key == "GET /demo" || key == "POST /api/auth/logout" || key == "GET /api/auth/session" || key == "GET /api/personas" || key == "GET /api/scan/universe" || key == "GET /api/scan/view" || key == "GET /api/stream/{ticker}" || key == "GET /api/ticker/{ticker}/progressive" { 200 } else if key.contains("google/callback") || key.contains("grok/callback") { 307 } else if key == "GET /api/auth/google/start" { 409 } else if key == "PUT /api/book" { 422 } else if key == "PUT /api/scan/view" || key.starts_with("GET /api/scan") { 403 } else if key.contains("/broker/book") || key.contains("/broker/credential") { 403 } else if key.contains("_metrics") || key.contains("_research") || key.contains("/settings") || key.contains("/credential") || key.contains("/broker/") { 401 } else if (key.contains("/auth/") && key != "POST /api/auth/login" && key != "POST /api/auth/signup") || key.contains("/book") || key.contains("sim-trade") { 403 } else if key == "POST /api/auth/login" || key == "POST /api/auth/signup" || key.contains("recommendation/{ticker}") || key == "GET /api/stream/prices" { 422 } else if key.contains("/prices") || key.contains("/contract/") { 400 } else if key.contains("/candidates/") || key.contains("/price/") || key.contains("/ticker/{ticker}") || key.contains("recommendation/export") || key.contains("recommendation/status") { 502 } else if key.contains("market-data") || key.contains("signals") || key.contains("strike-profile") { 404 } else { 200 };
             let access_mode = if key.contains("_metrics") || key.contains("_research") { "operator" } else { "anonymous" };
             let status = if access_mode == "operator" && status == 401 { 200 } else { status };
             let header_names = if status == 307 { vec!["location"] } else { Vec::new() };
@@ -966,10 +969,7 @@ async fn http_parity_harness_observes_all_operations() {
                     || path.contains("/auth/logout")
                     || path.contains("recommendation/export")
                     || path.contains("recommendation/status")
-                    || (method_name == "GET"
-                        && path.starts_with("/api/scan")
-                        && !path.contains("history")
-                        && !path.contains("universe"))
+                    || (method_name == "GET" && path == "/api/scan/view")
                 {
                     "optional-session"
                 } else if path.contains("/auth/")
@@ -977,7 +977,7 @@ async fn http_parity_harness_observes_all_operations() {
                     || path.contains("/broker/")
                     || path.contains("recommendation/")
                     || path.contains("sim-trade")
-                    || path == "/api/scan/view"
+                    || (path.starts_with("/api/scan") && path != "/api/scan/universe")
                 {
                     "session"
                 } else {
@@ -1276,8 +1276,10 @@ fn every_operation_has_the_contract_security_mode() {
         ("GET", "/api/auth/grok/callback", "public"),
         ("POST", "/api/recommendation/{ticker}", "session"),
         ("POST", "/api/positions/sim-trade/gate", "session"),
-        ("GET", "/api/scan", "optional-session"),
-        ("GET", "/api/scan/all", "optional-session"),
+        ("GET", "/api/scan", "session"),
+        ("GET", "/api/scan/all", "session"),
+        ("GET", "/api/scan/{symbol}/history", "session"),
+        ("GET", "/api/scan/universe", "public"),
         ("GET", "/api/scan/view", "optional-session"),
         ("PUT", "/api/scan/view", "session"),
     ];

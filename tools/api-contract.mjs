@@ -222,6 +222,8 @@ function preferredHttpStatus(key, operation) {
     (/^POST \/api\/positions\//.test(key) ||
       (method === 'GET' && path === '/api/book') ||
       (method === 'PUT' && path === '/api/scan/view') ||
+      // SEC-1: the scan board and structure path are signed-in reads (dealer levels).
+      (method === 'GET' && /^\/api\/scan(?:\/all|\/\{symbol\}\/history)?$/.test(path)) ||
       /\/broker\//.test(path) ||
       /\/auth\/(?:ai-key|grok)/.test(path))
   )

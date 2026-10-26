@@ -5676,6 +5676,14 @@ export interface operations {
           'application/json': components['schemas']['ScanEnvelope'];
         };
       };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuthErrorBody'];
+        };
+      };
     };
   };
   scan_all: {
@@ -5693,6 +5701,14 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ScanEnvelope'];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuthErrorBody'];
         };
       };
     };
@@ -5818,6 +5834,14 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StructureHistoryResponse'];
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuthErrorBody'];
         };
       };
     };

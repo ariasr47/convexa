@@ -2,7 +2,7 @@
 #![allow(dead_code)] // OpenAPI DTOs and response enums are exporter-only schema markers.
 
 use crate::openapi::RouteResponse;
-use crate::routes::auth::{require_user, MaybeUser};
+use crate::routes::auth::{require_user, AuthUser, MaybeUser};
 use crate::services::auth::{AuthError, UserRecord};
 use crate::services::scanner::projection::project_building;
 use crate::services::scanner::store::{
@@ -194,11 +194,15 @@ pub struct ScanViewBody {
     pub density: Option<String>,
 }
 
+/// `GET /api/scan` and `GET /api/scan/all`: signed in only, since every row carries dealer levels
+/// derived from the licensed options feed (SEC-1). Signed out is the shared 403 `auth_required`.
 #[allow(dead_code)]
 #[derive(Debug, IntoResponses)]
 pub enum ScanJsonResponse {
     #[response(status = 200, content_type = "application/json")]
     Ok(ScanEnvelope),
+    #[response(status = 403, content_type = "application/json")]
+    Forbidden(AuthErrorBody),
 }
 
 #[derive(Debug, IntoResponses)]
@@ -213,10 +217,14 @@ pub enum ScanViewGetResponse {
     Ok(ScanView),
 }
 
+/// `GET /api/scan/{symbol}/history`: signed in only, for the same reason as [`ScanJsonResponse`].
+#[allow(dead_code)]
 #[derive(Debug, IntoResponses)]
 pub enum StructureHistoryGetResponse {
     #[response(status = 200, content_type = "application/json")]
     Ok(StructureHistoryResponse),
+    #[response(status = 403, content_type = "application/json")]
+    Forbidden(AuthErrorBody),
 }
 
 #[allow(dead_code)]
@@ -240,6 +248,7 @@ impl IntoResponse for ScanJsonResponse {
     fn into_response(self) -> Response {
         match self {
             Self::Ok(body) => (StatusCode::OK, Json(body)).into_response(),
+            Self::Forbidden(body) => (StatusCode::FORBIDDEN, Json(body)).into_response(),
         }
     }
 }
@@ -264,6 +273,7 @@ impl IntoResponse for StructureHistoryGetResponse {
     fn into_response(self) -> Response {
         match self {
             Self::Ok(body) => (StatusCode::OK, Json(body)).into_response(),
+            Self::Forbidden(body) => (StatusCode::FORBIDDEN, Json(body)).into_response(),
         }
     }
 }
@@ -319,11 +329,19 @@ fn representative_auth_error(kind: &str) -> AuthErrorBody {
 /// Matching the complete canonical ID prevents one successful/error conversion from being relabeled.
 pub(crate) fn contract_representative_response(boundary: &str) -> Option<Response> {
     let response = match boundary {
-        "GET /api/scan 200 application/json optional-session"
-        | "GET /api/scan/all 200 application/json optional-session" => {
+        "GET /api/scan 200 application/json session"
+        | "GET /api/scan/all 200 application/json session" => {
             ScanJsonResponse::Ok(representative_scan_envelope()).into_response()
         }
-        "GET /api/scan/{symbol}/history 200 application/json public" => {
+        "GET /api/scan 403 application/json session"
+        | "GET /api/scan/all 403 application/json session" => {
+            ScanJsonResponse::Forbidden(representative_auth_error("auth_required")).into_response()
+        }
+        "GET /api/scan/{symbol}/history 403 application/json session" => {
+            StructureHistoryGetResponse::Forbidden(representative_auth_error("auth_required"))
+                .into_response()
+        }
+        "GET /api/scan/{symbol}/history 200 application/json session" => {
             StructureHistoryGetResponse::Ok(StructureHistoryResponse {
                 symbol: "SPY".into(),
                 samples: Vec::new(),
@@ -392,7 +410,7 @@ pub struct DetailBody {
 )]
 pub async fn get_scan_contract(
     State(state): State<AppState>,
-    user: MaybeUser,
+    user: AuthUser,
 ) -> RouteResponse<ScanJsonResponse> {
     get_scan(State(state), user).await.into_response().into()
 }
@@ -400,10 +418,11 @@ pub async fn get_scan_contract(
 #[utoipa::path(get, path = "/api/scan/{symbol}/history", operation_id = "scan_history", params(("symbol" = String, Path), HistoryQuery), responses(StructureHistoryGetResponse))]
 pub async fn get_structure_history_contract(
     State(state): State<AppState>,
+    user: AuthUser,
     Path(symbol): Path<String>,
     Query(q): Query<HistoryQuery>,
 ) -> RouteResponse<StructureHistoryGetResponse> {
-    get_structure_history(State(state), Path(symbol), Query(q))
+    get_structure_history(State(state), user, Path(symbol), Query(q))
         .await
         .into_response()
         .into()
@@ -445,7 +464,7 @@ pub async fn get_scan_universe_contract(
 )]
 pub async fn get_scan_all_contract(
     State(state): State<AppState>,
-    user: MaybeUser,
+    user: AuthUser,
 ) -> RouteResponse<ScanJsonResponse> {
     get_scan_all(State(state), user)
         .await
@@ -588,12 +607,14 @@ async fn fill_rows(state: &AppState, symbols: &[String]) -> Vec<ScanRow> {
     rows
 }
 
-/// GET /api/scan
+/// GET /api/scan — signed in only (SEC-1): the rows carry the flip and the walls, which derive from
+/// the licensed options feed and reach the owner's signed-in account alone (owner rule 2026-10-18).
+/// [`AuthUser`] refuses a signed-out caller with 403 `auth_required` before this body runs.
 pub async fn get_scan(
     State(state): State<AppState>,
-    MaybeUser(user): MaybeUser,
+    AuthUser(user): AuthUser,
 ) -> Json<ScanEnvelope> {
-    let view = effective_view(&state, user.as_ref()).await;
+    let view = effective_view(&state, Some(&user)).await;
     let rows = fill_rows(&state, &view.symbols)
         .await
         .into_iter()
@@ -691,9 +712,12 @@ const STRUCTURE_HISTORY_BASIS: &str =
 Samples thinned to ≥5 minutes; last 576 kept per symbol (research capture spine). \
 Snapshot path, never a forecast. Durable: JSON file (local) or Postgres (prod).";
 
-/// GET /api/scan/{symbol}/history — anonymous-open structure path for one ticker.
+/// GET /api/scan/{symbol}/history — one ticker's structure path, signed in only (SEC-1): each
+/// sample carries the flip, the walls and net GEX. The sign-in check runs before the path and query
+/// are read, so a signed-out caller gets 403 `auth_required` whatever it sends.
 pub async fn get_structure_history(
     State(state): State<AppState>,
+    AuthUser(_user): AuthUser,
     Path(symbol): Path<String>,
     Query(q): Query<HistoryQuery>,
 ) -> Json<StructureHistoryResponse> {
@@ -750,17 +774,17 @@ pub async fn get_scan_universe(State(state): State<AppState>) -> Json<UniverseRe
     })
 }
 
-/// GET /api/scan/all — full universe ranked by score.
+/// GET /api/scan/all — full universe ranked by score; signed in only, as [`get_scan`].
 pub async fn get_scan_all(
     State(state): State<AppState>,
-    MaybeUser(user): MaybeUser,
+    AuthUser(user): AuthUser,
 ) -> Json<ScanEnvelope> {
     let symbols = state
         .universe
         .as_ref()
         .map(|u| u.universe.clone())
         .unwrap_or_default();
-    let mut view = effective_view(&state, user.as_ref()).await;
+    let mut view = effective_view(&state, Some(&user)).await;
     view.symbols = symbols.clone();
     view.source = "universe".into();
     view.name = Some("all".into());
@@ -922,22 +946,33 @@ mod response_conversion_tests {
         .await
         .unwrap();
 
-        let Json(live) = get_scan(State(state.clone()), MaybeUser(None)).await;
+        let user = || {
+            AuthUser(UserRecord {
+                id: "scan-market-data-test".into(),
+                email: "scan-market-data@example.test".into(),
+                display_name: None,
+                password_hash: None,
+                google_sub: None,
+                created_at: 0.0,
+                last_login_at: None,
+            })
+        };
+        let Json(live) = get_scan(State(state.clone()), user()).await;
         assert_eq!(live.market_data, "live");
 
         let mut cfg = (*state.config).clone();
         cfg.market_data_mode = crate::config::MarketDataMode::Paused;
         cfg.massive_api_key = "configured-but-paused".into();
         state.config = std::sync::Arc::new(cfg.clone());
-        let Json(paused) = get_scan(State(state.clone()), MaybeUser(None)).await;
+        let Json(paused) = get_scan(State(state.clone()), user()).await;
         assert_eq!(paused.market_data, "paused");
-        let Json(paused_all) = get_scan_all(State(state.clone()), MaybeUser(None)).await;
+        let Json(paused_all) = get_scan_all(State(state.clone()), user()).await;
         assert_eq!(paused_all.market_data, "paused");
 
         // P-1: no vendor key at all reads as not live, on the scan envelope as on /api/health.
         cfg.massive_api_key = String::new();
         state.config = std::sync::Arc::new(cfg);
-        let Json(not_live) = get_scan(State(state), MaybeUser(None)).await;
+        let Json(not_live) = get_scan(State(state), user()).await;
         assert_eq!(not_live.market_data, "not_live");
     }
 }
