@@ -1,5 +1,5 @@
 {
-  "_comment": "Promoted at GATE S (2026-09-24) from contracts/_archive/no-vendor-production-posture/INTERFACE_CONTRACT.md. PAUSED-MODE contract: run ONLY against a backend booted with MARKET_DATA_MODE=paused (no MASSIVE_API_KEY needed). Every vendor-backed route answers 503 {detail:\"Market data is paused.\",code:\"market_data_paused\"}; health and scan report market_data. NOT part of the nightly production set (conformance.yml names its specs explicitly) - production mode can be flipped back to live. Since SEC-1 (2026-10-26) the two scan reads are signed-in only, so they are marked auth and this spec runs with --auth-signup (or --auth-cookie).",
+  "_comment": "Promoted at GATE S (2026-09-24) from contracts/_archive/no-vendor-production-posture/INTERFACE_CONTRACT.md. PAUSED-MODE contract: run ONLY against a backend booted with MARKET_DATA_MODE=paused (no MASSIVE_API_KEY needed). Every vendor-backed route answers 503 {detail:\"Market data is paused.\",code:\"market_data_paused\"}; health and scan report market_data. NOT part of the nightly production set (conformance.yml names its specs explicitly) - production mode can be flipped back to live. Since SEC-1 (2026-10-26) the two scan reads are signed-in only, so they are marked auth and this spec runs with --auth-signup (or --auth-cookie). Owner gate (2026-10-26, DESIGN.md Amendments): the endpoints marked _owner_gate read licence-derived data and answer the owner's account alone, so they are marked auth and this spec runs with --auth-cookie of an OWNER_EMAILS session. A --auth-signup user is not an owner and gets 403 owner_only; the refusals are asserted in public-surface.json (signed out) and auth-gated.json (signed in, not the owner).",
   "endpoints": [
     {
       "method": "GET",
@@ -15,6 +15,7 @@
     {
       "method": "GET",
       "path": "/api/scan",
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "auth": true,
       "expect_status": 200,
       "required": {
@@ -27,6 +28,7 @@
     {
       "method": "GET",
       "path": "/api/scan/{symbol}/history",
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "path_params": {
         "symbol": "SPY"
       },
@@ -43,6 +45,8 @@
     {
       "method": "GET",
       "path": "/api/ticker/{ticker}",
+      "auth": true,
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "path_params": {
         "ticker": "SPY"
       },
@@ -55,6 +59,8 @@
     {
       "method": "GET",
       "path": "/api/ticker/{ticker}/progressive",
+      "auth": true,
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "path_params": {
         "ticker": "SPY"
       },
@@ -67,6 +73,8 @@
     {
       "method": "GET",
       "path": "/api/market-data",
+      "auth": true,
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "query": {
         "ticker": "SPY"
       },
@@ -79,6 +87,8 @@
     {
       "method": "GET",
       "path": "/api/signals",
+      "auth": true,
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "query": {
         "ticker": "SPY"
       },
@@ -91,6 +101,8 @@
     {
       "method": "GET",
       "path": "/api/strike-profile",
+      "auth": true,
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "query": {
         "ticker": "SPY"
       },
@@ -103,6 +115,8 @@
     {
       "method": "GET",
       "path": "/api/candidates/{ticker}",
+      "auth": true,
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "path_params": {
         "ticker": "SPY"
       },
@@ -115,6 +129,8 @@
     {
       "method": "GET",
       "path": "/api/contract/{ticker}",
+      "auth": true,
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "path_params": {
         "ticker": "SPY"
       },
@@ -132,6 +148,8 @@
     {
       "method": "GET",
       "path": "/api/stream/{ticker}",
+      "auth": true,
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "path_params": {
         "ticker": "SPY"
       },
@@ -156,6 +174,8 @@
     {
       "method": "GET",
       "path": "/api/recommendation/export/{ticker}",
+      "auth": true,
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "path_params": {
         "ticker": "SPY"
       },
@@ -168,6 +188,8 @@
     {
       "method": "GET",
       "path": "/api/recommendation/status/{ticker}",
+      "auth": true,
+      "_owner_gate": "Owner gate (2026-10-26): owner only, since this read carries data computed from the licensed options feed. Run with --auth-cookie of an OWNER_EMAILS session; signed out is 403 auth_required (public-surface.json) and a signed-up non-owner is 403 owner_only (auth-gated.json).",
       "path_params": {
         "ticker": "SPY"
       },

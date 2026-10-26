@@ -1,0 +1,63 @@
+{
+  "_comment": "Owner-only envelopes (owner gate, 2026-10-26, DESIGN.md Amendments): licence-derived reads answer the OWNER_EMAILS accounts alone, so this spec runs with --auth-cookie of an owner session (a --auth-signup user is not an owner and gets 403 owner_only, which auth-gated.json asserts). The three entries are the SEC-1 scan envelopes from auth-gated.json, moved unchanged. Environment-independent: rows may be [] and sweep null on a fresh or pre-worker boot, and samples may be [] on a cold store. To get an owner session locally: boot the API with OWNER_EMAILS naming an account (e.g. the AUTH_DEMO_SEED one), POST /api/auth/login, and pass its gf_session cookie as NAME=VALUE.",
+  "version": "1.0",
+  "feature": "owner gate",
+  "endpoints": [
+    {
+      "id": "scan_default_view_signed_in",
+      "_note": "SEC-1 (2026-10-26): a signed-in read, since its rows carry dealer levels derived from the licensed options feed; signed out is the 403 public-surface.json asserts. Envelope only: rows may be [] and sweep null on a fresh or pre-worker boot.",
+      "method": "GET",
+      "path": "/api/scan",
+      "auth": true,
+      "required": {
+        "view": "object",
+        "view.source": "string",
+        "view.symbols": "array",
+        "view.sort": "object",
+        "view.density": "string",
+        "view.authenticated": "boolean",
+        "rows": "array",
+        "sweep": "object|null",
+        "market_data": "string"
+      }
+    },
+    {
+      "id": "scan_all_signed_in",
+      "_note": "SEC-1 (2026-10-26): the whole universe ranked by score, signed in only. Envelope only, as scan_default_view_signed_in.",
+      "method": "GET",
+      "path": "/api/scan/all",
+      "auth": true,
+      "required": {
+        "view": "object",
+        "view.source": "string",
+        "view.symbols": "array",
+        "view.sort": "object",
+        "view.density": "string",
+        "view.authenticated": "boolean",
+        "rows": "array",
+        "sweep": "object|null",
+        "market_data": "string"
+      }
+    },
+    {
+      "id": "structure_history_signed_in",
+      "_note": "SEC-1 (2026-10-26): each sample carries the flip, the walls and net GEX, so the structure path is signed in only. samples may be [] on a cold store.",
+      "method": "GET",
+      "path": "/api/scan/{symbol}/history",
+      "path_params": {
+        "symbol": "SPY"
+      },
+      "query": {
+        "limit": 3
+      },
+      "auth": true,
+      "required": {
+        "symbol": "string",
+        "samples": "array",
+        "basis": "string",
+        "stored_count": "number",
+        "backend": "string"
+      }
+    }
+  ]
+}

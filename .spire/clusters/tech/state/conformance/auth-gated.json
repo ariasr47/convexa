@@ -1,58 +1,44 @@
 {
-  "_comment": "Runnable (system-1) conformance spec for the AUTH-GATED surface — the endpoints every earlier spec explicitly omitted because the runner was cookieless (TECH_DEBT #12). Requires a session: run with --auth-signup (bootstraps a throwaway user via POST /api/auth/signup and replays its Set-Cookie on every endpoint marked 'auth': true) or --auth-cookie NAME=VALUE. Only statically-checkable, environment-INDEPENDENT shapes are asserted. The PUT ai-key probe mutates only the throwaway signup user's Anthropic credential slot and asserts the provider-bootstrap shape — never the key/ciphertext.",
+  "_comment": "Runnable (system-1) conformance spec for the AUTH-GATED surface — the endpoints every earlier spec explicitly omitted because the runner was cookieless (TECH_DEBT #12). Requires a session: run with --auth-signup (bootstraps a throwaway user via POST /api/auth/signup and replays its Set-Cookie on every endpoint marked 'auth': true) or --auth-cookie NAME=VALUE. Only statically-checkable, environment-INDEPENDENT shapes are asserted. The PUT ai-key probe mutates only the throwaway signup user's Anthropic credential slot and asserts the provider-bootstrap shape — never the key/ciphertext. Owner gate (2026-10-26, DESIGN.md Amendments): the signed-up user is not on OWNER_EMAILS, so every owner-only read here (the three scan reads, and since this change the ticker bundle and stream, market-data, signals, strike-profile, contract, candidates and the recommendation post, export and status) asserts its 403 owner_only refusal; the scan envelopes the SEC-1 entries asserted moved, unchanged, to owner-gated.json, which runs with the owner's session.",
   "version": "1.1",
   "feature": "auth-gated sweep (tech-debt #12)",
   "endpoints": [
     {
-      "id": "scan_default_view_signed_in",
-      "_note": "SEC-1 (2026-10-26): a signed-in read, since its rows carry dealer levels derived from the licensed options feed; signed out is the 403 public-surface.json asserts. Envelope only: rows may be [] and sweep null on a fresh or pre-worker boot.",
+      "id": "scan_default_view_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
       "method": "GET",
       "path": "/api/scan",
       "auth": true,
+      "expect_status": 403,
       "required": {
-        "view": "object",
-        "view.source": "string",
-        "view.symbols": "array",
-        "view.sort": "object",
-        "view.density": "string",
-        "view.authenticated": "boolean",
-        "rows": "array",
-        "sweep": "object|null",
-        "market_data": "string"
+        "error": "string",
+        "message": "string"
       }
     },
     {
-      "id": "scan_all_signed_in",
-      "_note": "SEC-1 (2026-10-26): the whole universe ranked by score, signed in only. Envelope only, as scan_default_view_signed_in.",
+      "id": "scan_all_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
       "method": "GET",
       "path": "/api/scan/all",
       "auth": true,
+      "expect_status": 403,
       "required": {
-        "view": "object",
-        "view.source": "string",
-        "view.symbols": "array",
-        "view.sort": "object",
-        "view.density": "string",
-        "view.authenticated": "boolean",
-        "rows": "array",
-        "sweep": "object|null",
-        "market_data": "string"
+        "error": "string",
+        "message": "string"
       }
     },
     {
-      "id": "structure_history_signed_in",
-      "_note": "SEC-1 (2026-10-26): each sample carries the flip, the walls and net GEX, so the structure path is signed in only. samples may be [] on a cold store.",
+      "id": "structure_history_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
       "method": "GET",
       "path": "/api/scan/{symbol}/history",
       "path_params": { "symbol": "SPY" },
       "query": { "limit": 3 },
       "auth": true,
+      "expect_status": 403,
       "required": {
-        "symbol": "string",
-        "samples": "array",
-        "basis": "string",
-        "stored_count": "number",
-        "backend": "string"
+        "error": "string",
+        "message": "string"
       }
     },
     {
@@ -137,6 +123,151 @@
       "auth": true,
       "required": {
         "authorized": "boolean"
+      }
+    },
+    {
+      "id": "ticker_bundle_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "ticker_progressive_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "GET",
+      "path": "/api/ticker/{ticker}/progressive",
+      "path_params": { "ticker": "SPY" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "market_data_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "GET",
+      "path": "/api/market-data",
+      "query": { "ticker": "SPY" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "signals_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "GET",
+      "path": "/api/signals",
+      "query": { "ticker": "SPY" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "strike_profile_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "GET",
+      "path": "/api/strike-profile",
+      "query": { "ticker": "SPY" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "tracked_contract_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "GET",
+      "path": "/api/contract/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "query": { "expiration": "2026-10-16", "strike": 500, "right": "call" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "candidates_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "GET",
+      "path": "/api/candidates/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "ticker_stream_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "GET",
+      "path": "/api/stream/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "rec_post_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "POST",
+      "path": "/api/recommendation/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "body": { "snapshot_fingerprint": "owner-gate-probe" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "rec_export_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "GET",
+      "path": "/api/recommendation/export/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "rec_status_non_owner_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data). The --auth-signup user is not on OWNER_EMAILS, so this asserts its 403 owner_only refusal (the runner checks types, not the code). The owner's envelope is checked in owner-gated.json.",
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "auth": true,
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
       }
     }
   ]

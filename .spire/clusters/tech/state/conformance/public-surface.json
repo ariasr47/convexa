@@ -1,5 +1,5 @@
 {
-  "_comment": "Anonymous public surface for CI / post-deploy smoke. Environment-independent envelope shapes only — never assert live scores or prices (vendor/time dependent). Auth-gated endpoints live in auth-gated.json. Since SEC-1 (2026-10-26) GET /api/scan, GET /api/scan/all and GET /api/scan/{symbol}/history are signed-in reads, because their dealer levels derive from the licensed options feed: this sweep asserts their signed-out 403 auth_required refusal, and their signed-in envelopes are in auth-gated.json.",
+  "_comment": "Anonymous public surface for CI / post-deploy smoke. Environment-independent envelope shapes only — never assert live scores or prices (vendor/time dependent). Auth-gated endpoints live in auth-gated.json. Since SEC-1 (2026-10-26) GET /api/scan, GET /api/scan/all and GET /api/scan/{symbol}/history are signed-in reads, because their dealer levels derive from the licensed options feed: this sweep asserts their signed-out 403 auth_required refusal, and their signed-in envelopes are in auth-gated.json. Owner gate (2026-10-26, DESIGN.md Amendments): the scan reads and every other read computed from the licensed options feed (the ticker bundle and stream, market-data, signals, strike-profile, contract, candidates, and the recommendation post, export and status) answer the OWNER_EMAILS accounts alone; this sweep asserts their signed-out 403 auth_required refusal.",
   "version": "1.0",
   "feature": "public-surface",
   "endpoints": [
@@ -83,6 +83,140 @@
       "expect_status": 200,
       "required": {
         "state": "string"
+      }
+    },
+    {
+      "id": "ticker_bundle_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "ticker_progressive_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "GET",
+      "path": "/api/ticker/{ticker}/progressive",
+      "path_params": { "ticker": "SPY" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "market_data_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "GET",
+      "path": "/api/market-data",
+      "query": { "ticker": "SPY" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "signals_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "GET",
+      "path": "/api/signals",
+      "query": { "ticker": "SPY" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "strike_profile_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "GET",
+      "path": "/api/strike-profile",
+      "query": { "ticker": "SPY" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "tracked_contract_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "GET",
+      "path": "/api/contract/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "query": { "expiration": "2026-10-16", "strike": 500, "right": "call" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "candidates_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "GET",
+      "path": "/api/candidates/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "ticker_stream_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "GET",
+      "path": "/api/stream/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "rec_post_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "POST",
+      "path": "/api/recommendation/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "body": { "snapshot_fingerprint": "owner-gate-probe" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "rec_export_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "GET",
+      "path": "/api/recommendation/export/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
+      }
+    },
+    {
+      "id": "rec_status_signed_out_refused",
+      "_note": "Owner gate (2026-10-26): owner only (licence-derived data), so a cookieless read is the 403 auth_required refusal before the handler, the path or the query is read (the runner checks types, not the code). Holds on a paused or a live backend alike. The owner's view is asserted with an owner session in owner-gated.json and the feature specs marked _owner_gate.",
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "expect_status": 403,
+      "required": {
+        "error": "string",
+        "message": "string"
       }
     }
   ]
