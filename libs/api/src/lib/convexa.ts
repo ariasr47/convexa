@@ -2177,6 +2177,10 @@ export async function fetchPersonas(): Promise<PersonaDefinition[]> {
 
 export type PublicDataState = components['schemas']['PublicDataState'];
 export type PublicMarkets = components['schemas']['PublicMarketsWire'];
+/** The fear–greed gauge (Research → Markets, Stress); absent from servers before 2026-10-25. A
+ *  component carries no state of its own: its `source` names its row in `sources`. */
+export type PublicStress = components['schemas']['StressWire'];
+export type PublicStressComponent = components['schemas']['StressComponentWire'];
 export type PublicYieldPoint = components['schemas']['YieldPointWire'];
 export type PublicFutures = components['schemas']['FuturesWire'];
 export type PublicFuturesMarket = components['schemas']['FuturesMarketWire'];

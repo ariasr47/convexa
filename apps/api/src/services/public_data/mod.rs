@@ -22,8 +22,6 @@ pub(crate) mod insider_trades;
 pub(crate) mod liquidity;
 pub(crate) mod ofr;
 pub(crate) mod sources;
-// Spec 07 step 3 lands the scoring alone; step 4 joins it into markets() and drops this allow.
-#[allow(dead_code)]
 pub(crate) mod stress;
 pub(crate) mod treasury;
 pub mod types;
@@ -250,6 +248,7 @@ impl PublicDataService {
                 futures: None,
                 liquidity: None,
                 calendar: None,
+                stress: None,
                 sources,
             };
         }
@@ -333,6 +332,13 @@ impl PublicDataService {
                 releases,
                 horizons,
             });
+        // Judged on the Eastern date, from whatever is cached: a last good copy still counts while
+        // its data's date is fresh.
+        let stress = stress::build(
+            ofr.cached().map(|c| c.value.as_ref()),
+            futures.cached().map(|c| c.value.as_ref()),
+            today_eastern(),
+        );
         let notes: Vec<String> = [
             rates.note(treasury::SOURCE),
             futures.note(cftc::SOURCE),
@@ -366,6 +372,7 @@ impl PublicDataService {
             futures,
             liquidity,
             calendar,
+            stress: Some(stress),
             sources: source_rows,
         }
     }
@@ -1429,6 +1436,8 @@ mod tests {
         assert_eq!(markets.state, DataState::Off);
         assert!(markets.rates.is_none() && markets.futures.is_none());
         assert!(markets.calendar.is_none());
+        // The gauge is absent only here: off contacts nothing, so it has nothing to judge.
+        assert!(markets.stress.is_none());
         // Every source is still listed, each saying Off: the credits page counts them.
         let ids: Vec<&str> = markets.sources.iter().map(|s| s.id).collect();
         assert_eq!(

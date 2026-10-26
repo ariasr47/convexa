@@ -4721,7 +4721,7 @@
             ]
           },
           "sources": {
-            "description": "Treasury, CFTC, the three liquidity inputs and the four release schedules. Absent from\nservers before 2026-10-15.",
+            "description": "Treasury, CFTC, the OFR, the three liquidity inputs and the four release schedules. Absent\nfrom servers before 2026-10-15 (the `ofr` row before 2026-10-25).",
             "items": {
               "$ref": "#/components/schemas/PublicSourceWire"
             },
@@ -4729,6 +4729,17 @@
           },
           "state": {
             "$ref": "#/components/schemas/PublicDataState"
+          },
+          "stress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StressWire",
+                "description": "The fear–greed gauge (the Stress section); null only when public data is off. Absent from\nservers before 2026-10-25."
+              }
+            ]
           }
         },
         "required": ["state", "detail", "rates", "futures", "liquidity"],
@@ -7098,6 +7109,189 @@
           }
         },
         "required": ["prices", "as_of"],
+        "type": "object"
+      },
+      "StressBandWire": {
+        "description": "The gauge's band, decided on `gauge`: 0–24 `extreme_fear`, 25–44 `fear`, 45–55 `neutral`,\n56–75 `greed`, 76–100 `extreme_greed`; each edge belongs to the calmer band.",
+        "enum": ["extreme_fear", "fear", "neutral", "greed", "extreme_greed"],
+        "type": "string"
+      },
+      "StressCadenceWire": {
+        "description": "`daily` (the OFR, about two business days late) or `weekly` (the CFTC).",
+        "enum": ["daily", "weekly"],
+        "type": "string"
+      },
+      "StressComponentWire": {
+        "description": "One input of the gauge. It carries no state of its own: its data state (a last good copy, an\noutage) is the `sources` row whose `id` is its `source`.",
+        "properties": {
+          "age": {
+            "description": "Weekdays (daily) or calendar days (weekly) from `as_of` to `judged_on`.",
+            "format": "int32",
+            "minimum": 0,
+            "type": ["integer", "null"]
+          },
+          "as_of": {
+            "description": "YYYY-MM-DD of `raw`: the input's newest observation.",
+            "type": ["string", "null"]
+          },
+          "cadence": {
+            "$ref": "#/components/schemas/StressCadenceWire"
+          },
+          "counted": {
+            "type": "boolean"
+          },
+          "higher_means": {
+            "$ref": "#/components/schemas/StressLeaningWire"
+          },
+          "id": {
+            "$ref": "#/components/schemas/StressInputWire"
+          },
+          "percentile": {
+            "description": "0–100 in the raw value's direction, rounded half up to one decimal for display. Null\nwithout data or with less than a year of it.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "raw": {
+            "description": "The as-of value: OFR index units (0 = average stress), or a CFTC net position (long minus\nshort) as a fraction of open interest. Null when the source answered nothing.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StressReasonWire",
+                "description": "Null when counted."
+              }
+            ]
+          },
+          "score": {
+            "description": "0–100, 0 = extreme fear and 100 = extreme greed, rounded half up to one decimal for\ndisplay (the gauge averages the unrounded scores). Null where `percentile` is.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "source": {
+            "$ref": "#/components/schemas/StressSourceWire"
+          },
+          "window": {
+            "description": "Observations in the window (the three calendar years ending `as_of`), `as_of` included.",
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "window_from": {
+            "description": "YYYY-MM-DD, the window's first observation.",
+            "type": ["string", "null"]
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "cadence",
+          "raw",
+          "as_of",
+          "window",
+          "window_from",
+          "percentile",
+          "higher_means",
+          "score",
+          "counted",
+          "reason",
+          "age"
+        ],
+        "type": "object"
+      },
+      "StressInputWire": {
+        "description": "One of the gauge's seven inputs, in table order: five OFR Financial Stress Index categories\nand two CFTC positioning ratios.",
+        "enum": [
+          "volatility",
+          "credit",
+          "safe_assets",
+          "equity_valuation",
+          "funding",
+          "vol_positioning",
+          "equity_positioning"
+        ],
+        "type": "string"
+      },
+      "StressLeaningWire": {
+        "description": "Which way a higher raw value leans.",
+        "enum": ["fear", "greed"],
+        "type": "string"
+      },
+      "StressReasonWire": {
+        "description": "Why an input is not counted: `stale` (past 5 weekdays daily, 14 days weekly), `no_data` (its\nsource answered nothing and no copy is kept) or `short_history` (less than a year of it).",
+        "enum": ["stale", "no_data", "short_history"],
+        "type": "string"
+      },
+      "StressSourceWire": {
+        "description": "The id of an input's row in `sources` (and its /credits anchor).",
+        "enum": ["ofr", "cftc"],
+        "type": "string"
+      },
+      "StressWire": {
+        "description": "The fear–greed gauge: seven public inputs, each a percentile of its own last three years,\nflipped so 0 is extreme fear and 100 extreme greed, equally weighted, and published only when\nat least 5 of 7 are fresh.",
+        "properties": {
+          "as_of": {
+            "description": "YYYY-MM-DD, the oldest as-of among the counted OFR inputs; null when none counts.",
+            "type": ["string", "null"]
+          },
+          "band": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StressBandWire",
+                "description": "Null unless published."
+              }
+            ]
+          },
+          "components": {
+            "description": "Always seven, in table order.",
+            "items": {
+              "$ref": "#/components/schemas/StressComponentWire"
+            },
+            "type": "array"
+          },
+          "counted": {
+            "description": "Inputs counted, 0–7.",
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "gauge": {
+            "description": "0–100: `mean` rounded half up. Null unless published.",
+            "format": "int32",
+            "minimum": 0,
+            "type": ["integer", "null"]
+          },
+          "judged_on": {
+            "description": "YYYY-MM-DD, the Eastern date freshness was judged on.",
+            "type": "string"
+          },
+          "mean": {
+            "description": "The unrounded mean of the counted scores that `gauge` rounds. Null unless published.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "published": {
+            "description": "True when at least 5 of the 7 inputs count.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "published",
+          "gauge",
+          "mean",
+          "band",
+          "as_of",
+          "counted",
+          "judged_on",
+          "components"
+        ],
         "type": "object"
       },
       "StructureHistoryResponse": {

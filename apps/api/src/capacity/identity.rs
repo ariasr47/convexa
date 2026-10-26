@@ -85,6 +85,10 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // and `blob` carries its doc comment. Same shape, zero new operations, so
 // `precutover-operation-baseline.json` keeps its hash and four artifacts move (ledger
 // `route-growth-repins-api-artifact-oracle`).
+// Re-pinned 2026-10-25 (spec 07 step 4): `PublicMarketsWire` gains optional `stress` (new schemas
+// `StressWire`, `StressComponentWire` and six enums) and its `sources` doc names the OFR row.
+// Additive schema growth, zero new operations, so `precutover-operation-baseline.json` keeps its
+// hash and four artifacts move (ledger `route-growth-repins-api-artifact-oracle`).
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -92,19 +96,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "19a14434dcdeb6a6b30c4edbc7aaf87d0b34ddc62e22b416e759cd58ab87e105",
+        "af58a40553b68f16a95e07a450e674f14d37793ec6b25c9c64488b7a46e55634",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "3d159243adacdd87b4a2b53079980d39c9e6c3d869595fdc1ee59a0bc7436d81",
+        "06175191bf282bd9b6776f8bac651387641b877a025e98f93b55c1e710824665",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "fa4d84ad8f65e15f48a1cce3257ea3f5edecc4572ec46bd43f4e9e66eb2de26f",
+        "080ead92ee66c218b348940644a67248668030e325899bc0e6a0580d8aee7d2c",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "c5701f396a7fbec976bf82166300f5c82a54ad535b1db2c30e6b1ccea9e997d0",
+        "766c655543ed59cd2f4a7d467e4b7f82fff9e8f13c0bdbbd50c1c3f537e87ceb",
     ),
 ];
 

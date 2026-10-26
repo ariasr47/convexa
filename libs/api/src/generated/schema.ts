@@ -2499,11 +2499,12 @@ export interface components {
       liquidity: null | components['schemas']['LiquidityWire'];
       rates: null | components['schemas']['RatesWire'];
       /**
-       * @description Treasury, CFTC, the three liquidity inputs and the four release schedules. Absent from
-       *     servers before 2026-10-15.
+       * @description Treasury, CFTC, the OFR, the three liquidity inputs and the four release schedules. Absent
+       *     from servers before 2026-10-15 (the `ofr` row before 2026-10-25).
        */
       sources?: components['schemas']['PublicSourceWire'][];
       state: components['schemas']['PublicDataState'];
+      stress?: null | components['schemas']['StressWire'];
     };
     /**
      * @description One source's standing, in the closed P-2 vocabulary: `updated` (fetched on its schedule),
@@ -3254,6 +3255,121 @@ export interface components {
       prices: {
         [key: string]: components['schemas']['StreamPricePointBody'];
       };
+    };
+    /**
+     * @description The gauge's band, decided on `gauge`: 0–24 `extreme_fear`, 25–44 `fear`, 45–55 `neutral`,
+     *     56–75 `greed`, 76–100 `extreme_greed`; each edge belongs to the calmer band.
+     * @enum {string}
+     */
+    StressBandWire: 'extreme_fear' | 'fear' | 'neutral' | 'greed' | 'extreme_greed';
+    /**
+     * @description `daily` (the OFR, about two business days late) or `weekly` (the CFTC).
+     * @enum {string}
+     */
+    StressCadenceWire: 'daily' | 'weekly';
+    /**
+     * @description One input of the gauge. It carries no state of its own: its data state (a last good copy, an
+     *     outage) is the `sources` row whose `id` is its `source`.
+     */
+    StressComponentWire: {
+      /**
+       * Format: int32
+       * @description Weekdays (daily) or calendar days (weekly) from `as_of` to `judged_on`.
+       */
+      age: number | null;
+      /** @description YYYY-MM-DD of `raw`: the input's newest observation. */
+      as_of: string | null;
+      cadence: components['schemas']['StressCadenceWire'];
+      counted: boolean;
+      higher_means: components['schemas']['StressLeaningWire'];
+      id: components['schemas']['StressInputWire'];
+      /**
+       * Format: double
+       * @description 0–100 in the raw value's direction, rounded half up to one decimal for display. Null
+       *     without data or with less than a year of it.
+       */
+      percentile: number | null;
+      /**
+       * Format: double
+       * @description The as-of value: OFR index units (0 = average stress), or a CFTC net position (long minus
+       *     short) as a fraction of open interest. Null when the source answered nothing.
+       */
+      raw: number | null;
+      reason: null | components['schemas']['StressReasonWire'];
+      /**
+       * Format: double
+       * @description 0–100, 0 = extreme fear and 100 = extreme greed, rounded half up to one decimal for
+       *     display (the gauge averages the unrounded scores). Null where `percentile` is.
+       */
+      score: number | null;
+      source: components['schemas']['StressSourceWire'];
+      /**
+       * Format: int32
+       * @description Observations in the window (the three calendar years ending `as_of`), `as_of` included.
+       */
+      window: number;
+      /** @description YYYY-MM-DD, the window's first observation. */
+      window_from: string | null;
+    };
+    /**
+     * @description One of the gauge's seven inputs, in table order: five OFR Financial Stress Index categories
+     *     and two CFTC positioning ratios.
+     * @enum {string}
+     */
+    StressInputWire:
+      | 'volatility'
+      | 'credit'
+      | 'safe_assets'
+      | 'equity_valuation'
+      | 'funding'
+      | 'vol_positioning'
+      | 'equity_positioning';
+    /**
+     * @description Which way a higher raw value leans.
+     * @enum {string}
+     */
+    StressLeaningWire: 'fear' | 'greed';
+    /**
+     * @description Why an input is not counted: `stale` (past 5 weekdays daily, 14 days weekly), `no_data` (its
+     *     source answered nothing and no copy is kept) or `short_history` (less than a year of it).
+     * @enum {string}
+     */
+    StressReasonWire: 'stale' | 'no_data' | 'short_history';
+    /**
+     * @description The id of an input's row in `sources` (and its /credits anchor).
+     * @enum {string}
+     */
+    StressSourceWire: 'ofr' | 'cftc';
+    /**
+     * @description The fear–greed gauge: seven public inputs, each a percentile of its own last three years,
+     *     flipped so 0 is extreme fear and 100 extreme greed, equally weighted, and published only when
+     *     at least 5 of 7 are fresh.
+     */
+    StressWire: {
+      /** @description YYYY-MM-DD, the oldest as-of among the counted OFR inputs; null when none counts. */
+      as_of: string | null;
+      band: null | components['schemas']['StressBandWire'];
+      /** @description Always seven, in table order. */
+      components: components['schemas']['StressComponentWire'][];
+      /**
+       * Format: int32
+       * @description Inputs counted, 0–7.
+       */
+      counted: number;
+      /**
+       * Format: int32
+       * @description 0–100: `mean` rounded half up. Null unless published.
+       */
+      gauge: number | null;
+      /** @description YYYY-MM-DD, the Eastern date freshness was judged on. */
+      judged_on: string;
+      /**
+       * Format: double
+       * @description The unrounded mean of the counted scores that `gauge` rounds. Null unless published.
+       */
+      mean: number | null;
+      /** @description True when at least 5 of the 7 inputs count. */
+      published: boolean;
     };
     StructureHistoryResponse: {
       /** @description Scan store backend that holds the diary (`json` | `postgres`). */

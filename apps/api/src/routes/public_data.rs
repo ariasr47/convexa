@@ -13,8 +13,8 @@
 
 use crate::error::AppError;
 use crate::services::public_data::{
-    self as service, calendar, cftc, liquidity, normalize_ticker, parse_ticker_list, treasury,
-    DataState, SourceState,
+    self as service, calendar, cftc, liquidity, normalize_ticker, parse_ticker_list, sources,
+    stress, treasury, DataState, SourceState,
 };
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
@@ -299,10 +299,202 @@ pub struct PublicMarketsWire {
     /// data is off. Absent from servers before 2026-10-15.
     #[serde(default)]
     pub calendar: Option<CalendarWire>,
-    /// Treasury, CFTC, the three liquidity inputs and the four release schedules. Absent from
-    /// servers before 2026-10-15.
+    /// The fear–greed gauge (the Stress section); null only when public data is off. Absent from
+    /// servers before 2026-10-25.
+    #[serde(default)]
+    pub stress: Option<StressWire>,
+    /// Treasury, CFTC, the OFR, the three liquidity inputs and the four release schedules. Absent
+    /// from servers before 2026-10-15 (the `ofr` row before 2026-10-25).
     #[serde(default)]
     pub sources: Vec<PublicSourceWire>,
+}
+
+/// The gauge's band, decided on `gauge`: 0–24 `extreme_fear`, 25–44 `fear`, 45–55 `neutral`,
+/// 56–75 `greed`, 76–100 `extreme_greed`; each edge belongs to the calmer band.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum StressBandWire {
+    ExtremeFear,
+    Fear,
+    Neutral,
+    Greed,
+    ExtremeGreed,
+}
+
+/// One of the gauge's seven inputs, in table order: five OFR Financial Stress Index categories
+/// and two CFTC positioning ratios.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum StressInputWire {
+    Volatility,
+    Credit,
+    SafeAssets,
+    EquityValuation,
+    Funding,
+    VolPositioning,
+    EquityPositioning,
+}
+
+/// The id of an input's row in `sources` (and its /credits anchor).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum StressSourceWire {
+    Ofr,
+    Cftc,
+}
+
+/// `daily` (the OFR, about two business days late) or `weekly` (the CFTC).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum StressCadenceWire {
+    Daily,
+    Weekly,
+}
+
+/// Which way a higher raw value leans.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum StressLeaningWire {
+    Fear,
+    Greed,
+}
+
+/// Why an input is not counted: `stale` (past 5 weekdays daily, 14 days weekly), `no_data` (its
+/// source answered nothing and no copy is kept) or `short_history` (less than a year of it).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum StressReasonWire {
+    Stale,
+    NoData,
+    ShortHistory,
+}
+
+/// One input of the gauge. It carries no state of its own: its data state (a last good copy, an
+/// outage) is the `sources` row whose `id` is its `source`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct StressComponentWire {
+    pub id: StressInputWire,
+    pub source: StressSourceWire,
+    pub cadence: StressCadenceWire,
+    /// The as-of value: OFR index units (0 = average stress), or a CFTC net position (long minus
+    /// short) as a fraction of open interest. Null when the source answered nothing.
+    #[schema(required = true)]
+    pub raw: Option<f64>,
+    /// YYYY-MM-DD of `raw`: the input's newest observation.
+    #[schema(required = true)]
+    pub as_of: Option<String>,
+    /// Observations in the window (the three calendar years ending `as_of`), `as_of` included.
+    pub window: u32,
+    /// YYYY-MM-DD, the window's first observation.
+    #[schema(required = true)]
+    pub window_from: Option<String>,
+    /// 0–100 in the raw value's direction, rounded half up to one decimal for display. Null
+    /// without data or with less than a year of it.
+    #[schema(required = true)]
+    pub percentile: Option<f64>,
+    pub higher_means: StressLeaningWire,
+    /// 0–100, 0 = extreme fear and 100 = extreme greed, rounded half up to one decimal for
+    /// display (the gauge averages the unrounded scores). Null where `percentile` is.
+    #[schema(required = true)]
+    pub score: Option<f64>,
+    pub counted: bool,
+    /// Null when counted.
+    #[schema(required = true)]
+    pub reason: Option<StressReasonWire>,
+    /// Weekdays (daily) or calendar days (weekly) from `as_of` to `judged_on`.
+    #[schema(required = true)]
+    pub age: Option<u32>,
+}
+
+/// The fear–greed gauge: seven public inputs, each a percentile of its own last three years,
+/// flipped so 0 is extreme fear and 100 extreme greed, equally weighted, and published only when
+/// at least 5 of 7 are fresh.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct StressWire {
+    /// True when at least 5 of the 7 inputs count.
+    pub published: bool,
+    /// 0–100: `mean` rounded half up. Null unless published.
+    #[schema(required = true)]
+    pub gauge: Option<u32>,
+    /// The unrounded mean of the counted scores that `gauge` rounds. Null unless published.
+    #[schema(required = true)]
+    pub mean: Option<f64>,
+    /// Null unless published.
+    #[schema(required = true)]
+    pub band: Option<StressBandWire>,
+    /// YYYY-MM-DD, the oldest as-of among the counted OFR inputs; null when none counts.
+    #[schema(required = true)]
+    pub as_of: Option<String>,
+    /// Inputs counted, 0–7.
+    pub counted: u32,
+    /// YYYY-MM-DD, the Eastern date freshness was judged on.
+    pub judged_on: String,
+    /// Always seven, in table order.
+    pub components: Vec<StressComponentWire>,
+}
+
+impl From<service::Stress> for StressWire {
+    fn from(s: service::Stress) -> Self {
+        Self {
+            published: s.published,
+            gauge: s.gauge,
+            mean: s.mean,
+            band: s.band.map(|band| match band {
+                service::StressBand::ExtremeFear => StressBandWire::ExtremeFear,
+                service::StressBand::Fear => StressBandWire::Fear,
+                service::StressBand::Neutral => StressBandWire::Neutral,
+                service::StressBand::Greed => StressBandWire::Greed,
+                service::StressBand::ExtremeGreed => StressBandWire::ExtremeGreed,
+            }),
+            as_of: s.as_of.map(day),
+            counted: s.counted,
+            judged_on: day(s.judged_on),
+            components: s.components.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<service::StressComponent> for StressComponentWire {
+    fn from(c: service::StressComponent) -> Self {
+        let leaning = |l| match l {
+            service::Leaning::Fear => StressLeaningWire::Fear,
+            service::Leaning::Greed => StressLeaningWire::Greed,
+        };
+        Self {
+            id: match c.input {
+                service::StressInput::Volatility => StressInputWire::Volatility,
+                service::StressInput::Credit => StressInputWire::Credit,
+                service::StressInput::SafeAssets => StressInputWire::SafeAssets,
+                service::StressInput::EquityValuation => StressInputWire::EquityValuation,
+                service::StressInput::Funding => StressInputWire::Funding,
+                service::StressInput::VolPositioning => StressInputWire::VolPositioning,
+                service::StressInput::EquityPositioning => StressInputWire::EquityPositioning,
+            },
+            source: if c.source == sources::CFTC.0 {
+                StressSourceWire::Cftc
+            } else {
+                StressSourceWire::Ofr
+            },
+            cadence: match c.cadence {
+                service::Cadence::Daily => StressCadenceWire::Daily,
+                service::Cadence::Weekly => StressCadenceWire::Weekly,
+            },
+            raw: c.raw,
+            as_of: c.as_of.map(day),
+            window: c.window,
+            window_from: c.window_from.map(day),
+            percentile: c.percentile.map(stress::display),
+            higher_means: leaning(c.higher_means),
+            score: c.score.map(stress::display),
+            counted: c.counted,
+            reason: c.reason.map(|r| match r {
+                service::NotCounted::Stale => StressReasonWire::Stale,
+                service::NotCounted::NoData => StressReasonWire::NoData,
+                service::NotCounted::ShortHistory => StressReasonWire::ShortHistory,
+            }),
+            age: c.age,
+        }
+    }
 }
 
 /// One scheduled release from an agency's published calendar.
@@ -527,6 +719,7 @@ impl From<service::Markets> for PublicMarketsWire {
                     .collect(),
             }),
             calendar: m.calendar.map(Into::into),
+            stress: m.stress.map(Into::into),
             sources: source_rows(m.sources),
         }
     }
@@ -1447,9 +1640,11 @@ fn representative_markets() -> PublicMarketsWire {
                 },
             ],
         }),
+        stress: Some(representative_stress()),
         sources: vec![
             representative_source("treasury", PublicSourceState::Updated, Some("2026-10-09")),
             representative_source("cftc", PublicSourceState::Delayed, Some("2026-10-06")),
+            representative_source("ofr", PublicSourceState::Delayed, Some("2026-10-09")),
             PublicSourceWire {
                 failed_at: Some("2026-10-13T13:00:00Z".into()),
                 detail: Some(
@@ -1457,6 +1652,71 @@ fn representative_markets() -> PublicMarketsWire {
                         .into(),
                 ),
                 ..representative_source("bea", PublicSourceState::LastGood, None)
+            },
+        ],
+    }
+}
+
+/// Six of seven counted (the VIX futures rows absent from the CFTC answer), published.
+fn representative_stress() -> StressWire {
+    let ofr = |id, raw, percentile, score| StressComponentWire {
+        id,
+        source: StressSourceWire::Ofr,
+        cadence: StressCadenceWire::Daily,
+        raw: Some(raw),
+        as_of: Some("2026-10-09".into()),
+        window: 781,
+        window_from: Some("2023-10-10".into()),
+        percentile: Some(percentile),
+        higher_means: StressLeaningWire::Fear,
+        score: Some(score),
+        counted: true,
+        reason: None,
+        age: Some(2),
+    };
+    StressWire {
+        published: true,
+        gauge: Some(57),
+        mean: Some(57.0192),
+        band: Some(StressBandWire::Greed),
+        as_of: Some("2026-10-09".into()),
+        counted: 6,
+        judged_on: "2026-10-13".into(),
+        components: vec![
+            ofr(StressInputWire::Volatility, -0.007, 78.5, 21.5),
+            ofr(StressInputWire::Credit, -0.947, 50.5, 49.5),
+            ofr(StressInputWire::SafeAssets, -0.294, 36.6, 63.4),
+            ofr(StressInputWire::EquityValuation, -0.503, 19.9, 80.1),
+            ofr(StressInputWire::Funding, -0.142, 41.5, 58.5),
+            StressComponentWire {
+                id: StressInputWire::VolPositioning,
+                source: StressSourceWire::Cftc,
+                cadence: StressCadenceWire::Weekly,
+                raw: None,
+                as_of: None,
+                window: 0,
+                window_from: None,
+                percentile: None,
+                higher_means: StressLeaningWire::Fear,
+                score: None,
+                counted: false,
+                reason: Some(StressReasonWire::NoData),
+                age: None,
+            },
+            StressComponentWire {
+                id: StressInputWire::EquityPositioning,
+                source: StressSourceWire::Cftc,
+                cadence: StressCadenceWire::Weekly,
+                raw: Some(0.4741),
+                as_of: Some("2026-10-06".into()),
+                window: 157,
+                window_from: Some("2023-10-10".into()),
+                percentile: Some(69.2),
+                higher_means: StressLeaningWire::Greed,
+                score: Some(69.2),
+                counted: true,
+                reason: None,
+                age: Some(7),
             },
         ],
     }
@@ -1711,6 +1971,8 @@ mod tests {
         }))
         .unwrap();
         assert!(old.sources.is_empty() && old.calendar.is_none());
+        // ...and one built before the fear–greed gauge (2026-10-25) reads without it.
+        assert!(old.stress.is_none());
         let old_rates = serde_json::from_value::<RatesWire>(serde_json::json!({
             "source": "x", "as_of": "2026-10-09", "fetched_at": "x",
             "latest": {"date": "2026-10-09", "t3m": null, "t2y": null, "t5y": null,
@@ -1776,6 +2038,7 @@ mod tests {
             futures: None,
             liquidity: None,
             calendar: None,
+            stress: None,
             sources: vec![service::SourceStatus {
                 id: "treasury",
                 name: "U.S. Treasury daily yield curves",

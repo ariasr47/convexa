@@ -1887,6 +1887,14 @@ fn register_route_schemas(mut document: OpenApi) -> OpenApi {
     schema!(public_data::PublicSourceState);
     schema!(public_data::PublicSourceWire);
     schema!(public_data::CalendarWire);
+    schema!(public_data::StressWire);
+    schema!(public_data::StressComponentWire);
+    schema!(public_data::StressBandWire);
+    schema!(public_data::StressInputWire);
+    schema!(public_data::StressSourceWire);
+    schema!(public_data::StressCadenceWire);
+    schema!(public_data::StressLeaningWire);
+    schema!(public_data::StressReasonWire);
     schema!(public_data::ReleaseWire);
     schema!(public_data::ScheduleHorizonWire);
     schema!(public_data::ResultsBasisWire);

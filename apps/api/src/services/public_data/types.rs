@@ -322,6 +322,9 @@ pub struct Markets {
     pub liquidity: Option<Liquidity>,
     /// `None` when every schedule failed with nothing cached, or public data is off.
     pub calendar: Option<Calendar>,
+    /// The fear–greed gauge, built from whatever OFR and CFTC copies are cached; `None` only when
+    /// public data is off.
+    pub stress: Option<Stress>,
     pub sources: Vec<SourceStatus>,
 }
 
