@@ -297,7 +297,21 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
               })}
             >
               <SearchIcon sx={{ fontSize: 16 }} aria-hidden />
-              <Box component="span" sx={{ flexGrow: 1, textAlign: 'left' }}>
+              {/* The box is the board's px, but this label is rem, so it follows the browser's font
+                size. At a 20px default (Chrome's "Large") it is 16.25px, needs ~173px of a 162px
+                slot, and wrapped to two lines out of the 34px box. One line, ellipsis when it can't
+                fit; the button's aria-label keeps the full words. */}
+              <Box
+                component="span"
+                sx={{
+                  flexGrow: 1,
+                  minWidth: 0,
+                  textAlign: 'left',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
                 Jump to a ticker or note
               </Box>
               <Box
