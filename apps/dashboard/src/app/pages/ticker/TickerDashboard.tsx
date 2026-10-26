@@ -455,7 +455,10 @@ function BoardZoneLabel({
   children: ReactNode;
 }) {
   // First zone sits under the deck — no top rule, quieter type so identity → structure is tight.
-  // Later zones keep a soft divider as section breaks.
+  // Later zones keep a soft divider as section breaks. Every zone is drawn at full opacity, as the
+  // board's `.tk-zl` (`final/ticker-desk.mjs`): the first one's 0.8 composited `text.secondary` to
+  // 3.38:1 on the light paper, under AA for 11px text (fidelity R3 review; 5.00:1 light, 6.78:1
+  // dark at full).
   return (
     <Typography
       component="p"
@@ -471,7 +474,6 @@ function BoardZoneLabel({
         letterSpacing: first ? '0.06em' : '0.08em',
         textTransform: 'uppercase',
         color: 'text.secondary',
-        opacity: first ? 0.8 : 1,
         borderTop: first ? 'none' : '1px solid',
         borderColor: 'divider',
       }}
