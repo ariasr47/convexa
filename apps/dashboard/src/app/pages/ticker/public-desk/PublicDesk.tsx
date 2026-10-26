@@ -72,13 +72,24 @@ export function PublicDesk({ feed }: { feed: FeedOff }) {
   const path = `/ticker/${encodeURIComponent(ticker)}`;
 
   return (
-    <Box sx={{ ...pageColumnSx, py: 3, display: 'grid', gap: 3 }}>
+    // The board's `.tkd` top: 16px on a phone, 24 from 768 (`ticker-desk.mjs:68`), the same top as
+    // the demo desk's page column (`TickerDashboard.tsx`); `py: 3` put the h1 at y122 against the
+    // production board's 114 at 390 (fidelity R3).
+    <Box sx={{ ...pageColumnSx, pt: { xs: 2, tablet: 3 }, pb: 3, display: 'grid', gap: 3 }}>
       <Box component="header" sx={{ display: 'grid', gap: 1.5 }}>
+        {/* The board's `.tk-mast` aligns its two columns at the foot (`align-items: flex-end`,
+            `ticker-desk.mjs:27`): on a wide screen the right column (tabs over the note button) is
+            the taller, so the symbol sits lower, at the board's y130 at 1440 (it was 122). The
+            board's columns share a row only while 520 + 32 + 600px fit the page column (94% of
+            the viewport), from 1226 up; below that each takes a row and the symbol is at the top.
+            This row fits both columns from about 1004, so it aligns at the foot only from 1226,
+            and the symbol is where the board's is at every width (fidelity R3). */}
         <Box
           sx={{
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'flex-start',
+            '@media (min-width: 1226px)': { alignItems: 'flex-end' },
             justifyContent: 'space-between',
             gap: 2,
           }}
@@ -513,14 +524,16 @@ function NoteCard({
           </Box>
         }
       />
+      {/* The title is the card's text, not a second heading under CardHead's h3: the board's
+          Archivo 600 17px/1.3 paragraph (`ticker-desk.mjs:281`; fidelity R3, it was an h3 at 19px). */}
       <Box
-        component="h3"
+        component="p"
         sx={{
           ...DISPLAY,
           m: 0,
           fontWeight: 600,
-          fontSize: 19,
-          lineHeight: 1.25,
+          fontSize: 17,
+          lineHeight: 1.3,
           textWrap: 'balance',
         }}
       >

@@ -56,8 +56,10 @@ export function TickerTabs({ ticker, current }: { ticker: string; current: Ticke
       sx={{
         minHeight: 44,
         // 13px, the boards' tab label (`.hd-tabs a`, `v4/hybrid-desk.mjs:16`), on a 44px target
-        // (fidelity DESK-13, app side). Sentence case comes from the theme's button typography.
-        '& .MuiTab-root': { minHeight: 44, minWidth: 96, fontSize: 13 },
+        // (fidelity DESK-13, app side). Sentence case comes from the theme's button typography; its
+        // 600 weight does not: the boards draw an unselected tab at 500 and the current one at 600
+        // (fidelity R3).
+        '& .MuiTab-root': { minHeight: 44, minWidth: 96, fontSize: 13, fontWeight: 500 },
         // Neutral (owner ruling A, 2026-10-15): the current page is carried by weight, a
         // `text.primary` label and a `text.primary` indicator, never amber.
         '& .MuiTab-root.Mui-selected': { color: 'text.primary', fontWeight: 600 },
