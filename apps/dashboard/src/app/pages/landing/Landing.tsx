@@ -284,7 +284,10 @@ export function Landing() {
               spacing={2.5}
               sx={{
                 alignItems: 'flex-start',
-                maxWidth: 600,
+                // 600 beside the panel from 1100. In one column the copy takes the full width, as
+                // the boards' `.fd-copy` does, so the h1 breaks in two lines at 768 and 1024, not
+                // three in 600 (fidelity round 4); the sub keeps its own 560.
+                maxWidth: { laptop: 600 },
                 minWidth: 0,
                 gridColumn: { laptop: '1' },
                 gridRow: { laptop: '1' },
