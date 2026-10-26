@@ -12,6 +12,7 @@
  */
 import { extrasFor } from '@/shared/theme/tokens';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
+import { ROUTE_FILL_SELECTOR } from '@/shared/ui/RouteFallback';
 import { WidgetProvenanceProvider } from '@/shared/ui/Widget/WidgetProvenanceContext';
 import {
   dataMode,
@@ -127,6 +128,16 @@ export function AppShell() {
         pt: 'env(safe-area-inset-top)',
         pl: 'env(safe-area-inset-left)',
         pr: 'env(safe-area-inset-right)',
+        // Sticky footer: the shell is at least one screen tall and <main> takes the rest, so a short
+        // page (the sign-in wall, the 404) keeps the footer at the bottom of the screen, not under
+        // its last line (site audit 2026-10-25, PERF-02, with RouteFallback's full-screen fill).
+        minHeight: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        // While a page's code is on its way (RouteFallback's full-screen fill) the footer is not laid
+        // out, so a short page brings its footer in as a new box under its last line instead of
+        // sliding it up from below the fold: on a phone that slide alone scored 0.197 on the 404.
+        [`&:has(${ROUTE_FILL_SELECTOR}) > footer`]: { display: 'none' },
       }}
     >
       {/* Skip link — visually hidden until keyboard focus (spine #6). First tab stop. */}
@@ -267,6 +278,9 @@ export function AppShell() {
         id="main-content"
         tabIndex={-1}
         sx={{
+          // Grows to fill the screen under the bars (the sticky footer above); never shrinks below
+          // its content.
+          flex: '1 0 auto',
           // Keep content clear of home indicator on notched phones.
           pb: 'env(safe-area-inset-bottom)',
           // Avoid horizontal overflow on narrow phones.

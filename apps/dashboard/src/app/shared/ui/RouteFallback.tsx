@@ -12,11 +12,15 @@ import Box from '@mui/material/Box';
 import Skeleton from '@mui/material/Skeleton';
 import { pageColumnSx } from './PageColumn';
 
+/** Marks the fill on screen: the shell lays out no footer while one is showing (AppShell). */
+export const ROUTE_FILL_SELECTOR = '[data-route-fill]';
+
 /** Shown inside the shell's <Outlet/> region; the nav chrome stays interactive. */
 export function RouteFallback() {
   return (
     <Box
       data-testid="route-fallback"
+      data-route-fill=""
       role="progressbar"
       aria-label="Loading page"
       sx={{
@@ -25,8 +29,11 @@ export function RouteFallback() {
         display: 'flex',
         flexDirection: 'column',
         gap: 1.5,
-        // Tall enough that the footer doesn't flash up under the nav while the chunk arrives.
-        minHeight: '60vh',
+        // A full screen, so the footer starts below the fold while the chunk arrives and nothing on
+        // screen moves when the page replaces this fill. At 60vh the footer sat in the first screen
+        // and the arriving page pushed it off: CLS 0.28-0.51 on a phone, ~0.21 on a laptop (site
+        // audit 2026-10-25, PERF-02). The shell's sticky footer keeps a short page's footer down.
+        minHeight: '100dvh',
       }}
     >
       <Skeleton variant="rounded" sx={{ height: 40, width: { xs: '70%', md: '40%' } }} />
