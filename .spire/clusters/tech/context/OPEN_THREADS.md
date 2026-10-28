@@ -1907,6 +1907,9 @@ steps live in the [branch checkpoint](../state/codex-portfolio-demo-platform/RES
   true multi-session block history needs a heavier batched pull. Future.
 
 ## 9. Resolved decisions (do NOT revisit)
+- **Journal figures stay in the journal** (`[journal-figures-stay-in-journal]`, promoted 2026-10-28 by
+  owner decision). Prose is in CONTEXT §5. Handing any journal figure to another store is a GATE-Z
+  reversal.
 - **API-surface change re-pins the artifact oracle in the same commit** (`[route-growth-repins-api-artifact-oracle]`,
   promoted 2026-09-24). Prose is in CONTEXT §5. Hand-editing generated artifacts, or leaving the pin
   stale for a later commit, is a GATE-Z reversal.
