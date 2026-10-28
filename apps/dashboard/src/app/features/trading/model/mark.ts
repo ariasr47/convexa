@@ -26,16 +26,20 @@ function normCdf(x: number): number {
   return x >= 0 ? 1 - p : p;
 }
 
-/** ivInput may be a percent (52) or a fraction (0.52); both accepted. */
+/**
+ * `sigma` is the implied volatility as a FRACTION: 0.52 for 52%, 1.5 for 150%. That is the unit
+ * `ContractWire.iv` carries: the API's contract route passes the options feed's decimal through, and
+ * the demo serves 0.27. It is never a percent. An IV above 100% is common on short-dated and far
+ * out-of-the-money contracts, so a value above 1 must not be read as a percent.
+ */
 export function bsPrice(
   right: OptionRight,
   S: number,
   K: number,
   dte: number,
-  ivInput: number,
+  sigma: number,
 ): number {
   const T = Math.max(dte, 1) / 365;
-  const sigma = ivInput > 1 ? ivInput / 100 : ivInput;
   if (S <= 0 || K <= 0 || sigma <= 0) return 0;
   const d1 =
     (Math.log(S / K) + (RISK_FREE_RATE + (sigma * sigma) / 2) * T) / (sigma * Math.sqrt(T));

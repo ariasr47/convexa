@@ -4,6 +4,7 @@
  * ladder's PRECEDENCE (snapshot → modeled → theoretical → last_known → frozen) or in the P/L
  * arithmetic would be invisible in review — the UI would keep rendering plausible numbers.
  */
+import { resolveMarketFill } from '@/features/trading/positions/entry';
 import type { TrackedContract } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import { bsPrice, computeMark, pl, RISK_FREE_RATE, type MarkInputs } from './mark';
@@ -133,10 +134,6 @@ describe('pl — (mark − entry) × 100 × qty', () => {
 });
 
 describe('bsPrice — theoretical pricing sanity', () => {
-  it('accepts IV as a percent (45) or a fraction (0.45) identically', () => {
-    expect(bsPrice('call', 250, 250, 24, 45)).toBeCloseTo(bsPrice('call', 250, 250, 24, 0.45), 10);
-  });
-
   it('satisfies put-call parity: C − P = S − K·e^(−rT)', () => {
     const S = 252;
     const K = 250;
@@ -151,5 +148,52 @@ describe('bsPrice — theoretical pricing sanity', () => {
     expect(bsPrice('call', 0, 250, 24, 0.45)).toBe(0);
     expect(bsPrice('put', 250, 0, 24, 0.45)).toBe(0);
     expect(bsPrice('call', 250, 250, 24, 0)).toBe(0);
+  });
+});
+
+describe('the cached IV is a fraction, the unit ContractWire.iv carries', () => {
+  it('an IV over 1.0 prices over 100%, continuously across 1.0, through every caller', () => {
+    // Risk: this mark is the displayed P/L, the limit-fill check, the order engine's fill and the
+    // realized P/L on close. The API sends IV as a fraction (the contract route passes the feed's
+    // decimal through), so 1.5 is 150%. Read as 1.5% it priced this call at 0.0345.
+    // `want` is an independent Black-Scholes (Python, exact normal CDF via math.erf, r =
+    // RISK_FREE_RATE) for a call, S = K = 20, dte 10. mark.ts's normCdf is within 7.5e-8 of exact,
+    // so its price is within (S + K) · 7.5e-8 = 3e-6 of these: TOL = 1e-4.
+    const TOL = 1e-4;
+    const rows: Array<{ iv: number; want: number | null }> = [
+      { iv: 1.5, want: 1.9870535390908675 },
+      { iv: 0.999, want: 1.3293915245131167 },
+      { iv: 1.001, want: 1.3320221350270796 },
+    ];
+    const noQuote = (iv: number) => tracked({ strike: 20, option_quote: null, iv, dte: 10 });
+    const at = (iv: number, live: boolean) =>
+      inputs({
+        tracked: noQuote(iv),
+        strike: 20,
+        anchorSpot: 20,
+        liveUnderlying: live ? 20 : null,
+        isLive: live,
+      });
+    const priced: Record<string, number> = {};
+    for (const { iv, want } of rows) {
+      const got = {
+        'snapshot (anchor)': computeMark(at(iv, false)).mark,
+        'live (step 3)': computeMark(at(iv, true)).mark,
+        'market entry': resolveMarketFill(noQuote(iv), 20, 'call', 20)?.mark ?? null,
+      };
+      for (const [caller, mark] of Object.entries(got)) {
+        const label = `iv ${iv}, ${caller}: ${mark}`;
+        if (want == null) {
+          expect(mark, label).toBeNull();
+        } else {
+          expect(mark, label).not.toBeNull();
+          expect(Math.abs((mark as number) - want), label).toBeLessThanOrEqual(TOL);
+        }
+      }
+      if (want != null) priced[String(iv)] = got['live (step 3)'] as number;
+    }
+    // Continuous across 1.0: 0.002 of vol moves this price by about 0.0026. The percent guess
+    // jumped from 1.33 to 0.03 there.
+    expect(Math.abs(priced['1.001'] - priced['0.999'])).toBeLessThan(0.01);
   });
 });
