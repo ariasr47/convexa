@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NVDA research · Convexa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112.5,600;112.5,700;112.5,800;125,800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0F17;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+a{color:#8CB0DE;text-underline-offset:3px}
+a:hover{color:#B9D0EC}
+a:focus-visible,button:focus-visible{outline:2px solid #F2A93B;outline-offset:2px;border-radius:4px}
+</style>
+</helmet>
+<div style="min-height: 100%; background: #0B0F17; color: #E9E4D6; font-size: 15px; line-height: 1.55">
+
+<div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 8px 32px; background: #131A24; border-bottom: 1px solid rgba(138,155,180,0.16); font-size: 12px">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A9BB4" stroke-width="1.75" stroke-linecap="round"><path d="M9 5v14M15 5v14"></path></svg>
+<span style="font-weight: 600">Live market data is off.</span>
+<span style="color: #8A9BB4">Prices, dealer structure and AI reads are paused. Research, rates and filings stay current.</span>
+<span style="flex-grow: 1"></span>
+<a href="#">Try the full demo →</a>
+</div>
+
+<header style="background: rgba(19,26,36,0.82); border-bottom: 1px solid rgba(138,155,180,0.16)">
+<nav aria-label="Primary" style="max-width: 1280px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; gap: 32px">
+<a href="#" style="text-decoration: none; color: #E9E4D6; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 125%; letter-spacing: 0.18em; font-size: 15px">CONVE<span style="color: #F2A93B">X</span>A</a>
+<div style="display: flex; align-items: stretch; gap: 4px; height: 64px">
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Scanner</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Ticker</a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: inset 0 -2px 0 #F2A93B">Research</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Positions</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Alerts</a>
+</div>
+<span style="flex-grow: 1"></span>
+<button type="button" style="display: inline-flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 12px; border-radius: 8px; border: 1px solid rgba(138,155,180,0.30); background: #0D121B; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Search tickers and notes<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(138,155,180,0.30); color: #E9E4D6">⌘K</span></button>
+<a href="#" style="color: #8A9BB4; text-decoration: none; font-size: 14px; font-weight: 500">Log in</a>
+</nav>
+</header>
+
+<main style="max-width: 1280px; margin: 0 auto; padding: 32px 32px 64px; display: flex; flex-direction: column; gap: 28px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 32px">
+<div style="flex: 999 1 520px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap">
+<span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 44px; line-height: 1">NVDA</span>
+<span style="font-size: 15px; color: #8A9BB4">NVIDIA · Nasdaq · AI accelerators, networking and the CUDA software stack</span>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #8A9BB4">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 20px; color: #E9E4D6">$226.32</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); font-size: 11px"><svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8A9BB4" stroke-width="2" stroke-linecap="round"><path d="M9 5v14M15 5v14"></path></svg>close · Oct 12</span>
+<span>52-week range <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">$164.27–$243.37</span></span>
+</div>
+</div>
+<nav aria-label="NVDA" style="flex: 1 1 280px; display: flex; justify-content: flex-end; gap: 4px">
+<a href="#" style="display: flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 999px; color: #8A9BB4; text-decoration: none; font-size: 13px; font-weight: 500">Overview</a>
+<a href="#" style="display: flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 999px; color: #8A9BB4; text-decoration: none; font-size: 13px; font-weight: 500">Technical</a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 999px; background: #E9E4D6; color: #0B0F17; text-decoration: none; font-size: 13px; font-weight: 600">Research</a>
+</nav>
+</div>
+
+<section aria-labelledby="note-title" style="display: flex; flex-direction: column; gap: 14px; padding-bottom: 24px; border-bottom: 1px solid rgba(138,155,180,0.16)">
+<h1 id="note-title" style="margin: 0; max-width: 30ch; font-family: 'Archivo', sans-serif; font-weight: 700; font-stretch: 112.5%; font-size: 34px; line-height: 1.15; text-wrap: balance">A 70% growth guide on a $412B year. What comes after FY2028 is the whole question.</h1>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; font-size: 13px; color: #8A9BB4">
+<span style="display: inline-flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 9px; height: 9px; border-radius: 999px; background: #E9E4D6"></span><span style="color: #E9E4D6; font-weight: 600">Current</span></span>
+<span>Review by <span style="color: #E9E4D6">Nov 11</span>, when the price turns 30 days old</span>
+<span>Written <span style="color: #E9E4D6">Oct 13, 2026</span></span>
+<span>26 sources</span>
+<span style="padding: 2px 10px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); color: #E9E4D6; font-size: 12px">Stance · your call</span>
+</div>
+</section>
+
+<section aria-labelledby="key" style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px">
+<h2 id="key" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 22px">Key numbers, read from the filings</h2>
+<span style="font-size: 13px; color: #8A9BB4">Each figure links to the filing and line it came from. Mono means traced; a dotted rule means someone else's estimate.</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 1px; background: rgba(138,155,180,0.16); border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; overflow: hidden">
+<sc-for list="{{cells}}" as="c" hint-placeholder-count="8">
+<div style="background: #131A24; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; min-width: 0">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">{{c.label}}</span>
+<span style="{{c.valueStyle}}">{{c.value}}</span>
+<span style="font-size: 12px; color: #8A9BB4; line-height: 1.4">{{c.sub}}</span>
+<a href="#" style="{{c.chipStyle}}">{{c.chip}}</a>
+</div>
+</sc-for>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+
+<figure style="flex: 999 1 600px; min-width: 0; margin: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<figcaption style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25; text-wrap: balance">Revenue more than doubled in a year, and NVIDIA guides $108B for next quarter.</span>
+<span style="font-size: 13px; color: #8A9BB4">Quarterly revenue, $B, Q1 FY2026 to Q3 FY2027. The dashed bar is guidance, not a result.</span>
+</figcaption>
+<div role="img" aria-label="Quarterly revenue in billions: Q1 FY26 44.1, Q2 46.7, Q3 57.0, Q4 68.1, Q1 FY27 81.6, Q2 96.2, Q3 FY27 guide 108.0 plus or minus 2 percent" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; align-items: end; height: 220px; padding-top: 8px; border-bottom: 1px solid rgba(138,155,180,0.30)">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="7">
+<div style="display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; height: 100%">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{b.labelColor}}">{{b.value}}</span>
+<span style="{{b.style}}"></span>
+</div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4; text-align: center">
+<span>Q1 FY26</span><span>Q2</span><span>Q3</span><span>Q4</span><span>Q1 FY27</span><span>Q2</span><span>Q3 guide</span>
+</div>
+<p style="margin: 0; font-size: 12px; color: #8A9BB4">Source: NVIDIA 8-K exhibits 99.1, Feb 25 to Aug 26, 2026. Q3 guide ±2%; results Nov 17.</p>
+</figure>
+
+<section aria-labelledby="value" style="flex: 1 1 380px; min-width: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 id="value" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25">The price sits between base and bull.</h2>
+<span style="font-size: 13px; color: #8A9BB4">Value per share, growth DCF. Computed at build from the note's sourced inputs.</span>
+</div>
+<div role="img" aria-label="Value range $53.56 bear to $431.39 bull, base $199.43; price $226.32 on Oct 12, 13% above the base case" style="position: relative; height: 64px; margin-top: 6px">
+<span style="position: absolute; left: 0; right: 0; top: 30px; height: 2px; background: rgba(138,155,180,0.12)"></span>
+<span style="position: absolute; top: 22px; height: 18px; left: 10.7%; width: 75.6%; border-radius: 9px; background: linear-gradient(90deg, rgba(94,139,196,0) 0%, rgba(94,139,196,0.32) 12%, rgba(94,139,196,0.6) 38%, rgba(94,139,196,0.32) 75%, rgba(94,139,196,0) 100%)"></span>
+<span style="position: absolute; top: 23px; left: 39.9%; width: 16px; height: 16px; margin-left: -8px; transform: rotate(45deg); background: #F2A93B; border-radius: 2px; box-shadow: 0 0 0 2px #131A24"></span>
+<span style="position: absolute; left: 45.3%; top: 8px; bottom: 0; width: 2px; background: #E9E4D6"></span>
+<span style="position: absolute; left: 45.3%; top: -10px; margin-left: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: nowrap">Price $226.32</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 13px">
+<span style="display: flex; flex-direction: column; color: #8A9BB4"><span style="font-family: 'IBM Plex Sans', sans-serif; font-size: 11px">Bear</span>$53.56</span>
+<span style="display: flex; flex-direction: column"><span style="font-family: 'IBM Plex Sans', sans-serif; font-size: 11px">Base</span>$199.43</span>
+<span style="display: flex; flex-direction: column; color: #8A9BB4"><span style="font-family: 'IBM Plex Sans', sans-serif; font-size: 11px">Bull</span>$431.39</span>
+</div>
+<p style="margin: 0; font-size: 13px; color: #8A9BB4; text-wrap: pretty">The price needs 15.2% a year growth over FY2029–32 at base margins. The base case assumes 12%.</p>
+<a href="#" style="font-size: 13px; font-weight: 500; margin-top: auto">Open the valuation →</a>
+</section>
+</div>
+
+<section aria-labelledby="pos" style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 16px">
+<div style="flex: 999 1 520px; display: flex; flex-direction: column; gap: 4px">
+<h2 id="pos" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 22px">Who is positioned how</h2>
+<span style="font-size: 13px; color: #8A9BB4">Short sellers, insiders and funds, from public filings. Each source reports on its own delay, shown on its card.</span>
+</div>
+<span style="flex: 0 0 auto; display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4">Demo · sample data</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px">
+
+<article style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Short interest</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">0.9%<span style="font-size: 14px; color: #8A9BB4"> of float</span></span>
+<div role="img" aria-label="Short interest as a share of float, last 12 reports, between 0.8% and 1.1%" style="display: flex; align-items: flex-end; gap: 3px; height: 40px">
+<sc-for list="{{si}}" as="h" hint-placeholder-count="12"><span style="{{h}}"></span></sc-for>
+</div>
+<dl style="margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; font-size: 12px">
+<dt style="color: #8A9BB4">Days to cover</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">1.1</dd>
+<dt style="color: #8A9BB4">Since Sep 15</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">−0.1 pts</dd>
+</dl>
+<span style="margin-top: auto; font-size: 11px; color: #8A9BB4">FINRA · settlement Sep 30 · published Oct 9</span>
+</article>
+
+<article style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Short-sale volume</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">41%<span style="font-size: 14px; color: #8A9BB4"> of volume</span></span>
+<p style="margin: 0; font-size: 12px; color: #8A9BB4; text-wrap: pretty">Counts every sale marked short, including market makers hedging customer buys. It is not short interest, and a high reading is normal.</p>
+<dl style="margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; font-size: 12px">
+<dt style="color: #8A9BB4">20-day average</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">43%</dd>
+</dl>
+<span style="margin-top: auto; font-size: 11px; color: #8A9BB4">FINRA Reg SHO daily file · Oct 9</span>
+</article>
+
+<article style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Insider trades · 90 days</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">12 sales<span style="font-size: 14px; color: #8A9BB4"> · 0 buys</span></span>
+<p style="margin: 0; font-size: 12px; color: #8A9BB4; text-wrap: pretty">All 12 under pre-set 10b5-1 plans, which schedule sales months ahead.</p>
+<dl style="margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; font-size: 12px">
+<dt style="color: #8A9BB4">Shares sold</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">1.6M</dd>
+<dt style="color: #8A9BB4">Of insiders' holdings</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">0.2%</dd>
+</dl>
+<span style="margin-top: auto; font-size: 11px; color: #8A9BB4">SEC Form 4 · filed within 2 business days</span>
+</article>
+
+<article style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Funds · Q2 holdings</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">+0.4%<span style="font-size: 14px; color: #8A9BB4"> net shares</span></span>
+<p style="margin: 0; font-size: 12px; color: #8A9BB4; text-wrap: pretty">What managers over $100M held on Jun 30. Filed up to 45 days later, so already stale on arrival.</p>
+<dl style="margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; font-size: 12px">
+<dt style="color: #8A9BB4">Filers</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">4,812</dd>
+<dt style="color: #8A9BB4">Added · cut</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">2,140 · 1,977</dd>
+</dl>
+<span style="margin-top: auto; font-size: 11px; color: #8A9BB4">SEC Form 13F · quarter ended Jun 30</span>
+</article>
+</div>
+</section>
+
+<section aria-labelledby="since" style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px">
+<h2 id="since" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 22px">Filed since this note</h2>
+<span style="font-size: 13px; color: #8A9BB4">From SEC EDGAR, checked each morning.</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<div style="flex: 1 1 360px; display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 10px; border: 1px dashed rgba(138,155,180,0.40)">
+<span style="font-weight: 600">Nothing yet. The note was written Oct 13.</span>
+<span style="font-size: 13px; color: #8A9BB4; text-wrap: pretty">Next expected: the Q3 FY2027 results 8-K on <span style="color: #E9E4D6">Nov 17</span>, a date NVIDIA has confirmed. When it lands, the note comes due and the new figures arrive here as a proposed update you approve, line by line.</span>
+<a href="#" style="font-size: 13px; font-weight: 500">How updates work →</a>
+</div>
+<div style="flex: 2 1 480px; display: flex; flex-direction: column">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4; padding-bottom: 6px">Filings this note cites</span>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+<sc-for list="{{cited}}" as="f" hint-placeholder-count="4">
+<li style="display: grid; grid-template-columns: 84px 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid rgba(138,155,180,0.16); font-size: 13px">
+<span style="font-family: 'IBM Plex Mono', monospace; color: #8A9BB4">{{f.date}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: rgba(138,155,180,0.16); text-align: center">{{f.form}}</span>
+<span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{f.what}}</span>
+<a href="#" style="font-size: 12px; font-weight: 500">Open</a>
+</li>
+</sc-for>
+</ol>
+</div>
+</div>
+</section>
+
+<p style="margin: 0; font-size: 12px; color: #8A9BB4">Personal research notes. Not financial advice.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var MONO = "font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 500; line-height: 1.2;";
+    var SANS = "font-family: 'IBM Plex Sans', sans-serif; font-size: 22px; font-weight: 500; line-height: 1.2; align-self: flex-start; border-bottom: 1px dotted rgba(138,155,180,0.85);";
+    var CHIP = "align-self: flex-start; display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #E9E4D6; text-decoration: none;";
+    var CHIP_UNTRACED = "align-self: flex-start; display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; border: 1px dotted rgba(138,155,180,0.55); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4; text-decoration: none;";
+    var cell = function (label, value, sub, chip, untraced) {
+      return { label: label, value: value, sub: sub, chip: chip, valueStyle: untraced ? SANS : MONO, chipStyle: untraced ? CHIP_UNTRACED : CHIP };
+    };
+    var max = 112;
+    var bar = function (v, label, guide, last) {
+      var h = Math.round((v / max) * 180);
+      var fill = guide ? 'border: 1.5px dashed rgba(233,228,214,0.65); background: transparent;' : last ? 'background: #E9E4D6;' : 'background: #8A9BB4;';
+      return { value: label, labelColor: guide || last ? '#E9E4D6' : '#8A9BB4', style: 'display: block; width: 100%; max-width: 56px; box-sizing: border-box; height: ' + h + 'px; border-radius: 6px 6px 2px 2px; ' + fill };
+    };
+    var si = [1.0, 1.1, 1.0, 0.9, 0.95, 1.0, 1.05, 0.9, 0.85, 0.9, 1.0, 0.9].map(function (v, i, a) {
+      return 'flex: 1; height: ' + Math.round((v / 1.2) * 40) + 'px; border-radius: 2px; background: ' + (i === a.length - 1 ? '#E9E4D6' : 'rgba(138,155,180,0.55)') + ';';
+    });
+    return {
+      cells: [
+        cell('Revenue · Q2 FY27', '$96.2B', '▲ 106% on a year. Data Center $89.0B.', '8-K 99.1 · Aug 26'),
+        cell('Gross margin, GAAP', '75.0%', '▲ 2.6 pts on a year. Guided 71–72% in Q4.', '8-K 99.1 · Aug 26'),
+        cell('Operating margin, GAAP', '66.2%', '▲ 5.4 pts on a year. 60.4% for FY2026.', '8-K 99.1 · Aug 26'),
+        cell('Free cash flow · Q2', '$21.3B', '▼ from $48.6B in Q1. Receivables absorbed cash.', '10-Q · Jul 26 quarter'),
+        cell('Supply commitments', '$279B', '▲ from $119B a quarter earlier. Mostly memory.', '10-Q · Jul 26 quarter'),
+        cell('Equity stakes', '$98.9B', '▲ from $35.1B in January. $25B more committed.', '10-Q · Jul 26 quarter'),
+        cell('Diluted shares', '24,285M', '▼ 1.0% on a year. $19.7B bought back in Q2.', '8-K 99.1 · Aug 26'),
+        cell('FY2028 revenue · consensus', '$692.2B', 'Average of 57 analysts. Not a company figure.', 'StockAnalysis · untraced', true)
+      ],
+      bars: [
+        bar(44.1, '44.1'), bar(46.7, '46.7'), bar(57.0, '57.0'), bar(68.1, '68.1'), bar(81.6, '81.6'), bar(96.2, '96.2', false, true), bar(108, '108.0', true)
+      ],
+      si: si,
+      cited: [
+        { date: 'Aug 26', form: '8-K', what: 'Q2 FY2027 results, exhibit 99.1: revenue, margins, Q3 guide' },
+        { date: 'Aug 2026', form: '10-Q', what: 'Quarter ended Jul 26: cash flow, commitments, equity stakes' },
+        { date: 'May 2026', form: '8-K', what: 'Q1 FY2027 results, exhibit 99.1' },
+        { date: 'Feb 25', form: '8-K', what: 'Q4 and fiscal 2026 results, exhibit 99.1' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

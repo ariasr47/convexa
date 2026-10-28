@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CBRS research on a phone · Convexa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112.5,600;112.5,700;112.5,800;125,800&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0F17;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#8CB0DE;text-underline-offset:3px}
+a:hover{color:#B9D0EC}
+summary{cursor:pointer}
+summary::-webkit-details-marker{display:none}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 3900px; box-sizing: border-box; background: #0B0F17; color: #E9E4D6; font-size: 15px; line-height: 1.55; font-family: 'IBM Plex Sans', sans-serif">
+
+<div role="status" style="padding: 8px 16px; background: #131A24; border-bottom: 1px solid rgba(138,155,180,0.16); font-size: 12px; line-height: 1.45"><span style="font-weight: 600">Live market data is off.</span> <span style="color: #8A9BB4">Research is current.</span> <a href="#">Full demo →</a></div>
+
+<header style="display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 8px 0 16px; background: rgba(19,26,36,0.82); border-bottom: 1px solid rgba(138,155,180,0.16)">
+<a href="#" style="text-decoration: none; color: #E9E4D6; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 125%; letter-spacing: 0.18em; font-size: 14px">CONVE<span style="color: #F2A93B">X</span>A</a>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="Search" style="width: 44px; height: 44px; border: 0; background: transparent; color: #8A9BB4; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></button>
+<button type="button" aria-label="Menu" style="width: 44px; height: 44px; border: 0; background: transparent; color: #E9E4D6; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+</header>
+
+<div style="display: flex; gap: 4px; padding: 0 8px; border-bottom: 1px solid rgba(138,155,180,0.16); overflow: hidden">
+<a href="#" style="padding: 12px 10px; color: #8A9BB4; text-decoration: none; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap">Overview</a>
+<a href="#" style="padding: 12px 10px; color: #8A9BB4; text-decoration: none; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap">Technical</a>
+<a href="#" aria-current="page" style="padding: 12px 10px; color: #E9E4D6; text-decoration: none; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; box-shadow: inset 0 -2px 0 #F2A93B; white-space: nowrap">Research</a>
+</div>
+
+<div style="padding: 20px 16px 40px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 44px; line-height: 1">CBRS</span><span style="font-size: 14px; color: #8A9BB4">Cerebras Systems</span></div>
+<h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700; font-stretch: 112.5%; font-size: 26px; line-height: 1.15">A $25B backlog on a $0.9B year. Converting it is the whole story.</h1>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<span style="padding: 3px 9px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-size: 12px">Stance · your call</span>
+<span style="padding: 3px 9px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #8A9BB4; font-size: 12px">12 min · 3 min skim</span>
+</div>
+<span style="font-size: 11px; color: #8A9BB4">Price as of Oct 12 intraday · thesis reviewed Oct 12</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #8A9BB4"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 999px; background: #E9E4D6"></span><span style="color: #E9E4D6; font-weight: 600">Current</span> · review by Oct 14, the lock-up release</span>
+</div>
+
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">Price vs value</span><span style="font-size: 12px"><span style="color: #8A9BB4">Uncertainty</span> <span style="font-weight: 600">Very high</span></span></div>
+<div role="img" aria-label="Value range $40 to $273, base $128, price $146.62" style="position: relative; height: 54px">
+<span style="position: absolute; left: 0; right: 0; top: 24px; height: 2px; background: rgba(138,155,180,0.12)"></span>
+<span style="position: absolute; top: 17px; height: 16px; left: 11.1%; width: 64.7%; border-radius: 8px; background: linear-gradient(90deg, rgba(94,139,196,0) 0%, rgba(94,139,196,0.32) 12%, rgba(94,139,196,0.62) 38%, rgba(94,139,196,0.32) 75%, rgba(94,139,196,0) 100%)"></span>
+<span style="position: absolute; top: 18px; left: 35.6%; width: 14px; height: 14px; margin-left: -7px; transform: rotate(45deg); background: #F2A93B; border-radius: 2px; box-shadow: 0 0 0 2px #131A24"></span>
+<span style="position: absolute; left: 40.7%; top: 6px; bottom: 6px; width: 2px; background: #E9E4D6"></span>
+<span style="position: absolute; left: 42%; top: -4px; font-family: 'IBM Plex Mono', monospace; font-size: 10px">$146.62</span>
+<span style="position: absolute; left: 11.1%; top: 38px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A9BB4">$40</span>
+<span style="position: absolute; left: 30%; top: 38px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #F2A93B">base $128</span>
+<span style="position: absolute; left: 75.8%; top: 38px; margin-left: -28px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A9BB4">$273</span>
+</div>
+<span style="font-size: 12px"><span style="color: #ff5c5c">▼</span> 13% from the Oct 12 price to base ·<span style="color: #8A9BB4">model v0, odds not set</span></span>
+</div>
+
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">TL;DR · 30 seconds</span>
+<sc-for list="{{tldr}}" as="t" hint-placeholder-count="3">
+<div style="display: grid; grid-template-columns: 60px minmax(0, 1fr); gap: 12px; align-items: baseline; padding-top: 10px; border-top: 1px solid rgba(138,155,180,0.16)"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 22px; letter-spacing: -0.02em">{{t.figure}}</span><span style="font-size: 14px">{{t.text}}</span></div>
+</sc-for>
+</div>
+
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">Next up · in 2 days</span><span style="font-weight: 600; font-size: 14px">Lock-up release, Oct 14</span></div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A9BB4">19.4M sh</span>
+</div>
+
+<!-- Sticky section chips -->
+<nav aria-label="On this page" style="position: sticky; top: 0; z-index: 5; margin: 0 -16px; padding: 10px 16px; background: rgba(11,15,23,0.92); border-top: 1px solid rgba(138,155,180,0.12); border-bottom: 1px solid rgba(138,155,180,0.12); display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; gap: 6px; overflow: hidden">
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="6">
+<a href="#" style="{{c.style}}">{{c.label}}</a>
+</sc-for>
+</div>
+<div style="height: 3px; border-radius: 3px; background: rgba(138,155,180,0.16)"><div style="width: 11%; height: 100%; border-radius: 3px; background: #E9E4D6"></div></div>
+</nav>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">01 · Key numbers</span>
+<h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 21px; line-height: 1.2">Growing fast, still losing money, sitting on cash.</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{stats}}" as="st" hint-placeholder-count="4">
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="font-size: 11px; color: #8A9BB4; line-height: 1.35">{{st.label}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 22px; line-height: 1.15">{{st.value}}</span>
+<span style="{{st.deltaStyle}}">{{st.delta}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">02 · Revenue</span>
+<h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 21px; line-height: 1.2">Core revenue doubled in a year.</h2>
+<figure style="margin: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 16px 12px 12px; display: flex; flex-direction: column; gap: 8px">
+<figcaption style="font-size: 11px; color: #8A9BB4">Quarterly revenue, GAAP, $M · hatched = approximate · dashed = guide</figcaption>
+<div role="img" aria-label="Revenue from $99.5M to $180.1M GAAP, $209.9M core, guide $214–216M" style="display: flex; align-items: flex-end; gap: 8px; height: 170px; border-bottom: 1px solid rgba(138,155,180,0.30)">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="7">
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: {{b.labelColor}}; white-space: nowrap">{{b.short}}</span><div style="{{b.barStyle}}"></div></div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 8px">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="7">
+<span style="flex: 1; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #8A9BB4">{{b.q}}</span>
+</sc-for>
+</div>
+</figure>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">03 · Backlog</span>
+<h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 21px; line-height: 1.2">29 years of this year's revenue, already contracted.</h2>
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<div role="img" aria-label="About 29 blocks, each one year of 2026 revenue" style="display: flex; flex-wrap: wrap; gap: 5px">
+<sc-for list="{{blocks}}" as="k" hint-placeholder-count="29">
+<span style="{{k.style}}"></span>
+</sc-for>
+</div>
+<div role="img" aria-label="22% within 24 months, 43% months 25 to 48, 35% later" style="display: flex; height: 28px; border-radius: 6px; overflow: hidden; font-family: 'IBM Plex Mono', monospace; font-size: 11px">
+<span style="width: 22%; background: #5E8BC4; color: #0B0F17; display: flex; align-items: center; padding-left: 6px; font-weight: 600">22%</span>
+<span style="width: 43%; background: rgba(94,139,196,0.55); display: flex; align-items: center; padding-left: 6px">43%</span>
+<span style="width: 35%; background: rgba(94,139,196,0.22); display: flex; align-items: center; padding-left: 6px">35%</span>
+</div>
+<span style="font-size: 12px; color: #8A9BB4">Next 24 months · months 25–48 · later</span>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">04 · Customers</span>
+<h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 21px; line-height: 1.2">The biggest customer's share halved in a year.</h2>
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: grid; grid-template-columns: 64px minmax(0, 1fr) 40px; align-items: center; gap: 10px; font-size: 13px"><span style="color: #8A9BB4">Q2 2025</span><span style="height: 16px; border-radius: 4px; background: rgba(138,155,180,0.12)"><span style="display: block; width: 70%; height: 100%; border-radius: 4px; background: #8A9BB4"></span></span><span style="font-family: 'IBM Plex Mono', monospace; text-align: right">70%</span></div>
+<div style="display: grid; grid-template-columns: 64px minmax(0, 1fr) 40px; align-items: center; gap: 10px; font-size: 13px"><span>Q2 2026</span><span style="height: 16px; border-radius: 4px; background: rgba(138,155,180,0.12)"><span style="display: block; width: 34%; height: 100%; border-radius: 4px; background: #E9E4D6"></span></span><span style="font-family: 'IBM Plex Mono', monospace; text-align: right">34%</span></div>
+<span style="font-size: 12px; color: #8A9BB4">Top three customers: 76% of Q2 2026 revenue.</span>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">05 · Bull vs bear</span>
+<div role="tablist" aria-label="Case" style="display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 10px; background: #131A24; border: 1px solid rgba(138,155,180,0.16)">
+<button type="button" role="tab" aria-selected="true" style="height: 40px; border: 0; border-radius: 8px; background: #1B2432; color: #2ecc71; font: 600 14px 'IBM Plex Sans', sans-serif">▲ Bull · 4</button>
+<button type="button" role="tab" aria-selected="false" style="height: 40px; border: 0; border-radius: 8px; background: transparent; color: #8A9BB4; font: 500 14px 'IBM Plex Sans', sans-serif">▼ Bear · 4</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{bull}}" as="p" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 10px; font-size: 14px; line-height: 1.5"><span style="width: 8px; height: 8px; margin-top: 8px; border-radius: 999px; background: #2ecc71"></span><span><span style="font-weight: 600">{{p.head}}</span> <span style="color: #8A9BB4">{{p.body}}</span></span></div>
+</sc-for>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">06 · Valuation</span>
+<h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 21px; line-height: 1.2">The price assumes the backlog mostly converts.</h2>
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 15px; line-height: 1.45">At $146.62 the market pays about <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">1.1×</span> contracted backlog.</span>
+<div role="img" aria-label="Model range $40 to $273, base $128, today $146.62" style="position: relative; height: 34px">
+<span style="position: absolute; left: 0; right: 0; top: 15px; height: 2px; background: rgba(138,155,180,0.14)"></span>
+<span style="position: absolute; top: 9px; height: 14px; border-radius: 4px; left: 11.1%; width: 64.7%; background: rgba(94,139,196,0.45)"></span>
+<span style="position: absolute; top: 6px; width: 10px; height: 20px; margin-left: -5px; border-radius: 3px; left: 35.6%; background: #5E8BC4"></span>
+<span style="position: absolute; left: 40.7%; top: 0; bottom: 0; width: 2px; background: #E9E4D6"></span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; text-align: center">
+<div style="display: flex; flex-direction: column"><span style="font-size: 11px; color: #ff5c5c; font-weight: 600">Bear</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px">$40</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 11px; font-weight: 600">Base</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px">$128</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 11px; color: #2ecc71; font-weight: 600">Bull</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px">$273</span></div>
+</div>
+<span style="font-size: 11px; color: #8A9BB4">Illustrative model v0 · white line is today's price · your target: not set</span>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">07 · Catalysts</span>
+<h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 21px; line-height: 1.2">Two unlocks and Q3 results in five weeks.</h2>
+<ol style="list-style: none; margin: 0; padding: 16px; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; display: flex; flex-direction: column">
+<sc-for list="{{catalysts}}" as="c" hint-placeholder-count="5">
+<li style="display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 12px">
+<span style="display: flex; flex-direction: column; align-items: center"><span style="{{c.dotStyle}}"></span><span style="{{c.lineStyle}}"></span></span>
+<span style="display: flex; flex-direction: column; gap: 2px; padding-bottom: 16px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: {{c.dateColor}}">{{c.date}}</span><span style="font-weight: 600; font-size: 14px">{{c.title}}</span><span style="font-size: 12px; color: #8A9BB4">{{c.detail}}</span></span>
+</li>
+</sc-for>
+</ol>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<details style="border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; background: #131A24"><summary style="padding: 14px 16px; min-height: 44px; box-sizing: border-box; display: flex; justify-content: space-between; font-weight: 600; font-size: 14px">08 · What would change the picture <span style="color: #8A9BB4">▾</span></summary></details>
+<details style="border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; background: #131A24"><summary style="padding: 14px 16px; min-height: 44px; box-sizing: border-box; display: flex; justify-content: space-between; font-weight: 600; font-size: 14px">09 · Competition <span style="color: #8A9BB4">▾</span></summary></details>
+<details style="border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; background: #131A24"><summary style="padding: 14px 16px; min-height: 44px; box-sizing: border-box; display: flex; justify-content: space-between; font-weight: 600; font-size: 14px">10 · Sources (40) <span style="color: #8A9BB4">▾</span></summary></details>
+</section>
+
+<p style="margin: 0; font-size: 12px; color: #8A9BB4">Personal research notes. Not financial advice.</p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":3900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var MONO = "font-family: 'IBM Plex Mono', monospace;";
+    var maxV = 230, chartH = 140;
+    var bars = [
+      { q: "Q1'25", v: 99.5, short: '99.5', kind: 'actual' },
+      { q: "Q2'25", v: 103.3, short: '103', kind: 'actual' },
+      { q: "Q3'25", v: 136, short: '~136', kind: 'approx' },
+      { q: "Q4'25", v: 171, short: '~171', kind: 'approx' },
+      { q: "Q1'26", v: 193.4, short: '193', kind: 'actual' },
+      { q: "Q2'26", v: 180.1, short: '180', kind: 'latest' },
+      { q: "Q3e", v: 215, short: '215', kind: 'guide' }
+    ].map(function (b) {
+      var h = Math.round((b.v / maxV) * chartH);
+      var fill = b.kind === 'latest' ? 'background: #E9E4D6;'
+        : b.kind === 'approx' ? 'background: repeating-linear-gradient(135deg, rgba(138,155,180,.7) 0 4px, rgba(138,155,180,.28) 4px 8px);'
+        : b.kind === 'guide' ? 'background: transparent; border: 1.5px dashed rgba(233,228,214,.65); box-sizing: border-box;'
+        : 'background: #8A9BB4;';
+      return { q: b.q, short: b.short, labelColor: b.kind === 'latest' || b.kind === 'guide' ? '#E9E4D6' : '#8A9BB4', barStyle: 'width: 100%; height: ' + h + 'px; border-radius: 4px 4px 1px 1px; ' + fill };
+    });
+    var blocks = [];
+    for (var i = 0; i < 29; i++) {
+      var base = 'width: 24px; height: 24px; border-radius: 5px; box-sizing: border-box; ';
+      if (i === 0) blocks.push({ style: base + 'background: #E9E4D6;' });
+      else if (i === 28) blocks.push({ style: base + 'border: 1px dashed rgba(94,139,196,0.55); background: linear-gradient(90deg, rgba(94,139,196,0.30) 70%, transparent 70%);' });
+      else blocks.push({ style: base + 'background: rgba(94,139,196,0.30); border: 1px solid rgba(94,139,196,0.55);' });
+    }
+    var chips = ['Verdict', 'Evidence', 'Debate', 'Valuation', 'Record'].map(function (label, idx) {
+      return { label: label, style: 'flex-shrink: 0; padding: 6px 12px; min-height: 32px; box-sizing: border-box; border-radius: 999px; text-decoration: none; font-size: 13px; white-space: nowrap; '
+        + (idx === 0 ? 'background: #E9E4D6; color: #0B0F17; font-weight: 600;' : 'background: rgba(138,155,180,0.16); color: #8A9BB4;') };
+    });
+    var delta = function (dir) {
+      var c = dir === 'up' ? '#2ecc71' : dir === 'down' ? '#ff5c5c' : '#8A9BB4';
+      return 'font-size: 11px; ' + MONO + ' color: ' + c + ';';
+    };
+    var stats = [
+      { label: 'Core revenue · Q2', value: '$209.9M', delta: '+103% YoY', dir: 'up' },
+      { label: 'Backlog (RPO)', value: '$25.4B', delta: '≈29× FY26 guide', dir: 'flat' },
+      { label: 'Core gross margin', value: '40.6%', delta: '−5.9 pts QoQ', dir: 'down' },
+      { label: 'Cash and investments', value: '$8.6B', delta: 'post-IPO', dir: 'flat' }
+    ].map(function (s) { return Object.assign({}, s, { deltaStyle: delta(s.dir) }); });
+    var tldr = [
+      { figure: '29×', text: 'Backlog ($25.4B) is about 29 times this year’s revenue guide.' },
+      { figure: '61%', text: 'Cloud is now most of the business, up 287% in a year.' },
+      { figure: '76%', text: 'Three customers were 76% of Q2 revenue.' }
+    ];
+    var bull = [
+      { head: 'Backlog dwarfs revenue.', body: '$25.4B contracted; about $5.6B lands within 24 months.' },
+      { head: 'The mix is shifting to cloud.', body: 'Core cloud +287%, about 61% of core revenue.' },
+      { head: 'Outsiders are validating it.', body: 'AWS, AMD and OpenAI all build on it.' },
+      { head: 'It skips GPU bottlenecks.', body: 'No HBM or CoWoS; $8.6B to fund the build.' }
+    ];
+    var cat = function (date, title, detail, state, last) {
+      var next = state === 'next';
+      return {
+        date: date, title: title, detail: detail, dateColor: next ? '#F2A93B' : '#8A9BB4',
+        dotStyle: 'width: 12px; height: 12px; margin-top: 4px; border-radius: 999px; flex-shrink: 0; ' + (next ? 'background: #F2A93B; box-shadow: 0 0 0 4px rgba(242,169,59,0.18);' : 'border: 2px solid #8A9BB4; box-sizing: border-box;'),
+        lineStyle: last ? 'display: none;' : 'flex-grow: 1; width: 2px; margin-top: 4px; background: rgba(138,155,180,0.22);'
+      };
+    };
+    var catalysts = [
+      cat('Oct 14 · in 2 days', 'Lock-up release', 'About 19.4M shares become sellable.', 'next'),
+      cat('by ~Nov 10', 'Final lock-up expiry', 'Up to ~171M shares in total.', 'expected'),
+      cat('~Nov 2026', 'Q3 2026 results', 'Core revenue guide $214–216M.', 'expected'),
+      cat('Q1 2027', 'AWS Bedrock launch', 'Trainium prefill plus CS-3 decode.', 'expected'),
+      cat('2027', 'More than 3× revenue', 'Company target.', 'expected', true)
+    ];
+    return { bars: bars, blocks: blocks, chips: chips, stats: stats, tldr: tldr, bull: bull, catalysts: catalysts };
+  }
+}
+</script>
+</body>
+</html>

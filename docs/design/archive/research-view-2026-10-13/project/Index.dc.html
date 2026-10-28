@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Research index · Convexa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112.5,600;112.5,700;112.5,800;125,800&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0F17;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#8CB0DE;text-underline-offset:3px}
+a:hover{color:#B9D0EC}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #F2A93B;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 100%; background: #0B0F17; color: #E9E4D6; font-size: 15px; line-height: 1.55">
+
+<div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 8px 32px; background: #131A24; border-bottom: 1px solid rgba(138,155,180,0.16); font-size: 12px">
+<span style="font-weight: 600">Live market data is off.</span>
+<span style="color: #8A9BB4">Prices, dealer structure and AI reads are paused. Research notes are current.</span>
+<span style="flex-grow: 1"></span>
+<a href="#">Try the full demo →</a>
+</div>
+
+<header style="background: rgba(19,26,36,0.82); border-bottom: 1px solid rgba(138,155,180,0.16)">
+<nav aria-label="Primary" style="max-width: 1280px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; gap: 32px">
+<a href="#" style="text-decoration: none; color: #E9E4D6; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 125%; letter-spacing: 0.18em; font-size: 15px">CONVE<span style="color: #F2A93B">X</span>A</a>
+<div style="display: flex; align-items: stretch; gap: 4px; height: 64px">
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Scanner</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Ticker</a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: inset 0 -2px 0 #F2A93B">Research</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Positions</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Alerts</a>
+</div>
+<span style="flex-grow: 1"></span>
+<a href="#" style="color: #8A9BB4; text-decoration: none; font-size: 14px; font-weight: 500">Log in</a>
+</nav>
+</header>
+
+<main style="max-width: 1280px; margin: 0 auto; padding: 40px 32px 64px; display: flex; flex-direction: column; gap: 32px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 32px">
+<div style="flex: 999 1 520px; display: flex; flex-direction: column; gap: 10px">
+<h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 48px; line-height: 1.05">Research</h1>
+<p style="margin: 0; max-width: 62ch; color: #8A9BB4; font-size: 16px">Notes on the tickers being followed: thesis, evidence, catalysts and risks. Each opens with a 30-second summary.</p>
+</div>
+<div style="flex: 1 1 280px; display: flex; gap: 8px; justify-content: flex-end">
+<label for="find" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Find a ticker</label>
+<input id="find" type="search" placeholder="Find a ticker" style="flex-grow: 1; max-width: 240px; height: 44px; box-sizing: border-box; padding: 0 14px; border-radius: 8px; border: 1px solid rgba(138,155,180,0.30); background: #131A24; color: #E9E4D6; font: 400 14px 'IBM Plex Sans', sans-serif">
+<button type="button" style="height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #E9E4D6; font: 500 13px 'IBM Plex Sans', sans-serif; white-space: nowrap">Recently updated ▾</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div role="group" aria-label="Filter by stance" style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" aria-pressed="true" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 0; background: #E9E4D6; color: #0B0F17; font: 600 13px 'IBM Plex Sans', sans-serif">All · 3</button>
+<button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Bullish · 0</button>
+<button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Bearish · 0</button>
+<button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Watching · 0</button>
+<button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.45); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Stance not set · 3</button>
+</div>
+<div role="group" aria-label="Filter by freshness" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8A9BB4; margin-right: 4px">Freshness</span>
+<button type="button" aria-pressed="false" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif"><span aria-hidden="true" style="width: 9px; height: 9px; border-radius: 999px; background: #E9E4D6"></span>Current · 3</button>
+<button type="button" aria-pressed="false" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif"><span aria-hidden="true" style="width: 9px; height: 9px; box-sizing: border-box; border-radius: 999px; border: 2px solid #E9E4D6; background: linear-gradient(90deg, #E9E4D6 50%, transparent 50%)"></span>Review due · 0</button>
+<button type="button" aria-pressed="false" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif"><span aria-hidden="true" style="width: 9px; height: 9px; border-radius: 2px; background: #8A9BB4"></span>Archived · 0</button>
+</div>
+</div>
+
+<!-- Coming up across every note -->
+<section aria-labelledby="coming" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px"><h2 id="coming" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Coming up</h2><span style="font-size: 13px; color: #8A9BB4">Catalysts from every note, next 10 weeks. Each date is also when its note comes due for review.</span></div>
+<ol style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 10px">
+<sc-for list="{{upcoming}}" as="u" hint-placeholder-count="6">
+<li style="{{u.cardStyle}}">
+<span style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px; background: rgba(138,155,180,0.16); color: #E9E4D6">{{u.ticker}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: {{u.whenColor}}">{{u.when}}</span></span>
+<span style="font-weight: 600; font-size: 14px; line-height: 1.35">{{u.title}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8A9BB4">{{u.date}}</span>
+</li>
+</sc-for>
+</ol>
+</section>
+
+<!-- Ticker cards -->
+<section aria-label="Tickers" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="3">
+<article style="position: relative; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.24), 0 2px 6px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.04)">
+<div style="display: flex; align-items: flex-start; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<a href="#" style="font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 32px; line-height: 1; color: #E9E4D6; text-decoration: none">{{c.ticker}}</a>
+<span style="font-size: 13px; color: #8A9BB4">{{c.name}}</span>
+</div>
+<span style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px"><span style="padding: 3px 9px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-size: 11px; font-weight: 500; white-space: nowrap">Stance · your call</span><span style="font-size: 11px; color: #8A9BB4; white-space: nowrap">Uncertainty · <span style="color: #E9E4D6; font-weight: 600">{{c.uncertainty}}</span></span></span>
+</div>
+<h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 19px; line-height: 1.25; text-wrap: balance">{{c.title}}</h2>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #8A9BB4"><span>{{c.chartLabel}}</span><span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">{{c.lastValue}}</span></div>
+<div role="img" aria-label="{{c.chartAria}}" style="display: flex; align-items: flex-end; gap: 4px; height: 56px">
+<sc-for list="{{c.bars}}" as="b" hint-placeholder-count="8">
+<span style="{{b.style}}"></span>
+</sc-for>
+</div>
+</div>
+<sc-if value="{{c.hasModel}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #8A9BB4"><span>Price vs value range</span><span><span style="color: #ff5c5c">▼</span> <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">13%</span> to base</span></div>
+<div role="img" aria-label="Value range $40 to $273, base $128, price $146.62" style="position: relative; height: 22px"><span style="position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: rgba(138,155,180,0.12)"></span><span style="position: absolute; top: 5px; height: 12px; left: 11.1%; width: 64.7%; border-radius: 6px; background: linear-gradient(90deg, rgba(94,139,196,0) 0%, rgba(94,139,196,0.32) 12%, rgba(94,139,196,0.6) 38%, rgba(94,139,196,0.32) 75%, rgba(94,139,196,0) 100%)"></span><span style="position: absolute; top: 5px; left: 35.6%; width: 4px; height: 12px; margin-left: -2px; border-radius: 2px; background: #E9E4D6"></span><span style="position: absolute; left: 40.7%; top: 0; bottom: 0; width: 2px; background: #E9E4D6"></span></div>
+</div>
+</sc-if>
+<sc-if value="{{c.noModel}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: 8px; border: 1px dashed rgba(138,155,180,0.35); font-size: 12px; color: #8A9BB4"><span>Price vs value range</span><span>valuation pass pending</span></div>
+</sc-if>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-top: 14px; border-top: 1px solid rgba(138,155,180,0.16)">
+<sc-for list="{{c.metrics}}" as="m" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 11px; color: #8A9BB4; line-height: 1.3">{{m.label}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 17px; font-weight: 500">{{m.value}}</span><span style="{{m.deltaStyle}}">{{m.delta}}</span></div>
+</sc-for>
+</div>
+<div style="{{c.nextStyle}}">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: {{c.nextColor}}">Next · {{c.nextWhen}}</span>
+<span style="font-size: 14px; font-weight: 500">{{c.nextTitle}}</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: #8A9BB4"><span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 999px; background: #E9E4D6"></span><span style="color: #E9E4D6; font-weight: 600">Current</span> · review by {{c.reviewBy}}</span><span>Written Oct 12, 2026</span><span>{{c.read}}</span><span>{{c.sources}}</span><a href="#" style="margin-left: auto; font-weight: 500">Open note →</a></div>
+</article>
+</sc-for>
+
+<article style="border: 1px dashed rgba(138,155,180,0.40); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px; justify-content: center">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">Add a ticker</span>
+<span style="font-size: 15px; font-weight: 600">Write one Markdown file and push.</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8A9BB4; background: #0D121B; border: 1px solid rgba(138,155,180,0.16); border-radius: 8px; padding: 10px 12px">research/NVDA/2026-10-20-supply.md</span>
+<a href="#" style="font-size: 13px; font-weight: 500">Read the format guide →</a>
+</article>
+</section>
+
+<p style="margin: 0; font-size: 12px; color: #8A9BB4">Personal research notes. Not financial advice.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var MONO = "font-family: 'IBM Plex Mono', monospace;";
+    var series = function (values, approx) {
+      var max = Math.max.apply(null, values);
+      return values.map(function (v, i) {
+        var last = i === values.length - 1;
+        var h = Math.max(4, Math.round((v / max) * 56));
+        var fill = last ? 'background: #E9E4D6;'
+          : approx && approx.indexOf(i) >= 0 ? 'background: repeating-linear-gradient(135deg, rgba(138,155,180,.7) 0 3px, rgba(138,155,180,.28) 3px 6px);'
+          : 'background: #8A9BB4; opacity: 0.75;';
+        return { style: 'flex: 1; height: ' + h + 'px; border-radius: 3px 3px 1px 1px; ' + fill };
+      });
+    };
+    var delta = function (dir) {
+      var c = dir === 'up' ? '#2ecc71' : dir === 'down' ? '#ff5c5c' : '#8A9BB4';
+      return 'font-size: 11px; ' + MONO + ' color: ' + c + ';';
+    };
+    var withDelta = function (list) { return list.map(function (m) { return Object.assign({}, m, { deltaStyle: delta(m.dir) }); }); };
+    var next = function (soon) {
+      return soon
+        ? 'display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: rgba(242,169,59,0.10); border: 1px solid rgba(242,169,59,0.35);'
+        : 'display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: #0D121B; border: 1px solid rgba(138,155,180,0.16);';
+    };
+    var cards = [
+      {
+        ticker: 'MU', name: 'Micron Technology · Nasdaq', uncertainty: 'High', hasModel: false, noModel: true,
+        title: 'A record quarter at an 87% gross margin. The question is how long memory pricing holds.',
+        chartLabel: 'Revenue per quarter, FQ2-25 to FQ4-26', lastValue: '$54.2B',
+        chartAria: 'Quarterly revenue rising from $8.1B to $54.2B over seven quarters',
+        bars: series([8.05, 9.30, 11.32, 13.64, 23.86, 41.46, 54.23]),
+        metrics: withDelta([
+          { label: 'Revenue YoY', value: '+379%', delta: '14-week quarter', dir: 'up' },
+          { label: 'Gross margin', value: '87.0%', delta: 'guide ~86.25% next', dir: 'flat' },
+          { label: 'Forward P/E', value: '5.6', delta: 'at ~$989, Oct 12', dir: 'flat' }
+        ]),
+        nextWhen: 'Dec 9', nextTitle: 'Capital return steps up; FQ1-27 results mid-to-late Dec', nextColor: '#8A9BB4', nextStyle: next(false),
+        read: '8 min read', sources: '30 sources', reviewBy: 'Nov 11 · price age'
+      },
+      {
+        ticker: 'CRWV', name: 'CoreWeave · Nasdaq', uncertainty: 'Very high', hasModel: false, noModel: true,
+        title: 'A $104B backlog financed with $35B of debt. Growth depends on the cost of money.',
+        chartLabel: 'Revenue per quarter, Q3 2024 to Q2 2026', lastValue: '$2.58B',
+        chartAria: 'Quarterly revenue rising from $584M to $2,575M over eight quarters',
+        bars: series([584, 747, 982, 1213, 1365, 1572, 2078, 2575]),
+        metrics: withDelta([
+          { label: 'Revenue YoY', value: '+112%', delta: 'Q2 2026', dir: 'up' },
+          { label: 'Backlog', value: '~$104B', delta: '+246% YoY', dir: 'up' },
+          { label: 'Total debt', value: '$35.1B', delta: 'was $11.1B', dir: 'down' }
+        ]),
+        nextWhen: '~Nov 5–16', nextTitle: 'Q3 2026 results; guide $3.45–3.60B', nextColor: '#8A9BB4', nextStyle: next(false),
+        read: '8 min read', sources: '47 sources', reviewBy: 'Nov 11 · price age'
+      },
+      {
+        ticker: 'CBRS', name: 'Cerebras Systems · Nasdaq', uncertainty: 'Very high', hasModel: true, noModel: false,
+        title: 'A $25B backlog on a $0.9B year. Converting it is the whole story.',
+        chartLabel: 'Revenue per quarter, Q1 2025 to Q2 2026', lastValue: '$180.1M',
+        chartAria: 'Quarterly revenue from $99.5M to $180.1M; two quarters approximate',
+        bars: series([99.5, 103.3, 136, 171, 193.4, 180.1], [2, 3]),
+        metrics: withDelta([
+          { label: 'Core revenue YoY', value: '+103%', delta: 'GAAP +74%', dir: 'up' },
+          { label: 'Backlog', value: '$25.4B', delta: '≈29× FY26 guide', dir: 'flat' },
+          { label: 'Top 3 customers', value: '76%', delta: 'of Q2 revenue', dir: 'down' }
+        ]),
+        nextWhen: 'in 2 days', nextTitle: 'Lock-up release, Oct 14 (~19.4M shares)', nextColor: '#8A9BB4', nextStyle: next(false),
+        read: '7 min read', sources: '40 sources', reviewBy: 'Oct 14 · lock-up'
+      }
+    ];
+    var up = function (ticker, when, title, date, soon) {
+      return {
+        ticker: ticker, when: when, title: title, date: date, whenColor: soon ? '#F2A93B' : '#8A9BB4',
+        cardStyle: 'display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; '
+          + (soon ? 'background: rgba(242,169,59,0.10); border: 1px solid rgba(242,169,59,0.35);' : 'background: #131A24; border: 1px solid rgba(138,155,180,0.16);')
+      };
+    };
+    var upcoming = [
+      up('CBRS', 'in 2 days', 'Lock-up release', 'Oct 14', true),
+      up('CRWV', '~4–5 weeks', 'Q3 2026 results', '~Nov 5–16 · TBA'),
+      up('CBRS', '~4 weeks', 'Final lock-up expiry', 'by ~Nov 10'),
+      up('CBRS', '~5 weeks', 'Q3 2026 results', '~Nov · TBA'),
+      up('MU', '8 weeks', 'Capital return step-up', 'Dec 9'),
+      up('MU', '~9–10 weeks', 'FQ1-27 results', 'mid–late Dec · TBA')
+    ];
+    return { cards: cards, upcoming: upcoming };
+  }
+}
+</script>
+</body>
+</html>

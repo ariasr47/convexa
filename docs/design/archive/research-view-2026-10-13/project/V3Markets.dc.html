@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Markets · Convexa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112.5,600;112.5,700;112.5,800;125,800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0F17;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+a{color:#8CB0DE;text-underline-offset:3px}
+a:hover{color:#B9D0EC}
+a:focus-visible,button:focus-visible{outline:2px solid #F2A93B;outline-offset:2px;border-radius:4px}
+</style>
+</helmet>
+<div style="min-height: 100%; background: #0B0F17; color: #E9E4D6; font-size: 15px; line-height: 1.55">
+
+<div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 8px 32px; background: #131A24; border-bottom: 1px solid rgba(138,155,180,0.16); font-size: 12px">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A9BB4" stroke-width="1.75" stroke-linecap="round"><path d="M9 5v14M15 5v14"></path></svg>
+<span style="font-weight: 600">Live market data is off.</span>
+<span style="color: #8A9BB4">Prices, dealer structure and AI reads are paused. Research, rates and filings stay current.</span>
+<span style="flex-grow: 1"></span>
+<a href="#">Try the full demo →</a>
+</div>
+
+<header style="background: rgba(19,26,36,0.82); border-bottom: 1px solid rgba(138,155,180,0.16)">
+<nav aria-label="Primary" style="max-width: 1280px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; gap: 32px">
+<a href="#" style="text-decoration: none; color: #E9E4D6; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 125%; letter-spacing: 0.18em; font-size: 15px">CONVE<span style="color: #F2A93B">X</span>A</a>
+<div style="display: flex; align-items: stretch; gap: 4px; height: 64px">
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Scanner</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Ticker</a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: inset 0 -2px 0 #F2A93B">Research</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Positions</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Alerts</a>
+</div>
+<span style="flex-grow: 1"></span>
+<button type="button" style="display: inline-flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 12px; border-radius: 8px; border: 1px solid rgba(138,155,180,0.30); background: #0D121B; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Search tickers and notes<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(138,155,180,0.30); color: #E9E4D6">⌘K</span></button>
+<a href="#" style="color: #8A9BB4; text-decoration: none; font-size: 14px; font-weight: 500">Log in</a>
+</nav>
+</header>
+
+<nav aria-label="Research" style="border-bottom: 1px solid rgba(138,155,180,0.16)">
+<div style="max-width: 1280px; margin: 0 auto; padding: 0 32px; display: flex; flex-wrap: wrap; gap: 4px; height: 48px; align-items: stretch">
+<a href="#" style="display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Notes<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #E9E4D6">14</span></a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: inset 0 -2px 0 #E9E4D6">Markets</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Filings</a>
+<a href="#" style="display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Scorecard<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #E9E4D6">77 open</span></a>
+</div>
+</nav>
+
+<main style="max-width: 1280px; margin: 0 auto; padding: 40px 32px 64px; display: flex; flex-direction: column; gap: 32px">
+
+<div style="display: flex; flex-direction: column; gap: 12px">
+<h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 48px; line-height: 1.05">Markets</h1>
+<p style="margin: 0; max-width: 64ch; color: #8A9BB4; font-size: 16px; text-wrap: pretty">Rates and futures positioning from public sources, refreshed each business day. The 10-year on this page is the risk-free rate every note's valuation starts from.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px">
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #E9E4D6"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8A9BB4" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5"></path></svg>Federal Reserve H.15 via FRED · through Oct 9, 2026</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4">CFTC positioning · Demo · sample data</span>
+</div>
+</div>
+
+<section aria-label="Rates today" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; overflow: hidden">
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid rgba(138,155,180,0.16)">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">10-year Treasury</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">5.24%</span>
+<span style="font-size: 12px; color: #8A9BB4"><span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">+1.10</span> pts on a year · was 4.14%</span>
+</div>
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid rgba(138,155,180,0.16)">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Real 10-year (TIPS)</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">2.91%</span>
+<span style="font-size: 12px; color: #8A9BB4"><span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">+1.11</span> pts on a year · was 1.80%</span>
+</div>
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid rgba(138,155,180,0.16)">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">10-year breakeven</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">2.33%</span>
+<span style="font-size: 12px; color: #8A9BB4">10-year less real (calc) · was 2.34%</span>
+</div>
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid rgba(138,155,180,0.16)">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">2s10s spread</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">+0.44</span>
+<span style="font-size: 12px; color: #8A9BB4">pts · year's range <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">0.27–0.72</span></span>
+</div>
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">3-month bill</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">4.25%</span>
+<span style="font-size: 12px; color: #8A9BB4"><span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">+0.22</span> pts on a year · was 4.03%</span>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+
+<figure style="flex: 999 1 640px; min-width: 0; margin: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px">
+<figcaption style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25; text-wrap: balance">The curve rose about a point in a year, and the front no longer inverts.</span>
+<span style="font-size: 13px; color: #8A9BB4">Treasury par yields by maturity, %. Oct 9, 2026 against the same day a year earlier.</span>
+</figcaption>
+<svg role="img" aria-label="Yield curve. Oct 9, 2026: 3-month 4.25%, 2-year 4.80%, 5-year 5.02%, 10-year 5.24%, 30-year 5.60%. Oct 9, 2025: 3-month 4.03%, 2-year 3.60%, 5-year 3.74%, 10-year 4.14%, 30-year 4.72%." viewBox="0 0 720 280" style="width: 100%; height: auto; display: block">
+<g font-family="IBM Plex Mono, monospace" font-size="11" fill="#8A9BB4">
+<line x1="48" x2="616" y1="240" y2="240" stroke="rgba(138,155,180,0.30)"></line>
+<line x1="48" x2="616" y1="168" y2="168" stroke="rgba(138,155,180,0.14)" stroke-dasharray="3 4"></line>
+<line x1="48" x2="616" y1="96" y2="96" stroke="rgba(138,155,180,0.14)" stroke-dasharray="3 4"></line>
+<line x1="48" x2="616" y1="24" y2="24" stroke="rgba(138,155,180,0.14)" stroke-dasharray="3 4"></line>
+<text x="40" y="244" text-anchor="end">3%</text>
+<text x="40" y="172" text-anchor="end">4%</text>
+<text x="40" y="100" text-anchor="end">5%</text>
+<text x="40" y="28" text-anchor="end">6%</text>
+<text x="48" y="262" text-anchor="middle">3M</text>
+<text x="152.3" y="262" text-anchor="middle">2Y</text>
+<text x="246.1" y="262" text-anchor="middle">5Y</text>
+<text x="351.8" y="262" text-anchor="middle">10Y</text>
+<text x="616" y="262" text-anchor="middle">30Y</text>
+</g>
+<polyline points="48,165.8 152.3,196.8 246.1,186.7 351.8,157.9 616,116.2" fill="none" stroke="#8A9BB4" stroke-width="2" stroke-dasharray="5 5" stroke-linejoin="round"></polyline>
+<polyline points="48,150 152.3,110.4 246.1,94.6 351.8,78.7 616,52.8" fill="none" stroke="#E9E4D6" stroke-width="2.5" stroke-linejoin="round"></polyline>
+<g fill="#E9E4D6"><circle cx="48" cy="150" r="3.5"></circle><circle cx="152.3" cy="110.4" r="3.5"></circle><circle cx="246.1" cy="94.6" r="3.5"></circle><circle cx="351.8" cy="78.7" r="3.5"></circle><circle cx="616" cy="52.8" r="3.5"></circle></g>
+<g fill="#0B0F17" stroke="#8A9BB4" stroke-width="1.5"><circle cx="48" cy="165.8" r="3"></circle><circle cx="152.3" cy="196.8" r="3"></circle><circle cx="246.1" cy="186.7" r="3"></circle><circle cx="351.8" cy="157.9" r="3"></circle><circle cx="616" cy="116.2" r="3"></circle></g>
+<g font-family="IBM Plex Mono, monospace" font-size="11" fill="#E9E4D6" text-anchor="middle">
+<text x="48" y="138">4.25</text><text x="152.3" y="98">4.80</text><text x="246.1" y="82">5.02</text><text x="351.8" y="66">5.24</text><text x="616" y="40">5.60</text>
+</g>
+<g font-family="IBM Plex Mono, monospace" font-size="11" fill="#8A9BB4" text-anchor="middle">
+<text x="62" y="186">4.03</text><text x="152.3" y="216">3.60</text><text x="246.1" y="206">3.74</text><text x="351.8" y="178">4.14</text><text x="616" y="136">4.72</text>
+</g>
+<g font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600">
+<text x="628" y="57" fill="#E9E4D6">Oct 9, 2026</text>
+<text x="628" y="120" fill="#8A9BB4">Oct 9, 2025</text>
+</g>
+</svg>
+<p style="margin: 0; font-size: 12px; color: #8A9BB4">Source: Federal Reserve H.15 via FRED (DGS3MO, DGS2, DGS5, DGS10, DGS30). As of Oct 9, 2026.</p>
+</figure>
+
+<figure style="flex: 1 1 340px; min-width: 0; margin: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<figcaption style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25; text-wrap: balance">Real yields did all of it. Inflation expectations held still.</span>
+<span style="font-size: 13px; color: #8A9BB4">Change over the year to Oct 9, 2026, percentage points.</span>
+</figcaption>
+<div role="img" aria-label="10-year Treasury up 1.10 points; real 10-year up 1.11 points; breakeven down 0.01 points" style="display: flex; flex-direction: column; gap: 18px; padding-top: 4px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">10-year Treasury</span><span style="font-family: 'IBM Plex Mono', monospace">+1.10</span></div>
+<div style="position: relative; height: 14px; background: #0D121B; border-radius: 4px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 91.7%; background: #E9E4D6; border-radius: 4px"></span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 13px"><span>Real 10-year</span><span style="font-family: 'IBM Plex Mono', monospace">+1.11</span></div>
+<div style="position: relative; height: 14px; background: #0D121B; border-radius: 4px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 92.5%; background: #8A9BB4; border-radius: 4px"></span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 13px"><span>Breakeven inflation <span style="color: #8A9BB4">(calc)</span></span><span style="font-family: 'IBM Plex Mono', monospace">−0.01</span></div>
+<div style="position: relative; height: 14px; background: #0D121B; border-radius: 4px"><span style="position: absolute; left: 0; top: 2px; bottom: 2px; width: 2px; background: #8A9BB4"></span></div>
+</div>
+</div>
+<p style="margin: 0; font-size: 13px; color: #8A9BB4; text-wrap: pretty">The 10-year is a real yield plus expected inflation. Expected inflation sat at 2.33–2.34% a year apart, so a higher price of money, not inflation, raised every note's discount rate.</p>
+<p style="margin: 0; margin-top: auto; font-size: 12px; color: #8A9BB4">Source: FRED DGS10, DFII10. Breakeven is 10-year less real 10-year.</p>
+</figure>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+
+<figure style="flex: 999 1 640px; min-width: 0; margin: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px">
+<figcaption style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25; text-wrap: balance">2s10s has held between 0.27 and 0.72 points all year. It is 0.44 now.</span>
+<span style="font-size: 13px; color: #8A9BB4">10-year less 2-year yield, percentage points, every other week from Oct 1, 2025.</span>
+</figcaption>
+<svg role="img" aria-label="2s10s spread over the past year: 0.57 in October 2025, a high of 0.72 on Feb 4, 2026, a low of 0.27 on Sep 16, 2026, and 0.44 on Oct 9, 2026." viewBox="0 0 640 220" style="width: 100%; height: auto; display: block">
+<g font-family="IBM Plex Mono, monospace" font-size="11" fill="#8A9BB4">
+<line x1="40" x2="576" y1="188" y2="188" stroke="rgba(138,155,180,0.30)"></line>
+<line x1="40" x2="576" y1="146" y2="146" stroke="rgba(138,155,180,0.14)" stroke-dasharray="3 4"></line>
+<line x1="40" x2="576" y1="104" y2="104" stroke="rgba(138,155,180,0.14)" stroke-dasharray="3 4"></line>
+<line x1="40" x2="576" y1="62" y2="62" stroke="rgba(138,155,180,0.14)" stroke-dasharray="3 4"></line>
+<line x1="40" x2="576" y1="20" y2="20" stroke="rgba(138,155,180,0.14)" stroke-dasharray="3 4"></line>
+<text x="32" y="192" text-anchor="end">0</text><text x="32" y="150" text-anchor="end">0.2</text><text x="32" y="108" text-anchor="end">0.4</text><text x="32" y="66" text-anchor="end">0.6</text><text x="32" y="24" text-anchor="end">0.8</text>
+<text x="40" y="208">Oct '25</text><text x="298" y="208" text-anchor="middle">Apr '26</text><text x="576" y="208" text-anchor="end">Oct '26</text>
+</g>
+<rect x="40" y="36.8" width="536" height="94.5" fill="rgba(138,155,180,0.07)"></rect>
+<polyline points="40,68.3 59.9,72.5 79.7,85.1 99.6,78.8 119.4,72.5 139.3,64.1 159.1,45.2 179,45.2 198.8,49.4 218.7,36.8 238.5,57.8 258.4,72.5 278.2,83 298.1,78.8 317.9,76.7 337.8,83 357.6,87.2 377.5,87.2 397.3,99.8 417.2,125 437,114.5 456.9,112.4 476.7,93.5 496.6,91.4 516.4,104 536.3,131.3 556.1,101.9 576,95.6" fill="none" stroke="#E9E4D6" stroke-width="2" stroke-linejoin="round"></polyline>
+<circle cx="218.7" cy="36.8" r="3" fill="#E9E4D6"></circle>
+<circle cx="536.3" cy="131.3" r="3" fill="#E9E4D6"></circle>
+<circle cx="576" cy="95.6" r="4" fill="#E9E4D6"></circle>
+<g font-family="IBM Plex Mono, monospace" font-size="11" fill="#E9E4D6">
+<text x="226" y="32">0.72 · Feb 4</text>
+<text x="528" y="150" text-anchor="end">0.27 · Sep 16</text>
+<text x="584" y="99">0.44</text>
+</g>
+</svg>
+<p style="margin: 0; font-size: 12px; color: #8A9BB4">Shaded band: the year's range. Source: FRED DGS2, DGS10. As of Oct 9, 2026.</p>
+</figure>
+
+<section aria-labelledby="feeds" style="flex: 1 1 340px; min-width: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<h2 id="feeds" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25">Every note's discount rate starts here.</h2>
+<div style="display: flex; align-items: baseline; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 32px; font-weight: 500; line-height: 1">14</span><span style="font-size: 14px; color: #8A9BB4">notes price their cost of capital off the 10-year</span></div>
+<dl style="margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; font-size: 13px">
+<dt style="color: #8A9BB4">Rate the notes used</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">5.24% · Oct 9</dd>
+<dt style="color: #8A9BB4">Rate today</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">5.24% · Oct 9</dd>
+<dt style="color: #8A9BB4">Drift since writing</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">0.00 pts</dd>
+<dt style="color: #8A9BB4">Flags a valuation at</dt><dd style="margin: 0; font-family: 'IBM Plex Mono', monospace">±0.25 pts</dd>
+</dl>
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px; background: #0D121B; border: 1px solid rgba(138,155,180,0.16); font-size: 13px"><span aria-hidden="true" style="width: 9px; height: 9px; border-radius: 999px; background: #E9E4D6"></span>No note's inputs have moved.</div>
+<a href="#" style="font-size: 13px; font-weight: 500; margin-top: auto">See the notes that use it →</a>
+</section>
+</div>
+
+<section aria-labelledby="cot" style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 16px">
+<div style="flex: 999 1 520px; display: flex; flex-direction: column; gap: 4px">
+<h2 id="cot" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25; text-wrap: balance">Asset managers' Treasury-note long sits near the top of its 3-year range; leveraged funds hold the mirror short.</h2>
+<span style="font-size: 13px; color: #8A9BB4">Net futures positions, thousands of contracts. Position of today's figure inside its 3-year range. CFTC Traders in Financial Futures, as of Tue Oct 6, released Fri Oct 9.</span>
+</div>
+<span style="flex: 0 0 auto; display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4">Demo · sample data</span>
+</div>
+<div style="overflow-x: auto" tabindex="0" aria-label="Futures positioning table">
+<table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px">
+<thead>
+<tr style="text-align: left; color: #8A9BB4; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase">
+<th scope="col" style="padding: 8px 12px 8px 0; font-weight: 600; border-bottom: 1px solid rgba(138,155,180,0.30)">Market</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid rgba(138,155,180,0.30); text-align: right">Asset managers</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid rgba(138,155,180,0.30); width: 26%">In 3-year range</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid rgba(138,155,180,0.30); text-align: right">Leveraged funds</th>
+<th scope="col" style="padding: 8px 0 8px 12px; font-weight: 600; border-bottom: 1px solid rgba(138,155,180,0.30); width: 26%">In 3-year range</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{cot}}" as="r" hint-placeholder-count="3">
+<tr>
+<th scope="row" style="padding: 14px 12px 14px 0; text-align: left; font-weight: 600; border-bottom: 1px solid rgba(138,155,180,0.16)">{{r.market}}<span style="display: block; font-weight: 400; font-size: 12px; color: #8A9BB4">{{r.code}}</span></th>
+<td style="padding: 14px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; border-bottom: 1px solid rgba(138,155,180,0.16)">{{r.am}}<span style="display: block; font-size: 11px; color: #8A9BB4">{{r.amWeek}} on week</span></td>
+<td style="padding: 14px 12px; border-bottom: 1px solid rgba(138,155,180,0.16)">
+<div role="img" aria-label="{{r.amAria}}" style="position: relative; height: 22px">
+<span style="position: absolute; left: 0; right: 0; top: 7px; height: 8px; border-radius: 4px; background: rgba(138,155,180,0.18)"></span>
+<span style="{{r.amMark}}"></span>
+</div>
+<div style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4"><span>{{r.amMin}}</span><span>{{r.amMax}}</span></div>
+</td>
+<td style="padding: 14px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; border-bottom: 1px solid rgba(138,155,180,0.16)">{{r.lf}}<span style="display: block; font-size: 11px; color: #8A9BB4">{{r.lfWeek}} on week</span></td>
+<td style="padding: 14px 0 14px 12px; border-bottom: 1px solid rgba(138,155,180,0.16)">
+<div role="img" aria-label="{{r.lfAria}}" style="position: relative; height: 22px">
+<span style="position: absolute; left: 0; right: 0; top: 7px; height: 8px; border-radius: 4px; background: rgba(138,155,180,0.18)"></span>
+<span style="{{r.lfMark}}"></span>
+</div>
+<div style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4"><span>{{r.lfMin}}</span><span>{{r.lfMax}}</span></div>
+</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<p style="margin: 0; font-size: 12px; color: #8A9BB4; text-wrap: pretty">Positions are reported as of Tuesday and published Friday, so this view is three days old when it updates. It describes who holds what, not what any of them will do.</p>
+</section>
+
+<footer style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid rgba(138,155,180,0.16); font-size: 12px; color: #8A9BB4">
+<span>Rates: Board of Governors of the Federal Reserve System, H.15 Selected Interest Rates, via FRED. Positioning: CFTC Commitments of Traders, Traders in Financial Futures.</span>
+<span>Personal research. Not financial advice.</span>
+</footer>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var mark = function (pos) {
+      return 'position: absolute; top: 2px; width: 4px; height: 18px; margin-left: -2px; border-radius: 2px; background: #E9E4D6; left: ' + pos + '%;';
+    };
+    var row = function (market, code, am, amWeek, amMin, amMax, amPos, lf, lfWeek, lfMin, lfMax, lfPos) {
+      return {
+        market: market, code: code,
+        am: am, amWeek: amWeek, amMin: amMin, amMax: amMax, amMark: mark(amPos),
+        amAria: 'Asset managers ' + am + ' thousand contracts, ' + amPos + '% of the way from ' + amMin + ' to ' + amMax,
+        lf: lf, lfWeek: lfWeek, lfMin: lfMin, lfMax: lfMax, lfMark: mark(lfPos),
+        lfAria: 'Leveraged funds ' + lf + ' thousand contracts, ' + lfPos + '% of the way from ' + lfMin + ' to ' + lfMax
+      };
+    };
+    return {
+      cot: [
+        row('10-year T-note', 'CBOT · ZN', '+1,214', '+22', '+702', '+1,301', 85, '−1,458', '−31', '−1,520', '−860', 9),
+        row('E-mini S&P 500', 'CME · ES', '+948', '+31', '+612', '+1,034', 80, '−312', '−18', '−455', '−88', 39),
+        row('E-mini Nasdaq-100', 'CME · NQ', '+54', '+3', '+18', '+71', 68, '−21', '+4', '−48', '+6', 50)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

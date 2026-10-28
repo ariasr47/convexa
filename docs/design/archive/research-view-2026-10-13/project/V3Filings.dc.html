@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Filings · Convexa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112.5,600;112.5,700;112.5,800;125,800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0F17;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+a{color:#8CB0DE;text-underline-offset:3px}
+a:hover{color:#B9D0EC}
+a:focus-visible,button:focus-visible{outline:2px solid #F2A93B;outline-offset:2px;border-radius:4px}
+@keyframes shimmer{0%{opacity:.55}50%{opacity:.9}100%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.skel{animation:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100%; background: #0B0F17; color: #E9E4D6; font-size: 15px; line-height: 1.55">
+
+<div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 8px 32px; background: #131A24; border-bottom: 1px solid rgba(138,155,180,0.16); font-size: 12px">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A9BB4" stroke-width="1.75" stroke-linecap="round"><path d="M9 5v14M15 5v14"></path></svg>
+<span style="font-weight: 600">Live market data is off.</span>
+<span style="color: #8A9BB4">Prices, dealer structure and AI reads are paused. Research, rates and filings stay current.</span>
+<span style="flex-grow: 1"></span>
+<a href="#">Try the full demo →</a>
+</div>
+
+<header style="background: rgba(19,26,36,0.82); border-bottom: 1px solid rgba(138,155,180,0.16)">
+<nav aria-label="Primary" style="max-width: 1280px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; gap: 32px">
+<a href="#" style="text-decoration: none; color: #E9E4D6; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 125%; letter-spacing: 0.18em; font-size: 15px">CONVE<span style="color: #F2A93B">X</span>A</a>
+<div style="display: flex; align-items: stretch; gap: 4px; height: 64px">
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Scanner</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Ticker</a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: inset 0 -2px 0 #F2A93B">Research</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Positions</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Alerts</a>
+</div>
+<span style="flex-grow: 1"></span>
+<button type="button" style="display: inline-flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 12px; border-radius: 8px; border: 1px solid rgba(138,155,180,0.30); background: #0D121B; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Search tickers and notes<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(138,155,180,0.30); color: #E9E4D6">⌘K</span></button>
+<a href="#" style="color: #8A9BB4; text-decoration: none; font-size: 14px; font-weight: 500">Log in</a>
+</nav>
+</header>
+
+<nav aria-label="Research" style="border-bottom: 1px solid rgba(138,155,180,0.16)">
+<div style="max-width: 1280px; margin: 0 auto; padding: 0 32px; display: flex; flex-wrap: wrap; gap: 4px; height: 48px; align-items: stretch">
+<a href="#" style="display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Notes<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #E9E4D6">14</span></a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Markets</a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: inset 0 -2px 0 #E9E4D6">Filings</a>
+<a href="#" style="display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Scorecard<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #E9E4D6">77 open</span></a>
+</div>
+</nav>
+
+<main style="max-width: 1280px; margin: 0 auto; padding: 40px 32px 64px; display: flex; flex-direction: column; gap: 28px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 32px">
+<div style="flex: 999 1 560px; display: flex; flex-direction: column; gap: 12px">
+<h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 48px; line-height: 1.05">Filings</h1>
+<p style="margin: 0; max-width: 66ch; color: #8A9BB4; font-size: 16px; text-wrap: pretty">What the 14 followed companies filed with the SEC, newest first. A results filing makes its note due, and its figures arrive as a proposed update you approve line by line.</p>
+</div>
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px">
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); font-family: 'IBM Plex Mono', monospace; font-size: 11px">SEC EDGAR · checked Oct 13, 06:00</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #8A9BB4"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(138,155,180,0.30); color: #E9E4D6">j</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(138,155,180,0.30); color: #E9E4D6">k</span>move<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(138,155,180,0.30); color: #E9E4D6; margin-left: 6px">o</span>open the filing</span>
+</div>
+</div>
+
+<div role="group" aria-label="Filter filings" style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" aria-pressed="true" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 0; background: #E9E4D6; color: #0B0F17; font: 600 13px 'IBM Plex Sans', sans-serif">All · 11</button>
+<button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Results · 4</button>
+<button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Quarterly and annual · 1</button>
+<button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Deals and financing · 3</button>
+<button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Other · 3</button>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+
+<section aria-labelledby="feed" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h2 id="feed" style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Expected · confirmed dates</h2>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{expected}}" as="e" hint-placeholder-count="4">
+<li style="display: grid; grid-template-columns: 64px 56px 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px; border-radius: 10px; border: 1px dashed rgba(138,155,180,0.40); font-size: 13px">
+<span style="font-family: 'IBM Plex Mono', monospace">{{e.date}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: rgba(138,155,180,0.16); text-align: center">{{e.ticker}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4">{{e.form}}</span>
+<span style="min-width: 0">{{e.what}}</span>
+<span style="font-size: 12px; color: #8A9BB4; white-space: nowrap">makes its note due</span>
+</li>
+</sc-for>
+</ol>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Filed · last 10 weeks</h2>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; overflow: hidden">
+<sc-for list="{{filed}}" as="f" hint-placeholder-count="11">
+<li style="{{f.rowStyle}}">
+<span style="font-family: 'IBM Plex Mono', monospace; color: #8A9BB4">{{f.date}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: rgba(138,155,180,0.16); text-align: center">{{f.ticker}}</span>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4">{{f.form}}</span></span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{f.what}}</span><span style="font-size: 12px; color: #8A9BB4">{{f.kind}}</span></span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #8A9BB4; white-space: nowrap"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A9BB4" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>in note</span>
+</li>
+</sc-for>
+</ol>
+<p style="margin: 0; font-size: 12px; color: #8A9BB4">All 11 are cited by the notes, which were written after them, so none is waiting on you. Filings the notes don't use yet are listed first and marked new.</p>
+</div>
+</section>
+
+<section aria-labelledby="detail" style="flex: 1 1 420px; min-width: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: rgba(138,155,180,0.16)">MU</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8A9BB4">8-K · Item 2.02 · Sep 30, 2026</span>
+<span style="margin-left: auto; display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); font-size: 11px; color: #8A9BB4">Replay</span>
+</div>
+<h2 id="detail" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25; text-wrap: balance">FQ4-26 results: three figures in the Micron note would change.</h2>
+<span style="font-size: 13px; color: #8A9BB4; text-wrap: pretty">How this filing arrives when a note already exists: each figure it touches, old against new, with the tag it was read from.</span>
+</div>
+<table style="width: 100%; border-collapse: collapse; font-size: 13px">
+<thead>
+<tr style="color: #8A9BB4; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; text-align: left">
+<th scope="col" style="padding: 6px 8px 6px 0; font-weight: 600; border-bottom: 1px solid rgba(138,155,180,0.30)"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Include</span></th>
+<th scope="col" style="padding: 6px 8px; font-weight: 600; border-bottom: 1px solid rgba(138,155,180,0.30)">Figure</th>
+<th scope="col" style="padding: 6px 8px; font-weight: 600; border-bottom: 1px solid rgba(138,155,180,0.30); text-align: right">In the note</th>
+<th scope="col" style="padding: 6px 0 6px 8px; font-weight: 600; border-bottom: 1px solid rgba(138,155,180,0.30); text-align: right">From the filing</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{diff}}" as="d" hint-placeholder-count="3">
+<tr>
+<td style="padding: 12px 8px 12px 0; border-bottom: 1px solid rgba(138,155,180,0.16); vertical-align: top"><input type="checkbox" checked="{{true}}" aria-label="{{d.include}}" style="width: 18px; height: 18px; margin: 2px 0 0; accent-color: #E9E4D6"></td>
+<td style="padding: 12px 8px; border-bottom: 1px solid rgba(138,155,180,0.16); vertical-align: top"><span style="display: block; font-weight: 500">{{d.figure}}</span><span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4">{{d.tag}}</span></td>
+<td style="padding: 12px 8px; border-bottom: 1px solid rgba(138,155,180,0.16); text-align: right; vertical-align: top; font-family: 'IBM Plex Mono', monospace; color: #8A9BB4">{{d.old}}<span style="display: block; font-size: 11px">{{d.oldAsOf}}</span></td>
+<td style="padding: 12px 0 12px 8px; border-bottom: 1px solid rgba(138,155,180,0.16); text-align: right; vertical-align: top; font-family: 'IBM Plex Mono', monospace">{{d.new}}<span style="display: block; font-size: 11px; color: #8A9BB4">{{d.newAsOf}}</span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<button type="button" style="height: 44px; padding: 0 18px; border-radius: 8px; border: 0; background: #F2A93B; color: #0B0F17; font: 600 14px 'IBM Plex Sans', sans-serif">Draft an update with these 3</button>
+<button type="button" style="height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #E9E4D6; font: 500 14px 'IBM Plex Sans', sans-serif">Open the filing</button>
+</div>
+<p style="margin: 0; font-size: 12px; color: #8A9BB4; text-wrap: pretty">The draft is a new dated note carrying these figures and flags every section to re-read. Nothing published changes until you push it, and the draft can be thrown away.</p>
+</section>
+</div>
+
+<section aria-labelledby="states" style="display: flex; flex-direction: column; gap: 12px; padding-top: 8px">
+<h2 id="states" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">When the feed can't show filings</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px">
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Loading</span>
+<sc-for list="{{skel}}" as="s" hint-placeholder-count="3">
+<div style="display: grid; grid-template-columns: 64px 56px minmax(0, 1fr); gap: 12px; align-items: center"><span class="skel" style="height: 12px; border-radius: 4px; background: rgba(138,155,180,0.16); animation: shimmer 1.6s ease-in-out infinite"></span><span class="skel" style="height: 18px; border-radius: 5px; background: rgba(138,155,180,0.16); animation: shimmer 1.6s ease-in-out infinite"></span><span class="skel" style="{{s}}"></span></div>
+</sc-for>
+<span style="font-size: 12px; color: #8A9BB4">Rows hold their final height, so nothing jumps when they fill.</span>
+</div>
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Quiet week</span>
+<span style="font-weight: 600">Nothing filed since Monday.</span>
+<span style="font-size: 13px; color: #8A9BB4; text-wrap: pretty">Results season starts Oct 15 with TSMC. Each followed company's next confirmed date is listed above.</span>
+</div>
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #E07A3F"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E07A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3zM12 10v4M12 17.5v.01"></path></svg>EDGAR unreachable</span>
+<span style="font-weight: 600">Showing filings as of 06:00.</span>
+<span style="font-size: 13px; color: #8A9BB4; text-wrap: pretty">The SEC's servers didn't answer the 07:00 check. Convexa retries every hour; notes keep their dates and nothing comes due late because of it.</span>
+</div>
+</div>
+</section>
+
+<p style="margin: 0; font-size: 12px; color: #8A9BB4">Filings from SEC EDGAR, the public record. Personal research notes. Not financial advice.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var ROW = 'display: grid; grid-template-columns: 64px 56px 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 16px; font-size: 13px; border-top: 1px solid rgba(138,155,180,0.16);';
+    var row = function (date, ticker, form, what, kind, first) {
+      return { date: date, ticker: ticker, form: form, what: what, kind: kind, rowStyle: first ? ROW.replace('border-top: 1px solid rgba(138,155,180,0.16);', 'border-top: 0; background: rgba(233,228,214,0.05); box-shadow: inset 2px 0 0 #E9E4D6;') : ROW };
+    };
+    return {
+      expected: [
+        { date: 'Oct 15', ticker: 'TSM', form: '6-K', what: '3Q26 results and 4Q26 guidance' },
+        { date: 'Oct 21', ticker: 'TSLA', form: '8-K', what: 'Q3 2026 results' },
+        { date: 'Oct 29', ticker: 'INTC', form: '8-K', what: 'Q3 2026 results' },
+        { date: 'Nov 17', ticker: 'NVDA', form: '8-K', what: 'Q3 FY2027 results' }
+      ],
+      filed: [
+        row('Oct 2', 'TSLA', '8-K', 'Q3 2026 production, deliveries and deployments', 'Other'),
+        row('Sep 30', 'MU', '8-K 2.02', 'FQ4-26 results and FQ1-27 guidance', 'Results', true),
+        row('Sep 29', 'TSLA', '8-K', 'New credit facilities', 'Deals and financing'),
+        row('Sep', 'MSFT', '8-K', 'FY27 segment recast and investor metrics', 'Other'),
+        row('Aug 26', 'NVDA', '8-K 2.02', 'Q2 FY2027 results', 'Results'),
+        row('Aug', 'NVDA', '10-Q', 'Quarter ended Jul 26', 'Quarterly and annual'),
+        row('Aug 14', 'SPCX', '8-K', 'Cursor (Anysphere) merger completed', 'Deals and financing'),
+        row('Aug 12', 'CBRS', '8-K 2.02', 'Q2 2026 results', 'Results'),
+        row('Aug 11', 'TSM', '6-K', 'Board resolutions', 'Other'),
+        row('Aug 10', 'INTC', '8-K', 'Upsized $20B common stock offering priced', 'Deals and financing'),
+        row('Aug 4', 'SPCX', '8-K 2.02', 'Q2 2026 results', 'Results')
+      ],
+      diff: [
+        { figure: 'Revenue · quarter', tag: 'us-gaap:Revenues', old: '$41,456M', oldAsOf: 'FQ3-26', new: '$54,229M', newAsOf: 'FQ4-26', include: 'Include revenue' },
+        { figure: 'Gross margin, GAAP · year', tag: 'us-gaap:GrossProfit ÷ Revenues', old: '39.8%', oldAsOf: 'FY2025', new: '80.7%', newAsOf: 'FY2026', include: 'Include gross margin' },
+        { figure: 'Next-quarter revenue guide', tag: 'exhibit 99.1 · not XBRL', old: '—', oldAsOf: '', new: '$61.5B ± $1.5B', newAsOf: 'FQ1-27', include: 'Include the guide' }
+      ],
+      skel: [
+        'height: 12px; width: 82%; border-radius: 4px; background: rgba(138,155,180,0.16); animation: shimmer 1.6s ease-in-out infinite',
+        'height: 12px; width: 64%; border-radius: 4px; background: rgba(138,155,180,0.16); animation: shimmer 1.6s ease-in-out infinite',
+        'height: 12px; width: 74%; border-radius: 4px; background: rgba(138,155,180,0.16); animation: shimmer 1.6s ease-in-out infinite'
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

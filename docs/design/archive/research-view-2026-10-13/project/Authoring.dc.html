@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Authoring research notes · Convexa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112.5,600;112.5,700;112.5,800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0F17;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+</style>
+</helmet>
+<div style="width: 1440px; height: 4800px; box-sizing: border-box; padding: 48px 56px; background: #0B0F17; color: #E9E4D6; display: flex; flex-direction: column; gap: 28px; font-size: 14px; line-height: 1.5">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">Spec · research/&lt;TICKER&gt;/*.md</span>
+<h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 40px; line-height: 1.1">Write Markdown, get visuals.</h1>
+<p style="margin: 0; max-width: 80ch; color: #8A9BB4; font-size: 15px">Plain Markdown still works. Fenced blocks with a name turn into the visuals on the left of each row. A malformed block fails <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">npm run research:check</span> with its line number, so nothing broken ever deploys. Headings written as <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">## Label | Takeaway</span> give each section its rail label and its one-line headline. Every figure carries its date after an <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">@</span>. Update notes add <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">since</span>, <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">moves</span> and carried-section flags (see the Freshness board).</p>
+</div>
+
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="15">
+<div style="display: grid; grid-template-columns: 560px minmax(0, 1fr); gap: 24px; align-items: stretch">
+<div style="background: #0D121B; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column">
+<div style="display: flex; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid rgba(138,155,180,0.16); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4"><span>{{r.block}}</span><span>{{r.file}}</span></div>
+<pre style="margin: 0; padding: 12px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.6; color: #E9E4D6; white-space: pre-wrap">{{r.code}}</pre>
+</div>
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; justify-content: center">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">Renders as · {{r.renders}}</span>
+<sc-if value="{{r.isHero}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px"><div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 36px; line-height: 1">CBRS</span><span style="color: #8A9BB4">Cerebras Systems</span></div><span style="font-family: 'Archivo', sans-serif; font-weight: 700; font-stretch: 112.5%; font-size: 22px; line-height: 1.2">A $25B backlog on a $0.9B year. Converting it is the whole story.</span><div style="display: flex; gap: 6px; flex-wrap: wrap"><span style="padding: 3px 9px; border-radius: 999px; background: rgba(138,155,180,0.16); font-size: 12px">Watching</span><span style="padding: 3px 9px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #8A9BB4; font-size: 12px">Written Oct 12, 2026</span><span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: rgba(138,155,180,0.16); font-size: 12px"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 999px; background: #E9E4D6"></span>Current · review by Oct 14</span><span style="padding: 3px 9px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #8A9BB4; font-size: 12px">7 min read</span></div></div>
+</sc-if>
+<sc-if value="{{r.isValuation}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div role="img" aria-label="Model range $40 to $273, base $128, today $146.62" style="position: relative; height: 30px"><span style="position: absolute; left: 0; right: 0; top: 13px; height: 2px; background: rgba(138,155,180,0.14)"></span><span style="position: absolute; top: 7px; height: 14px; border-radius: 4px; left: 11.1%; width: 64.7%; background: rgba(94,139,196,0.45)"></span><span style="position: absolute; top: 4px; width: 10px; height: 20px; margin-left: -5px; border-radius: 3px; left: 35.6%; background: #5E8BC4"></span><span style="position: absolute; left: 40.7%; top: 0; bottom: 0; width: 2px; background: #E9E4D6"></span></div>
+<div style="display: flex; gap: 20px; font-family: 'IBM Plex Mono', monospace"><span><span style="color: #ff5c5c; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600">Bear</span> $40</span><span><span style="font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600">Base</span> $128</span><span><span style="color: #2ecc71; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600">Bull</span> $273</span><span><span style="font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; color: #8A9BB4">Weighted</span> $131</span></div>
+<span style="font-size: 12px; color: #8A9BB4">The build computes every value from the stated inputs (no hand-typed outputs) and fails if the inputs don't add up. "Upside" is only ever shown against the dated price.</span>
+</div>
+</sc-if>
+<sc-if value="{{r.isTldr}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px"><div style="display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: baseline"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 22px">29×</span><span>Contracted backlog ($25.4B) is about 29 times this year’s revenue guide.</span></div><div style="display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: baseline; border-top: 1px solid rgba(138,155,180,0.16); padding-top: 8px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 22px">61%</span><span>Cloud is now most of the business, up 287% in a year.</span></div></div>
+</sc-if>
+<sc-if value="{{r.isMetrics}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><div style="border: 1px solid rgba(138,155,180,0.16); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #8A9BB4">Core revenue · Q2 2026</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 24px">$209.9M</span><span style="align-self: flex-start; padding: 1px 8px; border-radius: 999px; background: rgba(46,204,113,0.14); color: #2ecc71; font-family: 'IBM Plex Mono', monospace; font-size: 12px">+103% YoY</span></div><div style="border: 1px solid rgba(138,155,180,0.16); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #8A9BB4">Contracted backlog · Jun 30</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 24px">$25.4B</span><span style="align-self: flex-start; padding: 1px 8px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #8A9BB4; font-family: 'IBM Plex Mono', monospace; font-size: 12px">≈29× FY26 guide</span></div></div>
+</sc-if>
+<sc-if value="{{r.isChart}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; align-items: flex-end; gap: 10px; height: 120px; border-bottom: 1px solid rgba(138,155,180,0.30)"><span style="flex: 1; height: 52px; border-radius: 4px 4px 1px 1px; background: #8A9BB4"></span><span style="flex: 1; height: 54px; border-radius: 4px 4px 1px 1px; background: #8A9BB4"></span><span style="flex: 1; height: 71px; border-radius: 4px 4px 1px 1px; background: repeating-linear-gradient(135deg, rgba(138,155,180,.7) 0 5px, rgba(138,155,180,.28) 5px 10px)"></span><span style="flex: 1; height: 89px; border-radius: 4px 4px 1px 1px; background: repeating-linear-gradient(135deg, rgba(138,155,180,.7) 0 5px, rgba(138,155,180,.28) 5px 10px)"></span><span style="flex: 1; height: 101px; border-radius: 4px 4px 1px 1px; background: #8A9BB4"></span><span style="flex: 1; height: 94px; border-radius: 4px 4px 1px 1px; background: #E9E4D6"></span><span style="flex: 1; height: 112px; border-radius: 4px 4px 1px 1px; border: 1.5px dashed rgba(233,228,214,.65); box-sizing: border-box"></span></div>
+<span style="font-size: 12px; color: #8A9BB4">The last reported bar is highlighted; "approx" hatches; "guide" is dashed.</span>
+</sc-if>
+<sc-if value="{{r.isSplit}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; height: 32px; border-radius: 6px; overflow: hidden; font-family: 'IBM Plex Mono', monospace; font-size: 12px"><span style="width: 22%; background: #5E8BC4; color: #0B0F17; display: flex; align-items: center; padding-left: 8px; font-weight: 600">22%</span><span style="width: 43%; background: rgba(94,139,196,0.55); display: flex; align-items: center; padding-left: 8px">43%</span><span style="width: 35%; background: rgba(94,139,196,0.22); display: flex; align-items: center; padding-left: 8px">35%</span></div>
+<div style="display: grid; grid-template-columns: 22fr 43fr 35fr; font-size: 12px; color: #8A9BB4"><span>Next 24 months</span><span>Months 25–48</span><span>Later</span></div>
+</sc-if>
+<sc-if value="{{r.isCase}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px"><div style="display: flex; flex-direction: column; gap: 6px"><span style="color: #2ecc71; font-weight: 600">▲ Bull case</span><span><span style="font-weight: 600">Backlog dwarfs revenue.</span> <span style="color: #8A9BB4">$25.4B contracted against an ~$885M year.</span></span></div><div style="display: flex; flex-direction: column; gap: 6px"><span style="color: #ff5c5c; font-weight: 600">▼ Bear case</span><span><span style="font-weight: 600">Few customers, one big swing.</span> <span style="color: #8A9BB4">Top three were 76% of Q2 revenue.</span></span></div></div>
+</sc-if>
+<sc-if value="{{r.isTimeline}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 10px"><div style="display: grid; grid-template-columns: 100px 14px 1fr; gap: 10px; align-items: center"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #F2A93B; text-align: right">Oct 14</span><span style="width: 12px; height: 12px; border-radius: 999px; background: #F2A93B"></span><span><span style="font-weight: 600">Lock-up release</span> <span style="padding: 1px 8px; border-radius: 999px; background: rgba(242,169,59,0.12); color: #F2A93B; font-size: 11px">Next up · in 2 days</span></span></div><div style="display: grid; grid-template-columns: 100px 14px 1fr; gap: 10px; align-items: center"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8A9BB4; text-align: right">~Nov 2026</span><span style="width: 12px; height: 12px; border-radius: 999px; border: 2px solid #8A9BB4; box-sizing: border-box"></span><span><span style="font-weight: 600">Q3 2026 results</span> <span style="padding: 1px 8px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.45); color: #8A9BB4; font-size: 11px">Expected</span></span></div></div>
+<span style="font-size: 12px; color: #8A9BB4">"Next up" and "in 2 days" are worked out in the browser from today's date, so they never go stale.</span>
+</sc-if>
+<sc-if value="{{r.isScore}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px"><div style="display: grid; grid-template-columns: 1.4fr 1fr 96px; gap: 10px; align-items: center"><span style="font-weight: 600">Backlog converts on schedule</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">$209.9M vs ~$194M</span><span style="justify-self: start; padding: 2px 9px; border-radius: 999px; background: rgba(46,204,113,0.12); color: #2ecc71; font-size: 12px; font-weight: 600">✓ On track</span></div><div style="display: grid; grid-template-columns: 1.4fr 1fr 96px; gap: 10px; align-items: center"><span style="font-weight: 600">Margins hold as cloud scales</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">40.6%, from 46.5%</span><span style="justify-self: start; padding: 2px 9px; border-radius: 999px; background: rgba(138,155,180,0.18); font-size: 12px; font-weight: 600">! Watch</span></div></div>
+<span style="font-size: 12px; color: #8A9BB4">Status is a word plus a glyph, never colour alone.</span>
+</sc-if>
+<sc-if value="{{r.isKill}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: 1.2fr 1fr 80px 1fr; gap: 10px; font-size: 13px; align-items: start"><span style="font-weight: 600">Backlog conversion stalls</span><span>Q3 core revenue &lt; $214M</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">Nov 2026</span><span style="color: #8A9BB4">Move to the bear case.</span></div>
+<span style="font-size: 12px; color: #8A9BB4">Each row links back from the pre-mortem story it answers.</span>
+</sc-if>
+<sc-if value="{{r.isForecast}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 130px 72px; gap: 10px; align-items: center; font-size: 13px"><span>Q3 2026 core revenue is at least $214M.</span><span style="font-size: 12px; color: #8A9BB4">resolves ~Nov 2026</span><span style="font-family: 'IBM Plex Mono', monospace">P 0.70</span></div>
+<span style="font-size: 12px; color: #8A9BB4">Logged to research/_forecasts.csv on every build; scored with a Brier score once resolved. The 0.70 here is an example of the format.</span>
+</sc-if>
+<sc-if value="{{r.isSince}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<div style="display: grid; grid-template-columns: 76px minmax(0, 1fr) 150px; gap: 10px; align-items: center"><span style="color: #8A9BB4">Catalyst</span><span>Lock-up release, Oct 14</span><span style="justify-self: start; padding: 2px 9px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-size: 11px">outcome · your entry</span></div>
+<div style="display: grid; grid-template-columns: 76px minmax(0, 1fr) 150px; gap: 10px; align-items: center"><span style="color: #8A9BB4">Forecast</span><span>Q3 2026 core revenue ≥ $214M</span><span style="justify-self: start; padding: 2px 9px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-size: 11px">outcome · your entry</span></div>
+<div style="display: grid; grid-template-columns: 76px minmax(0, 1fr) 150px; gap: 10px; align-items: center"><span style="color: #8A9BB4">Kill #1</span><span>Q3 core revenue &lt; $214M</span><span style="justify-self: start; padding: 2px 9px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-size: 11px">outcome · your entry</span></div>
+</div>
+<span style="font-size: 12px; color: #8A9BB4">Opens every update note: the old calls, scored before any view moves. research:new writes it from the old note; a blank outcome fails the check.</span>
+</sc-if>
+<sc-if value="{{r.isMoves}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: 1.1fr 1fr 0.9fr 1fr; gap: 10px; font-size: 13px; align-items: baseline"><span style="font-weight: 600">Base revenue 2028</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">$5B → <span style="padding: 1px 7px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-family: 'IBM Plex Sans', sans-serif; font-size: 11px">new</span></span><span style="color: #8A9BB4">Q3 results</span><span style="justify-self: start; padding: 1px 8px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); color: #8A9BB4; font-size: 11px">why · your entry</span></div>
+<span style="font-size: 12px; color: #8A9BB4">Judgments start at the old note's values. The check compares each one with the previous note and fails on a change that has no line here. Each line also lands in the change log as a Revision.</span>
+</sc-if>
+<sc-if value="{{r.isCarried}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">07 · Moat and competition</span><span style="font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.2">Speed is the edge. Nothing yet shows it lasts.</span><span style="align-self: flex-start; padding: 2px 9px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #8A9BB4; font-size: 11px">Carried from Oct 12 · re-confirmed [date]</span></div>
+<span style="font-size: 12px; color: #8A9BB4">research:new writes the flag. Change it to <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">re-confirmed &lt;date&gt;</span> once you've read the section against the new filings, or rewrite the section. A flag left in fails the check.</span>
+</sc-if>
+<sc-if value="{{r.isArchive}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; padding: 4px 11px; border-radius: 999px; background: rgba(138,155,180,0.12); border: 1px solid rgba(138,155,180,0.22); color: #E9E4D6; font-size: 12px; font-weight: 600"><span aria-hidden="true" style="width: 9px; height: 9px; border-radius: 2px; background: #8A9BB4"></span>Archived · not following since [date]</span><span style="font-size: 13px">Kept as a dated record. The ticker leaves Coming up and research:due, so it stops asking for review.</span></div>
+</sc-if>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":4800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var row = function (block, renders, code, flag, file) {
+      var r = { block: block, renders: renders, code: code, file: file || '2026-10-12-initiation.md', isHero: false, isValuation: false, isTldr: false, isMetrics: false, isChart: false, isSplit: false, isCase: false, isTimeline: false, isScore: false, isKill: false, isForecast: false, isSince: false, isMoves: false, isCarried: false, isArchive: false };
+      r[flag] = true;
+      return r;
+    };
+    var F = '```';
+    return {
+      rows: [
+        row('front matter', 'the hero', '---\nticker: CBRS\ndate: 2026-10-12\ntitle: A $25B backlog on a $0.9B year. Converting it is the whole story.\nstance: watching\ntarget: 150\ntarget_date: 2027-06-30\ntags: AI chips, IPO 2026\n---', 'isHero'),
+        row(F + 'valuation', 'implied value, scenarios, football field, sensitivity', F + 'valuation\nprice: 146.62 @ 2026-10-12\nshares: 273.7M diluted (calc)\nnet_cash: 7.7B\nmodel: ev_sales, value mid-2028, discount 12%\nbear | rev 2.5B | 4x  | cash 4B | Backlog slips; OpenAI trims.\nbase | rev 5B   | 8x  | cash 5B | Converts on schedule.\nbull | rev 7.5B | 12x | cash 6B | OpenAI option; AWS live.\nodds: 6/10/4 (in twentieths)\nthird_party: Wall Street average 288.67 (TipRanks, 2026-10-12)\n' + F, 'isValuation'),
+        row(F + 'tldr', 'the 30-second summary', F + 'tldr\n29× | Contracted backlog ($25.4B) is about 29 times this year’s revenue guide.\n61% | Cloud is now most of the business, up 287% in a year.\n' + F, 'isTldr'),
+        row(F + 'metrics', 'figure tiles, each dated', F + 'metrics\nCore revenue       | $209.9M @ Q2 2026   | +103% YoY       | up   | [4]\nContracted backlog | $25.4B @ 2026-06-30 | ≈29× FY26 guide | flat | [3]\n' + F, 'isMetrics'),
+        row(F + 'chart bar', 'a bar chart', F + 'chart bar "Quarterly revenue, GAAP, $M"\nQ1 \'25  | 99.5\nQ2 \'25  | 103.3\nQ3 \'25  | 136   | approx\nQ4 \'25  | 171   | approx\nQ1 \'26  | 193.4\nQ2 \'26  | 180.1\nQ3 \'26e | 215   | guide\n' + F, 'isChart'),
+        row(F + 'split', 'a proportion bar', F + 'split "When the backlog becomes revenue"\nNext 24 months | 22\nMonths 25–48   | 43\nLater          | 35\n' + F, 'isSplit'),
+        row(F + 'case', 'bull vs bear', F + 'case\n+ Backlog dwarfs revenue. | $25.4B contracted against an ~$885M year. [3]\n- Few customers, one big swing. | Top three were 76% of Q2 revenue. [3]\n' + F, 'isCase'),
+        row(F + 'catalysts', 'the timeline', F + 'catalysts\n2026-10-14 | Lock-up release | About 19.4M shares become sellable. | confirmed\n2026-11    | Q3 2026 results | Core revenue guide $214–216M.      | expected\n' + F, 'isTimeline'),
+        row(F + 'scorecard', 'the thesis scorecard', F + 'scorecard\nBacklog converts on schedule | Core revenue vs guide | $209.9M vs ~$194M | ok    | Q3 core revenue < $214M\nMargins hold as cloud scales | Core gross margin     | 40.6%, from 46.5% | watch | Q3 core gross margin < 38%\n' + F, 'isScore'),
+        row(F + 'kill', 'kill criteria', F + 'kill\n#1 | Backlog conversion stalls | Q3 core revenue < $214M | Q3 8-K | 2026-11 | Move to the bear case.\n' + F, 'isKill'),
+        row(F + 'forecasts', 'the forecast ledger', F + 'forecasts\nQ3 2026 core revenue is at least $214M | 0.70 | 2026-11-30 | Q3 8-K\n' + F, 'isForecast'),
+        row(F + 'since', 'the old calls, scored first', F + 'since\ncatalyst | 2026-10-14 | Lock-up release | outcome: ___\nforecast | Q3 2026 core revenue ≥ $214M  | outcome: ___\nkill #1  | Q3 core revenue < $214M       | outcome: ___\n' + F, 'isSince', '<date>-update.md'),
+        row(F + 'moves', 'judgment moves', F + 'moves\nbase revenue 2028 | 5B → ___ | Q3 results | ___\n' + F, 'isMoves', '<date>-update.md'),
+        row('carried section', 'provenance on a carried section', '## Moat and competition | Speed is the edge. Nothing yet shows it lasts.\n<!-- re-confirm: carried from 2026-10-12 -->', 'isCarried', '<date>-update.md'),
+        row('front matter · dropping coverage', 'the archived state', '---\nticker: CBRS\ndate: 2026-10-12\n…\nnot_following_since: <date>\n---', 'isArchive')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

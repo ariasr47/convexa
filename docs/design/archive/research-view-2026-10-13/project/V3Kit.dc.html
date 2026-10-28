@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>v3 kit · Convexa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112.5,600;112.5,700;112.5,800;125,800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0F17;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+a{color:#8CB0DE;text-underline-offset:3px}
+a:hover{color:#B9D0EC}
+a:focus-visible,button:focus-visible{outline:2px solid #F2A93B;outline-offset:2px;border-radius:4px}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 2300px; box-sizing: border-box; padding: 56px 64px; background: #0B0F17; color: #E9E4D6; font-size: 15px; line-height: 1.55; display: flex; flex-direction: column; gap: 40px">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 40px; line-height: 1.05">v3 kit</h1>
+<p style="margin: 0; max-width: 72ch; color: #8A9BB4; font-size: 16px">The pieces the new Research views add, each drawn in its states. Everything here uses the canon's tokens and type; nothing new is introduced except the provenance chip.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+
+<section aria-labelledby="k-prov" style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 id="k-prov" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Provenance chip</h2>
+<p style="margin: 0; font-size: 13px; color: #8A9BB4">Where a figure came from, one click from the source. The border says how much to trust it.</p>
+<div style="display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 14px 16px; align-items: center; font-size: 13px">
+<span style="color: #8A9BB4">Filing, traced</span>
+<a href="#" style="justify-self: start; display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #E9E4D6; text-decoration: none">8-K 99.1 · Aug 26</a>
+<span style="color: #8A9BB4">Public dataset</span>
+<a href="#" style="justify-self: start; display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #E9E4D6; text-decoration: none">Fed H.15 via FRED · Oct 9</a>
+<span style="color: #8A9BB4">Someone else's estimate</span>
+<a href="#" style="justify-self: start; display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px dotted rgba(138,155,180,0.55); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4; text-decoration: none">StockAnalysis · untraced</a>
+<span style="color: #8A9BB4">Sample</span>
+<span style="justify-self: start; display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4">Demo · sample data</span>
+<span style="color: #8A9BB4">Hover</span>
+<a href="#" style="justify-self: start; display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.55); background: rgba(233,228,214,0.05); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #E9E4D6; text-decoration: none">8-K 99.1 · Aug 26</a>
+<span style="color: #8A9BB4">Keyboard focus</span>
+<a href="#" style="justify-self: start; display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); outline: 2px solid #F2A93B; outline-offset: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #E9E4D6; text-decoration: none">8-K 99.1 · Aug 26</a>
+</div>
+</section>
+
+<section aria-labelledby="k-cell" style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 id="k-cell" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Figure cell · registers</h2>
+<p style="margin: 0; font-size: 13px; color: #8A9BB4">Mono is a figure Convexa can trace. Sans with a dotted rule is asserted, not traced. Words from the closed list stand in for missing numbers.</p>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: rgba(138,155,180,0.16); border-radius: 10px; overflow: hidden">
+<div style="background: #0D121B; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Traced</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 500">$96.2B</span><span style="font-size: 12px; color: #8A9BB4">▲ 106% on a year</span></div>
+<div style="background: #0D121B; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Untraced</span><span style="align-self: flex-start; font-size: 22px; font-weight: 500; border-bottom: 1px dotted rgba(138,155,180,0.85)">$692.2B</span><span style="font-size: 12px; color: #8A9BB4">57 analysts' average</span></div>
+<div style="background: #0D121B; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Missing</span><span style="font-size: 17px; font-weight: 500; color: #8A9BB4; padding: 4px 0">not set</span><span style="font-size: 12px; color: #8A9BB4">says why, never a zero</span></div>
+<div style="background: #0D121B; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Stale</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 500; color: #7B8CA6">$226.32</span><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #8A9BB4"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8A9BB4" stroke-width="2" stroke-linecap="round"><path d="M9 5v14M15 5v14"></path></svg>close · Oct 12</span></div>
+</div>
+</section>
+
+<section aria-labelledby="k-dir" style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 id="k-dir" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Direction colour</h2>
+<p style="margin: 0; font-size: 13px; color: #8A9BB4">Green and red stay reserved for money moving: P&amp;L, flow, gamma sign. A company's revenue rising is a fact about the company, so its arrow is neutral.</p>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="padding: 14px 16px; border-radius: 10px; background: #0D121B; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Revenue · company fact</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 20px">$96.2B</span><span style="align-self: flex-start; padding: 2px 8px; border-radius: 10px; background: rgba(138,155,180,0.16); font-family: 'IBM Plex Mono', monospace; font-size: 12px">▲ 106% on a year</span></div>
+<div style="padding: 14px 16px; border-radius: 10px; background: #0D121B; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Position P&amp;L · your money</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 20px; color: #2ecc71">+$1,240</span><span style="align-self: flex-start; padding: 2px 8px; border-radius: 10px; background: rgba(46,204,113,0.14); font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #2ecc71">▲ 3.1% today</span></div>
+</div>
+</section>
+
+<section aria-labelledby="k-chart" style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 id="k-chart" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Chart frame</h2>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 10px; background: #0D121B">
+<span style="font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 18px; line-height: 1.25">The title states the finding, as a sentence.</span>
+<span style="font-size: 13px; color: #8A9BB4">The subtitle holds the metric, the unit and the period.</span>
+<div style="height: 64px; margin: 10px 0; border-bottom: 1px solid rgba(138,155,180,0.30); display: flex; align-items: flex-end; gap: 10px"><span style="width: 40px; height: 30px; background: #8A9BB4; border-radius: 4px 4px 1px 1px"></span><span style="width: 40px; height: 44px; background: #8A9BB4; border-radius: 4px 4px 1px 1px"></span><span style="width: 40px; height: 58px; background: #E9E4D6; border-radius: 4px 4px 1px 1px"></span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; align-self: flex-start">latest, labelled directly</span></div>
+<span style="font-size: 12px; color: #8A9BB4">Source and as-of on every chart. Bars start at zero; guidance is dashed, estimates hatched.</span>
+</div>
+</section>
+
+<section aria-labelledby="k-nav" style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 id="k-nav" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Research tabs</h2>
+<p style="margin: 0; font-size: 13px; color: #8A9BB4">The current tab is underlined in text colour, not amber: amber marks the section in the top bar and stays spent there.</p>
+<div style="display: flex; gap: 4px; height: 48px; align-items: stretch; border-bottom: 1px solid rgba(138,155,180,0.16)">
+<a href="#" style="display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Default</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 500; font-size: 14px; background: rgba(138,155,180,0.08); border-radius: 6px 6px 0 0">Hover</a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: inset 0 -2px 0 #E9E4D6">Current</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 500; font-size: 14px; outline: 2px solid #F2A93B; outline-offset: -4px; border-radius: 6px">Focus</a>
+<a href="#" style="display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">With count<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #E9E4D6">77 open</span></a>
+</div>
+</section>
+
+<section aria-labelledby="k-btn" style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 id="k-btn" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Actions</h2>
+<p style="margin: 0; font-size: 13px; color: #8A9BB4">One amber fill per view, for its single primary action. Pressed scales to 0.98 over 100ms; disabled says why.</p>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: center; font-size: 12px; color: #8A9BB4">
+<button type="button" style="height: 44px; border-radius: 8px; border: 0; background: #F2A93B; color: #0B0F17; font: 600 14px 'IBM Plex Sans', sans-serif">Draft an update</button>
+<button type="button" style="height: 44px; border-radius: 8px; border: 0; background: #D9952F; color: #0B0F17; font: 600 14px 'IBM Plex Sans', sans-serif; transform: scale(0.98)">Pressed</button>
+<div style="display: flex; flex-direction: column; gap: 4px"><button type="button" disabled style="height: 44px; border-radius: 8px; border: 1px dashed rgba(138,155,180,0.40); background: transparent; color: rgba(138,155,180,0.70); font: 600 14px 'IBM Plex Sans', sans-serif">Draft an update</button><span>Pick at least one figure</span></div>
+<button type="button" style="height: 36px; border-radius: 8px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #E9E4D6; font: 500 13px 'IBM Plex Sans', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"></path></svg>Copy line</button>
+<button type="button" aria-live="polite" style="height: 36px; border-radius: 8px; border: 1px solid rgba(138,155,180,0.55); background: rgba(233,228,214,0.05); color: #E9E4D6; font: 500 13px 'IBM Plex Sans', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Copied</button>
+<span>Copied shows for 1.5s, then reverts.</span>
+</div>
+</section>
+
+<section aria-labelledby="k-states" style="grid-column: 1 / -1; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 id="k-states" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Every source panel, in every state</h2>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+<div style="padding: 16px; border-radius: 10px; background: #0D121B; display: flex; flex-direction: column; gap: 8px"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Loading</span><span style="height: 12px; width: 48%; border-radius: 4px; background: rgba(138,155,180,0.16)"></span><span style="height: 24px; width: 64%; border-radius: 4px; background: rgba(138,155,180,0.16)"></span><span style="height: 12px; width: 80%; border-radius: 4px; background: rgba(138,155,180,0.16)"></span><span style="font-size: 12px; color: #8A9BB4">At its final size.</span></div>
+<div style="padding: 16px; border-radius: 10px; background: #0D121B; display: flex; flex-direction: column; gap: 8px"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Empty</span><span style="font-weight: 600">Nothing filed since Monday.</span><span style="font-size: 13px; color: #8A9BB4">Says what comes next and when.</span></div>
+<div style="padding: 16px; border-radius: 10px; background: #0D121B; display: flex; flex-direction: column; gap: 8px"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #E07A3F"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E07A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3zM12 10v4M12 17.5v.01"></path></svg>Source down</span><span style="font-weight: 600">Showing data as of 06:00.</span><span style="font-size: 13px; color: #8A9BB4">Warning orange and an icon, never amber alone.</span></div>
+<div style="padding: 16px; border-radius: 10px; background: #0D121B; display: flex; flex-direction: column; gap: 8px"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A9BB4" stroke-width="2" stroke-linecap="round"><path d="M9 5v14M15 5v14"></path></svg>Paused</span><span style="font-weight: 600; color: #7B8CA6">Last known value, dimmed.</span><span style="font-size: 13px; color: #8A9BB4">The pause mark carries the meaning, not opacity.</span></div>
+</div>
+</section>
+
+<section aria-labelledby="k-bullet" style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 id="k-bullet" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Range bar</h2>
+<p style="margin: 0; font-size: 13px; color: #8A9BB4">Where today sits inside its own history. Replaces gauges and percentile rings.</p>
+<div role="img" aria-label="Today at 85% of its 3-year range" style="display: flex; flex-direction: column; gap: 4px">
+<div style="position: relative; height: 22px"><span style="position: absolute; left: 0; right: 0; top: 7px; height: 8px; border-radius: 4px; background: rgba(138,155,180,0.18)"></span><span style="position: absolute; left: 52%; top: 5px; width: 2px; height: 12px; background: rgba(138,155,180,0.55)"></span><span style="position: absolute; left: 85%; top: 2px; width: 4px; height: 18px; margin-left: -2px; border-radius: 2px; background: #E9E4D6"></span></div>
+<div style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4"><span>3-yr low</span><span>median</span><span>3-yr high</span></div>
+</div>
+</section>
+
+<section aria-labelledby="k-type" style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<h2 id="k-type" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Type and spacing</h2>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 48px; line-height: 1.05">Page 48</span>
+<span style="font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Panel finding 20</span>
+<span style="font-size: 15px">Body 15 · IBM Plex Sans</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px">5.24% <span style="font-size: 13px; color: #8A9BB4">figures · IBM Plex Mono · tabular</span></span>
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Label 11 · the floor</span>
+</div>
+<div style="display: flex; align-items: flex-end; gap: 10px; padding-top: 6px">
+<sc-for list="{{space}}" as="s" hint-placeholder-count="8"><span style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4"><span style="{{s.style}}"></span>{{s.n}}</span></sc-for>
+</div>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      space: [4, 8, 12, 16, 20, 24, 32, 40].map(function (n) {
+        return { n: String(n), style: 'display: block; width: ' + n + 'px; height: ' + n + 'px; background: rgba(138,155,180,0.35); border-radius: 2px;' };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

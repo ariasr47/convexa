@@ -1,0 +1,28 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-12T23:45:00Z" },
+  "title": "Convexa Research View",
+  "launch": { "view": "canvas" },
+  "pages": [
+    { "id": "research-view", "name": "Research view" },
+    { "id": "v3", "name": "v3 · Public data" }
+  ],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 8700, "title": "Note view · desktop (CBRS)", "expand": "fill" },
+    "Mobile.dc.html": { "x": 1520, "y": 0, "w": 390, "h": 3900, "title": "Note view · phone" },
+    "Index.dc.html": { "x": 1990, "y": 0, "w": 1440, "h": 2100, "title": "Research index", "expand": "fill" },
+    "Authoring.dc.html": { "x": 1990, "y": 2220, "w": 1440, "h": 4800, "title": "Authoring: Markdown → visuals" },
+    "Freshness.dc.html": { "x": 3510, "y": 0, "w": 1440, "h": 4200, "title": "Freshness and updates" },
+    "V3Markets.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 2700, "title": "Markets · rates and positioning", "expand": "fill", "page": "v3" },
+    "V3Ticker.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 3000, "title": "Ticker research · filings and positioning (NVDA)", "expand": "fill", "page": "v3" },
+    "V3Filings.dc.html": { "x": 3040, "y": 0, "w": 1440, "h": 2500, "title": "Filings · what landed and what it changes", "expand": "fill", "page": "v3" },
+    "V3Scorecard.dc.html": { "x": 4560, "y": 0, "w": 1440, "h": 2300, "title": "Scorecard · forecasts and signals", "expand": "fill", "page": "v3" },
+    "V3Phone.dc.html": { "x": 6080, "y": 0, "w": 390, "h": 3300, "title": "Markets · phone", "page": "v3" },
+    "V3Kit.dc.html": { "x": 6550, "y": 0, "w": 1440, "h": 2300, "title": "v3 kit · provenance, cells, states", "page": "v3" }
+  },
+  "order": ["Main.dc.html", "Mobile.dc.html", "Index.dc.html", "Authoring.dc.html", "Freshness.dc.html", "V3Markets.dc.html", "V3Ticker.dc.html", "V3Filings.dc.html", "V3Scorecard.dc.html", "V3Phone.dc.html", "V3Kit.dc.html"],
+  "notes": {
+    "v3title": { "x": 0, "y": -300, "text": "v3 · Polish and public data", "kind": "title1", "maxW": 7990, "page": "v3" }
+  },
+  "designSystems": []
+}

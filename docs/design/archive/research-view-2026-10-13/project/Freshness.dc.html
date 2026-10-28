@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Research freshness · Convexa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112.5,600;112.5,700;112.5,800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0F17;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#8CB0DE;text-underline-offset:3px}
+a:hover{color:#B9D0EC}
+</style>
+</helmet>
+<div style="width: 1440px; height: 4200px; box-sizing: border-box; padding: 48px 56px; background: #0B0F17; color: #E9E4D6; display: flex; flex-direction: column; gap: 56px; font-size: 14px; line-height: 1.5">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">Spec · freshness and updates</span>
+<h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 40px; line-height: 1.1; max-width: 30ch">A note stays true as of its date. The page says when that stops.</h1>
+<p style="margin: 0; max-width: 84ch; color: #8A9BB4; font-size: 15px">Notes are never kept current. Every number carries its date, a real update is a new dated note, and the reader's browser works out each note's state from dates the note already holds. The pre-push check never reads the clock, so it can't fail a push just because a day went by.</p>
+</div>
+
+<!-- 01 States -->
+<section aria-labelledby="f1" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">01 · Four states</span><h2 id="f1" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 26px; line-height: 1.2">Worked out in the reader's browser, from dates the note already holds.</h2></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{states}}" as="s" hint-placeholder-count="4">
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<span style="{{s.chipStyle}}"><span style="{{s.dotStyle}}"></span>{{s.chip}}</span>
+<span style="font-family: 'Archivo', sans-serif; font-weight: 700; font-stretch: 112.5%; font-size: 20px; line-height: 1.2">{{s.name}}</span>
+<span style="display: flex; flex-direction: column; gap: 2px; font-size: 13px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">When</span><span>{{s.when}}</span></span>
+<span style="display: flex; flex-direction: column; gap: 2px; font-size: 13px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">The page shows</span><span style="color: #8A9BB4">{{s.shows}}</span></span>
+</div>
+</sc-for>
+</div>
+<span style="font-size: 13px; color: #8A9BB4">Each state is a shape plus a word, never a colour alone: filled dot, half dot, ring, square.</span>
+</section>
+
+<!-- 02 Review due as it renders -->
+<section aria-labelledby="f2" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">02 · Review due, as it renders</span><h2 id="f2" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 26px; line-height: 1.2">The CBRS note on Nov 20, 2026, if nobody updates it.</h2></div>
+<div style="border: 1px solid rgba(138,155,180,0.22); border-radius: 16px; overflow: hidden; background: #0B0F17">
+<div style="display: flex; justify-content: space-between; padding: 8px 16px; background: #0D121B; border-bottom: 1px solid rgba(138,155,180,0.16); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4"><span>/ticker/CBRS/research</span><span>viewed Nov 20, 2026 · example</span></div>
+<div style="padding: 28px 32px 32px; display: flex; flex-direction: column; gap: 20px">
+
+<div role="status" style="display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 16px 20px; border-radius: 12px; background: #1B2432; border: 1px solid rgba(233,228,214,0.30)">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E9E4D6" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-weight: 600; font-size: 16px">Review due. Written Oct 12, 2026, 39 days ago.</span>
+<span style="font-size: 14px; color: #8A9BB4; line-height: 1.55">Since then: <span style="color: #E9E4D6">Lock-up release</span> <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">Oct 14</span> · <span style="color: #E9E4D6">Final lock-up expiry</span> <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">by ~Nov 10</span> · <span style="color: #E9E4D6">Price turned 30 days old</span> <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">Nov 11</span>. The figures below predate them.</span>
+</div>
+<a href="#" style="font-size: 13px; white-space: nowrap">How this is worked out</a>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px 32px; align-items: flex-start">
+<div style="flex: 999 1 560px; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+<div style="display: flex; align-items: baseline; gap: 16px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 44px; line-height: 1">CBRS</span><span style="font-size: 15px; font-weight: 600">Cerebras Systems</span></div>
+<span style="font-family: 'Archivo', sans-serif; font-weight: 700; font-stretch: 112.5%; font-size: 28px; line-height: 1.15; max-width: 30ch">A $25B backlog on a $0.9B year. Converting it is the whole story.</span>
+</div>
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; font-size: 12px; color: #8A9BB4">
+<span><span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">Price</span> as of Oct 12, 2026 · 39 days old</span>
+<span><span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">Thesis</span> reviewed Oct 12, 2026 · 39 days ago</span>
+<span style="{{dueChip}}"><span style="{{dueDot}}"></span>Review due · since Oct 14</span>
+</div>
+</div>
+
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 16px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">Price vs value · per share</span><span style="font-size: 12px"><span style="color: #8A9BB4">Uncertainty</span> <span style="font-weight: 600">Very high</span></span></div>
+<div role="img" aria-label="Value range $40 bear to $273 bull, base $128. The Oct 12 price of $146.62 is drawn dashed because it is 39 days old." style="position: relative; height: 64px">
+<span style="position: absolute; left: 0; right: 0; top: 30px; height: 2px; background: rgba(138,155,180,0.12)"></span>
+<span style="position: absolute; top: 22px; height: 18px; left: 11.1%; width: 64.7%; border-radius: 9px; background: linear-gradient(90deg, rgba(94,139,196,0) 0%, rgba(94,139,196,0.30) 12%, rgba(94,139,196,0.62) 38%, rgba(94,139,196,0.30) 75%, rgba(94,139,196,0) 100%)"></span>
+<span style="position: absolute; top: 23px; left: 35.6%; width: 16px; height: 16px; margin-left: -8px; transform: rotate(45deg); background: #F2A93B; border-radius: 2px; box-shadow: 0 0 0 2px #131A24"></span>
+<span style="position: absolute; left: 40.7%; top: 8px; bottom: 0; border-left: 2px dashed rgba(233,228,214,0.65)"></span>
+<span style="position: absolute; left: 40.7%; top: -6px; margin-left: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4; white-space: nowrap">Price $146.62 · Oct 12</span>
+<span style="position: absolute; left: 11.1%; top: 46px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4">Bear $40</span>
+<span style="position: absolute; left: 35.6%; top: 46px; margin-left: -22px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #F2A93B">Base $128</span>
+<span style="position: absolute; left: 75.8%; top: 46px; margin-left: -58px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4">Bull $273</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; padding-top: 10px; border-top: 1px solid rgba(138,155,180,0.16)">
+<span>% to base hidden: the price is 39 days old.</span>
+<span style="color: #8A9BB4">The value range doesn't depend on the price, so it stays.</span>
+</div>
+</div>
+
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 18px 20px 4px; display: flex; flex-direction: column; gap: 14px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">13 · Catalysts</span>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+<sc-for list="{{agedCats}}" as="c" hint-placeholder-count="3">
+<li style="display: grid; grid-template-columns: 112px 20px minmax(0, 1fr); gap: 12px; align-items: start">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8A9BB4; padding-top: 2px; text-align: right">{{c.date}}</span>
+<span style="display: flex; flex-direction: column; align-items: center; align-self: stretch"><span style="width: 12px; height: 12px; margin-top: 4px; border-radius: 999px; border: 2px solid #8A9BB4; box-sizing: border-box; flex-shrink: 0"></span><span style="{{c.lineStyle}}"></span></span>
+<span style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-bottom: 16px"><span style="font-weight: 600; font-size: 14px">{{c.title}}</span><span style="{{c.chipStyle}}">{{c.chip}}</span></span>
+</li>
+</sc-for>
+</ol>
+</div>
+</div>
+</div>
+<span style="font-size: 13px; color: #8A9BB4">The price line turns dashed after 30 days. Nothing turns red: age is shown with words and dates. Q3 results (~Nov 2026) aren't listed yet because an approximate date counts from the end of its window, Nov 30.</span>
+</section>
+
+<!-- 03 What ages -->
+<section aria-labelledby="f3" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">03 · What ages</span><h2 id="f3" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 26px; line-height: 1.2">Seven signals, all read from the note itself.</h2></div>
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; overflow: hidden">
+<div style="display: grid; grid-template-columns: 160px 1fr 1.5fr; gap: 16px; padding: 10px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4; background: #0D121B"><span>Signal</span><span>Ages when</span><span>The page</span></div>
+<sc-for list="{{signals}}" as="g" hint-placeholder-count="7">
+<div style="display: grid; grid-template-columns: 160px 1fr 1.5fr; gap: 16px; padding: 14px 20px; border-top: 1px solid rgba(138,155,180,0.12); font-size: 14px; line-height: 1.5; align-items: start"><span style="font-weight: 600">{{g.signal}}</span><span>{{g.ages}}</span><span style="color: #8A9BB4">{{g.page}}</span></div>
+</sc-for>
+</div>
+<span style="font-size: 13px; color: #8A9BB4">An approximate date counts from the end of its window: <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">~Nov 5–16</span> → Nov 16, <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">2026-12</span> → Dec 31. A note never claims to predate an event that hasn't happened. Write the confirmed date once it's announced.</span>
+</section>
+
+<!-- 04 Updating -->
+<section aria-labelledby="f4" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">04 · Updating a note</span><h2 id="f4" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 26px; line-height: 1.2">The old note is the starting view and the checklist, never the draft.</h2></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{treatments}}" as="t" hint-placeholder-count="3">
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Archivo', sans-serif; font-weight: 700; font-stretch: 112.5%; font-size: 20px">{{t.kind}}</span><span style="font-size: 12px; color: #8A9BB4">{{t.what}}</span></div>
+<span style="font-size: 14px; line-height: 1.5">{{t.treat}}</span>
+<span style="font-size: 13px; color: #8A9BB4; line-height: 1.5"><span style="color: #E9E4D6; font-weight: 500">Why.</span> {{t.why}}</span>
+<span style="margin-top: auto; padding: 8px 10px; border-radius: 8px; background: #0D121B; border: 1px solid rgba(138,155,180,0.16); font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #E9E4D6; overflow-wrap: anywhere">{{t.sample}}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; overflow: hidden">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 16px 20px 12px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">00 · Since the last note · opens every update note</span><span style="font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">The Oct 12 calls, scored before any view moves.</span></div>
+<div style="display: grid; grid-template-columns: 110px 1.3fr 1fr 150px; gap: 14px; padding: 10px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4; background: #0D121B"><span>Call</span><span>Made Oct 12</span><span>What happened</span><span>Result</span></div>
+<sc-for list="{{since}}" as="r" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 110px 1.3fr 1fr 150px; gap: 14px; padding: 12px 20px; border-top: 1px solid rgba(138,155,180,0.12); font-size: 13px; align-items: center"><span style="color: #8A9BB4">{{r.kind}}</span><span style="font-weight: 500">{{r.call}}</span><span style="justify-self: start; padding: 2px 9px; border-radius: 999px; border: 1px dashed rgba(138,155,180,0.55); font-size: 12px">{{r.got}}</span><span style="color: #8A9BB4; font-size: 12px">{{r.result}}</span></div>
+</sc-for>
+<div style="padding: 10px 20px; font-size: 12px; color: #8A9BB4; background: #0D121B">Written by <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">research:new</span> from the old note's catalysts, forecasts, kill criteria and pillars. A blank outcome fails the check.</div>
+</div>
+</section>
+
+<!-- 05 When to update -->
+<section aria-labelledby="f5" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">05 · When to update, and how much</span><h2 id="f5" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 26px; line-height: 1.2">What happened decides the depth. A broken thesis gets a blank page.</h2></div>
+<div style="background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; overflow: hidden">
+<div style="display: grid; grid-template-columns: 1.3fr 1.5fr 170px; gap: 16px; padding: 10px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4; background: #0D121B"><span>What happened</span><span>What to do</span><span>Effort</span></div>
+<sc-for list="{{depth}}" as="d" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: 1.3fr 1.5fr 170px; gap: 16px; padding: 14px 20px; border-top: 1px solid rgba(138,155,180,0.12); font-size: 14px; line-height: 1.5; align-items: start">
+<span style="font-weight: 500">{{d.happened}}</span>
+<span style="color: #8A9BB4">{{d.action}}</span>
+<span style="display: flex; flex-direction: column; gap: 6px"><span style="font-weight: 600; font-size: 13px">{{d.label}}</span><span role="img" aria-label="{{d.effortAria}}" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; width: 112px"><sc-for list="{{d.cells}}" as="cell" hint-placeholder-count="4"><span style="{{cell.style}}"></span></sc-for></span></span>
+</div>
+</sc-for>
+</div>
+</section>
+
+<!-- 06 Tooling -->
+<section aria-labelledby="f6" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8A9BB4">06 · Tooling (planned)</span><h2 id="f6" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 26px; line-height: 1.2">Three commands make the rules hard to skip.</h2></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch">
+<sc-for list="{{tools}}" as="tl" hint-placeholder-count="3">
+<div style="background: #0D121B; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column">
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-bottom: 1px solid rgba(138,155,180,0.16); background: #131A24"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600">{{tl.cmd}}</span><span style="font-size: 12px; color: #8A9BB4">{{tl.what}}</span></div>
+<pre style="margin: 0; padding: 12px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; line-height: 1.6; color: #E9E4D6; white-space: pre-wrap; flex-grow: 1">{{tl.code}}</pre>
+</div>
+</sc-for>
+</div>
+<span style="font-size: 13px; color: #8A9BB4">The dates in <span style="font-family: 'IBM Plex Mono', monospace; color: #E9E4D6">research:due</span> are the three notes' real ones, once they're written with the Oct 12 prices. The other two outputs show the format; their line numbers are illustrative.</span>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":4200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var dot = function (kind) {
+      var b = 'display: inline-block; width: 10px; height: 10px; box-sizing: border-box; flex-shrink: 0; ';
+      if (kind === 'current') return b + 'border-radius: 999px; background: #E9E4D6;';
+      if (kind === 'due') return b + 'border-radius: 999px; border: 2px solid #E9E4D6; background: linear-gradient(90deg, #E9E4D6 50%, transparent 50%);';
+      if (kind === 'superseded') return b + 'border-radius: 999px; border: 2px solid #8A9BB4;';
+      return b + 'border-radius: 2px; background: #8A9BB4;';
+    };
+    var chip = function (strong) {
+      return 'align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; padding: 4px 11px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; '
+        + (strong ? 'background: #1B2432; border: 1px solid rgba(233,228,214,0.35); color: #E9E4D6;' : 'background: rgba(138,155,180,0.12); border: 1px solid rgba(138,155,180,0.22); color: #E9E4D6;');
+    };
+    var states = [
+      { name: 'Current', chip: 'Current · review by Oct 14', dotStyle: dot('current'), chipStyle: chip(false),
+        when: "None of the note's dates has passed.",
+        shows: 'A quiet chip beside the timestamps, naming the next date that will age the note.' },
+      { name: 'Review due', chip: 'Review due · since Oct 14', dotStyle: dot('due'), chipStyle: chip(true),
+        when: 'An earnings date, catalyst, forecast deadline or kill-criterion check date has passed, or the price is 30+ days old.',
+        shows: 'A banner naming what happened since, by date. Figures tied to the old price hide.' },
+      { name: 'Superseded', chip: 'Superseded · newer note', dotStyle: dot('superseded'), chipStyle: chip(false),
+        when: 'A newer note exists for the ticker.',
+        shows: 'A banner linking to the newer note. This one stays readable at its own address.' },
+      { name: 'Archived', chip: 'Archived · not following', dotStyle: dot('archived'), chipStyle: chip(false),
+        when: 'not_following_since is set in front matter.',
+        shows: '"Not following since <date>." The ticker leaves Coming up and research:due.' }
+    ];
+    var agedChip = function (open) {
+      return 'padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; '
+        + (open ? 'color: #E9E4D6; border: 1px dashed rgba(233,228,214,0.55);' : 'color: #8A9BB4; border: 1px dashed rgba(138,155,180,0.45);');
+    };
+    var agedCats = [
+      { date: 'Oct 14, 2026', title: 'Lock-up release', chip: 'Outcome not recorded', chipStyle: agedChip(true), lineStyle: 'flex-grow: 1; width: 2px; margin-top: 4px; background: rgba(138,155,180,0.22);' },
+      { date: 'by ~Nov 10', title: 'Final lock-up expiry', chip: 'Outcome not recorded', chipStyle: agedChip(true), lineStyle: 'flex-grow: 1; width: 2px; margin-top: 4px; background: rgba(138,155,180,0.22);' },
+      { date: '~Nov 2026', title: 'Q3 2026 results', chip: 'Expected · counts from Nov 30', chipStyle: agedChip(false), lineStyle: 'display: none;' }
+    ];
+    var signals = [
+      { signal: 'Price', ages: '30 days after the price date.', page: '"% to base" and the range percentages hide. The price line turns dashed and shows its age. The value range stays.' },
+      { signal: 'Results', ages: 'An earnings date in the catalysts has passed.', page: 'Review due. The banner names the results; key-number tiles read "before Q3 results".' },
+      { signal: 'Catalyst', ages: 'Its date has passed with no outcome recorded.', page: 'Review due. The timeline row reads "Outcome not recorded".' },
+      { signal: 'Forecast', ages: 'Its resolve-by date has passed, unresolved.', page: 'The row reads "Awaiting resolution" and stays out of the Brier score until resolved.' },
+      { signal: 'Kill criterion', ages: 'Its check-by date has passed, unchecked.', page: 'Review due. The row reads "Not checked".' },
+      { signal: 'Newer note', ages: 'A later note exists for the ticker.', page: 'Superseded banner with a link. This note stays readable at its own address.' },
+      { signal: 'Coverage', ages: 'not_following_since is set.', page: 'Archived. The ticker leaves Coming up and research:due.' }
+    ];
+    var treatments = [
+      { kind: 'Facts', what: 'Numbers, quotes, dates',
+        treat: 'Never copied. Looked up again in the filings; the old values stay in the old note.',
+        why: 'A copied number would pass the dating rule under a date it was never checked on.',
+        sample: 'Core revenue | ___ @ Q3 2026' },
+      { kind: 'Analysis', what: 'Business, moat, customers, governance',
+        treat: 'Carried over and flagged re-confirm. The check refuses to publish until each section is re-confirmed or rewritten.',
+        why: 'Mostly durable, so rewriting wastes effort. Publishing it unread is how errors spread.',
+        sample: '<!-- re-confirm: carried from 2026-10-12 -->' },
+      { kind: 'Judgment', what: 'Odds, forecasts, valuation inputs, stance',
+        treat: 'Starts at the old values and moves in small logged steps: trigger · old → new · why.',
+        why: 'The best forecasters revise often and in small steps (Atanasov et al. 2020). A blank page invites big unexplained jumps.',
+        sample: 'base revenue 2028 | 5B → ___ | Q3 results | ___' }
+    ];
+    var since = [
+      { kind: 'Catalyst', call: 'Lock-up release, Oct 14', got: 'your entry', result: 'Outcome' },
+      { kind: 'Forecast', call: 'Q3 2026 core revenue ≥ $214M', got: 'your entry · Q3 8-K', result: 'Brier score (calc)' },
+      { kind: 'Kill #1', call: 'Q3 core revenue < $214M', got: 'your entry · Q3 8-K', result: 'Fired or not fired' },
+      { kind: 'Pillar', call: 'Backlog converts on schedule', got: 'your entry', result: '✓ on track · ! watch · ✕ broken' }
+    ];
+    var effort = function (n, label) {
+      var cells = [];
+      for (var i = 0; i < 4; i++) cells.push({ style: 'height: 10px; border-radius: 2px; ' + (i < n ? 'background: #E9E4D6;' : 'border: 1px solid rgba(138,155,180,0.35); box-sizing: border-box;') });
+      return { label: label, cells: cells, effortAria: 'Effort ' + n + ' of 4' };
+    };
+    var depth = [
+      Object.assign({ happened: "None of the note's dates has passed.", action: 'Nothing.' }, effort(0, 'No change')),
+      Object.assign({ happened: 'A catalyst passed and your view is unchanged.', action: "Record its outcome in the note's change log, with updated: set." }, effort(1, 'Outcome line')),
+      Object.assign({ happened: 'New results or filings.', action: 'An update note from npm run research:new <TICKER>. Score the old calls first.' }, effort(3, 'Update note')),
+      Object.assign({ happened: 'A kill criterion fired, the price left the bear-to-bull range, the business changed shape, or 4+ quarters since the last full note.', action: 'A fresh full note from the blank template (--fresh). Read the old note only after drafting, then compare: its framing is what failed.' }, effort(4, 'Fresh note')),
+      Object.assign({ happened: 'You no longer follow the stock.', action: 'Set not_following_since: <date> on the latest note.' }, effort(1, 'Archive'))
+    ];
+    var tools = [
+      { cmd: 'npm run research:new CBRS', what: 'Builds the next note from the latest one.',
+        code: 'Wrote research/CBRS/<date>-update.md\nfrom  research/CBRS/2026-10-12-initiation.md\n\n---\nticker: CBRS\ndate: ___\ntitle: ___\n---\n\n```since\ncatalyst | 2026-10-14 | Lock-up release | outcome: ___\nforecast | Q3 2026 core revenue ≥ $214M  | outcome: ___\nkill #1  | Q3 core revenue < $214M       | outcome: ___\n```\n\n```metrics\nCore revenue | ___ @ Q3 2026 | ___ | ___ | [___]\n```\n\n## Moat and competition | Speed is the edge…\n<!-- re-confirm: carried from 2026-10-12 -->' },
+      { cmd: 'npm run research:check', what: 'Runs in pre-push. Structure only; never reads the clock.',
+        code: 'research/CBRS/<date>-update.md\n  14  blank ___ in metrics: Core revenue\n  52  "Moat and competition" is still\n      flagged re-confirm\n  77  valuation input "base revenue 2028"\n      differs from the 2026-10-12 note\n      with no moves line\n  93  catalyst "AWS Bedrock launch"\n      has no date\n\n4 problems · exit 1 · nothing deploys' },
+      { cmd: 'npm run research:due', what: 'Run by hand. Never part of pre-push.',
+        code: 'As of Oct 12, 2026 · due now: none\n\nOct 14  CBRS      Lock-up release\nNov 10  CBRS      Final lock-up expiry\n                  (end of "by ~Nov 10")\nNov 11  CBRS CRWV MU\n                  Price turns 30 days old\nNov 16  CRWV      Q3 2026 results\n                  (end of ~Nov 5–16)\nNov 30  CBRS      Q3 2026 results\n                  (end of ~Nov 2026)\nDec 9   MU        Capital return step-up\nDec 31  MU        FQ1-27 results\n                  (date not announced)' }
+    ];
+    return {
+      states: states, agedCats: agedCats, signals: signals, treatments: treatments, since: since, depth: depth, tools: tools,
+      dueChip: chip(true), dueDot: dot('due')
+    };
+  }
+}
+</script>
+</body>
+</html>

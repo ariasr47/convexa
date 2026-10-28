@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scorecard · Convexa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112.5,600;112.5,700;112.5,800;125,800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0F17;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+a{color:#8CB0DE;text-underline-offset:3px}
+a:hover{color:#B9D0EC}
+a:focus-visible,button:focus-visible{outline:2px solid #F2A93B;outline-offset:2px;border-radius:4px}
+</style>
+</helmet>
+<div style="min-height: 100%; background: #0B0F17; color: #E9E4D6; font-size: 15px; line-height: 1.55">
+
+<div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 8px 32px; background: #131A24; border-bottom: 1px solid rgba(138,155,180,0.16); font-size: 12px">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A9BB4" stroke-width="1.75" stroke-linecap="round"><path d="M9 5v14M15 5v14"></path></svg>
+<span style="font-weight: 600">Live market data is off.</span>
+<span style="color: #8A9BB4">Prices, dealer structure and AI reads are paused. Research, rates and filings stay current.</span>
+<span style="flex-grow: 1"></span>
+<a href="#">Try the full demo →</a>
+</div>
+
+<header style="background: rgba(19,26,36,0.82); border-bottom: 1px solid rgba(138,155,180,0.16)">
+<nav aria-label="Primary" style="max-width: 1280px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; gap: 32px">
+<a href="#" style="text-decoration: none; color: #E9E4D6; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 125%; letter-spacing: 0.18em; font-size: 15px">CONVE<span style="color: #F2A93B">X</span>A</a>
+<div style="display: flex; align-items: stretch; gap: 4px; height: 64px">
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Scanner</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Ticker</a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: inset 0 -2px 0 #F2A93B">Research</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Positions</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Alerts</a>
+</div>
+<span style="flex-grow: 1"></span>
+<button type="button" style="display: inline-flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 12px; border-radius: 8px; border: 1px solid rgba(138,155,180,0.30); background: #0D121B; color: #8A9BB4; font: 500 13px 'IBM Plex Sans', sans-serif">Search tickers and notes<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(138,155,180,0.30); color: #E9E4D6">⌘K</span></button>
+<a href="#" style="color: #8A9BB4; text-decoration: none; font-size: 14px; font-weight: 500">Log in</a>
+</nav>
+</header>
+
+<nav aria-label="Research" style="border-bottom: 1px solid rgba(138,155,180,0.16)">
+<div style="max-width: 1280px; margin: 0 auto; padding: 0 32px; display: flex; flex-wrap: wrap; gap: 4px; height: 48px; align-items: stretch">
+<a href="#" style="display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Notes<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #E9E4D6">14</span></a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Markets</a>
+<a href="#" style="display: flex; align-items: center; padding: 0 12px; color: #8A9BB4; text-decoration: none; font-weight: 500; font-size: 14px">Filings</a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #E9E4D6; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: inset 0 -2px 0 #E9E4D6">Scorecard<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: rgba(138,155,180,0.16); color: #E9E4D6">77 open</span></a>
+</div>
+</nav>
+
+<main style="max-width: 1280px; margin: 0 auto; padding: 40px 32px 64px; display: flex; flex-direction: column; gap: 28px">
+
+<div style="display: flex; flex-direction: column; gap: 12px">
+<h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 112.5%; font-size: 48px; line-height: 1.05">Scorecard</h1>
+<p style="margin: 0; max-width: 66ch; color: #8A9BB4; font-size: 16px; text-wrap: pretty">How the calls in the notes turn out. A forecast is scored when its date passes, but only if it carried your probability before then. Scoring a call after the answer is known would be fiction.</p>
+</div>
+
+<section aria-label="Ledger" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; overflow: hidden">
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid rgba(138,155,180,0.16)">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Open forecasts</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">77</span>
+<span style="font-size: 12px; color: #8A9BB4">across 14 notes</span>
+</div>
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid rgba(138,155,180,0.16)">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">With your probability</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">0</span>
+<span style="font-size: 12px; color: #8A9BB4">the notes leave it blank for you</span>
+</div>
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid rgba(138,155,180,0.16)">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Resolved</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1.2">0</span>
+<span style="font-size: 12px; color: #8A9BB4">first two on Oct 15</span>
+</div>
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9BB4">Brier score</span>
+<span style="font-size: 17px; font-weight: 500; line-height: 1.2; color: #8A9BB4; padding: 5px 0">not set</span>
+<span style="font-size: 12px; color: #8A9BB4">needs resolved, probability-carrying calls</span>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+
+<section aria-labelledby="soon" style="flex: 999 1 600px; min-width: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 id="soon" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25; text-wrap: balance">Eleven forecasts resolve in the next two weeks, all still without a probability.</h2>
+<span style="font-size: 13px; color: #8A9BB4">Set one in the note's forecasts block. Copy the line, put your probability in the second cell, and push.</span>
+</div>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+<sc-for list="{{soon}}" as="f" hint-placeholder-count="11">
+<li style="display: grid; grid-template-columns: 64px 52px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid rgba(138,155,180,0.16); font-size: 13px">
+<span style="font-family: 'IBM Plex Mono', monospace; color: #8A9BB4">{{f.date}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: rgba(138,155,180,0.16); text-align: center">{{f.ticker}}</span>
+<span style="min-width: 0; text-wrap: pretty">{{f.claim}}</span>
+<span style="font-size: 12px; color: #8A9BB4; white-space: nowrap">not set</span>
+<button type="button" aria-label="{{f.copyLabel}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid rgba(138,155,180,0.30); background: transparent; color: #E9E4D6; font: 500 12px 'IBM Plex Sans', sans-serif; white-space: nowrap"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"></path></svg>Copy line</button>
+</li>
+</sc-for>
+</ol>
+</section>
+
+<figure style="flex: 1 1 380px; min-width: 0; margin: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<figcaption style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25; text-wrap: balance">41 of the 77 resolve by the end of November.</span>
+<span style="font-size: 13px; color: #8A9BB4">Open forecasts by the month their date falls in.</span>
+</figcaption>
+<div role="img" aria-label="Forecasts resolving per month: October 18, November 23, December 8, January 7, February 7, March 6, April 0, May 1, June 3, July 1, 2028 3" style="display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 6px; align-items: end; height: 170px; border-bottom: 1px solid rgba(138,155,180,0.30)">
+<sc-for list="{{months}}" as="m" hint-placeholder-count="11">
+<div style="display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: {{m.labelColor}}">{{m.n}}</span>
+<span style="{{m.style}}"></span>
+</div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A9BB4; text-align: center">
+<span>O</span><span>N</span><span>D</span><span>J</span><span>F</span><span>M</span><span>A</span><span>M</span><span>J</span><span>J</span><span>'28</span>
+</div>
+<p style="margin: 0; font-size: 12px; color: #8A9BB4">October 2026 to July 2027, then 2028. Results season fills the first two months.</p>
+</figure>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+
+<figure style="flex: 1 1 520px; min-width: 0; margin: 0; background: #131A24; border: 1px solid rgba(138,155,180,0.16); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<figcaption style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px; line-height: 1.25">Calibration</span>
+<span style="font-size: 13px; color: #8A9BB4; text-wrap: pretty">How often calls made at each confidence came true. Appears once 20 forecasts with your probability have resolved; until then, nothing is drawn.</span>
+</figcaption>
+<div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap">
+<svg role="img" aria-label="Empty calibration chart: the diagonal marks perfect calibration; no forecasts have resolved yet" viewBox="0 0 240 240" style="width: 240px; height: 240px; flex: 0 0 auto">
+<rect x="32" y="8" width="200" height="200" fill="#0D121B" stroke="rgba(138,155,180,0.30)"></rect>
+<line x1="32" y1="208" x2="232" y2="8" stroke="rgba(138,155,180,0.55)" stroke-dasharray="4 4"></line>
+<g font-family="IBM Plex Mono, monospace" font-size="10" fill="#8A9BB4">
+<text x="26" y="211" text-anchor="end">0</text><text x="26" y="111" text-anchor="end">50%</text><text x="26" y="12" text-anchor="end">100%</text>
+<text x="32" y="224" text-anchor="middle">0</text><text x="132" y="224" text-anchor="middle">50%</text><text x="232" y="224" text-anchor="middle">100%</text>
+</g>
+<text x="132" y="112" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="#8A9BB4">0 of 20 resolved</text>
+</svg>
+<dl style="flex: 1 1 200px; margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px">
+<div><dt style="font-weight: 600">Across: your probability</dt><dd style="margin: 0; color: #8A9BB4">Grouped in tenths.</dd></div>
+<div><dt style="font-weight: 600">Up: how often it happened</dt><dd style="margin: 0; color: #8A9BB4">Dots on the diagonal mean your 70% calls come true about 70% of the time.</dd></div>
+<div><dt style="font-weight: 600">Brier score</dt><dd style="margin: 0; color: #8A9BB4">The average squared miss. Saying 50% to everything scores 0.25; lower is better.</dd></div>
+</dl>
+</div>
+</figure>
+
+<section aria-labelledby="signals" style="flex: 1 1 520px; min-width: 0; background: #131A24; border: 1px dashed rgba(138,155,180,0.40); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+<h2 id="signals" style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 600; font-stretch: 112.5%; font-size: 20px">Signal track record</h2>
+<span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(138,155,180,0.30); font-size: 11px; color: #8A9BB4">off</span>
+</div>
+<p style="margin: 0; font-size: 14px; text-wrap: pretty">Grading the scanner's setups means pricing what happened after each one, net of trading costs. That needs a price history licensed for public display, and the free feeds are for personal use only.</p>
+<dl style="margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; font-size: 13px">
+<dt style="color: #8A9BB4">Would show</dt><dd style="margin: 0">Hit rate and average move after costs, by setup</dd>
+<dt style="color: #8A9BB4">Would need</dt><dd style="margin: 0">Daily closes for every scanned symbol, with display rights</dd>
+<dt style="color: #8A9BB4">Meanwhile</dt><dd style="margin: 0">Run privately on staging's sample data</dd>
+</dl>
+<a href="#" style="font-size: 13px; font-weight: 500; margin-top: auto">What a licensed feed would cost →</a>
+</section>
+</div>
+
+<p style="margin: 0; font-size: 12px; color: #8A9BB4">Forecasts come from each note's forecasts block. Personal research notes. Not financial advice.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var counts = [18, 23, 8, 7, 7, 6, 0, 1, 3, 1, 3];
+    var months = counts.map(function (n, i) {
+      var h = n === 0 ? 2 : Math.round((n / 24) * 140);
+      return { n: String(n), labelColor: i < 2 ? '#E9E4D6' : '#8A9BB4', style: 'display: block; width: 100%; max-width: 32px; height: ' + h + 'px; border-radius: 4px 4px 1px 1px; background: ' + (i < 2 ? '#E9E4D6' : '#8A9BB4') + ';' };
+    });
+    var f = function (date, ticker, claim) { return { date: date, ticker: ticker, claim: claim, copyLabel: 'Copy the Markdown line for: ' + claim }; };
+    return {
+      months: months,
+      soon: [
+        f('Oct 15', 'TSM', '3Q26 gross margin is at least 66.0%, the guidance midpoint.'),
+        f('Oct 15', 'TSM', 'TSMC guides 4Q26 revenue with a midpoint of at least $50.0B.'),
+        f('Oct 21', 'META', 'Q3 2026 revenue is at least $62.5B, the guide midpoint.'),
+        f('Oct 21', 'META', 'The Q3 release keeps the 2026 capex range’s low end at $130B or higher.'),
+        f('Oct 21', 'TSLA', 'Q3 2026 automotive gross margin ex credits is at least 16.3%, Q2’s level.'),
+        f('Oct 21', 'TSLA', 'Q3 2026 regulatory credit revenue is below $200M.'),
+        f('Oct 21', 'TSLA', 'Q3 2026 revenue is at least $27.89B, the MarketBeat consensus.'),
+        f('Oct 27', 'HOOD', 'Q3 2026 total net revenues are at least $1.42B, the consensus.'),
+        f('Oct 27', 'HOOD', 'Q3 2026 event-contract revenue is above Q2’s $156M.'),
+        f('Oct 27', 'HOOD', 'Q3 2026 net deposits are at least $15B.'),
+        f('Oct 27', 'HOOD', 'Robinhood Gold has at least 5.2M subscribers at the end of Q3 2026.')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
