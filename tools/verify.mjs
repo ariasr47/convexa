@@ -113,7 +113,12 @@ const TARGETS = ['lint', 'typecheck', 'test'];
 // project when a {workspaceRoot} input of any of its targets changes). api:test scans the dashboard
 // sources (apps/api/tests/capacity_baseline_isolation.rs), so a dashboard edit must miss its cache,
 // but cargo test would add ~7 minutes to every dashboard edit. It runs with the next change to
-// another api:test input, or by hand: `npx nx test api`.
+// another api:test input, or by hand: `npx nx test api`. A dashboard file that a Rust test compiles
+// in is its own api:test input, so verify runs api when it changes: apps/dashboard/src/app/shared/
+// dataState/vocabulary.ts (include_str! in apps/api/src/services/analyst/package.rs), where a moved
+// file or a dropped DataStateKey fails cargo test. planProjects fails when an entry here is not one
+// of the project's test inputs, spelled the same way, or when the project has dependency inputs,
+// which a dependency-only change would then hold back.
 const CACHE_ONLY_INPUTS = { api: ['{workspaceRoot}/apps/dashboard/src/**/*'] };
 
 // Nx hashes dotfiles under `**` (apps/api/.env.example is an api:test input), but a wildcard in
@@ -124,40 +129,60 @@ const LEADING_DOT = /(^|[/{,(|])\./g;
 const undot = (text) => text.replace(LEADING_DOT, '$1\uE000');
 const matchesInput = (file, pattern) => posix.matchesGlob(undot(file), undot(pattern));
 
-// Each workspace-relative file pattern among a project's test inputs, with the input it came from.
-// Named inputs expand, and `{input, projects}` reads another project's named input, as Nx's task
-// hasher does (nx/dist/src/hasher/task-hasher.js). Dependency inputs (`^name`, `dependencies:
-// true`) are left out: a changed dependency already puts the project in Nx's affected graph. So is
-// an exclusion (`!pattern`), which can only widen the match. Runtime, env and package inputs are
-// not files.
-function testInputPatterns(project, nodes, namedInputs = {}) {
+// Inputs that name no file: they key the cache, but no changed file can match them.
+const NOT_FILES = ['runtime', 'env', 'externalDependencies', 'workingDirectory'];
+// Nx's inputs for a target that lists none (DEFAULT_INPUTS in nx/dist/src/hasher/task-hasher.js).
+const NX_DEFAULT_INPUTS = [{ input: 'default' }, { input: 'default', dependencies: true }];
+
+// A project's test inputs, read as Nx's task hasher reads them (nx/dist/src/hasher/task-hasher.js):
+// `patterns`, each workspace-relative file pattern with the input it came from, and `dependencies`,
+// the dependency inputs (`^name`, `dependencies: true`). Named inputs expand, and `{input,
+// projects}` reads another project's named input. Dependency inputs are left to Nx's affected
+// graph, which names a project when one of its dependencies changes. An exclusion (`!pattern`) is
+// left out: it can only widen the match. Any other input fails the plan rather than drop out
+// silently. One such is `dependentTasksOutputFiles`, the outputs of the tasks this one depends on: a
+// task linked only by dependsOn (as @convexa/api:test reaches api:api-contract-check) is in neither
+// the project graph nor Nx's affected list, so a change there would schedule nothing.
+function testInputs(project, nodes, namedInputs = {}) {
   const patterns = [];
+  const dependencies = [];
   const expand = (name, inputs, seen) => {
     const node = nodes[name];
     if (!node) throw new Error(`a test input names project "${name}", not in the project graph`);
     const named = { default: ['{projectRoot}/**/*'], ...namedInputs, ...node.data.namedInputs };
+    const file = (input) => {
+      if (input.startsWith('!')) return;
+      const pattern = input
+        .replaceAll('{projectRoot}', node.data.root)
+        .replaceAll('{projectName}', name)
+        .replace(/^\{workspaceRoot\}\//, '')
+        .replace(/^\.\//, '');
+      patterns.push({ input, pattern });
+    };
     for (const input of inputs) {
-      if (typeof input === 'object' && input.dependencies) continue;
-      const file = typeof input === 'string' ? input : (input.fileset ?? input.json);
-      if (typeof input === 'string' && Object.hasOwn(named, input)) {
-        const key = `${name}:${input}`;
-        if (!seen.has(key)) expand(name, named[input], new Set(seen).add(key));
-      } else if (typeof file === 'string') {
-        if (/^[!^]/.test(file)) continue;
-        const pattern = file
-          .replaceAll('{projectRoot}', node.data.root)
-          .replaceAll('{projectName}', name)
-          .replace(/^\{workspaceRoot\}\//, '')
-          .replace(/^\.\//, '');
-        patterns.push({ input: file, pattern });
-      } else if (typeof input.input === 'string' && input.projects !== 'dependencies') {
+      if (typeof input === 'string') {
+        if (input.startsWith('^')) dependencies.push(input);
+        else if (!Object.hasOwn(named, input)) file(input);
+        else if (!seen.has(`${name}:${input}`))
+          expand(name, named[input], new Set(seen).add(`${name}:${input}`));
+      } else if (input.dependencies || input.projects === 'dependencies') {
+        dependencies.push(input);
+      } else if (typeof input.fileset === 'string') {
+        file(input.fileset);
+      } else if (typeof input.json === 'string') {
+        file(input.json);
+      } else if (typeof input.input === 'string') {
         const owners = input.projects && input.projects !== 'self' ? [input.projects] : [name];
         for (const owner of owners.flat()) expand(owner, [input.input], seen);
+      } else if (!NOT_FILES.some((key) => Object.hasOwn(input, key))) {
+        throw new Error(
+          `${project}:test has an input verify cannot plan for: ${JSON.stringify(input)}`,
+        );
       }
     }
   };
-  expand(project, nodes[project].data.targets.test.inputs ?? [{ input: 'default' }], new Set());
-  return patterns;
+  expand(project, nodes[project].data.targets.test.inputs ?? NX_DEFAULT_INPUTS, new Set());
+  return { patterns, dependencies };
 }
 
 // What check 1 lints, typechecks and tests, given `affected`, Nx's affected projects for the same
@@ -172,15 +197,35 @@ export function planProjects({
   affected,
   cacheOnly = CACHE_ONLY_INPUTS,
 }) {
-  const scheduled = {};
+  const inputs = {};
   for (const [name, node] of Object.entries(nodes)) {
-    if (!node.data.targets?.test) continue;
+    if (node.data.targets?.test) inputs[name] = testInputs(name, nodes, namedInputs);
+  }
+  // A held input that no longer matches the project's own spelling holds nothing, and a project
+  // with dependency inputs can change through a dependency alone, which no own input would show.
+  for (const [name, held] of Object.entries(cacheOnly)) {
+    if (!inputs[name]) {
+      throw new Error(`CACHE_ONLY_INPUTS names ${name}, which has no test target in the graph`);
+    }
+    const own = new Set(inputs[name].patterns.map(({ input }) => input));
+    const missing = held.filter((input) => !own.has(input));
+    if (missing.length) {
+      throw new Error(
+        `CACHE_ONLY_INPUTS holds ${missing.join(', ')} for ${name}, but ${name}:test has no input spelled that way`,
+      );
+    }
+    if (inputs[name].dependencies.length) {
+      throw new Error(
+        `CACHE_ONLY_INPUTS holds ${name}, but ${name}:test has dependency inputs (${JSON.stringify(inputs[name].dependencies)}): a change to a dependency alone would skip it`,
+      );
+    }
+  }
+  const scheduled = {};
+  for (const [name, { patterns }] of Object.entries(inputs)) {
     const skip = new Set(cacheOnly[name]);
-    const patterns = testInputPatterns(name, nodes, namedInputs).filter(
-      ({ input }) => !skip.has(input),
-    );
+    const own = patterns.filter(({ input }) => !skip.has(input));
     for (const file of changed) {
-      const hit = patterns.find(({ pattern }) => matchesInput(file, pattern));
+      const hit = own.find(({ pattern }) => matchesInput(file, pattern));
       if (hit) (scheduled[name] ??= []).push({ file, input: hit.input });
     }
   }
@@ -213,13 +258,41 @@ function run(command, args, env = {}) {
   return result.status ?? 1;
 }
 
+// The files a change touches since `base`: committed, staged, unstaged and untracked, as paths
+// relative to the repository root (run it there). --no-renames, as Nx's own diff: a moved file
+// counts at both its old and its new path. -z prints each path as it is; without it, git quotes a
+// path with non-ASCII bytes ("apps/caf\303\251.tsx", quotes included), which matches no input.
+export function changedFiles(base, cwd = process.cwd()) {
+  const paths = (...args) =>
+    execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+      .split('\0')
+      .filter(Boolean);
+  return [
+    ...paths('diff', '--name-only', '--no-renames', '-z', base),
+    ...paths('ls-files', '--others', '--exclude-standard', '-z'),
+  ];
+}
+
+// Nx runs its own `git diff` for the affected list and splits it on newlines, so it misses a quoted
+// path the same way (nx/dist/src/utils/command-line-utils.js:245-251). git reads core.quotePath from
+// the environment too (GIT_CONFIG_COUNT, git 2.31 or later); this adds it after any set already.
+function unquotedGitPaths(env) {
+  const count = Number.parseInt(env.GIT_CONFIG_COUNT ?? '0', 10) || 0;
+  return {
+    ...env,
+    GIT_CONFIG_COUNT: String(count + 1),
+    [`GIT_CONFIG_KEY_${count}`]: 'core.quotePath',
+    [`GIT_CONFIG_VALUE_${count}`]: 'false',
+  };
+}
+
 // The JSON an Nx command prints, from its first `open` character on (Nx may print notes first).
 function jsonFromNx(args, open, input) {
   const result = spawnSync('npx', args, {
     encoding: 'utf8',
     input,
     maxBuffer: 256 * 1024 * 1024,
-    env: { ...process.env, NX_NO_CLOUD: 'true' },
+    env: unquotedGitPaths({ ...process.env, NX_NO_CLOUD: 'true' }),
   });
   if (result.status !== 0) {
     throw new Error(`npx ${args.join(' ')} exited ${result.status}\n${result.stderr}`);
@@ -227,18 +300,26 @@ function jsonFromNx(args, open, input) {
   return JSON.parse(result.stdout.slice(result.stdout.indexOf(open)));
 }
 
-function planChanges(changed, { base, files }) {
+const nxJsonNamedInputs = () =>
+  JSON.parse(readFileSync(new URL('../nx.json', import.meta.url), 'utf8')).namedInputs;
+
+// The plan for `changed`: the project graph and Nx's affected projects, read through `nx` (an Nx
+// command's args, the JSON's first character, stdin), then planProjects. With `files`, `changed`
+// came from --files and Nx reads that list on stdin; otherwise Nx diffs against `base` itself.
+export function planChanges(
+  changed,
+  { base, files = false, nx = jsonFromNx, namedInputs = nxJsonNamedInputs() },
+) {
   const affectedArgs = ['nx', 'show', 'projects', '--affected', '--json'];
   return planProjects({
     changed,
-    nodes: jsonFromNx(['nx', 'graph', '--print'], '{').graph.nodes,
-    namedInputs: JSON.parse(readFileSync(new URL('../nx.json', import.meta.url), 'utf8'))
-      .namedInputs,
+    nodes: nx(['nx', 'graph', '--print'], '{').graph.nodes,
+    namedInputs,
     affected: !changed.length
       ? []
       : files
-        ? jsonFromNx([...affectedArgs, '--stdin'], '[', changed.join('\n'))
-        : jsonFromNx([...affectedArgs, `--base=${base}`], '['),
+        ? nx([...affectedArgs, '--stdin'], '[', changed.join('\n'))
+        : nx([...affectedArgs, `--base=${base}`], '['),
   });
 }
 
@@ -269,15 +350,9 @@ function main() {
   }
   const baseArg = argv.find((arg) => arg.startsWith('--base='));
   const base = filesArg ? null : baseArg ? baseArg.slice('--base='.length) : mergeBase();
-  // --no-renames, as Nx's own diff: a moved file counts at both its old and its new path.
-  const changed = (
-    filesArg
-      ? filesArg.slice('--files='.length).split(',')
-      : [
-          ...git('diff', '--name-only', '--no-renames', base).split('\n'),
-          ...git('ls-files', '--others', '--exclude-standard').split('\n'),
-        ]
-  ).filter(Boolean);
+  const changed = filesArg
+    ? filesArg.slice('--files='.length).split(',').filter(Boolean)
+    : changedFiles(base);
   console.log(`[verify] ${base ? `base ${base}` : '--files'}; ${changed.length} changed file(s)`);
 
   let plan;
@@ -352,8 +427,8 @@ function main() {
   process.exit(status);
 }
 
-// Run only as a script: tools/verify.spec.mjs imports planProjects. Both paths are resolved, so a
-// symlinked checkout still runs.
+// Run only as a script: tools/verify.spec.mjs imports changedFiles, planChanges and planProjects.
+// Both paths are resolved, so a symlinked checkout still runs.
 const realpath = (file) => {
   try {
     return realpathSync(file);
