@@ -23,13 +23,10 @@
           "{workspaceRoot}/tools/archive-sourcemaps.mjs",
           "{workspaceRoot}/tools/precompress-dashboard.mjs",
           "{workspaceRoot}/research/**/*",
-          "{workspaceRoot}/tools/research-notes/blocks.mjs",
-          "{workspaceRoot}/tools/research-notes/dates.mjs",
-          "{workspaceRoot}/tools/research-notes/freshness.mjs",
-          "{workspaceRoot}/tools/research-notes/notes.mjs",
-          "{workspaceRoot}/tools/research-notes/scoring.mjs",
-          "{workspaceRoot}/tools/research-notes/valuation.mjs",
-          "{workspaceRoot}/tools/research-notes/vite-plugin.mjs"
+          "{workspaceRoot}/tools/research-notes/**/*.mjs",
+          "!{workspaceRoot}/tools/research-notes/**/*.spec.mjs",
+          "{workspaceRoot}/docs/blog/posts.json",
+          "{workspaceRoot}/docs/blog/*.md"
         ],
         "outputs": ["{projectRoot}/dist", "{projectRoot}/sourcemaps-private/current"],
         "configurations": {
@@ -44,6 +41,21 @@
           }
         },
         "defaultConfiguration": "production"
+      },
+      "test": {
+        "inputs": [
+          "default",
+          "^production",
+          {
+            "externalDependencies": ["vitest"]
+          },
+          "{workspaceRoot}/research/**/*",
+          "{workspaceRoot}/tools/research-notes/**/*.mjs",
+          "!{workspaceRoot}/tools/research-notes/**/*.spec.mjs",
+          "{workspaceRoot}/docs/blog/posts.json",
+          "{workspaceRoot}/docs/blog/*.md",
+          "{workspaceRoot}/libs/quant-engine/src/signals.rs"
+        ]
       },
       "precompress": {
         "command": "node tools/precompress-dashboard.mjs"

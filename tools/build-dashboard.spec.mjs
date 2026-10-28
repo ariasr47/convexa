@@ -68,13 +68,12 @@ function assertResolvedBuildIdentity(project) {
     '{workspaceRoot}/tools/archive-sourcemaps.mjs',
     '{workspaceRoot}/tools/precompress-dashboard.mjs',
     '{workspaceRoot}/research/**/*',
-    '{workspaceRoot}/tools/research-notes/blocks.mjs',
-    '{workspaceRoot}/tools/research-notes/dates.mjs',
-    '{workspaceRoot}/tools/research-notes/freshness.mjs',
-    '{workspaceRoot}/tools/research-notes/notes.mjs',
-    '{workspaceRoot}/tools/research-notes/scoring.mjs',
-    '{workspaceRoot}/tools/research-notes/valuation.mjs',
-    '{workspaceRoot}/tools/research-notes/vite-plugin.mjs',
+    // vite.config.mts loads the research-notes plugin, which imports its siblings (filing-check.mjs
+    // through blocks.mjs), and pages/blog/posts.ts bundles each post's source.
+    '{workspaceRoot}/tools/research-notes/**/*.mjs',
+    '!{workspaceRoot}/tools/research-notes/**/*.spec.mjs',
+    '{workspaceRoot}/docs/blog/posts.json',
+    '{workspaceRoot}/docs/blog/*.md',
   ]);
   assert.deepEqual(project.targets.build.outputs, [
     '{projectRoot}/dist',

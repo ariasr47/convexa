@@ -53,6 +53,8 @@
         "{workspaceRoot}/libs/api/src/generated/**/*",
         "{workspaceRoot}/libs/api/package.json",
         "{workspaceRoot}/apps/dashboard/src/**/*",
+        "{workspaceRoot}/apps/dashboard/src/app/shared/dataState/vocabulary.ts",
+        "{workspaceRoot}/tools/research-notes/filing-check.mjs",
         "{workspaceRoot}/.spire/clusters/tech/contracts/production-runtime-guardrails/conformance-receipt.json",
         "{workspaceRoot}/.spire/clusters/tech/contracts/_archive/production-runtime-guardrails/conformance-receipt.json",
         "{workspaceRoot}/.spire/clusters/tech/state/conformance/production-runtime-guardrails-transport.json",
@@ -60,6 +62,8 @@
         "{workspaceRoot}/docs/production-runtime-guardrails.md",
         "{workspaceRoot}/nx.json",
         "{workspaceRoot}/package.json",
+        "{workspaceRoot}/railway.json",
+        "{workspaceRoot}/.dockerignore",
         "{workspaceRoot}/Cargo.toml",
         "{workspaceRoot}/Cargo.lock",
         { "runtime": "rustc --version" }
