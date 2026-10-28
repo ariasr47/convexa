@@ -11703,7 +11703,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MarketWire"
+                  "$ref": "#/components/schemas/MarketStrikeProfile"
                 }
               }
             },
@@ -11775,7 +11775,7 @@
             "session-cookie": []
           }
         ],
-        "summary": "GET /api/strike-profile?ticker= — the owner's account only, as the bundle.",
+        "summary": "GET /api/strike-profile?ticker= — the bundle's strike profile, whole: the owner's account only,\nas the bundle.",
         "x-convexa-access": "owner",
         "x-convexa-security": "session",
         "x-convexa-surface": "json"

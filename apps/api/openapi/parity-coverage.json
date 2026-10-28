@@ -17465,7 +17465,7 @@
     {
       "boundaries": [
         {
-          "body_schema_signature": "{\"$ref\":\"#/components/schemas/MarketWire\"}",
+          "body_schema_signature": "{\"$ref\":\"#/components/schemas/MarketStrikeProfile\"}",
           "boundary_id": "GET /api/strike-profile 200 application/json session",
           "case_id": "GET /api/strike-profile 200 application/json session",
           "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
@@ -17889,6 +17889,6 @@
   "schema_version": 2,
   "source": {
     "openapi": "apps/api/openapi/convexa.openapi.json",
-    "sha256": "03fca03e2a408f147e1a4fcac409f328f7ad5f6c9831697e1be0e49c7e4bc069"
+    "sha256": "5e80d25c5fa4b29a88b7e7aebdefb49271242fc89e773a33f57477157da1916f"
   }
 }

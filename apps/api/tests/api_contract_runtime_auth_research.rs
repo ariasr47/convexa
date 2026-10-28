@@ -1685,13 +1685,13 @@ fn owner_gate_requests() -> Vec<(&'static str, &'static str, &'static str, bool)
             true,
         ),
         ("GET", "/api/signals", "/api/signals?ticker=SYN", false),
-        // Gated as options-derived, but its wire today is `MarketWire` over the profile object,
-        // which keeps only `ticker` (a pre-existing projection gap), so no level reaches it.
+        // The bundle's strike profile, whole: every strike row carries its net GEX
+        // (`strike_profile_answers_the_bundles_whole_profile`).
         (
             "GET",
             "/api/strike-profile",
             "/api/strike-profile?ticker=SYN",
-            false,
+            true,
         ),
         (
             "GET",
@@ -2027,6 +2027,69 @@ async fn a_contract_missing_a_greek_answers_null_for_it() {
     );
     assert_eq!(put.body["option_quote"], Value::Null);
     assert_eq!(put.body["iv"], 0.28);
+}
+
+/// `GET /api/strike-profile` answers the owner the bundle's whole strike profile, field for field:
+/// its body equals the ticker bundle's `strike_profile` as served, and both carry everything
+/// `build_bundle` puts there from the snapshot (the ticker, the GEX spot and every strike row, key
+/// for key; a row's integer volume reaches the wire as a JSON number). The route's wire was
+/// `MarketWire`, which kept only `ticker` and dropped the rest.
+#[tokio::test]
+async fn strike_profile_answers_the_bundles_whole_profile() {
+    fn same_json(a: &Value, b: &Value) -> bool {
+        match (a, b) {
+            (Value::Number(x), Value::Number(y)) => x.as_f64() == y.as_f64(),
+            (Value::Array(x), Value::Array(y)) => {
+                x.len() == y.len() && x.iter().zip(y).all(|(x, y)| same_json(x, y))
+            }
+            (Value::Object(x), Value::Object(y)) => {
+                x.len() == y.len()
+                    && x.iter()
+                        .all(|(key, v)| y.get(key).is_some_and(|w| same_json(v, w)))
+            }
+            _ => a == b,
+        }
+    }
+    let owner_email = "runtime-profile-owner@example.test";
+    let (state, router) = owner_gate_router(Some(owner_email)).await;
+    // The fixture's GEX spot, display spot and live price are all 100, so move the GEX spot off
+    // them: the profile's spot must be the snapshot's GEX spot, as in the bundle.
+    let mut snapshot = state
+        .gex_cache
+        .get("SYN")
+        .await
+        .expect("the seeded SYN snapshot");
+    snapshot.gex_spot = 100.25;
+    state.gex_cache.set(snapshot.clone()).await;
+    let (cookie, _) = signup(&state, &router, owner_email, false).await;
+
+    let profile = owner_gate_call(
+        &router,
+        "GET",
+        "/api/strike-profile?ticker=SYN",
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(profile.status, StatusCode::OK, "{}", profile.body);
+    let bundle = owner_gate_call(&router, "GET", "/api/ticker/SYN", Some(&cookie)).await;
+    assert_eq!(bundle.status, StatusCode::OK, "{}", bundle.body);
+    assert_eq!(profile.body, bundle.body["strike_profile"]);
+
+    assert_eq!(
+        snapshot.gex.strike_profile.len(),
+        3,
+        "the SYN chain quotes three strikes"
+    );
+    let built = serde_json::json!({
+        "ticker": "SYN",
+        "spot": snapshot.gex_spot,
+        "strikes": snapshot.gex.strike_profile,
+    });
+    assert!(
+        same_json(&profile.body, &built),
+        "route: {}\nbuilt: {built}",
+        profile.body
+    );
 }
 
 /// No operation can serialize a dealer level without being sorted: every operation whose declared

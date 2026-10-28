@@ -10,7 +10,7 @@ use axum::Json;
 use chrono::{DateTime, Utc};
 use quant_engine::{
     compute_opportunity_tier, evaluate_gate, generate_signals, market_state_from_gex,
-    off_exchange_signal_input, DEFAULT_GATE_SCORE,
+    off_exchange_signal_input, StrikeProfileRow, DEFAULT_GATE_SCORE,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -402,6 +402,42 @@ pub struct MarketStrike {
     pub volume: Option<f64>,
     pub vol_oi_ratio: Option<f64>,
 }
+
+/// One strike row of the engine's profile, field for field. The pattern names every field, so a
+/// field added to the row fails to compile here rather than being dropped from the wire.
+impl From<&StrikeProfileRow> for MarketStrike {
+    fn from(row: &StrikeProfileRow) -> Self {
+        let &StrikeProfileRow {
+            strike,
+            net_gex,
+            call_gex,
+            put_gex,
+            call_oi,
+            put_oi,
+            total_oi,
+            net_dex,
+            call_dex,
+            put_dex,
+            volume,
+            vol_oi_ratio,
+        } = row;
+        Self {
+            strike,
+            net_gex,
+            call_gex,
+            put_gex,
+            call_oi,
+            put_oi,
+            total_oi,
+            net_dex,
+            call_dex,
+            put_dex,
+            // A contract count; the bundle's JSON carries the same number.
+            volume: volume.map(|v| v as f64),
+            vol_oi_ratio,
+        }
+    }
+}
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct MarketExpiration {
     pub date: String,
@@ -458,9 +494,10 @@ pub struct PersonaWire {
     pub dte_pref: Option<String>,
 }
 
-/// The ticker bundle and its three slices (market state, signals, strike profile): the owner's
-/// account only, since every one carries dealer levels computed from the licensed options feed
-/// (owner gate). The 403 is the [`crate::routes::auth::OwnerUser`] refusal.
+/// The ticker bundle and two of its slices (market state, signals): the owner's account only,
+/// since every one carries dealer levels computed from the licensed options feed (owner gate). The
+/// 403 is the [`crate::routes::auth::OwnerUser`] refusal. The strike-profile slice has its own
+/// wire, [`StrikeProfileResponse`].
 #[derive(Debug, IntoResponses)]
 pub enum MarketResponse {
     #[response(status = 200, content_type = "application/json")]
@@ -488,6 +525,55 @@ impl IntoResponse for MarketResponse {
 /// intentionally serialized (including nullable required fields) through the production DTO.
 pub(crate) fn contract_market_response() -> Response {
     MarketResponse::Ok(MarketWire::default()).into_response()
+}
+
+/// The strike-profile slice: the bundle's `strike_profile`, whole (ticker, GEX spot and every
+/// strike row). The owner's account only, as the bundle (owner gate); the 403 is the
+/// [`crate::routes::auth::OwnerUser`] refusal.
+#[derive(Debug, IntoResponses)]
+pub enum StrikeProfileResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(MarketStrikeProfile),
+    #[response(
+        status = 403,
+        content_type = "application/json",
+        description = "Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`."
+    )]
+    Forbidden(crate::openapi::WireError),
+}
+
+impl IntoResponse for StrikeProfileResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+            Self::Forbidden(body) => {
+                (axum::http::StatusCode::FORBIDDEN, Json(body)).into_response()
+            }
+        }
+    }
+}
+
+/// Route-owned representative success conversion for the strike-profile slice.
+pub(crate) fn contract_strike_profile_response() -> Response {
+    StrikeProfileResponse::Ok(MarketStrikeProfile {
+        ticker: "SPY".into(),
+        spot: 100.0,
+        strikes: vec![MarketStrike {
+            strike: 100.0,
+            net_gex: 1.0,
+            call_gex: 2.0,
+            put_gex: -1.0,
+            call_oi: 10.0,
+            put_oi: 5.0,
+            total_oi: 15.0,
+            net_dex: Some(0.5),
+            call_dex: Some(1.0),
+            put_dex: Some(-0.5),
+            volume: Some(3.0),
+            vol_oi_ratio: Some(0.2),
+        }],
+    })
+    .into_response()
 }
 
 #[derive(Debug, IntoResponses)]
@@ -529,8 +615,14 @@ pub(crate) fn contract_representative_for(
     {
         panic!("unknown market response-conversion boundary: {boundary}");
     }
+    let strike_profile = boundary.starts_with("GET /api/strike-profile ");
     match status {
+        axum::http::StatusCode::OK if strike_profile => contract_strike_profile_response(),
         axum::http::StatusCode::OK => contract_market_response(),
+        axum::http::StatusCode::FORBIDDEN if strike_profile => {
+            StrikeProfileResponse::Forbidden(crate::routes::auth::contract_owner_refusal())
+                .into_response()
+        }
         axum::http::StatusCode::FORBIDDEN => {
             MarketResponse::Forbidden(crate::routes::auth::contract_owner_refusal()).into_response()
         }
@@ -855,25 +947,35 @@ pub async fn get_signals(
     ))
 }
 
-/// GET /api/strike-profile?ticker= — the owner's account only, as the bundle.
+/// GET /api/strike-profile?ticker= — the bundle's strike profile, whole: the owner's account only,
+/// as the bundle.
 #[utoipa::path(
     get,
     path = "/api/strike-profile",
     params(MarketQuery),
-    responses(MarketResponse)
+    responses(StrikeProfileResponse)
 )]
 pub async fn get_strike_profile(
     State(state): State<AppState>,
     _owner: OwnerUser,
     Query(q): Query<MarketQuery>,
-) -> Result<MarketResponse, AppError> {
+) -> Result<StrikeProfileResponse, AppError> {
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;
-    let dp = resolve_dark_pool(&state, q.dark_pool);
-    let bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
-    Ok(MarketResponse::Ok(
-        serde_json::from_value(bundle["strike_profile"].clone())
-            .expect("strike profile wire matches closed schema"),
-    ))
+    // The same read `build_bundle` makes, and the same fields it puts in `strike_profile`, built
+    // as typed wire structs (nothing to re-read through the schema, so nothing to panic on). The
+    // signals and dark-pool scoring the bundle adds play no part in the profile.
+    let (snap_opt, _) = load_analytics(&state, &sym, q.min_dte, q.max_dte, q.refresh).await?;
+    let snap = snap_opt.ok_or_else(|| AppError::NotFound(format!("no analytics for {sym}")))?;
+    Ok(StrikeProfileResponse::Ok(MarketStrikeProfile {
+        ticker: sym,
+        spot: snap.gex_spot,
+        strikes: snap
+            .gex
+            .strike_profile
+            .iter()
+            .map(MarketStrike::from)
+            .collect(),
+    }))
 }
 
 #[derive(Debug, Deserialize, Default, utoipa::IntoParams)]

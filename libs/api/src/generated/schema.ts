@@ -847,7 +847,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** GET /api/strike-profile?ticker= — the owner's account only, as the bundle. */
+    /**
+     * GET /api/strike-profile?ticker= — the bundle's strike profile, whole: the owner's account only,
+     *     as the bundle.
+     */
     get: operations['get_strike_profile'];
     put?: never;
     post?: never;
@@ -6142,7 +6145,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['MarketWire'];
+          'application/json': components['schemas']['MarketStrikeProfile'];
         };
       };
       /** @description Signed out: `auth_required`. Signed in but not the owner (`OWNER_EMAILS`): `owner_only`. */
