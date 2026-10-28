@@ -152,7 +152,7 @@ describe('bsPrice — theoretical pricing sanity', () => {
 });
 
 describe('the cached IV is a fraction, the unit ContractWire.iv carries', () => {
-  it('an IV over 1.0 prices over 100%, continuously across 1.0, through every caller', () => {
+  it('an IV over 1.0 prices over 100%, continuously across 1.0, and an unusable IV gives no theoretical mark, through every caller', () => {
     // Risk: this mark is the displayed P/L, the limit-fill check, the order engine's fill and the
     // realized P/L on close. The API sends IV as a fraction (the contract route passes the feed's
     // decimal through), so 1.5 is 150%. Read as 1.5% it priced this call at 0.0345.
@@ -164,6 +164,11 @@ describe('the cached IV is a fraction, the unit ContractWire.iv carries', () => 
       { iv: 1.5, want: 1.9870535390908675 },
       { iv: 0.999, want: 1.3293915245131167 },
       { iv: 1.001, want: 1.3320221350270796 },
+      // No usable IV: the caller falls through as for a null IV, never a number built from it.
+      { iv: 0, want: null },
+      { iv: -0.2, want: null },
+      { iv: Number.NaN, want: null },
+      { iv: Number.POSITIVE_INFINITY, want: null },
     ];
     const noQuote = (iv: number) => tracked({ strike: 20, option_quote: null, iv, dte: 10 });
     const at = (iv: number, live: boolean) =>

@@ -1,15 +1,16 @@
 /**
  * Entry/fill resolver — decides `entry_mark` + `entry_basis` at open time, under the three modes
  * (ARCHITECTURE_CONTRACT §2). Pure logic over the EXISTING tracked-contract data + the existing
- * `bsPrice` theoretical mark; NO new fetch, NO new endpoint, NO real order path.
+ * `theoreticalMark`; NO new fetch, NO new endpoint, NO real order path.
  *
  *  - manual : entry = the user's typed price, basis `user_entered`. Succeeds even with no quote/chain.
  *  - market : entry = option_quote.mid (basis `snapshot`) or the theoretical BS mark (basis
- *             `theoretical`); cannot fill when neither resolves (404 / chain unavailable / no IV).
+ *             `theoretical`); cannot fill when neither resolves (404 / chain unavailable / no
+ *             usable IV).
  *  - limit  : rests `pending`; fills on a LIVE cross (mark ≤ limit) at the limit price (basis
  *             `limit_fill`). Cross is evaluated elsewhere (useResting…), never here at open time.
  */
-import { bsPrice } from '@/features/trading/model/mark';
+import { theoreticalMark } from '@/features/trading/model/mark';
 import type { OptionRight, TrackedContract } from '@convexa/api';
 import type { EntryBasis } from './types';
 
@@ -32,10 +33,8 @@ export function resolveMarketFill(
   if (!tracked) return null;
   const mid = tracked.option_quote?.mid;
   if (mid != null) return { mark: mid, basis: 'snapshot' };
-  if (tracked.iv != null) {
-    return { mark: bsPrice(right, spot, strike, tracked.dte, tracked.iv), basis: 'theoretical' };
-  }
-  return null;
+  const theo = theoreticalMark(right, spot, strike, tracked.dte, tracked.iv);
+  return theo == null ? null : { mark: theo, basis: 'theoretical' };
 }
 
 /** A MANUAL fill is always the user's typed price; it never depends on a quote. */

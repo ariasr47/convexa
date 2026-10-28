@@ -50,6 +50,24 @@ export function bsPrice(
     : K * disc * normCdf(-d2) - S * normCdf(-d1);
 }
 
+/**
+ * The theoretical mark from a contract's cached IV, or null when that IV cannot price it. An IV that
+ * is null, not finite, zero or negative is no IV: bsPrice would return 0 for a zero IV and NaN for a
+ * NaN one, a number nobody quoted. This is the one place that rule lives. The snapshot anchor, the
+ * live step and the market-entry fill (positions/entry.ts) all price through here, so a contract
+ * without a usable IV falls through to its next rung: a withheld null mark, or no market fill.
+ */
+export function theoreticalMark(
+  right: OptionRight,
+  S: number,
+  K: number,
+  dte: number,
+  iv: number | null | undefined,
+): number | null {
+  if (iv == null || !Number.isFinite(iv) || iv <= 0) return null;
+  return bsPrice(right, S, K, dte, iv);
+}
+
 export interface MarkResult {
   mark: number | null;
   basis: MarkBasis;
@@ -68,17 +86,15 @@ export interface MarkInputs {
   lastMark: number | null; // last computed mark (for last_known when offline)
 }
 
-/** The anchor mark from the snapshot: NBBO mid if present, else theoretical from cached IV. */
+/** The anchor mark from the snapshot: NBBO mid if present, else theoretical from cached IV (null
+ *  when there is no usable IV). */
 function anchorMark(i: MarkInputs): { mark: number | null; basis: MarkBasis } {
   const q = i.tracked.option_quote?.mid;
   if (q != null) return { mark: q, basis: 'snapshot' };
-  if (i.tracked.iv != null) {
-    return {
-      mark: bsPrice(i.right, i.anchorSpot, i.strike, i.tracked.dte, i.tracked.iv),
-      basis: 'theoretical',
-    };
-  }
-  return { mark: null, basis: 'theoretical' };
+  return {
+    mark: theoreticalMark(i.right, i.anchorSpot, i.strike, i.tracked.dte, i.tracked.iv),
+    basis: 'theoretical',
+  };
 }
 
 export function computeMark(i: MarkInputs): MarkResult {
@@ -104,16 +120,20 @@ export function computeMark(i: MarkInputs): MarkResult {
       const modeled = q + delta * dS + 0.5 * gamma * dS * dS;
       return { mark: modeled, basis: dS !== 0 ? 'modeled' : 'snapshot', frozen: false };
     }
-    if (q == null && i.tracked.iv != null) {
-      return {
-        mark: bsPrice(i.right, i.liveUnderlying, i.strike, i.tracked.dte, i.tracked.iv),
-        basis: 'theoretical',
-        frozen: false,
-      };
+    if (q == null) {
+      const theo = theoreticalMark(
+        i.right,
+        i.liveUnderlying,
+        i.strike,
+        i.tracked.dte,
+        i.tracked.iv,
+      );
+      if (theo != null) return { mark: theo, basis: 'theoretical', frozen: false };
     }
   }
   // 4) Not live (cold/loading/quiet-but-open feed), or live with a quote but a missing greek →
-  //    the snapshot anchor.
+  //    the snapshot anchor. Live with no quote and no usable IV lands here too: its anchor is a
+  //    null mark, withheld.
   return { mark: anchor.mark, basis: anchor.basis, frozen: false };
 }
 
