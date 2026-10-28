@@ -550,6 +550,23 @@ conformance, and volume-replacement receipts.
   - A finding the widened matrix exposes is fixed, never waived.
   - The frozen inventory is raised deliberately, in the same change.
   *(curvature-v2-landing-and-site; no-vendor-production-posture.)*
+- **`[journal-figures-stay-in-journal]`** (owner record, 2026-10-28, 0 instances: spec 08's canon
+  event 5, approved with its open questions 2 and 3): the trade journal's figures stay in the
+  journal.
+  - Journal balances, margin, text, positions and rule limits **never reach** decision records, the
+    outcomes ledger, alerts, the Settings risk inputs, the ticker AI read or any export but the
+    journal's own.
+  - **There is no exit.** A hand-off to any of them would be a separate spec and a new record.
+  - AC-29a ("no account-size value may ever reach a ledger or decision record",
+    `features/trading/model/types.ts:86`) stays as written. The journal is a separate store, not an
+    exception to it.
+  - **Why a written rule:** the journal holds exactly what AC-29a keeps out of decision records,
+    typed by the owner about his real account. An earlier draft of spec 08 handed figures to
+    Settings and was cut for this reason: no closed metric matched a Settings slot, and Account size
+    would have carried the owner's real balance into every ticker AI read.
+  *(trade-journal, `docs/product/specs/2026-10-26/08-trade-journal.md`, Design → Canon events item 5
+  and open question 3; owner answers 2026-10-28, every recommendation taken as written. Recorded
+  before slice 1a builds the store, so no instance yet.)*
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->

@@ -511,6 +511,7 @@ shows the feature without live data.
 | **4 · Options flow** | Sweeps (ISO codes S/b/d across exchanges, with a documented grouping window). Blocks (floor and cross codes plus a documented premium threshold). Unusual activity (volume vs prior-day OI). Aggressor side vs NBBO. Cancels and late reports excluded; spread legs kept apart | Q7 passing; the thresholds published on the methodology page |
 | **5 · News and transcripts** | 8-K text and exhibits. Transcripts, if AI use is confirmed. Rubric sentiment storing its rubric version and model. Q4's earnings comparison | Q4 and Q12 passing |
 | **6 · MCP (optional)** | An MCP server over the same tools for the owner's Claude apps | — |
+| **J · Trade journal (its own track)** | J1–J4 on the owner's own journal (spec 08; Amendments, 2026-10-28), sequenced outside Q1–Q14 and the phases above, as spec 07's Q4 sequenced its gauge (2026-10-25). Slices 1a to 3 call no model | Slice 4 ships J1 and J2 only after its own eval passes (spec 08, Q13) |
 
 ---
 
@@ -739,3 +740,78 @@ unregistered-address case in item 5; it shadowed an owner who had already regist
 - **Not done:** sign-up still accepts non-ASCII addresses. Refusing them at sign-up and at Google
   account creation would be defence in depth; it changes who can register, so it is left for an
   owner decision.
+
+### 2026-10-28: the trade journal's J family, on the owner's own data (spec 08)
+
+Source: [spec 08](../specs/2026-10-26/08-trade-journal.md), open questions 4, 5, 6, 11, 13 and 15,
+answered by the owner on 2026-10-28 with every recommendation taken as written (DECISION_LEDGER row
+`trade-journal-approved-by-slice`). The journal is a separate track from §1's market questions: it
+reads what the owner types about his own real brokerage account. §6 stays as written for Q1–Q14;
+the items below say where the journal differs.
+
+1. **A new question family, J1–J4** (Q4). None of them is a market question.
+   - **J1** "What does this entry say?": details with character spans and a 60-word digest. No
+     observations.
+   - **J2** "What do my entries show?": at most 5 findings, each tied to one detector row or to the
+     one event, the event phrasing, and at most 3 questions back.
+   - **J3** "Draft rules from that evidence": part of J2's output, at most 3 drafts, each tied to a
+     finding. They are first-person **process** rules (how he sizes, borrows, exits and plans) drawn
+     from his cited entries (Q15). Market strategies, what to trade and when, never come from the
+     journal's AI; they belong to Q1–Q14.
+   - **J4** "Did I follow my rules?": counted by code, never by a model.
+
+   J1 and J2 run on their own completion path, and spec 08's deterministic check runs after every
+   read, following §5.2's rule: every quote equals his stored text byte for byte, every number cites
+   a fact and equals it, counts come only from code, and no rate shows below n = 20. One failure
+   fails the read, and a failed read is shown as failed.
+2. **"Simulated only" (§6) is scoped to the market questions** (Q4). It still holds for Q1–Q14. The
+   J family reads his real positions, balances, margin and words, all typed by him, and sends them
+   to his own AI provider on his own key. It places, changes and cancels nothing, and writes nothing
+   to the simulated book or to a brokerage.
+3. **A licence value for his own data, `owner_personal`** (Q4). §3's `Fact.source.licence` gains
+   `'owner_personal'` for data the owner typed. It reaches no other account and is never shown
+   publicly; the only place it is sent is his own AI provider, under item 5. The staging demo shows
+   a fictional sample journal instead, labelled Sample. Journal figures never reach the ticker AI
+   read or decision records, among the other paths PROJECT_CONTEXT's
+   `[journal-figures-stay-in-journal]` lists.
+4. **Never opened to other accounts** (Q4). This analysis is personal to one real account, so it is
+   never opened to other accounts in this form, and §6's "If the live analyst were ever opened to
+   others" has no counterpart for it. Every journal route is owner-only (`OwnerUser`). The gate
+   guards the journal because the data is his, not because of a licence; spec 08's slice 1a writes
+   that into the gate's doc comments and adds it here as an appended amendment.
+5. **Before anything is sent** (Q4, Q11):
+   - **Reads are off by default.** Nothing is sent until he turns AI reads on. There is no server
+     key: runs use his own Anthropic key, found by the journal's own resolver, never through the
+     provider and model he chose for ticker reads.
+   - **Per-entry exclusion.** "Keep this entry out of AI reads" withholds the entry's text,
+     snapshot, money in or out, details and later notes, and every computed fact in the package is
+     recomputed without them.
+   - **The eval gate first.** Neither J1 nor J2 ships before spec 08's eval passes: a frozen, hashed
+     golden set of 12 authored synthetic journals, never his entries; a bar that includes the check
+     passing on every run after at most one retry, no advice or tone hits, and pass^3; a judge from
+     another provider that sees only synthetic data; and the owner reading 10 outputs in full before
+     he turns reads on.
+   - **When entries are read** (Q11): at review time. Reading on every save is opt-in, and a
+     margin-call entry is never read on save.
+6. **Anthropic only at first** (Q5). Slice 4 runs journal reads on an Anthropic key only. The other
+   providers in `llm_catalog.rs` show "Not set up · journal reads run on an Anthropic key for now";
+   each would need its own schema and usage mapping first.
+7. **Models and caps** (Q6), priced from §6's table:
+   - **J1 on Sonnet 5.5** (`claude-sonnet-5-5`), effort `low`: ≈ $0.011 (prefix cached) to $0.020
+     (cold) a read.
+   - **J2 on Opus 5.5** (`claude-opus-5-5`), effort `high`, set explicitly because Opus 5.5 defaults
+     to `medium`: ≈ $0.21 a review.
+   - About **$1.40 a month** at two entries a trading day and one review a week.
+   - **Caps:** $1.00 a run, checked against the run's worst case (estimated input plus `max_tokens`
+     of output; ≤ $0.75 for a review at the sample's size), so a run that could exceed it never
+     starts; $5.00 a month by default; 3 reviews and 60 entry reads a day. They are counted from the
+     journal's own `journal_ai_runs` table, never the process-global rec counter.
+   - **No automatic fallback** to another model, the Messages API's refusal fallback (`fallbacks`)
+     included: a fallback would send his data to a model the What's sent drawer didn't name.
+   - Sonnet for J2 as well would halve the review's cost; the eval compares the two on the golden
+     set before that is decided.
+8. **Sequencing** (Q13). The J family keeps its runs and caps in `journal_ai_runs`, so it waits on
+   neither Phase 0's `analyst_answers` nor its per-user cap, and it reuses
+   `services/analyst/canonical.rs` as it is. Slices 1a to 3 call no model and are built now; slice
+   4, which ships J1 and J2, follows only after its eval passes. §7's table records this in one row;
+   spec 07's Q4 (the 2026-10-25 amendment above) is the precedent for sequencing outside the phases.
