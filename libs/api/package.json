@@ -11,7 +11,14 @@
         "dependsOn": ["^build", { "projects": "api", "target": "api-contract-check" }]
       },
       "test": {
-        "dependsOn": ["^build", { "projects": "api", "target": "api-contract-check" }]
+        "dependsOn": ["^build", { "projects": "api", "target": "api-contract-check" }],
+        "inputs": [
+          "default",
+          "^production",
+          { "externalDependencies": ["vitest"] },
+          "{workspaceRoot}/apps/api/src/services/auth/service.rs",
+          "{workspaceRoot}/apps/dashboard/src/**/*.{ts,tsx}"
+        ]
       }
     }
   },
