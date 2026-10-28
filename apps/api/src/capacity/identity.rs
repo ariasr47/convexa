@@ -99,26 +99,32 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // were `public` or `optional-session`, and eight gain a 403 (227 boundaries). Zero new operations,
 // so `precutover-operation-baseline.json` keeps its hash and four artifacts move (ledger
 // `route-growth-repins-api-artifact-oracle`).
-const API_ARTIFACTS: [(&str, &str); 5] = [
+// Re-pinned 2026-10-28, late: two contract changes that day skipped the re-pin. `adda4054` made
+// `ContractGreeksWire`'s four greeks nullable, and `9176a3b8` made `GET /api/strike-profile`
+// answer `MarketStrikeProfile`. Zero new operations, so `precutover-operation-baseline.json` keeps
+// its hash and four artifacts move to their bytes at `9176a3b8` (ledger
+// `route-growth-repins-api-artifact-oracle`). `tests/capacity_identity.rs` now compares every pin
+// with the file on disk, so `cargo test` fails on the next skipped re-pin.
+pub const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
         "8607f825d4d90e36223dd1177b56f9c2213fed124f779aafcb76d3a2e1775434",
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "07b3f71b39535afb343414e1b5c432067d88ecc5fbe284b62e7aa978c5567c17",
+        "5e80d25c5fa4b29a88b7e7aebdefb49271242fc89e773a33f57477157da1916f",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "194ce6df32c3d9bd823b6755e020d291d9354a9bbd7fbd4938984e2974868ffd",
+        "0216b1e4d98cb149b53f51b45b77718dd8a9a4765a46ae43ca57bc8252ddfefe",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "c0cab6fa0ce2b0d103e1ade528c26c5516b0b883f59c67e99408f813fc5339e3",
+        "6de1531bc5b93fb5832f794f49eb5dd2ae196a66e4dce8d67bb9154028fe11ab",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "d039a05b40b31471ab76fd7122e7a1c11f46f92b656cdd7a21178ba5e9e2237a",
+        "7836e4a865e9a6031c076e243e3108e3b739d9d20f857702380d254b23eab80c",
     ),
 ];
 
