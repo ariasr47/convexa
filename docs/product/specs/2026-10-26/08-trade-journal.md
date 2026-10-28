@@ -3493,3 +3493,98 @@ reversed before its slice is built (1b for G6's label, 2 for G1 and G3).
     with the entry, never computed, suggested, counted or totalled, and never asked on a
     margin-call entry, a broker liquidation or a trim written while a call is open. Criterion 35's
     label half binds slice 1b.
+
+## Corrections from the slice 1a plan review (2026-10-28)
+
+Appended after the slice 1a build plan
+(`docs/product/specs/2026-10-26/08-trade-journal-slice-1a-plan.md`) was reviewed; the body above
+is unchanged. Where an item below and the body disagree, the item holds. Each item names its
+source: a finding from the plan's "Review fold (2026-10-28)" list, or a C- or D-number from the
+plan's section 7.
+
+1. **A carried account value is not an observation.** The spec said a snapshot whose account
+   value is `not recorded` "is skipped by the index, the recorded high and the change" (line 561),
+   and the composer offers "Unchanged · Update numbers" (line 868). Now a snapshot whose account
+   value is carried is skipped the same way: its chain facts read `not recorded`, while its margin
+   used and excess liquidity still use its figures. "Unchanged", and quick capture's carried
+   numbers line, save no snapshot; a snapshot needs at least one typed figure (422 otherwise); and
+   margin-call mode's three numbers are typed or `not recorded`, never carried. Why: finding 1
+   (critical). Counted as new, a copy of Sep 29's $34,047 saved just after the $2,500 deposit read
+   −38.4% below the high and moved Oct 6 to −42.9%: a deposit shown as a loss, against
+   criterion 7.
+2. **Aug 4's "Account value alone" is 0.0%.** The worked example printed "—" in that cell
+   (line 628). Now 0.0%. Why: C9. The spec's own definition, `Vₖ ÷ V_high − 1` (line 543), gives
+   exactly 0 when Aug 4 is its own recorded high, as Aug 21's row shows for the same case, and
+   "—" is for a chain break (line 715). Recomputed with exact fractions; every other cell of the
+   table matches.
+3. **The seal covers every field the insert writes.** The spec said the seal is "over `user_id`,
+   `id`, `written_at`, `kind` and the SHA-256 of the body" (line 2552), and that a restored entry
+   keeps its dates when "its `seal_tag` verifies against the server's key for the id, `written_at`,
+   kind and body" (line 2637). Now the seal is the canonical message `journal.seal.v1` that the
+   plan's section 3.3 defines: every column the insert writes, each free text as its SHA-256, the
+   snapshot with each figure's provenance and source, and the money, in a fixed key order with
+   integer cents; a restore recomputes that message. Why: D9, findings 4 and 5. The short list let
+   an edited export change figures, money or a stated confidence and still read "written at the
+   time". Answered 2026-10-28 under the owner's standing instruction for the trade journal (ledger
+   `trade-journal-seal-message`); reversible until backend step B3 builds the seal.
+4. **The shared fixture moves to `libs/api`, with its exact values as strings.** The spec named
+   `apps/api/tests/fixtures/journal/worked-example.json` (lines 584 and 3111). Now it is
+   `libs/api/src/lib/journal/worked-example.json`, listed in `api:test`'s Nx inputs (and in
+   `tools/verify.mjs`'s `rustScope` while that exists), and each unrounded value is the string
+   `serde_json` writes for it. Why: finding 3 (under `apps/api`, `npm run verify` never scheduled the TypeScript parity
+   test when the Rust side changed) and finding 2 (`serde_json` without its `float_roundtrip`
+   feature read 7 of the 59 worked-example facts back 1 ulp off; reproduced).
+5. **A snapshot's time and the money's time are frozen at Save.** The spec said `as_of` "defaults
+   to `written_at` when About is today" (line 2460). Now the composer sends the time he pressed
+   Save, and the money's time as shown, so a save delivered late keeps the times he typed; the
+   server clamps a time up to 5 minutes after `written_at` to `written_at` and refuses a later
+   one. Why: finding 6. A snapshot typed at 2:14 PM and delivered at 5 PM, after a 3 PM deposit,
+   would have taken the deposit into its step.
+6. **Journal keys rotate add-only.** The spec said the journal ring reads the AI ring's pair "so
+   keys rotate the same way" (line 2529), and the AI ring rewraps on read, which is a write. Now a
+   new journal key is added and made active, old rows keep the key their envelope names, and
+   nothing is re-encrypted on read. Why: C4: a sealed row has no writer for a rewrap.
+7. **More plaintext metadata, and fixed-width ciphertext.** The spec's "Plaintext metadata, on
+   purpose" list (line 2546) left out what the Tables draw as plaintext. Now it also covers a
+   snapshot's `as_of` and `source`, money's `direction` and `occurred_at`, and a correction's
+   `target` and span offsets. And every `_ct` value that isn't free text is written at a fixed
+   width before encryption: amounts and the confidence as 16 characters, the "Closed by" and label
+   values as 24 bytes, the figures JSON in 1,024-byte blocks. Why: C8, and finding 22: AES-GCM
+   keeps the plaintext's length, so a deposit's digit count, or which "Closed by" was picked, would
+   show to anyone who can read the database.
+8. **More columns on two tables, and the carried figure's date.** The spec listed
+   `journal_corrections` as `id`, `target`, `value_ct`, `reason_ct`, `written_at` and
+   `supersedes_id` (line 2467), `journal_later_notes` without `user_id` or `client_id`
+   (line 2472), and a figure as `{ cents | null, provenance: … }` (line 2464). Now corrections
+   carry `user_id`, `entry_id`, `client_id` and span offsets; notes carry `user_id` and
+   `client_id`; and a carried figure also seals its source's `as_of`. Why: C7 and D15 (every table
+   is keyed by `user_id`, a figure correction must name its entry, and a retried append must not
+   land twice) and finding 18 (after the source is withdrawn, "Carried from {date}" still has its
+   date).
+9. **The tombstone keeps its keys.** The spec said the tombstone row "keeps only `id`,
+   `written_at`, `deleted_at` and kind `deleted`" (line 2647). Now it also keeps `user_id` and
+   `client_id`: keys, not content, so a late retry of the same save finds the tombstone and writes
+   nothing. Why: the plan's section 3.2 and D31.
+10. **Slice 1a doesn't touch DESIGN.md.** The build plan's 1a row listed
+    `docs/product/ai-analyst/DESIGN.md` "(an appended owner-gate amendment)" (line 3111). Now it
+    is not touched. Why: C2. The spec's own Owner gate section says DESIGN.md "needs no new
+    amendment" (line 2582), and DESIGN.md's 2026-10-28 correction, item 2, withdrew it.
+11. **The entry page's AI toggle comes with slice 4.** The Entry screen's foot drew the toggle
+    "Keep this entry out of AI reads" (line 1063). Now 1a ships only the composer's checkbox, set
+    at insert; the entry page's toggle comes with slice 4 as an appended row, never an `UPDATE`.
+    Why: C10: the store's only writers are insert, append and tombstone.
+12. **The 1a seed holds positions, not leg facts.** The 1a seed row said "12 snapshots with their
+    leg facts precomputed" (line 2689). Now the 12 snapshots carry their typed positions, which
+    criterion 26 sums, and the leg facts are seeded with slice 1b, the first slice that shows
+    them. Why: C11, under the spec's rule that no slice ships data that no screen shows.
+13. **Copy held back with its surface, and one sentence added.** The first run's "Nothing is sent
+    to an AI until you turn AI reads on." (lines 800 and 2211) ships in 1a as "Nothing is sent to
+    an AI."; the clause returns with slice 4's toggle. "What was already sent to your AI provider
+    is under its terms." (lines 1065-1066, 2255 and 2654-2655) waits for slice 4, and "When you’re
+    ready, a review can look at the weeks before this call. …" (lines 947-948 and 2245) for
+    slice 3. In 1a the delete confirm adds "Numbers carried into later entries stay in those
+    entries.", which the owner can strike before the entry page ships. Why: the spec's rule that
+    copy naming a later surface is held back with it (line 3148), C13, finding 20, and finding 18
+    (a withdrawn entry's figures live on as sealed copies in later entries).
+14. **`EXPIRIES` is at `shared.ts:7`.** The spec cited `shared.ts:6` (lines 597 and 2862). Now
+    `shared.ts:7`, where it has been at `e0236051`, `52339683` and HEAD. Why: finding 25.
