@@ -87,13 +87,15 @@ export function computeMark(i: MarkInputs): MarkResult {
   const closed = i.marketSession === 'overnight' || i.marketSession === 'closed';
   if (closed && !i.isLive) return { mark: anchor.mark, basis: anchor.basis, frozen: true };
 
-  // 3) Live → model between snapshots from the underlying move × cached greeks.
+  // 3) Live → model between snapshots from the underlying move × cached greeks. The model needs
+  //    BOTH delta and gamma: a greek the feed did not quote is null, and reading it as 0 would
+  //    give a delta-only number labeled modeled. Missing either one → Black-Scholes from the IV,
+  //    then the snapshot anchor, then a null mark.
   if (i.isLive && i.liveUnderlying != null) {
     const q = i.tracked.option_quote?.mid;
-    const delta = i.tracked.greeks.delta;
-    if (q != null && delta != null) {
+    const { delta, gamma } = i.tracked.greeks;
+    if (q != null && delta != null && gamma != null) {
       const dS = i.liveUnderlying - i.anchorSpot;
-      const gamma = i.tracked.greeks.gamma ?? 0;
       const modeled = q + delta * dS + 0.5 * gamma * dS * dS;
       return { mark: modeled, basis: dS !== 0 ? 'modeled' : 'snapshot', frozen: false };
     }
