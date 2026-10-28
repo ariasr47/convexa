@@ -1,5 +1,65 @@
 import nx from '@nx/eslint-plugin';
 import reactHooks from 'eslint-plugin-react-hooks';
+import path from 'node:path';
+
+// ---- MUI 9.2 system props: the selectors for the guard at the end of this file ----------------
+// Typography's `color` prop matches only a variant colour. Typography.mjs builds one variant per
+// palette entry with a string `main` (this theme has the six below) and one per palette.text key
+// (text + Key). `inherit` matches no variant, so the text inherits, which is what it asks for.
+const TYPOGRAPHY_VARIANT_COLOURS = [
+  'primary',
+  'secondary',
+  'error',
+  'info',
+  'success',
+  'warning',
+  'textPrimary',
+  'textSecondary',
+  'textDisabled',
+  'inherit',
+].join('|');
+const NOT_A_VARIANT = `:not([value=/^(${TYPOGRAPHY_VARIANT_COLOURS})$/])`;
+const TYPOGRAPHY_COLOUR =
+  "JSXOpeningElement[name.name=/^(Typography|DialogTitle|DialogContentText|AlertTitle)$/] > JSXAttribute[name.name='color']";
+const BOX_MESSAGE =
+  "MUI 9.2 ignores system props on Box, Stack, Grid and Container: color and bgcolor reach the DOM element as plain attributes and style nothing. Put the value in sx, e.g. sx={{ color: 'text.secondary' }}.";
+const TYPOGRAPHY_MESSAGE =
+  "MUI 9.2 ignores system props on Typography: its color prop takes only a variant colour (primary, secondary, error, info, success, warning, textPrimary, textSecondary, textDisabled, inherit), so a palette path like 'text.secondary' styles nothing. Put the value in sx, e.g. sx={{ color: 'text.secondary' }}.";
+const MUI_SYSTEM_PROP_GUARD = [
+  {
+    selector:
+      'JSXOpeningElement[name.name=/^(Box|Stack|Grid|Container)$/] > JSXAttribute[name.name=/^(color|bgcolor)$/]',
+    message: BOX_MESSAGE,
+  },
+  // color="text.secondary" and color={'text.secondary'}
+  { selector: `${TYPOGRAPHY_COLOUR} > Literal${NOT_A_VARIANT}`, message: TYPOGRAPHY_MESSAGE },
+  {
+    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > Literal${NOT_A_VARIANT}`,
+    message: TYPOGRAPHY_MESSAGE,
+  },
+  // The branches of a ternary (and of one else-if), and the operands of &&, || and ??.
+  {
+    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > ConditionalExpression > Literal:matches(.consequent, .alternate)${NOT_A_VARIANT}`,
+    message: TYPOGRAPHY_MESSAGE,
+  },
+  {
+    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > ConditionalExpression > ConditionalExpression.alternate > Literal:matches(.consequent, .alternate)${NOT_A_VARIANT}`,
+    message: TYPOGRAPHY_MESSAGE,
+  },
+  {
+    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > LogicalExpression > Literal${NOT_A_VARIANT}`,
+    message: TYPOGRAPHY_MESSAGE,
+  },
+  // A template literal: always when it interpolates, otherwise when its text is not a variant.
+  {
+    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > TemplateLiteral:not([expressions.length=0])`,
+    message: TYPOGRAPHY_MESSAGE,
+  },
+  {
+    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > TemplateLiteral[expressions.length=0] > TemplateElement:not([value.cooked=/^(${TYPOGRAPHY_VARIANT_COLOURS})$/])`,
+    message: TYPOGRAPHY_MESSAGE,
+  },
+];
 
 export default [
   ...nx.configs['flat/base'],
@@ -252,6 +312,27 @@ export default [
           ],
         },
       ],
+    },
+  },
+  // ---- MUI 9.2 system props (2026-10-28) ---------------------------------------------------------
+  // MUI 9 removed the system props from Box, Stack, Typography and Grid (@mui/material CHANGELOG:
+  // #47846 in 9.0.0-alpha.1, #48072 in 9.0.0-beta.0). No material component calls extendSxProp any
+  // more. Most system props stopped type-checking, so tsc catches them. `color` did not: React's
+  // HTMLAttributes declares it, and Typography's own `color` accepts any string. Box, Stack, Grid
+  // and Container pass it to the DOM element, where it styles nothing (@mui/system createBox.mjs
+  // forwards every prop except theme, sx and as). Typography matches it only against the variant
+  // colours above. So color="text.secondary" type-checked and did nothing in 34 places until
+  // 6c8a1297. This guard fails that pattern; the selectors are at the top of this file.
+  // It cannot see a value held in a variable (color={tone}), a prop passed through a local wrapper
+  // or a spread, or an aliased import. If a Box renders a component that has its own colour prop
+  // (component={Button}), pass the prop to that component instead.
+  // basePath pins the scope to the dashboard's source whichever config loads this array. `nx lint`
+  // runs `eslint .` in apps/dashboard, where a pattern like 'apps/dashboard/**' matches nothing.
+  {
+    basePath: path.join(import.meta.dirname, 'apps/dashboard'),
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': ['error', ...MUI_SYSTEM_PROP_GUARD],
     },
   },
 ];
