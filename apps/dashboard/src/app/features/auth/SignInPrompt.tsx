@@ -5,6 +5,8 @@
  *
  * The copy is supplied by the caller (it differs per action: track positions / save a view / accept a
  * rec / ask AI / "couldn't reach sign-in" when degraded), so this component is purely presentational.
+ * The owner gate's line (`AUTH_COPY.gate.ownerOnly`) is for a signed-in account, so it offers no
+ * `Sign in` either.
  */
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
@@ -20,13 +22,14 @@ interface Props {
 
 export function SignInPrompt({ text, onSignIn, testid = 'signin-prompt' }: Props) {
   const isDegraded = text === AUTH_COPY.gate.unavailable;
+  const offersSignIn = !isDegraded && text !== AUTH_COPY.gate.ownerOnly;
   return (
     <Collapse in={!!text} unmountOnExit>
       <Alert
         severity={isDegraded ? 'warning' : 'info'}
         data-testid={testid}
         action={
-          isDegraded ? undefined : (
+          offersSignIn ? (
             <Button
               color="inherit"
               size="small"
@@ -35,7 +38,7 @@ export function SignInPrompt({ text, onSignIn, testid = 'signin-prompt' }: Props
             >
               {AUTH_COPY.account.signIn}
             </Button>
-          )
+          ) : undefined
         }
       >
         {text}

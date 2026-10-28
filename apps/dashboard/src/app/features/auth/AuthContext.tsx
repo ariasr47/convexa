@@ -41,6 +41,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { startOwnerGateSession } from './ownerGate';
 
 export interface AuthState {
   /** false until the first who-am-I resolves (drives the account-control loading placeholder ONLY). */
@@ -149,6 +150,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // A sign-in or sign-out (or an expired session found by a re-read) is a new session for the owner
+  // gate: a refusal the last one met is dropped, and the owner-only surfaces ask again. The FIRST
+  // who-am-I answer is not a change: a request sent before it carried the same cookie it reads, so
+  // a refusal met while it was in flight (the desk doesn't wait for it) still stands.
+  const sessionIdentity = state.ready
+    ? state.authenticated
+      ? `user:${state.user?.id ?? ''}`
+      : 'anonymous'
+    : null;
+  const lastSessionIdentity = useRef<string | null>(null);
+  useEffect(() => {
+    if (sessionIdentity === null) return;
+    const last = lastSessionIdentity.current;
+    lastSessionIdentity.current = sessionIdentity;
+    if (last !== null && last !== sessionIdentity) startOwnerGateSession();
+  }, [sessionIdentity]);
 
   // DEV/TEST convenience: when the always-available test account signs in, seed a simulated
   // portfolio into the client-local positions store (once, non-destructively). A no-op for every

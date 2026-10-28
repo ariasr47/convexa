@@ -42,7 +42,7 @@
  */
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
-import { RequireAuth } from '@/features/auth/RequireAuth';
+import { OwnerGateBoundary, RequireAuth } from '@/features/auth/RequireAuth';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
@@ -192,23 +192,31 @@ function DefaultTickerRedirect() {
  *  `paused`) mounts the public desk instead, which never calls the endpoints that need the feed;
  *  waiting for the health read is what keeps the full desk's requests from starting. Demo builds and
  *  a live feed (or an unknown answer) keep the full desk; on the demo, a symbol its scenario doesn't
- *  cover says so instead of failing to load. */
+ *  cover says so instead of failing to load. On a live build every route the full desk reads is
+ *  behind the owner gate, so the desk gives way to its wall once the gate refuses this session:
+ *  the sign-in wall signed out, the owner's wall for any other account (`OwnerGateBoundary`). */
 function TickerDeskRoute() {
   const { ticker = '' } = useParams();
   const mode = useMarketDataMode();
+  const symbol = ticker.toUpperCase();
   // The route's one title, set before any branch (spec 2026-10-21/02, part (e)).
-  useDocumentTitle(`${ticker.toUpperCase()} — Convexa`);
+  useDocumentTitle(`${symbol} — Convexa`);
+  const demoCovers = (STAGING_DEMO_SYMBOLS as readonly string[]).includes(symbol);
   if (dataMode === 'demo')
-    return (STAGING_DEMO_SYMBOLS as readonly string[]).includes(ticker.toUpperCase()) ? (
-      <TickerDashboard />
-    ) : (
-      <DemoSymbolMissing ticker={ticker} />
-    );
+    return demoCovers ? <TickerDashboard /> : <DemoSymbolMissing ticker={ticker} />;
   if (mode === null) return <RouteFallback />;
-  return marketDataOff(mode) ? (
-    <PublicDesk feed={mode === 'paused' ? 'paused' : 'not_live'} />
-  ) : (
-    <TickerDashboard />
+  if (marketDataOff(mode)) return <PublicDesk feed={mode === 'paused' ? 'paused' : 'not_live'} />;
+  return (
+    <OwnerGateBoundary
+      surface={`the ${symbol} desk`}
+      demoPath={demoCovers ? `/ticker/${symbol}` : '/ticker'}
+      freePath={{
+        to: `/ticker/${encodeURIComponent(symbol)}/research`,
+        label: `Read ${symbol} research`,
+      }}
+    >
+      <TickerDashboard />
+    </OwnerGateBoundary>
   );
 }
 

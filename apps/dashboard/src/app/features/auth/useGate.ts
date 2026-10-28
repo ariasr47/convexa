@@ -8,6 +8,9 @@
  *  - server-enforced (AC-E7): even if a FE check is bypassed, the SERVER returns 403 `auth_required`
  *    / 503 `auth_unavailable`. `guard(run)` wraps a server-call so an `AuthError(auth_required)`
  *    re-opens the prompt and an `AuthError(auth_unavailable)` shows the "couldn't reach sign-in" copy.
+ *  - the owner gate (DESIGN.md, 2026-10-26): an owner-only action refused with 403 `owner_only`
+ *    is a signed-in account that isn't the owner's. Signing in again can't change that, so it gets
+ *    its own line with no sign-in button, and who-am-I is not re-read (the session is fine).
  *
  * The auth gate is OUTERMOST: this helper does NOT know about ai-rec's cooldown/cap/no_key — those
  * only run AFTER `allowed` is true, in the existing surfaces.
@@ -38,9 +41,10 @@ export interface GateApi {
   /** Clear the transient prompt. */
   clear: () => void;
   /** Run a gated action: if logged out, show the prompt and DON'T execute; else (optionally await a
-   *  server gate, then) run `fn`, translating a server `auth_required`/`auth_unavailable` into the right
-   *  in-context copy (AC-E7/J1). When `opts.serverGate` is supplied it is awaited FIRST and must succeed
-   *  before `fn` runs — so a pure-client write is still server-enforced. */
+   *  server gate, then) run `fn`, translating a server `auth_required` / `owner_only` /
+   *  `auth_unavailable` into the right in-context copy (AC-E7/J1). When `opts.serverGate` is
+   *  supplied it is awaited FIRST and must succeed before `fn` runs — so a pure-client write is
+   *  still server-enforced. */
   guard: (reason: string, fn: () => void | Promise<void>, opts?: GuardOptions) => Promise<void>;
   /** The server-enforced Positions sim-trade gate (`POST /api/positions/sim-trade/gate`). Pass as
    *  `opts.serverGate` to `guard` for every gated Positions WRITE action so the server is the boundary
@@ -96,6 +100,8 @@ export function useGate(): GateApi {
           setPromptText(reason);
           // Re-sync who-am-I so the rest of the UI reflects the now-anonymous truth.
           void auth.refresh();
+        } else if (err instanceof AuthError && err.code === 'owner_only') {
+          setPromptText(AUTH_COPY.gate.ownerOnly);
         } else if (err instanceof AuthError && err.code === 'auth_unavailable') {
           setPromptText(AUTH_COPY.gate.unavailable);
         } else {

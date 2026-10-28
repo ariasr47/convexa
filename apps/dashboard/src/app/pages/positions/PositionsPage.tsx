@@ -24,6 +24,7 @@
  * the book with its one toolbar row, then the orders panel beside the Track record panel, then the
  * Track record's five families full width.
  */
+import { ownerOnlyRead, useOwnerGate } from '@/features/auth/ownerGate';
 import { PRESETS } from '@/features/personas/presets';
 import { loadCustoms } from '@/features/personas/store';
 import { subscribeOrders } from '@/features/trading/orders/store';
@@ -247,10 +248,15 @@ function PositionsBook({ markFeed, lead }: { markFeed: MarkFeed; lead: Positions
   // degrade to their existing closed-vocabulary absent value; this only stops the silent,
   // indefinite re-ask of a route that will never answer differently. With no options feed on this
   // site the route can only refuse, so it is never asked (`markFeed` is fixed for the page load).
+  //
+  // The bundle and the stream are behind the owner gate too. A 403 `auth_required` / `owner_only`
+  // is kept for the session (`ownerGate.ts`): neither is asked while it stands, RequireAuth puts up
+  // the owner's wall in place of this page, and a sign-in or sign-out asks again.
+  const refused = useOwnerGate() != null;
   const { data } = usePollingResource<TickerBundle>(
     markFeed === 'notLive' ? null : ticker,
-    (signal) => getTicker(ticker, {}, { signal }),
-    { intervalMs: POLL_MS, haltOn: isMarketDataPaused },
+    (signal) => ownerOnlyRead(() => getTicker(ticker, {}, { signal })),
+    { intervalMs: POLL_MS, haltOn: isMarketDataPaused, enabled: !refused },
   );
 
   // ONE page-scoped SSE for the focused ticker (same lifecycle/teardown as the Ticker viewer). At most
@@ -259,7 +265,7 @@ function PositionsBook({ markFeed, lead }: { markFeed: MarkFeed; lead: Positions
   useEffect(() => {
     setLive(null);
     setStreamOffline(false);
-    if (markFeed === 'notLive') return;
+    if (markFeed === 'notLive' || refused) return;
     let gapTimer: ReturnType<typeof setTimeout> | undefined;
     const unsub = subscribeTicker(ticker, {}, (event) => {
       if (event.kind === 'ticker_update') {
@@ -276,7 +282,7 @@ function PositionsBook({ markFeed, lead }: { markFeed: MarkFeed; lead: Positions
       if (gapTimer) clearTimeout(gapTimer);
       unsub();
     };
-  }, [ticker, markFeed]);
+  }, [ticker, markFeed, refused]);
 
   const pf = usePortfolio(ticker, data, live, isLive, streamOffline);
   const [entryOpen, setEntryOpen] = useState(false);

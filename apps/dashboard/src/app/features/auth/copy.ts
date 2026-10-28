@@ -204,6 +204,10 @@ export const AUTH_COPY = {
     // an assertion about identity built on a read that FAILED.
     sessionUnknown: "We couldn't check your session.",
     retry: 'Try again',
+    // The owner gate (DESIGN.md, 2026-10-26): a gated action on an owner-only route, refused with
+    // 403 `owner_only`. The account is signed in, so it never offers sign-in; spec 08's "Not the
+    // owner" names whose this is.
+    ownerOnly: 'Only the account that owns this Convexa can do this.',
   },
 } as const;
 

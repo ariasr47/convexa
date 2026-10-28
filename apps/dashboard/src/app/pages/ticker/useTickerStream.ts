@@ -11,7 +11,12 @@
  * Session-tape: on payload-gap we ONLY flip `streamOffline` — last `live` (and thus
  * `lastSessionPhase`) is retained so consumeStanding can classify drop vs ended/fault
  * (never live-offline while session_tape was last vouched playing|gap).
+ *
+ * The stream is behind the owner gate, and an EventSource never sees the 403 that refuses it. So it
+ * follows what the session's other owner-only reads met (`ownerGate.ts`): while the gate refuses
+ * this session the stream is not opened, and a sign-in or sign-out opens it again.
  */
+import { useOwnerGate } from '@/features/auth/ownerGate';
 import { dataMode, subscribeTicker, type SupportedDemoSymbol } from '@convexa/api';
 import { useEffect } from 'react';
 import {
@@ -35,6 +40,7 @@ export function useTickerStreamConnection(
   /** null = all; [] = none (stream not opened); string[] = filter. */
   selected: string[] | null,
 ): void {
+  const refused = useOwnerGate() != null;
   useEffect(() => {
     const sym = ticker.toUpperCase();
     publishLiveTape({
@@ -44,7 +50,7 @@ export function useTickerStreamConnection(
       streamOffline: false,
       ticker: sym,
     });
-    if (selected !== null && selected.length === 0) {
+    if ((selected !== null && selected.length === 0) || refused) {
       return () => {
         resetLiveTape();
       };
@@ -93,7 +99,7 @@ export function useTickerStreamConnection(
       unsub();
       resetLiveTape();
     };
-  }, [ticker, selected]);
+  }, [ticker, selected, refused]);
 }
 
 /**

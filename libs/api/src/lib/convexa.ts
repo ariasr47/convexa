@@ -554,14 +554,24 @@ function sessionFromWire(value: AuthResponseWire): SessionStatus {
 }
 
 /** The auth-class error codes the FE maps to copy (INTERFACE §2). `auth_required` is the gated-action
- *  + settings-401 code; `auth_unavailable` is the subsystem-degraded code. */
+ *  + settings-401 code; `auth_unavailable` is the subsystem-degraded code. The closed set the API
+ *  sends is `apps/api/src/services/auth/service.rs`; `server-error-codes.spec.ts` pins each to its
+ *  kind here. */
 export type AuthErrorCode =
   | 'email_taken'
   | 'validation'
   | 'bad_credentials'
   | 'auth_required'
+  /** The owner gate (docs/product/ai-analyst/DESIGN.md, 2026-10-26): signed in, but not the owner
+   *  (`OWNER_EMAILS`), or no owner is configured, which refuses everyone. A 403 on every owner-only
+   *  route. Not `auth_required`: signing in again cannot change it, so the FE must never answer it
+   *  with a sign-in prompt, and a poller that meets it stops. */
+  | 'owner_only'
   | 'auth_unavailable'
   | 'google_unavailable'
+  /** 409 on `GET /api/auth/grok/start` until xAI user-OAuth is verified. A browser navigation,
+   *  so no fetch reads it today; named so a 409 can never pass for `email_taken`. */
+  | 'grok_unavailable'
   /** Owner lockdown (2026-08-06): registration is closed. A POLICY refusal, not a fault — the FE
    *  must not fold it into `auth_unavailable`, which claims a transient problem. */
   | 'signups_closed'
@@ -574,11 +584,26 @@ export function isAuthErrorCode(value: unknown): value is AuthErrorCode {
     value === 'validation' ||
     value === 'bad_credentials' ||
     value === 'auth_required' ||
+    value === 'owner_only' ||
     value === 'auth_unavailable' ||
     value === 'google_unavailable' ||
+    value === 'grok_unavailable' ||
     value === 'signups_closed' ||
     value === 'rate_limited'
   );
+}
+
+/** The owner gate's two refusals (DESIGN.md, "2026-10-26: the owner gate shipped"). Every route in
+ *  the API's `OWNER_ONLY_OPERATIONS` answers one with a 403: `auth_required` signed out (or with a
+ *  forged or expired cookie), `owner_only` signed in as anyone but the owner. */
+export type AccessRefusal = 'auth_required' | 'owner_only';
+
+/** The refusal `error` carries, or null. The one place a caller tells "this session was refused"
+ *  from any other fault, as `isMarketDataPaused` is for the paused code: a refused session gets the
+ *  same answer however often it asks, so a poller that sees one stops until the session changes. */
+export function accessRefusalOf(error: unknown): AccessRefusal | null {
+  if (!(error instanceof AuthError)) return null;
+  return error.code === 'auth_required' || error.code === 'owner_only' ? error.code : null;
 }
 
 /** A typed auth failure carrying the server `error` code + safe `message`. The FE maps off `code`;
@@ -637,6 +662,23 @@ function authResultError(result: ClientResult<unknown>): AuthError {
 function dataOf<T>(result: ClientResult<T>, message: string): T {
   if (!result.response.ok || result.data === undefined) throw resultError(result, message);
   return result.data;
+}
+
+/** An owner-only route's refusal, typed: a 403 whose envelope names `auth_required` or
+ *  `owner_only` is that `AuthError`. Anything else, a proxy's bare 403 included, is not the gate's,
+ *  so the caller keeps its `ApiError` handling and no code is invented. */
+function ownerGateRefusal(result: ClientResult<unknown>): AuthError | null {
+  if (result.response.status !== 403) return null;
+  const body = result.error && typeof result.error === 'object' ? result.error : {};
+  const code = (body as Record<string, unknown>).error;
+  return code === 'auth_required' || code === 'owner_only' ? authResultError(result) : null;
+}
+
+/** `dataOf` for a route behind the owner gate: its refusal throws the typed `AuthError` first. */
+function ownerDataOf<T>(result: ClientResult<T>, message: string): T {
+  const refusal = ownerGateRefusal(result);
+  if (refusal) throw refusal;
+  return dataOf(result, message);
 }
 
 type RecommendationWire = components['schemas']['RecommendationBody'];
@@ -1181,13 +1223,13 @@ function toScanViewBody(view: ScanViewWrite): components['schemas']['ScanViewBod
 /** GET /api/scan — the requested-or-default view as slim rows + sweep metadata. Owner only (SEC-1
  *  made it signed in on 2026-10-26; the owner gate made it the owner's account): the rows carry
  *  dealer levels derived from the licensed options feed, so a signed-out call is a 403
- *  `auth_required` and a signed-in non-owner a 403 `owner_only`, and both reject here. As the
- *  owner, the server is best-effort ALWAYS 200 (a store outage degrades CONTENT, never the status),
- *  so any other non-2xx is a TRANSPORT/proxy fault: we reject and the caller keeps its last-known
- *  rows. */
+ *  `auth_required` and a signed-in non-owner a 403 `owner_only`, and each throws that `AuthError`
+ *  (`accessRefusalOf`). As the owner, the server is best-effort ALWAYS 200 (a store outage degrades
+ *  CONTENT, never the status), so any other non-2xx is a TRANSPORT/proxy fault: we reject with an
+ *  `ApiError` and the caller keeps its last-known rows. */
 export async function getScan(): Promise<ScanResponse> {
   const result = await http.GET('/api/scan');
-  return dataOf(result, 'Scan read failed');
+  return ownerDataOf(result, 'Scan read failed');
 }
 
 /** GET /api/scan/universe — the read-only owner-curated universe for the view editor. */
@@ -1244,8 +1286,8 @@ export type StructureHistoryResponse = components['schemas']['StructureHistoryRe
 
 /** GET /api/scan/{symbol}/history — structure history, owner only (each sample carries the flip,
  *  the walls and net GEX): signed out is a 403 `auth_required`, a signed-in non-owner a 403
- *  `owner_only`, and both reject. Empty samples is honest cold-start, not an error. Transport
- *  faults reject so the caller can keep last-known path. */
+ *  `owner_only`, and each throws that `AuthError`. Empty samples is honest cold-start, not an
+ *  error. Transport faults reject so the caller can keep last-known path. */
 export async function getStructureHistory(
   symbol: string,
   limit = 48,
@@ -1257,7 +1299,7 @@ export async function getStructureHistory(
     signal: fetchOpts.signal,
     headers: fetchOpts.signal ? { 'x-convexa-preserve-signal': '1' } : undefined,
   });
-  return dataOf(result, 'Structure history failed');
+  return ownerDataOf(result, 'Structure history failed');
 }
 
 /** Live payload pushed over SSE (mid/flow/live flip). Levels other than the flip come from
@@ -1284,7 +1326,8 @@ function isLiveUpdate(value: unknown): value is LiveUpdate {
  * an unsubscribe fn that closes the EventSource (which tears down the backend session when the
  * last subscriber leaves). SSE comment lines (heartbeats) are ignored by EventSource. Owner only
  * (every update carries the gamma flip): anyone else gets a 403 (`auth_required` / `owner_only`),
- * which EventSource surfaces as an error and never as an update.
+ * which EventSource surfaces as an error and never as an update. It cannot see the status, so a
+ * caller learns the refusal from a fetch to the same gate (the bundle) and stops opening this.
  */
 export function streamTicker(
   symbol: string,
@@ -1326,8 +1369,8 @@ export function streamTicker(
 /** Full bundle for one ticker, optionally filtered by DTE window or explicit expirations. When
  *  `position` is supplied, the bundle additionally returns `position_eval` (else null). Owner only
  *  (the bundle carries the flip, the walls, net GEX and the strike profile): signed out is a 403
- *  `auth_required`, a signed-in non-owner a 403 `owner_only`; `getTicker` throws `ApiError` with
- *  that status and code. */
+ *  `auth_required`, a signed-in non-owner a 403 `owner_only`, and `getTicker` throws that
+ *  `AuthError`; every other fault is an `ApiError` with its status (and the paused `code`). */
 export type FetchOpts = {
   /** Abort in-flight work on ticker/route change (perf §3.2). */
   signal?: AbortSignal;
@@ -1356,6 +1399,8 @@ export async function getTicker(
     headers: fetchOpts.signal ? { 'x-convexa-preserve-signal': '1' } : undefined,
   });
   if (!result.response.ok) {
+    const refusal = ownerGateRefusal(result);
+    if (refusal) throw refusal;
     const code = codeOf(result);
     // F1: the paused reply's own `detail` ("Market data is paused.") is the honest message — never
     // the generic status-shaped text the other branches synthesize (`isMarketDataPaused` is what
@@ -1382,7 +1427,8 @@ export async function getTicker(
 /**
  * Filter-independent stats for one tracked option contract (GET /api/contract). Resolves from the
  * full snapshot regardless of the display DTE filter; no new vendor fetch. Owner only (the quote,
- * greeks and IV come from the licensed options feed): anyone else gets a 403 and this throws.
+ * greeks and IV come from the licensed options feed): anyone else gets a 403 and this throws its
+ * `AuthError` (`auth_required` / `owner_only`).
  * Returns `null` when the contract is **not in the snapshot** (HTTP 404 → FE "tracking unavailable").
  * A 200 with `option_quote: null` is a valid result (FE → theoretical mark), NOT null here.
  * Other failures throw (the caller treats a throw as "tracking unavailable" too).
@@ -1398,7 +1444,7 @@ export async function fetchTrackedContract(
     },
   });
   if (result.response.status === 404) return null;
-  return dataOf(result, 'Contract lookup failed');
+  return ownerDataOf(result, 'Contract lookup failed');
 }
 
 // ---- Operator metrics readout (observability; read-only, side-effect-free) -------------------
@@ -2098,8 +2144,8 @@ export async function putBook(body: {
  *  `status` field distinguishes them. A non-2xx / network fault throws `ApiError`; the rec hook
  *  catches it and renders the `unavailable` panel state (never thrown to the page). No key is sent.
  *  Owner only (the model reads the dealer levels): signed out is a 403 `auth_required` and a
- *  signed-in non-owner a 403 `owner_only`; both throw `AuthError` below. `owner_only` is not in
- *  `AuthErrorCode` yet, so `authResultError` reports it as `auth_required` (status 403). */
+ *  signed-in non-owner a 403 `owner_only`; each throws its own `AuthError` below, so the gate never
+ *  asks a signed-in non-owner to sign in. */
 export async function requestRecommendation(
   symbol: string,
   body: RecRequest,
@@ -2119,9 +2165,10 @@ export async function requestRecommendation(
     throw resultError(result, 'Recommendation request failed');
   }
   // user-accounts (D6f): the auth gate is the OUTERMOST precondition on the LLM invoke. A 403
-  // `auth_required` / 503 `auth_unavailable` is an AUTH-class outcome — surface it as an `AuthError`
-  // (NOT the ai-rec `unavailable` artifact) so the FE shows the sign-in / "couldn't reach" prompt
-  // and NEVER ai-rec's cooldown/cap/no_key (AC-E4/E7/J1). All other non-2xx stay `ApiError`.
+  // `auth_required` / `owner_only` / 503 `auth_unavailable` is an AUTH-class outcome — surface it
+  // as an `AuthError` (NOT the ai-rec `unavailable` artifact) so the FE shows the sign-in, owner or
+  // "couldn't reach" prompt and NEVER ai-rec's cooldown/cap/no_key (AC-E4/E7/J1). All other non-2xx
+  // stay `ApiError`.
   if (result.response.status === 403 || result.response.status === 503)
     throw authResultError(result);
   return projectRecommendation(dataOf(result, 'Recommendation request failed'));
@@ -2129,8 +2176,8 @@ export async function requestRecommendation(
 
 /** The structured state export (the always-available floor). 200 when a bundle exists; 404 if the
  *  ticker was never fetched. Triggers no LLM call. Owner only (the export is the dealer levels and
- *  the candidate contracts): anyone else gets a 403 (`auth_required` / `owner_only`) and this
- *  throws. */
+ *  the candidate contracts): anyone else gets a 403 and this throws its `AuthError`
+ *  (`auth_required` / `owner_only`). */
 export async function fetchRecExport(
   symbol: string,
   { personaId, sampleFingerprint }: { personaId?: string | null; sampleFingerprint?: string } = {},
@@ -2144,7 +2191,7 @@ export async function fetchRecExport(
       ? { headers: { 'x-convexa-sample-fingerprint': sampleFingerprint } }
       : {}),
   });
-  const projected = projectRecommendation(dataOf(result, 'Export unavailable'));
+  const projected = projectRecommendation(ownerDataOf(result, 'Export unavailable'));
   return {
     ...projected,
     context: projected.context ?? {
@@ -2158,13 +2205,13 @@ export async function fetchRecExport(
 
 /** Gating + cap + availability (drives the action's enabled/de-emphasized/disabled presentation).
  *  Cheap, side-effect-free, always 200 for the owner. Owner only (the gate's reasons name setups
- *  and the flip): anyone else gets a 403 (`auth_required` / `owner_only`) and this throws, as on a
- *  transport fault (caller degrades to inert). */
+ *  and the flip): anyone else gets a 403 and this throws its `AuthError` (`auth_required` /
+ *  `owner_only`), as it throws on a transport fault (caller degrades to inert). */
 export async function fetchRecStatus(symbol: string): Promise<RecStatus> {
   const result = await http.GET('/api/recommendation/status/{ticker}', {
     params: { path: { ticker: symbol.toUpperCase() } },
   });
-  const wire = dataOf(result, 'Status unavailable');
+  const wire = ownerDataOf(result, 'Status unavailable');
   const projected = projectRecommendation(wire);
   return {
     availability: projected.availability as { in_app_enabled: boolean },

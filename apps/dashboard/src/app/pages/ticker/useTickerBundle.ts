@@ -7,7 +7,11 @@
  *
  * Poll cadence matches backend GEX cache TTL (~60s). Abort + visibility via
  * `usePollingResource` (perf §3.1–3.3).
+ *
+ * The bundle is behind the owner gate: a 403 `auth_required` / `owner_only` is kept for the session
+ * (`ownerGate.ts`), and no request runs while it stands; a sign-in or sign-out resumes the poll.
  */
+import { ownerOnlyRead, useOwnerGate } from '@/features/auth/ownerGate';
 import { usePollingResource } from '@/shared/hooks/usePollingResource';
 import { getTicker, isMarketDataPaused, type OptionRight, type TickerBundle } from '@convexa/api';
 import { useCallback, useMemo, useRef } from 'react';
@@ -73,33 +77,36 @@ export function useTickerBundle({
   const fetcher = useCallback(
     async (signal: AbortSignal) => {
       const dte = takePrefillRef.current?.() ?? null;
-      return getTicker(
-        ticker,
-        {
-          expirations: selected ?? undefined,
-          // Off-exchange context is always on (the desk's toggle was removed to match the Figma).
-          darkPool: true,
-          position: positionQuery
-            ? {
-                expiration: positionQuery.expiration,
-                strike: positionQuery.strike,
-                right: positionQuery.right,
-                plPct: positionQuery.plPct,
-              }
-            : undefined,
-          minDte: dte?.min,
-          maxDte: dte?.max,
-        },
-        { signal },
+      return ownerOnlyRead(() =>
+        getTicker(
+          ticker,
+          {
+            expirations: selected ?? undefined,
+            // Off-exchange context is always on (the desk's toggle was removed to match the Figma).
+            darkPool: true,
+            position: positionQuery
+              ? {
+                  expiration: positionQuery.expiration,
+                  strike: positionQuery.strike,
+                  right: positionQuery.right,
+                  plPct: positionQuery.plPct,
+                }
+              : undefined,
+            minDte: dte?.min,
+            maxDte: dte?.max,
+          },
+          { signal },
+        ),
       );
     },
     [ticker, selected, positionQuery],
   );
 
+  const refused = useOwnerGate() != null;
   const { data, dataKey, error, errorCause, loading, refresh } = usePollingResource(key, fetcher, {
     intervalMs: TICKER_BUNDLE_POLL_MS,
     keepOnError: true,
-    enabled,
+    enabled: enabled && !refused,
     // F2b: once paused is known, no further request to this B2 route for this ticker — changing
     // the ticker (a new `key`) is the only thing that fetches again.
     haltOn: isMarketDataPaused,

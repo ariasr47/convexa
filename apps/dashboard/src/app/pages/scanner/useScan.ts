@@ -18,6 +18,10 @@
  * Degradation is best-effort: a failed poll KEEPS the last-known rows and flips `degraded` — the
  * table never blanks, never throws into the trader path.
  *
+ * The owner gate is not a degrade. The scan read is owner only, and its 403 (`auth_required` /
+ * `owner_only`) is the same for every later ask of this session, so the poll stops on it
+ * (`ownerGate.ts`) and RequireAuth puts up the matching wall; a sign-in or sign-out restarts it.
+ *
  * The view SAVE is the one gated, state-bearing action (`[server-side-gate-enforcement]`).
  * `saveScanView` IS the server gate (`PUT /api/scan/view` answers a real 403 signed-out), which is
  * useGate's documented "fn carries the enforcement" case — so no separate `opts.serverGate` is
@@ -25,6 +29,7 @@
  * ⇒ the thrown `AuthError` aborts before `setSnapshot`, so NOTHING is written locally. This hook
  * writes no localStorage and owns no durable store — the server is the boundary of record.
  */
+import { ownerOnlyRead, useOwnerGate } from '@/features/auth/ownerGate';
 import { useGate, type GateApi } from '@/features/auth/useGate';
 import {
   appNowMs,
@@ -141,10 +146,16 @@ export function useScan(): ScanApi {
   const prevPollRef = useRef<Map<string, RowPollSnap> | null>(null);
   const prevSymbolsKeyRef = useRef<string>('');
   const gate = useGate();
+  // The scan is behind the owner gate: once this session is refused (`ownerGate.ts`), no read runs
+  // (poll, resume or manual) until a sign-in or sign-out clears it, which restarts the poll below.
+  const refused = useOwnerGate() != null;
+  const refusedRef = useRef(refused);
+  refusedRef.current = refused;
 
   const refresh = useCallback(async () => {
+    if (refusedRef.current) return;
     try {
-      const res = await getScan();
+      const res = await ownerOnlyRead(getScan);
       const symbolsKey = (res.view?.symbols ?? []).join('\0');
       // Symbol-set change (view save / server default) clears deltas — not comparable.
       if (symbolsKey !== prevSymbolsKeyRef.current) {
@@ -190,6 +201,7 @@ export function useScan(): ScanApi {
   }, []);
 
   useEffect(() => {
+    if (refused) return;
     let active = true;
     void refreshRef.current(); // the first read paints the page, hidden or not
     const id = setInterval(() => {
@@ -199,7 +211,7 @@ export function useScan(): ScanApi {
       active = false;
       clearInterval(id);
     };
-  }, []);
+  }, [refused]);
 
   // --- the display clock (no network) -------------------------------------------------------------
   useEffect(() => {
