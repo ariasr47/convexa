@@ -1,12 +1,15 @@
 # Trade journal: his words, a real account, and a rulebook drawn from them
 
-_Proposal, 2026-10-26, revised the same day after the S2 skeptic's and the AI-and-privacy reviews.
-Kind: new-tool. Size: XL overall, shipped as seven slices (0, 1a, 1b, 2, 3, 4, 5). Slice 1a is L
-and is useful on its own the day it ships, margin-call entry included. Slices 1a to 3 call no model.
-Depends on: the owner gate (shipped in `d1f6ed0d`, with the Kelvin-sign fix `c9e8ebeb`). Slice 4
-also depends on a DESIGN amendment (open question 4) and its own eval gate. No 2026-10-21 spec
-blocks it. The journal's controls meet spec 2's 44px floor by themselves, and its table twins use
-spec 2's link cell if it has landed._
+_Proposal, 2026-10-26, revised the same day after the S2 skeptic's and the AI-and-privacy reviews,
+and again on 2026-10-28 with the owner's answers to all 16 open questions and the grafts from the
+full-text re-judge. Kind: new-tool. Size: XL overall, shipped as seven slices (0, 1a, 1b, 2, 3, 4,
+5). Slice 1a is L and is useful on its own the day it ships, margin-call entry included. Slices 1a
+to 3 call no model. Depends on: the owner gate (shipped in `d1f6ed0d`, with the Kelvin-sign fix
+`c9e8ebeb`). Slice 4 also depends on the DESIGN amendment the owner approved on 2026-10-28 (open
+question 4) and on its own eval gate. No 2026-10-21 spec blocks it. The journal's controls meet
+spec 2's 44px floor by themselves, and its table twins use spec 2's link cell if it has landed.
+Counts: 43 boards and 8 spec cards (BOARD BRIEF), 37 acceptance criteria, and 16 open questions,
+all answered on 2026-10-28 (Owner answers)._
 
 Code citations are `file:line` at commit `7eeb7150` (2026-10-26), read with `git show` where the
 working tree differs. The revision's citations were read at `48deb0d2`; no file under `apps/`,
@@ -17,7 +20,10 @@ here by about 9) and one appended Amendments row in `DESIGN_SYSTEM.md` (no cited
 
 This spec merges three design directions and the verdicts of three judges. The winner is
 **Notebook-first**: you write first and add structure later. The parts taken from the other two
-directions are listed under "How this design was chosen", which ends the Why section.
+directions are listed under "How this design was chosen", which ends the Why section. A re-judge on
+the full texts (2026-10-28) kept Notebook-first first overall. The Rulebook Loop won the
+owner-outcome lens, so eight more grafts were added: G1 to G7 from it and G8 from Ledger & Path,
+listed there and tagged where they land.
 
 ## Why
 
@@ -70,8 +76,10 @@ rulebook out of hindsight.
    assembles facts and never does sums.
 4. **Small samples are said plainly.** A fixed table of ten behaviours is checked every week,
    including the rows that found nothing, and no rate is shown below 20.
-5. **The rulebook is his.** The AI drafts first-person process rules from cited evidence. He
-   rewords, adopts, versions and retires them. Nothing blocks a trade, and nothing places one.
+5. **The rulebook is his, and it stays short.** The AI drafts first-person process rules from cited
+   evidence. He rewords, adopts, versions and retires them, with at most 7 active. Going ahead
+   against one takes a line on why, and code checks the limits it can compute. Nothing blocks a
+   trade, and nothing places one.
 
 ### How this design was chosen
 
@@ -91,6 +99,8 @@ and one lens scored Ledger & Path on partial text. The only lens that saw all th
 Rulebook Loop first (76 against 75). Grafting parts across directions doesn't make up for verdicts
 that were never given, so open question 14 asks whether to re-run the two lenses first.
 
+(Superseded 2026-10-28 by the full-text re-judge below.)
+
 Each judge also named gaps in the winner that another direction had already solved. This spec
 grafts them in:
 
@@ -101,7 +111,7 @@ grafts them in:
   - the fixed detector table with the caption "With this many, one can look notable by chance";
   - "Closed by" (Me · Broker (liquidation) · Expiry · Assignment);
   - an optional exit price, or "No exit set";
-  - an optional "Why go ahead anyway?" stored with a No answer;
+  - an optional "Why go ahead anyway?" stored with a No answer (required since 2026-10-28, G1);
   - the Path small multiples (account value, below the high, margin used) on one time axis;
   - "Where the money went";
   - the margin-call cross-check, and non-blocking sanity questions at the field;
@@ -115,7 +125,7 @@ grafts them in:
   - a warning before save when text looks like an account number;
   - a flag on wording written from memory ("fast forward to today");
   - "Why this rule, in your words" at adoption;
-  - the printable rulebook card;
+  - the printable rulebook card (deferred to a later spec on 2026-10-28, open question 16);
   - older entries travel to the model only as digests.
 - **From the fit-and-cost judge:**
   - slice 1 is split into 1a and 1b;
@@ -130,12 +140,18 @@ grafts them in:
   (`shell/CommandPalette/commandTable.ts:18-28`). See open question 2 for a separate group.
 - A projected cushion at an assumed 35% maintenance rate: brokers' requirements vary, and the
   sample's own call came from a raised requirement.
-- "Broke R3", "breaking R3", and a required reason to go ahead.
+- "Broke R3", "breaking R3", and a required reason to go ahead. (The required reason is superseded
+  on 2026-10-28 by G1. "Broke" and "breaking" stay rejected; the copy says "going ahead against
+  R3".)
 - "Followed 6 of 7" style scores.
-- A 60-minute window during which an edit still counts as written at the time.
-- A decision-quality rating made after the outcome is known.
+- A 60-minute window during which an edit still counts as written at the time. (Still rejected:
+  open question 9, answered 2026-10-28.)
+- A decision-quality rating made after the outcome is known. (Superseded on 2026-10-28 by G6 for his
+  own label only, "How did the decision look, apart from the result?", which is never computed,
+  suggested or totalled. A rating made by code or the AI stays rejected.)
 - An automatic AI read on the margin-call day.
-- A hard cap of seven active rules (asserted, not evidenced).
+- A hard cap of seven active rules (asserted, not evidenced). (Superseded on 2026-10-28 by G3: the
+  re-judge's owner-outcome lens scored a short rulebook as part of one he will follow.)
 
 **Input claims corrected while checking** (each is fixed below):
 
@@ -173,15 +189,92 @@ grafts them in:
    the catalog: every stock mark is the catalog's close for its date, and every option mark is at or
    above intrinsic value (Computed facts → Worked example).
 
+### Re-judged on the full texts (2026-10-28)
+
+Open question 14 asked whether to re-run, before step 0, the two lenses that never saw the Rulebook
+Loop. The owner said yes, and the re-judge ran on 2026-10-28.
+
+**Method.**
+
+- Three lenses: owner outcome (4 criteria), honesty and safety (5) and fit and cost (5). Each lens
+  has one fixed rubric, and each criterion is scored 1–10.
+- Two independent judges per lens, six in all. Every judge read all three directions' full text,
+  the two judges of a lens in opposite orders, and proved it had read each file to its last line
+  (567 lines of Notebook-first, 587 of Ledger & Path, 620 of the Rulebook Loop).
+- The run's record is `tmp/journal-rejudge/result.json`: every judge's per-criterion scores and
+  reasons, best ideas, weaknesses and margin. It is gitignored and stays out of the repository,
+  because the judges quote his request.
+
+**Scores**, as the mean of the two judges in percent of the lens maximum (40, 50 and 50 points):
+
+| Direction | Owner outcome | Honesty and safety | Fit and cost | Overall (equal weight) |
+|---|---|---|---|---|
+| **Notebook-first** | 70 | 86 | **88** | **81.3** |
+| Rulebook Loop | **80** | **87** | 72 | 79.7 |
+| Ledger & Path | 65 | 79 | 80 | 74.7 |
+
+Both owner-outcome judges ranked the Rulebook Loop first, both fit-and-cost judges ranked
+Notebook-first first, and the two honesty judges split, one each.
+
+**Per criterion.** Notebook-first was weakest on "surfaces why he loses money" (6, against Ledger &
+Path 9 and the Rulebook Loop 8) and on "produces a rulebook he will actually follow" (6, against the
+Rulebook Loop 9). It was strongest on "capture survives a bad day" (9, against the Rulebook Loop 7
+and Ledger & Path 4) and on every fit-and-cost criterion: reuse 9, identity 9, phasing 9, cost 8.
+
+**A correction to the record above.** The original judges' prompts carried the first 80,000
+characters of the directions, which held all of Notebook-first, 19% of Ledger & Path and none of the
+Rulebook Loop. The honesty judge found and read all three in full with its own tools, so its 76 for
+the Rulebook Loop stands. The owner-outcome and fit-and-cost judges did not. So both of them, not
+one as "The comparison is incomplete" says, scored Ledger & Path on 19% of its text, and neither
+scored the Rulebook Loop.
+
+**Verdict, by open question 14's rule.** The Rulebook Loop didn't win overall (79.7 against 81.3),
+so the home stays the notebook, and the record, facts, privacy and AI sections stand. It won the
+owner-outcome lens (80 against 70), so the owner-outcome mechanisms this spec lacked are grafted
+from it, and G8 from Ledger & Path. Each lands in an existing slice, and none adds a model call.
+
+- **G1. Going ahead against a rule takes a one-line reason** (slice 2). A No on Plan a trade kept
+  no record of why, and the owner-outcome judges named that as the gap between this rulebook and one
+  he follows. The honesty lens warned that a required field is friction at plan time, so the reason
+  is required to save the plan, never to trade, and "broke" and "breaking" stay out of the copy.
+- **G2. "Plan a trade" is the Rulebook tab's one amber primary** (slice 2), outlined in the Journal
+  rail's Rulebook mini and amber in the Rulebook tab's phone bar. The check before a trade was
+  reachable only through a kind chip or the Rulebook rail, and from no phone bottom bar.
+- **G3. At most 7 active rules** (slice 2). A short rulebook he follows beats a long one he
+  doesn't. Drafts and paused rules don't count.
+- **G4. The weekly review closes the loop, with no model** (slice 3): "Rules you went ahead
+  against", each with an optional "Was going ahead worth it to you?" saved as a later note, and
+  "This week's focus" on the Journal rail. The review counted his answers but never brought them
+  back to him.
+- **G5. Day-one value without AI** (capture in 1a, the rule in 2): "What do you think your
+  downfalls are?" and "One rule from today" under "Start with today.". The suspicions prompt waited
+  for slice 3, so nothing he suspected was on record before the first review.
+- **G6. His own decision label, and the result against planned risk (R)** (slice 1b). The judges
+  found no per-trade money link and no way to keep the decision apart from the result. The label is
+  his and never computed; R is code's arithmetic, all or nothing.
+- **G7. Findings may name what is linked to gains** (slice 4), under the same evidence rules as
+  losses, because a review that names only losses reads as a verdict. The honesty lens warned that a
+  few wins drafted into a rule push toward more risk, so no rule draft is tied to a finding linked
+  to gains.
+- **G8. Computed rule checks beside his answers** (slice 3, from Ledger & Path). Adherence was his
+  answers alone. Where code can compute a rule's limit at a kept detail, it records the reading too,
+  labelled apart from his answers.
+
+**Not grafted:** a text-correction window (open question 9 said no), the printable card (open
+question 16 deferred it), a Today-queue home (the home stays the notebook), "at most 3 new
+hypotheses per read" (the fixed 10-row table already admits none) and a three-tier sample floor
+(open question 10 keeps 20).
+
 ## Who and when
 
 - **The owner, on production.** He is the only real user (`OWNER_EMAILS`). He writes on his phone
   the moment something happens: a fill, a scare, a margin call. On a normal day he writes a sentence
-  and taps Save. On Mondays he runs a review, reads what his entries show, and turns the findings he
-  agrees with into rules. Before a trade he opens "Plan a trade", answers his own rules and writes
-  why. His first entries will mostly be written from memory, as his own example is. The design
-  labels those entries and keeps them out of any claim about what he decided at the time, and his
-  first reviews say so plainly ("Mostly from memory", Screens → Weekly review).
+  and taps Save. On Mondays he runs a review, reads what his entries show, turns the findings he
+  agrees with into rules, and sets one line of focus for the week. Before a trade he opens "Plan a
+  trade" and answers his own rules; going ahead against one takes a line on why. His first entries
+  will mostly be written from memory, as his own example is. The design labels those entries and
+  keeps them out of any claim about what he decided at the time, and his first reviews say so
+  plainly ("Mostly from memory", Screens → Weekly review).
 - **A recruiter or reviewer, on staging.** They open Positions › Journal on the demo and find a
   fictional trader's sample journal. It covers July to Oct 6, 2026, with a peak, adds below cost,
   margin creeping up, a margin call, and an account 42.6% below its recorded high. Its stock marks
@@ -207,27 +300,31 @@ grafts them in:
   - withdrawing an entry.
 - Computed facts in Rust: margin used, excess liquidity, leverage, loan to position value, change
   between snapshots, the drawdown with deposits taken out, the recorded high, where the money went,
-  planned risk, and position P/L (all or nothing). One TypeScript copy of the account-level facts,
-  for previews before save and for the demo, pinned to Rust by a parity test.
+  planned risk, position P/L (all or nothing), and the result against planned risk (R, G6). One
+  TypeScript copy of the account-level facts, for previews before save and for the demo, pinned to
+  Rust by a parity test.
 - The account chart (three small multiples with an event rail) and its table twin.
-- The rulebook: hand-written and drafted rules, versions, pause and retire, Plan a trade with his
-  answers and readings, adherence counts, and a printable card.
+- The rulebook: hand-written and drafted rules, at most 7 active (G3), versions, pause and retire,
+  Plan a trade with his answers, readings and a required reason to go ahead against a rule (G1),
+  computed checks beside his answers (G8), and adherence counts.
 - The deterministic layer:
   - the entry parser and the Tidy queue;
-  - his named suspicions;
+  - his named suspicions, captured from the first run (G5);
   - the fixed detector table;
   - where the money went;
-  - the event callout.
+  - the event callout;
+  - the review's "Rules you went ahead against" and "This week's focus" (G4).
+- His own decision label on a Trimmed or Closed entry (G6).
 - The AI, off by default and on his own key:
   - entry reads (details and digest only);
-  - the weekly synthesis (findings, an event callout, questions back, rule drafts);
+  - the weekly synthesis (findings linked to losses or to gains, an event callout, questions back,
+    rule drafts);
   - corrections;
   - the What's sent drawer;
   - costs and caps;
   - the citation, advice and tone checks;
   - an eval gate.
-- History import: write about an earlier day, paste positions, and read a trades CSV in the
-  browser.
+- History import: write about an earlier day, and paste positions from the broker.
 - Export (JSON), a merge-only restore that keeps "written at the time" only for sealed entries, and
   deleting the whole journal.
 - The staging sample journal, served by the demo transport.
@@ -250,13 +347,26 @@ grafts them in:
   Settings risk inputs or any other export.** A rule stays in the rulebook. A hand-off to Settings or
   personas would be a separate spec.
 - **No market strategies from the AI.** Process strategies drawn from his own entries become rule
-  drafts and questions; what to buy, and when, stays out (open question 15).
-- **No streaks, scores, badges, push notifications or nagging.**
+  drafts and questions; what to buy, and when, stays out (open question 15, answered 2026-10-28).
+  Findings may name what is linked to gains (G7), but no rule draft is drawn from one, so a few wins
+  never become a strategy.
+- **No streaks, scores, badges, push notifications or nagging.** His own decision label (G6) and
+  his week's focus (G4) are never totalled, scored or counted.
 - **No chat with the AI about findings.** A question-and-answer surface invites advice drift; it is
   later, if ever.
 - **No server-side search.** Bodies are encrypted; search runs in the browser.
-- **No edit of sealed text.** Later notes only. A short correction window is open question 9.
+- **No edit of sealed text.** Later notes only. The owner chose no correction window at launch
+  (open question 9, answered 2026-10-28).
 - **No application of rules** to Settings or personas, with or without a confirm.
+
+**Deferred to a later spec** (open question 16, answered 2026-10-28). A single user won't reach
+these for months. None is drawn, linked or built here, and their board is dropped:
+
+- **The printable rulebook card** (`/positions/rulebook/print`). "Copy as text" stays.
+- **Reading a trades CSV, with its column mapping.** No broker format is assumed, so a CSV can't be
+  read without the mapping. Pasting positions from the broker stays.
+- **The Monday auto-run** of the weekly review, with its toggle, egress line and after-run notice.
+  The Monday offer stays, and a review runs only when he taps Run.
 
 ## Information architecture
 
@@ -299,35 +409,45 @@ refuses anyone but the owner.
 | `/positions/review` | Latest review. `/positions/review/:reviewId` is a past one. `?finding=:id` opens the finding drawer. |
 | `/positions/rulebook` | Rulebook |
 | `/positions/rulebook/:ruleId` | Rule |
-| `/positions/rulebook/print` | Printable rulebook card |
 | `/settings#journal` | Settings › Journal panel: export and delete (1b), suspicions (3), AI consent, models and caps (4), reading on save and the bulk read (5) |
+
+The print route, `/positions/rulebook/print`, is deferred with the card (open question 16).
 
 ### Ways in for capture
 
-- The header primary "Write entry" on every journal tab.
+- "Write entry" in the header of the Journal and Review tabs. Each journal tab has exactly one
+  amber primary: "Write entry" on Journal; its own action on Review ("Run this week's review", or
+  "Save this week's review" where there is no Run); and "Plan a trade" on Rulebook (G2). Where the
+  tab's amber is its own action, "Write entry" is outlined.
 - The quick-capture box at the top of the timeline.
-- On a phone, a sticky, safe-area-padded bottom bar on the journal tabs: amber "Write entry" and an
-  outlined 44px "Margin call" with the warning glyph.
-- ⌘K: a "Write" group with two rows, "Write a journal entry" and "Margin call entry". This is open
-  question 2. The group sits after Go to. `PALETTE_COMMANDS` stays the five surfaces.
+- On a phone, a sticky, safe-area-padded bottom bar on the journal tabs: the tab's capture button
+  and an outlined 44px "Margin call" with the warning glyph. The capture button is an amber "Write
+  entry" on Journal, an outlined "Write entry" on Review, and an amber "Plan a trade" on Rulebook
+  (G2).
+- ⌘K: a "Write" group with two rows, "Write a journal entry" and "Margin call entry", approved with
+  the canon rows (open question 2, 2026-10-28). The group sits after Go to. `PALETTE_COMMANDS` stays
+  the five surfaces.
 - No `g` key, because `GO_TO` mirrors the nav exactly (`shell/shortcuts.ts:12-19`).
 - In the composer, ⌘↵ saves and Escape leaves while keeping the draft.
 
 ### Objects
 
 - **Entry**: sealed text, a kind, `written_at` (set by the server), an optional `about_date`, and a
-  source (typed, paste, csv or split). An entry has:
+  source (typed, paste or split; a later spec adds csv). An entry has:
   - at most one **Snapshot** (typed figures and positions, each with a provenance, and an `as_of`
     date and time for the moment the figures describe);
   - optional **Money in or out**, with the date and time it happened;
   - **Later notes** (append-only);
   - **Details** (proposed by the parser or the AI, kept, fixed or rejected by him);
-  - **Rule answers** (on plans).
+  - **Rule answers** (on plans), with a required reason on a No (G1);
+  - on a Trimmed or Closed entry, his optional **decision label**, Sound · Mixed · Poor (G6).
 - **Correction**: a superseding figure on a snapshot. The original stays visible.
-- **Suspicion**: a downfall he names himself, tested first.
+- **Suspicion**: a downfall he names himself, from the first run on (G5), tested first.
 - **Review**: the computed parts (the week in numbers, the detector table, where the money went,
-  events) and, if AI reads are on, one AI run with **Findings**, **Questions** and **Rule drafts**.
-- **Rule**: **Versions** (append-only) and **Checks**.
+  events, the rules he went ahead against), his **focus** for the week (G4), and, if AI reads are
+  on, one AI run with **Findings**, **Questions** and **Rule drafts**.
+- **Rule**: **Versions** (append-only) and **Checks**. A check is answered by him on a plan or
+  computed by code at a kept detail (G8). At most 7 rules are active (G3).
 
 ### Order
 
@@ -348,8 +468,8 @@ Sep 29 is at the time, although it is already Sep 30 in UTC.
 ## Computed facts (binding; Rust computes them, and one pinned TypeScript copy previews them)
 
 All money is integer cents. Percentages stay unrounded until display. Display rounds half up (away
-from zero): whole percent for margin used, one decimal for drawdown, change and "% below average
-cost", everywhere they appear.
+from zero): whole percent for margin used, one decimal for drawdown, change, "% below average cost"
+and R, everywhere they appear.
 
 Snapshots are ordered by `as_of`, then `written_at`. "Previous snapshot", the index and the recorded
 high all follow that order, so a statement for Aug 4 written on Aug 21 sorts at Aug 4.
@@ -370,6 +490,8 @@ high all follow that order, so a statement for Aug 4 written on Aug 21 sorts at 
 | Where the money went | per position since the high: value now + proceeds of sales − cost of buys − value at the high. The remainder (interest, fees, untyped trades) is shown as "Not explained by your typed marks" | positions, marks, kept trade details |
 | Planned risk | stock: qty × \|entry − exit\|; a long option: premium paid (the `maxLoss.ts` eligible set) | kept details |
 | Position P/L | all or nothing per position: a missing mark gives `not recorded`, never a partial sum (`positions/leg.ts:97-108` semantics) | positions, marks |
+| Result against planned risk (R, G6) | on a Trimmed or Closed entry: realised P/L against average cost ÷ the planned risk of the same quantity, where "entry" is the average cost at the trim and "exit" is the position's latest kept exit. Drawn for a stock or long-option position only. All or nothing: a stock position with no exit named gives `not set`, a P/L with no average cost gives `no basis`, and any other missing input gives `not recorded`, never a partial figure. A ratio, so it carries its sign and no tint | kept details, positions |
+| Computed rule check (G8) | at a kept Entered or Added detail, a limit's metric set against the limit of the rule version active at the entry's `written_at`: `above` when it meets the limit's comparison, else `within`; a missing input gives `not recorded` (The rulebook → How it is checked) | kept details, snapshots, rule versions |
 
 **Why the chain-linked percent.** A deposit made to meet a call raises account value and would hide
 part of the loss in simple subtraction. The chain takes each deposit or withdrawal out on its day.
@@ -407,9 +529,10 @@ the high, account value alone, lost since the high, and the projection. A parity
 `facts.rs` over one shared fixture of the worked example below
 (`apps/api/tests/fixtures/journal/worked-example.json`, synthetic) and fails on any difference, so the
 two copies can't drift unnoticed. Facts that need legs (position value, position share, leverage,
-loan to position value, P/L, where the money went) are Rust only. The demo seed carries them as
-authored values, checked against `facts.rs` by criterion 6's test over the same fixture. A demo
-visitor's own entry shows them as `—`.
+loan to position value, P/L, R, where the money went) and the computed rule checks are Rust only,
+so the composer doesn't preview R. The demo seed carries them as authored values, checked against
+`facts.rs` by criterion 6's test over the same fixture. A demo visitor's own entry shows them as
+`—`.
 
 ### Worked example: the staging sample, checked by script
 
@@ -433,8 +556,11 @@ Positions and trades:
 - Sep 18: added 3 TSLA puts at $19.80, 28.3% below $27.63; it becomes $26.06.
 - Sep 29: margin call of $2,750, due Oct 1, 4:00 PM.
 - Sep 30: trimmed NVDA 60 at $199.26 (Closed by: Me), −$581.67 against the $208.95 average. Money
-  in: $2,500, at 10:05 AM, before that day's 3:40 PM snapshot.
-- Oct 2: trimmed 5 TSLA puts at $13.10, as the Oct 1 plan said, −$6,480.00 against $26.06.
+  in: $2,500, at 10:05 AM, before that day's 3:40 PM snapshot. No decision label.
+- Oct 2: trimmed 5 TSLA puts at $13.10, as the Oct 1 plan said, −$6,480.00 against $26.06. His
+  decision label: Sound.
+
+Only the QQQ entry names an exit; no entry names one for NVDA, MSFT or the TSLA puts.
 
 Option marks at each snapshot:
 
@@ -482,6 +608,12 @@ interest, at about 9.5% a year. Derived:
 
   Shares are of the $22,142 lost. They add to more than 100% because NVDA and MSFT gained.
 - Leverage: 1.23× on Aug 21, 2.47× on Sep 29.
+- Result against planned risk (R) on the two trims:
+  - Oct 2, TSLA puts, a long option, so the planned risk is the premium paid for the 5 contracts at
+    the $26.06 average: 5 × 100 × $26.06 = $13,030.00. R = −$6,480.00 ÷ $13,030.00 = −0.4973,
+    shown as **−0.5R**.
+  - Sep 30, NVDA, a stock with no exit named, so it has no planned risk and R reads `not set`. Its
+    P/L of −$581.67 still shows.
 - Sep 18: margin used 115% of account value; loan to position value 53.6%.
 - NVDA was over 40% of position value at 12 of 12 snapshots.
 - Margin used set a new high at 7 of the 11 steps between snapshots (Aug 28 through Sep 29).
@@ -517,15 +649,16 @@ never appear on a journal screen. Value gaps use only rule 24's set (`DESIGN_SYS
 
 | Member | Used for |
 |---|---|
-| `not recorded` | never captured |
-| `not set` | no exit named, or a rule with no limit |
+| `not recorded` | never captured, including an input that R or a computed rule check needs |
+| `not set` | no exit named (so R on a stock position), or a rule with no limit |
 | `not given` | no confidence stated |
-| `no basis` | P/L with no average cost |
+| `no basis` | P/L, and so R, with no average cost |
 | `unrecognized` | an import line that didn't parse |
 | `—` | a cell with nothing to show: percent facts past a chain break, a gain's share of the fall, and leg-based facts on a demo visitor's own entry |
 
 Rule answers (Yes · No · Doesn’t apply · Not answered) are answer labels, not value gaps; they render
-in Sans like any other label. Loading and empty states carry no tag.
+in Sans like any other label. So is his decision label (Sound · Mixed · Poor, G6), which is never
+tinted. Loading and empty states carry no tag.
 
 ### 1. Journal timeline · `/positions/journal`
 
@@ -544,6 +677,8 @@ written.
   - One line, "What happened, and what are you thinking?", which grows to six lines on focus.
   - Kind chips, optional and single-select: Entered · Added · Trimmed · Closed · Margin call ·
     Money in or out · Plan a trade · Just thinking.
+  - Picking Trimmed or Closed adds the optional "How did the decision look, apart from the result?"
+    row, Sound · Mixed · Poor (from 1b, G6; Composer → Optional reveals).
   - Numbers line: "Numbers: carried from Oct 6 (1 day) · Update".
   - An outlined "Save" and a text link "Open full editor". Save is outlined because the header holds
     the screen's one amber fill.
@@ -559,9 +694,14 @@ written.
     - The Margin call pill carries the warning glyph and burnt-orange text, never red.
     - The body: the first 4 lines, Plex Sans 16/1.55, then "Read more".
     - Footer: "Written Oct 26 · about Aug 14" on recalled entries · "1 later note" · "Asked 2
-      rules" on plans · "Corrected Aug 22" when a figure was corrected.
+      rules · went ahead against R3 · with a reason" on plans (G1) · "−0.5R against planned risk ·
+      Your label: Sound" on a Trimmed or Closed entry (from 1b, G6) · "Corrected Aug 22" when a
+      figure was corrected.
 - **Rail.**
-  1. **Account frame** (solid border: own data; `ChartFrame`).
+  1. **This week's focus** (slice 3, G4), drawn only while the latest review has one: a quiet
+     one-line panel, "This week’s focus: Name an exit before I place a trade. · your Oct 7 review".
+     It stays until the next review is saved, and it is never scored, checked or counted.
+  2. **Account frame** (solid border: own data; `ChartFrame`).
      - Title, the finding: "Account value $31,609, 42.6% below its recorded high".
      - Body: the account value small multiple only, as a sparkline height of the Path chart.
      - "Open the account path" opens the full Path in a 760 drawer (slice 1b; before it, the frame
@@ -571,17 +711,17 @@ written.
        - Margin used 92% (Computed);
        - Since Oct 2: −$2,994 (−8.7%) in `textDown` with the minus sign;
        - Below the recorded high −42.6% (Computed) with its ⓘ.
-  2. **Rulebook mini** (slice 2): "Active rules 2", each wording on one line. A rule with a limit
+  3. **Rulebook mini** (slice 2): "Active rules 2", each wording on one line. A rule with a limit
      shows its reading, e.g. "Margin used now 92% · R3 limit 50%", with the warning glyph and the
-     word "above".
-  3. **Review mini** (slice 3): "Last review Oct 7 · 4 findings · 0 entries since · Open review".
-  4. **Filters**: search (run in the browser over decrypted entries), kind, ticker, "Written from
+     word "above". Under the rules, an outlined "Plan a trade" (G2).
+  4. **Review mini** (slice 3): "Last review Oct 7 · 4 findings · 0 entries since · Open review".
+  5. **Filters**: search (run in the browser over decrypted entries), kind, ticker, "Written from
      memory", "Kept out of AI reads", "Has later notes".
 
 **Phone (390).**
 - h1 at 30px; the tab rail.
 - An account peek row, "Account value $31,609 · margin used 92% · Oct 6 ›", that opens the Path and
-  its table twin in a bottom sheet.
+  its table twin in a bottom sheet. Under it, the week's focus line when there is one (slice 3).
 - No quick-capture box: the sticky bottom bar replaces it.
 - Cards are full width with a 3-line clamp. Filters are in a bottom sheet.
 - No horizontal overflow at 390 or 393.
@@ -590,7 +730,7 @@ written.
 
 | State | Tag | Words |
 |---|---|---|
-| First run | — | Heading "Start with today." Body "Write what you hold, what you’re thinking and how the account looks. One sentence is enough. Nothing is sent to an AI until you turn AI reads on." Primary "Write the first entry". Links "Write about an earlier day" (1a) · "Name what you think goes wrong" (from slice 3) · "Bring in past trades" (from slice 5); a link whose slice hasn't shipped isn't drawn. The rail frames name their metric: "Account value · appears after your first snapshot". |
+| First run | — | Heading "Start with today." Body "Write what you hold, what you’re thinking and how the account looks. One sentence is enough. Nothing is sent to an AI until you turn AI reads on." Button "Write the first entry", outlined, because the header's "Write entry" is the screen's one amber. Links "Write about an earlier day" (1a) · "Bring in past trades" (from slice 5). Under them, two optional prompts (G5), each with an outlined button and a text "Skip": "What do you think your downfalls are?" (1a): up to 5 lines in his words, saved as his suspicions with "Save"; from slice 3 the line "Reviews test these first." joins it. "One rule from today" (from slice 2, and only while no rule exists): his wording and the required "Why this rule, in your words", adopted as R1 with "Adopt as R1". Neither blocks writing. After the first entry saves, an unanswered prompt is offered once more under the new card, then not again; later, suspicions live in Settings › Journal (slice 3) and rules on the Rulebook. A prompt or link whose slice hasn't shipped isn't drawn. The rail frames name their metric: "Account value · appears after your first snapshot". |
 | Loading | — | Day-group skeletons at their final height. |
 | Loaded | Stored here on figures | As above. |
 | Couldn’t load | Couldn’t load | "Your journal didn’t load. Nothing is lost." + "Try again". Drafts held in this browser are still listed. |
@@ -598,7 +738,7 @@ written.
 | Signing out with an unsent entry | — | Sign-out stops first, inline: "{1} entry hasn’t reached your account yet. Signing out deletes it from this browser." + "Try sending now" · "Sign out and delete it" · "Stay signed in". Drafts are cleared on sign-out; a queued entry is never dropped without this. |
 | Storage not set up (no journal encryption key on the server) | Not set up | "Journal storage isn’t set up on this server, so nothing can be saved yet." |
 | Signed out (production) | Sign in | The Positions private-testing wall: "Sign in to open your journal". Sign-ups are closed. "See it on the demo →". |
-| Not the owner (API 403 `owner_only`) | — | "This journal is private to the account that owns this Convexa." + "See it on the demo →". No P-2 word exists for this (open question 12). |
+| Not the owner (API 403 `owner_only`) | — | "This journal is private to the account that owns this Convexa." + "See it on the demo →". No P-2 word exists for this, and the wall has no tag (open question 12, answered 2026-10-28). |
 | Staging | Sample (once per frame) | The demo bar is the page's one "Demo · sample data · Oct 7, 2026". Frames are dashed, with the 8px steel hatch band. The account frame's source chip reads "Sample journal". Cards and rows carry no tag (D1, `DESIGN_SYSTEM.md:288`). |
 
 ### 2. Composer · `/positions/journal/new`
@@ -630,6 +770,12 @@ save.
   - "+ I’m wrong if…", with a price field "Exit at $ ___" and a checkbox "No exit set"
   - "+ Revisit on…"
   - On Trimmed or Closed: "Closed by: Me · Broker (liquidation) · Expiry · Assignment"
+  - On Trimmed or Closed, from slice 1b: "How did the decision look, apart from the result?" with a
+    44px segment Sound · Mixed · Poor, optional and unselected (G6). It is his label: code and the
+    AI never compute, infer or suggest it, and it is sealed with the entry. It is never asked on a
+    margin-call entry, whose page says "Nothing here is graded", nor on a close the broker made
+    ("Closed by: Broker (liquidation)"). The saved entry shows R beside its P/L; the composer
+    doesn't preview R, which needs legs (Computed facts → Where facts are computed).
 - **Checkbox:** "Keep this entry out of AI reads". It ships in 1a, so entries written before AI
   reads exist can already be kept out.
 - **Footer.**
@@ -729,12 +875,14 @@ happened. The bottom bar's "Margin call" opens this mode from any journal tab; �
 entry" does on desktop.
 
 **States.** The composer's, plus a "Call amount `not recorded`" save, and entry from ⌘K on any page.
-No AI read runs on a margin-call entry, even with reads on every save turned on.
+No AI read runs on a margin-call entry, even with reads on every save turned on, and it never asks
+for a decision label (G6).
 
 ### 4. Composer · Plan a trade · `/positions/journal/new?kind=plan`
 
 **Purpose.** Check an intended trade against his own rules before he places it at his broker. His
-answers are recorded. Nothing is blocked, and nothing is judged.
+answers are recorded, with his reason when he goes ahead against a rule. Nothing is blocked, and
+nothing is judged.
 
 **1440.** The composer with the right column swapped: "Your rules" first, the snapshot below.
 - Each active rule shows:
@@ -750,14 +898,20 @@ answers are recorded. Nothing is blocked, and nothing is judged.
   maintenance-rate assumption.
 - When the snapshot is more than 5 weekdays old, a burnt-orange strip with its icon reads: "These
   numbers are 20 days old. Update them for a current reading."
-- **On a No answer**, an optional field: "Why go ahead anyway? (optional)". It is never required.
+- **On a No answer** (G1), a required one-line field: "Why go ahead anyway?". The save button then
+  names the rule: "Save plan · going ahead against R3" ("…against R2 and R3" for two). With the
+  line empty, Save shows "Add a line on why, or change the answer." inline under the field and saves
+  nothing. The line is required to save the plan, never to trade: nothing is blocked, and this
+  journal still never stops or places a trade. Doesn't apply and Not answered need no reason.
 - The "+ I’m wrong if…" reveal is open by default for this kind.
 - Above the amber "Save plan": "This journal doesn’t stop or place trades. It keeps what you
   decided, and why."
 - Unanswered rules save as "Not answered", an answer label like the other three.
+- Saved, a No shows as "went ahead against R3 · with a reason", with his line under it, on the card,
+  on the entry's Rules panel and in the rule's check table.
 
-**Phone (390).** The rules stack first and the editor second, with a sticky "Save plan". Each rule's
-segment is a 44px row.
+**Phone (390).** The rules stack first and the editor second, with a sticky "Save plan" whose label
+follows the answers ("Save plan · going ahead against R3"). Each rule's segment is a 44px row.
 
 **States.**
 
@@ -766,7 +920,8 @@ segment is a 44px row.
 | No rules | "No rules yet. Plans still save; rules you adopt later show up here." + "Write a rule". |
 | No snapshot | Readings show `not recorded`. |
 | Stale snapshot | The strip above. |
-| Saved | "Plan saved · asked 2 rules · 1 answered No". |
+| Reason missing | "Add a line on why, or change the answer.", inline under the empty field. Nothing is saved. |
+| Saved | "Plan saved · asked 2 rules · went ahead against R3 · with a reason". With no No answer: "Plan saved · asked 2 rules". |
 | Walls and staging | As elsewhere. |
 
 ### 5. Entry · `/positions/journal/:entryId`
@@ -781,7 +936,8 @@ made of it, and the rules it touched.
     not as what you thought at the time."
   - The body.
   - "Later notes", each dated ("Later note · Sep 30, 6:40 PM"), and an outlined "Add a later note"
-    that opens an inline editor. A later note can be marked "Context for the AI".
+    that opens an inline editor. A later note can be marked "Context for the AI". A note that
+    answers a review's "Was going ahead worth it to you?" shows that question above his words (G4).
 - **Right panels.**
   - **Snapshot.**
     - Figures in Mono with Stored here; computed lines tagged Computed; a positions table.
@@ -790,6 +946,13 @@ made of it, and the rules it touched.
       $11,890 → corrected to $11,980 on Aug 22: “the statement says 11,980”". The corrected figure
       is the one that makes positions × marks − loan equal the typed account value. "As of" is
       correctable the same way; no other correction moves it.
+  - **Result** (slice 1b, Trimmed or Closed entries only, G6).
+    - On the Oct 2 TSLA puts trim: "P/L −$6,480.00 against average cost $26.06" (Computed, Mono,
+      signed text) and "Result against planned risk −0.5R" (Computed, Mono, its sign and no tint),
+      both from the server.
+    - His label, if he gave one: "Your label: Sound" (Sans, an answer label). Without one, the line
+      isn't drawn. It is his own word for the decision, shown as he chose it and never totalled.
+    - On the Sep 30 NVDA trim, R reads `not set`: no exit was named for NVDA.
   - **Details found** (slice 3).
     - Each detail highlights its source span in the body on hover or focus, e.g. "Added · TSLA
       Dec 18 ’26 440 P · 3 at $19.80", from “added 3 more TSLA 440 puts at 19.80”.
@@ -804,17 +967,25 @@ made of it, and the rules it touched.
     - Above every control in this panel that sends a request ("Read it now", "Run again", "Retry"),
       in full and never in a tooltip: "Reading sends this entry’s text, its numbers, the summaries of
       your 5 previous entries and your active rules to Anthropic (Sonnet 5.5) on your key."
-  - **Rules** (slice 2). His plan answers, plus proposed touches: "R2 may apply: “added 3 more TSLA
-    440 puts at 19.80”; the TSLA puts were 28.3% below your average cost." with "That’s right" /
-    "Not right". Only kept touches count.
+  - **Rules** (slice 2). Two groups, labelled and never merged:
+    - "answered by you": his plan answers, each with its reading as received and, on a No, "went
+      ahead against R3 · with a reason" and his line (G1); plus proposed touches: "R2 may apply:
+      “added 3 more TSLA 440 puts at 19.80”; the TSLA puts were 28.3% below your average cost."
+      with "That’s right" / "Not right". Only kept touches count.
+    - "computed" (slice 3, G8): one line per rule version active at this entry's `written_at`
+      whose limit code can compute at its kept details, e.g. "R2 · 28.3% below average cost at the
+      add price · limit 15 · above". A missing input reads `not recorded`, never within. In the
+      sample no Entered or Added entry follows Sep 30, when R2 and R3 became active, so no sample
+      entry has one.
 - **Foot.**
   - Toggle "Keep this entry out of AI reads".
   - Burnt-orange "Delete entry…" with an inline confirm: "Delete this entry’s words and numbers? The
     timeline keeps a line saying an entry was deleted on Oct 27. What was already sent to your AI
     provider is under its terms." Buttons: "Delete entry" / "Keep it".
 
-**Phone (390).** One column (meta, body, later notes), then accordions: "Numbers", "Details found
-(5)", "AI read", "Rules (2)". Drawers become bottom sheets with a peek row.
+**Phone (390).** One column (meta, body, later notes), then accordions: "Numbers", "Result" (on a
+Trimmed or Closed entry), "Details found (5)", "AI read", "Rules (2)". Drawers become bottom sheets
+with a peek row.
 
 **AI read states** (rule 16, `DESIGN_SYSTEM.md:171`; words in Copy):
 
@@ -898,8 +1069,9 @@ The computed parts (slice 3) need no model.
   snapshots, computed figures, rules and corrections to Anthropic (Sonnet 5.5 and Opus 5.5) on your
   key. Drafts and entries you kept out are never sent. View what’s sent"
 - The amber primary "Run this week’s review", with "≈ $0.31 · estimate · up to $0.75" beside it.
-  In slice 3 there is no Run: the page shows the computed sections, and a review row is stored when
-  he taps "Save this week’s numbers" (`POST /api/journal/reviews`).
+  Where there is no Run (slice 3, and from slice 4 with AI reads off or not set up), the page shows
+  the computed sections, and the amber "Save this week’s review" stores the review row
+  (`POST /api/journal/reviews`). The header's "Write entry" is outlined here.
 - **Main** `minmax(0, 1fr)` and **rail** 320.
 - **Head:** "Review of Sep 28 – Oct 6 · as of Oct 7, 7:02 AM · 8 new entries (34 in all)". When the
   AI ran: "AI · Opus 5.5 on your key".
@@ -927,16 +1099,33 @@ The computed parts (slice 3) need no model.
        chance."
   6. **Findings** (AI, 5 at most). Each card has:
      - a label, "About what you decided" or "About what happened";
+     - its side in words, "Linked to losses" or "Linked to gains" (G7), under one set of evidence
+       rules (The AI interaction → the check, point 9);
      - the claim, Sans 17;
      - the evidence line, e.g. "In 3 of 4 “Added” entries · cites 4";
      - either "4 counted; rates start at 20." or a rate such as "63% (Wilson 95%: 43–79%, n =
        24)";
      - "Cut the other way: 1 (NVDA, Aug 28)";
      - every stated figure with the check glyph, in Mono, linked to its fact;
-     - actions: "Show entries" · outlined "Draft a rule from this" · text "That’s not right".
+     - actions: "Show entries" · outlined "Draft a rule from this" · text "That’s not right". A
+       finding linked to gains has no "Draft a rule from this": a few wins never become a rule.
   7. **Questions your entries raise** (AI, 3 at most). Each has "Answer in a new entry", which opens
      the composer with the question quoted.
-  8. **Rules this review**: per rule, "asked 2 · Yes 0 · No 1 · Doesn’t apply 1 · Not answered 0".
+  8. **Rules this review**: per rule, his answers, "asked 2 · Yes 0 · No 1 · Doesn’t apply 1 · Not
+     answered 0", and apart from them, from slice 3, the computed checks, "Computed: within 0 ·
+     above 0 · not recorded 0" (G8).
+  9. **Rules you went ahead against** (slice 3, G4). Each No answer from the review's window, with
+     its rule, the plan and his reason: "R3 · Oct 5 plan (SPY puts) · “It’s a hedge; it should lower
+     the risk.”". Under each, an optional one-line "Was going ahead worth it to you?" with an
+     outlined "Save". The answer is saved as a later note on that plan, marked as this answer; the
+     plan itself is never edited. Answers are shown as written and never counted. In the sample the
+     question is still open. With no No answer in the window, the section reads "No rule answered
+     No this week."
+  10. **This week's focus** (slice 3, G4), the review's last section, optional: one line he writes
+      ("Write your own") or one active rule he picks ("Pick a rule"). The outlined "Save focus"
+      stores it, and stores this week's review first if it isn't stored yet. It shows on the Journal
+      rail as "This week’s focus: …" until the next review is saved. It is never scored, checked or
+      counted as a streak. In the sample: "Name an exit before I place a trade."
 - **Rail.**
   - **How this ran:**
     - "Read 8 entries · Sonnet 5.5 · $0.09";
@@ -952,6 +1141,7 @@ The computed parts (slice 3) need no model.
 - One column: the egress sentence and Run first, then the strip as a 2-column grid.
 - The Path behind a peek row.
 - Findings full width. The detector table becomes cards, and its twin stays.
+- Sections 9 and 10 close the page; "Save focus" is a full-width outlined 44px button.
 - "How this ran" is collapsed. The finding drawer is a bottom sheet with a peek row.
 
 **The fixed detector table** (computed by code from kept details and snapshots; the model never
@@ -1007,9 +1197,9 @@ row is from a rate.
 | State | Tag | Words |
 |---|---|---|
 | Too little written | — | "Reviews start once there are 3 saved entries. You have 2." |
-| Mostly from memory | — | What he will actually see first: most of his early entries are recalled or imported, so the decided rows have little or nothing to count. A quiet strip leads the page: "Most of your entries so far are written from memory (9 of 11). Patterns about what you decided use only entries written at the time, so they start as you write them. What happened is below." Sections 1–4 render in full (the week in numbers, the Path, events, where the money went). Decided rows show their honest counts ("0 of 0 · counts start with entries written at the time"); happened rows count as usual. With AI reads on, findings are "About what happened" only, plus his words against his numbers and questions back; no "About what you decided" card is drawn. |
-| Computed only, slice 3 | — | Sections 1–5 render, with "Save this week’s review" (stores the computed parts). No AI section, no Run, and no link to a setting that doesn't exist yet. |
-| Computed only (AI off), from slice 4 | Off on the AI parts | Sections 1–5 render. Findings, questions and drafts are replaced by "AI reads are off. The counts above need no AI. Turn reads on in Settings › Journal." |
+| Mostly from memory | — | What he will actually see first: most of his early entries are recalled or imported, so the decided rows have little or nothing to count. A quiet strip leads the page: "Most of your entries so far are written from memory (9 of 11). Patterns about what you decided use only entries written at the time, so they start as you write them. What happened is below." Sections 1–4 render in full (the week in numbers, the Path, events, where the money went). Decided rows show their honest counts ("0 of 0 · counts start with entries written at the time"); happened rows count as usual. Sections 8–10 render as usual. With AI reads on, findings are "About what happened" only, plus his words against his numbers and questions back; no "About what you decided" card is drawn. |
+| Computed only, slice 3 | — | Sections 1–5 and 8–10 render, with the amber "Save this week’s review" (stores the computed parts). No AI section, no Run, and no link to a setting that doesn't exist yet. |
+| Computed only (AI off), from slice 4 | Off on the AI parts | Sections 1–5 and 8–10 render, with the amber "Save this week’s review". Findings, questions and drafts are replaced by "AI reads are off. The counts above need no AI. Turn reads on in Settings › Journal." |
 | No key or model unset | Not set up | Rule 16's copy; Run is replaced by "Set up in Settings". |
 | Ready | — | "8 new entries since Sep 28 · ≈ $0.31". |
 | Running | — | Named steps with result-shaped skeletons and the in-flight indicator: "Reading 8 new entries · Counting 10 patterns · Checking 31 figures against your snapshots · Writing findings". |
@@ -1068,7 +1258,8 @@ answered when asked.
 **1440.**
 - h1 "Rulebook". Sub: "Your rules, in your words. Each one cites the entries it came from. Convexa
   never enforces them."
-- The amber "Write a rule"; outlined "Copy as text" and "Print".
+- The screen's one amber primary, "Plan a trade" (G2), which opens Plan a trade; outlined "Write a
+  rule" and "Copy as text".
 - **Main 840, rail 320.**
 - **"Drafted from your journal (2)"** (drafts arrive with slice 4): draft cards, unnumbered until
   adopted, with:
@@ -1084,28 +1275,38 @@ answered when asked.
     threshold, not from your entries"; otherwise it is `not set` for him to fill (The AI
     interaction → the check);
   - "Why this rule, in your words" (required to adopt);
-  - outlined "Adopt" and text "Not for me".
+  - outlined "Adopt" and text "Not for me". With 7 rules active, Adopt shows "7 active rules is
+    the limit. Pause or retire one to adopt this." inline and adopts nothing (G3).
 - **"Active (2)":** one row per rule:
   - "R3" (Mono 13) and its wording;
   - "v1 · since Sep 30";
-  - "Asked in 2 plans · Yes 0 · No 1 · Doesn’t apply 1 · Not answered 0";
+  - "Asked in 2 plans · Yes 0 · No 1 · Doesn’t apply 1 · Not answered 0" (answered by you);
+  - on its own line, never added to his answers, the computed checks (slice 3, G8): "Computed:
+    within 0 · above 0 · not recorded 0", or "Computed at kept entries: none yet", as for R2 and R3
+    in the sample;
   - "Account change after Yes vs after No: too few to judge (0 and 1 counted; rates start at 20)";
   - "Margin used now 92% · limit 50% · above" with the warning glyph, as neutral text;
   - a row menu: Edit (makes a new version) · Pause · Retire.
 - **"Paused"** and **"Retired (1)"** are collapsed, each with its reason and dates: "R1 retired Sep
-  24: “I add from my phone and can’t always write first.”"
-- **Rail:** "Before you trade": an outlined "Plan a trade". A rule goes nowhere else: no Settings or
-  persona hand-off in this spec.
+  24: “I add from my phone and can’t always write first.”" A paused rule's menu offers Resume; with
+  7 active it shows "7 active rules is the limit. Pause or retire one to resume this." (G3).
+- **Rail:** "Before you trade": "Plan a trade asks each active rule before you place a trade at
+  your broker. Going ahead against one takes a line on why." Under it, "2 active · 7 at most" (G3).
+  A rule goes nowhere else: no Settings or persona hand-off in this spec.
+- **At most 7 active** (G3). Adopting, writing or resuming an eighth is refused inline with the
+  lines above; "Write a rule" at the limit offers "Save as draft" instead, so his words are kept.
+  Drafts and paused rules don't count.
 - Counts are neutral steel dots: no green or red, no streaks, no score.
 - **Numbering.** A rule gets the next number when it becomes active, written by him or adopted from a
   draft, and keeps it through versions, pauses and retirement. Drafts and declined drafts have no
   number.
 
-**Print** (`/positions/rulebook/print`): one page in clean type with the active rules' numbers,
-wordings and check questions, "Adopted {date} · v{n}", and the foot "Your rules, in your words.
-Printed Oct 7, 2026." It holds no figures, so it can sit by the screen.
+**Print** is deferred to a later spec with the printable card (open question 16). "Copy as text"
+stays.
 
-**Phone (390).** Accordion sections and one card per rule. The row menu is a bottom sheet.
+**Phone (390).** Accordion sections and one card per rule. The row menu is a bottom sheet. The
+sticky, safe-area-padded bottom bar carries the amber "Plan a trade" and the outlined "Margin call"
+(G2).
 
 **States:**
 
@@ -1114,6 +1315,7 @@ Printed Oct 7, 2026." It holds no figures, so it can sit by the screen.
 | Empty | "No rules yet. Write one, or let the weekly review draft some from your entries." |
 | Drafts only | — |
 | Stale draft | "Evidence changed since this was drafted: 3 new entries." |
+| At the limit | With 7 active: "7 active rules is the limit. Pause or retire one to adopt this." on Adopt, "…to resume this." on Resume, and "Save as draft" on Write a rule (G3). |
 | Loading | — |
 | Couldn’t load | As on the timeline. |
 | Staging | Sample. |
@@ -1127,10 +1329,13 @@ Printed Oct 7, 2026." It holds no figures, so it can sit by the screen.
   - "v2 Oct 3: you added “the same day”."
 - His why, in a quiet quote.
 - The origin finding and its cited entries.
-- A check table: date · entry link · his answer · the reading at the time · his "why go ahead"
-  if any · the account change to the next snapshot, signed with ▼/▲ and text.
+- A check table, one row per check: date · entry link · how, "answered by you" or "computed" ·
+  his answer, or the computed result · the reading at the time · on a No, his "why go ahead"
+  (required since G1) and any later "worth it" note (G4) · the account change to the next
+  snapshot, signed with ▼/▲ and text. Computed rows (slice 3, G8) come from kept Entered or Added
+  details; a missing input reads `not recorded`. The two kinds are counted apart and never summed.
 - A counts block that follows the floor of 20.
-- Actions: Edit, Pause, Retire (with a reason).
+- Actions: Edit, Pause (or Resume, refused at 7 active), Retire (with a reason).
 
 **Phone (390).** Stacked. The table becomes cards, and the table twin stays the accessible path.
 
@@ -1142,13 +1347,14 @@ counts · Staging.
 **1440.** A three-step page, 880 wide.
 1. **Choose:**
    - "Write about an earlier day" opens the composer with About set (slice 1a).
-   - "Paste positions from your broker": a textarea.
-   - "Read a trades CSV": `input type="file"`, read in the browser with FileReader. The sentence
-     "The file is read in this browser. Only the rows you import are sent to your account."
+   - "Paste positions from your broker": a textarea. The sentence "The paste is read in this
+     browser. Only the rows you import are sent to your account."
 2. **Preview:** parsed rows in a table. A line that can't be read shows `unrecognized` beside the raw
-   line. CSV columns get a mapping control; no broker format is assumed.
-3. **File them:** "One entry per day" or "One entry per trade". Each becomes kind Imported, written
-   now, about the trade date: "Imported Oct 26 · about Aug 14".
+   line.
+3. **File them:** one entry of kind Imported, written now, about the date he picks, with the pasted
+   positions as its snapshot: "Imported Oct 26 · about Aug 14".
+
+Reading a trades CSV, with its column mapping, is deferred to a later spec (open question 16).
 
 A `convexa-journal-v1` export is restored from Settings › Journal (slice 1b), not from this page
 (Data and privacy → Export and delete).
@@ -1156,7 +1362,7 @@ A `convexa-journal-v1` export is restored from Settings › Journal (slice 1b), 
 Then: "Want to add what you remember thinking? It’ll be marked as written from memory." Import is
 merge-only: rows already imported are matched by hash and skipped.
 
-**Phone (390).** The same steps stacked. A CSV can be picked from Files.
+**Phone (390).** The same steps stacked.
 
 **States:**
 
@@ -1167,7 +1373,7 @@ merge-only: rows already imported are matched by hash and skipped.
 | Parsed with unrecognized lines | Those lines show `unrecognized` beside the raw text. |
 | Duplicates skipped | "12 rows were already in your journal." |
 | Saved | — |
-| Parse failed | "This file couldn’t be read as a table. Nothing was imported." |
+| Parse failed | "This couldn’t be read as positions. Nothing was imported." |
 | Staging | A sample paste, prefilled. |
 
 ### 12. What's sent drawer (on Review, Entry and Settings)
@@ -1218,12 +1424,13 @@ lands with its slice, and a part whose slice hasn't shipped isn't drawn:
   and delete).
 - **Slice 1b: burnt-orange "Delete journal…"**: an inline confirm that requires typing "delete
   journal". It offers "Export first", and says what deletion reaches (Data and privacy → Delete).
-- **Slice 3: "Downfalls you suspect"** (up to 5 lines in his words): "Reviews test these first." The
-  first run's "Name what you think goes wrong" and the Review rail's "Edit" open this.
+- **Slice 3: "Downfalls you suspect"** (up to 5 lines in his words): "Reviews test these first." It
+  edits the list that the first run's "What do you think your downfalls are?" fills from slice 1a
+  (G5). The Review rail's "Edit" opens it.
 - **Slice 4: toggle "AI reads of my journal"**, Off by default. Above it, not in a tooltip:
   "Turning this on lets Convexa send your journal text, numbers and rules to Anthropic on your key
   when you run a review, tap Read on an entry or accept a bulk read of older entries, and, if you
-  turn them on below, on each save and each Monday. Nothing is sent until one of those happens."
+  turn it on below, on each save. Nothing is sent until one of those happens."
   - With no Anthropic key, the toggle is replaced by "Add an Anthropic key in Settings › AI first".
 - **Slice 4: "Models for journal reads"**: "Entry reads" (Sonnet 5.5 · Opus 5.5) and "Reviews"
   (Opus 5.5 · Sonnet 5.5), defaulting to open question 6's answer. The AI read's "Model unset" state
@@ -1235,10 +1442,8 @@ lands with its slice, and a part whose slice hasn't shipped isn't drawn:
   save). Its own egress line sits under it, in full: "With this on, each save sends that entry’s
   text, its numbers, the summaries of your 5 previous entries and your active rules to Anthropic
   (Sonnet 5.5) on your key. Margin-call entries are never sent on save."
-- **Slice 5: "Run it automatically Mondays at 7:00 AM ET"** (off; open question 16 recommends
-  deferring it). Its egress line: "Each Monday at 7:00 AM ET this sends what a review sends, without
-  you tapping Run." After an automatic run, the Review page leads with "Ran automatically Mon {Oct
-  5}, 7:00 AM · sent {8} entries’ text and {26} summaries · What was sent".
+- The Monday auto-run, its toggle, its egress line and its after-run notice are deferred to a later
+  spec (open question 16, Scope → Deferred to a later spec).
 
 **States:**
 
@@ -1259,7 +1464,8 @@ lands with its slice, and a part whose slice hasn't shipped isn't drawn:
 ### First entry (starting after a bad stretch, as his example does)
 
 1. Signed in on production, he opens Positions › Journal. `GET /api/journal/entries` passes
-   `OwnerUser` and returns nothing. The timeline shows "Start with today."
+   `OwnerUser` and returns nothing. The timeline shows "Start with today." with its optional
+   prompts (G5).
 2. He taps "Write the first entry". The composer says "No numbers yet." He taps "Update numbers" and
    types today's account value, cash, margin loan and maintenance requirement, with source Broker
    screen.
@@ -1274,7 +1480,11 @@ lands with its slice, and a part whose slice hasn't shipped isn't drawn:
 6. With a high now recorded (labelled "from a statement" or "from memory"), the rail computes "below
    the recorded high". If he put money in after August, he adds a "Money in or out" entry and the
    percent stops hiding it.
-7. From slice 3, a last optional prompt: "Name what you think goes wrong" (up to 5 suspicions). AI
+7. Under the new card, the first-run prompts he hasn't answered are offered once more (G5). Under
+   "What do you think your downfalls are?" he names the downfalls he suspects, in his words (up to
+   5), and they are saved as his suspicions, on record before any review exists; from slice 3,
+   reviews test them first. From slice 2, "One rule from today" takes his wording and the required
+   "Why this rule, in your words" and adopts it as R1. Either can be skipped. Nothing is sent: AI
    reads stay off. From slice 4, each card says "Not read: AI reads are off".
 8. His first reviews show the "Mostly from memory" state: events, where the money went, and his
    words against his numbers, with the decided rows waiting for entries written at the time.
@@ -1283,10 +1493,12 @@ lands with its slice, and a part whose slice hasn't shipped isn't drawn:
 
 1. He opens Journal, or ⌘K "Write a journal entry" from any page.
 2. In the quick-capture box: "Sold 5 of the TSLA puts at 13.10. Felt relief more than conviction."
-   He picks Trimmed.
+   He picks Trimmed. The optional "How did the decision look, apart from the result?" appears, and
+   he taps Sound (G6).
 3. The numbers line reads "carried from Sep 30 (2 days)". He taps Update, changes Account value and
    Margin loan, and the other fields carry over with their dates.
-4. ⌘↵ saves it, in about 30 seconds.
+4. ⌘↵ saves it, in about 30 seconds. From slice 1b the card reads "−0.5R against planned risk ·
+   Your label: Sound": −$6,480.00 against the $13,030.00 paid for those 5 puts.
 5. With slice 3, the parser proposes "Trimmed · TSLA Dec 18 ’26 440 P · 5 at $13.10" and links it to
    the Oct 1 plan that named $13.10. He keeps both in Tidy later in the week, in one pass.
 
@@ -1324,7 +1536,13 @@ lands with its slice, and a part whose slice hasn't shipped isn't drawn:
 5. He opens a finding, reads the quoted spans and the counter-case, and marks one "missing
    context", which opens a later note on the cited entry.
 6. He answers one of the "Questions your entries raise" in a new Just thinking entry.
-7. He opens "Draft a rule from this" on a finding (the next flow), then clears 14 details in Tidy.
+7. Under "Rules you went ahead against" (G4), R3's No on the Oct 5 plan shows with his reason.
+   "Was going ahead worth it to you?" is optional; an answer would be saved as a later note on that
+   plan, which never changes. He leaves it for now.
+8. He opens "Draft a rule from this" on a finding (the next flow).
+9. Last, he writes this week's focus, "Name an exit before I place a trade.", and taps "Save
+   focus". The Journal rail shows it until the next review. Later in the week he clears 14 details
+   in Tidy.
 
 ### An insight becomes a rule
 
@@ -1344,24 +1562,33 @@ lands with its slice, and a part whose slice hasn't shipped isn't drawn:
 5. On Oct 3 he edits R2 to "…I don’t add to it the same day.", which is v2. v1 stays listed with its
    dates.
 6. Had he chosen "Not for me", his reason would be stored. The draft would stay read-only, with no
-   number, and wouldn't be drafted again until 5 more entries change the count.
+   number, and wouldn't be drafted again until 5 more entries change the count. Had 7 rules been
+   active, Adopt would have shown "7 active rules is the limit. Pause or retire one to adopt this."
+   and adopted nothing (G3).
 7. The AI never adopts a rule, and nothing is ever deleted.
 
 ### A rule check before a trade
 
-1. Before buying SPY puts at his broker, he opens ⌘K "Write a journal entry" and picks Plan a trade,
-   or Rulebook › "Plan a trade". On a phone, the bottom bar's "Write entry" then the Plan chip.
+1. Before buying SPY puts at his broker, he opens the Rulebook tab and taps its amber "Plan a
+   trade" (G2). The Journal rail's Rulebook mini has the same button, outlined; on a phone, the
+   Rulebook tab's bottom bar carries it; and ⌘K "Write a journal entry" with the Plan chip also
+   works.
 2. "Your rules" lists R2 and R3. R3 shows "Margin used 84% of account value (Oct 2 snapshot, 3 days
    old) · R3 limit 50% · above", with the warning glyph, and "If the $1,280 is borrowed: margin used
    84% → 88%".
-3. He answers R3 No and R2 Doesn't apply. Under the No, the optional "Why go ahead anyway?" gets
-   "It’s a hedge; it should lower the risk."
+3. He answers R3 No and R2 Doesn't apply. Under the No, the required "Why go ahead anyway?"
+   appears, and Save now reads "Save plan · going ahead against R3" (G1). He writes "It’s a hedge;
+   it should lower the risk." Had he tapped Save with the line empty, it would have read "Add a
+   line on why, or change the answer." and saved nothing.
 4. He writes "Buying 2 SPY Dec 18 ’26 640 P at 6.40 as a hedge. I’m wrong if SPY closes above 705."
    and saves the plan.
-5. It is recorded with his answers and readings: "Plan saved · asked 2 rules · 1 answered No".
-   Nothing is blocked, and no order exists.
+5. "Plan saved · asked 2 rules · went ahead against R3 · with a reason". It is recorded with his
+   answers, his reason and the readings. Nothing is blocked, and no order exists.
 6. If he later writes the Entered entry, the parser or J1 proposes "This carries out the Oct 5
-   plan", and he keeps the link. Detector 4 then counts it.
+   plan", and he keeps the link. Detector 4 then counts it. From slice 3, keeping that entry's
+   Entered detail also records R3's computed check at its snapshot, beside his No and apart from it
+   (G8).
+7. At the next review the No appears under "Rules you went ahead against", with his reason (G4).
 
 ### History import (his own example's shape)
 
@@ -1371,8 +1598,8 @@ lands with its slice, and a part whose slice hasn't shipped isn't drawn:
    remembers it, and types that day's numbers with source Memory or Statement. It saves as "Written
    Oct 26 · about Aug 14".
 3. Alternatively (slice 5), "Paste positions from your broker" fills positions through the parser,
-   or "Read a trades CSV" files one Imported entry per trade day. Both are read in the browser and
-   kept only after he confirms.
+   as one Imported entry about the day he picks. It is read in the browser and kept only after he
+   confirms. Reading a trades CSV is deferred to a later spec (open question 16).
 4. The timeline in About order reads Aug 14 → Oct 26 as events. In Written order, all of them were
    written today, which is the honest order.
 5. The Path draws recalled snapshots hollow and at-the-time ones filled, and its legend says so in
@@ -1407,7 +1634,7 @@ lands with its slice, and a part whose slice hasn't shipped isn't drawn:
 ### Where it sits
 
 This is a new question family in the analyst architecture, added by a DESIGN amendment (open
-question 4):
+question 4, approved 2026-10-28):
 
 - **J1** "What does this entry say?": details and a digest. No observations.
 - **J2** "What do my entries show?": findings, the event phrasing, and questions back.
@@ -1440,7 +1667,7 @@ model the What's sent drawer didn't name. It is not gated by `AI_REC_IN_APP_ENAB
 (`recommendation.rs:89-95`), so turning off ticker reads doesn't silently turn off the journal, and
 the reverse. An empty Anthropic slot gives "Not set up" and no request. The other providers in
 `llm_catalog.rs` show "Not set up · journal reads run on an Anthropic key for now" (open question
-5).
+5: Anthropic only in slice 4, answered 2026-10-28).
 
 ### Packages
 
@@ -1519,7 +1746,7 @@ and a valid pointer isn't a correct number. The check below is the guard.
 | Pass | Returns |
 |---|---|
 | J1 | Details with character spans:<br>- action, symbol, quantity and price;<br>- the thesis sentence and the "wrong if" sentence;<br>- stated confidence (only a number he wrote);<br>- figures he stated, e.g. "margin around 55%";<br>- the recalled-wording flag;<br>- a proposed link to a plan, and proposed rule touches;<br>- a 60-word digest. |
-| J2 | - At most 5 findings, each tied to one detector row or the event;<br>- the event phrasing;<br>- at most 3 questions back;<br>- at most 3 rule drafts, each tied to a finding, each limit cited to a figure he wrote or a detector threshold, or `not set`. |
+| J2 | - At most 5 findings, each tied to one detector row or the event, and each naming its side, linked to losses or linked to gains (G7);<br>- the event phrasing;<br>- at most 3 questions back;<br>- at most 3 rule drafts, each tied to a finding linked to losses, each limit cited to a figure he wrote or a detector threshold, or `not set`. |
 
 **The check** is deterministic, on the server, after every run (DESIGN.md §5.2's rule):
 
@@ -1547,6 +1774,12 @@ and a valid pointer isn't a correct number. The check below is the guard.
    wrote, quoted and cited by offsets, or a pattern's threshold cited as
    `journal:detector.<key>.threshold` and shown with "Convexa’s pattern threshold, not from your
    entries". Anything else fails. A draft with neither has its limit `not set`, for him to fill.
+9. **Gains are held to the same rules as losses** (G7). Each finding names its side, `losses` or
+   `gains`. Either way, its count is code's count of the cases on that side of the cited row, its
+   figures cite facts, and its "Cut the other way" cases are code's cases on the other side. A
+   finding linked to gains whose count or counter-cases differ from code's fails, and so does any
+   rule draft tied to a finding linked to gains: a few wins drafted into a rule push toward more
+   risk.
 
 **The allowlist**, after DESIGN.md §5.2's: numbers that need no citation are dates that are a cited
 fact's own metadata; rule and version numbers ("R2", "v2"); an option's strike and expiry inside a
@@ -1561,6 +1794,9 @@ failed, never as findings.
 
 - What his entries say, quoted and cited.
 - Counts, from the detector table only, with "Cut the other way".
+- What is linked to gains, under the same rules as losses: code's counts, cited entries and
+  figures, and "Cut the other way" (G7). A review that names only losses reads as a verdict. A
+  finding linked to gains is evidence, never praise, and no rule draft is drawn from it.
 - Changes in his own numbers, cited.
 - The gap between a figure in his words and the computed one, as a question, not a verdict.
 - That a single event moved a stated number of dollars, named as one event.
@@ -1579,7 +1815,8 @@ failed, never as findings.
 - Diagnoses ("revenge trading", "tilt", "FOMO") unless quoting his own words.
 - "Should", "must" or "need to" addressed to him.
 - Causal claims ("this caused your loss"), including counterfactuals ("lower margin would have
-  avoided the call").
+  avoided the call"), and their mirror on the gains side ("this paid off", "thanks to", "this made
+  you money").
 - The overclaiming words the ai-rec scan bans (`pages/ticker/widgets/ai-rec/bannedWords.scan.spec.ts:19-30`),
   except "suspect": J2 is fed his suspicions and is told to write "you named" instead.
 - Praise or reassurance ("great job", "don’t worry", "everyone gets margin called").
@@ -1624,6 +1861,7 @@ and as-of. Every number in the "It says" column cites a fact in the catalog.
 | His words against his numbers | "On Sep 18 you wrote that margin was “around 55%”. Your Sep 18 snapshot computes 115% of account value ($49,911.40 borrowed on $43,277), or 53.6% of position value. Which number were you looking at?" | "You were wrong about your margin." · "You were in denial." |
 | A question back | "Your Sep 4, Sep 11 and Sep 18 adds are 3 of the 4 that pattern 1 counted, and each says a version of “it has to roll over”. What would have told you it wasn’t going to?" | "Hope is not a strategy." · "Would selling the puts earlier have helped?" |
 | Something that went as planned | "Your Oct 1 plan named a price, $13.10, and the Oct 2 trim of the TSLA puts was made at it. What was different about writing that one?" | "Great discipline!" · "Keep it up." |
+| Something linked to gains (G7) | "Linked to gains, one case: the NVDA add on Aug 28 was 8.6% below your average cost, the one add pattern 1 didn’t count, and NVDA is +$867 since the Aug 21 high. One case isn’t a pattern." The card adds "Cut the other way: 3 (the TSLA put adds)" and offers no rule draft. | "Great call on NVDA." · "Adding less paid off." · "Keep adding small." |
 | A rule draft | "When a position is 15% or more below my average cost, I don’t add to it." Its limit reads "15% · Convexa’s pattern threshold, not from your entries". | "Sell TSLA." · "Never use margin." · "Reduce your NVDA position." · A limit the model picked: "When margin used is above 50%…" |
 | The drawdown, his words | "You wrote “down about 40%”. With money in and out taken out, your snapshots compute −42.6% from the Aug 21 high; account value alone is −38.3%." | "You’re down 42.6% because of bad decisions." |
 
@@ -1636,7 +1874,7 @@ Prices are from `docs/product/ai-analyst/DESIGN.md:453-457`, per million tokens:
 | Opus 5.5 (`claude-opus-5-5`) | $4 | $20 | $0.20 | $5 |
 | Sonnet 5.5 (`claude-sonnet-5-5`) | $2 | $10 | $0.20 | $2.50 |
 
-**Recommended (open question 6):**
+**Chosen (open question 6, answered 2026-10-28):**
 
 - **J1 on Sonnet 5.5**, effort `low`. Extraction is high-volume and needs no deep reasoning.
 - **J2 on Opus 5.5**, effort `high`, set explicitly because Opus 5.5's default is `medium`. Its
@@ -1669,8 +1907,8 @@ schema and glossary. The volatile package comes after the last breakpoint. J1 re
 at review time, so the prefix is written once and read 7 times within 5 minutes. J2 runs weekly and
 is cold each time. Each prefix is long enough to cache on its model, which is checked when built
 (`usage.cache_read_input_tokens` > 0 on the second J1 read). The Batch API (half price) is used only
-when he isn't waiting: the Monday auto-run and the first bulk read after turning reads on, in slice
-5.
+when he isn't waiting: the first bulk read after turning reads on, in slice 5. Its other use, the
+Monday auto-run, is deferred (open question 16).
 
 **Caps.**
 
@@ -1700,7 +1938,7 @@ A failed refresh never evicts the pinned review.
 - **The set:** a frozen, hashed golden set of 12 authored synthetic journals, flagged `illustrative:
   true`, never his entries:
   - 6 with planted downfalls (adds below cost, size after wins, passed exits, margin creeping up
-    before an event);
+    before an event), each also carrying one planted gain on a pattern's other side (G7);
   - 4 traps: one catastrophic event, a journal **mostly from memory** (1 entry written at the time
     and 10 recalled, his own likely start), prose figures that disagree with snapshots, a deposit
     during a drawdown;
@@ -1709,6 +1947,8 @@ A failed refresh never evicts the pinned review.
   - the number check passes on 100% of runs after at most one retry;
   - 0 advice or tone hits;
   - every planted pattern appears among the top 5 findings;
+  - every planted gain appears among them too, linked to gains, with code's "Cut the other way" and
+    no rule draft tied to it (G7);
   - the event is never generalised;
   - on the mostly-from-memory journal, no "About what you decided" finding at all: only what
     happened, his words against his numbers, and questions back;
@@ -1729,6 +1969,9 @@ A failed refresh never evicts the pinned review.
 - **Origin**: a finding with its cited entries, or "written by you".
 - **His why**, in his words. It is required to adopt.
 
+At most 7 rules are active at once (G3). The server refuses an eighth (409 `rule_limit`), so the
+cap holds whatever the page does. Drafts and paused rules don't count.
+
 **Wording rules, enforced by code on AI drafts.** He may write anything himself.
 
 - first person;
@@ -1741,21 +1984,26 @@ A failed refresh never evicts the pinned review.
 
 | Rule | Status | Wording | Check by asking | Limit | His why |
 |---|---|---|---|---|---|
-| R1 | written by him Aug 21, retired Sep 24 | "Before I add to a position, I write why in the journal first." | "Did I write why first?" | — | Retired with: "I add from my phone and can’t always write first." |
+| R1 | written by him Aug 21 as his first run's "One rule from today" (G5), retired Sep 24 | "Before I add to a position, I write why in the journal first." | "Did I write why first?" | — | "So I can see later what I was thinking." Retired with: "I add from my phone and can’t always write first." |
 | R2 | v2, Oct 3; v1 adopted Sep 30 from the Sep 28 review's draft, which lacked "the same day" | "When a position is 15% or more below my average cost, I don’t add to it the same day." | "Is this position less than 15% below my average cost?" | position % below average cost · at or above · 15 (Convexa’s pattern threshold, not from your entries) | "Three TSLA put adds, each lower." |
 | R3 | v1, written by him Sep 30, after the call | "When margin used is above 50% of account value, I don’t open or add to a position." | "Is margin used at or below 50% of account value?" | margin used · above · 50% (his figure) | "147% turned a bad month into a margin call." |
 | Draft | drafted by the Oct 7 review | "Every Entered or Added entry gets an “I’m wrong if…” line before I place it." | — | `not set` | — |
 | Draft | drafted by the Oct 7 review | "Before an earnings date for a position I hold on margin, I check my broker’s margin requirement for it." | — | `not set` | — |
 
-The earnings draft is drawn from his own Sep 29 words about the raised NVDA requirement.
+The earnings draft is drawn from his own Sep 29 words about the raised NVDA requirement. No Entered
+or Added entry was written after Sep 30, when R2 and R3 became active, so neither has a computed
+check yet ("Computed at kept entries: none yet").
 
 **Lifecycle.**
 
 1. Drafted, by a review (3 at most) or by "Draft a rule from this". A draft has no number.
 2. Adopt as written, Edit then adopt, or Not for me (his reason stored; the draft stays read-only).
-3. Active v1, with `adopted_at` and the next rule number. A rule he writes himself starts here.
+   With 7 active, Adopt is refused inline (G3).
+3. Active v1, with `adopted_at` and the next rule number. A rule he writes himself starts here, and
+   so does the first run's "One rule from today" (G5). At the limit, "Write a rule" saves a draft.
 4. An edit makes v2. v1 is kept with its dates, his reason, and the AI's original wording.
-5. Pause: no checks are asked.
+5. Pause: no checks are asked, and it stops counting toward the 7. Resume makes it active again,
+   unless 7 are active.
 6. Retire: with a reason and a date. The rule stays listed.
 
 The AI never adopts a rule, and nothing is ever deleted.
@@ -1764,17 +2012,43 @@ The AI never adopts a rule, and nothing is ever deleted.
 
 1. **At plan time, by him.** Yes · No · Doesn't apply, starting unselected. A limit shows its
    reading as received ("within" plain, "above" with the warning glyph, never green). His answer is
-   never pre-filled. "Why go ahead anyway?" is optional on a No. A snapshot older than 5 weekdays
-   raises the stale strip.
+   never pre-filled. "Why go ahead anyway?" is required on a No: one line, saved with the answer
+   (G1). The server refuses a No without it (422 `reason_required`). The plan can't save without
+   the line, and nothing else waits on it: the trade is his, at his broker. A snapshot older than 5
+   weekdays raises the stale strip.
 2. **After the fact.** Proposed touches from the parser or J1 ("R2 may apply: …"), and only the ones
    he keeps count.
-3. **All counts are computed by code.** The UI says which are "answered by you" (plan answers) and
-   which are "computed" (limit readings), because his answers can't be checked against anything.
+3. **Computed, at kept details** (slice 3, G8). When he keeps an Entered or Added detail, code
+   checks the entry against every rule version active at its `written_at` whose limit's metric it
+   can compute there:
+   - margin used, excess liquidity and open positions, from the entry's snapshot, typed or carried,
+     with its date;
+   - position % below average cost, from the add's price and the average cost just before it, as
+     row 1 computes it.
+
+   The weekdays-to-earnings and same-day-as-a-losing-close metrics stay asked, not computed. The
+   result is `above` when the reading meets the limit's comparison (R3: above 50%; R2: at or above
+   15) and `within` otherwise, compared on unrounded values, so a limit at row 1's threshold agrees
+   with row 1's count. A missing input (no snapshot, no account value, no kept price, no average cost)
+   records `not recorded`: listed and counted apart, never as within. A metric that doesn't apply
+   records nothing (an Entered entry has no average cost to be below). Entries written before the
+   version became active, and recalled or imported ones, aren't checked: a rule is checked only
+   against a decision made while it stood, as the decided rows are.
+4. **All counts are computed by code.** The UI says which are "answered by you" (plan answers and
+   kept touches) and which are "computed" (limit readings and computed checks), because his answers
+   can't be checked against anything. The two are listed apart and never summed.
+
+A reading at the limit's edge shows one more decimal, so the words never contradict the figure: an
+add 14.96% below average cost reads "14.96% · limit 15 · within", not "15.0%".
 
 **How adherence is shown.**
 
 - Per rule: "Asked in 2 plans · Yes 0 · No 1 · Doesn’t apply 1 · Not answered 0", as neutral count
   dots. "Not answered" is an answer label with its count, not a value gap.
+- Per rule, on its own line: "Computed: within 0 · above 0 · not recorded 0" (G8), as neutral
+  dots, never added to his answers.
+- His reasons for going ahead (G1) and his later "worth it" notes (G4) are shown as he wrote them
+  and never counted.
 - "Account change after Yes vs after No" stays withheld as "too few to judge (0 and 1 counted;
   rates start at 20)" until both sides reach 20. After that it shows a mean change and a
   Wilson-bounded "next snapshot higher" rate, labelled "linked to, not caused by".
@@ -1797,15 +2071,17 @@ apostrophes are used in UI strings, as `vocabulary.ts` does.
 |---|---|
 | Tab band | `Book` · `Journal` · `Review` · `Rulebook` |
 | Journal h1 / subline | `Journal` / `Your real account, in your words. Typed by you, stored on your account.` |
-| Primary (journal tabs) | `Write entry` |
-| Phone bottom bar | `Write entry` · `Margin call` |
+| Primary, one per journal tab | `Write entry` (Journal) · `Run this week’s review`, or `Save this week’s review` where there is no Run (Review) · `Plan a trade` (Rulebook) |
+| Phone bottom bar | `Write entry` · `Margin call` (Journal, and Review with `Write entry` outlined) · `Plan a trade` · `Margin call` (Rulebook) |
 | ⌘K group / rows (Q2) | `Write` / `Write a journal entry` · `Margin call entry` |
 | Quick capture | `What happened, and what are you thinking?` · `Numbers: carried from {Oct 2} ({4} days) · Update` · `Save` · `Open full editor` |
 | Kind chips | `Entered` · `Added` · `Trimmed` · `Closed` · `Margin call` · `Money in or out` · `Plan a trade` · `Just thinking` · (import) `Imported` |
 | Order segment | `Order by: Written · About` |
 | Recalled card | `Written {Oct 26} · about {Aug 14}` |
-| First run | `Start with today.` · `Write what you hold, what you’re thinking and how the account looks. One sentence is enough. Nothing is sent to an AI until you turn AI reads on.` · `Write the first entry` · `Write about an earlier day` · `Bring in past trades` · `Name what you think goes wrong` |
+| First run | `Start with today.` · `Write what you hold, what you’re thinking and how the account looks. One sentence is enough. Nothing is sent to an AI until you turn AI reads on.` · `Write the first entry` · `Write about an earlier day` · `Bring in past trades` · `What do you think your downfalls are?` · `Up to 5 lines, in your words.` · `Reviews test these first.` (from slice 3) · `Save` · `Skip` · `One rule from today` · `When …, I …` · `Why this rule, in your words` · `Adopt as R1` |
+| Rail focus (G4) | `This week’s focus: {Name an exit before I place a trade.}` · `your {Oct 7} review` |
 | Rail account frame | finding `Account value {$31,609}, {42.6}% below its recorded high` · loading/empty `Account value` · `Account value · appears after your first snapshot` · `Account value · one snapshot so far` |
+| Rail Rulebook mini | `Active rules {2}` · `Margin used now {92%} · {R3} limit {50%}` · `above` · `Plan a trade` |
 | Below-the-high ⓘ | `Each deposit or withdrawal is taken out on its day, so money you put in can’t hide a loss and money you take out isn’t counted as one. Account value alone is {38.3}% below its recorded high.` |
 | Chain break | `Account value reached $0 or below on {Sep 29}, so a percent can’t be chained past it. The dollars still add up.` |
 | Money timing | `Counted before your {3:40 PM} numbers · Change` · `The AI’s drawdown will count this money as a gain or a loss.` |
@@ -1821,7 +2097,8 @@ apostrophes are used in UI strings, as `vocabulary.ts` does.
 | Composer h1 / meta | `New entry` · `Written when you save · {Tue Sep 29}` · `About: Today ▾` |
 | About strip | `This will read “Written {Oct 26} · about {Aug 14}”. Reviews treat it as memory, not as what you thought at the time.` · `As of {Aug 14}, {4:00 PM} · Change` |
 | Placeholders | `What happened, and what are you thinking right now?` · `What did you buy or sell, why now, and what would tell you you’re wrong?` · `What are you about to do, and why?` · `Anything on your mind about the account.` |
-| Reveals | `+ How sure are you this works out? (0–100)` · `+ I’m wrong if…` · `Exit at` · `No exit set` · `+ Revisit on…` · `Closed by: Me · Broker (liquidation) · Expiry · Assignment` |
+| Reveals | `+ How sure are you this works out? (0–100)` · `+ I’m wrong if…` · `Exit at` · `No exit set` · `+ Revisit on…` · `Closed by: Me · Broker (liquidation) · Expiry · Assignment` · `How did the decision look, apart from the result?` · `Sound · Mixed · Poor` |
+| Result (G6) | `Result` · `P/L {−$6,480.00} against average cost {$26.06}` · `Result against planned risk {−0.5R}` · `Your label: {Sound}` · card footer `{−0.5R} against planned risk · Your label: {Sound}` |
 | Keep out | `Keep this entry out of AI reads` |
 | Account number scan | `This looks like an account number (9 or more digits in a row). Remove it? Entries never need one.` · `Remove` · `Keep it` |
 | Draft / save | `Draft saved {2:15 PM}` · `Discard draft` · `Save entry` · `Saved entries stay as written. You can add a later note any time.` · `Picking up your draft from {1:58 PM} · Discard` |
@@ -1836,7 +2113,7 @@ apostrophes are used in UI strings, as `vocabulary.ts` does.
 | Margin call mode | h1 `Margin call` · strip `Write it as it is, facts first. Nothing here is graded, and you can add more later. This page doesn’t contact your broker; its notice and deadline are what count.` · `More numbers` · `Unchanged since {Sep 25}` · `What’s happening, and what are you weighing? It doesn’t have to be tidy.` · `One thing you want to remember from today` |
 | Cross-check | `Your broker’s call: {$2,750}` · `Your numbers compute excess liquidity of {−$2,750}. That matches the call.` · `Your numbers compute {−$2,762}` |
 | After a call | `Saved · {Tue Sep 29, 2:14 PM}. It’s in the record as you wrote it.` · `Add a later note when it’s resolved` · `When you’re ready, a review can look at the weeks before this call. Nothing runs until you ask.` |
-| Plan a trade | `Your rules` · `Yes · No · Doesn’t apply` · `{Margin used 84%} of account value ({Oct 2} snapshot, {3} days old) · {R3} limit {50%} · above` · `within` · `If the {$1,280} is borrowed: margin used {84%} → {88%}` · `Why go ahead anyway? (optional)` · `This journal doesn’t stop or place trades. It keeps what you decided, and why.` · `Save plan` · `Plan saved · asked {2} rules · {1} answered No` · `No rules yet. Plans still save; rules you adopt later show up here.` |
+| Plan a trade | `Your rules` · `Yes · No · Doesn’t apply` · `{Margin used 84%} of account value ({Oct 2} snapshot, {3} days old) · {R3} limit {50%} · above` · `within` · `If the {$1,280} is borrowed: margin used {84%} → {88%}` · `Why go ahead anyway?` · `Add a line on why, or change the answer.` · `This journal doesn’t stop or place trades. It keeps what you decided, and why.` · `Save plan` · `Save plan · going ahead against {R3}` · `Plan saved · asked {2} rules · went ahead against {R3} · with a reason` · `Plan saved · asked {2} rules` · `went ahead against {R3} · with a reason` · `No rules yet. Plans still save; rules you adopt later show up here.` |
 | Stale snapshot strip | `These numbers are {20} days old. Update them for a current reading.` |
 | Entry | `Written {Aug 21} about {Aug 4}. Reviews treat this as memory, not as what you thought at the time.` · `Later note · {Sep 30, 6:40 PM}` · `Add a later note` · `Context for the AI` |
 | Correct a figure | `Correct a figure` · `{Margin loan} {$11,890} → corrected to {$11,980} on {Aug 22}: “{reason}”` |
@@ -1844,6 +2121,7 @@ apostrophes are used in UI strings, as `vocabulary.ts` does.
 | AI read head | `AI · read {Oct 7, 6:58 AM} · {Sonnet 5.5} on your key` · `How the AI summarised this entry (used in reviews)` · `Cited in` · `What was sent` |
 | AI read states | `AI reads are off. Turn them on in Settings › Journal.` · `Add an Anthropic key in Settings to turn on AI reads. Writing, numbers and the rulebook work without one.` · `Choose a model for journal reads in Settings › Journal.` · `Reading sends this entry’s text, its numbers, the summaries of your 5 previous entries and your active rules to Anthropic ({Sonnet 5.5}) on your key.` · `Not read yet. It’s read with the next review.` · `Reading this entry · Finding details · Writing the summary` · `No read on the day of a margin call. It’s read with the next review.` · `Read it now` · `This read didn’t pass the number check, so it isn’t shown.` · `Run again` · `AI unavailable · Anthropic returned an error. Nothing was lost.` · `Retry` · `Anthropic declined this read. Nothing from it is shown.` · `Kept out of AI reads since {Oct 26}.` · `Sample read · No model was called` |
 | Rule touch | `{R2} may apply: “{quote}”; the {TSLA puts} were {28.3}% below your average cost.` · `That’s right` · `Not right` |
+| Computed check (G8) | `answered by you` · `computed` · `{R2} · {28.3}% below average cost at the add price · limit {15} · above` · `{14.96}% · limit {15} · within` |
 | Delete entry | `Delete entry…` · `Delete this entry’s words and numbers? The timeline keeps a line saying an entry was deleted on {Oct 27}. What was already sent to your AI provider is under its terms.` · `Delete entry` · `Keep it` · tombstone `An entry written {Sep 29} was deleted on {Oct 27}.` |
 | Tidy | `Tidy up` · `Details found in your entries. Only the details you keep count in reviews and rule checks.` · `{14} details in {6} entries` · `Keep all in this entry` · `Count “{160 NVDA at $214.00}” as a position in this entry?` · `Part of this reads like it’s written from memory.` · `Split the remembered part into an entry about an earlier day` · `Mark the whole entry as from memory` · `Split from your {Sep 29} entry` · `Nothing to tidy.` |
 | Review h1 / egress | `Weekly review` · `Running a review sends the text of entries written since the last review, short summaries of older ones, your snapshots, computed figures, rules and corrections to Anthropic ({Sonnet 5.5} and {Opus 5.5}) on your key. Drafts and entries you kept out are never sent.` · `View what’s sent` |
@@ -1854,22 +2132,22 @@ apostrophes are used in UI strings, as `vocabulary.ts` does.
 | Event | `One event, not a pattern` · `It’s one event, so it isn’t counted as a pattern.` |
 | Money went | `Where the money went since the high` · `Not explained by your typed marks: {−$424} (interest, fees or trades you didn’t type)` · `The {TSLA puts} are {90.2}% of the fall. That’s one position, not a pattern.` |
 | Detector table | `Patterns checked every review` · `You named this` · `{3} of {4}` · `{4} counted; rates start at 20` · `{63}% (Wilson 95%: {43}–{79}%, n = {24})` · `no winning closes yet` · `no usual size yet` · `{1} resolved` · `{1} resolved; a score starts at 20` · `Seen at your snapshots only` · `Not measurable from your entries; asked in reviews` · caption `10 patterns are checked every review. With this many, one can look notable by chance.` |
-| Finding card | `About what you decided` · `About what happened` · `In {3} of {4} “Added” entries · cites {4}` · `Cut the other way: {1} ({NVDA, Aug 28})` · `Show entries` · `Draft a rule from this` · `That’s not right` |
+| Finding card | `About what you decided` · `About what happened` · `Linked to losses` · `Linked to gains` · `In {3} of {4} “Added” entries · cites {4}` · `Cut the other way: {1} ({NVDA, Aug 28})` · `Show entries` · `Draft a rule from this` · `That’s not right` |
 | Questions | `Questions your entries raise` · `Answer in a new entry` |
-| Rules this review | `Rules this review` · `asked {2} · Yes {0} · No {1} · Doesn’t apply {1} · Not answered {0}` |
+| Rules this review | `Rules this review` · `asked {2} · Yes {0} · No {1} · Doesn’t apply {1} · Not answered {0}` · `Computed: within {0} · above {0} · not recorded {0}` |
+| Review loop (G4) | `Rules you went ahead against` · `{R3} · {Oct 5} plan ({SPY puts}) · “{It’s a hedge; it should lower the risk.}”` · `Was going ahead worth it to you?` · `Save` · `No rule answered No this week.` · `This week’s focus` · `Write your own` · `Pick a rule` · `Save focus` |
 | How this ran | `How this ran` · `Read {8} entries · {Sonnet 5.5} · {$0.09}` · `Findings · {Opus 5.5} · {17,400} in · {6,900} out · {$0.21}` · `Number check passed · {31} figures` |
-| Review states | `Reviews start once there are 3 saved entries. You have {2}.` · `Most of your entries so far are written from memory ({9} of {11}). Patterns about what you decided use only entries written at the time, so they start as you write them. What happened is below.` · `{0} of {0} · counts start with entries written at the time` · `Save this week’s review` · `AI figures leave out {2} entries you kept out` · `Ran automatically Mon {Oct 5}, 7:00 AM · sent {8} entries’ text and {26} summaries · What was sent` · `AI reads are off. The counts above need no AI. Turn reads on in Settings › Journal.` · `{8} new entries since {Sep 28} · ≈ {$0.31}` · `Reading {8} new entries · Counting 10 patterns · Checking {31} figures against your snapshots · Writing findings` · `{3} entries since this review. Its findings don’t include them.` · `Run again` · `This review didn’t pass the number check: {2} figures didn’t match your snapshots. It isn’t shown as findings.` · `See the failed draft` · `Failed draft · not findings` · `AI unavailable · Anthropic returned an error. Your entries are unchanged.` · `Anthropic declined this review. Nothing from it is shown; the counts above still stand.` · `The answer was cut off.` · `A review is already running.` · `3 reviews today is the limit. The next can run tomorrow.` · `This month’s journal AI cap of {$5.00} is reached. Change it in Settings.` · `This review could cost up to {$1.12}, over the {$1.00} limit per run. Keep some entries out, or raise the limit in Settings.` · `Sample review · No model was called. Entries you write here aren’t read.` |
+| Review states | `Reviews start once there are 3 saved entries. You have {2}.` · `Most of your entries so far are written from memory ({9} of {11}). Patterns about what you decided use only entries written at the time, so they start as you write them. What happened is below.` · `{0} of {0} · counts start with entries written at the time` · `Save this week’s review` · `AI figures leave out {2} entries you kept out` · `AI reads are off. The counts above need no AI. Turn reads on in Settings › Journal.` · `{8} new entries since {Sep 28} · ≈ {$0.31}` · `Reading {8} new entries · Counting 10 patterns · Checking {31} figures against your snapshots · Writing findings` · `{3} entries since this review. Its findings don’t include them.` · `Run again` · `This review didn’t pass the number check: {2} figures didn’t match your snapshots. It isn’t shown as findings.` · `See the failed draft` · `Failed draft · not findings` · `AI unavailable · Anthropic returned an error. Your entries are unchanged.` · `Anthropic declined this review. Nothing from it is shown; the counts above still stand.` · `The answer was cut off.` · `A review is already running.` · `3 reviews today is the limit. The next can run tomorrow.` · `This month’s journal AI cap of {$5.00} is reached. Change it in Settings.` · `This review could cost up to {$1.12}, over the {$1.00} limit per run. Keep some entries out, or raise the limit in Settings.` · `Sample review · No model was called. Entries you write here aren’t read.` |
 | Finding drawer | `Evidence` · `How it was counted` · `counted: {selection rule}` · `Cut the other way` · `What it doesn’t use` · `Entries written from memory or imported aren’t used for what you decided.` · `It misread what I wrote` · `It’s missing context` · `Not a pattern to me` · `You marked this “{missing context}” on {Oct 6}.` · `{1} cited entry was deleted; this finding is out of date.` |
-| Rulebook | `Rulebook` · `Your rules, in your words. Each one cites the entries it came from. Convexa never enforces them.` · `Write a rule` · `Copy as text` · `Print` · `Drafted from your journal ({2})` · `A draft from your entries. Reword it until it’s yours, or set it aside.` · `Because` · `Check by asking` · `Why this rule, in your words` · `Adopt` · `Not for me` · `Active ({2})` · `v{1} · since {Sep 30}` · `Asked in {2} plans · Yes {0} · No {1} · Doesn’t apply {1} · Not answered {0}` · `Account change after Yes vs after No: too few to judge ({0} and {1} counted; rates start at 20)` · `Convexa’s pattern threshold, not from your entries` · `answered by you` · `computed` · `Edit` · `Pause` · `Retire` · `Paused` · `Retired ({1})` · `Evidence changed since this was drafted: {3} new entries.` · `No rules yet. Write one, or let the weekly review draft some from your entries.` |
-| Print card foot | `Your rules, in your words. Printed {Oct 7, 2026}.` |
-| Import | `Write about an earlier day` · `Paste positions from your broker` · `Read a trades CSV` · `The file is read in this browser. Only the rows you import are sent to your account.` · `One entry per day` · `One entry per trade` · `Imported {Oct 26} · about {Aug 14}` · `Want to add what you remember thinking? It’ll be marked as written from memory.` · `{12} rows were already in your journal.` · `This file couldn’t be read as a table. Nothing was imported.` |
+| Rulebook | `Rulebook` · `Your rules, in your words. Each one cites the entries it came from. Convexa never enforces them.` · `Plan a trade` · `Write a rule` · `Copy as text` · `Drafted from your journal ({2})` · `A draft from your entries. Reword it until it’s yours, or set it aside.` · `Because` · `Check by asking` · `Why this rule, in your words` · `Adopt` · `Not for me` · `Active ({2})` · `v{1} · since {Sep 30}` · `Asked in {2} plans · Yes {0} · No {1} · Doesn’t apply {1} · Not answered {0}` · `Account change after Yes vs after No: too few to judge ({0} and {1} counted; rates start at 20)` · `Convexa’s pattern threshold, not from your entries` · `answered by you` · `computed` · `Computed: within {0} · above {0} · not recorded {0}` · `Computed at kept entries: none yet` · `Edit` · `Pause` · `Resume` · `Retire` · `Paused` · `Retired ({1})` · `Evidence changed since this was drafted: {3} new entries.` · `No rules yet. Write one, or let the weekly review draft some from your entries.` · `Before you trade` · `Plan a trade asks each active rule before you place a trade at your broker. Going ahead against one takes a line on why.` · `{2} active · 7 at most` · `7 active rules is the limit. Pause or retire one to adopt this.` · `7 active rules is the limit. Pause or retire one to resume this.` · `Save as draft` |
+| Import | `Write about an earlier day` · `Paste positions from your broker` · `The paste is read in this browser. Only the rows you import are sent to your account.` · `Imported {Oct 26} · about {Aug 14}` · `Want to add what you remember thinking? It’ll be marked as written from memory.` · `{12} rows were already in your journal.` · `This couldn’t be read as positions. Nothing was imported.` |
 | What's sent | `What’s sent to Anthropic · {Sonnet 5.5} and {Opus 5.5} on your key` · `Convexa never adds your email, name, broker credentials or AI key to what’s sent. Text you write is sent as written.` · `Never sent: the simulated book, drafts, deleted entries, and the {2} entries you kept out, with their numbers, money in or out, details and notes. Computed figures sent to the AI leave those {2} entries out, so they can differ from the ones on your pages.` · `Copy all` · `Copied` · `Nothing is sent while AI reads are off` · `No model is called on the demo` |
-| Settings › Journal | `Journal` · `AI reads of my journal` · `Turning this on lets Convexa send your journal text, numbers and rules to Anthropic on your key when you run a review, tap Read on an entry or accept a bulk read of older entries, and, if you turn them on below, on each save and each Monday. Nothing is sent until one of those happens.` · `Add an Anthropic key in Settings › AI first` · `Models for journal reads` · `Entry reads` · `Reviews` · `Read each entry right after I save it` · `With this on, each save sends that entry’s text, its numbers, the summaries of your 5 previous entries and your active rules to Anthropic ({Sonnet 5.5}) on your key. Margin-call entries are never sent on save.` · `Offer the weekly review each Monday` · `Run it automatically Mondays at 7:00 AM ET` · `Each Monday at 7:00 AM ET this sends what a review sends, without you tapping Run.` · `Monthly cost cap for the journal` · `Limit per run` · `This month: {$0.31} of {$5.00} · {1} review · {8} entry reads` · `Downfalls you suspect` · `Reviews test these first.` · `Export journal (JSON)` · `This file isn’t encrypted. Keep it somewhere private.` · `Restore from an export` · `Delete journal…` · `Type “delete journal” to confirm.` · `Export first` |
+| Settings › Journal | `Journal` · `AI reads of my journal` · `Turning this on lets Convexa send your journal text, numbers and rules to Anthropic on your key when you run a review, tap Read on an entry or accept a bulk read of older entries, and, if you turn it on below, on each save. Nothing is sent until one of those happens.` · `Add an Anthropic key in Settings › AI first` · `Models for journal reads` · `Entry reads` · `Reviews` · `Read each entry right after I save it` · `With this on, each save sends that entry’s text, its numbers, the summaries of your 5 previous entries and your active rules to Anthropic ({Sonnet 5.5}) on your key. Margin-call entries are never sent on save.` · `Offer the weekly review each Monday` · `Monthly cost cap for the journal` · `Limit per run` · `This month: {$0.31} of {$5.00} · {1} review · {8} entry reads` · `Downfalls you suspect` · `Reviews test these first.` · `Export journal (JSON)` · `This file isn’t encrypted. Keep it somewhere private.` · `Restore from an export` · `Delete journal…` · `Type “delete journal” to confirm.` · `Export first` |
 | Bulk read offer | `Sends the full text of {34} entries, once each, with their numbers and your active rules, to Anthropic ({Sonnet 5.5}, batch price) on your key. Entries you kept out are left out.` · `{34} entries haven’t been read. Read them now · ≈ {$0.18}` |
 | Not set up (provider) | `Not set up · journal reads run on an Anthropic key for now` |
 | Staging | source chip `Sample journal` · `Sample review · No model was called` |
 | /privacy store rows | `Journal` · `On your account, encrypted. Only you can open it.` · `When you write an entry` — and `Journal drafts and unsent entries` · `In this browser, not encrypted. Drafts clear when the entry saves, on Discard and on sign-out; an unsent entry stays until it reaches your account, and sign-out asks first.` · `When you start writing` |
-| /privacy egress row | `Your AI provider (Anthropic), only with journal AI reads on: when you run a review, read an entry, accept a bulk read of older entries, or turn on reading on save or the Monday run. It gets the entries you allow, your numbers and rules, on your own key.` |
+| /privacy egress row | `Your AI provider (Anthropic), only with journal AI reads on: when you run a review, read an entry, accept a bulk read of older entries, or turn on reading on save. It gets the entries you allow, your numbers and rules, on your own key.` |
 | Page foot | `Not investment advice.` |
 
 ## Design
@@ -1912,7 +2190,8 @@ Values live only in `tokens.ts`; the boards use the mirror.
 | burnt orange (`warning.*`) with its icon | the Margin call pill, "above" readings, stale strips, failures and the Delete actions (with the word, never red) |
 | `textUp` / `textDown` | only signed money text (change, P/L, where the money went), always with + or − or ▲/▼ |
 
-Counts, rates, adherence and "within" are never tinted. No green or red on any status.
+Counts, rates, adherence, "within", R and his decision labels are never tinted. No green or red on
+any status.
 
 ### Charts
 
@@ -1948,7 +2227,8 @@ They are drawn in the chart system: `ChartFrame`, `frame/roles.ts`, P-8 to P-13.
    Dots, not bars, because a bar reads as a rate.
    At n ≥ 20: a 0–100% track with a phosphor fill to the rate and a steel whisker for the Wilson
    interval, with the text "63% (43–79%) · n = 24". It has a twin.
-4. **Rule asks.** The same dot strip per answer kind.
+4. **Rule asks.** The same dot strip per answer kind, and a separate strip for computed checks
+   (within, above, not recorded; G8), never merged with his answers.
 
 **Titles state the finding only when there is data (P-10).** Loading, empty and failed frames name
 the metric: "Account value", "Where the money went since the high", "Patterns checked every review".
@@ -1976,9 +2256,9 @@ staging. A staging frame names the sample once, through the source chip "Sample 
 
 One fluid body per screen across the six bands. Grids use `minmax(0, 1fr)`. Figures step 20 → 17 →
 15px by container. No horizontal overflow at 390, 393, 834, 900 or 1280. The only sideways rails
-are the tab band, the kind chips and the import mapping table.
+are the tab band and the kind chips (the import mapping table is deferred with CSV import).
 
-### Canon events (each an Amendments row, open question 2)
+### Canon events (each an Amendments row; all five approved 2026-10-28, open question 2)
 
 1. **A pen glyph.** A stroke icon on the 24 grid named `edit`, added to `design/src/lib.mjs` and to
    the app's icon set.
@@ -2031,9 +2311,12 @@ survive a restart and are never "ephemeral" as `user_book` is on a JSON build
   - `body_ct`, `body_chars`, `written_at` (set by the server);
   - `about_date` (null unless set). There is no `recalled` column: recalled is derived on read from
     the kind and the latest About-date correction (Information architecture → Order);
-  - `source`: typed | paste | csv | split; `confidence_ct` (0–100, null unless given);
-    `wrong_if_ct`;
+  - `source`: typed | paste | split (a later spec adds `csv`); `confidence_ct` (0–100, null unless
+    given); `wrong_if_ct`;
   - `exit_price_ct` (null unless named) and `no_exit_set` (boolean), `closed_by_ct`, `revisit_on`;
+  - `decision_label_ct`: sound | mixed | poor, null unless given; only on trimmed or closed, never
+    on margin_call or a broker liquidation; created by `journal_core` and written from slice 1b
+    (G6). It is sealed with the entry like every other column;
   - `ai_excluded`, `deleted_at`, `seal_tag` (the export seal, below), `schema_version`.
   - **Sealed, with one permitted mutation.** The store module exposes insert, append (for notes,
     corrections, details and the other append-only tables) and a single `tombstone(id)` function,
@@ -2053,14 +2336,20 @@ survive a restart and are never "ephemeral" as `user_book` is on a JSON build
   Append-only.
 - **`journal_money`**: `id`, `entry_id`, `direction` (in | out), `amount_ct`, `occurred_at`
   (timestamptz).
-- **`journal_later_notes`**: `id`, `entry_id`, `body_ct`, `written_at`, `ai_context`. Append-only.
+- **`journal_later_notes`**: `id`, `entry_id`, `body_ct`, `written_at`, `ai_context`, `prompt`
+  (null, or `worth_it` for the review's "Was going ahead worth it to you?", G4). Append-only.
 - **`journal_details`**: `id`, `entry_id`, `field`, `value_ct`, `span_start`, `span_end`, `origin`
   (parser | ai), `run_id`, `status` (proposed | kept | fixed | rejected), `decided_at`.
   Append-only; superseded by a new row.
 - **`journal_suspicions`**: `id`, `text_ct`, `detector_key | null`, `created_at`, `retired_at`.
+  Created by `journal_core` in slice 1a, so the first run can save them (G5); slice 3 maps them to
+  detector rows.
 - **`journal_reviews`**: `id`, `cutoff`, `computed_ct` (the week strip, the detector table, where
-  the money went, events), `ai_run_id | null`. Created by `POST /api/journal/reviews` (slice 3),
-  with or without an AI run.
+  the money went, events, the rules he went ahead against), `ai_run_id | null`. Created by
+  `POST /api/journal/reviews` (slice 3), with or without an AI run.
+- **`journal_focus`** (slice 3, G4): `id`, `review_id`, `text_ct` (his own line, or null),
+  `rule_id` (a picked active rule, or null), `written_at`. Append-only; the rail shows the latest
+  row of the latest review.
 - **`journal_ai_runs`**: `id`, `kind` (entry | review), `entry_id`, `cutoff`, `package_id`,
   `package_ct`, `provider`, `model_id`, `prompt_version` (`j-entry-1`, `j-review-1`), `effort`,
   `input_tokens`, `output_tokens`, `cache_read`, `cache_write`, `cost_micros`, `status` (produced |
@@ -2083,9 +2372,12 @@ survive a restart and are never "ephemeral" as `user_book` is on a JSON build
   - `reason_ct`, `from_ts`, `to_ts`.
   - Append-only.
 - **`journal_rule_checks`**: `id`, `rule_id`, `version`, `entry_id`, `answer` (yes | no | na |
-  unanswered), `reading_json`, `why_anyway_ct`, `origin` (plan | kept_touch), `created_at`.
-- **`journal_settings`**: `ai_reads`, `read_on_save`, `offer_monday`, `auto_monday`,
-  `monthly_cap_cents`, `run_cap_cents`, `model_entry`, `model_review`, `updated_at`.
+  unanswered; null on a computed check), `result` (within | above | not_recorded; computed checks
+  only, G8), `reading_json`, `why_anyway_ct` (required when `answer` is no, G1), `origin` (plan |
+  kept_touch | computed), `created_at`.
+- **`journal_settings`**: `ai_reads`, `read_on_save`, `offer_monday`, `monthly_cap_cents`,
+  `run_cap_cents`, `model_entry`, `model_review`, `updated_at`. (`auto_monday` is deferred with the
+  Monday auto-run.)
 
 ### Encryption at rest
 
@@ -2111,9 +2403,10 @@ Every `_ct` column is AES-256-GCM through the `EncryptionKeyRing` type (`service
   with empty values, with a one-line way to make a dev key (Verification, step 5). The owner's rule
   is that an agent never commits a `.env*` file, so the build lane stops and hands him that edit.
 - **Plaintext metadata, on purpose:** ids, kind, `written_at`, `about_date`, `revisit_on` (a date,
-  like `about_date`), `no_exit_set`, `ai_excluded` and the other flags, counts, token usage and cost.
-  Everything else is encrypted, symbols, confidence, exit price and "Closed by" included. Search and
-  ticker filters run in the browser after decryption.
+  like `about_date`), `no_exit_set`, `ai_excluded` and the other flags (a rule check's answer and
+  computed result, a later note's prompt), counts, token usage and cost. Everything else is
+  encrypted, symbols, confidence, exit price, "Closed by" and his decision label included. Search
+  and ticker filters run in the browser after decryption.
 - **The export seal.** On insert the server stores `seal_tag` = HMAC-SHA256, under a key derived
   from the journal ring, over `user_id`, `id`, `written_at`, `kind` and the SHA-256 of the body. An
   export carries it, and a restore uses it (Export and delete).
@@ -2152,17 +2445,21 @@ The same change, in slice 1a:
 
 | Slice | Operations |
 |---|---|
-| 1a | `GET/POST /api/journal/entries` · `GET /api/journal/entries/{id}` · `POST /api/journal/entries/{id}/notes` · `POST /api/journal/entries/{id}/corrections` · `DELETE /api/journal/entries/{id}` |
+| 1a | `GET/POST /api/journal/entries` · `GET /api/journal/entries/{id}` · `POST /api/journal/entries/{id}/notes` · `POST /api/journal/entries/{id}/corrections` · `DELETE /api/journal/entries/{id}` · `GET/PUT /api/journal/suspicions` (the first run's prompt, G5) |
 | 1b | `GET /api/journal/export` · `POST /api/journal/restore` (a `convexa-journal-v1` file, merge-only) · `DELETE /api/journal` |
 | 2 | `GET/POST /api/journal/rules` · `POST /api/journal/rules/{id}/versions` |
-| 3 | `POST /api/journal/details` · `GET/PUT /api/journal/suspicions` · `GET/POST /api/journal/reviews` (the POST stores a review's computed parts and cutoff) · `GET /api/journal/reviews/{id}` |
+| 3 | `POST /api/journal/details` (keeping an Entered or Added detail also writes its computed checks, G8) · `GET/POST /api/journal/reviews` (the POST stores a review's computed parts and cutoff) · `GET /api/journal/reviews/{id}` · `POST /api/journal/reviews/{id}/focus` (G4) |
 | 4 | `GET/PUT /api/journal/settings` · `GET /api/journal/ai/package` (What's sent) · `POST /api/journal/ai/runs` (takes a review id, or an entry id for one read) · `GET /api/journal/ai/runs/{id}` · `POST /api/journal/feedback` |
 | 5 | `POST /api/journal/import` (confirmed rows only) |
 
-Rule checks travel inside a plan entry's `POST`, so they need no route of their own. There is no
-facts-preview route: previews before save come from the shared TypeScript facts module (Computed
-facts → Where facts are computed). From slice 4, "Run this week's review" calls
-`POST /api/journal/reviews` and then `POST /api/journal/ai/runs` with the new review's id.
+Rule checks travel inside a plan entry's `POST`, so they need no route of their own. The server
+refuses a No answer with no reason (422 `reason_required`, G1) and an eighth active rule (409
+`rule_limit`, G3), so both hold whatever the page does. Computed checks (G8) are written by the
+server when a detail is kept, never by the browser. A "worth it" answer (G4) is a later note through
+the notes route. There is no facts-preview route: previews before save come from the shared
+TypeScript facts module (Computed facts → Where facts are computed). From slice 4, "Run this
+week's review" calls `POST /api/journal/reviews` and then `POST /api/journal/ai/runs` with the new
+review's id.
 
 ### Egress, shown before any model call
 
@@ -2173,7 +2470,8 @@ facts → Where facts are computed). From slice 4, "Run this week's review" call
   and afterwards the stored usage.
 - The ticker read's "no account or identity, no broker/order data" promise is not reused.
 - **Every control that can reach the provider shows its own egress line, in full, in the same
-  view, never in a tooltip.** There are six triggers, and each has its words in Copy:
+  view, never in a tooltip.** There are five triggers, and each has its words in Copy. (A sixth,
+  the Monday auto-run, is deferred with it: open question 16.)
 
   | Trigger | Slice | Where the line sits |
   |---|---|---|
@@ -2182,14 +2480,13 @@ facts → Where facts are computed). From slice 4, "Run this week's review" call
   | "Retry" on a failed review | 4 | the review sentence stays above it |
   | "Read each entry right after I save it" | 5 | under the toggle, and, while it is on, under the composer's Save: "Saving also sends this entry’s text, its numbers, the summaries of your 5 previous entries and your active rules to Anthropic (Sonnet 5.5) on your key." (not on a margin-call entry, which is never sent on save) |
   | The bulk read of older entries | 5 | above "Read them now" (the bulk sentence) |
-  | The Monday auto-run | 5 | under its toggle, plus the after-run notice on the Review page |
 
 ### Export and delete
 
 - **Export.** "Export journal (JSON)" returns everything decrypted (entries, snapshots, money,
-  notes, corrections, details, rules with versions and checks, reviews, AI runs' outputs) as
-  `convexa-journal-v1` with `schema_version`, and each entry's `seal_tag`. The page warns that the
-  file is plaintext.
+  notes, corrections, details, suspicions, rules with versions and checks, reviews with their focus
+  lines, AI runs' outputs) as `convexa-journal-v1` with `schema_version`, and each entry's
+  `seal_tag`. The page warns that the file is plaintext.
 - **Restore** (`POST /api/journal/restore`, slice 1b). Merge-only, matching by id and content hash;
   it never overwrites. The pattern is `features/trading/outcomes/archive.ts:1-20`. The file is
   plaintext and can be edited, so an entry keeps its original `id`, `written_at` and kind only when
@@ -2243,8 +2540,9 @@ header comment (`PrivacyPage.tsx:1-17`) gains the journal tables and the browser
   | Slice | Seeded |
   |---|---|
   | 1a | 34 entries (26 written at the time, 5 recalled, 3 imported), 12 snapshots with their leg facts precomputed, 1 money-in entry, 5 later notes, the Aug 22 correction. The 2 plan entries are cards only. |
-  | 2 | R1 (retired), R2 (two versions), R3, and the 2 plans' rule answers. R2's origin shows the finding's title as text until slice 4 seeds the finding. |
-  | 3 | Suspicions, kept details, and the computed parts of the Sep 21, Sep 28 and Oct 7 reviews. |
+  | 1b | The two trims' R (−0.5R on Oct 2, `not set` on Sep 30), precomputed like the leg facts, and the Oct 2 trim's label, Sound (G6). |
+  | 2 | R1 (retired), R2 (two versions), R3, and the 2 plans' rule answers, with the Oct 5 plan's reason for going ahead against R3. R2's origin shows the finding's title as text until slice 4 seeds the finding. |
+  | 3 | Suspicions, kept details, and the computed parts of the Sep 21, Sep 28 and Oct 7 reviews, with the Oct 7 review's focus line (G4). No computed rule check: no Entered or Added entry follows Sep 30. |
   | 4 | Those reviews' AI parts (findings, questions, the two drafts), the entries' sample AI reads, and the sample package for What's sent. |
   | 5 | The sample paste on the Import page. |
 
@@ -2315,10 +2613,11 @@ re-checked by every later slice that touches it.
    the sample seed, the server's facts equal the worked example: every margin used and excess
    liquidity, the chain-linked series (−42.6% on Oct 6), account value alone (−38.3%), $22,142 lost
    since the high, where the money went (−$19,980 · −$2,800 · +$867 · +$195 · remainder −$424),
-   leverage 1.23× and 2.47×, and the detector column: row 1 3 of 4, row 2 4 of 5, row 3 1 of 1, row
-   4 0 of 1, row 5 0 of 2, row 6 no winning closes, row 7 7 of 11, row 8 12 of 12, row 9 1 of 3, row
-   10 1 resolved, written from memory 8 of 34. _Check:_ Rust tests over the seed fixture, and the
-   TypeScript parity test over the same fixture.
+   leverage 1.23× and 2.47×, R on the two trims (−0.5R on Oct 2, `not set` on Sep 30; 1b, G6),
+   and the detector column: row 1 3 of 4, row 2 4 of 5, row 3 1 of 1, row 4 0 of 1, row 5 0 of 2,
+   row 6 no winning closes, row 7 7 of 11, row 8 12 of 12, row 9 1 of 3, row 10 1 resolved, written
+   from memory 8 of 34. _Check:_ Rust tests over the seed fixture, and the TypeScript parity test
+   over the same fixture.
 7. **A deposit can't hide a loss** (1a). Two fixtures that differ only by a $D deposit and an end
    value higher by $D give the same chain-linked drawdown, including when the deposit falls on a
    snapshot's day before or after it. _Check:_ a test.
@@ -2352,10 +2651,10 @@ re-checked by every later slice that touches it.
     categories equal the package's categories for the same run, item for item. An entry marked
     "Keep this entry out of AI reads" appears only in `omitted`, and none of its text, figures,
     money, details or notes appears anywhere in the package, derived series included. Every control
-    that can reach the provider (the six triggers in Data and privacy → Egress) renders its egress
+    that can reach the provider (the five triggers in Data and privacy → Egress) renders its egress
     line in the same view. _Check:_ a test on the builder (excluded figures absent from the
     serialised package, and computed facts equal a recompute without the excluded entries), a text
-    diff of the drawer against the package JSON, and a Playwright walk over the six controls.
+    diff of the drawer against the package JSON, and a Playwright walk over the five controls.
 15. **Off by default** (4). A fresh account with an Anthropic key saved makes 0 provider requests
     while entries are saved and reviews' computed parts render, until the toggle is on and Run is
     tapped. _Check:_ the `journal.provider_request` counter and log lines over a scripted session.
@@ -2421,6 +2720,63 @@ re-checked by every later slice that touches it.
     10 recalled shows the "Mostly from memory" strip, decided rows at "0 of 0", happened rows counted,
     and, with AI on, no "About what you decided" finding. _Check:_ a text read on a local fixture.
 
+Criteria 30 to 37 were added on 2026-10-28 with the re-judge's grafts (G1 to G8).
+
+30. **Going ahead against a rule takes a reason** (2, G1). On Plan a trade, answering No makes "Why
+    go ahead anyway?" required, and the button reads "Save plan · going ahead against R3". Save with
+    the line empty shows "Add a line on why, or change the answer." and nothing is saved. With a
+    line, the plan saves as "Plan saved · asked 2 rules · went ahead against R3 · with a reason",
+    and the entry's Rules panel shows his line. Doesn't apply and Not answered save with no reason,
+    so criterion 20 still holds. A `POST` of a plan whose No has no reason gets 422
+    `reason_required` and writes nothing. _Check:_ a test on the plan save, and a Playwright walk.
+31. **One amber per journal screen** (2, re-checked by 3 to 5, G2). At 1440 and 390, each journal
+    route has exactly one element with the amber fill: "Write entry" on Journal; "Plan a trade" on
+    Rulebook (its header at 1440, its bottom bar at 390); Run, or "Save this week's review" where
+    there is no Run, on Review. The Journal rail's Rulebook mini shows an outlined "Plan a trade",
+    and "Write a rule" is outlined. _Check:_ by observation: a computed-style count of amber fills
+    per route, run with Verification step 6's probes and recorded with the slice.
+32. **At most 7 active rules** (2, G3). With 7 active, Adopt on a draft shows "7 active rules is
+    the limit. Pause or retire one to adopt this." and no rule gains a number; Resume on a paused
+    rule shows the resume line; "Write a rule" offers "Save as draft". Pausing one lets the next
+    adoption through, and drafts and paused rules never count. The API answers an eighth activation
+    with 409 `rule_limit`. _Check:_ a Playwright walk on a local fixture with 7 active rules, and
+    one `curl`.
+33. **The review closes the loop with no model** (3, G4). On a local fixture whose week holds a
+    plan with a No answer, the review lists it under "Rules you went ahead against" with its rule,
+    date and reason. Answering "Was going ahead worth it to you?" adds a later note to that plan,
+    and the plan's body, answers and reason are unchanged. "Save focus" stores the week's focus, and
+    the Journal rail shows "This week’s focus: …" until the next review is saved. No count, rate,
+    score or streak of these answers or focus lines appears on any page. _Check:_ a text read, and
+    the plan entry read before and after (criterion 2's test covers the seal).
+34. **Day-one value without AI** (1a, and 2 for the rule; G5). On an empty local journal, "What do
+    you think your downfalls are?" saves up to 5 lines, which `GET /api/journal/suspicions` returns.
+    "Skip" leaves writing untouched, and the first entry saves with neither prompt answered. After
+    that save, an unanswered prompt is offered once more, then not again. From slice 2, "One rule
+    from today" with its required why adopts R1, and without the why it adopts nothing. _Check:_ a
+    Playwright walk on a local build, and the `GET`.
+35. **Result against planned risk, and his own label** (1b, G6). On a Trimmed or Closed entry,
+    "Result against planned risk" shows R to one decimal: the sample's Oct 2 trim reads −0.5R, the
+    Sep 30 NVDA trim reads `not set` (no exit named), and a trim missing any other input reads `not
+    recorded`, never a partial figure. "How did the decision look, apart from the result?" appears
+    only on Trimmed and Closed entries, never on a margin-call entry or a broker liquidation, starts
+    unselected, and shows on the entry as "Your label: …". No page shows a count, rate, score or
+    streak of labels. _Check:_ the R values by criterion 6's Rust tests and the owed R test; the
+    rest by a text read on staging and a local build.
+36. **Gains are held to the same rules** (4, G7). Each of these mutated J2 outputs is stored as
+    `failed_check`: a finding linked to gains whose count differs from code's count of its side;
+    one whose "Cut the other way" cases differ from code's; a rule draft tied to a finding linked to
+    gains; and one saying "This paid off." A correct finding linked to gains passes and renders with
+    "Linked to gains", its counter-cases and no "Draft a rule from this". _Check:_ a test beside
+    criterion 12's, and the eval bar (The AI interaction → The eval gate).
+37. **Computed checks sit beside his answers** (3, G8). For a rule version active at an Added
+    entry's `written_at` with R2's limit (position % below average cost, at or above 15), a kept add
+    exactly 15% below records `above` and one 14.9% below records `within`. With R3's limit (margin
+    used above 50%), a snapshot at exactly 50% records `within` and one at 50.1% records `above`. An
+    entry with no snapshot or no average cost records `not recorded`, listed apart and never counted
+    as within. Entries written before the version became active, and recalled or imported ones, get
+    no check. The entry's Rules panel and the rule's check table label these "computed", apart from
+    "answered by you". _Check:_ a test over the check function, and a text read on a local fixture.
+
 ## Verification
 
 Risk-based, per CLAUDE.md. Tests are written for logic that can fail silently and cost something:
@@ -2446,6 +2802,10 @@ and see it go red.
   - where the money went (sums to the change net of money, and the remainder line);
   - planned risk for stock and a long option;
   - position P/L all or nothing;
+  - R on a trim or close (G6): realised P/L ÷ planned risk over the same quantity, for a long
+    option (the sample's Oct 2 trim: −$6,480.00 ÷ $13,030.00 = −0.4973 → −0.5R) and for a stock
+    with a kept exit; `not set` for a stock with no exit named; `not recorded` when any other input
+    is missing, never a partial figure; and R's display rounding half up at an edge (−0.25 → −0.3R);
   - display rounding half up (away from zero) at an exact edge (−24.85% → −24.9%), and the sample's
     −42.6056% → −42.6%;
   - **parity**: `facts.ts` and `facts.rs` give identical results on every fact they share, over the
@@ -2464,6 +2824,15 @@ and see it go red.
   - a row with nothing to count reads 0 of 0, and is still listed;
   - row 3 sees a pass only at a snapshot; row 6 skips a case with fewer than 3 earlier entries; row
     10 resolves on a full close or a pass and not on a trim.
+- **Computed rule checks** (`services/journal/checks.rs`, G8), because a wrong "within" would hide a
+  limit he set:
+  - each comparison at its boundary, on unrounded values: "at or above 15" gives `above` at 15.0
+    and `within` at 14.9; "above 50" gives `within` at 50.0 and `above` at 50.1;
+  - a missing input (no snapshot, no account value, no kept price, no average cost) gives `not
+    recorded`, never `within`;
+  - the version active at the entry's `written_at` is the one checked, and an entry written before
+    it, a recalled entry and an imported one get no check;
+  - a computed check and row 1 agree on every add of the seed fixture.
 - **The account boundary:**
   - the OpenAPI walk, failing on any journal operation not tagged owner;
   - `PUT` and `DELETE` arms in the tagging;
@@ -2473,6 +2842,9 @@ and see it go red.
   - the store trait's writers are exactly insert, append and tombstone, on both stores (criterion
     2); a later note doesn't change the entry;
   - an idempotent create on a repeated `client_id`;
+  - the required-reason save (G1): a plan whose No answer has an empty reason gets 422
+    `reason_required` and writes no entry and no check; with a reason, the reason is stored with
+    that answer; Doesn't apply and Not answered save without one;
   - a correction supersedes and keeps the original;
   - a tombstone nulls every `_ct` column, keeps `written_at`, and purges the listed rows;
   - AAD binding (a ciphertext moved across rows or columns fails);
@@ -2486,8 +2858,8 @@ and see it go red.
     quantities ("200 sh", "3 contracts"), option notation ("QQQ 600P 12/18"), dates, action verbs;
   - the recalled-wording list, one case each;
   - the 9-digit scan (money with grouping or decimals excluded);
-  - paste-positions parsing;
-  - CSV mapping, with an `unrecognized` line kept and the duplicate hash;
+  - paste-positions parsing, with an `unrecognized` line kept and the duplicate hash (CSV mapping is
+    deferred, open question 16);
   - the existing plain-decimal input rule is reused, not rewritten.
 - **The egress contract:**
   - the package builder is deterministic (two builds give one `package_id`);
@@ -2496,7 +2868,8 @@ and see it go red.
   - the category table equals the drawer's list;
   - the journal resolver uses the Anthropic slot and the journal's models whatever the ticker
     preference, and ignores `AI_REC_IN_APP_ENABLED` (criterion 28);
-  - the number check's seven mutations, number words included (criterion 12);
+  - the number check's seven mutations, number words included (criterion 12), and the four gains
+    mutations (criterion 36, G7);
   - the advice and tone table (criterion 13), and that "suspect" isn't on the journal's list;
   - no rate field below 20 (criterion 10);
   - Rust Wilson equals `ledger.ts` at 3 cases with n ≥ 20, and Rust Brier equals `scoring.mjs` at 3
@@ -2527,27 +2900,28 @@ recorded with the slice.
    - Then `VITE_DATA_MODE=demo npm run serve:dashboard` for the sample, and the acceptance script on
      both.
 6. The observation probes, recorded with the slice and not committed: criterion 21's overflow and
-   tap probe on every shipped journal route at 390 and 393 in both schemes, and criterion 4's
-   interaction count.
+   tap probe on every shipped journal route at 390 and 393 in both schemes, criterion 4's
+   interaction count, and criterion 31's count of amber fills per route at 390 and 1440.
 7. After deploy: the same script read-only against staging. On production, only the signed-out
    wall and a signed-in empty first run. No real entry is ever written by a script.
 
 ## Build plan
 
 Overall size **XL**. Each slice ships alone, behind the owner gate, and slices 1a to 3 call no
-model. Before step 1, record this spec's questions in
+model. The owner's order (open question 13): slices 1a to 3 now, slice 4 after its eval passes.
+Before step 1, record this spec's questions with the owner's 2026-10-28 answers in
 `design/src/screens/final/tracker-data.mjs` `OPEN_QUESTIONS` (the 2026-10-21 README's rule,
-`README.md:260-272`).
+`README.md:260-272`). Each graft (G1 to G8) lands in the slice named below and adds no slice.
 
 | # | Step | Files likely touched | Size |
 |---|---|---|---|
 | 0 | **Design board** (BOARD BRIEF): the spec cards and boards, the pen icon in the design set, sample strings; regenerate | `design/src/screens/final/journal.mjs` (new), `journal-kit.mjs` (new), `index.mjs`, `design/src/lib.mjs` (`edit` icon), `design/src/data/journal-sample.mjs` (new) | M |
-| 1a | **The notebook.** Migration `journal_core`. Owner-only routes (with the `PUT`/`DELETE` arms, the widened contract probe and the amended gate comments), the journal ring (`from_env_prefixed`, no ephemeral key) with row-bound AAD and the seal tag, and the JSON dev store on the same three-writer trait. The composer (text, kinds, About with `as_of`, margin-call mode, money in or out with its time, snapshot with carry-forward, source, sanity questions, the 9-digit warning, Keep out of AI reads). Seal, later notes, corrections, withdraw. The timeline (Written/About, ET dates, derived recalled), the entry page, the computed facts with their edge cases, the shared TypeScript facts module and its parity test, and the rail's account frame (value and figure strip). `SectionTabs` with Book · Journal, the routes and walls, sign-out with an unsent entry. The demo transport with slice 1a's part of the seed. The /privacy rows and key, and the backup-retention check for the delete copy. Owed tests: money, parity, recalled and dates, boundary, writes. | `apps/api/src/db/migrations.rs`, `routes/journal.rs` (new), `routes/mod.rs` (`OWNER_ONLY_OPERATIONS`, its doc comment and the arms), `services/journal/{mod,store,facts,crypto}.rs` (new), `services/auth/crypto.rs` (`from_env_prefixed` and the AAD functions), `config.rs` (the `OWNER_EMAILS` comment), `capacity/identity.rs`, `tools/api-contract.mjs` (owner → 403 for any method), `docs/product/ai-analyst/DESIGN.md` (an appended owner-gate amendment), `apps/api/.env.example` (names only; handed to the owner to commit), `apps/api/tests/fixtures/journal/worked-example.json` (new, synthetic); regenerated: `apps/api/openapi/*`, `libs/api/src/generated/schema.ts`; `libs/api/src/lib/convexa.ts`, `libs/api/src/lib/journal/facts.ts` and its spec (new), `libs/api/src/lib/demo/{transport,workspace,journal}.ts`; `apps/dashboard/src/app/app.tsx`, `pages/positions/journal/*` (new), `shared/ui/SectionTabs.tsx` (from `pages/research/ResearchTabs.tsx`), `features/auth/AuthContext.tsx` (the sign-out check), `pages/trust/PrivacyPage.tsx` | L |
-| 1b | **The account path, positions and the way out.** The Path chart (three multiples, event rail, twin) and its drawer, `RealPositionRows` (typed positions and marks, leverage, loan to position value, P/L), the "Revisit due" line, export, restore and delete journal, the Settings › Journal panel (export, restore and delete), the ⌘K Write group (if open question 2 is approved). | `pages/positions/journal/AccountPath.tsx` (new), `features/journal/RealPositionRows.tsx` (new; a copy of the `LegFields` grid, importing only `multiplierFor`), `features/trading/positions/leg.ts` and `tradeEntry/LegFields.tsx` (`multiplierFor` moves, with a re-export), `routes/journal.rs`, `services/journal/store.rs` (restore), `features/auth/SettingsPage.tsx`, `shell/CommandPalette/CommandPalette.tsx` | M |
-| 2 | **The rulebook, no model.** Migration `journal_rules`. Hand-written rules, numbering at activation, versions, pause and retire, Plan a trade with answers, readings, the projection and "Why go ahead anyway?". Adherence counts with the floor of 20. Print and Copy as text (open question 16). The Rulebook tab, the rail's Rulebook mini, the entry's Rules panel. Slice 2's part of the seed. | `routes/journal.rs`, `services/journal/rules.rs` (new), `pages/positions/rulebook/*` (new), `libs/api/src/lib/demo/journal.ts` | M |
-| 3 | **The review, no model.** Migration `journal_review`. The entry parser and Tidy (with the split), suspicions and their Settings panel, the detector table with rows 3, 6 and 10 as defined, the week strip, where the money went, the event callout, the Review page's computed sections with "Save this week's review" and the "Mostly from memory" state, `POST /api/journal/reviews`, the Review tab and rail mini, the Rust Wilson and Brier. Owed parser and detector tests. Slice 3's part of the seed. | `services/journal/{parser,detectors,review,stats}.rs` (new), `routes/journal.rs`, `pages/positions/review/*` (new), `pages/positions/journal/Tidy.tsx` (new), `features/auth/SettingsPage.tsx` (suspicions), `tools/research-notes/scoring.mjs` (a header line naming the port), `libs/api/src/lib/demo/journal.ts` | L |
-| 4 | **The AI.** Prerequisites: the DESIGN amendment (open question 4), the model and cap answers (open question 6), the strategies answer (open question 15), and the eval gate passing. Migration `journal_ai`. Settings consent, the model picker, caps; What's sent; `resolve_journal_key`; `complete_journal()` with streaming, structured output, usage, the per-request log line and counter, and the non-production base-URL override; J1 and J2 with J3 drafts; the fact catalog, the number check (number words, count words, the allowlist, draft limits), the advice and tone scan, the caps on the worst case; findings, questions, drafts, corrections, the stale and failure states; the entry's AI panel with its egress line. Slice 4's part of the seed. | `services/llm.rs`, `services/journal/{package,ai,check,scan}.rs` (new), `routes/journal.rs`, `pages/positions/review/*`, `features/auth/SettingsPage.tsx`, `docs/product/ai-analyst/DESIGN.md` (appended amendment), an eval set under `apps/api/tests/fixtures/journal_eval/` (synthetic, `illustrative: true`), `libs/api/src/lib/demo/journal.ts` | L |
-| 5 | **The rest.** Paste and CSV import (owed parser tests), reading on every save with its egress line, the bulk read offer with its egress line and the Batch API, and the Monday auto-run with its toggle line and after-run notice (open question 16 recommends deferring CSV mapping and the auto-run). | `pages/positions/journal/Import.tsx` (new), `services/journal/import.rs` (new), `routes/journal.rs`, `features/auth/SettingsPage.tsx` | M |
+| 1a | **The notebook.** Migration `journal_core`. Owner-only routes (with the `PUT`/`DELETE` arms, the widened contract probe and the amended gate comments), the journal ring (`from_env_prefixed`, no ephemeral key) with row-bound AAD and the seal tag, and the JSON dev store on the same three-writer trait. The composer (text, kinds, About with `as_of`, margin-call mode, money in or out with its time, snapshot with carry-forward, source, sanity questions, the 9-digit warning, Keep out of AI reads). Seal, later notes, corrections, withdraw. The timeline (Written/About, ET dates, derived recalled), the entry page, the computed facts with their edge cases, the shared TypeScript facts module and its parity test, and the rail's account frame (value and figure strip). The first run with "What do you think your downfalls are?" saving to `journal_suspicions` through `GET/PUT /api/journal/suspicions` (G5). `SectionTabs` with Book · Journal, the routes and walls, sign-out with an unsent entry. The demo transport with slice 1a's part of the seed. The /privacy rows and key, and the backup-retention check for the delete copy. Owed tests: money, parity, recalled and dates, boundary, writes. | `apps/api/src/db/migrations.rs`, `routes/journal.rs` (new), `routes/mod.rs` (`OWNER_ONLY_OPERATIONS`, its doc comment and the arms), `services/journal/{mod,store,facts,crypto}.rs` (new), `services/auth/crypto.rs` (`from_env_prefixed` and the AAD functions), `config.rs` (the `OWNER_EMAILS` comment), `capacity/identity.rs`, `tools/api-contract.mjs` (owner → 403 for any method), `docs/product/ai-analyst/DESIGN.md` (an appended owner-gate amendment), `apps/api/.env.example` (names only; handed to the owner to commit), `apps/api/tests/fixtures/journal/worked-example.json` (new, synthetic); regenerated: `apps/api/openapi/*`, `libs/api/src/generated/schema.ts`; `libs/api/src/lib/convexa.ts`, `libs/api/src/lib/journal/facts.ts` and its spec (new), `libs/api/src/lib/demo/{transport,workspace,journal}.ts`; `apps/dashboard/src/app/app.tsx`, `pages/positions/journal/*` (new), `shared/ui/SectionTabs.tsx` (from `pages/research/ResearchTabs.tsx`), `features/auth/AuthContext.tsx` (the sign-out check), `pages/trust/PrivacyPage.tsx` | L |
+| 1b | **The account path, positions and the way out.** The Path chart (three multiples, event rail, twin) and its drawer, `RealPositionRows` (typed positions and marks, leverage, loan to position value, P/L), R on Trimmed and Closed entries and his decision label in the composer, the quick capture and the entry's Result panel (G6), the "Revisit due" line, export, restore and delete journal, the Settings › Journal panel (export, restore and delete), the ⌘K Write group (approved, open question 2). Slice 1b's part of the seed. Owed test: R's arithmetic. | `services/journal/facts.rs` (R), `pages/positions/journal/AccountPath.tsx` (new), `features/journal/RealPositionRows.tsx` (new; a copy of the `LegFields` grid, importing only `multiplierFor`), `features/trading/positions/leg.ts` and `tradeEntry/LegFields.tsx` (`multiplierFor` moves, with a re-export), `routes/journal.rs`, `services/journal/store.rs` (restore), `features/auth/SettingsPage.tsx`, `shell/CommandPalette/CommandPalette.tsx` | M |
+| 2 | **The rulebook, no model.** Migration `journal_rules`. Hand-written rules, numbering at activation, at most 7 active with the server's `rule_limit` (G3), versions, pause, resume and retire, Plan a trade with answers, readings, the projection and the required "Why go ahead anyway?" on a No, with the server's `reason_required` (G1). "Plan a trade" as the Rulebook tab's one amber, outlined in the Journal rail's Rulebook mini and amber in the Rulebook tab's phone bar (G2). The first run's "One rule from today" (G5). Adherence counts with the floor of 20. Copy as text; print is deferred (open question 16). The Rulebook tab, the rail's Rulebook mini, the entry's Rules panel ("answered by you"). Slice 2's part of the seed. Owed test: the required-reason save. | `routes/journal.rs`, `services/journal/rules.rs` (new), `pages/positions/rulebook/*` (new), `libs/api/src/lib/demo/journal.ts` | M |
+| 3 | **The review, no model.** Migration `journal_review`. The entry parser and Tidy (with the split), suspicions tested first and their Settings panel (captured since 1a, G5), the detector table with rows 3, 6 and 10 as defined, the week strip, where the money went, the event callout, the Review page's computed sections with "Save this week's review" and the "Mostly from memory" state, "Rules you went ahead against" with "Was going ahead worth it to you?", "This week's focus" with `journal_focus`, `POST /api/journal/reviews/{id}/focus` and the rail's focus line (G4), computed rule checks at kept details on the entry's Rules panel and the rule's check table (G8), `POST /api/journal/reviews`, the Review tab and rail mini, the Rust Wilson and Brier. Owed parser, detector and computed-check tests. Slice 3's part of the seed. | `services/journal/{parser,detectors,review,stats,checks}.rs` (new), `routes/journal.rs`, `pages/positions/review/*` (new), `pages/positions/journal/Tidy.tsx` (new), `features/auth/SettingsPage.tsx` (suspicions), `tools/research-notes/scoring.mjs` (a header line naming the port), `libs/api/src/lib/demo/journal.ts` | L |
+| 4 | **The AI.** Prerequisites: the DESIGN amendment, approved 2026-10-28 (open question 4) and appended in this slice, and the eval gate passing. The model and cap answers (open question 6) and the strategies answer (open question 15) are in. Migration `journal_ai`. Settings consent, the model picker, caps; What's sent; `resolve_journal_key`; `complete_journal()` with streaming, structured output, usage, the per-request log line and counter, and the non-production base-URL override; J1 and J2 with J3 drafts; findings linked to losses or to gains under one check, with no draft tied to a gains finding and planted gains in the eval set (G7); the fact catalog, the number check (number words, count words, the allowlist, draft limits, each finding's side and counter-cases), the advice and tone scan, the caps on the worst case; findings, questions, drafts, corrections, the stale and failure states; the entry's AI panel with its egress line. Slice 4's part of the seed. | `services/llm.rs`, `services/journal/{package,ai,check,scan}.rs` (new), `routes/journal.rs`, `pages/positions/review/*`, `features/auth/SettingsPage.tsx`, `docs/product/ai-analyst/DESIGN.md` (appended amendment), an eval set under `apps/api/tests/fixtures/journal_eval/` (synthetic, `illustrative: true`), `libs/api/src/lib/demo/journal.ts` | L |
+| 5 | **The rest.** Paste import (owed parser tests), reading on every save with its egress line, and the bulk read offer with its egress line and the Batch API. CSV import with its column mapping, and the Monday auto-run, are deferred to a later spec (open question 16). | `pages/positions/journal/Import.tsx` (new), `services/journal/import.rs` (new), `routes/journal.rs`, `features/auth/SettingsPage.tsx` | M |
 | 6 | **Verification:** the commands above, the acceptance script, the observation probes, screenshots at 390 and 1440 in both schemes on both builds | `tmp/ux-audit/…` (scratch) | S |
 
 Revisit reminders no longer go through Alerts: the Alerts `note` kind is "Note coming due" for
@@ -2563,20 +2937,23 @@ for it.
 | Surface | 1a | 1b | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|---|
 | Tab band | Book · Journal | same | + Rulebook | + Review | same | same |
+| Rail: this week's focus | not drawn | not drawn | not drawn | drawn while the latest review has one | same | same |
 | Rail: account frame | value and figure strip | + "Open the account path" | same | same | same | same |
-| Rail: Rulebook mini | not drawn | not drawn | drawn | drawn | drawn | drawn |
+| Rail: Rulebook mini | not drawn | not drawn | drawn, with an outlined "Plan a trade" | same | same | same |
 | Rail: Review mini | not drawn | not drawn | not drawn | drawn | drawn | drawn |
-| First-run links | "Write about an earlier day" | same | same | + "Name what you think goes wrong" | same | + "Bring in past trades" |
+| First run | "Write about an earlier day" · "What do you think your downfalls are?" | same | + "One rule from today" | + "Reviews test these first." | same | + "Bring in past trades" |
 | Composer kind chips | all but Plan a trade | same | + Plan a trade | same | same | same |
-| Entry page panels | Snapshot (figures, correct a figure) | + positions table | + Rules | + Details found | + AI read | same |
-| Review page | not drawn | not drawn | not drawn | computed sections, "Save this week's review" | + egress, Run, AI sections | + after-run notice |
-| Settings › Journal | not drawn | export, restore, delete | same | + suspicions | + AI toggle, models, Monday offer, caps | + read on save, auto-run |
-| Tidy, Import | not drawn | not drawn | not drawn | Tidy | same | + Import |
-| Demo seed | entries, snapshots, money, notes, correction | same | + rules and plan answers | + suspicions, details, review computed parts | + AI parts | + sample paste |
+| Decision label (Trimmed, Closed) | not drawn | composer, quick capture, entry | same | same | same | same |
+| Entry page panels | Snapshot (figures, correct a figure) | + positions table, + Result (R and his label) | + Rules (answered by you) | + Details found, + computed checks | + AI read | same |
+| Rulebook tab primary | not drawn | not drawn | amber "Plan a trade", also in its phone bar | same | same | same |
+| Review page | not drawn | not drawn | not drawn | computed sections, "Rules you went ahead against", "This week's focus", "Save this week's review" | + egress, Run, AI sections (findings linked to losses or gains) | same |
+| Settings › Journal | not drawn | export, restore, delete | same | + suspicions | + AI toggle, models, Monday offer, caps | + read on save |
+| Tidy, Import | not drawn | not drawn | not drawn | Tidy | same | + Import (paste) |
+| Demo seed | entries, snapshots, money, notes, correction | + the trims' R and the Oct 2 label | + rules and plan answers | + suspicions, details, review computed parts, the Oct 7 focus | + AI parts | + sample paste |
 
 Copy that names a later surface is held back with it: the Review page's "Turn reads on in Settings ›
-Journal" appears only from slice 4, and "Choose a model…" links to a control that ships in the same
-slice.
+Journal" appears only from slice 4, "Choose a model…" links to a control that ships in the same
+slice, and the first run's "Reviews test these first." waits for slice 3.
 
 **Shared files.** Specs 1, 2 and 4 of 2026-10-21 also edit `ChartFrame.tsx` and the shell. Rebase
 on them; never merge `design/canvas` or `design/site` by hand, regenerate them. The migration numbers
@@ -2588,6 +2965,9 @@ For the boards stage. Eight rows, all `section: 'planned'`, so they land on the 
 page (`index.mjs:20-52`). Board files are named `F<Key><Id>`, and each row also has its spec card,
 built with `specBody` (`spec.mjs:44-78`): widgets, states, phone, acceptance, built, rulings and
 code.
+
+Changed on 2026-10-28: the grafts G1 to G8 redraw boards that already exist and add none, and the
+print card board is dropped with the card (open question 16).
 
 **Data on the boards.**
 
@@ -2602,11 +2982,11 @@ code.
 
 | Board | Width | What it shows | States drawn |
 |---|---|---|---|
-| Staging · demo account | 1440 | Tab band (Journal current), header with amber "Write entry", quick capture, day groups Sep 29 – Oct 6 (margin-call card, money-in card, plan card, recalled card "Written Aug 21 · about Aug 4"), rail: account frame (title finding, −42.6%), rulebook mini (R3 "above"), review mini, filters | Loaded |
+| Staging · demo account | 1440 | Tab band (Journal current), header with amber "Write entry", quick capture, day groups Sep 29 – Oct 6 (margin-call card, money-in card, the Oct 2 trim card "−0.5R against planned risk · Your label: Sound" (G6), the Oct 5 plan card "Asked 2 rules · went ahead against R3 · with a reason" (G1), recalled card "Written Aug 21 · about Aug 4"), rail: this week's focus "Name an exit before I place a trade." (G4), account frame (title finding, −42.6%), rulebook mini (R3 "above", outlined "Plan a trade", G2), review mini, filters | Loaded |
 | Production · signed out | 1440 | The private-testing wall: "Sign in to open your journal", "See it on the demo →" | Sign in |
-| Production · first run | 1440 | "Start with today." empty state, metric-named rail frames | First run |
+| Production · first run | 1440 | "Start with today." empty state with the outlined "Write the first entry" and the two optional prompts, "What do you think your downfalls are?" and "One rule from today" (G5); metric-named rail frames | First run |
 | Production · illustrative | 1440 | The staging layout in solid frames with the board note | Loaded |
-| Phone · staging | 390 | Tab rail, account peek row, cards with a 3-line clamp, sticky bottom bar ("Write entry", "Margin call") | Loaded |
+| Phone · staging | 390 | Tab rail, account peek row with the focus line under it, cards with a 3-line clamp, sticky bottom bar (amber "Write entry", outlined "Margin call") | Loaded |
 | Light · staging | 1440 | The staging board in light | Loaded |
 | States | 1440 | Loading skeletons; Couldn’t load; Not on your account yet (card strip); Sign-out with an unsent entry; Storage not set up; Not the owner; staging marking reference | 7 states |
 
@@ -2614,13 +2994,13 @@ code.
 
 | Board | Width | What it shows | States drawn |
 |---|---|---|---|
-| Staging · normal day | 1440 | Editor with a Trimmed entry, snapshot column "Carried from Sep 30 · 2 days old" with Update open, Computed box, source segment | Carried |
-| Margin call mode | 1440 | The three-number row, the "Nothing here is graded" strip, cross-check lines (matching), after-save confirmation inset | Saved |
-| Plan a trade | 1440 | "Your rules" with R3 (reading "84% · limit 50% · above", projection 84% → 88%) and R2; a No answer with "Why go ahead anyway?" | Unanswered → answered |
+| Staging · normal day | 1440 | Editor with a Trimmed entry and the optional "How did the decision look, apart from the result?" row with Sound picked (G6), snapshot column "Carried from Sep 30 · 2 days old" with Update open, Computed box, source segment | Carried |
+| Margin call mode | 1440 | The three-number row, the "Nothing here is graded" strip, cross-check lines (matching), after-save confirmation inset; no decision label | Saved |
+| Plan a trade | 1440 | "Your rules" with R3 (reading "84% · limit 50% · above", projection 84% → 88%) and R2; a No answer with the required "Why go ahead anyway?" filled and the amber "Save plan · going ahead against R3" (G1) | Unanswered → answered |
 | Phone · margin call | 390 | Full-screen page, stacked 44px fields, the keyboard toolbar | Typing |
-| Phone · plan a trade | 390 | Rules first with 44px segments, sticky "Save plan" | — |
+| Phone · plan a trade | 390 | Rules first with 44px segments, sticky "Save plan · going ahead against R3" | — |
 | Light · staging | 1440 | The normal-day board in light | — |
-| States | 1440 | Blank; Draft restored; No earlier snapshot; Carried and old (plain text); Validating ("Use a plain number…"); Sanity question; Account-number warning; Saving; Save failed; Offline; Stale snapshot strip (plan); Cross-check mismatch (two neutral lines); No rules (plan); Money timing ("Counted before your 3:40 PM numbers") | 14 states |
+| States | 1440 | Blank; Draft restored; No earlier snapshot; Carried and old (plain text); Validating ("Use a plain number…"); Sanity question; Account-number warning; Saving; Save failed; Offline; Stale snapshot strip (plan); Cross-check mismatch (two neutral lines); No rules (plan); Money timing ("Counted before your 3:40 PM numbers"); Reason missing (plan: "Add a line on why, or change the answer.", G1) | 15 states |
 
 ### Row `journal-entry` · "Journal · Entry" (`/positions/journal/:id`)
 
@@ -2629,37 +3009,36 @@ code.
 | Staging · the Sep 29 call | 1440 | Body, later note "Met on Sep 30…", snapshot with call and Computed lines, details found, AI read (digest, Cited in, the per-entry egress line), rules panel, foot with Delete entry… | Read |
 | Staging · recalled entry | 1440 | "Written Aug 21 about Aug 4" strip, a Statement snapshot, the correction "Margin loan $11,890 → corrected to $11,980 on Aug 22" | Corrected |
 | Phone · staging | 390 | Stacked body and accordions; the What's sent sheet's peek row | — |
-| Light · staging | 1440 | The Sep 29 board in light | — |
-| States | 1440 | AI read: Off · No key · Model unset · Not read yet · Reading · Held · Didn’t pass the check · Request failure · Refused · Cap reached · Kept out · Sample; page: Deleted tombstone, Loading, Couldn’t load; delete inline confirm | 16 states |
+| Light · staging | 1440 | The Oct 2 TSLA puts trim in light: the Result panel (P/L −$6,480.00 against average cost $26.06, "Result against planned risk −0.5R", "Your label: Sound"; G6), Closed by: Me, the Rules panel's "answered by you" group | — |
+| States | 1440 | AI read: Off · No key · Model unset · Not read yet · Reading · Held · Didn’t pass the check · Request failure · Refused · Cap reached · Kept out · Sample; page: Deleted tombstone, Loading, Couldn’t load; delete inline confirm; Result `not set` (the Sep 30 NVDA trim, no exit named; G6); Rules panel with computed checks, above, within and `not recorded`, apart from "answered by you" (drawn on illustrative entries; G8) | 18 states |
 
 ### Row `journal-review` · "Journal · Weekly review" (`/positions/review`)
 
 | Board | Width | What it shows | States drawn |
 |---|---|---|---|
-| Staging · Oct 7 review | 1440 | Egress sentence, amber Run, week strip, the Path (three multiples, event rail), the event callout, where the money went, the 10-row detector table with suspicions first and the caption, 4 findings with Cut the other way, 3 questions, rules this review, rail (How this ran, suspicions, past reviews, Tidy) | Produced |
-| Production · AI off | 1440 | The computed sections only, with "AI reads are off. The counts above need no AI…" | Computed only |
+| Staging · Oct 7 review | 1440 | Egress sentence, amber Run, week strip, the Path (three multiples, event rail), the event callout, where the money went, the 10-row detector table with suspicions first and the caption, 4 findings with their side and Cut the other way, 3 questions, rules this review (his answers and the computed checks apart), "Rules you went ahead against" (R3 · Oct 5 plan · his reason, with the open "Was going ahead worth it to you?"; G4), "This week's focus" ("Name an exit before I place a trade.", "Save focus"; G4), rail (How this ran, suspicions, past reviews, Tidy) | Produced |
+| Production · AI off | 1440 | The computed sections, "Rules you went ahead against" and "This week's focus", with the amber "Save this week’s review" and "AI reads are off. The counts above need no AI…" | Computed only |
 | Production · mostly from memory | 1440 | His likely first weeks: the "Mostly from memory" strip ("9 of 11"), the week in numbers, the Path with mostly hollow points, events, where the money went, decided rows at "0 of 0 · counts start with entries written at the time", happened rows counted, findings "About what happened" only, questions back | Mostly from memory |
-| Phone · staging | 390 | Egress and Run first, strip as a 2-column grid, detector cards, findings, collapsed How this ran | — |
+| Phone · staging | 390 | Egress and Run first, strip as a 2-column grid, detector cards, findings, collapsed How this ran, sections 9 and 10 with the full-width "Save focus" | — |
 | Light · staging | 1440 | The Oct 7 board in light | — |
-| States | 1440 | Too little written; Computed only, slice 3 ("Save this week’s review"); No key; Ready; Running (named steps and result-shaped skeletons); Stale strip over a pinned review; Didn’t pass the check (failed draft collapsed); Request failure (pinned stays); Refused; Already running; Daily limit; Monthly cap; Over the per-run limit (worst case); a detector row at n ≥ 20 (bar with Wilson whisker, "63% (43–79%) · n = 24"); Sample run | 15 states |
+| States | 1440 | Too little written; Computed only, slice 3 ("Save this week’s review"); No key; Ready; Running (named steps and result-shaped skeletons); Stale strip over a pinned review; Didn’t pass the check (failed draft collapsed); Request failure (pinned stays); Refused; Already running; Daily limit; Monthly cap; Over the per-run limit (worst case); a detector row at n ≥ 20 (bar with Wilson whisker, "63% (43–79%) · n = 24"); Sample run; a finding linked to gains (the NVDA case, with Cut the other way and no "Draft a rule from this"; G7) | 16 states |
 
-### Row `journal-rulebook` · "Journal · Rulebook" (`/positions/rulebook`, `/:ruleId`, `/print`)
+### Row `journal-rulebook` · "Journal · Rulebook" (`/positions/rulebook`, `/:ruleId`)
 
 | Board | Width | What it shows | States drawn |
 |---|---|---|---|
-| Staging · rulebook | 1440 | Two unnumbered drafts (Because, sample state, Check by asking, limit `not set`, Why this rule), Active R2 and R3 (asks as dots, "too few to judge", R2's limit labelled as Convexa's pattern threshold, R3's reading "above"), Retired R1 collapsed, rail (Plan a trade) | Loaded |
-| Staging · rule R2 | 1440 | Version timeline v1 → v2, his why, origin finding with cited entries, check table, counts block | Active |
-| Print card | 1440 (A4 inset) | One page of active rules, no figures | — |
-| Phone · staging | 390 | Accordions, rule cards, row menu as a bottom sheet | — |
+| Staging · rulebook | 1440 | Header with the amber "Plan a trade" and outlined "Write a rule" and "Copy as text" (G2), two unnumbered drafts (Because, sample state, Check by asking, limit `not set`, Why this rule), Active R2 and R3 (asks as dots, "Computed at kept entries: none yet" (G8), "too few to judge", R2's limit labelled as Convexa's pattern threshold, R3's reading "above"), Retired R1 collapsed, rail ("Before you trade" line, "2 active · 7 at most"; G3) | Loaded |
+| Staging · rule R2 | 1440 | Version timeline v1 → v2, his why, origin finding with cited entries, check table with its "answered by you" and "computed" rows (G8), counts block | Active |
+| Phone · staging | 390 | Accordions, rule cards, row menu as a bottom sheet, sticky bar with the amber "Plan a trade" and outlined "Margin call" (G2) | — |
 | Light · staging | 1440 | The rulebook in light | — |
-| States | 1440 | Empty; Drafts only; Stale draft; Adopt in progress (Why required); Not for me with reason; Paused; Retired; Declined draft read-only; Loading; Couldn’t load | 10 states |
+| States | 1440 | Empty; Drafts only; Stale draft; Adopt in progress (Why required); Not for me with reason; Paused; Retired; Declined draft read-only; Loading; Couldn’t load; At the limit (7 active: the adopt and resume lines, "Save as draft"; G3); Computed checks (within, above, `not recorded`, drawn on illustrative entries; G8) | 12 states |
 
 ### Row `journal-tidy-import` · "Journal · Tidy up and import" (`/positions/journal/tidy`, `/import`)
 
 | Board | Width | What it shows | States drawn |
 |---|---|---|---|
 | Staging · Tidy | 1440 | Panels per entry with highlighted spans, Keep/Fix/Not right, a position-from-prose prompt, the recalled-wording offer (Split · Mark the whole entry) | Loaded |
-| Staging · Import | 1440 | Three steps: choose, preview with `unrecognized` lines and a mapping control, file them | Parsed |
+| Staging · Import | 1440 | Three steps: choose (write about an earlier day, or paste positions), preview with `unrecognized` lines, file them as one Imported entry; no CSV and no mapping control (open question 16) | Parsed |
 | Phone · staging | 390 | Tidy cards and the import steps stacked | — |
 | States | 1440 | Tidy: Empty, Parser only, Couldn’t load. Import: Parsing, Duplicates skipped, Parse failed, Saved | 7 states |
 
@@ -2678,11 +3057,12 @@ code.
 
 | Board | Width | What it shows | States drawn |
 |---|---|---|---|
-| Staging · demo account | 1440 | The panel: egress sentence naming every trigger, toggle, models, sub-toggles each with its egress line, caps with "This month", suspicions, export, restore, Delete journal… | Sample (writes refused) |
+| Staging · demo account | 1440 | The panel: egress sentence naming every trigger, toggle, models, the read-on-save toggle with its egress line, caps with "This month", suspicions, export, restore, Delete journal… | Sample (writes refused) |
 | Phone · production | 390 | The panel stacked | On |
 | States | 1440 | Off; On; No key ("Add an Anthropic key in Settings › AI first"); Cap reached; Exporting; Restoring; Delete confirm; Signed out | 8 states |
 
-**Count:** 44 boards (7 + 7 + 5 + 6 + 6 + 4 + 6 + 3) plus 8 spec cards. Open question 16 would drop the print card board if print is deferred.
+**Count:** 43 boards (7 + 7 + 5 + 6 + 5 + 4 + 6 + 3) plus 8 spec cards. It was 44; the print card
+board was dropped on 2026-10-28 with the card (open question 16), and no graft adds a board.
 
 ## Open questions for the owner
 
@@ -2813,3 +3193,51 @@ code.
       would change the fixed table's count of 10.
     - If deferred, slices 2 and 5 shrink, and the board count falls by one.
     - Holds up slices 2 and 5.
+
+## Owner answers (2026-10-28)
+
+The owner answered all 16 on 2026-10-28 by accepting every recommendation. Each question takes its
+recommendation exactly as written above, and none holds up a step any more. Each line gives the
+answer and what it changed here.
+
+1. **Tabs on Positions** (Book · Journal · Review · Rulebook), no sixth nav link. No change: the
+   spec already placed the journal there. A nav amendment is revisited after four weeks of daily
+   use.
+2. **The five canon rows are approved** as written (Design → Canon events). Step 0 can draw the pen
+   glyph and the tabs, slice 1b builds the ⌘K "Write" group, and slice 4 uses rule 16's
+   verdict-free scope.
+3. **Journal figures stay in the journal**, as a written record; AC-29a is unchanged. No change:
+   [journal-figures-stay-in-journal] is recorded as written.
+4. **The DESIGN amendment is approved:** his real positions, balances, margin and words may go to
+   his own AI provider, with reads off by default, per-entry exclusion, and the eval gate first.
+   Slice 4 appends it to DESIGN.md before any model call; the header and the build plan now say so.
+5. **Anthropic only in slice 4.** The other providers show "Not set up · journal reads run on an
+   Anthropic key for now".
+6. **Sonnet 5.5 for entry reads; Opus 5.5 at effort `high` for reviews.** Caps: $1.00 per run,
+   checked against the worst case; $5.00 a month; 3 reviews and 60 entry reads a day. No automatic
+   fallback. Models, cost and caching now states these as chosen.
+7. **"Margin used" stays loan ÷ account value**, with leverage beside it, loan ÷ position value in
+   the ⓘ, and his broker's own figure named in the ⓘ once he says which it is. No change until he
+   names it.
+8. **The chain-linked percent is the headline**, with the dollars lost since the high beside it and
+   account value alone in the ⓘ. No change.
+9. **No text-correction window at launch**; later notes only. Scope → Not in scope records the
+   answer, and the re-judge's 60-minute window is not grafted.
+10. **The floor of 20 stays for every rate.** No change; the re-judge's three-tier floor is not
+    grafted.
+11. **Entries are read at review time.** Reading on every save is opt-in, and margin-call entries
+    are never read on save. No change.
+12. **The not-the-owner wall has no tag.** No amendment and no change.
+13. **Slices 1a to 3 are built now, with no model; slice 4 after its eval passes.** The build plan
+    states the order.
+14. **Re-judge before step 0: done on 2026-10-28** (How this design was chosen → Re-judged on the
+    full texts). Notebook-first won overall, so the home stays the notebook. The Rulebook Loop won
+    the owner-outcome lens, so its owner-outcome mechanisms are grafted as G1 to G7, with G8 from
+    Ledger & Path, each in an existing slice. The original record is corrected there: both
+    incomplete lenses, not one, scored Ledger & Path on 19% of its text. Step 0 is no longer held.
+15. **Process strategies only**, as rule drafts and questions back. Market strategies belong to the
+    analyst roadmap. No change; findings linked to gains (G7) never become rule drafts.
+16. **Deferred to a later spec:** the printable rulebook card, CSV column mapping (paste stays) and
+    the Monday auto-run, and their board is dropped. The n ≥ 20 rate path and row 10 stay. They are
+    listed under Scope → Deferred to a later spec and removed from slices 2 and 5, the screens, the
+    copy, the egress triggers (now five) and the BOARD BRIEF. The board count falls from 44 to 43.
