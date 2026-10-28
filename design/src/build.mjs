@@ -1,13 +1,15 @@
 // Builds everything from the registries:
-//   ../canvas/<Name>.dc.html + canvas.json  — artboards for the Claude Design canvas (then: seed.sh)
+//   ../canvas/<Name>.dc.html + canvas.json  — artboards for the Claude Design canvas (then: emit-project.mjs)
 //   ../site/*.html + tokens.css + tokens.json — the static site, one page per screen, the library
+// Both state Convexa's version, the root package.json's; the Changelog board reads design/CHANGELOG.md and git.
+// Nothing reads the clock: building twice gives byte-identical output.
 // Run: node design/src/build.mjs
 import { mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FONT_LINK, TOKENS_CSS, shell, tokens } from './lib.mjs';
 import { screens } from './screens/index.mjs';
-import { artboards, canvasJson, CANVAS_URL } from './canvas.config.mjs';
+import { artboards, canvasJson, CANVAS_URL, CONVEXA_VERSION, pages as canvasPages } from './canvas.config.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const CANVAS = join(here, '..', 'canvas');
@@ -37,7 +39,7 @@ for (const a of artboards) {
   writeFileSync(join(CANVAS, `${a.name}.dc.html`), html);
 }
 writeFileSync(join(CANVAS, 'canvas.json'), JSON.stringify(canvasJson(), null, 2) + '\n');
-console.log(`canvas: ${artboards.length} artboards + canvas.json → design/canvas/`);
+console.log(`canvas: Convexa ${CONVEXA_VERSION}, ${artboards.length} artboards on ${canvasPages.length} pages + canvas.json → design/canvas/`);
 
 // ---- 2. site --------------------------------------------------------------------------------
 const SITE_CSS = `
@@ -146,7 +148,7 @@ for (const [slug, scr] of Object.entries(screens)) {
 
 const groups = [...new Set(pages.map((p) => p[2]))];
 const indexInner = `<div style="min-height: 100vh; padding: 40px clamp(16px, 4vw, 56px) 80px; max-width: 1200px; margin: 0 auto;">
-  <div class="caps" style="color: var(--amber-text);">Convexa · design</div>
+  <div class="caps" style="color: var(--amber-text);">Convexa <span class="mono">${CONVEXA_VERSION}</span> · design</div>
   <h1 class="display" style="margin: 8px 0 0; font-size: clamp(28px, 3vw, 40px); letter-spacing: -0.02em;">Curvature Terminal v2</h1>
   <p style="margin: 10px 0 0; max-width: 720px; font-size: 14.5px; color: var(--steel); line-height: 1.6;">Static renders of every screen in the redesign, generated from <span class="mono">design/src</span>. Each page is fluid — resize the window — and the corner toggle flips the scheme. The editable canvas lives in Claude Design, one file per board; the v4 single-file viewer is kept beside this site as history.</p>
   <div style="display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap;"><a href="library.html" class="btn primary">Tokens, components &amp; library</a><a href="final-desk-staging.html" class="btn secondary">Open the ticker desk</a><a href="${CANVAS_URL}" class="btn ghost">Editable canvas ↗</a><a href="../canvas/convexa-desk-redesign.html" class="btn ghost">v4 canvas file (frozen)</a></div>

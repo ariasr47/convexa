@@ -1,10 +1,10 @@
 // Final · the screen tracker's inputs that don't live on a spec card (2026-10-15).
 //
 // Everything about a screen's items comes from its spec card (`built`, with `waits` and `ask` on the
-// open ones). This file holds only what no card can: the owner's open questions, and the known issues
-// that checks found on built screens. Update an issue's `status` when its fix merges (`fixed`, with the
-// commit), and a question's when the owner answers it (`answered`, with the answer); never delete an
-// entry, so the tracker keeps the record.
+// open ones). This file holds only what no card can: the Convexa version each built row shipped in, the
+// owner's open questions, and the known issues that checks found on built screens. Update an issue's
+// `status` when its fix merges (`fixed`, with the commit), and a question's when the owner answers it
+// (`answered`, with the answer); never delete an entry, so the tracker keeps the record.
 
 /** Why an open item is open. An open item with no `waits` is "To build". */
 export const WAITS = {
@@ -13,6 +13,42 @@ export const WAITS = {
   parked: { word: 'Parked by you', note: 'An owner ruling parks it' },
   spend: { word: 'Needs paid data', note: 'Needs a licensed source' },
   decided: { word: 'Left out on purpose', note: 'Deliberate; the card says why' },
+};
+
+/**
+ * The Convexa version each row on a built page shipped in (2026-10-28). Convexa has one version, the root
+ * package.json's, in SemVer; 1.0.0 is the first release (the first push after 2026-10-28, tagged v1.0.0).
+ * The rule: every row on a built page has an entry, the version of the release it first shipped in, set once;
+ * a later change to a shipped row is a design/CHANGELOG.md entry, not a new value here. A row on a planned page
+ * or the prototypes page has none until the release that moves it to a built page. The build fails on a
+ * missing, extra or non-SemVer entry, or one after the package.json version (index.mjs).
+ */
+export const SHIPPED_IN = {
+  scanner: '1.0.0',
+  desk: '1.0.0',
+  'ai-read': '1.0.0',
+  technical: '1.0.0',
+  note: '1.0.0',
+  'research-index': '1.0.0',
+  'research-markets': '1.0.0',
+  'research-filings': '1.0.0',
+  'research-scorecard': '1.0.0',
+  positions: '1.0.0',
+  alerts: '1.0.0',
+  settings: '1.0.0',
+  operator: '1.0.0',
+  dialogs: '1.0.0',
+  overlays: '1.0.0',
+  landing: '1.0.0',
+  methodology: '1.0.0',
+  blog: '1.0.0',
+  credits: '1.0.0',
+  privacy: '1.0.0',
+  terms: '1.0.0',
+  'not-found': '1.0.0',
+  shell: '1.0.0',
+  foundations: '1.0.0',
+  library: '1.0.0',
 };
 
 /** Questions only the owner can answer. Items point at them with `ask: '<id>'`. */

@@ -715,3 +715,35 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
 - **Left as found:** the desk's own sign-in wall is not drawn. Since `e86ab538`, on a build with the feed, a signed-out
   visitor's refused bundle read (403 `auth_required`) puts up the sign-in wall with "Read SPY research" in place of
   the desk, so the desk's AI read · Sign in cell may no longer be reachable there. Not checked in a running app.
+
+## 2026-10-28 · The canvas in 13 pages, tethered to Convexa's version
+
+- **Owner ask:** organize the canvas more logically, use several pages, and version it, tied to Convexa's version.
+  "Convexa Desk Redesign" now has **13 pages**: Start here; the app in its navigation order (Scanner, Ticker desk,
+  Research, Positions & alerts, Settings & operator, Dialogs & overlays, Public site, Shell & foundations); Planned ·
+  Trade journal; Planned · Public-data tools; Prototypes · not ruled; and Changelog. Rows keep their keys, so no board
+  file is renamed. `PAGE_ROWS` (`src/screens/final/index.mjs`) places every row, the library and the prototypes
+  included; the build fails when a row sits on no page or on two, or a planned row on a built page.
+- **Version:** Convexa's one version is the root `package.json`'s (1.0.0, the first push after 2026-10-28). Each page
+  carries a header note at its top left naming the page and the version; Start here adds a version card. Each built
+  row's title ends "· Convexa 1.0.0", from `SHIPPED_IN` in `tracker-data.mjs` (the build fails on a missing, extra or
+  non-SemVer entry); the board map and the tracker gain a Version column, Planned on the planned pages.
+- **Changelog page:** one board lists every entry in this file, newest first, under the version it shipped in: the
+  earliest `v*` tag holding the commit that added its heading, else the package version, marked not released yet
+  (`src/screens/final/changelog.mjs`, read from git at build time).
+- **Publish stamp:** `emit-project.mjs` fills the version card in the emitted index only with the release status,
+  the commit and its date, and the commits not yet on origin/main, and records it in `batches.json`. It refuses
+  (exit 1) while `design/` or `package.json` has uncommitted changes, unless `--allow-dirty`.
+- **Why:** pages by app area follow how the app is used; a canvas that names its version and commit can be matched
+  to the Convexa it shows, and building `design/` at a release tag shows that release's design.
+- **Heights:** FProgressMap 4373 → 4792 and FProgressTracker 6988 → 7499 (the Version column and five more page
+  groups); FChangelogEntries is new at 2371. A second measurement changed 0; so did a measurement of all 254 Final
+  boards.
+- **Checked:** build 0 (a second run byte-identical), verify-tokens 0, the sweep of the 3 changed boards 0 (0 overflow,
+  0 text under 11px, 0 clipped, no change at a 20px default font), note geometry 0 (60 notes; none overlaps a board
+  or a note, every title at least 223px above its row), NUL 0, CR 0. Each of 11 mutations of the page and version
+  rules fails the build with its reason; the emitter refuses fake dirty porcelain (exit 1) and stamps with
+  `--allow-dirty` (exit 0).
+- **Open:** Planned · Liquidity reads Built (5 of 5 shipped, inside Markets) yet carries no version, because planned
+  rows have none; moving it to Research would give it 1.0.0. `design/README.md` still describes the eight pages of
+  2026-10-25; it is outside this change.

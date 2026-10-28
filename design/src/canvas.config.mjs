@@ -1,57 +1,37 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { FINAL_PAGES, finalArtboards, finalNotes } from './screens/final/index.mjs';
+import { CONVEXA_VERSION, FINAL_PAGES, canvasLayout } from './screens/final/index.mjs';
 // Canvas registry — which screens become artboards, at which widths, on which page.
 //
-// Since 2026-10-25 the canvas holds only the current, ruled design: one page per product area (the final
-// rows, screens/final/index.mjs) plus the token and component library on Foundations and two unruled
-// prototypes on Planned. The earlier rounds
-// (the v2 pages, v4 · Data states / Tools / App / Research / Coverage, v5 · Charts / Families / Frontier,
-// the Q-5 alerts page, Directions B and C) left the canvas; their screen modules still build the static
-// site, and git and design/CHANGELOG.md keep the record.
+// Since 2026-10-25 the canvas holds only the current, ruled design. Since 2026-10-28 it has 13 pages by app area
+// (screens/final/index.mjs PAGE_ROWS): Start here, the app in its navigation order, the two planned pages, the
+// unruled prototypes and the Changelog, and it states Convexa's version (the root package.json's). The earlier
+// rounds (the v2 pages, v4 · Data states / Tools / App / Research / Coverage, v5 · Charts / Families / Frontier,
+// the Q-5 alerts page, Directions B and C) left the canvas; their screen modules still build the static site,
+// and git and design/CHANGELOG.md keep the record.
+export { CONVEXA_VERSION };
 export const pages = FINAL_PAGES;
 
 const FINAL_HEIGHTS_FILE = new URL('./screens/final/heights.json', import.meta.url);
 const FINAL_HEIGHTS = existsSync(FINAL_HEIGHTS_FILE) ? JSON.parse(readFileSync(FINAL_HEIGHTS_FILE, 'utf8')) : {};
 
-const FINAL = finalArtboards(FINAL_HEIGHTS);
-
-/** A row of extra boards under everything already on `page`: 120px apart, its title note above. */
-const EXTRA_NOTES = [];
-function rowUnder(page, placed, boards, title) {
-  const y = Math.max(...placed.filter((a) => a.page === page).map((a) => a.y + a.h)) + 360;
-  let x = 0;
-  const row = boards.map((b) => { const a = { page, x, y, expand: 'fill', ...b }; x += b.w + 120; return a; });
-  EXTRA_NOTES.push({ id: `row-${row[0].name}`, page, x: 0, y: y - 300, kind: 'title1', maxW: x - 120, text: title });
-  return row;
-}
-
-// The library (tokens, type, controls, data, chrome, overlays, patterns, states, charts, motion, React
-// mapping) is generated from tokens.json and src/components, so it stays current; a frame caps at 8,000px,
-// so it is three boards. It sits under the Foundations row.
-const LIBRARY = rowUnder('foundations', FINAL, [
-  ['Library', 6240, 'Library · 1 of 3 · tokens, type, controls, data', 1],
-  ['LibraryB', 4750, 'Library · 2 of 3 · chrome, overlays, patterns, states, charts, motion', 2],
-  ['LibraryC', 3970, 'Library · 3 of 3 · React mapping', 3],
-].map(([name, h, title, part]) => ({ name, screen: 'library', w: 1440, h, title, opts: { dataStates: 'summary', charts: 'summary', part } })), 'Library · tokens, components and their React mapping');
-
-// Two v5 frontier prototypes the owner has not ruled on (F1, the dealer-gamma surface, shipped as the
-// landing hero). The boards draw each one's designed fallback; the prototype runs in design/site.
-const PROTOTYPES = rowUnder('planned', FINAL, [
-  { name: 'V5FrontierCurve', screen: 'v5-frontier-curve', w: 1440, h: 2460, title: 'Prototype F2 · a year of the curve · fallback shown (runs in design/site/v5-frontier-curve.html)' },
-  { name: 'V5FrontierCalib', screen: 'v5-frontier-calibration', w: 1440, h: 1880, title: 'Prototype F3 · calibration, explorable · fallback shown (runs in design/site/v5-frontier-calibration.html)' },
-], 'Prototypes · not ruled: a year of the curve (F2), calibration you can question (F3)');
+// Every page's rows, laid out in screens/final/index.mjs: the Final rows, then the library (under Shell &
+// foundations) and the two prototypes (their own page), whose boards come from the wider screen registry.
+const LAYOUT = canvasLayout(FINAL_HEIGHTS);
 
 // { name, screen, page, x, y, w, h, title, opts?, expand? }
-export const artboards = [...FINAL, ...LIBRARY, ...PROTOTYPES];
+export const artboards = LAYOUT.boards;
 
-export const annotations = [...finalNotes(), ...EXTRA_NOTES];
+/** Every note: the version card and the guide on Start here, a header on each page, a title over each row. */
+export const annotations = LAYOUT.notes();
 
 /** Every artboard carries its own x/y (screens/final lays the rows out per page). */
 export function layout() {
   return artboards.map((a) => ({ ...a }));
 }
 
-export function canvasJson() {
+/** The canvas index. `stamp` is the publish step's line for the version card (emit-project.mjs); the
+ *  committed design/canvas/canvas.json has none, so its card says what the publish step adds. */
+export function canvasJson({ stamp = null } = {}) {
   return {
     pages,
     artboards: layout().map(({ name, screen, page, w, h, title, expand, x, y }) => ({
@@ -59,7 +39,7 @@ export function canvasJson() {
       ...(screen === 'desk' ? { is_interactive: true } : {}),
       ...(expand ? { expand } : {}),
     })),
-    annotations: annotations.map(({ id, ...n }) => ({ id, ...n, x: n.x ?? 0, y: n.y ?? -150 })),
+    annotations: LAYOUT.notes(stamp).map(({ id, ...n }) => ({ id, ...n, x: n.x ?? 0, y: n.y ?? -150 })),
     launch: { view: 'canvas', page: pages[0].id },
   };
 }
@@ -74,9 +54,9 @@ export const CANVAS_TITLE = 'Convexa Desk Redesign';
 export const CREATED_ON_FILES = { v: 1, at: '2026-10-14T04:05:17Z' };
 
 /** The v3 index for the files-based canvas: boards keyed by file, `order` back to front, notes keyed by
- *  id. Same pages, positions, titles and notes as canvasJson(). */
-export function canvasIndexV3() {
-  const legacy = canvasJson();
+ *  id. Same pages, positions, titles and notes as canvasJson({ stamp }). */
+export function canvasIndexV3({ stamp = null } = {}) {
+  const legacy = canvasJson({ stamp });
   const boards = {};
   for (const a of legacy.artboards) {
     const { file, ...rest } = a;

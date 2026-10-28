@@ -5,8 +5,11 @@
 // A screen is Built when every item on its card is shipped, In progress when some are shipped or
 // partly built, and Designed when none are. Items marked `host: true` (the page a planned tool sits
 // on) never count toward a status.
+//
+// Since 2026-10-28 both boards carry a Version column: the Convexa release a screen shipped in
+// (tracker-data.mjs SHIPPED_IN), or Planned for a screen on a planned page.
 
-import { ISSUES, OPEN_QUESTIONS, WAITS } from './tracker-data.mjs';
+import { ISSUES, OPEN_QUESTIONS, SHIPPED_IN, WAITS } from './tracker-data.mjs';
 
 const STATUS = {
   built: { word: 'Built', cls: 'built' },
@@ -50,6 +53,8 @@ export const PROGRESS_CSS = `
   .pm .next { color: var(--phosphor); }
   .pm .next .more { display: block; margin-top: 4px; color: var(--steel); font-size: 12px; }
   .pm .next .none { color: var(--steel); }
+  .pm td.ver .v { font: 500 12.5px/1.5 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
+  .pm td.ver .none { color: var(--steel); }
 `;
 
 const pascal = (s) => s.replace(/(^|[-_ ])(\w)/g, (_, __, c) => c.toUpperCase());
@@ -95,10 +100,13 @@ const clip = (s, max = 190) => {
   return `${t.slice(0, cut > 80 ? cut : max)} …`;
 };
 
+/** A screen's Version cell: the Convexa release it shipped in (Mono, a figure), or Planned (Sans, a word). */
+const versionCell = (r) => (SHIPPED_IN[r.key] ? `<span class="v">${SHIPPED_IN[r.key]}</span>` : '<span class="none">Planned</span>');
+
 /**
  * The board. `groups` = [{ label, rows }] in page order (the progress row itself excluded).
  */
-export function progressBoard(groups) {
+export function progressBoard(groups, { version } = {}) {
   return ({ scheme = 'dark', minHeight = 0 } = {}) => {
     const rows = groups.flatMap((g) => g.rows);
     const all = rows.map(rowProgress);
@@ -136,6 +144,7 @@ export function progressBoard(groups) {
           const next = p.open[0];
           return `<tr>
             <td class="name"><strong>${r.label}</strong>${r.spec?.route ? `<span class="route">${r.spec.route}</span>` : ''}</td>
+            <td class="ver">${versionCell(r)}</td>
             <td><span class="st ${s.cls}">${s.word}</span></td>
             <td>${bar(p)}<div class="counts">${p.shipped}/${p.total} shipped${p.partial ? ` · ${p.partial} partly` : ''}${p.todo ? ` · ${p.todo} not built` : ''}</div></td>
             <td><div class="boards">${names.map((n) => `<span>${n}</span>`).join('')}</div></td>
@@ -146,8 +155,8 @@ export function progressBoard(groups) {
       return `<section class="grp">
         <div class="grp-h"><h2>${g.label}</h2><span class="c">${g.rows.length} screen${g.rows.length === 1 ? '' : 's'} · ${gs.shipped}/${gs.total} items shipped</span></div>
         <table>
-          <colgroup><col style="width: 20%;"><col style="width: 9%;"><col style="width: 15%;"><col style="width: 18%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
+          <colgroup><col style="width: 19%;"><col style="width: 6%;"><col style="width: 8%;"><col style="width: 14%;"><col style="width: 17%;"><col></colgroup>
+          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody>${body}</tbody>
         </table>
       </section>`;
@@ -155,9 +164,9 @@ export function progressBoard(groups) {
 
     return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><article class="pm" aria-label="Board map">
       <header>
-        <div class="eyebrow">Start here · board map</div>
+        <div class="eyebrow">Start here · board map${version ? ` · Convexa ${version}` : ''}</div>
         <h1 class="display">What’s built</h1>
-        <p class="lead">Every screen on this canvas, grouped by the page it sits on (the page list, top left), read from its own spec card’s “Built so far” each time the design builds; nothing on this board is typed by hand. A screen is <strong>Built</strong> when every item on its card is shipped, <strong>In progress</strong> when some are shipped or partly built, and <strong>Designed</strong> when none are. A planned tool’s status counts only its own items, not the page it sits on. Board names are the ones in its row, left to right.</p>
+        <p class="lead">Every screen on this canvas, grouped by the page it sits on (the page list, top left), read from its own spec card’s “Built so far” each time the design builds; nothing on this board is typed by hand. <strong>Version</strong> is the Convexa release a screen shipped in, from <code>tracker-data.mjs</code>; a screen on a planned page has none yet and reads <strong>Planned</strong>. A screen is <strong>Built</strong> when every item on its card is shipped, <strong>In progress</strong> when some are shipped or partly built, and <strong>Designed</strong> when none are. A planned tool’s status counts only its own items, not the page it sits on. Board names are the ones in its row, left to right.</p>
       </header>
       ${totals}
       ${groups.map(group).join('')}
@@ -221,6 +230,8 @@ export const TRACKER_CSS = `
   .tk .qs td .ub { display: flex; flex-wrap: wrap; gap: 4px; }
   .tk table.answered td { color: var(--steel); }
   .tk table.answered td b { color: var(--phosphor); font-weight: 500; }
+  .tk td.ver .v { font: 500 12.5px/1.5 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
+  .tk td.ver .none { color: var(--steel); }
 `;
 
 const SEV_WORD = { high: 'High', medium: 'Medium', low: 'Low' };
@@ -249,7 +260,7 @@ const issueState = (i) =>
           : '';
 
 /** The tracker board. `groups` as for progressBoard. */
-export function trackerBoard(groups) {
+export function trackerBoard(groups, { version } = {}) {
   return ({ scheme = 'dark', minHeight = 0 } = {}) => {
     const rows = groups.flatMap((g) => g.rows);
     const info = rows.map((r) => {
@@ -320,6 +331,7 @@ export function trackerBoard(groups) {
             : `<span class="none">${issues.length ? `None open · ${issues.length} fixed or closed` : 'None known'}</span>`;
           return `<tr>
             <td class="name"><strong>${r.label}</strong>${r.spec?.route ? `<span class="route">${r.spec.route}</span>` : ''}</td>
+            <td class="ver">${versionCell(r)}</td>
             <td><span class="st ${s.cls}">${s.word}</span>${bar(p)}<div class="counts">${p.shipped}/${p.total} shipped${issues.some((i) => !closedIssue(i)) ? ` · ${issues.filter((i) => !closedIssue(i)).length} issue${issues.filter((i) => !closedIssue(i)).length === 1 ? '' : 's'} open` : ''}</div></td>
             <td>${items}</td>
             <td>${iss}</td>
@@ -329,8 +341,8 @@ export function trackerBoard(groups) {
       return `<section class="grp">
         <div class="grp-h"><h2>${g.label}</h2><span class="c">${g.rows.length} screen${g.rows.length === 1 ? '' : 's'} · ${nOpen} open item${nOpen === 1 ? '' : 's'} · ${nIss} known issue${nIss === 1 ? '' : 's'} open</span></div>
         <table>
-          <colgroup><col style="width: 16%;"><col style="width: 11%;"><col style="width: 40%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
+          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody>${body}</tbody>
         </table>
       </section>`;
@@ -338,9 +350,9 @@ export function trackerBoard(groups) {
 
     return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><article class="tk" aria-label="Screen tracker">
       <header>
-        <div class="eyebrow">Start here · screen tracker</div>
+        <div class="eyebrow">Start here · screen tracker${version ? ` · Convexa ${version}` : ''}</div>
         <h1 class="display">Screen tracker</h1>
-        <p class="lead">Every screen, every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>; this board shows only what is still open, and the file keeps every answer and fix as the record. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
+        <p class="lead">Every screen, the Convexa release it shipped in (or Planned), every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>; this board shows only what is still open, and the file keeps every answer and fix as the record. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
       </header>
       ${tiles}
       ${qTable}

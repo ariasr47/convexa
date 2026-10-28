@@ -197,6 +197,7 @@
   "FPlannedTaProduction": 1513,
   "FPlannedTaPhone": 2614,
   "FPlannedTaStates": 1456,
+  "FChangelogEntries": 2371,
   "FJournalTimelineSpec": 3652,
   "FJournalTimelineStaging": 2575,
   "FJournalTimelineProduction": 920,
@@ -249,7 +250,7 @@
   "FJournalSettingsPhone": 2496,
   "FJournalSettingsStates": 2098,
   "FScannerProductionSignedIn": 1039,
-  "FProgressMap": 4373,
-  "FProgressTracker": 6988,
+  "FProgressMap": 4792,
+  "FProgressTracker": 7499,
   "FCreditsPhone2": 4709
 }
