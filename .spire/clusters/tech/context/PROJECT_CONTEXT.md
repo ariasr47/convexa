@@ -550,9 +550,9 @@ conformance, and volume-replacement receipts.
   - A finding the widened matrix exposes is fixed, never waived.
   - The frozen inventory is raised deliberately, in the same change.
   *(curvature-v2-landing-and-site; no-vendor-production-posture.)*
-- **`[journal-figures-stay-in-journal]`** (owner record, 2026-10-28, 0 instances: spec 08's canon
-  event 5, approved with its open questions 2 and 3): the trade journal's figures stay in the
-  journal.
+- **`[journal-figures-stay-in-journal]`** (promoted 2026-10-28 by owner decision, 0 instances:
+  spec 08's canon event 5, approved with its open questions 2 and 3): the trade journal's figures
+  stay in the journal.
   - Journal balances, margin, text, positions and rule limits **never reach** decision records, the
     outcomes ledger, alerts, the Settings risk inputs, the ticker AI read or any export but the
     journal's own.

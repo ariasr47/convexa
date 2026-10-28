@@ -815,3 +815,31 @@ the items below say where the journal differs.
    `services/analyst/canonical.rs` as it is. Slices 1a to 3 call no model and are built now; slice
    4, which ships J1 and J2, follows only after its eval passes. §7's table records this in one row;
    spec 07's Q4 (the 2026-10-25 amendment above) is the precedent for sequencing outside the phases.
+
+### 2026-10-28: the J family amendment, corrected (canon review of `cc87d08c`, amends items 1, 4 and 7)
+
+Source: the canon review of `cc87d08c` on 2026-10-28, checked against spec 08 at `c72c45ea`. The
+amendment above stays as written; each item below supersedes the part it names.
+
+1. **Item 1, J2 and J3: what is linked to gains** (spec 08's re-judge graft G7, "Re-judged on the
+   full texts (2026-10-28)"). G7 is a council verdict on the re-judge, not one of the owner's 16
+   answers (DECISION_LEDGER row `trade-journal-rejudge-grafts`).
+   - **J2:** each finding names its side, linked to losses or linked to gains. A finding may name
+     what is linked to gains, under the same evidence rules as one linked to losses: code's count
+     of the cases on its side of the cited row, figures that cite facts, and code's cases on the
+     other side as "Cut the other way". A finding linked to gains is evidence, never praise.
+   - **J3:** no rule draft is tied to a finding linked to gains. A draft is tied only to a finding
+     linked to losses, because a few wins drafted into a rule push toward more risk.
+   - **The check** fails a finding linked to gains whose count or counter-cases differ from code's,
+     and any rule draft tied to one (spec 08's check point 9 and criterion 36). G7 adds no model
+     call; it changes what J2 may return.
+2. **Item 4's last clause.** Item 4 is itself the line spec 08's Owner gate section asks DESIGN.md's
+   owner-gate section to gain: the gate also guards the owner's personal data, because it is his.
+   Its "and adds it here as an appended amendment" is withdrawn: slice 1a only amends the doc
+   comments on `OWNER_ONLY_OPERATIONS` (`routes/mod.rs`) and `OWNER_EMAILS` (`config.rs`). Likewise,
+   the J family amendment above is the one open question 4 approved, and no slice appends it again.
+3. **Item 7's worst case for a review.** "≤ $0.75 for a review at the sample's size" understated
+   it. On spec 08's own token estimates the worst case is one cold J1 read ($0.0528), seven warm
+   ones ($0.0436 each) and J2 ($0.3946): $0.7526. It reads "≈ $0.75 for a review at the sample's
+   size ($0.753 on the spec's token estimates)". The $1.00 cap per run is unchanged, and a run whose
+   worst case exceeds it still never starts.
