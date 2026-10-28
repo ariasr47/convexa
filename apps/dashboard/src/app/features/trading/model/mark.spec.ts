@@ -65,16 +65,24 @@ describe('computeMark — ladder precedence', () => {
     expect(r.frozen).toBe(false);
   });
 
-  it('live + quote + delta but gamma NULL → never the delta-only modeled mark (a missing greek is not 0)', () => {
+  it('live + quote but a greek NULL → the quoted mid as snapshot: never a delta-only modeled mark, never Black-Scholes', () => {
     // dS = 2. Delta alone would give 5 + 0.5·2 = 6 labeled modeled, with ½γ·dS² silently dropped.
-    const greeks = { delta: 0.5, gamma: null, theta: -0.05, vega: 0.1 };
-    const withIv = computeMark(inputs({ tracked: tracked({ greeks }), liveUnderlying: 252 }));
-    expect(withIv.basis).toBe('theoretical'); // Black-Scholes off the LIVE underlying
-    expect(withIv.mark).toBeCloseTo(bsPrice('call', 252, 250, 24, 0.45), 10);
-    const noIv = computeMark(
-      inputs({ tracked: tracked({ greeks, iv: null }), liveUnderlying: 252 }),
-    );
-    expect(noIv).toEqual({ mark: 5, basis: 'snapshot', frozen: false }); // the snapshot anchor
+    // Black-Scholes would swap a real quote for a model price under "No live option quote", while
+    // a market entry fills at the mid: P/L would jump at entry. A missing greek is not 0.
+    const greekSets = [
+      { delta: 0.5, gamma: null, theta: -0.05, vega: 0.1 },
+      { delta: null, gamma: 0.01, theta: -0.05, vega: 0.1 },
+    ];
+    for (const greeks of greekSets) {
+      for (const iv of [0.45, null]) {
+        const r = computeMark(inputs({ tracked: tracked({ greeks, iv }), liveUnderlying: 252 }));
+        expect(r, JSON.stringify({ greeks, iv })).toEqual({
+          mark: 5,
+          basis: 'snapshot',
+          frozen: false,
+        });
+      }
+    }
   });
 
   it('live + quote and the underlying has NOT moved → the exact snapshot mid, labeled snapshot', () => {

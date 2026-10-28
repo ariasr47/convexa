@@ -89,8 +89,9 @@ export function computeMark(i: MarkInputs): MarkResult {
 
   // 3) Live → model between snapshots from the underlying move × cached greeks. The model needs
   //    BOTH delta and gamma: a greek the feed did not quote is null, and reading it as 0 would
-  //    give a delta-only number labeled modeled. Missing either one → Black-Scholes from the IV,
-  //    then the snapshot anchor, then a null mark.
+  //    give a delta-only number labeled modeled. A quote with a missing greek keeps the quote (the
+  //    snapshot anchor in step 4). Black-Scholes runs only when there is no quote, which is what
+  //    its label says; a market entry fills at the mid, so a model price would move P/L at entry.
   if (i.isLive && i.liveUnderlying != null) {
     const q = i.tracked.option_quote?.mid;
     const { delta, gamma } = i.tracked.greeks;
@@ -99,7 +100,7 @@ export function computeMark(i: MarkInputs): MarkResult {
       const modeled = q + delta * dS + 0.5 * gamma * dS * dS;
       return { mark: modeled, basis: dS !== 0 ? 'modeled' : 'snapshot', frozen: false };
     }
-    if (i.tracked.iv != null) {
+    if (q == null && i.tracked.iv != null) {
       return {
         mark: bsPrice(i.right, i.liveUnderlying, i.strike, i.tracked.dte, i.tracked.iv),
         basis: 'theoretical',
@@ -107,7 +108,8 @@ export function computeMark(i: MarkInputs): MarkResult {
       };
     }
   }
-  // 4) Not live (cold/loading/quiet-but-open feed) → the snapshot anchor.
+  // 4) Not live (cold/loading/quiet-but-open feed), or live with a quote but a missing greek →
+  //    the snapshot anchor.
   return { mark: anchor.mark, basis: anchor.basis, frozen: false };
 }
 
