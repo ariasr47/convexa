@@ -885,6 +885,16 @@ fn resolve_dark_pool(state: &AppState, q: Option<bool>) -> bool {
     q.unwrap_or(state.config.include_dark_pool)
 }
 
+/// Read the bundle, or one of its slices, back through the closed `MarketWire`. A value the wire
+/// cannot hold (a number that is not finite, which `json!` writes as null, or a field whose type
+/// drifted from the wire) answers the route's 500 and is logged. It never panics the handler.
+fn market_wire(value: Value, sym: &str, part: &'static str) -> Result<MarketWire, AppError> {
+    serde_json::from_value(value).map_err(|error| {
+        tracing::error!(ticker = sym, part, %error, "the market bundle does not fit its wire");
+        AppError::Config("market bundle internal failure".into())
+    })
+}
+
 /// GET /api/ticker/{ticker} — FE TickerBundle shape (not progressive dual-path DTO). The owner's
 /// account only ([`OwnerUser`]): the bundle carries the flip, the walls, net GEX and the strike
 /// profile. The owner check runs before the path and query are read.
@@ -897,12 +907,8 @@ pub async fn get_ticker_bundle(
 ) -> Result<MarketResponse, AppError> {
     let sym = normalize(&ticker)?;
     let dp = resolve_dark_pool(&state, q.dark_pool);
-    Ok(MarketResponse::Ok(
-        serde_json::from_value(
-            build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?,
-        )
-        .expect("bundle wire matches closed schema"),
-    ))
+    let bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
+    Ok(MarketResponse::Ok(market_wire(bundle, &sym, "bundle")?))
 }
 
 /// GET /api/market-data?ticker= — the owner's account only, as the bundle.
@@ -920,10 +926,11 @@ pub async fn get_market_data(
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;
     let dp = resolve_dark_pool(&state, q.dark_pool);
     let bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
-    Ok(MarketResponse::Ok(
-        serde_json::from_value(bundle["market_state"].clone())
-            .expect("market state wire matches closed schema"),
-    ))
+    Ok(MarketResponse::Ok(market_wire(
+        bundle["market_state"].clone(),
+        &sym,
+        "market_state",
+    )?))
 }
 
 /// GET /api/signals?ticker= — the owner's account only, as the bundle.
@@ -941,10 +948,11 @@ pub async fn get_signals(
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;
     let dp = resolve_dark_pool(&state, q.dark_pool);
     let bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
-    Ok(MarketResponse::Ok(
-        serde_json::from_value(bundle["signals"].clone())
-            .expect("signals wire matches closed schema"),
-    ))
+    Ok(MarketResponse::Ok(market_wire(
+        bundle["signals"].clone(),
+        &sym,
+        "signals",
+    )?))
 }
 
 /// GET /api/strike-profile?ticker= — the bundle's strike profile, whole: the owner's account only,

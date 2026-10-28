@@ -8,7 +8,6 @@ use axum::extract::{Path, Query, State};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use utoipa::{IntoResponses, ToSchema};
 
@@ -213,27 +212,22 @@ pub async fn get_prices(
         return Err(AppError::Validation("symbols query is required".into()));
     }
 
-    let mut prices = serde_json::Map::new();
+    // Built as the typed wire, never JSON read back through the schema, so a cached price the wire
+    // cannot hold cannot panic the handler (as `routes::contract` builds its wire).
+    let mut prices = BTreeMap::new();
     let mut missing = Vec::new();
     for sym in &syms {
         match state.prices.get_price(sym).await? {
             Some(p) => {
-                prices.insert(
-                    sym.clone(),
-                    serde_json::to_value(PriceWire::from(StatePriceResponse::from(&p)))
-                        .unwrap_or(Value::Null),
-                );
+                prices.insert(sym.clone(), PriceWire::from(StatePriceResponse::from(&p)));
             }
             None => missing.push(sym.clone()),
         }
     }
 
-    Ok(PricesHttpResponse::Ok(
-        serde_json::from_value(json!({
-            "prices": prices,
-            "missing": missing,
-            "cache": state.prices.backend_name(),
-        }))
-        .expect("batch prices wire matches closed schema"),
-    ))
+    Ok(PricesHttpResponse::Ok(PricesWire {
+        prices,
+        missing,
+        cache: state.prices.backend_name().into(),
+    }))
 }

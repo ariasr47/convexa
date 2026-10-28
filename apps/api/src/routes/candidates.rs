@@ -215,10 +215,14 @@ pub async fn get_candidates(
             session_basis: Some(snap.market_phase.as_str().to_string()),
         },
     );
-    Ok(CandidatesResponse::Ok(
-        serde_json::from_value(crate::services::rec_inputs::candidate_envelope(
-            &sym, &set, age,
-        ))
-        .expect("candidate envelope matches closed schema"),
-    ))
+    // The envelope is the one serializer the export and the rec response share, read back through
+    // the closed wire. A value the wire cannot hold (a number that is not finite, which serde_json
+    // writes as null, or a field whose type drifted from the wire) answers the route's 500 and is
+    // logged. It never panics the handler.
+    let envelope = crate::services::rec_inputs::candidate_envelope(&sym, &set, age);
+    let wire = serde_json::from_value(envelope).map_err(|error| {
+        tracing::error!(ticker = %sym, %error, "the candidate envelope does not fit its wire");
+        AppError::Config("candidate selection internal failure".into())
+    })?;
+    Ok(CandidatesResponse::Ok(wire))
 }
