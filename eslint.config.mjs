@@ -18,47 +18,50 @@ const TYPOGRAPHY_VARIANT_COLOURS = [
   'textDisabled',
   'inherit',
 ].join('|');
-const NOT_A_VARIANT = `:not([value=/^(${TYPOGRAPHY_VARIANT_COLOURS})$/])`;
-const TYPOGRAPHY_COLOUR =
-  "JSXOpeningElement[name.name=/^(Typography|DialogTitle|DialogContentText|AlertTitle)$/] > JSXAttribute[name.name='color']";
+const VARIANT = `/^(${TYPOGRAPHY_VARIANT_COLOURS})$/`;
+// Where a colour reaches Typography: the color prop of Typography and of the components that are
+// styled(Typography) and pass it on (Breadcrumbs, DialogTitle, DialogContentText, AlertTitle), and
+// the color key of a Typography slot in slotProps (ListItemText primary and secondary, CardHeader
+// title and subheader, FormControlLabel typography).
+const TYPOGRAPHY_COLOUR = [
+  "JSXOpeningElement[name.name=/^(Typography|Breadcrumbs|DialogTitle|DialogContentText|AlertTitle)$/] > JSXAttribute[name.name='color']",
+  "JSXOpeningElement[name.name=/^(ListItemText|CardHeader|FormControlLabel)$/] > JSXAttribute[name.name='slotProps'] > JSXExpressionContainer > ObjectExpression > Property[key.name=/^(primary|secondary|title|subheader|typography)$/] > ObjectExpression > Property[key.name='color']",
+].join(', ');
+// A node is the colour's value when each node between it and the prop passes its value on: braces,
+// a ternary's branches, the operands of &&, || and ??, `as`, `satisfies` and `!`. A ternary's test,
+// a comparison, a call's arguments or an object's keys are not the value, at any depth.
+const PASS_THROUGH =
+  'JSXExpressionContainer, ConditionalExpression, LogicalExpression, TSAsExpression, TSSatisfiesExpression, TSNonNullExpression';
+const colourValue = (node) =>
+  `:matches(${TYPOGRAPHY_COLOUR}) ${node}:not(.test):not(:matches(${TYPOGRAPHY_COLOUR}) :matches(:not(${PASS_THROUGH}), .test) *)`;
 const BOX_MESSAGE =
   "MUI 9.2 ignores system props on Box, Stack, Grid and Container: color and bgcolor reach the DOM element as plain attributes and style nothing. Put the value in sx, e.g. sx={{ color: 'text.secondary' }}.";
 const TYPOGRAPHY_MESSAGE =
-  "MUI 9.2 ignores system props on Typography: its color prop takes only a variant colour (primary, secondary, error, info, success, warning, textPrimary, textSecondary, textDisabled, inherit), so a palette path like 'text.secondary' styles nothing. Put the value in sx, e.g. sx={{ color: 'text.secondary' }}.";
+  "MUI 9.2 ignores system props on Typography: its color prop takes only a variant colour (primary, secondary, error, info, success, warning, textPrimary, textSecondary, textDisabled, inherit), so a palette path like 'text.secondary' styles nothing. The same holds for Breadcrumbs, DialogTitle, DialogContentText, AlertTitle and a Typography slot's props. Put the value in sx, e.g. sx={{ color: 'text.secondary' }}.";
 const MUI_SYSTEM_PROP_GUARD = [
   {
     selector:
       'JSXOpeningElement[name.name=/^(Box|Stack|Grid|Container)$/] > JSXAttribute[name.name=/^(color|bgcolor)$/]',
     message: BOX_MESSAGE,
   },
-  // color="text.secondary" and color={'text.secondary'}
-  { selector: `${TYPOGRAPHY_COLOUR} > Literal${NOT_A_VARIANT}`, message: TYPOGRAPHY_MESSAGE },
+  // A string that is not a variant colour: color="text.secondary", a branch, an operand, `as const`.
   {
-    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > Literal${NOT_A_VARIANT}`,
+    selector: colourValue(`Literal[value=type(string)]:not([value=${VARIANT}])`),
     message: TYPOGRAPHY_MESSAGE,
   },
-  // The branches of a ternary (and of one else-if), and the operands of &&, || and ??.
+  // A template: always when it interpolates, otherwise when its text is not a variant colour.
+  // A concatenation counts as a template that interpolates.
   {
-    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > ConditionalExpression > Literal:matches(.consequent, .alternate)${NOT_A_VARIANT}`,
-    message: TYPOGRAPHY_MESSAGE,
-  },
-  {
-    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > ConditionalExpression > ConditionalExpression.alternate > Literal:matches(.consequent, .alternate)${NOT_A_VARIANT}`,
+    selector: colourValue('TemplateLiteral:not([expressions.length=0])'),
     message: TYPOGRAPHY_MESSAGE,
   },
   {
-    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > LogicalExpression > Literal${NOT_A_VARIANT}`,
+    selector: colourValue(
+      `TemplateLiteral[expressions.length=0]:not([quasis.0.value.cooked=${VARIANT}])`,
+    ),
     message: TYPOGRAPHY_MESSAGE,
   },
-  // A template literal: always when it interpolates, otherwise when its text is not a variant.
-  {
-    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > TemplateLiteral:not([expressions.length=0])`,
-    message: TYPOGRAPHY_MESSAGE,
-  },
-  {
-    selector: `${TYPOGRAPHY_COLOUR} > JSXExpressionContainer > TemplateLiteral[expressions.length=0] > TemplateElement:not([value.cooked=/^(${TYPOGRAPHY_VARIANT_COLOURS})$/])`,
-    message: TYPOGRAPHY_MESSAGE,
-  },
+  { selector: colourValue("BinaryExpression[operator='+']"), message: TYPOGRAPHY_MESSAGE },
 ];
 
 export default [
@@ -156,10 +159,14 @@ export default [
       ],
     },
   },
-  {
-    // Vite analogue of Next optimizePackageImports: source must not import the @mui barrel
-    // (type-only barrels are allowed — erased, no runtime graph). Path imports stay.
-    files: ['apps/dashboard/**/*.{ts,tsx}', 'libs/**/*.{ts,tsx}'],
+  // Vite analogue of Next optimizePackageImports: source must not import the @mui barrel
+  // (type-only barrels are allowed — erased, no runtime graph). Path imports stay.
+  // basePath, as for the guard at the end of this file: `nx lint` runs `eslint .` inside the
+  // project folder, where the old patterns 'apps/dashboard/**' and 'libs/**' matched nothing, so
+  // this rule never ran under nx lint or npm run verify.
+  ...['apps/dashboard', 'libs'].map((dir) => ({
+    basePath: path.join(import.meta.dirname, dir),
+    files: ['**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [
         'error',
@@ -179,7 +186,7 @@ export default [
         },
       ],
     },
-  },
+  })),
   // ---- broker-option-grouping · Layer 1 of the no-naming machinery (SPEC §2.3) -------------------
   // File-NAMED deliberately: a directory-wide override would have to re-exempt every shipped module in
   // broker/. That means an implementer CAN forget to add a fourth file here — which is why Layer 2's
@@ -323,8 +330,11 @@ export default [
   // forwards every prop except theme, sx and as). Typography matches it only against the variant
   // colours above. So color="text.secondary" type-checked and did nothing in 34 places until
   // 6c8a1297. This guard fails that pattern; the selectors are at the top of this file.
-  // It cannot see a value held in a variable (color={tone}), a prop passed through a local wrapper
-  // or a spread, or an aliased import. If a Box renders a component that has its own colour prop
+  // It cannot see a value held in a variable (color={tone}) or returned by a call, a prop passed
+  // through a spread, a local wrapper or a styled() wrapper, or an aliased import. It matches the
+  // element's name, not its import: a local component named like one of these (pages/research has
+  // two called Grid) is checked too, although nothing ignores its props; rename it, or disable the
+  // rule on that line. If a Box renders a component that has its own colour prop
   // (component={Button}), pass the prop to that component instead.
   // basePath pins the scope to the dashboard's source whichever config loads this array. `nx lint`
   // runs `eslint .` in apps/dashboard, where a pattern like 'apps/dashboard/**' matches nothing.
