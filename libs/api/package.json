@@ -16,8 +16,7 @@
           "default",
           "^production",
           { "externalDependencies": ["vitest"] },
-          "{workspaceRoot}/apps/api/src/services/auth/service.rs",
-          "{workspaceRoot}/apps/dashboard/src/**/*.{ts,tsx}"
+          "{workspaceRoot}/apps/api/src/services/auth/service.rs"
         ]
       }
     }
@@ -29,6 +28,11 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./contract-authority": {
+      "types": "./src/lib/contract-authority.ts",
+      "import": "./src/lib/contract-authority.ts",
+      "default": "./src/lib/contract-authority.ts"
     },
     "./package.json": "./package.json"
   }

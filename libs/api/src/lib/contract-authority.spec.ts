@@ -1,48 +1,22 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import {
+  authorityViolations,
+  generatedComponentNames,
+  isHandwrittenSource,
+} from './contract-authority';
 
-const GENERATED_COMPONENTS = new Set(
-  [
-    ...readFileSync(resolve(import.meta.dirname, '../generated/schema.ts'), 'utf8').matchAll(
-      /^\s{4}([A-Za-z][A-Za-z0-9]*): \{/gm,
-    ),
-  ].map(([, name]) => name),
+// The boundary's rules, applied here to libs/api/src. The dashboard's sources get the same rules in
+// apps/dashboard/src/app/contract-authority.structural.spec.ts, under the dashboard's own test.
+const GENERATED_COMPONENTS = generatedComponentNames(
+  readFileSync(resolve(import.meta.dirname, '../generated/schema.ts'), 'utf8'),
 );
-
-const FACADE_FILES = new Set([
-  'libs/api/src/lib/client.ts',
-  'libs/api/src/lib/convexa.ts',
-  'libs/api/src/lib/broker.ts',
-]);
-
-function authorityViolations(repoRelative: string, source: string): string[] {
-  const violations: string[] = [];
-  if (
-    !FACADE_FILES.has(repoRelative) &&
-    /(?:from|import\s*\()\s*['"][^'"]*generated\/schema/.test(source)
-  ) {
-    violations.push(`${repoRelative}: generated deep import`);
-  }
-  for (const [, name] of source.matchAll(/^export interface (\w+)/gm)) {
-    if (GENERATED_COMPONENTS.has(name))
-      violations.push(`${repoRelative}: duplicate wire interface ${name}`);
-  }
-  for (const [, name] of source.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*\{/g)) {
-    if (GENERATED_COMPONENTS.has(name))
-      violations.push(`${repoRelative}: duplicate wire object ${name}`);
-  }
-  if (/body\s*:\s*[^\n]+\s+as\s+components\[/.test(source)) {
-    violations.push(`${repoRelative}: unchecked generated HTTP body cast`);
-  }
-  return violations;
-}
 
 function sourceFiles(root: string): string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
     const path = resolve(root, entry.name);
-    if (entry.isDirectory()) return sourceFiles(path);
-    return /\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith('.d.ts') ? [path] : [];
+    return entry.isDirectory() ? sourceFiles(path) : [path];
   });
 }
 
@@ -56,32 +30,28 @@ describe('generated contract authority', () => {
 
   it('enforces the handwritten-wire boundary and rejects every poison mutation', () => {
     const workspace = resolve(import.meta.dirname, '../../../..');
-    const generated = resolve(workspace, 'libs/api/src/generated');
-    const handwritten = [
-      ...sourceFiles(resolve(workspace, 'libs/api/src')),
-      ...sourceFiles(resolve(workspace, 'apps/dashboard/src')),
-    ]
-      .filter((file) => !file.includes(generated) && !/\.(spec|test)\.(ts|tsx)$/.test(file))
-      .map(
-        (file) =>
-          [relative(workspace, file).replaceAll('\\', '/'), readFileSync(file, 'utf8')] as const,
-      );
-    const baseline = handwritten.flatMap(([file, source]) => authorityViolations(file, source));
+    const handwritten = sourceFiles(resolve(workspace, 'libs/api/src'))
+      .map((file) => relative(workspace, file).replaceAll('\\', '/'))
+      .filter(isHandwrittenSource);
+    expect(handwritten).toContain('libs/api/src/lib/convexa.ts');
+    const baseline = handwritten.flatMap((file) =>
+      authorityViolations(
+        file,
+        readFileSync(resolve(workspace, file), 'utf8'),
+        GENERATED_COMPONENTS,
+      ),
+    );
     expect(baseline).toEqual([]);
 
-    const duplicate = authorityViolations(
-      'lib/poison.ts',
-      'export interface LiveUpdateBody { mid: number }',
-    );
-    const duplicateObject = authorityViolations(
-      'lib/poison.ts',
-      'const LiveUpdateBody = { mid: 1 };',
-    );
-    const deepImport = authorityViolations(
+    const check = (file: string, source: string) =>
+      authorityViolations(file, source, GENERATED_COMPONENTS);
+    const duplicate = check('lib/poison.ts', 'export interface LiveUpdateBody { mid: number }');
+    const duplicateObject = check('lib/poison.ts', 'const LiveUpdateBody = { mid: 1 };');
+    const deepImport = check(
       'apps/dashboard/src/poison.ts',
       "import type { paths } from '../../../libs/api/src/generated/schema';",
     );
-    const uncheckedCast = authorityViolations(
+    const uncheckedCast = check(
       'lib/poison.ts',
       "http.POST(\"/x\", { body: value as components['schemas']['LoginBody'] });",
     );
