@@ -576,6 +576,58 @@ mod panic_guard_tests {
         let body = to_bytes(response.into_body(), 1024).await.unwrap();
         assert_eq!(&body[..], br#"{"detail":"internal server error"}"#);
     }
+
+    /// The text of the top-level function that `signature` starts, up to its closing brace.
+    fn fn_text<'s>(src: &'s str, signature: &str) -> &'s str {
+        let start = src
+            .find(signature)
+            .unwrap_or_else(|| panic!("{signature} missing"));
+        let len = src[start..].find("\n}\n").expect("the function closes");
+        &src[start..start + len]
+    }
+
+    /// Whether `body` layers the route graph only through `production_layers`.
+    fn layers_only_through_production_layers(body: &str) -> bool {
+        body.contains("production_layers(") && !body.contains(".layer(")
+    }
+
+    /// The test above drives `production_layers` directly, so it cannot see the production stack
+    /// lose the guard one level up. Source-level proof, in the style of
+    /// `paused_boot_gate_wraps_every_vendor_touching_worker_spawn`: `serve`, `serve_http_only`
+    /// and `production_router` build with `router_with_cors`, and it layers the route graph only
+    /// through `production_layers`. The poison arm is the inline chain `router_with_cors` had
+    /// before the guard.
+    #[test]
+    fn every_production_router_is_layered_through_production_layers() {
+        let src = include_str!("server.rs");
+        let body = fn_text(src, "fn router_with_cors(");
+        assert!(
+            layers_only_through_production_layers(body),
+            "router_with_cors must layer the route graph only through production_layers"
+        );
+        for entry in [
+            "pub async fn serve(",
+            "pub async fn serve_http_only(",
+            "pub fn production_router(",
+        ] {
+            assert!(
+                fn_text(src, entry).contains("router_with_cors("),
+                "{entry} must build its router with router_with_cors"
+            );
+        }
+
+        // Poison arm (in memory, never written to disk).
+        let inline = body.replace(
+            "production_layers(router, limiter, cors)",
+            "router.layer(middleware::from_fn_with_state(limiter, rate_limit_middleware))\
+             .layer(cors).layer(TraceLayer::new_for_http())",
+        );
+        assert_ne!(inline, body, "the poison arm must change the body");
+        assert!(
+            !layers_only_through_production_layers(&inline),
+            "the check must fail the inline chain"
+        );
+    }
 }
 
 #[cfg(test)]
