@@ -45,7 +45,11 @@ const WIDE_ONLY = { display: { xs: 'none', sm: 'inline' } } as const;
 /** The bar's separator: its own `aria-hidden` span holding only "·"; the row's 6px gap spaces it. */
 function BarSeparator({ sx }: { sx?: SxProps<Theme> }) {
   return (
-    <Typography variant="caption" color="text.secondary" aria-hidden sx={sx}>
+    <Typography
+      variant="caption"
+      aria-hidden
+      sx={[{ color: 'text.secondary' }, ...(Array.isArray(sx) ? sx : [sx])]}
+    >
       ·
     </Typography>
   );
@@ -218,18 +222,18 @@ export function AppShell() {
               Demo · sample data
             </Typography>
             <BarSeparator />
-            <Typography variant="caption" color="text.secondary" sx={PHONE_ONLY}>
+            <Typography variant="caption" sx={{ ...PHONE_ONLY, color: 'text.secondary' }}>
               Oct 7, 2026
             </Typography>
             {/* From 600px up the bar names the product: a deep link to the desk or Research never
                 shows the landing's explanation (spec 01, Why §1). The as-of is the owner's D2
                 wording; "Signed in as the demo account" is gone, since the nav already shows the
                 "Demo account" name from 600px up and the drawer shows it on a phone. */}
-            <Typography variant="caption" color="text.secondary" sx={WIDE_ONLY}>
+            <Typography variant="caption" sx={{ ...WIDE_ONLY, color: 'text.secondary' }}>
               Convexa is an options desk: dealer positioning, SEC filings and research notes.
             </Typography>
             <BarSeparator sx={WIDE_ONLY} />
-            <Typography variant="caption" color="text.secondary" sx={WIDE_ONLY}>
+            <Typography variant="caption" sx={{ ...WIDE_ONLY, color: 'text.secondary' }}>
               As of Oct 7, 2026 · no market feed connected
             </Typography>
             {/* Below 600px the playback line starts a line of its own (PhoneLineBreak), so it takes
@@ -239,7 +243,7 @@ export function AppShell() {
               <>
                 <PhoneLineBreak />
                 <BarSeparator sx={WIDE_ONLY} />
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                   Simulated playback paused. Showing the last sample.
                 </Typography>
                 <Button size="small" onClick={resumeDemoPlayback} sx={{ minHeight: 44 }}>
@@ -251,7 +255,7 @@ export function AppShell() {
               <>
                 <PhoneLineBreak />
                 <BarSeparator sx={WIDE_ONLY} />
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                   Sample playback complete. Showing the last sample.
                 </Typography>
               </>

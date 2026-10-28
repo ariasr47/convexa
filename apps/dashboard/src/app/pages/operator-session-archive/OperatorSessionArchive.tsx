@@ -89,11 +89,11 @@ function GateForm({
   return (
     // The fields fill the panel (the board's `fld` rows), not a 560px column (fidelity SITE-14).
     <Stack spacing={2}>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         {COPY.lockedCaption}
       </Typography>
       {api.documentIsPages && (
-        <Typography variant="body2" color="text.secondary" data-testid="osa-pages-helper">
+        <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="osa-pages-helper">
           {COPY.pagesHelper}
         </Typography>
       )}
@@ -428,7 +428,7 @@ export function OperatorSessionArchive(props: OperatorSessionArchiveProps = {}) 
 
           {standing.kind === 'locked' && (
             <Panel title={COPY.booksHead} testId="osa-books-locked">
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 {COPY.booksLocked}
               </Typography>
             </Panel>

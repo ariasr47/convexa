@@ -98,7 +98,7 @@ export function BrowserNotifyControl({
           </Typography>
           <DataStateTag state="notSetUp" label="Blocked here" />
         </Box>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 13 }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: 13 }}>
           {NOTIFY_COPY.blocked}
         </Typography>
       </Box>
@@ -110,8 +110,7 @@ export function BrowserNotifyControl({
         <NotificationsNoneOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={{ fontSize: 13 }}
+          sx={{ color: 'text.secondary', fontSize: 13 }}
           data-testid="alerts-notify-explain"
         >
           {NOTIFY_COPY.unavailable}
@@ -124,7 +123,7 @@ export function BrowserNotifyControl({
     <>
       <Box sx={rowSx}>
         <NotificationsNoneOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-        <Typography variant="caption" color="text.secondary" sx={{ flex: '1 1 160px' }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary', flex: '1 1 160px' }}>
           {`Fired alerts are listed here. Browser notifications, once allowed, also pop ${notifyWhen(where)}.`}
         </Typography>
         {on ? (
@@ -235,7 +234,7 @@ export function NotifyAskDialog({
             </Typography>
           </Box>
         </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 13 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13 }}>
           {NOTIFY_COPY.askNext}
         </Typography>
       </DialogContent>

@@ -149,8 +149,10 @@ export function MarketDataNotice() {
         </Typography>
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={mode === 'not_live' ? notLiveBodySx : { display: 'inline' }}
+          sx={{
+            ...(mode === 'not_live' ? notLiveBodySx : { display: 'inline' }),
+            color: 'text.secondary',
+          }}
         >
           {copy.body}
         </Typography>

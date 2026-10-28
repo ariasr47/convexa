@@ -46,8 +46,7 @@ function DemoPublicRecord({ symbol, d }: { symbol: string; d: PublicTicker }) {
           id="public-record"
           component="h2"
           variant="overline"
-          color="text.secondary"
-          sx={{ lineHeight: 1.6 }}
+          sx={{ color: 'text.secondary', lineHeight: 1.6 }}
         >
           {`Public record · ${symbol}`}
         </Typography>
@@ -95,13 +94,13 @@ function FactList({
               <>
                 <Typography component="span">{fact.text}</Typography>
                 {fact.sourceIds.length <= 3 ? (
-                  <Typography component="span" variant="caption" color="text.secondary">
+                  <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>
                     {' '}
                     Source: {fact.sourceIds.join(', ')}
                   </Typography>
                 ) : (
                   <Box sx={{ minWidth: 0 }}>
-                    <Typography component="span" variant="caption" color="text.secondary">
+                    <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>
                       {' '}
                       Source: {fact.sourceIds.slice(0, 3).join(', ')} …
                     </Typography>
@@ -126,8 +125,7 @@ function FactList({
                       <Typography
                         component="div"
                         variant="caption"
-                        color="text.secondary"
-                        sx={{ overflowWrap: 'anywhere', minWidth: 0 }}
+                        sx={{ color: 'text.secondary', overflowWrap: 'anywhere', minWidth: 0 }}
                       >
                         {fact.sourceIds.join(', ')}
                       </Typography>
@@ -136,9 +134,9 @@ function FactList({
                 )}
               </>
             ) : fact.state === 'checked_none' ? (
-              <Typography color="text.secondary">Checked · {fact.text}</Typography>
+              <Typography sx={{ color: 'text.secondary' }}>Checked · {fact.text}</Typography>
             ) : (
-              <Typography color="text.secondary">Not curated for this sample.</Typography>
+              <Typography sx={{ color: 'text.secondary' }}>Not curated for this sample.</Typography>
             )}
           </Box>
         ))}
@@ -468,7 +466,7 @@ export function ResearchView({ symbol }: { symbol: string }) {
   if (state.phase === 'loading')
     return (
       <Stack spacing={2} aria-label="Loading sample research">
-        <Typography component="h1" variant="overline" color="text.secondary">
+        <Typography component="h1" variant="overline" sx={{ color: 'text.secondary' }}>
           Sample research note · authored for this scenario
         </Typography>
         <Skeleton variant="rounded" height={90} />
@@ -541,7 +539,7 @@ export function ResearchView({ symbol }: { symbol: string }) {
               gap: 1,
             }}
           >
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               Same {ticker} scenario · no external news, AI or forecast citations. Not investment
               advice.
             </Typography>

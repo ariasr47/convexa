@@ -1351,13 +1351,13 @@ export function TickerDashboard() {
             {page.sourceBasis.label} · Authored scenario · October 7, 2026 · no market feed
             connected
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             Structure and related signals use the selected expiry set:{' '}
             {page.selectedExpiryKey ?? 'awaiting sample snapshot'}. Full-chain context keeps its
             labeled full-chain basis. Sample analysis is authored for this scenario.
           </Typography>
           {page.positionEval == null && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               Position evaluation unavailable for this sample.
             </Typography>
           )}
@@ -1373,7 +1373,7 @@ export function TickerDashboard() {
           })
             .filter(([, absent]) => absent)
             .map(([label]) => (
-              <Typography key={label} variant="caption" color="text.secondary">
+              <Typography key={label} variant="caption" sx={{ color: 'text.secondary' }}>
                 {label} unavailable for this sample.
               </Typography>
             ))}

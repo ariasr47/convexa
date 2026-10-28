@@ -215,11 +215,11 @@ function SignInWall({ surface, demoPath, freePath }: WallProps) {
           {subsystemDegraded ? AUTH_COPY.gate.sessionUnknown : `Sign in to open ${surface}`}
         </Typography>
         {subsystemDegraded && (
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
             {AUTH_COPY.gate.unavailable}
           </Typography>
         )}
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
           {copy.unlocks}
         </Typography>
         <Box sx={wallButtonsSx}>
@@ -267,18 +267,16 @@ function SignInWall({ surface, demoPath, freePath }: WallProps) {
         </Box>
         <Typography
           variant="body2"
-          color="text.secondary"
           data-testid="require-auth-policy"
-          sx={{ fontSize: 13, lineHeight: 1.6 }}
+          sx={{ color: 'text.secondary', fontSize: 13, lineHeight: 1.6 }}
         >
           {WALL_POLICY}
         </Typography>
         {demoPath && (
           <Typography
             variant="body2"
-            color="text.secondary"
             data-testid="require-auth-demo"
-            sx={wallFootSx}
+            sx={{ ...wallFootSx, color: 'text.secondary' }}
           >
             {copy.demo}
           </Typography>

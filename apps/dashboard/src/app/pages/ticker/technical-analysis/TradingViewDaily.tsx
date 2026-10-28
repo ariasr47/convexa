@@ -119,8 +119,7 @@ export function TradingViewDaily({
       )}
       <Typography
         variant="caption"
-        color="text.secondary"
-        sx={{ maxWidth: 640, textWrap: 'pretty' }}
+        sx={{ color: 'text.secondary', maxWidth: 640, textWrap: 'pretty' }}
       >
         This chart loads from TradingView, which receives your IP address and this page’s address.
         Convexa doesn’t read, store or compute anything from the prices in it.

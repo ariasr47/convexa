@@ -83,7 +83,7 @@ function RiskField({
   return (
     <Box>
       <Stack direction="row" spacing={0.25} sx={{ alignItems: 'center' }}>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
           {label}
         </Typography>
         {help && <AccessibleHelp label={`${label} help`} text={help} />}
@@ -252,7 +252,7 @@ function DecisionMetadata({ rec, bundle }: { rec: RecResponse; bundle: TickerBun
         })()}
         caption={
           dteMin != null && dteMax != null ? (
-            <Typography component="span" variant="caption" color="text.secondary">
+            <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>
               {dteWindowCaption(dteMin, dteMax)}
             </Typography>
           ) : undefined
@@ -276,7 +276,7 @@ function DecisionMetadata({ rec, bundle }: { rec: RecResponse; bundle: TickerBun
       />
       <Box>
         <Stack direction="row" sx={{ alignItems: 'center' }}>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             {PLAN_FIELD_LABEL.confidence}
           </Typography>
           <AccessibleHelp

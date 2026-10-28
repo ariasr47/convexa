@@ -34,7 +34,7 @@ export function DemoSymbolMissing({ ticker }: { ticker: string }) {
         <Typography component="h1" variant="h5" sx={{ fontWeight: 700 }}>
           {`${t} isn’t in the demo scenario.`}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ textWrap: 'pretty' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', textWrap: 'pretty' }}>
           The demo runs one authored day, Oct 7, 2026, for six symbols, so it has no sample data for{' '}
           {t}. Open one of these instead:
         </Typography>
