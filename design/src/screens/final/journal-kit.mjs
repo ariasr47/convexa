@@ -15,7 +15,7 @@ import { icon, finalPage } from '../../lib.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
 import { chartFrame, dataTable, plot } from '../../chart-kit.mjs';
 import { dlg, fld, seg, statesBoard, sw } from '../v4/kit.mjs';
-import { ACCT_CSS, wallButtons, DEMO as DEMO_URL } from './account-pages.mjs';
+import { ACCT_CSS, ownerWall, wallButtons } from './account-pages.mjs';
 import { ANSWER_WORD, CALL, ENTRY, HIGH, KIND_WORD, LATEST, LATER_NOTES, PATH, PLAN, SNAPSHOT, STRINGS, daysBetween, etDate, fmtDate, fmtDay, fmtTime, pct, rFooter, recalledLine, usd } from '../../data/journal-sample.mjs';
 
 export { statesBoard, stateTag, provChip, icon, dlg, fld, seg, sw };
@@ -355,9 +355,12 @@ export const jrSampleChip = () => provChip(SAMPLE_CHIP, 'dashed');
 export function jrWall({ path = '/positions/journal' } = {}) {
   return `<div class="ac-wall" role="region" aria-label="Sign in to open your journal">${stateTag('locked', 'Private testing')}<h1 class="display">Sign in to open your journal</h1><p class="steel">This area is limited to invited accounts while Convexa is in private testing.</p>${wallButtons(path)}<p class="dline">Invited accounts only; new sign-ups are closed while Convexa is in private testing. Research, rates, positioning and short data are open to everyone.</p><p class="dline" style="border-top: 1px solid var(--line); padding-top: 12px;">The demo account shows this screen on sample data.</p></div>`;
 }
-/** Signed in as another account (API 403 owner_only): a sentence and the demo, no tag (open question 12). */
+/** Signed in as another account (API 403 owner_only): the owner gate's wall, no tag (open question 12). The journal
+ *  shows the shipped OwnerOnlyWall (the slice 1a plan, F4), so this draws it as the desk, Scanner and Positions boards
+ *  do (account-pages.mjs ownerWall, 2026-10-28): the sentence, “See it on the demo →” and “For the site’s operator”,
+ *  folded. */
 export function jrNotOwner({ path = '/positions/journal' } = {}) {
-  return `<div class="ac-wall" role="region" aria-label="Private journal"><h1 class="display" style="font-size: 24px;">This journal is private to the account that owns this Convexa.</h1><div class="ac-wbtns"><a href="${DEMO_URL}${path}" class="btn secondary">See it on the demo →</a></div></div>`;
+  return ownerWall('journal', { demoPath: path });
 }
 
 // =========================================================================================================

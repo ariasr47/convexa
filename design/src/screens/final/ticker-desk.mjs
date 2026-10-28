@@ -10,6 +10,7 @@ import { chartFrame, dataTable, fmt, plot, rangeBar, sparkline, stateBody, ticks
 import { dataCell, gexBars, provChip, stateTag } from '../../components/data-states.mjs';
 import { thirdPartyFrame } from '../../components/charts.mjs';
 import { statesBoard } from '../v4/kit.mjs';
+import { ownerWall, ownerWhen } from './account-pages.mjs';
 
 export const TK_CSS = `
   /* chart-kit declares the chart roles on :root and [data-scheme="dark"] only, so inside a light board they keep
@@ -317,6 +318,9 @@ export function deskStatesBoardBody({ minHeight = 0, scheme = 'dark' } = {}) {
     { name: 'TradingView blocked or timed out', tag: null, when: 'A content blocker or the network stopped TradingView’s script, or 12 s passed without the frame. Information, not a failure of ours; resets when the symbol changes.', html: thirdPartyFrame({ ticker: 'NVDA', state: 'blocked' }) },
     { name: 'AI read · Sign in', tag: ['locked'], when: 'Only on a build with the options feed (neither site today): signed out, the read says what is behind the wall and offers the one way in.', html: dataCell({ fam: 'ai', state: 'locked', w: '100%', h: 'auto' }) },
     { name: 'AI read · no key', tag: ['notConfigured', 'Add a key'], when: 'Same build, signed in without a provider key: reads run on the reader’s own key.', html: dataCell({ fam: 'ai', state: 'notConfigured', w: '100%', h: 'auto' }) },
+    // The full desk's owner wall (app.tsx TickerDeskRoute): SPY, as the app's measurements drew it; its free path is
+    // the ticker's research, which reads no licensed data.
+    { name: 'Not the owner', tag: null, when: ownerWhen('The desk gives way to this wall and stops polling; its free path is the ticker’s research.'), html: ownerWall('desk', { demoPath: '/ticker/SPY', freePath: { to: '/ticker/SPY/research', label: 'Read SPY research' }, standalone: true }), wide: true },
     { name: 'Demo · sample data', tag: ['demo'], when: 'Staging, always: the demo bar is up, the account is the seed demo account, every options panel runs the Oct 7 scenario in a dashed, hatched frame, and every source chip says “shaped like”.', html: `${finalDemoNotice()}<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">${P(`${head('Sample analysis · SPY', stateTag('sample', 'Sample read'))}<p class="tk-verdict" style="font-size: 20px;">No trade · sit this one out</p><span class="dline">This is an authored example. No model was called.</span><div style="margin-top: auto;">${provChip('Sample · shaped like an AI read', 'dashed')}</div>`, { sample: true })}${positionPanel()}</div>` },
     { name: 'Ticker outside the demo', tag: ['empty', 'Not in the demo'], when: 'Staging, a symbol beyond SPY, QQQ, AAPL, MSFT, NVDA and TSLA: the scenario has no data for it, so the desk says so and offers the six.', html: `<div class="hd-p"><div class="ph"><h3>RKLB isn’t in the demo scenario</h3></div><span class="dline">The demo runs on six symbols. Pick one to see the whole desk on sample data.</span>${quick(DEMO_SYMS, '')}</div>` },
   ];

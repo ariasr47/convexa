@@ -33,6 +33,7 @@ export const ROWS = [
       ],
       states: [
         { tag: 'locked', when: 'Production visitor: the wall, the one way in, the demo button.' },
+        { tag: null, when: 'Not the owner, on a build with the options feed (neither site today): “The scanner is private to the account that owns this Convexa.”, “See it on the demo →” and “For the site’s operator”, folded; no tag (open question 12) and no Sign in.' },
         { tag: 'notLive', when: 'Production, signed in: the explain panel, the table’s outline, “See it on the demo →”.' },
         { tag: 'demo', when: 'Staging: the sample scan, chips dashed and “shaped like”.' },
         { tag: 'loading', when: 'Rows held at final height while the sweep answers.' },
@@ -63,9 +64,10 @@ export const ROWS = [
         { status: 'shipped', what: 'Wall copy: the Private testing tag, sign-ups closed, “Open a ticker desk” (RequireAuth, 2026-10-15).' },
         { status: 'shipped', what: 'Signed in on production (not_live): ScannerNotLive, with would show / off because, “See it on the demo →” and the table’s outline; it never calls /api/scan* (app.tsx ScannerRoute). A paused feed keeps the scanner and its banner.' },
         { status: 'shipped', what: 'The “Live on this site” link cards (Treasury, CFTC, FINRA, EDGAR, each with its own state word) and the On this page legend counting them.' },
+        { status: 'shipped', what: 'Not the owner, 2026-10-28 (e86ab538, 4471cb0b), on the boards the same day. Once the owner gate refuses the session (403 owner_only), the scanner gives way to OwnerOnlyWall: the sentence as a 24px title, “See it on the demo →” as a neutral outlined 44px button, and “For the site’s operator” folded under a rule, whose line reads “If this is your Convexa, add your account’s email to OWNER_EMAILS on the API.” No tag, no Sign in. The refusal holds until a sign-in or sign-out, and the scan asks nothing while it stands (RequireAuth.tsx, ownerGate.ts, useScan.ts).' },
       ],
       rulings: ['P-1', 'P-2', 'P-3', 'P-5 rejected', 'P-11', 'P-13', ...ENV, 'Wall 2026-10-14'],
-      code: ['apps/dashboard/src/app/pages/scanner/ (Scanner.tsx, ScanTable.tsx, ScanCard.tsx, ScanToolbar.tsx, labels.ts)', 'apps/dashboard/src/app/features/auth/RequireAuth.tsx', 'apps/dashboard/src/app/app.tsx:249-258', 'libs/api/src/lib/demo/transport.ts:1217-1260', 'design/src/screens/final/account-pages.mjs'],
+      code: ['apps/dashboard/src/app/pages/scanner/ (Scanner.tsx, ScanTable.tsx, ScanCard.tsx, ScanToolbar.tsx, labels.ts)', 'apps/dashboard/src/app/features/auth/{RequireAuth.tsx,ownerGate.ts}', 'apps/dashboard/src/app/app.tsx:249-258', 'libs/api/src/lib/demo/transport.ts:1217-1260', 'design/src/screens/final/account-pages.mjs'],
     },
     boards: [
       { id: 'staging', title: 'Staging · demo account', w: 1440, h: 1142, body: (o) => scannerStaging(o) },
@@ -103,6 +105,7 @@ export const ROWS = [
       ],
       states: [
         { tag: 'locked', when: 'Production visitor: the wall, the one way in, the demo button.' },
+        { tag: null, when: 'Not the owner, on a build with the options feed (neither site today): “Positions are private to the account that owns this Convexa.”, “See it on the demo →” and “For the site’s operator”, folded; no tag (open question 12) and no Sign in.' },
         { tag: ['notLive', 'Mark not live'], when: 'Production, signed in: records persist; option marks need the feed; P&L from user-entered prices only.' },
         { tag: 'sample', when: 'Staging: each mark names the sample chain and its scenario time.' },
         { tag: 'empty', when: '“No simulated positions yet. Open one to start your book.”' },
@@ -127,9 +130,10 @@ export const ROWS = [
         { status: 'shipped', what: 'Wall copy: the Private testing tag, sign-ups closed, “Open a ticker desk” (RequireAuth, 2026-10-15).' },
         { status: 'shipped', what: 'Marks name their source (positions/markFeed.tsx, 2026-10-15): “Sample mark · <scenario time>” on staging rows and cards; “Mark not live” beside a dash on a signed-in production book; the page lead says which.' },
         { status: 'shipped', what: 'The P/L sparkline on the chart roles: zero line, each run coloured by its own sign and split at the crossing, a text twin (PlSparkline.tsx, 2026-10-15).' },
+        { status: 'shipped', what: 'Not the owner, 2026-10-28 (e86ab538, 4471cb0b), on the boards the same day. Once the owner gate refuses the session (403 owner_only), the book gives way to OwnerOnlyWall: the sentence as a 24px title, “See it on the demo →” as a neutral outlined 44px button, and “For the site’s operator” folded under a rule, whose line reads “If this is your Convexa, add your account’s email to OWNER_EMAILS on the API.” No tag, no Sign in. While the refusal stands, the bundle, the stream, the contract and spot lookups, the order engine and the trade dialog’s lookup ask nothing (RequireAuth.tsx, ownerGate.ts, PositionsPage.tsx; useContractLive.ts, useTickerSpots.ts and useOrderEngine.ts in 4471cb0b).' },
       ],
       rulings: ['P-1', 'P-2', 'P-3', 'P-5 rejected', 'P-11', 'P-13', ...ENV],
-      code: ['apps/dashboard/src/app/pages/positions/PositionsPage.tsx', 'apps/dashboard/src/app/features/trading/{positions,orders,broker}/', 'apps/dashboard/src/app/features/auth/RequireAuth.tsx', 'libs/api/src/lib/demo/workspace.ts', 'design/src/screens/final/account-pages.mjs'],
+      code: ['apps/dashboard/src/app/pages/positions/PositionsPage.tsx', 'apps/dashboard/src/app/features/trading/{positions,orders,broker}/', 'apps/dashboard/src/app/features/auth/{RequireAuth.tsx,ownerGate.ts}', 'libs/api/src/lib/demo/workspace.ts', 'design/src/screens/final/account-pages.mjs'],
     },
     boards: [
       { id: 'staging', title: 'Staging · demo account', w: 1440, h: 1020, body: (o) => positionsStaging(o) },

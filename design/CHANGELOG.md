@@ -680,3 +680,38 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
   cap; a second measurement changes 0. Build 0 (a second run byte-identical), verify-tokens 0, check-sample 0
   (352 of 352), the sweep 0 (51 artboards: 0 overflow, 0 text under 11px), content past a frame 0, amber text 0,
   NUL bytes 0.
+
+## 2026-10-28 · The owner-only state on the desk, Scanner and Positions boards (app `e86ab538`, `4471cb0b`)
+
+- **Drawn:** a "Not the owner" cell on `FDeskStates`, `FScannerStates` and `FPositionsStates`, each the shipped
+  `OwnerOnlyWall` (`RequireAuth.tsx`): the surface's sentence as a 24px title, "See it on the demo →" as a neutral
+  outlined 44px button (on the desk, then "Read SPY research", the route's free path), and "For the site’s operator"
+  folded under a rule. No tag (P-2 has no word for it, spec 08 open question 12) and no Sign in. The cells are wide,
+  as the sign-in wall's cell is on Scanner and Positions, and sit after Signed out (Scanner, Positions) or after AI
+  read · no key (the desk). Each says when the wall shows: only on a build with the options feed, so neither site
+  today.
+- **Closed only:** every operator line on the canvas is drawn folded (`planned.mjs` `nc()`, Filings, the trust
+  pages), so the cells draw the closed form. The line itself is in the markup.
+- **Spec cards:** Desk, Scanner and Positions list the state in States (no tag) and a shipped line citing both
+  commits in Built so far; Code adds `ownerGate.ts`.
+- **One drawing:** `account-pages.mjs` `ownerWall()` draws the wall, and `jrNotOwner` now draws through it, since the
+  slice 1a plan shows the journal through the same `OwnerOnlyWall` (its F4). So `FJournalTimelineStates`' wall gains
+  the folded operator line and wraps as the app does. `WALL_CSS` carries the walls' rules to the desk's board, whose
+  row doesn't load `ACCT_CSS`; `ACCT_CSS` is byte-identical (sha256 `7f4fe025…`).
+- **Against the app** (`fe-fixup` measurements and crops at 1440, fine pointer, and 390, coarse; dark and light; 16px
+  root): the wall is 600 × 227.78 at 1440 and 358 × 308.17 (desk) or 254.17 at 390; the title breaks where the app's
+  does; buttons are 44 tall (312 wide at 390); the summary is 24 tall (44 coarse); every text size and colour is the
+  app's (summary 6.19:1 dark, 5.42:1 light). The title wraps greedily: `lib.mjs` balances every board h1, which broke
+  "…private to the / account that…" where the app breaks after "that".
+- **Differs on purpose:** at 1440 the buttons are 2.6 and 2.0px wider (the kit's `.btn` pads 14 + 1 a side, MUI's
+  outlined button 13 + 1; every wall button on the canvas has it); the → is the app's Plex Sans glyph (its vendored
+  `symbols` subset, `styles.css`) but a fallback face on the boards, whose Google Fonts Plex Sans has no U+2192 (every
+  → on the canvas has it); the boards are drawn at a 16px root (px only).
+- **Heights:** 7 stems changed. FDeskSpec 5684 → 5964, FDeskStates 2770 → 3255, FScannerSpec 2797 → 2999,
+  FScannerStates 2696 → 3181, FPositionsSpec 2152 → 2396, FPositionsStates 2118 → 2603, FJournalTimelineStates
+  2300 → 2351. A measurement of all 253 boards before writing changed only these; the second measurement changed 0.
+- **Checked:** build 0 (a second run byte-identical), verify-tokens 0, the sweep of the 9 changed artboards 0
+  (0 overflow, 0 text under 11px, 0 clipped, no change at a 20px default font), canvas layout 0 overlaps, NUL 0, CR 0.
+- **Left as found:** the desk's own sign-in wall is not drawn. Since `e86ab538`, on a build with the feed, a signed-out
+  visitor's refused bundle read (403 `auth_required`) puts up the sign-in wall with "Read SPY research" in place of
+  the desk, so the desk's AI read · Sign in cell may no longer be reachable there. Not checked in a running app.

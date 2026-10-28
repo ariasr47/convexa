@@ -10,6 +10,15 @@ import { fld, seg, statesBoard, sw } from '../v4/kit.mjs';
 import { ALERT_KINDS, FIRED, KIND, RULES, STRUCTURE_KINDS } from '../../data/alerts.mjs';
 import { SIM } from './account-dialogs.mjs';
 
+// The walls' rules (RequireAuth.tsx wallPanelSx, wallTitleSx, wallButtonsSx). ACCT_CSS takes them where they always
+// stood, so its text is unchanged; WALL_CSS carries them to a board whose row doesn't load ACCT_CSS (the desk's).
+const WALL_BOX = '.ac-wall { max-width: 600px; margin: 56px auto; display: flex; flex-direction: column; gap: 14px; padding: 32px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); }';
+const WALL_H1 = '.ac-wall h1 { margin: 0; font-size: 28px; letter-spacing: -0.01em; }';
+const WALL_P = '.ac-wall p { margin: 0; line-height: 1.6; }';
+const WALL_BTNS = '.ac-wbtns { display: flex; flex-wrap: wrap; gap: 10px; } .ac-wall .ac-wbtns .btn { min-height: 44px; }';
+const WALL_PHONE = '.ac-wall { margin: 24px 0; padding: 22px; } .ac-wall .btn { flex: 1 1 100%; min-height: 44px; }';
+export const WALL_CSS = [WALL_BOX, WALL_H1, WALL_P, WALL_BTNS, `@media (max-width: 599px) { ${WALL_PHONE} }`].join('\n');
+
 export const ACCT_CSS = `
   .ap-h.ac-scanh { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 32px; row-gap: 12px; align-items: start; }
   .ap-h.ac-scanh h1 { font-size: clamp(30px, 3vw, 40px); line-height: 1.1; letter-spacing: -0.01em; } /* owner NO-12 A, 2026-10-25: every account page h1 */
@@ -44,13 +53,13 @@ export const ACCT_CSS = `
   .ac-ord:first-child { border-top: 0; padding-top: 0; }
   .ac-ord b { font: 600 13.5px 'IBM Plex Mono', monospace; }
   .ac-ord .dline { grid-column: 1 / -1; }
-  .ac-wall { max-width: 600px; margin: 56px auto; display: flex; flex-direction: column; gap: 14px; padding: 32px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); }
+  ${WALL_BOX}
   .ac-wall > .stag, .hd-p > .prov, .hd-p > .stag { align-self: flex-start; }
   .v4 .fld > .seg4 { align-self: flex-start; }
   .ac-pills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .ac-wall h1 { margin: 0; font-size: 28px; letter-spacing: -0.01em; }
-  .ac-wall p { margin: 0; line-height: 1.6; }
-  .ac-wbtns { display: flex; flex-wrap: wrap; gap: 10px; } .ac-wall .ac-wbtns .btn { min-height: 44px; }
+  ${WALL_H1}
+  ${WALL_P}
+  ${WALL_BTNS}
   .ac-acct { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
   .ac-av { width: 40px; height: 40px; border-radius: 50%; background: var(--raised-2); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; flex: 0 0 auto; }
   .ac-fam { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
@@ -58,7 +67,7 @@ export const ACCT_CSS = `
   @media (max-width: 1099px) { .ac-live, .ac-fam { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 599px) { .ac-fam { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 899px) { .ap-h.ac-scanh { grid-template-columns: minmax(0, 1fr); } .ac-sess { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 0; } .ac-sess .dline { text-align: left; } .ac-strip { grid-template-columns: 1fr; } .ac-ghost .hdr, .ac-ghost .r { grid-template-columns: 1.2fr repeat(3, 1fr); } .ac-ghost .hdr span:nth-child(n+5), .ac-ghost .r i:nth-child(n+5) { display: none; } .ac-prev .g { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 599px) { .ac-live { grid-template-columns: 1fr; } .ac-wall { margin: 24px 0; padding: 22px; } .ac-wall .btn { flex: 1 1 100%; min-height: 44px; } .ac-hold { grid-template-columns: 56px minmax(0, 1fr) auto; } .ac-hold > :nth-child(3) { display: none; } }
+  @media (max-width: 599px) { .ac-live { grid-template-columns: 1fr; } ${WALL_PHONE} .ac-hold { grid-template-columns: 56px minmax(0, 1fr) auto; } .ac-hold > :nth-child(3) { display: none; } }
 `;
 
 export const DEMO = STAGING_DEMO_URL;
@@ -124,6 +133,37 @@ export const scanNotLive = () => P('Scanner', stateTag('notLive'), `<p class="dl
 // at every width (minHeight 44 in the app); under 600px they stack full width. The free path opens /ticker, as shipped.
 export const wallButtons = (path) => `<div class="ac-wbtns"><a href="#signin" class="btn primary">Sign in</a><a href="${DEMO}${path}" class="btn secondary">See it on the demo →</a><a href="/ticker" class="btn secondary">Open a ticker desk</a></div>`;
 export const scannerWall = () => `<div class="ac-wall" role="region" aria-label="Sign in to open the scanner">${stateTag('locked', 'Private testing')}<h1 class="display">Sign in to open the scanner</h1><p class="steel">See ranked dealer-gamma setups across the universe, then jump into any name for walls, flip and flow.</p>${wallButtons('/scanner')}<p class="dline">Invited accounts only; new sign-ups are closed while Convexa is in private testing. Research, rates, positioning and short data are open to everyone.</p><p class="dline" style="border-top: 1px solid var(--line); padding-top: 12px;">Want to see a scan? The demo account runs one, on sample data.</p></div>`;
+// The owner gate's wall (RequireAuth.tsx OwnerOnlyWall; e86ab538, 4471cb0b, 2026-10-28): a signed-in account the API
+// refuses with 403 owner_only. Spec 08's "Not the owner" (journal-kit.mjs jrNotOwner draws the journal's) adapted to the
+// tool: the surface's sentence as the title, 24px, a step under the sign-in wall's 28px; "See it on the demo →" as a
+// neutral outlined 44px button; the route's free path after it when it has one (the desk's, its ticker's research; the
+// scanner and Positions have none); then "For the site’s operator" folded under a rule, its line worded to hold whether
+// OWNER_EMAILS is unset or lists other accounts. No state tag (P-2 has no word for it, open question 12) and no Sign
+// in: the account is signed in. The details are drawn closed, as every operator line on the canvas is. The sentence and
+// label are RequireAuth.tsx wallCopy()'s `owner` and `ownerLabel`. The title wraps greedily, as the app's MUI h1 does
+// (lib.mjs balances every board h1, which broke "…private to the / account that…" where the app breaks after "that").
+// The details follow wallFootSx (13px, line height 1.6, text.secondary, 12px under a divider), the summary keeps the
+// browser's disclosure marker, as the app's does, and its line is Plex Mono 11px (MONO_FACE).
+const OWNER_WALL = {
+  desk: { label: 'Private desk', sentence: 'This desk is private to the account that owns this Convexa.' },
+  scanner: { label: 'Private scanner', sentence: 'The scanner is private to the account that owns this Convexa.' },
+  positions: { label: 'Private positions', sentence: 'Positions are private to the account that owns this Convexa.' },
+  // Spec 08's own sentence and the region name its boards give it; slice 1a adds them to wallCopy() (its plan, F4).
+  journal: { label: 'Private journal', sentence: 'This journal is private to the account that owns this Convexa.' },
+};
+const OWNER_OP_CSS = '.ac-wall .ac-op { padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.6; color: var(--steel); } .ac-wall .ac-op > summary { cursor: pointer; min-height: 24px; } .ac-wall .ac-op > .mono { font-size: 11px; } @media (pointer: coarse) { .ac-wall .ac-op > summary { min-height: 44px; line-height: 44px; } }';
+/** The owner gate's wall for `surface` ('desk' | 'scanner' | 'positions'). It brings its own rules in a <style>, as
+ *  research.mjs's STRIP_HATCH does, so it draws the same in any row: `standalone` adds WALL_CSS for a row that doesn't
+ *  load ACCT_CSS (the desk's). */
+export function ownerWall(surface, { demoPath, freePath = null, standalone = false } = {}) {
+  const c = OWNER_WALL[surface];
+  const free = freePath ? `<a href="${freePath.to}" class="btn secondary">${freePath.label}</a>` : '';
+  return `<style>${standalone ? `${WALL_CSS}\n` : ''}${OWNER_OP_CSS}</style><div class="ac-wall" role="region" aria-label="${c.label}"><h1 class="display" style="font-size: 24px; text-wrap: wrap;">${c.sentence}</h1><div class="ac-wbtns"><a href="${DEMO}${demoPath}" class="btn secondary">See it on the demo →</a>${free}</div><details class="ac-op"><summary>For the site’s operator</summary><span class="mono">If this is your Convexa, add your account’s email to OWNER_EMAILS on the API.</span></details></div>`;
+}
+/** The states boards' "Not the owner" cell: when it happens, in the boards' words. A build with the options feed is
+ *  the only place the wall can show: without one, the scanner explains itself, Positions marks say Not live and the
+ *  desk is the public desk, and none of them asks an owner-only route (app.tsx, PositionsPage.tsx markFeed). */
+export const ownerWhen = (gives) => `Only on a build with the options feed (neither site today). Signed in, but not the owner: the API answers 403 owner_only, as it does for every account while OWNER_EMAILS is unset. ${gives} No P-2 word exists for this, so the wall has no tag (open question 12).`;
 export function scannerProduction({ minHeight = 0, scheme = 'dark' } = {}) {
   return finalPage({ scheme, minHeight, active: 'scanner', label: 'Scanner', main: `<div class="wrap ap">${scannerWall()}</div>` });
 }
@@ -136,6 +176,7 @@ export function scannerStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const warn = (t, d, btn = '') => `<div class="dwarn">${icon('warn', 14)}<div style="display: flex; flex-direction: column; gap: 4px;"><strong style="font-size: 13px;">${t}</strong>${d ? `<span class="dline">${d}</span>` : ''}${btn}</div></div>`;
   const items = [
     { name: 'Signed out (production)', tag: ['locked'], id: 'SCN-01', when: 'Production visitors: the private-testing wall. Sign-ups closed; one way in; the button to the same screen on the demo, second in the row, and a free path to a ticker desk (owner ruling 2026-10-14; spec 02 (b)).', html: scannerWall().replace('margin: 56px auto', 'margin: 0'), wide: true },
+    { name: 'Not the owner', tag: null, when: ownerWhen('The scan gives way to this wall and stops polling.'), html: ownerWall('scanner', { demoPath: '/scanner' }), wide: true },
     { name: 'Not live (production, signed in)', tag: ['notLive'], when: 'The owner, signed in: the explain panel, the outline of the table, and the link to the same screen on the demo. Signing in can’t make it work; the score reads the options chain.', html: scanNotLive(), wide: true },
     { name: 'Sample scan (staging)', tag: ['demo'], when: 'The demo account’s six names on the Oct 7 scenario. Dashed frame and hatch; no price flash; chips say “shaped like”.', html: dataCell({ fam: 'table', state: 'demo', w: '100%', h: 'auto' }) },
     { name: 'Loading', tag: ['loading'], when: 'Rows held at their final height while the sweep answers.', html: dataCell({ fam: 'table', state: 'loading', w: '100%', h: 'auto' }) },
@@ -181,6 +222,7 @@ export function positionsProduction({ minHeight = 0, scheme = 'dark' } = {}) {
 export function positionsStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const items = [
     { name: 'Signed out (production)', tag: ['locked'], id: 'POS-03', when: 'Production visitors: the private-testing wall. Sign-ups closed; one way in; the demo button, second in the row, and a free path.', html: positionsWall().replace('margin: 56px auto', 'margin: 0'), wide: true },
+    { name: 'Not the owner', tag: null, when: ownerWhen('The book gives way to this wall; its marks and orders stop asking.'), html: ownerWall('positions', { demoPath: '/positions' }), wide: true },
     { name: 'Signed in, production: marks', tag: ['notLive', 'Mark not live'], when: 'The owner’s book on production. Records and P&L from user-entered prices work; option marks need the feed, so each says Not live, never a blank.', html: `<div class="drows"><div style="grid-template-columns: minmax(0, 1fr) auto auto;"><span><strong>NVDA 200 C · Nov 20</strong><br><span class="dline">1 × entry 6.80 · user-entered</span></span>${stateTag('notLive', 'Mark not live')}<span class="mono steel">—</span></div></div>` },
     { name: 'Marks name their basis', tag: ['sample', 'Sample mark'], id: 'POS-01', when: 'Every mark says where it came from: the sample chain (staging), user-entered, the last good copy with its time, or closed.', html: `<div style="display: flex; flex-wrap: wrap; gap: 8px;">${stateTag('sample', 'Sample mark · 2:30 PM')}<span class="stag k-solid">${icon('edit', 12)}user-entered</span>${stateTag('stale', 'Last good copy · 2:41 PM')}<span class="stag k-solid">${icon('check', 12)}closed Oct 7</span></div>` },
     { name: 'Empty book', tag: ['empty'], when: 'No positions yet. Teaches the first step.', html: `<div class="hd-p" style="border-style: dashed; align-items: flex-start;"><strong>No simulated positions yet.</strong><span class="dline">Open one to start your book.</span><a href="#open" class="btn primary">Open simulated position</a></div>` },
