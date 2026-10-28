@@ -1277,15 +1277,16 @@ export interface components {
       models: components['schemas']['CatalogModelBody'][];
       provider: string;
     };
+    /** @description A greek the options feed did not quote is null, never a fabricated 0. */
     ContractGreeksWire: {
       /** Format: double */
-      delta: number;
+      delta?: number | null;
       /** Format: double */
-      gamma: number;
+      gamma?: number | null;
       /** Format: double */
-      theta: number;
+      theta?: number | null;
       /** Format: double */
-      vega: number;
+      vega?: number | null;
     };
     ContractWire: {
       /** Format: double */

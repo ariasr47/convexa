@@ -1043,25 +1043,25 @@
         "type": "object"
       },
       "ContractGreeksWire": {
+        "description": "A greek the options feed did not quote is null, never a fabricated 0.",
         "properties": {
           "delta": {
             "format": "double",
-            "type": "number"
+            "type": ["number", "null"]
           },
           "gamma": {
             "format": "double",
-            "type": "number"
+            "type": ["number", "null"]
           },
           "theta": {
             "format": "double",
-            "type": "number"
+            "type": ["number", "null"]
           },
           "vega": {
             "format": "double",
-            "type": "number"
+            "type": ["number", "null"]
           }
         },
-        "required": ["delta", "gamma", "theta", "vega"],
         "type": "object"
       },
       "ContractWire": {

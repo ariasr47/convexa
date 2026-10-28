@@ -1628,22 +1628,11 @@ async fn owner_gate_router(owner_emails: Option<&str>) -> (AppState, axum::Route
 
     let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market");
     let port = MarketDataPort::fixture(load_fixture_dir(&dir).expect("SYN fixture chain"));
-    let mut snapshot =
-        compute_from_port(&port, "SYN", None, &AnalyticsComputeParams::default(), None)
-            .await
-            .expect("hermetic SYN analytics");
-    // The fixture chain quotes gamma and delta only, and `GET /api/contract/{ticker}` needs all
-    // four greeks (a missing one panics its handler, a gap that predates the gate), so fill
-    // theta and vega for the owner's 200.
-    let mut contracts = snapshot.contracts.to_vec();
-    for contract in &mut contracts {
-        let greeks = contract.greeks.get_or_insert_with(Default::default);
-        greeks.theta.get_or_insert(-0.01);
-        greeks.vega.get_or_insert(0.1);
-        greeks.delta.get_or_insert(0.5);
-        greeks.gamma.get_or_insert(0.01);
-    }
-    snapshot.contracts = contracts.into();
+    // The fixture chain quotes gamma and delta only, so the owner's contract read below answers
+    // with theta and vega null (`a_contract_missing_a_greek_answers_null_for_it`).
+    let snapshot = compute_from_port(&port, "SYN", None, &AnalyticsComputeParams::default(), None)
+        .await
+        .expect("hermetic SYN analytics");
     assert!(
         snapshot.gex.call_wall != 0.0 && snapshot.gex.put_wall != 0.0,
         "the SYN fixture must yield real walls, or the owner arm proves nothing"
@@ -1972,6 +1961,72 @@ async fn owner_only_routes_fail_closed_without_owner_emails() {
             );
         }
     }
+}
+
+/// A contract the feed quotes without a greek answers the owner 200 with that greek null: never a
+/// fabricated 0, an HTTP error or a panic (`[best-effort-isolated-or-null]`). The SYN chain quotes
+/// delta and gamma only. Here the 105 call also gets a vega and a two-sided quote, so each of its
+/// four greeks lands in its own key beside the quote, and the 95 put loses its greeks entirely.
+#[tokio::test]
+async fn a_contract_missing_a_greek_answers_null_for_it() {
+    let owner_email = "runtime-greeks-owner@example.test";
+    let (state, router) = owner_gate_router(Some(owner_email)).await;
+    let mut snapshot = state
+        .gex_cache
+        .get("SYN")
+        .await
+        .expect("the seeded SYN snapshot");
+    let mut contracts = snapshot.contracts.to_vec();
+    for contract in &mut contracts {
+        if contract.strike_price == 105.0 && contract.contract_type.is_call() {
+            contract.greeks.as_mut().expect("fixture greeks").vega = Some(0.15);
+            contract.bid = Some(1.1);
+            contract.ask = Some(1.3);
+        } else if contract.strike_price == 95.0 && !contract.contract_type.is_call() {
+            contract.greeks = None;
+        }
+    }
+    snapshot.contracts = contracts.into();
+    state.gex_cache.set(snapshot).await;
+    let (cookie, _) = signup(&state, &router, owner_email, false).await;
+
+    let call = owner_gate_call(
+        &router,
+        "GET",
+        "/api/contract/SYN?expiration=2026-08-21&strike=105&right=call",
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(call.status, StatusCode::OK, "the 105 call: {}", call.body);
+    let dte = call.body["dte"].as_f64().expect("dte is a number");
+    assert_eq!(
+        call.body,
+        serde_json::json!({
+            "ticker": "SYN",
+            "expiration": "2026-08-21",
+            "strike": 105.0,
+            "right": "call",
+            "option_quote": {"bid": 1.1, "ask": 1.3, "mid": 1.2},
+            "greeks": {"delta": 0.4, "gamma": 0.02, "theta": null, "vega": 0.15},
+            "iv": 0.25,
+            "dte": dte,
+        })
+    );
+
+    let put = owner_gate_call(
+        &router,
+        "GET",
+        "/api/contract/SYN?expiration=2026-08-21&strike=95&right=put",
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(put.status, StatusCode::OK, "the 95 put: {}", put.body);
+    assert_eq!(
+        put.body["greeks"],
+        serde_json::json!({"delta": null, "gamma": null, "theta": null, "vega": null})
+    );
+    assert_eq!(put.body["option_quote"], Value::Null);
+    assert_eq!(put.body["iv"], 0.28);
 }
 
 /// No operation can serialize a dealer level without being sorted: every operation whose declared

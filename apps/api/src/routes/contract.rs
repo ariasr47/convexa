@@ -10,7 +10,6 @@ use axum::Json;
 use chrono::{NaiveDate, Utc};
 use quant_engine::ContractType;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use utoipa::{IntoResponses, ToSchema};
 
 #[derive(Debug, Deserialize, utoipa::IntoParams)]
@@ -37,12 +36,14 @@ pub struct OptionQuoteWire {
     pub ask: f64,
     pub mid: f64,
 }
+// `[best-effort-isolated-or-null]`, as `candidates::CandidateGreeksWire`.
+/// A greek the options feed did not quote is null, never a fabricated 0.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ContractGreeksWire {
-    pub delta: f64,
-    pub gamma: f64,
-    pub theta: f64,
-    pub vega: f64,
+    pub delta: Option<f64>,
+    pub gamma: Option<f64>,
+    pub theta: Option<f64>,
+    pub vega: Option<f64>,
 }
 
 /// One option contract's quote, greeks and IV from the licensed options feed: the owner's account
@@ -102,10 +103,10 @@ pub(crate) fn contract_representative_response() -> Response {
             mid: 1.1,
         }),
         greeks: ContractGreeksWire {
-            delta: 0.5,
-            gamma: 0.01,
-            theta: -0.01,
-            vega: 0.1,
+            delta: Some(0.5),
+            gamma: Some(0.01),
+            theta: Some(-0.01),
+            vega: Some(0.1),
         },
         iv: Some(0.2),
         dte: 30.0,
@@ -201,39 +202,39 @@ pub async fn get_tracked_contract(
     };
 
     let option_quote = match (c.bid, c.ask) {
-        (Some(bid), Some(ask)) => Some(json!({
-            "bid": bid,
-            "ask": ask,
-            "mid": ((bid + ask) / 2.0 * 10_000.0).round() / 10_000.0,
-        })),
+        (Some(bid), Some(ask)) => Some(OptionQuoteWire {
+            bid,
+            ask,
+            mid: ((bid + ask) / 2.0 * 10_000.0).round() / 10_000.0,
+        }),
         _ => None,
     };
 
+    // Each greek the feed left out stays null. The wire is built as typed structs, never JSON
+    // re-read through the schema, so a gap in the data cannot panic the handler.
     let g = c.greeks.unwrap_or_default();
     let iv = if c.implied_volatility > 0.0 {
         Some(c.implied_volatility)
     } else {
         None
     };
+    let dte = dte_days(&exp10);
 
-    Ok(ContractResponse::Ok(
-        serde_json::from_value(json!({
-            "ticker": sym,
-            "expiration": exp10,
-            "strike": q.strike,
-            "right": right_label,
-            "option_quote": option_quote,
-            "greeks": {
-                "delta": g.delta,
-                "gamma": g.gamma,
-                "theta": g.theta,
-                "vega": g.vega,
-            },
-            "iv": iv,
-            "dte": dte_days(&exp10),
-        }))
-        .expect("contract wire matches closed schema"),
-    ))
+    Ok(ContractResponse::Ok(ContractWire {
+        ticker: sym,
+        expiration: exp10,
+        strike: q.strike,
+        right: right_label.to_owned(),
+        option_quote,
+        greeks: ContractGreeksWire {
+            delta: g.delta,
+            gamma: g.gamma,
+            theta: g.theta,
+            vega: g.vega,
+        },
+        iv,
+        dte,
+    }))
 }
 
 fn dte_days(exp10: &str) -> f64 {
