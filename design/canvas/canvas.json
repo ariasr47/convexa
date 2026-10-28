@@ -40,7 +40,7 @@
       "x": 0,
       "y": 0,
       "w": 1440,
-      "h": 3621,
+      "h": 4373,
       "page": "start",
       "expand": "fill"
     },
@@ -50,7 +50,7 @@
       "x": 1560,
       "y": 0,
       "w": 1440,
-      "h": 4480,
+      "h": 6970,
       "page": "start",
       "expand": "fill"
     },
@@ -1985,6 +1985,499 @@
       "expand": "fill"
     },
     {
+      "file": "FJournalTimelineSpec.dc.html",
+      "title": "Journal · Timeline · spec",
+      "x": 0,
+      "y": 23664,
+      "w": 760,
+      "h": 3438,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalTimelineStaging.dc.html",
+      "title": "Journal · Timeline · Staging · demo account",
+      "x": 880,
+      "y": 23664,
+      "w": 1440,
+      "h": 2452,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalTimelineProduction.dc.html",
+      "title": "Journal · Timeline · Production · signed out",
+      "x": 2440,
+      "y": 23664,
+      "w": 1440,
+      "h": 920,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalTimelineFirstRun.dc.html",
+      "title": "Journal · Timeline · Production · first run",
+      "x": 4000,
+      "y": 23664,
+      "w": 1440,
+      "h": 1332,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalTimelineIllustrative.dc.html",
+      "title": "Journal · Timeline · Production · illustrative",
+      "x": 5560,
+      "y": 23664,
+      "w": 1440,
+      "h": 2388,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalTimelinePhone.dc.html",
+      "title": "Journal · Timeline · Phone · staging",
+      "x": 7120,
+      "y": 23664,
+      "w": 390,
+      "h": 2583,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalTimelineLight.dc.html",
+      "title": "Journal · Timeline · Light · staging",
+      "x": 7630,
+      "y": 23664,
+      "w": 1440,
+      "h": 2452,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalTimelineStates.dc.html",
+      "title": "Journal · Timeline · States",
+      "x": 9190,
+      "y": 23664,
+      "w": 1440,
+      "h": 2300,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalComposeSpec.dc.html",
+      "title": "Journal · New entry · spec",
+      "x": 0,
+      "y": 27462,
+      "w": 760,
+      "h": 4030,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalComposeStaging.dc.html",
+      "title": "Journal · New entry · Staging · normal day",
+      "x": 880,
+      "y": 27462,
+      "w": 1440,
+      "h": 1592,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalComposeMarginCall.dc.html",
+      "title": "Journal · New entry · Margin call mode",
+      "x": 2440,
+      "y": 27462,
+      "w": 1440,
+      "h": 1560,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalComposePlan.dc.html",
+      "title": "Journal · New entry · Plan a trade",
+      "x": 4000,
+      "y": 27462,
+      "w": 1440,
+      "h": 1909,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalComposePhoneCall.dc.html",
+      "title": "Journal · New entry · Phone · margin call",
+      "x": 5560,
+      "y": 27462,
+      "w": 390,
+      "h": 1190,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalComposePhonePlan.dc.html",
+      "title": "Journal · New entry · Phone · plan a trade",
+      "x": 6070,
+      "y": 27462,
+      "w": 390,
+      "h": 1321,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalComposeLight.dc.html",
+      "title": "Journal · New entry · Light · staging",
+      "x": 6580,
+      "y": 27462,
+      "w": 1440,
+      "h": 1592,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalComposeStates.dc.html",
+      "title": "Journal · New entry · States",
+      "x": 8140,
+      "y": 27462,
+      "w": 1440,
+      "h": 3019,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalEntrySpec.dc.html",
+      "title": "Journal · Entry · spec",
+      "x": 0,
+      "y": 31852,
+      "w": 760,
+      "h": 3365,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalEntryStaging.dc.html",
+      "title": "Journal · Entry · Staging · the Sep 29 call",
+      "x": 880,
+      "y": 31852,
+      "w": 1440,
+      "h": 2448,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalEntryRecalled.dc.html",
+      "title": "Journal · Entry · Staging · recalled entry",
+      "x": 2440,
+      "y": 31852,
+      "w": 1440,
+      "h": 1372,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalEntryPhone.dc.html",
+      "title": "Journal · Entry · Phone · staging",
+      "x": 4000,
+      "y": 31852,
+      "w": 390,
+      "h": 3049,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalEntryLight.dc.html",
+      "title": "Journal · Entry · Light · staging",
+      "x": 4510,
+      "y": 31852,
+      "w": 1440,
+      "h": 1963,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalEntryStates.dc.html",
+      "title": "Journal · Entry · States",
+      "x": 6070,
+      "y": 31852,
+      "w": 1440,
+      "h": 3270,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalReviewSpec.dc.html",
+      "title": "Journal · Weekly review · spec",
+      "x": 0,
+      "y": 35577,
+      "w": 760,
+      "h": 3537,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalReviewStaging.dc.html",
+      "title": "Journal · Weekly review · Staging · Oct 7 review",
+      "x": 880,
+      "y": 35577,
+      "w": 1440,
+      "h": 5865,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalReviewAiOff.dc.html",
+      "title": "Journal · Weekly review · Production · AI off",
+      "x": 2440,
+      "y": 35577,
+      "w": 1440,
+      "h": 4078,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalReviewFromMemory.dc.html",
+      "title": "Journal · Weekly review · Production · mostly from memory",
+      "x": 4000,
+      "y": 35577,
+      "w": 1440,
+      "h": 4647,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalReviewPhone.dc.html",
+      "title": "Journal · Weekly review · Phone · staging",
+      "x": 5560,
+      "y": 35577,
+      "w": 390,
+      "h": 7848,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalReviewLight.dc.html",
+      "title": "Journal · Weekly review · Light · staging",
+      "x": 6070,
+      "y": 35577,
+      "w": 1440,
+      "h": 5865,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalReviewStates.dc.html",
+      "title": "Journal · Weekly review · States",
+      "x": 7630,
+      "y": 35577,
+      "w": 1440,
+      "h": 3710,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalRulebookSpec.dc.html",
+      "title": "Journal · Rulebook · spec",
+      "x": 0,
+      "y": 43785,
+      "w": 760,
+      "h": 3331,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalRulebookStaging.dc.html",
+      "title": "Journal · Rulebook · Staging · rulebook",
+      "x": 880,
+      "y": 43785,
+      "w": 1440,
+      "h": 2157,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalRulebookRule.dc.html",
+      "title": "Journal · Rulebook · Staging · rule R2",
+      "x": 2440,
+      "y": 43785,
+      "w": 1440,
+      "h": 1931,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalRulebookPhone.dc.html",
+      "title": "Journal · Rulebook · Phone · staging",
+      "x": 4000,
+      "y": 43785,
+      "w": 390,
+      "h": 3799,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalRulebookLight.dc.html",
+      "title": "Journal · Rulebook · Light · staging",
+      "x": 4510,
+      "y": 43785,
+      "w": 1440,
+      "h": 2157,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalRulebookStates.dc.html",
+      "title": "Journal · Rulebook · States",
+      "x": 6070,
+      "y": 43785,
+      "w": 1440,
+      "h": 5092,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalTidyImportSpec.dc.html",
+      "title": "Journal · Tidy up and import · spec",
+      "x": 0,
+      "y": 49237,
+      "w": 760,
+      "h": 3082,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalTidyImportTidy.dc.html",
+      "title": "Journal · Tidy up and import · Staging · Tidy",
+      "x": 880,
+      "y": 49237,
+      "w": 1440,
+      "h": 1737,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalTidyImportImport.dc.html",
+      "title": "Journal · Tidy up and import · Staging · Import",
+      "x": 2440,
+      "y": 49237,
+      "w": 1440,
+      "h": 1470,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalTidyImportPhone.dc.html",
+      "title": "Journal · Tidy up and import · Phone · staging",
+      "x": 4000,
+      "y": 49237,
+      "w": 390,
+      "h": 4375,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalTidyImportStates.dc.html",
+      "title": "Journal · Tidy up and import · States",
+      "x": 4510,
+      "y": 49237,
+      "w": 1440,
+      "h": 1875,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalOverlaysSpec.dc.html",
+      "title": "Journal · Drawers and sheets · spec",
+      "x": 0,
+      "y": 53972,
+      "w": 760,
+      "h": 2791,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalOverlaysFinding.dc.html",
+      "title": "Journal · Drawers and sheets · Finding drawer · staging",
+      "x": 880,
+      "y": 53972,
+      "w": 1440,
+      "h": 1180,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalOverlaysWhatsSent.dc.html",
+      "title": "Journal · Drawers and sheets · What’s sent drawer · staging",
+      "x": 2440,
+      "y": 53972,
+      "w": 1440,
+      "h": 960,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalOverlaysEditPositions.dc.html",
+      "title": "Journal · Drawers and sheets · Edit positions dialog · staging",
+      "x": 4000,
+      "y": 53972,
+      "w": 1440,
+      "h": 1400,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalOverlaysPath.dc.html",
+      "title": "Journal · Drawers and sheets · Account path drawer · staging",
+      "x": 5560,
+      "y": 53972,
+      "w": 1440,
+      "h": 1460,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalOverlaysPhone.dc.html",
+      "title": "Journal · Drawers and sheets · Phone · bottom sheets",
+      "x": 7120,
+      "y": 53972,
+      "w": 390,
+      "h": 6361,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalOverlaysStates.dc.html",
+      "title": "Journal · Drawers and sheets · States",
+      "x": 7630,
+      "y": 53972,
+      "w": 1440,
+      "h": 2161,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalSettingsSpec.dc.html",
+      "title": "Journal · Settings panel · spec",
+      "x": 0,
+      "y": 60693,
+      "w": 760,
+      "h": 2929,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalSettingsStaging.dc.html",
+      "title": "Journal · Settings panel · Staging · demo account",
+      "x": 880,
+      "y": 60693,
+      "w": 1440,
+      "h": 1876,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
+      "file": "FJournalSettingsPhone.dc.html",
+      "title": "Journal · Settings panel · Phone · production",
+      "x": 2440,
+      "y": 60693,
+      "w": 390,
+      "h": 2302,
+      "page": "planned"
+    },
+    {
+      "file": "FJournalSettingsStates.dc.html",
+      "title": "Journal · Settings panel · States",
+      "x": 2950,
+      "y": 60693,
+      "w": 1440,
+      "h": 2098,
+      "page": "planned",
+      "expand": "fill"
+    },
+    {
       "file": "Library.dc.html",
       "title": "Library · 1 of 3 · tokens, type, controls, data",
       "x": 0,
@@ -2018,7 +2511,7 @@
       "file": "V5FrontierCurve.dc.html",
       "title": "Prototype F2 · a year of the curve · fallback shown (runs in design/site/v5-frontier-curve.html)",
       "x": 0,
-      "y": 23664,
+      "y": 63982,
       "w": 1440,
       "h": 2460,
       "page": "planned",
@@ -2028,7 +2521,7 @@
       "file": "V5FrontierCalib.dc.html",
       "title": "Prototype F3 · calibration, explorable · fallback shown (runs in design/site/v5-frontier-calibration.html)",
       "x": 1560,
-      "y": 23664,
+      "y": 63982,
       "w": 1440,
       "h": 1880,
       "page": "planned",
@@ -2043,7 +2536,7 @@
       "y": 0,
       "w": 900,
       "size": "l",
-      "text": "Convexa Desk Redesign: every screen in its current, ruled design (organized 2026-10-25).\n\nPages: Ticker desk (the desk, its AI read, and the Technical and Research tabs) · Research (Notes, Markets, Filings and Scorecard) · Scanner & account (Scanner, Positions, Alerts and Settings) · Dialogs & overlays (every dialog, drawer and sheet) · Site & shell (the shell, the public pages and the operator pages) · Foundations (data states, the chart system, and the token and component library) · Planned · not built (the public-data tools, designed and waiting, and two prototypes not yet ruled on).\n\nEach row is one screen, left to right: its spec card (purpose, where every number comes from, states, acceptance, what is built), then staging (the demo account, all sample), production where it differs, phone, light, and its states.\n\nRuled questions, fixed issues and the earlier rounds (v2–v5 directions, audits and before/after boards) are off the canvas: the record is git, design/CHANGELOG.md and DESIGN_SYSTEM.md Amendments."
+      "text": "Convexa Desk Redesign: every screen in its current, ruled design (organized 2026-10-25).\n\nPages: Ticker desk (the desk, its AI read, and the Technical and Research tabs) · Research (Notes, Markets, Filings and Scorecard) · Scanner & account (Scanner, Positions, Alerts and Settings) · Dialogs & overlays (every dialog, drawer and sheet) · Site & shell (the shell, the public pages and the operator pages) · Foundations (data states, the chart system, and the token and component library) · Planned · not built (the public-data tools and the trade journal (spec 08), designed and waiting, and two prototypes not yet ruled on).\n\nEach row is one screen, left to right: its spec card (purpose, where every number comes from, states, acceptance, what is built), then staging (the demo account, all sample), production where it differs, phone, light, and its states.\n\nRuled questions, fixed issues and the earlier rounds (v2–v5 directions, audits and before/after boards) are off the canvas: the record is git, design/CHANGELOG.md and DESIGN_SYSTEM.md Amendments."
     },
     {
       "id": "row-progress",
@@ -2352,6 +2845,78 @@
       "text": "Planned · Technical readings · /ticker/:symbol/technical-analysis"
     },
     {
+      "id": "row-journal-timeline",
+      "page": "planned",
+      "x": 0,
+      "y": 23364,
+      "kind": "title1",
+      "maxW": 10630,
+      "text": "Journal · Timeline · /positions/journal"
+    },
+    {
+      "id": "row-journal-compose",
+      "page": "planned",
+      "x": 0,
+      "y": 27162,
+      "kind": "title1",
+      "maxW": 9580,
+      "text": "Journal · New entry · /positions/journal/new"
+    },
+    {
+      "id": "row-journal-entry",
+      "page": "planned",
+      "x": 0,
+      "y": 31552,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Journal · Entry · /positions/journal/:entryId"
+    },
+    {
+      "id": "row-journal-review",
+      "page": "planned",
+      "x": 0,
+      "y": 35277,
+      "kind": "title1",
+      "maxW": 9070,
+      "text": "Journal · Weekly review · /positions/review"
+    },
+    {
+      "id": "row-journal-rulebook",
+      "page": "planned",
+      "x": 0,
+      "y": 43485,
+      "kind": "title1",
+      "maxW": 7510,
+      "text": "Journal · Rulebook · /positions/rulebook"
+    },
+    {
+      "id": "row-journal-tidy-import",
+      "page": "planned",
+      "x": 0,
+      "y": 48937,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Journal · Tidy up and import · /positions/journal/tidy"
+    },
+    {
+      "id": "row-journal-overlays",
+      "page": "planned",
+      "x": 0,
+      "y": 53672,
+      "kind": "title1",
+      "maxW": 9070,
+      "text": "Journal · Drawers and sheets · /positions/review/:reviewId?finding=:id"
+    },
+    {
+      "id": "row-journal-settings",
+      "page": "planned",
+      "x": 0,
+      "y": 60393,
+      "kind": "title1",
+      "maxW": 4390,
+      "text": "Journal · Settings panel · /settings#journal"
+    },
+    {
       "id": "row-Library",
       "page": "foundations",
       "x": 0,
@@ -2364,7 +2929,7 @@
       "id": "row-V5FrontierCurve",
       "page": "planned",
       "x": 0,
-      "y": 23364,
+      "y": 63682,
       "kind": "title1",
       "maxW": 3000,
       "text": "Prototypes · not ruled: a year of the curve (F2), calibration you can question (F3)"

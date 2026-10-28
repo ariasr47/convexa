@@ -334,6 +334,9 @@ const P = {
   doc: '<path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4M9 12h6M9 16h6"></path>',
   wrench: '<path d="M14.5 6.5a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3l7.5-7.5a4 4 0 0 0-2-2z"></path>',
   keyboard: '<rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"></path>',
+  // The pen glyph (spec 08 canon event 1, Amendments 2026-10-28): it marks writing; the journal's "Write entry"
+  // carries it. A pencil at 45° from its tip at (4, 20), a rounded end and a ferrule line.
+  edit: '<path d="M4 20l.7-4.3L15.7 4.7a2.5 2.5 0 0 1 3.6 3.6L8.3 19.3z"></path><path d="M13.2 7.2l3.6 3.6"></path>',
 };
 export function icon(name, size = 16, extra = '') {
   return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${P[name] || ''}</svg>`;

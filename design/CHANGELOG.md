@@ -549,3 +549,89 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
   - The filings pills are 32 tall against the app's 36.
   - The app's wall paragraphs measure `text.primary` (rgb(233,228,214)) though `RequireAuth.tsx` asks for
     `text.secondary`; the boards keep steel. That is an app question, not a board change.
+
+## 2026-10-28 · Spec 08, step 0: the trade journal's boards (43 boards, 8 spec cards)
+
+- **Eight rows on Planned · not built**, after the nine public-data tools and before the two prototypes, in BOARD
+  BRIEF order (`docs/product/specs/2026-10-26/08-trade-journal.md`; `src/screens/final/journal.mjs`):
+  - Journal · Timeline, 7 boards: staging, production signed out, first run, illustrative, phone, light, states;
+  - Journal · New entry, 7: a normal day, margin-call mode, plan a trade, phone margin call, phone plan a trade,
+    light, states;
+  - Journal · Entry, 5: the Sep 29 call, a recalled entry, phone, light, states;
+  - Journal · Weekly review, 6: the Oct 7 review, production AI off, production mostly from memory, phone, light,
+    states;
+  - Journal · Rulebook, 5: the rulebook, rule R2, phone, light, states;
+  - Journal · Tidy up and import, 4: Tidy, Import, phone, states;
+  - Journal · Drawers and sheets, 6: the finding drawer, What's sent, Edit positions, the account path, phone
+    bottom sheets, states;
+  - Journal · Settings panel, 3: staging, phone (production), states.
+  Each row opens with its spec card (route, job, widgets and their sources, states, phone, acceptance by criterion,
+  built so far by slice, rulings, code). The board map and the screen tracker gain the eight rows.
+- **The kit and the sample.** `src/screens/final/journal-kit.mjs` is the rows' shared kit: the Positions host page,
+  frames, tags, walls, entry cards, figures, controls, drawers, dialogs, sheets and the account path.
+  `src/data/journal-sample.mjs` is the spec's fictional Sample journal (the Oct 7, 2026 scenario), every figure
+  computed from typed inputs in integer cents and rounded half away from zero for display;
+  `tmp/journal-boards/check-sample.mjs` asserts the figures the spec prints (352 checks). No board carries the
+  owner's own data or his request's words.
+- **Marking (P-2, P-3, P-4, D1).** Staging frames are dashed with the 8px steel hatch band and one "Sample journal"
+  chip. Production boards drawn on the sample trader's figures have solid frames and the board note "Figures
+  illustrative; production shows only the owner's entries"; the walls and the first run draw no sample. Words the
+  spec doesn't print (most entry bodies, the Sep 29 digest, Tidy's 14 details, the import paste) are left out with a
+  board note or composed only from that entry's printed words and the sample's figures, and each spec card's
+  staging line says which. Figures are IBM Plex Mono; signed money takes `textUp`/`textDown` with its sign (Design →
+  Palette roles, criterion 9); counts are neutral steel dots or text; "above" carries the warning glyph and "within"
+  is plain. Units are px.
+- **Canon events drawn (Amendments, 2026-10-28):**
+  - the pen glyph `edit`, on the 24 grid in `lib.mjs`'s icon table. The journal's amber "Write entry" carries it,
+    and the boards that already called `icon('edit')` for the user-entered mark tag (`final/account-pages.mjs:185`,
+    `v4/app-pages.mjs:81` and `:90`) now draw it where they drew an empty SVG (FPositionsStates and the v4
+    positions pages; no height changes);
+  - Positions' section tabs, Book · Journal · Review · Rulebook, on every journal page: the current tab underlined
+    in text colour, a sideways rail on a phone;
+  - one amber primary per tab: Write entry on Journal, Run or "Save this week's review" on Review, Plan a trade on
+    Rulebook; on a phone the bottom bar follows its tab (amber Write entry, outlined on Review, amber Plan a trade)
+    beside the outlined 44px Margin call.
+  The ⌘K Write group (slice 1b) and rule 16's verdict-free scope (slice 4) are on the spec cards. No journal board
+  draws amber text.
+- **The owner's 2026-10-28 answers, as drawn:**
+  - grafts G1 to G8: G1, the one-line reason to save a plan that goes ahead against a rule (New entry · plan a
+    trade); G2, Plan a trade as the Rulebook's amber; G3, at most 7 active rules (Rulebook states); G4, "Rules you
+    went ahead against", "Was going ahead worth it to you?" and This week's focus (Weekly review, the Timeline
+    rail); G5, "Start with today." with "What do you think your downfalls are?" and "One rule from today" (Timeline
+    first run); G6, his own label and the result against planned risk (Entry, Timeline cards); G7, a finding linked
+    to gains, with no rule draft (Weekly review states); G8, computed checks (within · above · not recorded) apart
+    from his answers (Entry, Rulebook);
+  - open questions 17 to 19 answered under his standing instruction, each reversible before its slice; the tracker
+    records Q-JOURNAL-01 to 19, all answered (`tracker-data.mjs`), and no board carries a held note;
+  - deferred by question 16, so absent: the printable rulebook card, CSV column mapping and the Monday auto-run have
+    no board, control or copy (the Rulebook and Import spec cards say so). The Monday offer stays in Settings ›
+    Journal (slice 4).
+- **Integration fixes:**
+  - `jrFig({ signed: true })` now tints: `.jr-fig-v`'s phosphor came after the base `.t-down`/`.t-up` at the same
+    specificity. The rows had worked around it, so no board's pixels change;
+  - `.jr-more`, a standalone link, is 44px under a coarse pointer and below 600px (rule 7), as `.jr-chip` is; Weekly
+    review · phone grows 20px (7828 → 7848);
+  - the Weekly review's "Where the money went" twin printed "[object Object]" in its Total row's share cell
+    (`{ t: '' }` falls through `chart-kit.mjs`'s twin cell); the cell is now empty. It sat in the closed "Show the
+    numbers" on 7 boards.
+- **Heights** (`tmp/journal-boards/heights.mjs`, the R2-C script adapted to this tree): 253 boards measured, 53
+  changed: the 51 journal stems, new, and FProgressMap 3621 → 4373 and FProgressTracker 4480 → 6970. 0 overflow, 0
+  text under 11px. The new stems follow FPlannedTaStates in board order; a second measurement after the rebuild
+  changes 0.
+- **Sweep of the 51 journal artboards as built** (`design/canvas`, each at its artboard width and frame height): 0
+  horizontal overflow and 0 visible text under 11px (the sweep exits 1 on a mutant with either); no content past
+  its frame; no child past its kit frame; no sentence split by a flex container; with the browser's default font at
+  20px, no board changes width or height; `textUp`/`textDown` only on text with its sign.
+- **Checked:**
+  - `node design/src/build.mjs` 0 (258 artboards, 359 site pages), and a second run is byte-identical;
+  - `node design/src/verify-tokens.mjs` 0;
+  - `node tmp/journal-boards/check-sample.mjs` 0 (352 of 352);
+  - NUL bytes 0 in every changed or new file under `design/`.
+- **Not published** to the canvas artifact.
+- **Left as found:**
+  - What's sent counts 8 new entries and 26 older summaries (all 34) yet says the 2 entries he kept out are never
+    sent; the boards draw it as printed;
+  - 14 of the sample's 34 entries are undescribed, so no board draws them;
+  - on every Final board, not only the journal's: shared chrome under 44px at 390 under a coarse pointer (the
+    wordmark, the avatar, the footer's Privacy and Terms, the skip link; `lib.mjs`), and 12px corners on phone
+    sheets from the base `[role="dialog"]` rule (`lib.mjs:241`) where the kits draw 16 16 0 0.

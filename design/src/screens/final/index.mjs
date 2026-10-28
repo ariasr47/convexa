@@ -12,6 +12,7 @@ import { ROWS as ACCOUNT } from './account.mjs';
 import { ROWS as TRUST } from './trust.mjs';
 import { ROWS as DEEP } from './deep.mjs';
 import { ROWS as PLANNED } from './planned.mjs';
+import { ROWS as JOURNAL } from './journal.mjs';
 import { PROGRESS_CSS, TRACKER_CSS, progressBoard, trackerBoard } from './progress.mjs';
 
 /** The canvas's pages (2026-10-25): one per product area, in the order a reader meets them. Every row
@@ -25,7 +26,7 @@ const PAGE_ROWS = [
   { id: 'overlays', name: 'Dialogs & overlays', keys: ['dialogs', 'overlays'], blurb: 'every dialog, drawer and sheet' },
   { id: 'site', name: 'Site & shell', keys: ['shell', 'landing', 'methodology', 'blog', 'not-found', 'credits', 'privacy', 'terms', 'operator'], blurb: 'the shell, the public pages and the operator pages' },
   { id: 'foundations', name: 'Foundations', keys: ['foundations'], blurb: 'data states, the chart system, and the token and component library' },
-  { id: 'planned', name: 'Planned · not built', keys: null, blurb: 'the public-data tools, designed and waiting, and two prototypes not yet ruled on' },
+  { id: 'planned', name: 'Planned · not built', keys: null, blurb: 'the public-data tools and the trade journal (spec 08), designed and waiting, and two prototypes not yet ruled on' },
 ];
 export const FINAL_PAGES = PAGE_ROWS.map(({ id, name }) => ({ id, name }));
 /** Kept for imports that still name one page: the entry page. */
@@ -43,7 +44,7 @@ function assemble(base, extra) {
   }
   return [...rows, ...extra.filter((x) => x.section === 'planned')];
 }
-const SCREEN_ROWS = assemble([...FOUNDATIONS, ...SHELL_SITE, ...TICKER, ...RESEARCH, ...ACCOUNT], [...TRUST, ...DEEP, ...PLANNED]);
+const SCREEN_ROWS = assemble([...FOUNDATIONS, ...SHELL_SITE, ...TICKER, ...RESEARCH, ...ACCOUNT], [...TRUST, ...DEEP, ...PLANNED, ...JOURNAL]);
 
 /** Rows per page, in page order; the Planned page takes every `section: 'planned'` row. */
 const rowsOf = (pg) => (pg.keys ? pg.keys.map((k) => SCREEN_ROWS.find((r) => r.key === k) ?? fail(`page ${pg.id}: no row ${k}`)) : SCREEN_ROWS.filter((r) => r.section === 'planned'));

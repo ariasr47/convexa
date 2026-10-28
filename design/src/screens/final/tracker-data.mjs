@@ -221,6 +221,125 @@ export const OPEN_QUESTIONS = [
     ask: 'Outlined and text buttons: neutral as the boards draw them, or amber as the 2026-10-13 theme default?',
     why: 'Site check finding D-16.',
   },
+  // ---- Spec 08, the trade journal (docs/product/specs/2026-10-26/08-trade-journal.md): its 19 questions, recorded
+  // at its step 0 by the 2026-10-21 README's rule (Owner decisions). Questions 1 to 16 were answered by the owner on
+  // 2026-10-28, every recommendation taken as written; 17 to 19 were added after the canon review the same day and
+  // answered under his standing instruction for the journal (take every recommendation), so each can be reversed
+  // before its slice is built (1b for 19, 2 for 17 and 18). The spec's "Owner answers (2026-10-28)" is the record.
+  {
+    id: 'Q-JOURNAL-01', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Tabs on Positions: Book · Journal · Review · Rulebook, and no sixth nav link. Revisit with a nav amendment after four weeks of daily use.',
+    ask: 'Spec 08, Q1: does the journal live in Positions’ tabs, or get a sixth nav link?',
+    why: 'Rule 19 allows five links; Positions is already behind the sign-in wall and TopNav lights it for every /positions/* path. Held step 0 and slice 1a’s routes.',
+  },
+  {
+    id: 'Q-JOURNAL-02', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Approved as written: the pen glyph, Positions’ section tabs, the ⌘K “Write” group and rule 16’s verdict-free scope are DESIGN_SYSTEM.md Amendments rows of 2026-10-28; [journal-figures-stay-in-journal] is a PROJECT_CONTEXT record.',
+    ask: 'Spec 08, Q2: approve the five canon rows (Design → Canon events)?',
+    why: 'Each is an Amendments row, appended, never rewritten. Held step 0 (pen, tabs), slice 1b (⌘K) and slice 4 (rule 16’s scope).',
+  },
+  {
+    id: 'Q-JOURNAL-03', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes: the journal is its own store with its own rule and no exit; AC-29a stays as written.',
+    ask: 'Spec 08, Q3: keep journal figures out of every other store, as a written rule, while AC-29a stays as written?',
+    why: 'The journal holds exactly what AC-29a keeps out of decision records. Held slice 1a.',
+  },
+  {
+    id: 'Q-JOURNAL-04', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes, with reads off by default, per-entry exclusion and the eval gate first. The amendment was appended to DESIGN.md the same day (cc87d08c, corrected in b30b2664).',
+    ask: 'Spec 08, Q4: send his real positions, balances, margin and words to his own AI provider, by a DESIGN amendment?',
+    why: 'The analyst’s line was “Simulated only” (DESIGN.md:425). Holds slice 4 only; slices 1a to 3 call no model.',
+  },
+  {
+    id: 'Q-JOURNAL-05', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Anthropic only in slice 4; the other providers show “Not set up · journal reads run on an Anthropic key for now”.',
+    ask: 'Spec 08, Q5: Anthropic only for journal reads at first?',
+    why: 'The cost table, caching, structured output and refusal handling are specified for Anthropic. Holds slice 4.',
+  },
+  {
+    id: 'Q-JOURNAL-06', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Sonnet 5.5 for entry reads, Opus 5.5 at effort high for reviews; caps of $1.00 per run checked against the worst case, $5.00 a month, and 3 reviews and 60 entry reads a day; no automatic fallback.',
+    ask: 'Spec 08, Q6: which models, and what caps?',
+    why: 'A review at the sample’s size is about $0.31, and at worst $0.76. Holds slice 4.',
+  },
+  {
+    id: 'Q-JOURNAL-07', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: '“Margin used” stays loan ÷ account value, with leverage beside it and loan ÷ position value in the ⓘ; his broker’s own figure is named there once he says which it is.',
+    ask: 'Spec 08, Q7: what margin figure does your broker show?',
+    why: 'Brokers differ: in the sample, Sep 18 reads 115% one way and 53.6% the other. Held slice 1a’s copy.',
+  },
+  {
+    id: 'Q-JOURNAL-08', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes: the chain-linked percent is the headline, with the dollars lost since the high beside it and account value alone in the ⓘ.',
+    ask: 'Spec 08, Q8: measure “down from the high” with money in and out taken out?',
+    why: 'Simple subtraction would let a deposit made to meet a call hide part of the loss. Held slice 1a.',
+  },
+  {
+    id: 'Q-JOURNAL-09', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'No text-correction window at launch; later notes only. Revisit after a month.',
+    ask: 'Spec 08, Q9: should saved text be correctable for a few minutes?',
+    why: 'Sealing protects what he thought at the time; figures already get “Correct a figure”, which keeps the original. Held slice 1a.',
+  },
+  {
+    id: 'Q-JOURNAL-10', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes: the floor of 20 stays for every rate.',
+    ask: 'Spec 08, Q10: keep the floor of 20 for every rate, knowing most rows will read “counted; rates start at 20” for months?',
+    why: 'The early value comes from what needs no rate: events and their dollars, where the money went, cited counts, his words against his numbers, questions back. Held slice 3.',
+  },
+  {
+    id: 'Q-JOURNAL-11', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes: entries are read at review time, reading on every save is opt-in, and margin-call entries are never read on save.',
+    ask: 'Spec 08, Q11: read entries at review time, with reading on every save opt-in?',
+    why: 'Per-save reads cost more (a cold cache) and add per-entry noise. Holds slice 4.',
+  },
+  {
+    id: 'Q-JOURNAL-12', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes: the not-the-owner wall is its sentence and no tag; no amendment.',
+    ask: 'Spec 08, Q12: is the not-the-owner wall left without a state word?',
+    why: 'P-2 is closed and has no owner-only word; sign-ups are closed, so the wall is rare. Held slice 1a.',
+  },
+  {
+    id: 'Q-JOURNAL-13', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes: slices 1a to 3 now, with no model; slice 4 after its eval passes.',
+    ask: 'Spec 08, Q13: build the journal ahead of the analyst roadmap?',
+    why: 'Its runs and caps live in its own table, so it doesn’t wait on the analyst’s Phase 0. Held the order of every slice.',
+  },
+  {
+    id: 'Q-JOURNAL-14', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes, and done on 2026-10-28: on the full texts Notebook-first stays first overall (81.3 against 79.7), so the home stays the notebook; the Rulebook Loop won the owner-outcome lens, so grafts G1 to G8 were added (a council verdict, DECISION_LEDGER trade-journal-rejudge-grafts).',
+    ask: 'Spec 08, Q14: re-run the two judge lenses that never saw the Rulebook Loop, before step 0?',
+    why: 'Two of the three lenses never received its text. Held step 0.',
+  },
+  {
+    id: 'Q-JOURNAL-15', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Process strategies only, as rule drafts and questions back; market strategies belong to the analyst roadmap. A finding linked to gains never becomes a draft.',
+    ask: 'Spec 08, Q15: what do “strategies” mean for the journal’s AI?',
+    why: 'The number check can verify a count of his own behaviour, not a claim about a market. Holds slice 4’s prompt and the eval bar.',
+  },
+  {
+    id: 'Q-JOURNAL-16', asked: '2026-10-26', status: 'answered', answered: '2026-10-28',
+    answer: 'Deferred to a later spec: the printable rulebook card, CSV column mapping (paste stays) and the Monday auto-run, with their one board, so the board count falls from 44 to 43; the n ≥ 20 rate path and detector row 10 stay.',
+    ask: 'Spec 08, Q16: defer the parts a single user won’t reach for months?',
+    why: 'Most rows will read “counted; rates start at 20” for months, and the journal has one user. Held slices 2 and 5; the spec’s Scope → Deferred to a later spec lists them.',
+  },
+  {
+    id: 'Q-JOURNAL-17', asked: '2026-10-28', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes (G1): a one-line reason is required to save a plan that goes ahead against a rule, never to trade (422 reason_required); Doesn’t apply and Not answered need none, and “broke” and “breaking” stay out of the copy. Under the owner’s standing instruction; reversible before slice 2.',
+    ask: 'Spec 08, Q17: require a one-line reason to go ahead against a rule?',
+    why: 'Added after the canon review: it reverses, in part, an item the approved spec rejected (e0236051). Holds G1 in slice 2 and criterion 30.',
+  },
+  {
+    id: 'Q-JOURNAL-18', asked: '2026-10-28', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes (G3): at most 7 active rules (409 rule_limit); drafts and paused rules don’t count, and “Your drafts” keeps what he writes at the limit. Under the owner’s standing instruction; reversible before slice 2.',
+    ask: 'Spec 08, Q18: cap active rules at 7?',
+    why: 'Added after the canon review: it reverses an item the approved spec rejected (e0236051). Holds G3 in slice 2 and criterion 32.',
+  },
+  {
+    id: 'Q-JOURNAL-19', asked: '2026-10-28', status: 'answered', answered: '2026-10-28',
+    answer: 'Yes (G6’s label), his own label only: optional, sealed with the entry, never computed, suggested, counted or totalled, and never asked on a margin-call entry, a broker liquidation or a trim written while a call is open. Under the owner’s standing instruction; reversible before slice 1b.',
+    ask: 'Spec 08, Q19: ask for his own decision label on a trim or close?',
+    why: 'Added after the canon review: it reverses, for his own label only, an item the approved spec rejected (e0236051). Holds G6’s label in slice 1b and criterion 35’s label half.',
+  },
 ];
 
 /**
