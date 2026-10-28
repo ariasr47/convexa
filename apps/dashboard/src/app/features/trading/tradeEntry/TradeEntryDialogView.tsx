@@ -35,6 +35,7 @@
  */
 import { useAuth } from '@/features/auth/AuthContext';
 import { RISK_INPUTS_COPY } from '@/features/auth/copy';
+import { ownerOnlyRead, useOwnerGate } from '@/features/auth/ownerGate';
 import { formatAccountSize, formatAmount } from '@/features/auth/riskInputs';
 import {
   alreadyMetNotice,
@@ -328,14 +329,24 @@ export function TradeEntryDialog({
 
   // Resolve the contract stats / market fill from the picked contract (mid → theoretical BS mark via
   // the shared resolver). Best-effort: a lookup failure only degrades THIS preview, never the app.
+  // The contract route is behind the owner gate: a 403 the lookup meets is kept for the session
+  // (`ownerGate.ts`), which puts up the host page's wall; while it stands nothing is asked, and the
+  // preview says what a failed lookup says.
+  const refused = useOwnerGate() != null;
   useEffect(() => {
     // rec-absence-literals-hole (F11, discovered — not named in §2.5): `right === ''` (the read named
     // no structure) has no contract to look up either, mirroring the shipped `strike === ''` guard.
     if (!open || manualContract || !expiration || strike === '' || right === '') return;
+    if (refused) {
+      setContractStatsFailed(true);
+      setMarketFill(null);
+      setFillState('error');
+      return;
+    }
     let cancelled = false;
     setFillState('loading');
     setContractStatsFailed(false);
-    fetchTrackedContract(ticker, { expiration, strike: Number(strike), right })
+    ownerOnlyRead(() => fetchTrackedContract(ticker, { expiration, strike: Number(strike), right }))
       .then((tc) => {
         if (cancelled) return;
         if (!tc) {
@@ -362,7 +373,7 @@ export function TradeEntryDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, manualContract, ticker, expiration, strike, right, spot]);
+  }, [open, manualContract, ticker, expiration, strike, right, spot, refused]);
 
   // ---- Derived previews / guards per mode ------------------------------------------------------
   //

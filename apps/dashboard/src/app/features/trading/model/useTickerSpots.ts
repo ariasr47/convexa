@@ -18,7 +18,12 @@
  * A ticker that never resolves stays `null`, and `resolveLegMark` withholds. A ticker that resolved
  * ONCE keeps its last good spot across a later failed refresh — never blanked
  * (`[best-effort-isolated-or-null]`, `[live-vs-static-isolation]`).
+ *
+ * The bundle route is behind the owner gate: a 403 `auth_required` / `owner_only` a lookup meets is
+ * kept for the session (`ownerGate.ts`), which puts up the page's wall, and no lookup runs while it
+ * stands; a sign-in or sign-out asks again.
  */
+import { ownerOnlyRead, useOwnerGate } from '@/features/auth/ownerGate';
 import { useMarkFeed } from '@/features/trading/positions/markFeed';
 import { getTicker, type LiveUpdate, type TickerBundle } from '@convexa/api';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -48,6 +53,7 @@ export function useTickerSpots(
   const [spots, setSpots] = useState<Record<string, number>>({});
   // With no options feed on this site the bundle route can only refuse: never ask it.
   const skip = useMarkFeed() === 'notLive';
+  const refused = useOwnerGate() != null;
 
   const focused = up(bundle?.market_state.ticker ?? focusedFallback) || null;
   const focusedSpot = bundle?.market_state.price ?? null;
@@ -63,10 +69,10 @@ export function useTickerSpots(
   const foreign = useMemo(() => (spotKey === '' ? [] : spotKey.split(',')), [spotKey]);
 
   useEffect(() => {
-    if (skip) return;
+    if (skip || refused) return;
     let cancelled = false;
     for (const t of foreign) {
-      getTicker(t)
+      ownerOnlyRead(() => getTicker(t))
         .then((d) => {
           if (cancelled) return;
           const price = d?.market_state?.price;
@@ -82,7 +88,7 @@ export function useTickerSpots(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spotKey, servedAt, skip]);
+  }, [spotKey, servedAt, skip, refused]);
 
   const spotOf = useCallback(
     (ticker: string): number | null => {

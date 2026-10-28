@@ -9,11 +9,14 @@
  *  - Fill input: the option mark through the EXISTING `computeMark` ladder, accepted ONLY live —
  *    not frozen, not last_known, `isLive && !streamOffline` (AC-16/17/28).
  *  - Per-order contract lookups via the EXISTING `GET /api/contract`; a single order's lookup
- *    failure degrades only that order's fill leg (per-row isolation, arch §9).
+ *    failure degrades only that order's fill leg (per-row isolation, arch §9). The route is behind
+ *    the owner gate: a 403 `auth_required` / `owner_only` is kept for the session (`ownerGate.ts`),
+ *    which puts up the page's wall, and no lookup runs while it stands.
  *  - Per-tick isolation: an evaluation-tick throw is caught per order per tick.
  *  - No retro-fill: evaluation runs only on new live payloads; on (re)open it starts from the next
  *    payload (AC-27). Clock expiry is swept on every tick too (the only off-stream transition).
  */
+import { ownerOnlyRead, useOwnerGate } from '@/features/auth/ownerGate';
 import { computeMark } from '@/features/trading/model/mark';
 import { useMarkFeed } from '@/features/trading/positions/markFeed';
 import {
@@ -101,12 +104,19 @@ export function useOrderEngine({
   // With no options feed on this site the contract route can only refuse (503): never ask it. The
   // fill leg then has no mark, exactly as a refused lookup would leave it (useContractLive.ts).
   const skipContracts = useMarkFeed() === 'notLive';
+  const refused = useOwnerGate() != null;
 
   useEffect(() => {
-    if (dataMode === 'demo' || skipContracts) return;
+    if (dataMode === 'demo' || skipContracts || refused) return;
     let cancelled = false;
     active.forEach((o) => {
-      fetchTrackedContract(o.ticker, { expiration: o.expiration, strike: o.strike, right: o.right })
+      ownerOnlyRead(() =>
+        fetchTrackedContract(o.ticker, {
+          expiration: o.expiration,
+          strike: o.strike,
+          right: o.right,
+        }),
+      )
         .then((tc) => {
           if (!cancelled) setTracked((prev) => ({ ...prev, [o.id]: tc }));
         })
@@ -119,7 +129,7 @@ export function useOrderEngine({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeKey, servedAt, skipContracts]);
+  }, [activeKey, servedAt, skipContracts, refused]);
 
   // Demo evaluation is exclusively driven by a new immutable controller frame. Mount, bundle
   // updates, pause/end, and absent contract marks never enter the pure transition engine.

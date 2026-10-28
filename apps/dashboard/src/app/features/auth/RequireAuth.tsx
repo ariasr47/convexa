@@ -175,13 +175,20 @@ export function RequireAuth({ children, surface, demoPath, docTitle }: Props) {
  */
 export function OwnerGateBoundary({ children, ...wall }: WallProps & { children: ReactNode }) {
   const refusal = useOwnerGate();
-  const { authenticated, refresh } = useAuth();
+  const { ready, authenticated, refresh } = useAuth();
+  // Read when the effect below runs; a change to it alone (a sign-in) must not run it.
+  const signedIn = useRef(authenticated);
+  signedIn.current = authenticated;
 
   // The server found no session while who-am-I still holds one (it expired between the two reads):
-  // re-read who-am-I so the account control agrees, as a gated action's `auth_required` does.
+  // re-read who-am-I so the account control agrees, as a gated action's `auth_required` does. So
+  // this asks when the refusal is met signed in, or when who-am-I's first answer says signed in while
+  // it stands, and not on a sign-in: the refusal a sign-in leaves on the page belongs to the signed-out
+  // session, and AuthProvider drops it in an effect that runs after this one (a parent's effects run
+  // after its children's). Keyed on `authenticated`, every sign-in from this wall read who-am-I twice.
   useEffect(() => {
-    if (refusal === 'auth_required' && authenticated) void refresh();
-  }, [refusal, authenticated, refresh]);
+    if (refusal === 'auth_required' && signedIn.current) void refresh();
+  }, [refusal, ready, refresh]);
 
   if (refusal === 'owner_only') return <OwnerOnlyWall {...wall} />;
   if (refusal === 'auth_required') return <SignInWall {...wall} />;
@@ -295,10 +302,15 @@ function SignInWall({ surface, demoPath, freePath }: WallProps) {
  * The same 403 comes back to every account, the owner's included, while `OWNER_EMAILS` is unset on
  * the API (it fails closed), and the page can't tell the two apart. So, as the planned boards do
  * for an unset variable (design/src/screens/final/planned.mjs, `nc()`), a collapsed line names it
- * for the site's operator.
+ * for the site's operator, worded to hold either way: whether the variable is unset or lists other
+ * accounts, an owner refused here is missing from it.
+ *
+ * A free path only when the route passes one: the desk's is its ticker's research, which needs no
+ * licensed data. There is no default, since every ticker desk is owner only too.
  */
-function OwnerOnlyWall({ surface, demoPath }: WallProps) {
+function OwnerOnlyWall({ surface, demoPath, freePath }: WallProps) {
   const copy = wallCopy(surface);
+  const outlinedSx = { minHeight: 44, ...wallButtonFlex };
   return (
     <Box sx={wallOuterSx}>
       <Paper
@@ -312,16 +324,29 @@ function OwnerOnlyWall({ surface, demoPath }: WallProps) {
         <Typography component="h1" sx={{ ...wallTitleSx, fontSize: 24 }}>
           {copy.owner}
         </Typography>
-        {demoPath && (
+        {(demoPath || freePath) && (
           <Box sx={wallButtonsSx}>
-            <Button
-              href={`${STAGING_DEMO_URL}${demoPath}`}
-              variant="outlined"
-              data-testid="owner-only-demo-link"
-              sx={{ minHeight: 44, ...wallButtonFlex }}
-            >
-              See it on the demo →
-            </Button>
+            {demoPath && (
+              <Button
+                href={`${STAGING_DEMO_URL}${demoPath}`}
+                variant="outlined"
+                data-testid="owner-only-demo-link"
+                sx={outlinedSx}
+              >
+                See it on the demo →
+              </Button>
+            )}
+            {freePath && (
+              <Button
+                component={RouterLink}
+                to={freePath.to}
+                variant="outlined"
+                data-testid="owner-only-free-path"
+                sx={outlinedSx}
+              >
+                {freePath.label}
+              </Button>
+            )}
           </Box>
         )}
         <Box
@@ -342,7 +367,7 @@ function OwnerOnlyWall({ surface, demoPath }: WallProps) {
             For the site’s operator
           </Box>
           <Box component="span" sx={{ ...MONO_FACE, fontSize: 11 }}>
-            Set OWNER_EMAILS on the API
+            If this is your Convexa, add your account’s email to OWNER_EMAILS on the API.
           </Box>
         </Box>
       </Paper>

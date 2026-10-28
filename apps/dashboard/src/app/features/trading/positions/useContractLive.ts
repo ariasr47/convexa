@@ -1,7 +1,12 @@
 /**
  * Per-CONTRACT tracked-contract fetch, de-duplicated across the whole open/pending book.
  * One contract's 404 marks ONLY the legs that reference it (SPEC §2.5).
+ *
+ * The contract route is behind the owner gate: a 403 `auth_required` / `owner_only` a lookup meets
+ * is kept for the session (`ownerGate.ts`), which puts up the page's wall, and no lookup runs while
+ * it stands; a sign-in or sign-out asks again.
  */
+import { ownerOnlyRead, useOwnerGate } from '@/features/auth/ownerGate';
 import { fetchTrackedContract, type OptionRight, type TrackedContract } from '@convexa/api';
 import { useEffect, useMemo, useState } from 'react';
 import { legContractKey } from './composeMark';
@@ -28,6 +33,7 @@ export function useContractLiveForLegs(
   // With no options feed on this site the contract route can only refuse: never ask it. Every
   // option mark then reads "Mark not live" (markFeed.tsx), the same answer a refused lookup gives.
   const skip = useMarkFeed() === 'notLive';
+  const refused = useOwnerGate() != null;
 
   const contractKeys = useMemo(() => {
     const keys = new Map<
@@ -50,14 +56,16 @@ export function useContractLiveForLegs(
   const trackKey = [...contractKeys.keys()].toSorted().join(',');
 
   useEffect(() => {
-    if (skip) return;
+    if (skip || refused) return;
     let cancelled = false;
     contractKeys.forEach((c, key) => {
-      fetchTrackedContract(c.ticker, {
-        expiration: c.expiration,
-        strike: c.strike,
-        right: c.right,
-      })
+      ownerOnlyRead(() =>
+        fetchTrackedContract(c.ticker, {
+          expiration: c.expiration,
+          strike: c.strike,
+          right: c.right,
+        }),
+      )
         .then((tc) => {
           if (cancelled) return;
           setContractLive((prev) => ({ ...prev, [key]: { tracked: tc, unavailable: tc == null } }));
@@ -74,7 +82,7 @@ export function useContractLiveForLegs(
     // Re-fetch when the contract SET or the served bundle changes, never from this effect's own
     // writes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trackKey, servedAt, skip]);
+  }, [trackKey, servedAt, skip, refused]);
 
   return contractLive;
 }
