@@ -171,10 +171,14 @@ pub async fn get_price(
     if sym.is_empty() {
         return Err(AppError::Config("empty ticker".into()));
     }
+    // `price` is a required number on the closed wire, so a cached price that is not finite is a
+    // cache miss: the cold read below answers and replaces it. It is never served as null.
     if let Some(p) = state.prices.get_price(&sym).await? {
-        return Ok(PriceHttpResponse::Ok(PriceWire::from(
-            StatePriceResponse::from(&p),
-        )));
+        if p.price.is_finite() {
+            return Ok(PriceHttpResponse::Ok(PriceWire::from(
+                StatePriceResponse::from(&p),
+            )));
+        }
     }
 
     // Cold: stock snapshot REST (~ms), not options chain.
@@ -213,15 +217,17 @@ pub async fn get_prices(
     }
 
     // Built as the typed wire, never JSON read back through the schema, so a cached price the wire
-    // cannot hold cannot panic the handler (as `routes::contract` builds its wire).
+    // cannot hold cannot panic the handler (as `routes::contract` builds its wire). `price` is a
+    // required number on that wire, so a cached price that is not finite is listed as missing,
+    // never served as null.
     let mut prices = BTreeMap::new();
     let mut missing = Vec::new();
     for sym in &syms {
         match state.prices.get_price(sym).await? {
-            Some(p) => {
+            Some(p) if p.price.is_finite() => {
                 prices.insert(sym.clone(), PriceWire::from(StatePriceResponse::from(&p)));
             }
-            None => missing.push(sym.clone()),
+            _ => missing.push(sym.clone()),
         }
     }
 
@@ -230,4 +236,75 @@ pub async fn get_prices(
         missing,
         cache: state.prices.backend_name().into(),
     }))
+}
+
+#[cfg(test)]
+mod non_finite_price_tests {
+    use super::*;
+    use crate::domain::LivePrice;
+
+    /// A hermetic state with `prices` cached. A cold single read resolves from the SYN fixture,
+    /// never from the vendor.
+    async fn state_with(prices: &[(&str, f64)]) -> AppState {
+        let mut state = AppState::for_runtime_guardrail_tests("price-route-tests".into())
+            .await
+            .expect("hermetic state");
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market");
+        state.vendor_fixture = Some(std::sync::Arc::new(
+            crate::services::market_data::load_fixture_dir(&dir).expect("SYN fixture"),
+        ));
+        for &(symbol, price) in prices {
+            let live = LivePrice {
+                symbol: symbol.into(),
+                price,
+                bid: None,
+                ask: None,
+                ts_ns: 1,
+                received_at: 0,
+            };
+            state
+                .prices
+                .set_price(&live)
+                .await
+                .expect("cache the price");
+        }
+        state
+    }
+
+    /// `price` is a required number on the closed wire. A cached price that is not finite is
+    /// listed as missing, never answered as `"price": null` in a 200 that a typed client trusts.
+    #[tokio::test]
+    async fn the_batch_lists_a_cached_price_that_is_not_finite_as_missing() {
+        let state = state_with(&[
+            ("SYN", 100.0),
+            ("ZZNAN", f64::NAN),
+            ("ZZINF", f64::INFINITY),
+        ])
+        .await;
+        let query = Query(PricesQuery {
+            symbols: "ZZNAN,SYN,ZZINF".into(),
+        });
+        let Ok(PricesHttpResponse::Ok(wire)) = get_prices(State(state), query).await else {
+            panic!("the batch read answers 200");
+        };
+        assert_eq!(wire.prices.keys().collect::<Vec<_>>(), ["SYN"]);
+        assert_eq!(wire.prices["SYN"].price, 100.0);
+        assert_eq!(wire.missing, ["ZZNAN", "ZZINF"]);
+    }
+
+    /// The single read takes such a price as a cache miss: the cold read answers, and its price
+    /// replaces the cached one.
+    #[tokio::test]
+    async fn the_single_read_takes_a_cached_price_that_is_not_finite_as_a_miss() {
+        let state = state_with(&[("SYN", f64::NAN)]).await;
+        let Ok(PriceHttpResponse::Ok(wire)) =
+            get_price(State(state.clone()), Path("SYN".into())).await
+        else {
+            panic!("the single read answers 200");
+        };
+        assert!(wire.price.is_finite(), "answered {}", wire.price);
+        assert_eq!(wire.source, "stock_snapshot");
+        let cached = state.prices.get_price("SYN").await.expect("cache read");
+        assert_eq!(cached.map(|p| p.price), Some(wire.price));
+    }
 }
