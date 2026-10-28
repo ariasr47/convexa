@@ -2,7 +2,7 @@
 
 use crate::config::{ChainSnapshotBackend, Config};
 use crate::error::AppResult;
-use crate::middleware::rate_limit_middleware;
+use crate::middleware::{rate_limit_middleware, RateLimiter};
 use crate::routes;
 use crate::services::scanner::{self, LoopConfig, SweepConfig};
 use crate::services::warmer;
@@ -12,8 +12,11 @@ use axum::http::{
     HeaderValue, Method,
 };
 use axum::middleware;
+use axum::response::IntoResponse;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::time::Duration;
+use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
@@ -288,15 +291,37 @@ fn router_with_cors(state: AppState, cors: CorsLayer) -> AppResult<axum::Router>
         .map_err(|error| {
             crate::error::AppError::Config(format!("incomplete contract coverage: {error}"))
         })
-        .map(|router| {
-            router
-                .layer(middleware::from_fn_with_state(
-                    limiter,
-                    rate_limit_middleware,
-                ))
-                .layer(cors)
-                .layer(TraceLayer::new_for_http())
-        })
+        .map(|router| production_layers(router, limiter, cors))
+}
+
+/// The middleware around the production route graph, innermost first: the rate limit, the panic
+/// guard, CORS, then the trace. The guard sits inside CORS and the trace, so a panic's 500 still
+/// carries the CORS headers a browser needs to read it, and the trace records it as a 500.
+fn production_layers(
+    router: axum::Router,
+    limiter: Arc<RateLimiter>,
+    cors: CorsLayer,
+) -> axum::Router {
+    router
+        .layer(middleware::from_fn_with_state(
+            limiter,
+            rate_limit_middleware,
+        ))
+        .layer(CatchPanicLayer::custom(panic_response))
+        .layer(cors)
+        .layer(TraceLayer::new_for_http())
+}
+
+/// A request that panics answers the API's closed 500 body (`AppErrorBody`: `detail` only), not a
+/// dropped connection. The panic message goes to the log, never to the caller.
+fn panic_response(panic: Box<dyn std::any::Any + Send + 'static>) -> axum::response::Response {
+    let message = panic
+        .downcast_ref::<String>()
+        .map(String::as_str)
+        .or_else(|| panic.downcast_ref::<&str>().copied())
+        .unwrap_or("a panic payload that is not text");
+    tracing::error!(panic = message, "a request handler panicked; answered 500");
+    crate::error::AppError::Other(anyhow::anyhow!("internal server error")).into_response()
 }
 
 /// Build the real production HTTP stack for transport conformance tests.
@@ -506,6 +531,50 @@ mod cors_tests {
                 .headers()
                 .contains_key("access-control-allow-origin"));
         }
+    }
+}
+
+#[cfg(test)]
+mod panic_guard_tests {
+    use super::*;
+    use axum::body::{to_bytes, Body};
+    use axum::http::{Request, StatusCode};
+    use axum::routing::get;
+    use axum::Router;
+    use tower::ServiceExt;
+
+    async fn panics() -> &'static str {
+        panic!("panic text that must not reach the caller")
+    }
+
+    /// A handler panic under the production middleware answers the closed 500 body with the CORS
+    /// headers. Without the guard the panic escapes `oneshot` (over a socket, the connection
+    /// drops); with the guard outside CORS the browser could not read the 500.
+    #[tokio::test]
+    async fn a_handler_panic_answers_the_closed_500_with_cors_headers() {
+        let app = production_layers(
+            Router::new().route("/panics", get(panics)),
+            Arc::new(RateLimiter::new(0)),
+            production_cors_layer(vec!["https://app.example".into()]),
+        );
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/panics")
+                    .header("origin", "https://app.example")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(
+            response.headers()["access-control-allow-origin"],
+            "https://app.example"
+        );
+        assert_eq!(response.headers()["content-type"], "application/json");
+        let body = to_bytes(response.into_body(), 1024).await.unwrap();
+        assert_eq!(&body[..], br#"{"detail":"internal server error"}"#);
     }
 }
 
