@@ -635,3 +635,48 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
   - on every Final board, not only the journal's: shared chrome under 44px at 390 under a coarse pointer (the
     wordmark, the avatar, the footer's Privacy and Terms, the skip link; `lib.mjs`), and 12px corners on phone
     sheets from the base `[role="dialog"]` rule (`lib.mjs:241`) where the kits draw 16 16 0 0.
+- **Review fixes** (the spec-fidelity and design-canon reviews of `13c3073d`, same day). Applied:
+  - Weekly review · mostly from memory keeps his words against his numbers (the Sep 18 margin question) beside the
+    Oct 1 plan's question and drops the one that leans on pattern 1's count; row 4 reads "0 of 1" (a plan is
+    written at the time); the recalled high reads "$51,251 · recorded high · Aug 21 · from memory". The card says so.
+  - Marking (P-3, D1): Drawers and sheets · phone gains the demo bar, the staging board note and a Sample tag in
+    each sheet's peek row, as do Rulebook · phone's menu sheet and Entry · phone's docked peek; the 1440 drawers'
+    and dialog's sections of sample data are dashed with the 8px band; the timeline's day groups, the week's focus,
+    the phone's account peek row and Review's Past reviews sit in sample frames, and the reference cell matches.
+  - Type register: the "was …" figures (Update numbers sheet, the composer behind Edit positions), the finding
+    sheet's peek-row claim (traced), Entry's cap line, and the composer's typed Due by and money date-time are Mono.
+  - Edit positions: excess liquidity is untinted (Palette roles) and the composer behind draws no amber, so
+    "Save positions" is the board's one fill.
+  - The Oct 5 plan card carries his line under "went ahead against R3" (Screens 4), in the kit's `jrEntryCard`.
+  - Board notes (P-4): R2's Oct 1 answer is derived (Rulebook, Rule R2, all five Review boards); "Draft a rule from
+    this" shows only where the review holds a draft (Review boards, and a state line on the card); each card's AI
+    status isn't drawn (Timeline boards).
+  - Settings · phone draws the bulk read offer, its egress sentence above "Read them now"; the card's slice-5 line
+    and criterion 14 name it.
+  - Words: "Couldn’t load" with the typographic apostrophe on every journal board (`jrTag`'s default;
+    `data/states.mjs` untouched), and no Loading tag on the Rulebook and Tidy cards; the AI read's tag is Sample,
+    with "Sample read · No model was called" as its first line; the failed draft's label is caps text, not a tag;
+    one Delete journal confirm (the spec's and Settings', with no "Keep it"); "Looking back, …", from the parser's
+    list, replaces "fast forward to today" on Tidy's Aug 21 panel.
+  - Contrast and touch: action labels on a warn strip are text.primary ("Keep it" 12.95:1 in light, from 4.27:1);
+    "Delete journal" sits on the neutral well (4.69:1 in light); below 600px and under a coarse pointer every
+    journal button, the chart twin's summary and the ⓘ are 44px; the Filters sheet's switch rows are labels.
+  - Spec cards: Timeline cites Screens 1 and 4 for the plan card and the wall and adds criteria 7 and 26; Review
+    adds criterion 13; Drawers and sheets says RealPositionRows' Right is neutral under ruling #18.
+- **Declined in review:**
+  - signed money keeps `textUp`/`textDown` with its sign: the spec's Palette roles and criterion 9 and the canon's
+    2026-10-13 rows outrank the step's "no green or red tint" line; neutral journal P/L needs an Amendments row;
+  - Compose · Plan a trade keeps its inset's "Save plan": the BOARD BRIEF draws "Unanswered → answered" there and
+    15 states on States;
+  - the Book boards keep no tab band: FPositions* draw the shipped `/positions`, which gains it with slice 1a;
+  - control borders and the pressed segment under 3:1 are kit-wide and need a canon Amendments row;
+  - What's sent (34 sent, 2 kept out) and Oct 2's maintenance requirement (`not recorded`, though untouched
+    fields carry over) need spec lines from the owner; the boards draw the spec as printed;
+  - no draft row under the timeline's "Couldn’t load" (the spec prints no words for one), no light cell for the
+    warn strip (light is a token swap; the flipped scheme was measured), and no Entry · States cell for the Oct 5
+    plan's Rules panel (the brief draws 18 states).
+- **Review fixes, checked:** heights 28 stems changed (27 journal boards and FProgressTracker 6970 → 6988, the
+  Settings slice-5 line); Weekly review · phone's notes were shortened to keep it at 7985, under the canvas's 8000
+  cap; a second measurement changes 0. Build 0 (a second run byte-identical), verify-tokens 0, check-sample 0
+  (352 of 352), the sweep 0 (51 artboards: 0 overflow, 0 text under 11px), content past a frame 0, amber text 0,
+  NUL bytes 0.

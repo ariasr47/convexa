@@ -30,6 +30,9 @@ const W = {
   // Settings’ Cap reached has no words of its own in the spec; this is the Review copy’s cap line, the one the page
   // shows when the cap stops a run.
   capLine: `This month’s journal AI cap of ${AI.caps.month} is reached. Change it in Settings.`,
+  // The bulk read offer (Copy → Bulk read offer; Data and privacy → Egress, trigger 5; Other flows → Turning on AI
+  // reads), slice 5: its own egress sentence above its button.
+  bulk: `Sends the full text of ${AI.bulk.entries} entries, once each, with their numbers and your active rules, to Anthropic (${AI.models.entry}, batch price) on your key. Entries you kept out are left out.`,
   signedOut: 'Sign in to open your journal',
   disclaimer: 'Convexa is an analysis tool. Positions are simulated (paper); a connected brokerage is read-only. Not investment advice.',
 };
@@ -60,6 +63,11 @@ const monday = () => sec(switchRow('Offer the weekly review each Monday', true))
 const readOnSave = () => sec(`${switchRow('Read each entry right after I save it', false)}<p class="jr-st-eg sm">${W.readOnSave}</p>`);
 /** The caps, his figures, and "This month" summed from the runs (computed). `capped`: the cap line in its place. */
 const caps = ({ capped = false } = {}) => sec(`<div class="jr-st-two">${fieldBox('Monthly cost cap for the journal', AI.caps.month, { mono: true })}${fieldBox('Limit per run', AI.caps.run, { mono: true })}</div>${capped ? jrStrip('info', `<span>${figs(W.capLine)}</span>`) : `<p class="jr-st-month"><span>${figs(AI.month)}</span>${jrTag('computed')}</p>`}`);
+/** The bulk read of older entries (slice 5): the egress sentence above "Read them now", with the count and the
+ *  estimate in Mono, from the sample's own line ("34 entries haven’t been read. Read them now · ≈ $0.18"). */
+const BULK = AI.bulk.text.split(' Read them now · ');
+if (BULK.length !== 2) throw new Error('journal-settings: the bulk read line drifted from “… Read them now · ≈ …”');
+const bulkRead = () => sec(`<p class="jr-st-eg sm">${W.bulk}</p><div class="jr-st-bulk"><span>${figs(BULK[0])}</span>${jrBtn('Read them now')}<span class="jr-st-est">${figs(BULK[1])}</span></div>`);
 /** "Downfalls you suspect": up to 5 lines in his words; the sample's three, then two empty lines. */
 const suspicions = () => sec(`<span class="jr-st-h">Downfalls you suspect</span><p class="jr-st-help">${W.suspicionsNote}</p><div class="jr-st-lines">${Array.from({ length: 5 }, (_, i) => input(SUSPICIONS[i]?.text ?? '', { label: `Downfall ${i + 1}` })).join('')}</div><div>${jrBtn('Save')}</div>`);
 /** Export (a download, with its plaintext warning) beside Restore (merge-only). `busy`: 'export' | 'restore'. */
@@ -71,9 +79,9 @@ const deleteJournal = ({ confirm = false } = {}) => sec(confirm
 
 /** The Journal panel (a Settings PanelCard). Staging: dashed with the hatch band and its one "Sample journal" chip, and a
  *  refused write under the switch; production: solid, no tag while reads are on. */
-function journalPanel(env, { state = 'on', refused = false } = {}) {
+function journalPanel(env, { state = 'on', refused = false, bulk = false } = {}) {
   const sample = env === 'staging';
-  const inner = [consent({ state, refused }), models(), monday(), readOnSave(), caps(), suspicions(), exportRestore(), deleteJournal()].join('');
+  const inner = [consent({ state, refused }), models(), monday(), readOnSave(), caps(), bulk ? bulkRead() : '', suspicions(), exportRestore(), deleteJournal()].join('');
   return P('Journal', sample ? jrSampleChip() : '', inner, 'Journal', `jr-st${sample ? ' is-sample' : ''}`);
 }
 
@@ -89,7 +97,8 @@ function settingsPage({ scheme = 'dark', minHeight = 0, env = 'staging', panel =
 // =========================================================================================================
 const AT_JOURNAL = 'Settings at /settings#journal, scrolled to the panel: it follows AI providers (SettingsPage.tsx:644) in the page’s one 760px column. The panels above it are drawn on the Settings row.';
 const staging = (o) => settingsPage({ ...o, env: 'staging', note: AT_JOURNAL, panel: journalPanel('staging', { state: 'on', refused: true }) });
-const phone = (o) => settingsPage({ ...o, env: 'production', note: JR_NOTES.illustrative, panel: journalPanel('production', { state: 'on' }) });
+/** The production phone panel, reads just turned on: the bulk read of older entries is offered under the caps. */
+const phone = (o) => settingsPage({ ...o, env: 'production', note: JR_NOTES.illustrative, panel: journalPanel('production', { state: 'on', bulk: true }) });
 
 function states({ scheme = 'dark', minHeight = 0 } = {}) {
   const frame = (tag, html) => P('Journal', tag, html, 'Journal', 'jr-st');
@@ -133,6 +142,8 @@ const ST_CSS = `
   .jr-st-in.focus { border-color: var(--amber-text); box-shadow: 0 0 0 3px var(--amber-tint); }
   .jr-st-lines { display: flex; flex-direction: column; gap: 8px; }
   .jr-st-month { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0; font-size: 13px; line-height: 1.5; color: var(--phosphor); }
+  .jr-st-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 14px; line-height: 1.45; color: var(--phosphor); }
+  .jr-st-est { font-size: 13px; color: var(--text-dim); } .jr-st-est .mono { color: var(--phosphor); }
   .jr-st-acts { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 24px; }
   .jr-st-acts0 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .jr-st-spin { flex: none; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--amber-text); }
@@ -152,7 +163,7 @@ export const ROW = {
   label: 'Journal · Settings panel',
   section: 'planned',
   css: JR_CSS + ST_CSS,
-  specH: 2929,
+  specH: 3063,
   spec: {
     title: 'Journal · Settings panel',
     route: '/settings#journal',
@@ -179,12 +190,13 @@ export const ROW = {
       { tag: null, when: 'Restoring: merge-only; a second restore adds nothing (“N rows were already in your journal”).' },
       { tag: null, when: `Delete confirm: “${W.deleteType}”, “Export first”, and what deletion reaches, “${W.deleteReach}”` },
       { tag: null, when: `Read on save, under its switch: “${W.readOnSave}”` },
+      { tag: null, when: `Bulk read (slice 5), once reads are on: “${W.bulk}” sits above “${AI.bulk.text}”; nothing is read until he taps it.` },
       { tag: 'locked', when: `Signed out (production): “${W.signedOut}”.` },
       { tag: 'sample', when: `Staging: the panel’s one “Sample journal” chip; a refused write reads “${W.refused}”` },
     ],
     phone: 'The panel stacks in the page column: the egress sentence, then each switch as a full-width 44px row with its own line under it; the model segments and the two caps one per row; the suspicion lines full width; Export, Restore and Delete journal… full-width buttons, stacked. No horizontal overflow at 390 or 393.',
     acceptance: [
-      'Criterion 14 (4, 5): every control that can reach the provider renders its egress line in the same view, never in a tooltip: the sentence above “AI reads of my journal”, and the line under “Read each entry right after I save it”.',
+      'Criterion 14 (4, 5): every control that can reach the provider renders its egress line in the same view, never in a tooltip: the sentence above “AI reads of my journal”, the line under “Read each entry right after I save it”, and the bulk sentence above “Read them now”.',
       'Criterion 15 (4): Off by default; a fresh account with an Anthropic key saved makes 0 provider requests until the switch is on and a run is asked for.',
       'Criterion 16 (4): a run whose worst case passes what is left of the monthly cap isn’t started, and the cap line shows; after Delete journal the month’s spend is unchanged.',
       'Criterion 28 (4): with no Anthropic key the panel offers “Add an Anthropic key in Settings › AI first” and runs make 0 requests; the journal reads its own models, never the ticker read’s provider.',
@@ -199,7 +211,7 @@ export const ROW = {
       { status: 'todo', waits: 'build', slice: '1b', what: `Slice 1b: the panel lands with “Export journal (JSON)” (convexa-journal-v1; “${W.exportNote}”), “Restore from an export” (merge-only; an entry whose seal doesn’t verify comes back as Imported) and the burnt-orange “Delete journal…” with its typed confirm.` },
       { status: 'todo', waits: 'build', slice: '3', what: `Slice 3: “Downfalls you suspect”, up to 5 lines, with “${W.suspicionsNote}”; the Review rail’s Edit opens it.` },
       { status: 'todo', waits: 'build', slice: '4', what: 'Slice 4: “AI reads of my journal”, Off by default, with its egress sentence above it, and “Add an Anthropic key in Settings › AI first” with no key; the models for entry reads and reviews; “Offer the weekly review each Monday”; the monthly and per-run caps with “This month”; What’s sent from here.' },
-      { status: 'todo', waits: 'build', slice: '5', what: 'Slice 5: “Read each entry right after I save it”, off, with its egress line in full; margin-call entries are never read on save.' },
+      { status: 'todo', waits: 'build', slice: '5', what: `Slice 5: “Read each entry right after I save it”, off, with its egress line in full; margin-call entries are never read on save. The bulk read of older entries, offered once reads are on, with its egress sentence above “Read them now · ${BULK[1]}”; it never runs without his tap.` },
     ],
     rulings: JR_RULINGS.filter((r) => !/^rule (10|19|22)\b|^P-6|^P-8|^NO-13/.test(r)),
     code: [
@@ -212,7 +224,7 @@ export const ROW = {
   },
   boards: [
     B('staging', 'Staging · demo account', 1440, 1876, (o) => staging(o)),
-    B('phone', 'Phone · production', 390, 2302, (o) => phone(o)),
+    B('phone', 'Phone · production', 390, 2496, (o) => phone(o)),
     B('states', 'States', 1440, 2098, (o) => states(o)),
   ],
 };

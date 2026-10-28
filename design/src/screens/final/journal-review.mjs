@@ -11,9 +11,9 @@
 // words it returns differ from the words it was given. Classes are `jr-rv-`. Units are px.
 //
 // Exports beyond ROW (for the overlays row, the same lane's other file): RV_CSS, reviewPage, figs, findingFacts.
-import { JR_CSS, B, LIGHT, JR_NOTES, JR_SUBLINE, JR_RULINGS, jrPage, jrHeader, jrHeaderActions, jrBtn, jrGrid, jrFrame, jrQuiet, jrChartFrame, jrTag, jrDots, jrRate, jrStrip, jrSeg, jrSigned, jrPath, jrPeek, statesBoard, icon } from './journal-kit.mjs';
+import { JR_CSS, B, LIGHT, JR_NOTES, JR_R2_DERIVED, JR_SUBLINE, JR_RULINGS, jrPage, jrHeader, jrHeaderActions, jrBtn, jrGrid, jrFrame, jrChartFrame, jrTag, jrDots, jrRate, jrStrip, jrSeg, jrSigned, jrPath, jrPeek, statesBoard, icon } from './journal-kit.mjs';
 import { dataTable } from '../../chart-kit.mjs';
-import { AI, DETECTOR_ROWS, EVENT_TEXT, FINDINGS, ILLUSTRATIVE_RATE, INSTRUMENTS, LATEST, MONEY_WENT, PATH, QUESTIONS, REVIEWS, RULE, RULE_COUNTS, SOURCE_WORD, STRINGS, SUSPICIONS, TIDY, asksLine, fmtDate, pct, usd, wilson } from '../../data/journal-sample.mjs';
+import { AI, DETECTOR_ROWS, EVENT_TEXT, FINDINGS, HIGH, ILLUSTRATIVE_RATE, INSTRUMENTS, LATEST, MONEY_WENT, PATH, QUESTIONS, REVIEWS, RULE, RULE_COUNTS, SOURCE_WORD, STRINGS, SUSPICIONS, TIDY, asksLine, fmtDate, pct, usd, wilson } from '../../data/journal-sample.mjs';
 
 const OCT7 = REVIEWS.oct7;
 const DET = OCT7.detectors;
@@ -263,7 +263,13 @@ function withRecalled(mask, draw) {
     PATH.forEach((p, i) => { [p.hollow, p.source] = saved[i]; });
   }
 }
-const pathFull = (env, { memory = false } = {}) => (memory ? withRecalled((p) => p.date < LATEST.asOf, () => jrPath(env)) : jrPath(env));
+/** A recalled high says how it was written (Computed facts → Recalled snapshots: "from memory" or "from a
+ *  statement"); read from the masked point, so it follows the mask. */
+const recalledHighLabel = () => {
+  const hp = PATH.find((p) => p.date === HIGH.asOf);
+  return hp.hollow ? `${STRINGS.highLabel} · ${hp.source === SOURCE_WORD.statement ? 'from a statement' : 'from memory'}` : STRINGS.highLabel;
+};
+const pathFull = (env, { memory = false } = {}) => (memory ? withRecalled((p) => p.date < LATEST.asOf, () => jrPath(env, { highLabel: recalledHighLabel() })) : jrPath(env));
 /** On a phone the Path sits behind a peek row that opens it, with its twin, in a bottom sheet. */
 const pathPeek = (env) => jrFrame({ env, chipAt: 'foot', label: 'The account path', body: jrPeek({ title: STRINGS.pathTitle, open: false }) });
 
@@ -301,14 +307,19 @@ const moneyFrame = (env) => jrChartFrame(env, { claim: STRINGS.moneyWentCaption,
 const SUSP = new Map(SUSPICIONS.map((s) => [s.row, s.text]));
 const ABOUT = { decided: 'Decided', happened: 'Happened' };
 const ZERO_LINE = 'counts start with entries written at the time';
+/** Row 4 counts plans with a No answer, and a plan is written at the time by construction, so its honest count keeps
+ *  the week's Oct 5 No ("0 of 1") when most entries are from memory; the other decided rows read "0 of 0". */
+const PLAN_ROW = 4;
+const zeroed = (d, memory) => !!memory && d.about === 'decided' && d.row !== PLAN_ROW;
 /** A detector row's count: dots below 20, the row's own words for rows 6 and 10, plain text for the memory row. In
- *  the mostly-from-memory state every decided row reads "0 of 0 · counts start with entries written at the time". */
+ *  the mostly-from-memory state every decided row but row 4 reads "0 of 0 · counts start with entries written at
+ *  the time". */
 function detCount(d, { memory = null } = {}) {
   if (d.key === 'from_memory') {
     const t = memory ? `${memory.recalled} of ${memory.entries}` : d.text;
     return `<div class="c"><span class="ct">${t}</span></div>`;
   }
-  if (memory && d.about === 'decided') {
+  if (zeroed(d, memory)) {
     if (d.row === 10) return `<div class="c"><span class="cw"><span class="mono">0</span> resolved</span><span class="cb">0 resolved; a score starts at 20</span></div>`;
     return `<div class="c"><span class="cw"><span class="ct">0 of 0</span> · ${ZERO_LINE}</span></div>`;
   }
@@ -327,7 +338,7 @@ const DET_ORDER = [...DETECTOR_ROWS.filter((d) => SUSP.has(d.row)), ...DETECTOR_
 /** The twin: one row per pattern with the count as the row shows it and the line under it. */
 function detTwin({ memory = null } = {}) {
   const rows = [...DET_ORDER, MEMORY].map((d) => {
-    const zero = memory && d.about === 'decided';
+    const zero = zeroed(d, memory);
     const count = d.key === 'from_memory' ? (memory ? `${memory.recalled} of ${memory.entries}` : d.text) : zero ? (d.row === 10 ? '0 resolved' : '0 of 0') : d.text;
     const under = d.key === 'from_memory' ? '' : zero ? (d.row === 10 ? '0 resolved; a score starts at 20' : ZERO_LINE) : d.building ?? '';
     const note = [SUSP.has(d.row) ? 'You named this' : '', d.row === 3 ? 'Seen at your snapshots only' : '', under].filter(Boolean).join(' · ');
@@ -392,13 +403,14 @@ const ranFrame = (env, { collapsed = false } = {}) => (collapsed
   ? jrFrame({ env, chipAt: 'foot', label: 'How this ran', body: `<details class="jr-rv-ran"><summary>How this ran</summary>${ranLines()}</details>` })
   : jrFrame({ env, title: 'How this ran', level: 'h3', chipAt: 'foot', body: ranLines() }));
 function suspicionsFrame(env, { memory = null } = {}) {
-  const count = (row) => { const d = det(row); return memory && d.about === 'decided' ? '0 of 0' : d.text; };
+  const count = (row) => { const d = det(row); return zeroed(d, memory) ? '0 of 0' : d.text; };
   const items = SUSPICIONS.map((s) => `<li>${s.text} · row ${s.row} · <span class="mono">${count(s.row)}</span></li>`).join('');
   return jrFrame({ env, title: 'Your suspicions', level: 'h3', chipAt: 'foot', body: `<ul class="jr-rv-lines">${items}</ul><a href="/settings#journal" class="jr-more">Edit</a>` });
 }
 const pastLinks = () => `<ul class="jr-rv-links">${[REVIEWS.sep28, REVIEWS.sep21].map((r) => `<li><a href="/positions/review/${r.id}">${fmtDate(r.at)}</a></li>`).join('')}</ul>`;
 const tidyLink = () => `<a href="/positions/journal/tidy" class="jr-more">Tidy up · ${TIDY.details} details waiting</a>`;
-const pastPanel = () => jrQuiet(`<h3 style="margin: 0; font-size: 15px; font-weight: 600;">Past reviews</h3>${pastLinks()}${tidyLink()}`, { label: 'Past reviews' });
+/** Past reviews and Tidy are the sample's too: on staging a dashed frame with its one "Sample journal" chip (P-3, D1). */
+const pastPanel = (env) => jrFrame({ env, title: 'Past reviews', level: 'h3', chipAt: 'foot', body: `${pastLinks()}${tidyLink()}` });
 /** On a phone the rail folds into one frame of collapsed rows: How this ran (collapsed, as the spec draws it), the
  *  suspicions and the past reviews, then Tidy. */
 const fold = (title, inner) => `<details class="jr-rv-ran"><summary>${title}</summary>${inner}</details>`;
@@ -412,6 +424,13 @@ const phoneRail = (env) => jrFrame({ env, chipAt: 'foot', label: 'How this ran, 
 const FIRST_WEEKS = { recalled: 9, entries: 11 };
 const MEMORY_STRIP = `Most of your entries so far are written from memory (${FIRST_WEEKS.recalled} of ${FIRST_WEEKS.entries}). Patterns about what you decided use only entries written at the time, so they start as you write them. What happened is below.`;
 const OFF_LINE = 'AI reads are off. The counts above need no AI. Turn reads on in Settings › Journal.';
+/** Board notes (P-4). R2's answer on the Oct 1 plan is the sample module's derived one, so every board that counts
+ *  R2's asks says so (JR_R2_DERIVED); and "Draft a rule from this" shows only where the review holds a draft. */
+const R2_DERIVED = JR_R2_DERIVED;
+const DRAFT_NOTE = '“Draft a rule from this” shows only where the review holds a draft (at most 3 a review).';
+/** In the mostly-from-memory state the questions back keep his words against his numbers (q-margin, the tone
+ *  guide's) and the Oct 1 plan's question; q-roll leans on pattern 1's count, which reads 0 of 0 there. */
+const MEMORY_QUESTIONS = QUESTIONS.filter((q) => q.id !== 'q-roll');
 
 /**
  * The Review page. mode: 'staging' (the authored Oct 7 review on the demo, AI parts as the seed holds them, Sample)
@@ -419,7 +438,7 @@ const OFF_LINE = 'AI reads are off. The counts above need no AI. Turn reads on i
  * · 'memory' (production, mostly from memory, AI reads on). `phone` reorders for 390: the egress and Run first, the
  * Path behind a peek row, "How this ran" collapsed, and sections 9 and 10 closing the page.
  */
-export function reviewPage(mode = 'staging', { scheme = 'dark', minHeight = 0, phone = false } = {}) {
+export function reviewPage(mode = 'staging', { scheme = 'dark', minHeight = 0, phone = false, note = true } = {}) {
   const env = mode === 'staging' ? 'staging' : 'production';
   const ai = mode !== 'off';
   const memory = mode === 'memory' ? FIRST_WEEKS : null;
@@ -431,7 +450,7 @@ export function reviewPage(mode = 'staging', { scheme = 'dark', minHeight = 0, p
     head({ env, ai, total: memory ? FIRST_WEEKS.entries : null }),
   ].join('');
   const findings = memory ? FINDINGS.filter((f) => f.about === 'happened') : FINDINGS;
-  const questions = memory ? QUESTIONS.filter((q) => q.id === 'q-plan') : QUESTIONS;
+  const questions = memory ? MEMORY_QUESTIONS : QUESTIONS;
   const s = {
     week: sec('This week in numbers', week(env)),
     path: sec('The account path', phone ? pathPeek(env) : pathFull(env, { memory: !!memory })),
@@ -445,11 +464,15 @@ export function reviewPage(mode = 'staging', { scheme = 'dark', minHeight = 0, p
     went: sec('Rules you went ahead against', wentFrame(env, { phone })),
     focus: sec('This week’s focus', focusFrame(env, { phone })),
   };
-  const rail = [ai && !memory ? ranFrame(env, { collapsed: phone }) : '', suspicionsFrame(env, { memory }), memory ? '' : pastPanel()].join('');
+  const rail = [ai && !memory ? ranFrame(env, { collapsed: phone }) : '', suspicionsFrame(env, { memory }), memory ? '' : pastPanel(env)].join('');
   const body = phone
     ? `<div class="jr-rv-main">${[s.week, s.path, s.event, s.money, s.det, s.ai, s.rules].join('')}${phoneRail(env)}${s.went}${s.focus}</div>`
     : jrGrid(`<div class="jr-rv-main">${[s.week, s.path, s.event, s.money, s.det, s.ai, s.rules, s.went, s.focus].join('')}</div>`, rail, { rail: 320 });
-  return jrPage({ scheme, minHeight, env, tab: 'review', bar: 'review', label: 'Weekly review', main: top + body, note: env === 'production' ? JR_NOTES.illustrative : '' });
+  // Staging review boards carry only these two facts (the demo bar and the spec card state the scenario), which keeps
+  // the phone board under the canvas's 8000px cap; production boards lead with the illustrative note.
+  const extra = [R2_DERIVED, ai ? DRAFT_NOTE : ''].filter(Boolean).join(' ');
+  const boardNote = !note ? '' : env === 'production' ? `${JR_NOTES.illustrative}. ${extra}` : extra;
+  return jrPage({ scheme, minHeight, env, tab: 'review', bar: 'review', label: 'Weekly review', main: top + body, note: boardNote });
 }
 
 // =========================================================================================================
@@ -489,7 +512,7 @@ function statesBody({ scheme = 'dark', minHeight = 0 } = {}) {
     { name: 'Ready', tag: null, when: 'AI reads on, new entries since the last review. The computed sections are already on the page; the egress sentence sits above Run.', html: `<p class="jr-rv-msg">${figs(AI.ready, { ints: true })}</p>${egressBand()}` },
     { name: 'Running', tag: null, wide: true, when: 'Named steps with result-shaped skeletons and the in-flight indicator (amber, rule 16’s list). The computed sections stay on the page.', html: `<div style="display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 16px 24px; align-items: start;">${steps(2)}<div style="display: flex; flex-direction: column; gap: 12px;">${skelCard()}${skelCard()}</div></div>` },
     { name: 'Stale · over a pinned review', tag: null, when: 'Entries written since the review: a burnt-orange strip with its icon. The pinned review stays.', html: `${jrStrip('warn', `<span>${figs('3 entries since this review. Its findings don’t include them.', { ints: true })} · <a href="#">Run again</a></span>`)}${pinned()}` },
-    { name: 'Didn’t pass the check', tag: null, when: 'One failed figure fails the read: it is stored as failed, never shown as findings. The failed draft stays collapsed and labelled; the computed sections still show.', html: `${jrStrip('warn', `<span>${figs('This review didn’t pass the number check: 2 figures didn’t match your snapshots. It isn’t shown as findings.', { ints: true })}</span>`)}<details class="jr-rv-fail"><summary>See the failed draft <span class="stag k-solid">Failed draft · not findings</span></summary></details>` },
+    { name: 'Didn’t pass the check', tag: null, when: 'One failed figure fails the read: it is stored as failed, never shown as findings. The failed draft stays collapsed and labelled; the computed sections still show.', html: `${jrStrip('warn', `<span>${figs('This review didn’t pass the number check: 2 figures didn’t match your snapshots. It isn’t shown as findings.', { ints: true })}</span>`)}<details class="jr-rv-fail"><summary>See the failed draft <span class="jr-rv-lab">Failed draft · not findings</span></summary></details>` },
     { name: 'Request failure · pinned stays', tag: null, when: 'A provider error or timeout: its own line and Retry, under the review sentence. The previous review is never evicted. The second line shows only when the output was cut off (max_tokens).', html: `<p class="jr-rv-wl" style="font-size: 13px; color: var(--text-dim);">${EGRESS}</p>${jrStrip('warn', '<span>AI unavailable · Anthropic returned an error. Your entries are unchanged.</span><span>The answer was cut off.</span>')}<div>${jrBtn('Retry')}</div>${pinned()}` },
     { name: 'Refused', tag: null, when: 'stop_reason “refusal”: nothing from the run is shown, with no automatic retry.', html: jrStrip('warn', '<span>Anthropic declined this review. Nothing from it is shown; the counts above still stand.</span>') },
     { name: 'Already running', tag: null, when: 'A second run while one runs (409 run_in_progress).', html: `<div class="jr-rv-run"><span class="jr-rv-spin" role="progressbar" aria-label="In flight"></span><span class="jr-rv-msg" style="font-size: 14px;">A review is already running.</span></div>` },
@@ -513,7 +536,7 @@ export const ROW = {
   label: 'Journal · Weekly review',
   section: 'planned',
   css: JR_CSS + RV_CSS,
-  specH: 3537,
+  specH: 3688,
   spec: {
     title: 'Journal · Weekly review',
     route: '/positions/review · /positions/review/:reviewId',
@@ -536,13 +559,13 @@ export const ROW = {
     ],
     states: [
       { tag: null, when: 'Too little written: “Reviews start once there are 3 saved entries. You have 2.”' },
-      { tag: null, when: 'Mostly from memory: “Most of your entries so far are written from memory (9 of 11). Patterns about what you decided use only entries written at the time, so they start as you write them. What happened is below.” Decided rows “0 of 0 · counts start with entries written at the time”; happened rows counted; findings “About what happened” only.' },
+      { tag: null, when: 'Mostly from memory: “Most of your entries so far are written from memory (9 of 11). Patterns about what you decided use only entries written at the time, so they start as you write them. What happened is below.” Decided rows show their honest counts, “0 of 0 · counts start with entries written at the time” (row 4 keeps the week’s plan with a No, “0 of 1”: a plan is written at the time); happened rows counted; findings “About what happened” only, plus his words against his numbers and questions back. A recalled recorded high says so: “… · from memory”.' },
       { tag: null, when: 'Computed only, slice 3: sections 1–5 and 8–10 with the amber “Save this week’s review”; no AI section, no Run.' },
       { tag: 'off', when: 'Computed only (AI off), from slice 4: “AI reads are off. The counts above need no AI. Turn reads on in Settings › Journal.”' },
       { tag: 'notConfigured', when: 'No key or model unset: Run is replaced by “Set up in Settings”.' },
       { tag: null, when: 'Ready: “8 new entries since Sep 28 · ≈ $0.31”.' },
       { tag: null, when: 'Running: “Reading 8 new entries · Counting 10 patterns · Checking 31 figures against your snapshots · Writing findings”, with result-shaped skeletons and the in-flight indicator.' },
-      { tag: null, when: 'Produced: as the staging board.' },
+      { tag: null, when: 'Produced: as the staging board. “Draft a rule from this” shows that review’s draft for the finding, so it is drawn only where the review holds one (at most 3 a review): rows 2 and 7 on Oct 7. A finding linked to gains never has it.' },
       { tag: null, when: 'Stale: “3 entries since this review. Its findings don’t include them. · Run again” (burnt orange, with its icon); the pinned review stays.' },
       { tag: null, when: 'Didn’t pass the check: “This review didn’t pass the number check: 2 figures didn’t match your snapshots. It isn’t shown as findings.” + “See the failed draft”, labelled “Failed draft · not findings”.' },
       { tag: null, when: 'Request failure: “AI unavailable · Anthropic returned an error. Your entries are unchanged.” + “Retry”; “The answer was cut off.” on truncated output.' },
@@ -558,6 +581,7 @@ export const ROW = {
       '10 · Every row or finding with n < 20 shows “{k} of {n}” with “{n} counted; rates start at 20”, and its payload has the building shape with no rate or interval field.',
       '11 · All 10 detector rows in the fixed order, zeros included, with the caption “10 patterns are checked every review. With this many, one can look notable by chance.”',
       '12 · A failed number check shows the failed state and no findings.',
+      '13 · Findings, questions and drafts pass the advice and tone scan: “sell TSLA”, “you should”, “reckless”, “Reduce leverage.” and the scan’s other phrases fail the read in the AI’s own words and pass inside a quote of his; “You named three suspicions” passes.',
       '14 · The egress sentence sits above Run in the same view; the What’s sent drawer equals the package’s categories item for item.',
       '15 · With a key saved and reads off, 0 provider requests while the computed parts render.',
       '16 · With $0.10 of the monthly cap left, a run whose worst case is $0.76 isn’t started and the page shows the cap line.',
@@ -587,11 +611,11 @@ export const ROW = {
     ],
   },
   boards: [
-    B('staging', 'Staging · Oct 7 review', 1440, 5865, (o) => reviewPage('staging', o)),
+    B('staging', 'Staging · Oct 7 review', 1440, 5908, (o) => reviewPage('staging', o)),
     B('ai-off', 'Production · AI off', 1440, 4078, (o) => reviewPage('off', o)),
-    B('from-memory', 'Production · mostly from memory', 1440, 4647, (o) => reviewPage('memory', o)),
-    B('phone', 'Phone · staging', 390, 7848, (o) => reviewPage('staging', { ...o, phone: true })),
-    B('light', 'Light · staging', 1440, 5865, (o) => reviewPage('staging', o), LIGHT),
+    B('from-memory', 'Production · mostly from memory', 1440, 4794, (o) => reviewPage('memory', o)),
+    B('phone', 'Phone · staging', 390, 7985, (o) => reviewPage('staging', { ...o, phone: true })),
+    B('light', 'Light · staging', 1440, 5908, (o) => reviewPage('staging', o), LIGHT),
     B('states', 'States', 1440, 3710, statesBody),
   ],
 };

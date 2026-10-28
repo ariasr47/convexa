@@ -16,7 +16,7 @@
 // sentence rebuilt from detectors(), equal to the spec's text); the check table's account change is the next
 // snapshot's chained change. The States board's illustrations (7 active, a paused rule, a declined draft, computed
 // checks) are marked illustrative where they appear; the spec prints no words for some of them (see deviations).
-import { B, LIGHT, JR_CSS, JR_RULINGS, dotJoin, jrPage, jrHeader, jrHeaderActions, jrBtn, jrGrid, jrOne, jrFrame, jrTag, jrDots, jrAbove, jrWithin, jrGap, jrAnswer, jrQuote, jrSpan, jrStrip, jrKind, jrSym, jrSheet, jrSheetStage, jrSurface, statesBoard, icon, provChip, SAMPLE_CHIP } from './journal-kit.mjs';
+import { B, LIGHT, JR_CSS, JR_ERROR_WORD, JR_NOTES, JR_R2_DERIVED, JR_RULINGS, dotJoin, jrPage, jrHeader, jrHeaderActions, jrBtn, jrGrid, jrOne, jrFrame, jrTag, jrDots, jrAbove, jrWithin, jrGap, jrAnswer, jrQuote, jrSpan, jrStrip, jrKind, jrSym, jrSheet, jrSheetStage, jrSurface, statesBoard, icon, provChip, SAMPLE_CHIP } from './journal-kit.mjs';
 import { DETECTOR_ROWS, DRAFTS, ENTRY, FINDINGS, INSTRUMENTS, LATEST, PLANS, REVIEWS, REVIEW_CUTOFF, RULE, RULES, RULE_COUNTS, SCENARIO, SNAPSHOTS, STRINGS, TRADES, ANSWER_WORD, afterLine, asksLine, avgBefore, fmtDate, fmtDay, pct, reading, signedUsd, snapshotBefore, usd } from '../../data/journal-sample.mjs';
 
 // =========================================================================================================
@@ -153,15 +153,18 @@ const railFrame = (env, { active = ACTIVE.length } = {}) => jrFrame({ env, title
 // rule, "Write a rule" and "Copy as text" under the header, and the bottom bar's amber "Plan a trade"
 // =========================================================================================================
 const phoneActs = () => `<div class="jr-rb-phacts">${jrBtn('Write a rule', { ic: 'edit', size: 'touch' })}${jrBtn('Copy as text', { ic: 'copy', size: 'touch' })}</div>`;
+/** The staging board note (P-4): R2's asks count its Oct 1 answer, which the spec doesn't print. */
+const RB_NOTE = `${JR_NOTES.staging} ${JR_R2_DERIVED}`;
 function rulebookPage(o, { phone = false } = {}) {
   const env = 'staging';
   const main = `${draftsSection(env)}${activeSection(env)}${retiredSection(env, { open: !phone })}`;
-  return jrPage({ ...o, env, tab: 'rulebook', bar: 'rulebook', label: 'Rulebook', main: `${jrHeader({ title: 'Rulebook', sub: RB_SUB, actions: jrHeaderActions('rulebook') })}${phoneActs()}${jrGrid(main, railFrame(env), { rail: 840 })}` });
+  return jrPage({ ...o, env, tab: 'rulebook', bar: 'rulebook', label: 'Rulebook', note: RB_NOTE, main: `${jrHeader({ title: 'Rulebook', sub: RB_SUB, actions: jrHeaderActions('rulebook') })}${phoneActs()}${jrGrid(main, railFrame(env), { rail: 840 })}` });
 }
-/** The phone: the page, then its row menu (opened from R3's ⋯) as a bottom sheet over the page. */
+/** The phone: the page, then its row menu (opened from R3's ⋯) as a bottom sheet over the page; the sheet names the
+ *  sample once, with the Sample tag in its peek row (D1). */
 function rulebookPhone(o) {
   const r = RULE.R3;
-  const sheet = jrSheet({ title: `${r.id} · ${plain(vLine(r))}`, sub: r.versions[r.versions.length - 1].wording, label: `${r.id} menu`, actions: [jrBtn('Edit', { ic: 'edit', size: 'touch' }), jrBtn('Pause', { size: 'touch' }), jrBtn('Retire', { kind: 'text', size: 'touch' })] });
+  const sheet = jrSheet({ title: `${r.id} · ${plain(vLine(r))}`, sub: r.versions[r.versions.length - 1].wording, tag: jrTag('sample'), label: `${r.id} menu`, actions: [jrBtn('Edit', { ic: 'edit', size: 'touch' }), jrBtn('Pause', { size: 'touch' }), jrBtn('Retire', { kind: 'text', size: 'touch' })] });
   return jrSurface({ ...o, gap: 0, html: `${rulebookPage({ scheme: o.scheme, minHeight: 0 }, { phone: true })}<div class="v4" data-scheme="${o.scheme || 'dark'}" style="background: var(--ink); color: var(--phosphor);">${jrSheetStage(sheet)}</div>` });
 }
 
@@ -218,7 +221,7 @@ function rulePage(o) {
   const table = `<div class="jr-rb-tw" role="region" aria-label="Checks of ${r.id}" tabindex="0"><table class="jr-rb-tbl"><thead><tr><th>Date</th><th>Entry</th><th>How</th><th>Answer or result</th><th>Reading at the time</th><th>Why go ahead</th><th>Account change to the next snapshot</th></tr></thead><tbody>${checkRows(r.id)}</tbody></table></div><div class="jr-rb-kv">${how('computed')}<p class="jr-rb-line">${STRINGS.computedNone}</p></div>`;
   const counts = `<div class="jr-rb-counts"><div class="jr-rb-kv">${how('answered by you')}${asks(r.id)}</div><p class="jr-rb-after">${afterLine(r.id)}</p></div>`;
   const main = jrOne(`${head}${jrFrame({ env, label: 'Versions and why', chipAt: 'foot', body: `${vt}${def}` })}${jrFrame({ env, title: 'Because', level: 'h2', body: origin })}${jrFrame({ env, label: 'Checks', chipAt: 'foot', body: `${table}${counts}` })}`);
-  return jrPage({ ...o, env, tab: 'rulebook', label: `${r.id} · Rulebook`, main });
+  return jrPage({ ...o, env, tab: 'rulebook', label: `${r.id} · Rulebook`, note: RB_NOTE, main });
 }
 
 // =========================================================================================================
@@ -255,7 +258,7 @@ function states({ scheme = 'dark', minHeight = 0 } = {}) {
     { name: 'Retired', tag: null, when: `R1, written ${fmtDate(RULE.R1.versions[0].from)} as his first run’s rule and retired ${fmtDate(RULE.R1.retired.on)} with his reason: it keeps its number and stays listed, and nothing is deleted.`, html: section('production', { title: `Retired (${m(RETIRED.length)})`, body: RETIRED.map((r) => retiredRow(r, { open: true })).join('') }) },
     { name: 'Declined draft, read-only', tag: null, when: 'The rule page of a draft he set aside: his wording kept, no number, his reason under it, no Adopt. Illustrative, as above.', html: draftCard(earn, { readonly: true, status: `<p class="jr-rb-line jr-rb-dec">${dotJoin(['Not for me', fmtDate(SCENARIO.date), `“${declineReason}”`])}</p>` }) },
     { name: 'Loading', tag: null, when: 'Skeletons at their final height: the drafts, the rule rows and the rail. No tag.', html: `<div class="jr-rb-sk">${skel('42%', 22)}${skel('100%', 150)}${skel('100%', 96)}${skel('100%', 96)}${skel('60%', 14)}</div>` },
-    { name: 'Couldn’t load', tag: ['error'], when: 'As on the timeline: the cause and Try again. Drafts and rules are on the account; nothing is lost.', html: prodFrame({ label: 'Rulebook, couldn’t load', tag: jrTag('error'), body: `<p class="jr-rb-p">${CANT_LOAD}</p><div class="jr-rb-acts">${jrBtn('Try again', { ic: 'refresh' })}</div>` }) },
+    { name: 'Couldn’t load', tag: ['error', JR_ERROR_WORD], when: 'As on the timeline: the cause and Try again. Drafts and rules are on the account; nothing is lost.', html: prodFrame({ label: 'Rulebook, couldn’t load', tag: jrTag('error'), body: `<p class="jr-rb-p">${CANT_LOAD}</p><div class="jr-rb-acts">${jrBtn('Try again', { ic: 'refresh' })}</div>` }) },
     { name: 'At the limit · 7 active', tag: null, wide: true, when: `Illustrative, with 7 rules active (G3): Adopt and Resume are refused inline and adopt nothing; “Write a rule” offers “Save as draft”, and his words land under “Your drafts”, origin “written by you”, with Edit and an outlined Adopt. Drafts and paused rules don’t count. The line he writes is his ${reviewDay('oct7')} focus.`, html: `<div class="jr-rb-pair">${draftCard(exit, { under: inlineLine(LIMIT_ADOPT) })}<div class="jr-rb-col2">${section('production', { title: 'Paused', body: pausedRow(inlineLine(LIMIT_RESUME)) })}${prodFrame({ title: 'Write a rule', level: 'h3', body: `${input(focusWords, { name: 'Write a rule' })}${label('Why this rule, in your words', input('', { multi: true }))}<div class="jr-rb-acts">${jrBtn('Save as draft')}</div>` })}${section('production', { title: 'Your drafts', body: ownDraft(focusWords) })}${prodFrame({ title: 'Before you trade', level: 'h3', body: countLine(CAP) })}</div></div>` },
     { name: 'Computed checks', tag: ['computed'], wide: true, when: `Slice 3 (G8), on illustrative Added entries after the scenario day: the sample has none, since no Entered or Added entry follows ${fmtDate(RULE.R2.versions[0].from)}. Each reads within (plain), above (warning glyph) or not recorded (Sans), derived on read, counted on the rule apart from his answers and never summed with them.`, html: `<div class="jr-rb-rules">${ruleRow('R2', { computed: compCount, menu: false })}</div>${compTable}` },
   ];
@@ -393,7 +396,7 @@ export const ROW = {
   label: 'Journal · Rulebook',
   section: 'planned',
   css: JR_CSS + RB_CSS,
-  specH: 3331,
+  specH: 3330,
   spec: {
     title: 'Journal · Rulebook',
     route: '/positions/rulebook · /positions/rulebook/:ruleId',
@@ -419,8 +422,8 @@ export const ROW = {
       { tag: null, when: 'Drafts only: the review’s drafts and no active rule; no words of its own.' },
       { tag: null, when: `Stale draft: “${STALE}”` },
       { tag: null, when: `At the limit, 7 active: “${LIMIT_ADOPT}” on Adopt; “${LIMIT_RESUME}” on Resume; “Write a rule” offers “Save as draft”, which lands under “Your drafts” (G3).` },
-      { tag: 'loading', when: 'Loading: skeletons at their final height; no tag in the product.' },
-      { tag: 'error', when: `Couldn’t load: “${CANT_LOAD}” and “Try again”, as on the timeline.` },
+      { tag: null, when: 'Loading: skeletons at their final height; no tag in the product.' },
+      { tag: ['error', JR_ERROR_WORD], when: `Couldn’t load: “${CANT_LOAD}” and “Try again”, as on the timeline.` },
       { tag: 'locked', when: 'Signed out (production): the Positions private-testing wall, “Sign in to open your journal”, “See it on the demo →”.' },
       { tag: null, when: 'Not the owner: “This journal is private to the account that owns this Convexa.” and “See it on the demo →”; no tag (open question 12).' },
       { tag: 'sample', when: 'Staging: the demo bar once; each frame dashed with the 8px hatch band and one “Sample journal” chip; cards and rows untagged.' },
@@ -460,10 +463,10 @@ export const ROW = {
     ],
   },
   boards: [
-    B('staging', 'Staging · rulebook', 1440, 2157, (o) => rulebookPage(o)),
-    B('rule', 'Staging · rule R2', 1440, 1931, (o) => rulePage(o)),
-    B('phone', 'Phone · staging', 390, 3799, (o) => rulebookPhone(o)),
-    B('light', 'Light · staging', 1440, 2157, (o) => rulebookPage(o), LIGHT),
+    B('staging', 'Staging · rulebook', 1440, 2218, (o) => rulebookPage(o)),
+    B('rule', 'Staging · rule R2', 1440, 1992, (o) => rulePage(o)),
+    B('phone', 'Phone · staging', 390, 3930, (o) => rulebookPhone(o)),
+    B('light', 'Light · staging', 1440, 2218, (o) => rulebookPage(o), LIGHT),
     B('states', 'States', 1440, 5092, states),
   ],
 };

@@ -9,7 +9,8 @@
 // lanes' contract is tmp/journal-boards/KIT.md. The review page behind two drawers, and figs() (the module's own digits
 // in Mono, traced or tinted, with a check that the words never drift), come from this lane's other row,
 // ./journal-review.mjs, so this row's css carries its RV_CSS. Classes are `jr-ov-`. Units are px.
-import { JR_CSS, B, JR_RULINGS, JOURNAL_SUB, jrPage, jrHeader, jrHeaderActions, jrBtn, jrGrid, jrFrame, jrQuiet, jrTag, jrDots, jrStrip, jrQuote, jrSpan, jrPath, jrDrawer, jrDialog, jrOverlay, jrSheet, jrSheetStage, jrSurface, jrKind, jrSym, jrEntryCard, jrDay, jrFig, jrFigs, jrSpark, jrChips, jrSeg, jrGap, jrAbove, statesBoard, icon, sw } from './journal-kit.mjs';
+import { finalDemoNotice } from '../../lib.mjs';
+import { JR_CSS, B, JR_NOTES, JR_RULINGS, JOURNAL_SUB, jrPage, jrHeader, jrHeaderActions, jrBtn, jrGrid, jrFrame, jrQuiet, jrTag, jrDots, jrStrip, jrQuote, jrSpan, jrPath, jrDrawer, jrDialog, jrOverlay, jrSheet, jrSheetStage, jrSurface, jrNote, jrKind, jrSym, jrEntryCard, jrDay, jrFig, jrFigs, jrSpark, jrChips, jrSeg, jrGap, jrAbove, statesBoard, icon, sw } from './journal-kit.mjs';
 import { RV_CSS, reviewPage, figs, findingFacts } from './journal-review.mjs';
 import { AI, DETECTOR_ROWS, ENTRY, FINDINGS, INSTRUMENTS, KIND_WORD, LATEST, Q, REVIEWS, RULE, SNAPSHOT, STRINGS, daysBetween, fmtDate, fmtDay, pct, times, usd } from '../../data/journal-sample.mjs';
 
@@ -30,6 +31,11 @@ const OV_CSS = `
   .jr-ov-p .mono { color: var(--phosphor); }
   .jr-ov-sec { display: flex; flex-direction: column; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line); }
   .jr-db > .jr-ov-sec:first-child { padding-top: 0; border-top: 0; }
+  /* On staging each section of sample data is a dashed frame with the 8px steel hatch band (P-3, P-8) and no chip of
+     its own: the overlay's head names the sample once (D1), as the Final What's sent drawer draws its sections. */
+  .jr-ov-sec.is-sample, .jr-db > .jr-ov-sec.is-sample:first-child { position: relative; padding: 20px 12px 12px; border: 1px dashed var(--steel-2); border-radius: 10px; }
+  .jr-ov-pos.is-sample { position: relative; padding-top: 20px; border: 1px dashed var(--steel-2); }
+  .jr-ov-sec.is-sample::before, .jr-ov-pos.is-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 9px 9px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--steel) 28%, transparent) 6px 12px); pointer-events: none; }
   /* the account path's twin in the 760 drawer: headers and words wrap so all eight columns show */
   .jr-ov-pathd .cf-tw th, .jr-ov-pathd .cf-tw td { padding: 6px 8px; }
   .jr-ov-pathd .cf-tw thead th { white-space: normal; vertical-align: bottom; }
@@ -76,6 +82,7 @@ const OV_CSS = `
   .jr-ov-in .jr-gap { font-size: 13px; }
   .jr-ov-in .car { margin-left: auto; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid var(--steel); }
   .jr-ov-hint { display: block; margin-top: 4px; font-size: 12px; line-height: 1.4; color: var(--steel); }
+  .jr-ov-hint .mono { color: var(--phosphor); }
   .jr-ov-tg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); box-shadow: inset 0 0 0 1px var(--line-2); border-radius: 8px; overflow: hidden; }
   .jr-ov-tg > button { min-height: 36px; padding: 0 8px; border: 0; border-left: 1px solid var(--line-2); background: transparent; color: var(--steel); font: 600 13px/1 'IBM Plex Sans', sans-serif; }
   .jr-ov-tg > button:first-child { border-left: 0; }
@@ -84,7 +91,7 @@ const OV_CSS = `
   .jr-ov-res .mono { color: var(--phosphor); }
   .jr-ov-res .mono.t-down { color: var(--text-down); } .jr-ov-res .mono.t-up { color: var(--text-up); }
   .jr-ov-row { box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 10px; background: transparent; font: 400 13px/1.45 'IBM Plex Sans', sans-serif; color: var(--phosphor); text-align: left; }
-  button.jr-ov-row { cursor: pointer; }
+  button.jr-ov-row, label.jr-ov-row { cursor: pointer; }
   .jr-ov-row > span:first-child { flex: 1 1 auto; min-width: 0; }
   .jr-ov-row .mono { color: var(--phosphor); }
   .jr-ov-row .ico { flex: none; color: var(--steel); }
@@ -120,9 +127,13 @@ const OV_CSS = `
 
   /* ---- states: a drawer or dialog drawn flat inside its state frame ---------------------------------------------------- */
   .jr-ov-st .jr-drawer, .jr-ov-st .jr-dlg { width: 100%; border: 1px solid var(--line-2); border-radius: 16px; box-shadow: none; overflow: visible; }
-  .jr-ov-del { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1px solid var(--warn); border-radius: 12px; background: var(--warn-tint); }
+  /* Delete journal's typed confirm, drawn as Settings › Journal draws it (one version): a neutral well, the warning
+     glyph by its words, the burnt-orange "Delete journal" with its glyph. */
+  .jr-ov-del { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--ink-2); }
   .jr-ov-del .acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .jr-ov-del .jr-ov-in { max-width: 320px; font-family: 'IBM Plex Sans', sans-serif; }
+  .jr-ov-delh { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; line-height: 1.45; color: var(--phosphor); }
+  .jr-ov-delh .ico { flex: none; margin-top: 2px; color: var(--warn); }
 `;
 
 // =========================================================================================================
@@ -161,20 +172,22 @@ const choices = () => `<div class="jr-ov-choices">${['It misread what I wrote', 
 /** On a phone the other way is one line, in the user flow's own form: "1 (NVDA, Aug 28, 8.6% below your average
  *  cost)" (User flows → An insight becomes a rule). */
 const cutLine = (d) => figs(`${d.uncounted.length} (${d.uncounted.map((c) => `${INSTRUMENTS[c.inst].short}, ${fmtDate(c.date)}, ${pct(c.below, 1)} below your average cost`).join('; ')})`, { ints: true });
-function findingBody({ sheet = false } = {}) {
+/** `sample`: staging, so the sections that hold the sample's cases are dashed frames with the hatch band. */
+const secCls = (sample) => `jr-ov-sec${sample ? ' is-sample' : ''}`;
+function findingBody({ sheet = false, sample = false } = {}) {
   const x = findingFacts(F1);
   const d = det(1);
   const parts = [
     `<p class="jr-rv-claim">${x.claim}</p><p class="jr-rv-ev">${x.evidence}</p>`,
-    `<section class="jr-ov-sec" aria-label="Evidence"><h3 class="jr-ov-h">Evidence</h3><div>${d.cases.map(evidenceRow).join('')}</div></section>`,
-    `<section class="jr-ov-sec" aria-label="How it was counted"><h3 class="jr-ov-h">How it was counted</h3>${jrDots(d.k, d.n)}<p class="jr-ov-p dim">counted: ${DETECTOR_ROWS.find((r) => r.row === 1).over}</p></section>`,
-    `<section class="jr-ov-sec" aria-label="Cut the other way"><h3 class="jr-ov-h">Cut the other way</h3>${sheet ? `<p class="jr-ov-p">${cutLine(d)}</p>` : otherWay(d.uncounted)}</section>`,
+    `<section class="${secCls(sample)}" aria-label="Evidence"><h3 class="jr-ov-h">Evidence</h3><div>${d.cases.map(evidenceRow).join('')}</div></section>`,
+    `<section class="${secCls(sample)}" aria-label="How it was counted"><h3 class="jr-ov-h">How it was counted</h3>${jrDots(d.k, d.n)}<p class="jr-ov-p dim">counted: ${DETECTOR_ROWS.find((r) => r.row === 1).over}</p></section>`,
+    `<section class="${secCls(sample)}" aria-label="Cut the other way"><h3 class="jr-ov-h">Cut the other way</h3>${sheet ? `<p class="jr-ov-p">${cutLine(d)}</p>` : otherWay(d.uncounted)}</section>`,
     `<section class="jr-ov-sec" aria-label="What it doesn’t use"><h3 class="jr-ov-h">What it doesn’t use</h3><p class="jr-ov-p dim">Entries written from memory or imported aren’t used for what you decided.</p></section>`,
     sheet ? `<section class="jr-ov-sec" aria-label="Past corrections">${pastLine()}</section>` : `<section class="jr-ov-sec" aria-label="That’s not right"><h3 class="jr-ov-h">That’s not right</h3>${choices()}${pastLine()}</section>`,
   ];
   return parts.join('');
 }
-const findingDrawer = () => jrDrawer({ w: 560, title: findingFacts(F1).label, chip: `${side(F1)}${jrTag('sample')}`, body: findingBody(), label: `Finding: ${strip(findingFacts(F1).claim)}` });
+const findingDrawer = () => jrDrawer({ w: 560, title: findingFacts(F1).label, chip: `${side(F1)}${jrTag('sample')}`, body: findingBody({ sample: true }), label: `Finding: ${strip(findingFacts(F1).claim)}` });
 
 // ---- What's sent ----------------------------------------------------------------------------------------------------------------
 const nw = (s) => `<span class="jr-rv-nw">${s}</span>`;
@@ -189,10 +202,12 @@ const pkg = () => `<div class="jr-ov-pkg"><span>Package</span><span class="mono"
 /** state: 'ready' (before a run) · 'off' (AI reads off: what would be sent) · 'after' (the package actually sent,
  *  with its stored usage) · 'copied'. `env` 'staging' adds the demo's line. */
 function whatsSentBody({ env = 'staging', state = 'ready' } = {}) {
-  const demo = env === 'staging' ? jrStrip('info', '<span>No model is called on the demo</span>') : '';
+  const sample = env === 'staging';
+  const demo = sample ? jrStrip('info', '<span>No model is called on the demo</span>') : '';
   const usage = state === 'after' ? `<section class="jr-ov-sec" aria-label="How this ran"><h3 class="jr-ov-h">How this ran</h3><ul class="jr-ov-est">${AI.howThisRan.map((l) => `<li>${figs(l, { ints: true })}</li>`).join('')}</ul></section>` : '';
-  const est = state === 'ready' || state === 'copied' ? `<section class="jr-ov-sec" aria-label="Estimate"><h3 class="jr-ov-h">Estimate</h3>${estimate()}</section>` : '';
-  return `${demo}${usage}${cats()}<p class="jr-ov-p dim">${NEVER_ADDS}</p><p class="jr-ov-never">${figs(NEVER_SENT, { ints: true })}</p>${est}${state === 'off' ? '' : pkg()}`;
+  const est = state === 'ready' || state === 'copied' ? `<section class="${secCls(sample)}" aria-label="Estimate"><h3 class="jr-ov-h">Estimate</h3>${estimate()}</section>` : '';
+  const categories = sample ? `<section class="${secCls(true)}" aria-label="Categories">${cats()}</section>` : cats();
+  return `${demo}${usage}${categories}<p class="jr-ov-p dim">${NEVER_ADDS}</p><p class="jr-ov-never">${figs(NEVER_SENT, { ints: true })}</p>${est}${state === 'off' ? '' : pkg()}`;
 }
 const copyAll = (copied = false) => (copied ? jrBtn('Copied', { ic: 'check' }) : jrBtn('Copy all', { ic: 'copy' }));
 const whatsSentDrawer = ({ env = 'staging', state = 'ready' } = {}) => jrDrawer({
@@ -211,7 +226,7 @@ const tg = (opts, on, label) => `<div><span class="jr-ov-l">${label}</span><div 
 const plOf = (p) => Q.of(p.mark).sub(p.avg).mul(p.qty * INSTRUMENTS[p.inst].mult);
 /** The composer's position line: "NVDA · 220 sh · avg $208.95 · mark $199.20", "QQQ · 4 × Dec 18 ’26 600 P · …". */
 const posLine = (p) => { const I = INSTRUMENTS[p.inst]; return `${I.symbol} · <span class="mono">${p.qty}</span> ${I.kind === 'option' ? `× ${I.name.slice(I.symbol.length + 1)}` : 'sh'} · avg <span class="mono">${usd(p.avg, { dp: 2 })}</span> · mark <span class="mono">${usd(p.mark, { dp: 2 })}</span>`; };
-function posCard(p) {
+function posCard(p, { sample = false } = {}) {
   const I = INSTRUMENTS[p.inst];
   const opt = I.kind === 'option';
   const markLabel = `Mark · ${fmtDate(S29.asOf)}`;
@@ -219,7 +234,7 @@ function posCard(p) {
     ? `<div class="jr-ov-g4">${tg(['Long', 'Short'], 'Long', 'Side')}${fld('Expiration', '2026-12-18', { caret: true })}${fld('Strike', `$${I.strike}`, { caret: true })}${tg(['Call', 'Put'], I.right === 'put' ? 'Put' : 'Call', 'Right')}</div><div class="jr-ov-g4">${fld('Quantity', String(p.qty), { hint: 'contracts' })}${fld('Average cost', usd(p.avg, { dp: 2 }))}${fld(markLabel, usd(p.mark, { dp: 2 }))}${fld('Multiplier', String(I.mult), { ro: true })}</div>`
     : `<div class="jr-ov-g4">${tg(['Long', 'Short'], 'Long', 'Side')}${fld('Quantity', String(p.qty), { hint: 'shares' })}${fld('Average cost', usd(p.avg, { dp: 2 }))}${fld(markLabel, usd(p.mark, { dp: 2 }))}</div>`;
   const res = `<p class="jr-ov-res">${jrTag('computed')} Value <span class="mono">${usd(p.value, { dp: 2 })}</span> · P/L against average cost <span class="mono ${plOf(p).sign() < 0 ? 't-down' : 't-up'}">${usd(plOf(p), { dp: 2, sign: true })}</span></p>`;
-  return `<section class="jr-ov-pos" aria-label="${I.name}"><div class="jr-ov-posh"><span class="n"><span class="mono">${I.symbol}</span>${opt ? I.name.slice(I.symbol.length + 1) : ''}</span>${jrSeg(['Stock', 'Option'], opt ? 'Option' : 'Stock', { size: 32, label: 'Instrument' })}<button class="btn ghost sm" type="button" aria-label="Remove ${I.name}">${icon('trash', 16)}</button></div>${grid}${res}</section>`;
+  return `<section class="jr-ov-pos${sample ? ' is-sample' : ''}" aria-label="${I.name}"><div class="jr-ov-posh"><span class="n"><span class="mono">${I.symbol}</span>${opt ? I.name.slice(I.symbol.length + 1) : ''}</span>${jrSeg(['Stock', 'Option'], opt ? 'Option' : 'Stock', { size: 32, label: 'Instrument' })}<button class="btn ghost sm" type="button" aria-label="Remove ${I.name}">${icon('trash', 16)}</button></div>${grid}${res}</section>`;
 }
 const SNAP_FOOT = 'These are the numbers you type. Convexa can’t read balances or margin from your broker, and never places, changes or cancels an order.';
 const posStrip = () => jrFigs([
@@ -228,27 +243,31 @@ const posStrip = () => jrFigs([
   jrFig({ label: 'Loan to position value', value: pct(S29.loanToPositionValue, 1), tag: jrTag('computed') }),
 ]);
 /** `collapse`: on a phone, positions after the first `collapse` sit as one-line rows (the composer's own lines). */
-function positionsBody({ collapse = 0 } = {}) {
+function positionsBody({ collapse = 0, sample = false } = {}) {
   const ps = S29.positions;
   const open = collapse ? ps.filter((p) => p.inst === 'NVDA' || p.inst === 'TSLA_P440') : ps;
   const rows = collapse ? ps.filter((p) => !open.includes(p)).map((p) => `<button type="button" class="jr-ov-row"><span>${posLine(p)}</span>${icon('chevronR', 16)}</button>`).join('') : '';
-  return `<p class="jr-ov-p dim">${SNAP_FOOT}</p>${open.map(posCard).join('')}${rows}<div>${jrBtn('Add a position', { kind: 'text', ic: 'plus' })}</div>${posStrip()}`;
+  return `<p class="jr-ov-p dim">${SNAP_FOOT}</p>${open.map((p) => posCard(p, { sample })).join('')}${rows}<div>${jrBtn('Add a position', { kind: 'text', ic: 'plus' })}</div>${posStrip()}`;
 }
-const positionsDialog = () => jrDialog({ w: 760, title: 'Edit positions', chip: jrTag('sample'), body: positionsBody(), foot: `<span style="flex: 1 1 auto;"></span>${jrBtn('Cancel', { kind: 'text' })}${jrBtn('Save positions', { kind: 'primary' })}` });
+const positionsDialog = () => jrDialog({ w: 760, title: 'Edit positions', chip: jrTag('sample'), body: positionsBody({ sample: true }), foot: `<span style="flex: 1 1 auto;"></span>${jrBtn('Cancel', { kind: 'text' })}${jrBtn('Save positions', { kind: 'primary' })}` });
 
 // =========================================================================================================
 // The pages behind
 // =========================================================================================================
 const KINDS = ['entered', 'added', 'trimmed', 'closed', 'margin_call', 'money', 'plan', 'thinking'].map((k) => KIND_WORD[k]);
-/** The composer on Tue Sep 29 (Screens → 2's own example): Update numbers open, the positions and the Computed box. */
+/** "was $36,146 on Sep 25" under a field: the previous value, its figure in Mono (the composer's own field helper). */
+const wasHint = (v, date) => `was <span class="mono">${usd(v, { dp: v % 100 ? 2 : 0 })}</span> on ${fmtDate(date)}`;
+/** The composer on Tue Sep 29 (Screens → 2's own example): Update numbers open, the positions and the Computed box.
+ *  Behind the Edit positions dialog its footer (Discard draft · the amber Save entry) isn't drawn: the open dialog's
+ *  "Save positions" is the screen's one amber fill, as on the Final dialog boards. Only the signed change is tinted;
+ *  excess liquidity isn't change, P/L or where the money went (Design → Palette roles). */
 function composerPage({ scheme = 'dark' } = {}) {
   const prev = SNAPSHOT['s-sep25'];
   const days = daysBetween(prev.asOf, S29.asOf);
-  const was = (v) => `was ${usd(v, { dp: v % 100 ? 2 : 0 })} on ${fmtDate(prev.asOf)}`;
-  const fields = `${fld('Account value', usd(S29.accountValue), { hint: was(prev.accountValue) })}${fld('Margin loan', usd(S29.marginLoan, { dp: 2 }), { hint: was(prev.marginLoan) })}${fld('Maintenance requirement', usd(S29.maint))}`;
-  const computed = `<div class="jr-q">${jrTag('computed')}<p class="jr-ov-res">Margin used <span class="mono">${pct(S29.marginUsed, 0)}</span> · Excess liquidity <span class="mono t-down">${usd(S29.excessLiquidity, { sign: true })}</span> · Since ${fmtDate(prev.asOf)} <span class="mono t-down">${usd(S29.change.usd, { sign: true })} (${pct(S29.change.pct, 1, { sign: true })})</span></p></div>`;
+  const fields = `${fld('Account value', usd(S29.accountValue), { hint: wasHint(prev.accountValue, prev.asOf) })}${fld('Margin loan', usd(S29.marginLoan, { dp: 2 }), { hint: wasHint(prev.marginLoan, prev.asOf) })}${fld('Maintenance requirement', usd(S29.maint))}`;
+  const computed = `<div class="jr-q">${jrTag('computed')}<p class="jr-ov-res">Margin used <span class="mono">${pct(S29.marginUsed, 0)}</span> · Excess liquidity <span class="mono">${usd(S29.excessLiquidity, { sign: true })}</span> · Since ${fmtDate(prev.asOf)} <span class="mono t-down">${usd(S29.change.usd, { sign: true })} (${pct(S29.change.pct, 1, { sign: true })})</span></p></div>`;
   const snap = jrFrame({ env: 'staging', title: 'Account snapshot', tag: jrTag('stored'), chipAt: 'foot', body: `<p class="jr-ov-p dim">Carried from ${fmtDate(prev.asOf)} · ${days} days old</p><div>${jrSeg(['Unchanged', 'Update numbers'], 'Update numbers', { size: 32 })}</div>${fields}<ul class="jr-ov-plines">${S29.positions.map((p) => `<li>${posLine(p)}</li>`).join('')}</ul><div>${jrBtn('Edit positions', { size: 'sm' })}</div>${computed}<p class="jr-ov-p dim">${SNAP_FOOT}</p>` });
-  const left = `<div class="jr-ov-col"><header><h1 class="display" style="margin: 0; font-size: clamp(30px, 3vw, 40px);">New entry</h1><p class="jr-ov-meta"><span>Written when you save · ${fmtDay(S29.asOf)}</span><span>About: Today ▾</span></p></header>${jrChips(KINDS, null)}${jrQuiet('<p class="jr-ov-ph">What happened, and what are you thinking right now?</p>', { cls: 'jr-ov-ed', label: 'Entry' })}<div class="jr-ov-foot">${jrBtn('Discard draft', { kind: 'text' })}${jrBtn('Save entry', { kind: 'primary' })}</div></div>`;
+  const left = `<div class="jr-ov-col"><header><h1 class="display" style="margin: 0; font-size: clamp(30px, 3vw, 40px);">New entry</h1><p class="jr-ov-meta"><span>Written when you save · ${fmtDay(S29.asOf)}</span><span>About: Today ▾</span></p></header>${jrChips(KINDS, null)}${jrQuiet('<p class="jr-ov-ph">What happened, and what are you thinking right now?</p>', { cls: 'jr-ov-ed', label: 'Entry' })}</div>`;
   return jrPage({ scheme, env: 'staging', tab: 'journal', label: 'New entry', main: `<div class="jr-ov-cmp">${left}<div class="jr-ov-col">${snap}</div></div>` });
 }
 /** The Journal timeline, where the rail's account frame opens the path. */
@@ -271,36 +290,40 @@ function timelinePage({ scheme = 'dark' } = {}) {
 // Boards
 // =========================================================================================================
 /** Heights of the one viewport each overlay board shows (the drawer or dialog fits inside, measured). */
-const VIEW = { finding: 1160, whatsSent: 940, positions: 1380, path: 1440 };
-const findingBoard = (o) => jrOverlay({ ...o, minHeight: Math.max(o.minHeight || 0, VIEW.finding), behind: clip(reviewPage('staging', { scheme: o.scheme }), VIEW.finding), panel: findingDrawer() });
-const whatsSentBoard = (o) => jrOverlay({ ...o, minHeight: Math.max(o.minHeight || 0, VIEW.whatsSent), behind: clip(reviewPage('staging', { scheme: o.scheme }), VIEW.whatsSent), panel: whatsSentDrawer() });
+const VIEW = { finding: 1160, whatsSent: 960, positions: 1410, path: 1440 };
+const findingBoard = (o) => jrOverlay({ ...o, minHeight: Math.max(o.minHeight || 0, VIEW.finding), behind: clip(reviewPage('staging', { scheme: o.scheme, note: false }), VIEW.finding), panel: findingDrawer() });
+const whatsSentBoard = (o) => jrOverlay({ ...o, minHeight: Math.max(o.minHeight || 0, VIEW.whatsSent), behind: clip(reviewPage('staging', { scheme: o.scheme, note: false }), VIEW.whatsSent), panel: whatsSentDrawer() });
 const positionsBoard = (o) => jrOverlay({ ...o, minHeight: Math.max(o.minHeight || 0, VIEW.positions), center: true, behind: clip(composerPage({ scheme: o.scheme }), VIEW.positions), panel: positionsDialog() });
 const pathBoard = (o) => jrOverlay({ ...o, minHeight: Math.max(o.minHeight || 0, VIEW.path), behind: clip(timelinePage({ scheme: o.scheme }), VIEW.path), panel: jrDrawer({ w: 760, title: 'The account path', body: `<div class="jr-ov-pathd">${jrPath('staging', { open: true })}</div>` }) });
 
 // ---- the phone's bottom sheets ---------------------------------------------------------------------------------------------------
 const touch = (label, o = {}) => jrBtn(label, { size: 'touch', ...o });
+/** The phone's sheets, each over a staging page: the demo bar heads the board, the board note states the scenario,
+ *  and each sheet names the sample once, with the Sample tag in its peek row (D1, as the 1440 drawers carry it in
+ *  their heads); its sections of sample data are dashed frames with the hatch band, as on the drawers (P-3). */
 function sheetsBody({ scheme = 'dark', minHeight = 0 } = {}) {
   const x = findingFacts(F1);
   const r3 = RULE.R3;
-  const u = (v) => usd(v, { dp: v % 100 ? 2 : 0 });
   const s30 = SNAPSHOT['s-sep30'], s02 = SNAPSHOT['s-oct02'];
-  const numField = (label, value, prevValue) => fld(label, value == null ? jrGap('not recorded') : u(value), { hint: prevValue == null ? '' : `was ${u(prevValue)} on ${fmtDate(s30.asOf)}` });
+  const u = (v) => usd(v, { dp: v % 100 ? 2 : 0 });
+  const numField = (label, value, prevValue) => fld(label, value == null ? jrGap('not recorded') : u(value), { hint: prevValue == null ? '' : wasHint(prevValue, s30.asOf) });
+  const tag = jrTag('sample');
   const sheets = [
     ['Finding', 'Review › a finding · the peek row shows the claim',
-      `<div class="jr-ov-clamp jr-ov-sheet">${jrSheet({ title: strip(x.claim), sub: `${x.label} · ${x.side}`, body: findingBody({ sheet: true }), actions: ['It misread what I wrote', 'It’s missing context', 'Not a pattern to me'].map((c) => touch(c)), label: 'Finding' })}</div>`],
+      `<div class="jr-ov-clamp jr-ov-sheet">${jrSheet({ title: x.claim, sub: `${x.label} · ${x.side}`, tag, body: findingBody({ sheet: true, sample: true }), actions: ['It misread what I wrote', 'It’s missing context', 'Not a pattern to me'].map((c) => touch(c)), label: 'Finding' })}</div>`],
     ['What’s sent', 'Review, Entry and Settings › View what’s sent',
-      `<div class="jr-ov-sheet">${jrSheet({ title: 'What’s sent to Anthropic', sub: `${AI.models.entry} and ${AI.models.review} on your key`, body: whatsSentBody({ env: 'staging', state: 'ready' }), actions: [touch('Copy all', { ic: 'copy' }), touch('Close', { kind: 'text' })] })}</div>`],
+      `<div class="jr-ov-sheet">${jrSheet({ title: 'What’s sent to Anthropic', sub: `${AI.models.entry} and ${AI.models.review} on your key`, tag, body: whatsSentBody({ env: 'staging', state: 'ready' }), actions: [touch('Copy all', { ic: 'copy' }), touch('Close', { kind: 'text' })] })}</div>`],
     ['Edit positions', 'The composer’s snapshot › Edit positions',
-      `<div class="jr-ov-sheet">${jrSheet({ title: 'Edit positions', body: positionsBody({ collapse: 2 }), actions: [touch('Save positions', { kind: 'primary' }), touch('Cancel', { kind: 'text' })] })}</div>`],
+      `<div class="jr-ov-sheet">${jrSheet({ title: 'Edit positions', tag, body: positionsBody({ collapse: 2, sample: true }), actions: [touch('Save positions', { kind: 'primary' }), touch('Cancel', { kind: 'text' })] })}</div>`],
     ['Rule menu', 'Rulebook › a rule’s row menu',
-      `<div class="jr-ov-clamp jr-ov-sheet">${jrSheet({ title: `${r3.id} · ${r3.versions[0].wording}`, sub: `v${r3.versions[0].v} · since ${fmtDate(r3.versions[0].from)}`, body: `<p class="jr-ov-p">${STRINGS.rulebookR3.replace(/(\d+%)/g, '<span class="mono">$1</span>')} · ${jrAbove()}</p>`, actions: ['Edit', 'Pause', 'Retire'].map((c) => touch(c)) })}</div>`],
+      `<div class="jr-ov-clamp jr-ov-sheet">${jrSheet({ title: `${r3.id} · ${r3.versions[0].wording}`, sub: `v${r3.versions[0].v} · since ${fmtDate(r3.versions[0].from)}`, tag, body: `<p class="jr-ov-p">${STRINGS.rulebookR3.replace(/(\d+%)/g, '<span class="mono">$1</span>')} · ${jrAbove()}</p>`, actions: ['Edit', 'Pause', 'Retire'].map((c) => touch(c)) })}</div>`],
     ['Filters', 'Journal › Filters',
-      `<div class="jr-ov-sheet">${jrSheet({ title: 'Filters', body: `${fld('Search', '<span class="jr-gap" style="font-weight: 400;">Search your entries</span>', { mono: false })}<div><span class="jr-ov-l">Kind</span>${jrChips(KINDS, null)}</div><div><span class="jr-ov-l">Ticker</span>${jrChips(['NVDA', 'MSFT', 'TSLA', 'QQQ', 'SPY'], null, { label: 'Ticker' })}</div>${['Written from memory', 'Kept out of AI reads', 'Has later notes'].map((t) => `<div class="jr-ov-row"><span>${t}</span>${sw(false, t)}</div>`).join('')}`, actions: [touch('Done')] })}</div>`],
+      `<div class="jr-ov-sheet">${jrSheet({ title: 'Filters', tag, body: `${fld('Search', '<span class="jr-gap" style="font-weight: 400;">Search your entries</span>', { mono: false })}<div><span class="jr-ov-l">Kind</span>${jrChips(KINDS, null)}</div><div><span class="jr-ov-l">Ticker</span>${jrChips(['NVDA', 'MSFT', 'TSLA', 'QQQ', 'SPY'], null, { label: 'Ticker' })}</div>${['Written from memory', 'Kept out of AI reads', 'Has later notes'].map((t) => `<label class="jr-ov-row"><span>${t}</span>${sw(false, t)}</label>`).join('')}`, actions: [touch('Done')] })}</div>`],
     ['Update numbers', 'New entry › Numbers: carried · Update',
-      `<div class="jr-ov-sheet">${jrSheet({ title: 'Update numbers', sub: `Carried from ${fmtDate(s30.asOf)} · ${daysBetween(s30.asOf, s02.asOf)} days old`, body: `<div>${jrSeg(['Broker screen', 'Statement', 'Memory'], 'Broker screen', { size: 32, label: 'Source' })}</div>${numField('Account value', s02.accountValue, s30.accountValue)}${numField('Cash', s02.cash, s30.cash)}${numField('Margin loan', s02.marginLoan, s30.marginLoan)}${numField('Maintenance requirement', s02.maint, s30.maint)}${numField('Buying power', null, null)}<div>${jrBtn('+ Margin call', { kind: 'link' })}</div>`, actions: [touch('Done')] })}</div>`],
+      `<div class="jr-ov-sheet">${jrSheet({ title: 'Update numbers', sub: `Carried from ${fmtDate(s30.asOf)} · ${daysBetween(s30.asOf, s02.asOf)} days old`, tag, body: `<div>${jrSeg(['Broker screen', 'Statement', 'Memory'], 'Broker screen', { size: 32, label: 'Source' })}</div>${numField('Account value', s02.accountValue, s30.accountValue)}${numField('Cash', s02.cash, s30.cash)}${numField('Margin loan', s02.marginLoan, s30.marginLoan)}${numField('Maintenance requirement', s02.maint, s30.maint)}${numField('Buying power', null, null)}<div>${jrBtn('+ Margin call', { kind: 'link' })}</div>`, actions: [touch('Done')] })}</div>`],
   ];
-  const html = `<header class="jr-ov-shh"><h1 class="display">Bottom sheets</h1><p>Below 600px every journal overlay is a bottom sheet: a grab handle, a peek row, the body, and its actions stacked at 44px. It opens in 320 ms; Escape closes it and returns focus to its opener.</p></header>${sheets.map(([t, from, sheet]) => `<section class="jr-ov-ss" aria-label="${t}"><div class="jr-ov-cap"><b>${t}</b><span>${from}</span></div>${jrSheetStage(sheet)}</section>`).join('')}`;
-  return jrSurface({ scheme, minHeight, gap: 28, html });
+  const html = `${finalDemoNotice({ phone: true })}<header class="jr-ov-shh"><h1 class="display">Bottom sheets</h1><p>Below 600px every journal overlay is a bottom sheet: a grab handle, a peek row, the body, and its actions stacked at 44px. It opens in 320 ms; Escape closes it and returns focus to its opener.</p></header>${sheets.map(([t, from, sheet]) => `<section class="jr-ov-ss" aria-label="${t}"><div class="jr-ov-cap"><b>${t}</b><span>${from}</span></div>${jrSheetStage(sheet)}</section>`).join('')}`;
+  return jrNote(scheme, JR_NOTES.staging) + jrSurface({ scheme, minHeight, gap: 28, html });
 }
 
 // ---- states (6) -------------------------------------------------------------------------------------------------------------------
@@ -309,7 +332,9 @@ function statesBody({ scheme = 'dark', minHeight = 0 } = {}) {
   const aug26 = ENTRY['e-aug26'];
   const deleted = jrDrawer({ w: 560, title: x3.label, chip: side(F3), label: 'Finding with a deleted cited entry', body: `<p class="jr-rv-claim">${x3.claim}</p>${jrStrip('warn', `<span>${figs('1 cited entry was deleted; this finding is out of date.', { ints: true })}</span>`)}<section class="jr-ov-sec" aria-label="Evidence"><h3 class="jr-ov-h">Evidence</h3><div><div class="jr-ov-ev"><div class="jr-ov-evh"><span class="jr-ov-d">${fmtDay(aug26.writtenAt)}</span>${jrKind(aug26.kind)}${aug26.tickers.map(jrSym).join('')}</div><p class="jr-ov-p">${figs(`Exit at ${usd(aug26.exit, { dp: 2 })} on the ${INSTRUMENTS.QQQ_P600.short}`, { trace: true })}</p></div><div class="jr-ov-ev"><p class="jr-ov-tomb">An entry written Sep 29 was deleted on Oct 27.</p></div></div></section>` });
   const past = `<section class="jr-ov-sec" style="border-top: 0; padding-top: 0;" aria-label="That’s not right"><h3 class="jr-ov-h">That’s not right</h3>${choices()}${pastLine()}</section>`;
-  const del = `<div class="jr-ov-del" role="group" aria-label="Delete journal"><p class="jr-ov-p"><b>Delete journal…</b></p><p class="jr-ov-p">Type “delete journal” to confirm.</p><span class="jr-ov-in" role="textbox" aria-label="Type delete journal to confirm">delete journal</span><p class="jr-ov-p dim">What was already sent to your AI provider is under its terms.</p><div class="acts">${jrBtn('Export first')}${jrBtn('Delete journal', { kind: 'danger', ic: 'trash' })}${jrBtn('Keep it', { kind: 'text' })}</div></div>`;
+  // One version of the typed confirm, the spec's and Settings › Journal's: its words, the input, what deletion
+  // reaches, "Export first" and the burnt-orange "Delete journal" with the warning glyph; no "Keep it" (not in Copy).
+  const del = `<div class="jr-ov-del" role="group" aria-label="Delete journal"><p class="jr-ov-delh">${icon('warn', 16)}<span>Type “delete journal” to confirm.</span></p><span class="jr-ov-in" role="textbox" aria-label="Type delete journal to confirm">delete journal</span><p class="jr-ov-p dim">What was already sent to your AI provider is under its terms.</p><div class="acts">${jrBtn('Export first', { ic: 'down' })}${jrBtn('Delete journal', { kind: 'danger', warn: true })}</div></div>`;
   const items = [
     { name: 'Finding · a cited entry was deleted', tag: null, when: 'After “Delete entry” on a cited entry (criterion 22): the finding is marked out of date and loses its quotes from that entry, whose row reads as its tombstone (the spec’s own example). Drawn on the Aug 26 exit finding, which cites the Sep 29 entry.', html: `<div class="jr-ov-st">${deleted}</div>` },
     { name: 'Finding · past corrections listed', tag: null, when: 'Each correction is an append-only feedback row, sent as an owner_feedback fact in the next package. “It’s missing context” opened a later note on the cited entry, marked “Context for the AI”; “Not a pattern to me” isn’t raised again until 5 more entries change the count.', html: past },
@@ -329,19 +354,19 @@ export const ROW = {
   label: 'Journal · Drawers and sheets',
   section: 'planned',
   css: JR_CSS + RV_CSS + OV_CSS,
-  specH: 2791,
+  specH: 2966,
   spec: {
     title: 'Journal · Drawers and sheets',
     route: '/positions/review/:reviewId?finding=:id · What’s sent · Edit positions · the account path',
     job: 'Show exactly which entries and numbers a claim rests on, and let him correct it; show what is sent to his AI provider before and after a run; edit the positions he typed; open the full account path. Below 600px, each is a bottom sheet.',
     env: {
       production: 'The owner’s own journal, signed in; visitors meet the Positions private-testing wall. Edit positions and the account path drawer arrive with slice 1b, the finding drawer and What’s sent with slice 4, when AI reads are off by default and What’s sent reads “Nothing is sent while AI reads are off”.',
-      staging: 'The Sample journal on the demo account, Oct 7, 2026: row 1’s finding from the authored Oct 7 review (his Sep 18 span quoted; the Sep 4 and Sep 11 bodies aren’t printed, so their rows show the kept detail), the sample package (“No model is called on the demo”), the Sep 29 snapshot’s four positions, and the account path. Each overlay names the sample once: its Sample tag, or its frame’s “Sample journal” chip.',
+      staging: 'The Sample journal on the demo account, Oct 7, 2026: row 1’s finding from the authored Oct 7 review (his Sep 18 span quoted; the Sep 4 and Sep 11 bodies aren’t printed, so their rows show the kept detail), the sample package (“No model is called on the demo”), the Sep 29 snapshot’s four positions, and the account path. Each overlay names the sample once: its Sample tag (a drawer’s or dialog’s head, a sheet’s peek row), or its frame’s “Sample journal” chip; the sections and position cards that hold sample data are dashed with the 8px hatch band and carry no tag of their own.',
     },
     widgets: [
       { name: 'Finding drawer (560)', source: 'the review’s finding and code’s detector cases and counter-cases (services/journal/detectors.rs); his spans by entry id and offsets', production: [['computed', 'Computed'], ['off', 'Off']], staging: 'sample' },
       { name: 'What’s sent drawer (520)', source: 'one server table of categories, the build_export pattern (services/journal/package.rs); estimate, worst case and package id', production: [['off', 'Off'], ['notConfigured', 'Not set up']], staging: 'sample' },
-      { name: 'Edit positions dialog (760)', source: 'RealPositionRows: his typed positions and marks (Stored here); value, leverage, loan to position value and P/L computed', production: [['local', 'Stored here'], ['computed', 'Computed']], staging: 'sample' },
+      { name: 'Edit positions dialog (760)', source: 'RealPositionRows: his typed positions and marks (Stored here); value, leverage, loan to position value and P/L computed. It copies the LegFields grid but not its Right fills: Call · Put is a neutral segment under ruling #18 (position surfaces never tint call against put), not LegFields’ green and red rightSelectedSx', production: [['local', 'Stored here'], ['computed', 'Computed']], staging: 'sample' },
       { name: 'Account path drawer (760)', source: 'the Path: his snapshots and the chain-linked facts, the event rail, the table twin open', production: [['local', 'Stored here'], ['computed', 'Computed']], staging: 'sample' },
       { name: 'Bottom sheets (below 600px)', source: 'shared/ui/bottomSheet.ts: finding, What’s sent, Edit positions, rule menu, filters, Update numbers', production: 'every overlay', staging: 'every overlay' },
       { name: 'Delete journal confirm', source: 'Settings › Journal (features/auth/SettingsPage.tsx); removes every row but the AI runs’ cost columns', production: 'inline, typed', staging: 'writes refused with the demo’s copy' },
@@ -354,7 +379,7 @@ export const ROW = {
       { tag: null, when: 'What’s sent · ready: the eight categories, “Convexa never adds …”, “Never sent: …”, the estimate and worst case, the package id with Copy, “Copy all”.' },
       { tag: 'off', when: 'What’s sent · AI off: what would be sent, headed “Nothing is sent while AI reads are off”.' },
       { tag: null, when: 'What’s sent · after a run: the package actually sent, with its stored usage. “Copy all” then “Copied”.' },
-      { tag: 'sample', when: 'Staging: the finding drawer is Sample; What’s sent shows a sample package, “No model is called on the demo”.' },
+      { tag: 'sample', when: 'Staging: the finding drawer is Sample; What’s sent shows a sample package, “No model is called on the demo”. On a phone each sheet carries the Sample tag in its peek row, under the demo bar.' },
       { tag: null, when: 'Delete journal: “Type “delete journal” to confirm.” with “Export first”; nothing is removed until the words match.' },
       { tag: 'locked', when: 'Signed out (production): the Positions private-testing wall; no overlay opens.' },
     ],
@@ -366,7 +391,7 @@ export const ROW = {
       '16 · After Delete journal, the month’s AI spend is unchanged.',
       '18 · On staging each overlay carries one Sample mark, and What’s sent shows “No model is called on the demo”.',
       '21 · At 390 and 393 each overlay is a bottom sheet with no horizontal overflow and no interactive element under 44px with a coarse pointer.',
-      '9 · No success or error fill: RealPositionRows’ Right toggle is neutral, and P/L takes textUp/textDown only with its sign.',
+      '9 · No success or error fill: RealPositionRows’ Right toggle (Call · Put) is a neutral segment under ruling #18, with none of LegFields’ green and red rightSelectedSx fills, and P/L takes textUp/textDown only with its sign.',
       'Rule 10 (Screens → 2): git grep -n tradeEntry apps/dashboard/src/app/features/journal prints nothing; the dialog shows no SIMULATED chip and no order control.',
     ],
     built: [
@@ -391,7 +416,7 @@ export const ROW = {
     B('whats-sent', 'What’s sent drawer · staging', 1440, VIEW.whatsSent + 20, whatsSentBoard),
     B('edit-positions', 'Edit positions dialog · staging', 1440, VIEW.positions + 20, positionsBoard),
     B('path', 'Account path drawer · staging', 1440, VIEW.path + 20, pathBoard),
-    B('phone', 'Phone · bottom sheets', 390, 6361, sheetsBody),
+    B('phone', 'Phone · bottom sheets', 390, 6721, sheetsBody),
     B('states', 'States', 1440, 2161, statesBody),
   ],
 };

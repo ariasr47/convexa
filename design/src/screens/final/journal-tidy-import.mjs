@@ -12,11 +12,11 @@
 // (GAPS). The Oct 2 panel is the spec's own flow ("A normal day", step 5: the parser finds the trade already kept from
 // his sale row and proposes only its link to the Oct 1 plan); the Oct 5 panel reads his printed words. The position
 // prompt is the spec's string on the sample's own figures (160 NVDA at $214.00, the Jul 2 import), shown on the
-// recalled Aug 4 entry; the recalled-wording offer uses the spec's own example wording ("fast forward to today",
-// First entry, step 3) on his Aug 21 first entry, with a remembered sentence composed from the sample's Jul 14 TSLA
-// put trade. The import's sample paste is composed from the sample's Aug 4 statement positions. Each board says so in
-// a P-4 board note, and the spec card's staging line repeats it.
-import { B, JR_CSS, JR_RULINGS, dotJoin, jrPage, jrBtn, jrOne, jrFrame, jrTag, jrKind, jrSym, jrCard, jrGap, jrSpan, jrStrip, jrSurface, statesBoard, icon } from './journal-kit.mjs';
+// recalled Aug 4 entry; the recalled-wording offer uses one of the parser's listed phrases ("looking back", Screens →
+// 6) on his Aug 21 first entry, in a remembered sentence composed from the sample's Jul 14 TSLA put trade. The import's
+// sample paste is composed from the sample's Aug 4 statement positions. Each board says so in a P-4 board note, and
+// the spec card's staging line repeats it.
+import { B, JR_CSS, JR_ERROR_WORD, JR_RULINGS, dotJoin, jrPage, jrBtn, jrOne, jrFrame, jrTag, jrKind, jrSym, jrCard, jrGap, jrSpan, jrStrip, jrSurface, statesBoard, icon } from './journal-kit.mjs';
 import { ENTRY, INSTRUMENTS, PLAN, Q, SCENARIO, SNAPSHOT, TIDY, TRADES, fmtDate, fmtDay, fmtTime, num, recalledLine, usd } from '../../data/journal-sample.mjs';
 
 // =========================================================================================================
@@ -36,7 +36,7 @@ const TIDY_COUNT = `${TIDY.details} details in ${TIDY.entries} entries`;
 const NVDA_IMP = TRADES.find((x) => x.id === 't-nvda-imp');
 const NVDA_POS = `${NVDA_IMP.qty} ${INSTRUMENTS[NVDA_IMP.inst].symbol} at ${usd(NVDA_IMP.price, { dp: 2 })}`;
 const D = { oct5: fmtDate(ENTRY['e-oct05-plan'].writtenAt), oct2: fmtDate(ENTRY['e-oct02'].writtenAt), aug4: fmtDate(ENTRY['e-aug04'].about), aug21: fmtDate(ENTRY['e-aug21'].writtenAt) };
-const TIDY_NOTE = `Tidy’s count is the spec’s, ${TIDY_COUNT}; the spec prints none of the details. These four panels are composed for the board: ${D.oct5} and ${D.oct2} from his printed words and the spec’s own flow, ${D.aug4} and ${D.aug21} from the sample’s trades and the spec’s examples (“${NVDA_POS}”, “fast forward to today”).`;
+const TIDY_NOTE = `Tidy’s count is the spec’s, ${TIDY_COUNT}; the spec prints none of the details. These four panels are composed for the board: ${D.oct5} and ${D.oct2} from his printed words and the spec’s own flow, ${D.aug4} and ${D.aug21} from the sample’s trades and the spec’s examples (“${NVDA_POS}”, and “looking back” from the parser’s list).`;
 const IMPORT_NOTE = `The spec prints no sample paste. This one is composed for the board from the sample’s ${fmtDate(SNAPSHOT['s-aug04'].asOf)} statement positions and their marks.`;
 
 const m = (x) => `<span class="mono">${x}</span>`;
@@ -101,17 +101,18 @@ function aug4(env) {
   const ask = `<div class="jr-ti-ask"><p class="jr-ti-q">Count “${NVDA_POS}” as a position in this entry?</p><div class="jr-ti-askf"><span class="jr-ti-o">${BY_PARSER}</span><div class="jr-ti-b">${jrBtn('Keep')}${jrBtn('Not right', { kind: 'text' })}</div></div></div>`;
   return panel(env, { head: `<span class="jr-ti-d">${recalledLine('e-aug04')}</span>`, excerpt: `…${jrSpan(span)}…`, extra: ask });
 }
-/** His Aug 21 first entry, about that day: wording such as "fast forward to today" marks a remembered part. The offer
- *  never re-dates today's numbers: Split (the default) or Mark the whole entry, each with a date picker. */
+/** His Aug 21 first entry, about that day: wording from the parser's list ("looking back", Screens → 6) marks a
+ *  remembered part. The offer never re-dates today's numbers: Split (the default) or Mark the whole entry, each with
+ *  a date picker. The rest of the entry is unprinted, so the excerpt ends at the span. */
 function aug21(env) {
   const e = ENTRY['e-aug21'];
   const t = TRADES.find((x) => x.id === 't-tsla-imp');
   const I = INSTRUMENTS[t.inst];
   const month = new Date(`${t.date}T12:00:00Z`).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
-  const remembered = `Bought ${t.qty} ${I.symbol} ${I.strike} puts at ${num(Q.of(t.price).div(100), 0)} in ${month}.`;
+  const remembered = `Looking back, I bought ${t.qty} ${I.symbol} ${I.strike} puts at ${num(Q.of(t.price).div(100), 0)} in ${month}.`;
   const picker = (v) => `<span class="jr-ti-sel" role="combobox" aria-expanded="false" aria-label="About">${v ? `About: ${fmtDate(v)}` : 'About'}${icon('chevron', 16)}</span>`;
   const offer = `<div class="jr-ti-ask"><p class="jr-ti-q jr-ti-qi">${icon('info', 16)}<span>${RECALL}</span></p><div class="jr-ti-opts" role="group" aria-label="${esc(RECALL)}"><div class="jr-ti-opt">${jrBtn(SPLIT)}${picker(t.date)}</div><div class="jr-ti-opt">${jrBtn(MARK, { kind: 'text' })}${picker('')}</div></div><div class="jr-ti-askf"><span class="jr-ti-o">${BY_PARSER}</span>${jrBtn('Not right', { kind: 'text' })}</div></div>`;
-  return panel(env, { head: headOf(e.writtenAt, null), excerpt: `${jrSpan(remembered)} Fast forward to today…`, extra: offer });
+  return panel(env, { head: headOf(e.writtenAt, null), excerpt: `${jrSpan(remembered)} …`, extra: offer });
 }
 
 const tidyHead = () => `<header class="jr-h"><div><h1 class="display">Tidy up</h1><p class="jr-sub">${TIDY_SUB}</p><p class="jr-ti-count">${m(TIDY.details)} details in ${m(TIDY.entries)} entries</p></div></header>`;
@@ -165,7 +166,7 @@ function states({ scheme = 'dark', minHeight = 0 } = {}) {
   const items = [
     { name: 'Tidy · Empty', tag: null, when: 'Every detail is kept, fixed or set aside. No tag.', html: jrFrame({ env, label: 'Tidy up, empty', body: `<p class="jr-ti-p">Nothing to tidy.</p>` }) },
     { name: 'Tidy · Parser only', tag: null, when: 'AI reads off: every row says “found by the parser”; nothing waits on a model.', html: oct5(env, { parserOnly: true }) },
-    { name: 'Tidy · Couldn’t load', tag: ['error'], when: 'As on the timeline: the cause and Try again. Kept details are on the account; nothing is lost.', html: jrFrame({ env, label: 'Tidy up, couldn’t load', tag: jrTag('error'), body: `<p class="jr-ti-p">${CANT_LOAD}</p><div class="jr-ti-acts">${jrBtn('Try again', { ic: 'refresh' })}</div>` }) },
+    { name: 'Tidy · Couldn’t load', tag: ['error', JR_ERROR_WORD], when: 'As on the timeline: the cause and Try again. Kept details are on the account; nothing is lost.', html: jrFrame({ env, label: 'Tidy up, couldn’t load', tag: jrTag('error'), body: `<p class="jr-ti-p">${CANT_LOAD}</p><div class="jr-ti-acts">${jrBtn('Try again', { ic: 'refresh' })}</div>` }) },
     { name: 'Import · Parsing', tag: null, when: 'Reading the paste in this browser: the preview’s rows as skeletons at their final height. No words, no tag.', html: step(env, 2, 'Preview', previewTable({ skeleton: true })) },
     { name: 'Import · Duplicates skipped', tag: null, when: 'Merge-only: rows already imported are matched by hash and skipped. Here the same paste is filed twice.', html: step(env, 2, 'Preview', `${previewTable()}${jrStrip('info', `<span>${m(dupes)} rows were already in your journal.</span>`)}`) },
     { name: 'Import · Parse failed', tag: null, when: 'Nothing in the paste reads as a position, so nothing is imported. The paste stays in the box to fix.', html: step(env, 1, 'Choose', `${chooseBody([call])}${jrStrip('warn', PARSE_FAILED)}`) },
@@ -247,7 +248,7 @@ export const ROW = {
   label: 'Journal · Tidy up and import',
   section: 'planned',
   css: JR_CSS + TI_CSS,
-  specH: 3082,
+  specH: 3080,
   spec: {
     title: 'Journal · Tidy up and import',
     route: '/positions/journal/tidy · /positions/journal/import',
@@ -268,9 +269,9 @@ export const ROW = {
     states: [
       { tag: ['local', 'Stored here'], when: `Tidy loaded: “${TIDY_COUNT}”, one panel per entry with spans highlighted (hover and focus both reveal them) and each row’s origin, “found by the parser” or “found by the AI”.` },
       { tag: null, when: 'Tidy empty: “Nothing to tidy.”' },
-      { tag: 'loading', when: 'Tidy loading: panel skeletons at their final height; no tag in the product.' },
+      { tag: null, when: 'Tidy loading: panel skeletons at their final height; no tag in the product.' },
       { tag: null, when: 'Tidy, parser only (AI reads off): rows say “found by the parser”.' },
-      { tag: 'error', when: `Tidy couldn’t load: “${CANT_LOAD}” and “Try again”, as on the timeline.` },
+      { tag: ['error', JR_ERROR_WORD], when: `Tidy couldn’t load: “${CANT_LOAD}” and “Try again”, as on the timeline.` },
       { tag: null, when: 'Import empty: the two choices and an empty paste box.' },
       { tag: null, when: 'Import parsing: the preview’s rows as skeletons; no words.' },
       { tag: null, when: 'Import parsed with unrecognized lines: those lines show “unrecognized” beside the raw text.' },
@@ -312,7 +313,7 @@ export const ROW = {
   boards: [
     B('tidy', 'Staging · Tidy', 1440, 1737, (o) => tidyPage(o)),
     B('import', 'Staging · Import', 1440, 1470, (o) => importPage(o)),
-    B('phone', 'Phone · staging', 390, 4375, (o) => phone(o)),
+    B('phone', 'Phone · staging', 390, 4391, (o) => phone(o)),
     B('states', 'States', 1440, 1875, states),
   ],
 };

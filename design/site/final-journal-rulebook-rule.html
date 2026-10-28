@@ -568,6 +568,8 @@
   /* A standalone link is 24px, 44 under a coarse pointer (rule 7); a phone board draws the 44, as .jr-chip does. */
   @media (pointer: coarse), (max-width: 599px) { .jr-more { min-height: 44px; } }
   .jr-card-f { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; font-size: 13px; line-height: 1.5; color: var(--text-dim); }
+  /* A plan's No with his line under it (Screens 4: "went ahead against R3", with his line under it, on the card). */
+  .jr-card .jr-quote.jr-card-why { margin-top: -2px; font-size: 14px; line-height: 1.5; }
   .jr-sep { margin: 0 6px; color: var(--steel); }
   .jr-day { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 4px 0 2px; border-bottom: 1px solid var(--line); }
   .jr-day h3 { margin: 0; font-size: 14px; font-weight: 600; }
@@ -620,6 +622,9 @@
   .jr-strip > .ico { flex: none; margin-top: 2px; color: var(--steel); }
   .jr-strip.warn { background: var(--warn-tint); border-color: var(--warn); }
   .jr-strip.warn > .ico { color: var(--warn); }
+  /* Action labels on the warn tint take text.primary: steel on the tint measured 4.27:1 in light (the base kit's
+     .dwarn .dline fix, and the canon's 2026-10-26 row (5)); the strip's icon carries the warning. */
+  .jr-strip.warn .btn.ghost { color: var(--phosphor); }
   .jr-strip > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 
   /* ---- counts: neutral steel dots below 20; at n ≥ 20 a rate track with a Wilson whisker ---------- */
@@ -665,6 +670,7 @@
   .jr-peek .t { font-size: 15px; font-weight: 600; line-height: 1.35; }
   .jr-peek .s { font-size: 12px; line-height: 1.4; color: var(--steel); }
   .jr-peek .btn { flex: none; width: 44px; height: 44px; min-height: 44px; padding: 0; }
+  .jr-peek > .stag { flex: none; }
   .jr-sheet-b { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; }
   .jr-stack { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
   .jr-stack .btn { width: 100%; height: 44px; min-height: 44px; }
@@ -695,6 +701,14 @@
   .jr-legend span { display: inline-flex; align-items: center; gap: 6px; }
   .jr-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; box-sizing: border-box; background: var(--phosphor); }
   .jr-legend i.o { background: var(--panel); border: 2px solid var(--phosphor); }
+
+  /* ---- rule 7 on a phone: every button, the chart twin's summary and the ⓘ reach 44px below 600px, as under a
+     coarse pointer; scoped to the journal's own content, so the shell's chrome is untouched ------------------- */
+  @media (pointer: coarse), (max-width: 599px) {
+    :is(.jr-page, .jr-sheet, .jr-cp-fsm) .btn, :is(.jr-page, .jr-sheet, .jr-cp-fsm) .btn.sm, :is(.jr-page, .jr-sheet, .jr-cp-fsm) .btn.link { min-height: 44px; }
+    :is(.jr-page, .jr-sheet, .jr-cp-fsm) .cf-tab > summary { min-height: 44px; }
+    .jr-i { width: 44px; height: 44px; }
+  }
 
   .jr-rb-ab { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
   .jr-rb-acc > details > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; min-height: 32px; }
@@ -818,7 +832,7 @@
 </style>
 </head>
 <body>
-<div class="v4" style="width: 100%; min-height: 0px; background: var(--ink); color: var(--phosphor);">
+<div class="v4" style="background: var(--ink); color: var(--phosphor);"><div class="jr-note" role="note" aria-label="Board note"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span>Staging · the demo account on the Oct 7, 2026 scenario. The Sample journal is a fictional trader’s; every value is sample data. R2’s Oct 1 plan answer is derived (Doesn’t apply); the spec doesn’t print it.</span></div></div><div class="v4" style="width: 100%; min-height: 0px; background: var(--ink); color: var(--phosphor);">
     <a href="#main" class="btn secondary sm" style="position: absolute; left: -9999px;">Skip to main content</a>
     <div role="status" aria-label="Demo scenario provenance" class="v4-notice demo fd-bar"><style>.fd-bar { padding-top: 8px; padding-bottom: 8px; } .v4-notice.demo.fd-bar { border-bottom: 1px solid var(--line); } .fd-bar > .wrap { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 0; } .fd-bar .fd-reset { margin-left: auto; height: 44px; } .fd-bar .fd-ph, .fd-bar .fd-br { display: none; } @media (max-width: 599px) { .fd-bar { padding-top: 0; padding-bottom: 0; } .fd-bar .fd-wd { display: none; } .fd-bar .fd-ph { display: inline; } .fd-bar .fd-br { display: block; flex-basis: 100%; height: 0; } }</style><div class="wrap"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"></rect></svg><strong style="font-weight: 700;">Demo · sample data</strong><span class="steel" aria-hidden="true">·</span><span class="steel fd-ph">Oct 7, 2026</span><span class="steel fd-wd">Convexa is an options desk: dealer positioning, SEC filings and research notes.</span><span class="steel fd-wd" aria-hidden="true">·</span><span class="steel fd-wd">As of Oct 7, 2026 · no market feed connected</span><button class="btn ghost sm fd-reset" type="button" aria-label="Reset demo data"><span class="fd-wd">Reset demo data</span><span class="fd-ph">Reset</span></button></div></div>
     <header class="v4n"><div class="wrap v4n-in">

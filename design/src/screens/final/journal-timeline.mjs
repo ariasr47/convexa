@@ -13,7 +13,7 @@ import {
   jrCard, jrEntryCard, jrDay, jrFig, jrFigs, jrSeg, jrChips, jrStrip, jrAbove, jrSpark, jrSigned,
 } from './journal-kit.mjs';
 import {
-  CALL, COUNTS, ENTRIES, ENTRY, FACTS, FINDINGS, KIND_WORD, LATEST, MONEY, REVIEW_CUTOFF, RULES, SCENARIO, SNAPSHOTS, STRINGS,
+  CALL, COUNTS, ENTRIES, ENTRY, FACTS, FINDINGS, KIND_WORD, LATEST, MONEY, PLAN, REVIEW_CUTOFF, RULES, SCENARIO, SNAPSHOTS, STRINGS,
   etDate, fmtDate, pct, times, usd,
 } from '../../data/journal-sample.mjs';
 
@@ -30,6 +30,8 @@ const KIND_CHIPS = ['entered', 'added', 'trimmed', 'closed', 'margin_call', 'mon
 const ACTIVE = RULES.filter((r) => r.status === 'active');
 const latestWording = (r) => r.versions[r.versions.length - 1].wording;
 const UNDESCRIBED = COUNTS.entries - COUNTS.described;
+/** His line on the Oct 5 plan's No, which the card draws under its footer (Screens 4). */
+const PLAN_WHY = PLAN[ENTRY['e-oct05-plan'].plan].answers.find((a) => a.answer === 'no').reason;
 
 /** "This week’s focus: Name an exit before I place a trade. · your Oct 7 review", split so the review is a link. */
 function focusLine() {
@@ -77,8 +79,13 @@ const quickCapture = () => jrQuiet(`<label class="jr-tl-qin"><span class="sr">Wr
 const orderBy = (extra = '') => `<div class="jr-tl-order"><span>Order by:</span>${jrSeg(['Written', 'About'], 'Written', { size: 32, label: 'Order by' })}${extra}</div>`;
 const revisit = () => { const [line] = STRINGS.revisit.split(' · Open'); return `<p class="jr-tl-revisit">${icon('calendar', 14)}<span>${line}${SEP}<a href="/positions/journal/e-aug26">Open</a></span></p>`; };
 
+/** The day groups sit in one frame (P-3, D1): on staging dashed with the 8px band and its one "Sample journal" chip,
+ *  so the cards inside carry no tag; on production solid. Under 600px its side padding narrows so cards stay wide. */
+const entriesFrame = (env, body) => jrFrame({ env, label: 'Entries', cls: 'jr-tl-entries', body });
+
 // ---- rail ------------------------------------------------------------------------------------------------------------
-const railFocus = () => jrQuiet(focusLine(), { label: 'This week’s focus', cls: 'jr-tl-focus' });
+/** This week's focus is the sample's line: a one-line frame, dashed with its chip on staging, solid on production. */
+const railFocus = (env) => jrFrame({ env, chipAt: 'foot', label: 'This week’s focus', cls: 'jr-tl-focus', body: focusLine() });
 function accountFrame(env) {
   const [sinceLabel, sinceValue] = STRINGS.sinceOct2.split(': ');
   const cells = [
@@ -102,17 +109,22 @@ function reviewMini(env) {
 const filters = () => jrQuiet(`<h3 class="jr-tl-h3">Filters</h3><label class="jr-tl-search">${icon('search', 14)}<span>Search</span></label><div class="jr-tl-sels"><button type="button" class="jr-tl-sel">Kind${icon('chevron', 14)}</button><button type="button" class="jr-tl-sel">Ticker${icon('chevron', 14)}</button></div>${jrChips(['Written from memory', 'Kept out of AI reads', 'Has later notes'], null, { label: 'Show only' })}`, { label: 'Filters', cls: 'jr-tl-fil' });
 
 // ---- the loaded page (staging, production illustrative, light, phone) ---------------------------------------------------
-const STAGING_NOTE = `${JR_NOTES.staging} Cards carry the words the spec prints; a card whose words it doesn’t print says so, and the ${UNDESCRIBED} entries it doesn’t describe aren’t drawn.`;
+/** Each card's AI status sits at the right of its first row from slice 4; the spec prints no per-card words for the
+ *  sample, so the boards leave the slot empty and say so (P-4). */
+const AI_STATUS = 'Each card’s AI status, at the right of its first row from slice 4, isn’t drawn: the spec prints no per-card status for the sample.';
+const STAGING_NOTE = `${JR_NOTES.staging} Cards carry the words the spec prints; a card whose words it doesn’t print says so, and the ${UNDESCRIBED} entries it doesn’t describe aren’t drawn. ${AI_STATUS}`;
 const header = () => jrHeader({ title: 'Journal', sub: JOURNAL_SUB, actions: jrHeaderActions('journal') });
 function loaded(o = {}, { env = 'staging', phone = false } = {}) {
-  const note = env === 'staging' ? STAGING_NOTE : JR_NOTES.illustrative;
+  const note = env === 'staging' ? STAGING_NOTE : `${JR_NOTES.illustrative}. ${AI_STATUS}`;
   if (phone) {
     const peek = `<button type="button" class="jr-tl-peek" aria-haspopup="dialog" aria-label="Open the account path"><span>${figs(STRINGS.peek.replace(/ ›$/, '')).replace(/ (\d{1,2})$/, '&nbsp;$1')}</span><span aria-hidden="true">›</span></button>`;
-    const main = `${header()}<div class="jr-tl-pk">${peek}${focusLine()}</div>${orderBy(jrBtn('Filters', { ic: 'filter', size: 'touch' }))}<div class="jr-tl-days">${dayGroups(WEEK)}</div>`;
+    // The account peek row and the week's focus line are the sample's: one frame, its chip in the foot.
+    const pk = jrFrame({ env, chipAt: 'foot', label: 'Account and this week’s focus', cls: 'jr-tl-pk', body: `${peek}${focusLine()}` });
+    const main = `${header()}${pk}${entriesFrame(env, `${orderBy(jrBtn('Filters', { ic: 'filter', size: 'touch' }))}<div class="jr-tl-days">${dayGroups(WEEK)}</div>`)}`;
     return jrPage({ ...o, env, tab: 'journal', bar: 'journal', main, note });
   }
-  const main = `${quickCapture()}${orderBy()}${revisit()}<div class="jr-tl-days">${dayGroups(WEEK)}${olderGroup()}</div>`;
-  const rail = `${railFocus()}${accountFrame(env)}${rulebookMini(env)}${reviewMini(env)}${filters()}`;
+  const main = `${quickCapture()}${entriesFrame(env, `${orderBy()}${revisit()}<div class="jr-tl-days">${dayGroups(WEEK)}${olderGroup()}</div>`)}`;
+  const rail = `${railFocus(env)}${accountFrame(env)}${rulebookMini(env)}${reviewMini(env)}${filters()}`;
   return jrPage({ ...o, env, tab: 'journal', bar: 'journal', main: `${header()}${jrGrid(main, rail)}`, note });
 }
 
@@ -136,7 +148,7 @@ function states(o = {}) {
   const unsent = jrCard({ kind: 'margin_call', tickers: ENTRY[CALL.entry].tickers, body: callBody, more: false, strip: jrStrip('warn', `<span>Not on your account yet. Kept in this browser until it goes through${SEP}<a href="#retry">Try again</a></span>`), label: 'Margin call · not on your account yet' });
   const signOut = `<div class="jr-tl-menu" role="group" aria-label="Sign out"><div class="jr-tl-mrow">${jrBtn('Sign out', { attrs: 'aria-expanded="true"' })}</div>${jrStrip('warn', '1 entry hasn’t reached your account yet. Signing out deletes it from this browser.')}<div class="jr-tl-qact">${jrBtn('Try sending now', { ic: 'refresh' })}${jrBtn('Sign out and delete it', { kind: 'danger', warn: true })}${jrBtn('Stay signed in', { kind: 'text' })}</div></div>`;
   const storage = jrFrame({ env: 'production', label: 'Journal', tag: jrTag('notSetUp'), body: '<p class="jr-tl-p">Journal storage isn’t set up on this server, so nothing can be saved yet.</p>' });
-  const marking = `<div class="jr-tl-mark"><div class="jr-tl-bars">${finalDemoNotice()}${finalDemoNotice({ phone: true })}</div><div class="jr-tl-mk2">${accountFrame('staging')}${jrEntryCard('e-oct02')}</div></div>`;
+  const marking = `<div class="jr-tl-mark"><div class="jr-tl-bars">${finalDemoNotice()}${finalDemoNotice({ phone: true })}</div><div class="jr-tl-mk2">${accountFrame('staging')}${entriesFrame('staging', jrEntryCard('e-oct02'))}</div></div>`;
   const items = [
     { name: 'Loading', tag: null, when: 'Day-group skeletons at their final height; the rail’s frames name their metric (P-10). No tag.', html: loading },
     { name: 'Couldn’t load', tag: ['error', 'Couldn’t load'], when: '“Your journal didn’t load. Nothing is lost.” + “Try again”. Drafts held in this browser are still listed.', html: failed },
@@ -144,7 +156,7 @@ function states(o = {}) {
     { name: 'Signing out with an unsent entry', tag: null, when: 'Sign-out stops first, inline. Drafts are cleared on sign-out; a queued entry is never dropped without this.', html: signOut },
     { name: 'Storage not set up', tag: ['notConfigured'], when: 'No journal encryption key on the server: nothing can be saved, and the composer’s Save says the same.', html: storage },
     { name: 'Not the owner', tag: null, when: 'Signed in as another account (API 403 owner_only): one sentence and the demo. No P-2 word exists for this, so the wall has no tag (open question 12).', html: `<div class="jr-tl-wallfit">${jrNotOwner()}</div>` },
-    { name: 'Staging marking (reference)', tag: ['sample'], wide: true, when: 'The demo bar is the page’s one “Demo · sample data · Oct 7, 2026” (“As of Oct 7, 2026” from 600px, D2). Each frame is dashed with the 8px steel hatch band and names the sample once, by its “Sample journal” chip; cards and rows carry no tag (D1).', html: marking },
+    { name: 'Staging marking (reference)', tag: ['sample'], wide: true, when: 'The demo bar is the page’s one “Demo · sample data · Oct 7, 2026” (“As of Oct 7, 2026” from 600px, D2). Each frame is dashed with the 8px steel hatch band and names the sample once, by its “Sample journal” chip; the cards sit inside the day groups’ frame and carry no tag (D1).', html: marking },
   ];
   return statesBoard({ ...o, title: 'Journal · Timeline · states', lead: 'The timeline’s states beyond Loaded, in the spec’s words (Screens → 1, Copy). Production frames are solid; the last item is the staging marking every staging board follows. Signed out and the first run have boards of their own.', items });
 }
@@ -169,7 +181,11 @@ const TL_CSS = `
   .jr-tl-bn b, .jr-tl-cut b { font-weight: 600; color: var(--phosphor); }
   .jr-tl-cut { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-top: 1px dashed var(--line-2); border-bottom: 1px dashed var(--line-2); background: var(--ink-2); font: 500 12px/1.5 'IBM Plex Mono', monospace; color: var(--steel); }
   .jr-tl-cut .ico { flex: none; margin-top: 2px; }
-  .jr-tl-focus { padding: 12px 16px; }
+  .jr-tl-focus { padding: 12px 16px; gap: 8px; }
+  .jr-tl-entries { gap: 14px; }
+  /* the phone's account frame: the peek row is the frame's first line, so it drops its own panel */
+  .jr-tl-pk { gap: 6px; }
+  .jr-tl-pk .jr-tl-peek { min-height: 44px; padding: 0; border: 0; border-radius: 0; background: transparent; }
   .jr-tl-fl { margin: 0; font-size: 14px; line-height: 1.5; color: var(--phosphor); text-wrap: pretty; }
   .jr-tl-fl b { font-weight: 600; }
   .jr-tl-open { margin-top: -4px; }
@@ -199,7 +215,6 @@ const TL_CSS = `
   .jr-tl-in { display: flex; align-items: center; min-height: 40px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--ink-2); font-size: 15px; color: var(--text-dim); }
   .jr-tl-lb { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--phosphor); }
   .jr-tl-ghost { height: 72px; border-bottom: 1px dashed var(--line-2); background: repeating-linear-gradient(to bottom, transparent 0 23px, var(--line) 23px 24px); opacity: 0.7; }
-  .jr-tl-pk { display: flex; flex-direction: column; gap: 8px; }
   .jr-tl-peek { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 52px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font: 400 14px/1.45 'IBM Plex Sans', sans-serif; color: var(--phosphor); text-align: left; cursor: pointer; }
   .jr-tl-peek > span:last-child { flex: none; font-size: 20px; color: var(--steel); }
   .jr-tl-pk .jr-tl-fl { font-size: 13.5px; padding: 0 2px; }
@@ -216,6 +231,7 @@ const TL_CSS = `
   .jr-tl-mk2 { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 16px; align-items: start; }
   @media (max-width: 899px) { .jr-tl-st2, .jr-tl-mk2 { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 599px) {
+    .jr-tl-entries { padding-left: 8px; padding-right: 8px; }
     .jr-tl-first { padding: 18px 16px; }
     .jr-tl-qact .btn { min-height: 44px; }
     .jr-tl-order { flex-direction: column; align-items: stretch; }
@@ -234,19 +250,19 @@ export const ROW = {
   label: 'Journal · Timeline',
   section: 'planned',
   css: JR_CSS + TL_CSS,
-  specH: 3438,
+  specH: 3652,
   spec: {
     title: 'Journal · Timeline',
     route: '/positions/journal',
     job: 'The home. He can write without leaving the page, and see the record in the order it was written.',
     env: {
       production: `The owner’s own journal, signed in: his entries in Written order (About on request), day groups by ET date, and the rail’s focus, account frame and minis, in solid frames. A visitor meets the Positions private-testing wall, “Sign in to open your journal”; another account sees “This journal is private to the account that owns this Convexa.”; an empty journal opens on “Start with today.”`,
-      staging: `The Sample journal on the demo account, Oct 7, 2026: a fictional trader’s, every value sample data. The demo bar is the page’s one “Demo · sample data”; each frame is dashed with the 8px steel hatch band and the “Sample journal” chip; cards carry no tag. Cards carry the words the spec prints: a card whose words it doesn’t print says so in a board note, the money-in card shows its amount with the composer’s word for its direction (“In ${usd(MONEY[0].amount)}”), and the ${UNDESCRIBED} entries the spec doesn’t describe aren’t drawn.`,
+      staging: `The Sample journal on the demo account, Oct 7, 2026: a fictional trader’s, every value sample data. The demo bar is the page’s one “Demo · sample data”; each frame is dashed with the 8px steel hatch band and the “Sample journal” chip, the day groups and the week’s focus included; cards carry no tag. Cards carry the words the spec prints: a card whose words it doesn’t print says so in a board note, the money-in card shows its amount with the composer’s word for its direction (“In ${usd(MONEY[0].amount)}”), and the ${UNDESCRIBED} entries the spec doesn’t describe aren’t drawn.`,
     },
     widgets: [
       { name: 'Section tabs', source: 'SectionTabs (generalised from ResearchTabs.tsx): Book · Journal · Review · Rulebook, current tab underlined in text colour', production: 'Journal current; Review and Rulebook join with slices 3 and 2', staging: 'Same band, under the demo bar' },
       { name: 'Quick capture', source: 'Typed by him; the draft is kept in this browser (convexa.journal.drafts.v1) until it saves; Numbers carried from the latest snapshot', production: 'local', staging: 'Writes go to demo browser storage' },
-      { name: 'Day groups and entry cards', source: 'GET /api/journal/entries (owner only, sealed text decrypted by the server); ET dates; recalled derived on read (store.rs)', production: [['local'], ['computed']], staging: 'No tag on cards (D1); the demo bar marks the page' },
+      { name: 'Day groups and entry cards', source: 'GET /api/journal/entries (owner only, sealed text decrypted by the server); ET dates; recalled derived on read (store.rs)', production: [['local'], ['computed']], staging: 'One dashed frame with its “Sample journal” chip holds the day groups; no tag on cards (D1)' },
       { name: 'Rail · This week’s focus', source: 'journal_focus, saved with the latest review (slice 3); dated “Focus from your Oct 7 review: …” after 7 days', production: 'His words, no tag', staging: 'The Oct 7 review’s focus' },
       { name: 'Rail · Account frame', source: 'His snapshots; facts.rs (margin used, leverage, the change, below the recorded high); the sparkline is the Path’s account value multiple', production: [['local'], ['computed']], staging: ['sample', 'Sample journal'] },
       { name: 'Rail · Rulebook mini', source: 'journal rules (slice 2); R3’s reading from the latest snapshot', production: 'computed', staging: ['sample', 'Sample journal'] },
@@ -263,7 +279,7 @@ export const ROW = {
       { tag: 'notConfigured', when: 'Storage not set up (no journal encryption key on the server): “Journal storage isn’t set up on this server, so nothing can be saved yet.”' },
       { tag: 'locked', when: 'Signed out (production): the Positions private-testing wall, “Sign in to open your journal”, sign-ups closed, “See it on the demo →”.' },
       { tag: null, when: 'Not the owner (API 403 owner_only): “This journal is private to the account that owns this Convexa.” + “See it on the demo →”, with no tag (open question 12).' },
-      { tag: 'sample', when: 'Staging: “Demo · sample data · Oct 7, 2026” once, in the bar; frames dashed with the hatch band and the “Sample journal” chip, once per frame.' },
+      { tag: 'sample', when: 'Staging: “Demo · sample data · Oct 7, 2026” once, in the bar; frames dashed with the hatch band and the “Sample journal” chip, once per frame; the day groups sit in one such frame, so the cards carry no tag.' },
     ],
     phone: `h1 at 30px and the tab rail. An account peek row, “${STRINGS.peek}”, opens the Path and its table twin in a bottom sheet, with the week’s focus line under it. No quick-capture box: the sticky, safe-area-padded bottom bar carries the amber “Write entry” and the outlined 44px “Margin call” with the warning glyph, and the header’s action hides. Cards are full width with a 3-line clamp; filters open in a bottom sheet. No horizontal overflow at 390 or 393.`,
     acceptance: [
@@ -273,10 +289,12 @@ export const ROW = {
       'Figures render in the Mono token with no dotted rule; “not set” on the Sep 30 trim card renders in Sans (criterion 8).',
       '“within” is never tinted; the Margin call pill and the Rulebook mini’s “above” carry the warning glyph; no success or error fill on any element (criterion 9).',
       'The Oct 2 trim card reads “−0.5R against planned risk · Your label: Sound”; the Sep 30 NVDA trim card reads “not set” and no label (criterion 35).',
-      'The Oct 5 plan card reads “Asked 2 rules · went ahead against R3” (criterion 30).',
+      `The Oct 5 plan card reads “Asked 2 rules · went ahead against R3”, with his line under it, “${PLAN_WHY}” (Screens 1 and 4).`,
       'The focus line reads “This week’s focus: …” until the next review is saved, and “Focus from your Oct 7 review: …” once 7 days have passed its cutoff; no count, rate, score or streak of focus lines or labels appears (criteria 33 and 35).',
       'Empty journal: “What do you think your downfalls are?” saves up to 5 lines and “Skip” leaves writing untouched; after the first save an unanswered prompt sits under its card while it is the only entry, never under a margin-call entry; with entries and no rule the Rulebook mini reads “No rules yet · One rule from today” (criterion 34).',
-      'Signed out: the wall “Sign in to open your journal” with “See it on the demo →”; another account gets 403 owner_only and the untagged sentence (criterion 1).',
+      'Signed out: the wall “Sign in to open your journal” with “See it on the demo →”; another account sees the untagged sentence (Screens 1, States; the API’s 403s behind them are criterion 1).',
+      `The rail’s “Below the recorded high” is chain-linked: a deposit with an end value higher by the same amount leaves it unchanged, so the ${fmtDate(etDate(MONEY[0].at))} ${usd(MONEY[0].amount)} in can’t hide the loss (criterion 7).`,
+      `The rail and the day lines add up from the seed: at each of the ${SNAPSHOTS.length} sample snapshots, positions × marks + cash − margin loan equals account value to the cent, and the stock marks equal the demo catalog’s closes (criterion 26).`,
       'At 390 and 393, in both schemes: scrollWidth equals clientWidth, and with a coarse pointer no interactive element is under 44px (criterion 21).',
     ],
     built: [
@@ -300,12 +318,12 @@ export const ROW = {
     ],
   },
   boards: [
-    B('staging', 'Staging · demo account', 1440, 2452, (o) => loaded(o, { env: 'staging' })),
+    B('staging', 'Staging · demo account', 1440, 2575, (o) => loaded(o, { env: 'staging' })),
     B('production', 'Production · signed out', 1440, 920, (o) => jrPage({ ...o, env: 'production', tab: null, signedIn: false, main: jrWall() })),
     B('first-run', 'Production · first run', 1440, 1332, (o) => firstRun(o)),
-    B('illustrative', 'Production · illustrative', 1440, 2388, (o) => loaded(o, { env: 'production' })),
-    B('phone', 'Phone · staging', 390, 2583, (o) => loaded(o, { env: 'staging', phone: true })),
-    B('light', 'Light · staging', 1440, 2452, (o) => loaded(o, { env: 'staging' }), LIGHT),
+    B('illustrative', 'Production · illustrative', 1440, 2467, (o) => loaded(o, { env: 'production' })),
+    B('phone', 'Phone · staging', 390, 2859, (o) => loaded(o, { env: 'staging', phone: true })),
+    B('light', 'Light · staging', 1440, 2575, (o) => loaded(o, { env: 'staging' }), LIGHT),
     B('states', 'States', 1440, 2300, (o) => states(o)),
   ],
 };

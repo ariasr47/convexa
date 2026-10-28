@@ -16,7 +16,7 @@ import { provChip, stateTag } from '../../components/data-states.mjs';
 import { chartFrame, dataTable, plot } from '../../chart-kit.mjs';
 import { dlg, fld, seg, statesBoard, sw } from '../v4/kit.mjs';
 import { ACCT_CSS, wallButtons, DEMO as DEMO_URL } from './account-pages.mjs';
-import { CALL, ENTRY, HIGH, KIND_WORD, LATEST, LATER_NOTES, PATH, PLAN, SNAPSHOT, STRINGS, daysBetween, etDate, fmtDate, fmtDay, fmtTime, pct, rFooter, recalledLine, usd } from '../../data/journal-sample.mjs';
+import { ANSWER_WORD, CALL, ENTRY, HIGH, KIND_WORD, LATEST, LATER_NOTES, PATH, PLAN, SNAPSHOT, STRINGS, daysBetween, etDate, fmtDate, fmtDay, fmtTime, pct, rFooter, recalledLine, usd } from '../../data/journal-sample.mjs';
 
 export { statesBoard, stateTag, provChip, icon, dlg, fld, seg, sw };
 
@@ -65,6 +65,8 @@ export const JR_CSS = `${ACCT_CSS}
   /* A standalone link is 24px, 44 under a coarse pointer (rule 7); a phone board draws the 44, as .jr-chip does. */
   @media (pointer: coarse), (max-width: 599px) { .jr-more { min-height: 44px; } }
   .jr-card-f { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; font-size: 13px; line-height: 1.5; color: var(--text-dim); }
+  /* A plan's No with his line under it (Screens 4: "went ahead against R3", with his line under it, on the card). */
+  .jr-card .jr-quote.jr-card-why { margin-top: -2px; font-size: 14px; line-height: 1.5; }
   .jr-sep { margin: 0 6px; color: var(--steel); }
   .jr-day { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 4px 0 2px; border-bottom: 1px solid var(--line); }
   .jr-day h3 { margin: 0; font-size: 14px; font-weight: 600; }
@@ -117,6 +119,9 @@ export const JR_CSS = `${ACCT_CSS}
   .jr-strip > .ico { flex: none; margin-top: 2px; color: var(--steel); }
   .jr-strip.warn { background: var(--warn-tint); border-color: var(--warn); }
   .jr-strip.warn > .ico { color: var(--warn); }
+  /* Action labels on the warn tint take text.primary: steel on the tint measured 4.27:1 in light (the base kit's
+     .dwarn .dline fix, and the canon's 2026-10-26 row (5)); the strip's icon carries the warning. */
+  .jr-strip.warn .btn.ghost { color: var(--phosphor); }
   .jr-strip > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 
   /* ---- counts: neutral steel dots below 20; at n ≥ 20 a rate track with a Wilson whisker ---------- */
@@ -162,6 +167,7 @@ export const JR_CSS = `${ACCT_CSS}
   .jr-peek .t { font-size: 15px; font-weight: 600; line-height: 1.35; }
   .jr-peek .s { font-size: 12px; line-height: 1.4; color: var(--steel); }
   .jr-peek .btn { flex: none; width: 44px; height: 44px; min-height: 44px; padding: 0; }
+  .jr-peek > .stag { flex: none; }
   .jr-sheet-b { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; }
   .jr-stack { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
   .jr-stack .btn { width: 100%; height: 44px; min-height: 44px; }
@@ -192,6 +198,14 @@ export const JR_CSS = `${ACCT_CSS}
   .jr-legend span { display: inline-flex; align-items: center; gap: 6px; }
   .jr-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; box-sizing: border-box; background: var(--phosphor); }
   .jr-legend i.o { background: var(--panel); border: 2px solid var(--phosphor); }
+
+  /* ---- rule 7 on a phone: every button, the chart twin's summary and the ⓘ reach 44px below 600px, as under a
+     coarse pointer; scoped to the journal's own content, so the shell's chrome is untouched ------------------- */
+  @media (pointer: coarse), (max-width: 599px) {
+    :is(.jr-page, .jr-sheet, .jr-cp-fsm) .btn, :is(.jr-page, .jr-sheet, .jr-cp-fsm) .btn.sm, :is(.jr-page, .jr-sheet, .jr-cp-fsm) .btn.link { min-height: 44px; }
+    :is(.jr-page, .jr-sheet, .jr-cp-fsm) .cf-tab > summary { min-height: 44px; }
+    .jr-i { width: 44px; height: 44px; }
+  }
 `;
 
 // =========================================================================================================
@@ -217,6 +231,10 @@ export const JR_NOTES = {
   illustrative: 'Figures illustrative; production shows only the owner’s entries',
   staging: 'Staging · the demo account on the Oct 7, 2026 scenario. The Sample journal is a fictional trader’s; every value is sample data.',
 };
+/** A board note's sentence (P-4) for every board that counts R2's asks: its answer on the Oct 1 plan is the sample
+ *  module's derived one, since the spec doesn't print it. */
+const R2_PLAN = Object.values(PLAN).find((p) => p.answers.some((a) => a.rule === 'R2' && a.derived));
+export const JR_R2_DERIVED = `R2’s ${fmtDate(R2_PLAN.at)} plan answer is derived (${ANSWER_WORD[R2_PLAN.answers.find((a) => a.rule === 'R2').answer]}); the spec doesn’t print it.`;
 /** "Your real account, in your words." heads every journal tab (Information architecture → Placement); the
  *  Journal tab's subline carries the rest. */
 export const JR_SUBLINE = 'Your real account, in your words.';
@@ -317,10 +335,13 @@ export function jrChartFrame(env, { claim, sub = '', body = '', table = '', note
 
 /** The provenance and state words the spec names, from P-2's closed set: 'stored' Stored here · 'computed'
  *  Computed · 'error' Couldn’t load · 'notSetUp' Not set up · 'off' Off · 'signIn' Sign in · 'sample' Sample.
- *  Loading and empty states carry no tag. */
+ *  Loading and empty states carry no tag. The error word is spelt with the typographic apostrophe, as the app's
+ *  vocabulary and the spec's Copy spell it (data/states.mjs's shared default has a straight one). */
+export const JR_ERROR_WORD = 'Couldn’t load';
 export function jrTag(key, word = '') {
   const map = { stored: 'local', computed: 'computed', error: 'error', notSetUp: 'notConfigured', off: 'off', signIn: 'locked', sample: 'sample' };
-  return stateTag(map[key] || key, word);
+  const k = map[key] || key;
+  return stateTag(k, word || (k === 'error' ? JR_ERROR_WORD : ''));
 }
 /** The staging source chip, alone (for a frame drawn without jrFrame). */
 export const jrSampleChip = () => provChip(SAMPLE_CHIP, 'dashed');
@@ -350,11 +371,11 @@ export const jrSym = (t) => `<span class="jr-sym">${t}</span>`;
 /** An entry card (a quiet panel with no lift). Row 1: time (Sans 13, textDim), kind pill, ticker chips, AI status
  *  at the right; the body (Plex Sans 16/1.55) clamped to `clamp` lines (4, or 3 on a phone) with "Read more";
  *  footers joined by a middle dot. `strip` sits under the body (e.g. "Not on your account yet …"). */
-export function jrCard({ time = '', kind = null, tickers = [], ai = '', body = '', clamp = 4, more = true, foot = [], strip = '', label = '', cls = '' } = {}) {
+export function jrCard({ time = '', kind = null, tickers = [], ai = '', body = '', clamp = 4, more = true, foot = [], strip = '', why = '', label = '', cls = '' } = {}) {
   const head = `<div class="jr-card-h">${time ? `<span class="jr-time">${time}</span>` : ''}${jrKind(kind)}${tickers.map(jrSym).join('')}${ai ? `<span class="jr-ai">${ai}</span>` : ''}</div>`;
   const b = body ? `<p class="jr-body${clamp ? ` jr-clamp l${clamp}` : ''}">${body}</p>${more ? '<a href="#" class="jr-more">Read more</a>' : ''}` : '';
   const f = foot.filter(Boolean).length ? `<div class="jr-card-f">${dotJoin(foot)}</div>` : '';
-  return `<article class="jr-card${cls ? ' ' + cls : ''}" aria-label="${esc(plain(label || [KIND_WORD[kind] ?? 'Entry', time].filter(Boolean).join(' · ')))}">${head}${b}${strip}${f}</article>`;
+  return `<article class="jr-card${cls ? ' ' + cls : ''}" aria-label="${esc(plain(label || [KIND_WORD[kind] ?? 'Entry', time].filter(Boolean).join(' · ')))}">${head}${b}${strip}${f}${why}</article>`;
 }
 /** The footers the sample gives an entry: "Written Aug 21 · about Aug 4" on a recalled one; "1 later note";
  *  "Asked 2 rules · went ahead against R3" on a plan (G1); "−0.5R against planned risk · Your label: Sound" on a
@@ -376,12 +397,21 @@ export function jrEntryFooter(entryId) {
   if (e.corrected) out.push('Corrected Aug 22');
   return out;
 }
+/** A plan's No answers with his line under the footer (Screens 4: "Saved, a No shows as “went ahead against R3”,
+ *  with his line under it, on the card"): his words alone for one No, each led by its rule for more. */
+export function jrPlanWhy(entryId) {
+  const e = ENTRY[entryId];
+  if (!e?.plan) return '';
+  const nos = PLAN[e.plan].answers.filter((a) => a.answer === 'no' && a.reason);
+  if (!nos.length) return '';
+  return jrQuote(nos.length === 1 ? nos[0].reason : nos.map((a) => `${a.rule} · ${a.reason}`).join('<br>')).replace('class="jr-quote"', 'class="jr-quote jr-card-why"');
+}
 /** A sample entry's card, filled from the Sample journal (body only where the spec prints it; pass `body` to
  *  draw an entry whose words the spec gives elsewhere, e.g. a money-in line). */
 export function jrEntryCard(entryId, o = {}) {
   const e = ENTRY[entryId];
   const time = e.writtenAt && e.writtenAt.length > 10 ? fmtTime(e.writtenAt) : '';
-  return jrCard({ time, kind: e.kind, tickers: e.tickers, body: e.body ?? '', foot: jrEntryFooter(entryId), ...o });
+  return jrCard({ time, kind: e.kind, tickers: e.tickers, body: e.body ?? '', foot: jrEntryFooter(entryId), why: jrPlanWhy(entryId), ...o });
 }
 /** A day group's header: "Tue Sep 29" with that day's snapshot line, labels in Sans and figures in Mono
  *  ("Account value $34,047 · margin used 147% · call $2,750"). */
@@ -468,11 +498,13 @@ export function jrDialog({ w = 560, title, chip = '', body = '', foot = '', labe
 export function jrOverlay({ scheme = 'dark', minHeight = 0, behind = '', panel = '', center = false } = {}) {
   return `<div class="v4 jr-over" data-scheme="${scheme}" style="min-height: ${Math.max(minHeight, 900)}px;"><div class="jr-behind" aria-hidden="true">${behind}</div><div class="jr-scrim${center ? ' center' : ''}">${panel}</div></div>`;
 }
-/** A peek row: the sheet's title (and an optional sub line) with a chevron to open or minimize. */
-export const jrPeek = ({ title, sub = '', open = true } = {}) => `<div class="jr-peek"><div class="c"><span class="t">${title}</span>${sub ? `<span class="s">${sub}</span>` : ''}</div><button class="btn ghost" type="button" aria-label="${open ? 'Minimize' : 'Open'}">${icon(open ? 'chevron' : 'chevronU', 18)}</button></div>`;
-/** A bottom sheet (every overlay below 600px): grab handle, peek row, body, actions stacked at 44px. */
-export function jrSheet({ title, sub = '', body = '', actions = [], label = '' } = {}) {
-  return `<section class="jr-sheet" role="dialog" aria-modal="true" aria-label="${esc(plain(label || title))}"><div class="jr-grab" aria-hidden="true"></div>${jrPeek({ title, sub })}${body ? `<div class="jr-sheet-b">${body}</div>` : ''}${actions.length ? `<div class="jr-stack">${actions.join('')}</div>` : ''}</section>`;
+/** A peek row: the sheet's title (and an optional sub line) with a chevron to open or minimize. `tag`: a state tag
+ *  beside the title; on staging, the sheet's one Sample mark (D1), as a 1440 drawer carries it in its head. */
+export const jrPeek = ({ title, sub = '', open = true, tag = '' } = {}) => `<div class="jr-peek"><div class="c"><span class="t">${title}</span>${sub ? `<span class="s">${sub}</span>` : ''}</div>${tag}<button class="btn ghost" type="button" aria-label="${open ? 'Minimize' : 'Open'}">${icon(open ? 'chevron' : 'chevronU', 18)}</button></div>`;
+/** A bottom sheet (every overlay below 600px): grab handle, peek row (with an optional `tag`), body, actions stacked
+ *  at 44px. */
+export function jrSheet({ title, sub = '', tag = '', body = '', actions = [], label = '' } = {}) {
+  return `<section class="jr-sheet" role="dialog" aria-modal="true" aria-label="${esc(plain(label || title))}"><div class="jr-grab" aria-hidden="true"></div>${jrPeek({ title, sub, tag })}${body ? `<div class="jr-sheet-b">${body}</div>` : ''}${actions.length ? `<div class="jr-stack">${actions.join('')}</div>` : ''}</section>`;
 }
 /** A sheet over a dimmed page strip, for the phone's sheet boards. */
 export const jrSheetStage = (sheet) => `<div class="jr-sheetstage">${sheet}</div>`;
@@ -490,7 +522,7 @@ const XT = (ticks) => ({ min: 0, max: XMAX, ticks });
 const XTICKS = [['2026-08-04', 0], ['2026-08-21', null], ['2026-09-04', null], ['2026-09-18', null], ['2026-10-06', 1]].map(([d, a], i) => ({ v: dx(d), label: fmtDate(d), align: a ?? undefined, minor: i === 1 || i === 3 }));
 const PL = 56, PR = 96, PRN = 56;
 const FACET_KEY = { accountValue: 'accountValue', below: 'below', margin: 'marginUsed' };
-function facet(key, { last = false, height = 112, spark = false } = {}) {
+function facet(key, { last = false, height = 112, spark = false, highLabel = STRINGS.highLabel } = {}) {
   const v = FACET_KEY[key];
   const pts = PATH.map((p) => [dx(p.date), p.v[v]]);
   const dots = PATH.map((p) => ({ x: dx(p.date), y: p.v[v], open: p.hollow, role: 'emph', ...(spark ? { size: 6 } : {}) }));
@@ -502,7 +534,7 @@ function facet(key, { last = false, height = 112, spark = false } = {}) {
   }
   const common = { height, pl: PL, pr: PR, prn: PRN, pt: 14, pb: last ? 26 : 10, keyboard: false, x: XT(last ? XTICKS : []), dots };
   if (key === 'accountValue') {
-    return plot({ ...common, aria: `Account value at each snapshot, Aug 4 to Oct 6; recorded high ${usd(HIGH.accountValue)} on ${fmtDate(HIGH.asOf)}`, y: { min: 28000, max: 54000, ticks: [30000, 40000, 50000].map((v) => ({ v, label: `$${v / 1000}k` })) }, hlines: [{ v: HIGH.accountValue / 100, label: STRINGS.highLabel, kind: 'ref' }], series: [{ id: 'av', points: pts, role: 'emph', width: 2, end: endAt, endValue: usd(LATEST.accountValue) }] });
+    return plot({ ...common, aria: `Account value at each snapshot, Aug 4 to Oct 6; recorded high ${usd(HIGH.accountValue)} on ${fmtDate(HIGH.asOf)}`, y: { min: 28000, max: 54000, ticks: [30000, 40000, 50000].map((v) => ({ v, label: `$${v / 1000}k` })) }, hlines: [{ v: HIGH.accountValue / 100, label: highLabel, kind: 'ref' }], series: [{ id: 'av', points: pts, role: 'emph', width: 2, end: endAt, endValue: usd(LATEST.accountValue) }] });
   }
   if (key === 'below') {
     return plot({ ...common, aria: `Below the recorded high, with money in and out taken out: ${STRINGS.belowEnd} on Oct 6`, y: { min: -50, max: 5, ticks: [0, -20, -40].map((v) => ({ v, label: v ? `−${Math.abs(v)}%` : '0%' })) }, hlines: [{ v: 0, kind: 'zero' }], bands: [{ points: PATH.map((p) => [dx(p.date), p.v.below, 0]) }], series: [{ id: 'below', points: pts, role: 'emph', width: 2, end: endAt, endValue: STRINGS.belowEnd }] });
@@ -531,10 +563,12 @@ export const PATH_CAPTION = 'The line joins your snapshots. Convexa has no price
 /** The rail's sparkline (Journal rail, account frame): the account value multiple only, at a sparkline's height. */
 export const jrSpark = ({ height = 64 } = {}) => `<div class="jr-path">${facet('accountValue', { spark: true, height })}</div>`;
 /** The account path in its frame. `facets`: any of 'accountValue', 'below', 'margin'. `rail`, `table` and `frame`
- *  can be dropped (frame: false returns the body alone, for the 760 drawer or a sheet). */
-export function jrPath(env = 'staging', { facets = ['accountValue', 'below', 'margin'], height = 112, rail = true, table = true, frame = true, open = false, claim = STRINGS.pathTitle } = {}) {
+ *  can be dropped (frame: false returns the body alone, for the 760 drawer or a sheet). `highLabel` relabels the
+ *  recorded high's line when it says how the high was written ("… · from memory", Computed facts → Recalled
+ *  snapshots). */
+export function jrPath(env = 'staging', { facets = ['accountValue', 'below', 'margin'], height = 112, rail = true, table = true, frame = true, open = false, claim = STRINGS.pathTitle, highLabel = STRINGS.highLabel } = {}) {
   const titles = { accountValue: 'Account value', below: 'Below the recorded high', margin: 'Margin used' };
-  const body = `<div class="jr-path">${facets.map((f, i) => `<h4>${titles[f]}</h4>${facet(f, { last: i === facets.length - 1, height })}`).join('')}${rail ? eventRail() : ''}</div>`;
+  const body = `<div class="jr-path">${facets.map((f, i) => `<h4>${titles[f]}</h4>${facet(f, { last: i === facets.length - 1, height, highLabel })}`).join('')}${rail ? eventRail() : ''}</div>`;
   if (!frame) return body;
   return jrChartFrame(env, { claim, sub: 'Account value, below the recorded high and margin used at each snapshot, Aug 4 – Oct 6, 2026', body, legendHtml: PATH_LEGEND, note: PATH_CAPTION, table: table ? jrPathTable({ open }) : '' });
 }

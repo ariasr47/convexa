@@ -105,8 +105,12 @@ function callRead(env, { title = 'AI read' } = {}) {
   const digest = `A margin call of ${traced(usd(CALL.amount))}, due ${traced(fmtDateTime(CALL.dueBy))}. Account value ${traced(usd(s.accountValue))}, margin used ${traced(pct(s.marginUsed, 0))}, excess liquidity ${traced(signedUsd(s.excessLiquidity))}. You wrote that the broker raised the NVDA requirement before earnings, and: “${quote}”`;
   const cited = FINDINGS.filter((f) => f.cites.includes(e.id)).map((f) => `<li><a href="/positions/review?finding=${f.id}">${DETECTOR_ROWS.find((d) => d.row === f.row).title}</a><span class="jr-en-src">${SEP}${REVIEW_DAY} review</span></li>`).join('');
   const body = `<section class="jr-en-ais" aria-label="Summary"><h3>How the AI summarised this entry (used in reviews)</h3><p class="jr-en-dg">${digest}</p><div>${jrBtn('That’s not right', { kind: 'text', size: 'sm' })}</div></section><section class="jr-en-ais" aria-label="Cited in"><h3>Cited in</h3><ul class="jr-en-cited">${cited}</ul></section><div><a href="#whats-sent" class="jr-more">What was sent</a></div>${egress()}<div>${jrBtn('Run again', { ic: 'refresh' })}</div>`;
-  return aiFrame(env, env === 'staging' ? jrTag('sample', 'Sample read · No model was called') : '', body, title);
+  // Staging: the tag is P-2's word, Sample; the state's words lead the panel (Copy → AI read states: Tag "Sample",
+  // Words "Sample read · No model was called").
+  return aiFrame(env, env === 'staging' ? jrTag('sample') : '', `${env === 'staging' ? SAMPLE_READ : ''}${body}`, title);
 }
+/** The AI read's staging words, the panel's first line under its Sample tag. */
+const SAMPLE_READ = '<p class="jr-en-sr">Sample read · No model was called</p>';
 
 // ---- Rules (slice 2; computed checks slice 3, G8) -------------------------------------------------------------------------
 const groupHead = (word) => `<span class="jr-en-gl">${word}</span>`;
@@ -161,7 +165,7 @@ function callPhone(o = {}) {
   const acc = (title, open, html = '') => `<section class="jr-en-acc"><button type="button" class="jr-en-acch" aria-expanded="${open}"><span>${title}</span>${icon(open ? 'chevronU' : 'chevron', 18)}</button>${open ? html : ''}</section>`;
   const accs = `<div class="jr-en-accs">${acc('Numbers', true, snapshotPanel('staging', CALL.snapshot, { call: true }))}${acc('Details found', false)}${acc('AI read', true, callRead('staging', { title: '' }))}${acc('Rules', false)}</div>`;
   const main = `<div class="jr-en">${meta(e)}${words(e)}${laterNotes(e)}${accs}${foot()}</div>`;
-  const dock = `<div class="jr-en-dock"><section class="jr-sheet" role="dialog" aria-label="What’s sent"><div class="jr-grab" aria-hidden="true"></div>${jrPeek({ title: 'What’s sent to Anthropic', sub: 'No model is called on the demo', open: false })}</section></div>`;
+  const dock = `<div class="jr-en-dock"><section class="jr-sheet" role="dialog" aria-label="What’s sent"><div class="jr-grab" aria-hidden="true"></div>${jrPeek({ title: 'What’s sent to Anthropic', sub: 'No model is called on the demo', open: false, tag: jrTag('sample') })}</section></div>`;
   const html = jrPage({ ...o, env: 'staging', tab: 'journal', label: 'Journal entry', note: CALL_NOTE, main });
   return html.replace(/<\/div>\s*$/, `${dock}</div>`);
 }
@@ -191,9 +195,9 @@ function states(o = {}) {
     { name: 'AI read · Didn’t pass the check', tag: null, when: 'The number check failed: nothing from the read is shown.', html: aiFrame('production', '', `${jrStrip('warn', 'This read didn’t pass the number check, so it isn’t shown.')}${egress()}${btn('Run again', 'refresh')}`) },
     { name: 'AI read · Request failure', tag: null, when: 'Its own line, never shown as idle; a read already shown stays pinned.', html: aiFrame('production', '', `${jrStrip('warn', 'AI unavailable · Anthropic returned an error. Nothing was lost.')}${egress()}${btn('Retry', 'refresh')}`) },
     { name: 'AI read · Refused', tag: null, when: 'No automatic retry.', html: aiFrame('production', '', jrStrip('warn', 'Anthropic declined this read. Nothing from it is shown.')) },
-    { name: 'AI read · Cap reached', tag: null, when: 'The month’s cap is spent: no request is sent.', html: aiFrame('production', '', p(`This month’s journal AI cap of ${AI.caps.month} is reached. Change it in Settings.`)) },
+    { name: 'AI read · Cap reached', tag: null, when: 'The month’s cap is spent: no request is sent.', html: aiFrame('production', '', p(figs(`This month’s journal AI cap of ${AI.caps.month} is reached. Change it in Settings.`))) },
     { name: 'AI read · Kept out', tag: null, when: '“Keep this entry out of AI reads” is on: none of its text, numbers, details or notes is sent.', html: aiFrame('production', '', p('Kept out of AI reads since Oct 26.')) },
-    { name: 'AI read · Sample', tag: ['sample'], when: 'Staging: no model is called on the demo. The Sep 29 board draws it in full.', html: aiFrame('staging', jrTag('sample', 'Sample read · No model was called'), `<div><a href="#whats-sent" class="jr-more">What was sent</a></div>`) },
+    { name: 'AI read · Sample', tag: ['sample'], when: 'Staging: no model is called on the demo. The tag is Sample; the words lead the panel. The Sep 29 board draws it in full.', html: aiFrame('staging', jrTag('sample'), `${SAMPLE_READ}<div><a href="#whats-sent" class="jr-more">What was sent</a></div>`) },
     { name: 'Deleted', tag: null, when: 'A tombstone line only; findings that cite it read “out of date”.', html: `<p class="jr-en-tomb">An entry written ${fmtDate(ENTRY[CALL.entry].writtenAt)} was deleted on Oct 27.</p>` },
     { name: 'Loading', tag: null, when: 'Skeletons at the panels’ final height; frames name their metric. No tag.', html: loading },
     { name: 'Couldn’t load', tag: ['error', 'Couldn’t load'], when: 'As on the timeline.', html: failed },
@@ -248,6 +252,7 @@ const EN_CSS = `
   .jr-en-ais { display: flex; flex-direction: column; gap: 6px; }
   .jr-en-ais h3 { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--steel); }
   .jr-en-dg { margin: 0; font-size: 15px; line-height: 1.6; color: var(--phosphor); text-wrap: pretty; }
+  .jr-en-sr { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.45; color: var(--steel); }
   .jr-en-tr { white-space: nowrap; }
   .jr-en-tr .ico { margin-right: 2px; vertical-align: -1px; color: var(--steel); }
   .jr-en-cited { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 14px; line-height: 1.5; }
@@ -304,7 +309,7 @@ export const ROW = {
   label: 'Journal · Entry',
   section: 'planned',
   css: JR_CSS + EN_CSS,
-  specH: 3365,
+  specH: 3230,
   spec: {
     title: 'Journal · Entry',
     route: '/positions/journal/:entryId',
@@ -319,7 +324,7 @@ export const ROW = {
       { name: 'Account snapshot', source: 'His typed figures with source and as-of; facts.rs for margin used, excess liquidity, the change and leverage; corrections supersede and the original stays', production: [['local'], ['computed']], staging: ['sample', 'Sample journal'] },
       { name: 'Result', source: 'His typed sale (a kept detail, origin typed); P/L against average cost and R from facts.rs; his label as he chose it (1b)', production: [['local'], ['computed']], staging: ['sample', 'Sample journal'] },
       { name: 'Details found', source: 'The parser (slice 3) or J1 (slice 4); kept, fixed or rejected by him in place or in Tidy', production: 'Origin line: found by the parser, or found by the AI', staging: ['sample', 'Sample journal'] },
-      { name: 'AI read', source: `J1 on his own Anthropic key (${AI.models.entry}), read with the review; journal_ai_runs; What was sent from the package table`, production: 'Rule 16’s states, no verdict: Off, Not set up, or none', staging: ['sample', 'Sample read · No model was called'] },
+      { name: 'AI read', source: `J1 on his own Anthropic key (${AI.models.entry}), read with the review; journal_ai_runs; What was sent from the package table`, production: 'Rule 16’s states, no verdict: Off, Not set up, or none', staging: 'sample' },
       { name: 'Rules', source: 'His plan answers with their reasons and kept touches (answered by you); computed checks derived on read from kept details (checks.rs, slice 3)', production: [['local'], ['computed']], staging: ['sample', 'Sample journal'] },
     ],
     states: [
@@ -330,7 +335,7 @@ export const ROW = {
       { tag: null, when: 'Held (slice 5): “No read on the day of a margin call. It’s read with the next review.” + the egress line + “Read it now”.' },
       { tag: null, when: 'Didn’t pass the check: “This read didn’t pass the number check, so it isn’t shown.” + “Run again”. Request failure: “AI unavailable · Anthropic returned an error. Nothing was lost.” + “Retry”, never shown as idle. Refused: “Anthropic declined this read. Nothing from it is shown.”' },
       { tag: null, when: `Cap reached: “This month’s journal AI cap of ${AI.caps.month} is reached. Change it in Settings.” Kept out: “Kept out of AI reads since Oct 26.”` },
-      { tag: 'sample', when: 'Staging: “Sample read · No model was called”.' },
+      { tag: 'sample', when: 'Staging: tagged Sample, its first line “Sample read · No model was called”.' },
       { tag: null, when: 'Recalled: “Written Aug 21 about Aug 4. Reviews treat this as memory, not as what you thought at the time.”' },
       { tag: 'local', when: `Corrected: ${STRINGS.correction}; the original stays visible.` },
       { tag: null, when: 'Deleted: a tombstone line only, “An entry written Sep 29 was deleted on Oct 27.”; the delete confirm is inline: “Delete this entry’s words and numbers? …” + “Delete entry” · “Keep it”.' },
@@ -371,10 +376,10 @@ export const ROW = {
     ],
   },
   boards: [
-    B('staging', 'Staging · the Sep 29 call', 1440, 2448, (o) => callBoard(o)),
+    B('staging', 'Staging · the Sep 29 call', 1440, 2478, (o) => callBoard(o)),
     B('recalled', 'Staging · recalled entry', 1440, 1372, (o) => recalledBoard(o)),
-    B('phone', 'Phone · staging', 390, 3049, (o) => callPhone(o)),
+    B('phone', 'Phone · staging', 390, 3100, (o) => callPhone(o)),
     B('light', 'Light · staging', 1440, 1963, (o) => trimBoard(o), LIGHT),
-    B('states', 'States', 1440, 3270, (o) => states(o)),
+    B('states', 'States', 1440, 3319, (o) => states(o)),
   ],
 };
