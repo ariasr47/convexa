@@ -888,11 +888,68 @@ fn resolve_dark_pool(state: &AppState, q: Option<bool>) -> bool {
 /// Read the bundle, or one of its slices, back through the closed `MarketWire`. A value the wire
 /// cannot hold (a number that is not finite, which `json!` writes as null, or a field whose type
 /// drifted from the wire) answers the route's 500 and is logged. It never panics the handler.
+/// Each route first runs [`isolate_best_effort`], so only a core field can fail here.
 fn market_wire(value: Value, sym: &str, part: &'static str) -> Result<MarketWire, AppError> {
     serde_json::from_value(value).map_err(|error| {
         tracing::error!(ticker = sym, part, %error, "the market bundle does not fit its wire");
         AppError::Config("market bundle internal failure".into())
     })
+}
+
+/// The added blocks of `market_state` that the wire carries as an object or null.
+const NULLABLE_ADDED_BLOCKS: [&str; 6] = [
+    "iv_skew",
+    "term_structure",
+    "dealer_flow_projection",
+    "market_context",
+    "iv_rank",
+    "vol_normalized_gex",
+];
+
+/// Why `value` cannot be `MarketWire`'s `field`, or `None` when it fits. The wire type itself
+/// judges, so this check cannot drift from the wire.
+fn wire_misfit(field: &str, value: &Value) -> Option<serde_json::Error> {
+    let probe = serde_json::Map::from_iter([(field.to_owned(), value.clone())]);
+    serde_json::from_value::<MarketWire>(Value::Object(probe)).err()
+}
+
+/// `[best-effort-isolated-or-null]` on the read path. An added block the wire cannot hold is
+/// served as null, and a dark-pool confluence row it cannot hold is dropped. Each is logged. A
+/// block that fits is left as it is, and the score is never touched. After this only a core field
+/// can fail the read: `market_state`'s own fields, `strike_profile`, `meta`, and `straddle_move`.
+/// `straddle_move` stays core because its contract forbids a bare null and a local tenor filter
+/// (`quant_engine::restrict_move_to_tenors` is the only one).
+fn isolate_best_effort(bundle: &mut Value, sym: &str) {
+    let log = |part: &str, error: &serde_json::Error| {
+        tracing::warn!(
+            ticker = sym,
+            part,
+            %error,
+            "an added block does not fit its wire; served without it"
+        );
+    };
+    let state_blocks = NULLABLE_ADDED_BLOCKS.map(|field| ("/market_state", field));
+    for (parent, field) in state_blocks.into_iter().chain([("", "off_exchange")]) {
+        let Some(block) = bundle.pointer_mut(parent).and_then(|p| p.get_mut(field)) else {
+            continue;
+        };
+        if let Some(error) = wire_misfit(field, block) {
+            log(field, &error);
+            *block = Value::Null;
+        }
+    }
+    let rows = bundle.pointer_mut("/signals/dark_pool_confluence");
+    if let Some(rows) = rows.and_then(Value::as_array_mut) {
+        rows.retain(|row| {
+            match wire_misfit("dark_pool_confluence", &Value::Array(vec![row.clone()])) {
+                Some(error) => {
+                    log("dark_pool_confluence", &error);
+                    false
+                }
+                None => true,
+            }
+        });
+    }
 }
 
 /// GET /api/ticker/{ticker} — FE TickerBundle shape (not progressive dual-path DTO). The owner's
@@ -907,7 +964,8 @@ pub async fn get_ticker_bundle(
 ) -> Result<MarketResponse, AppError> {
     let sym = normalize(&ticker)?;
     let dp = resolve_dark_pool(&state, q.dark_pool);
-    let bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
+    let mut bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
+    isolate_best_effort(&mut bundle, &sym);
     Ok(MarketResponse::Ok(market_wire(bundle, &sym, "bundle")?))
 }
 
@@ -925,7 +983,8 @@ pub async fn get_market_data(
 ) -> Result<MarketResponse, AppError> {
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;
     let dp = resolve_dark_pool(&state, q.dark_pool);
-    let bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
+    let mut bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
+    isolate_best_effort(&mut bundle, &sym);
     Ok(MarketResponse::Ok(market_wire(
         bundle["market_state"].clone(),
         &sym,
@@ -947,7 +1006,8 @@ pub async fn get_signals(
 ) -> Result<MarketResponse, AppError> {
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;
     let dp = resolve_dark_pool(&state, q.dark_pool);
-    let bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
+    let mut bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
+    isolate_best_effort(&mut bundle, &sym);
     Ok(MarketResponse::Ok(market_wire(
         bundle["signals"].clone(),
         &sym,
@@ -994,4 +1054,154 @@ pub struct MarketQuery {
     #[serde(default)]
     pub refresh: bool,
     pub dark_pool: Option<bool>,
+}
+
+#[cfg(test)]
+mod best_effort_isolation_tests {
+    use super::*;
+    use crate::services::analytics::{compute_from_port, AnalyticsComputeParams};
+    use crate::services::market_data::{load_fixture_dir, MarketDataPort};
+    use crate::state::{AnalyticsSnapshot, GexCache};
+    use axum::body::{to_bytes, Body};
+    use axum::http::{header, Request, StatusCode};
+    use quant_engine::signals::DarkPoolMatch;
+    use tower::ServiceExt;
+
+    fn fixture_dir() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market")
+    }
+
+    /// The production route graph over one cached SYN snapshot, and the owner's session. A cache
+    /// miss would resolve from the SYN fixture, never from the vendor.
+    async fn app(snapshot: AnalyticsSnapshot) -> (axum::Router, String) {
+        let mut state = AppState::for_runtime_guardrail_tests("best-effort-tests".into())
+            .await
+            .expect("hermetic state");
+        state.vendor_fixture = Some(std::sync::Arc::new(
+            load_fixture_dir(&fixture_dir()).expect("SYN fixture"),
+        ));
+        let mut config = (*state.config).clone();
+        config.gex_cache_ttl_secs = 3_600;
+        state.gex_cache = GexCache::new(config);
+        state.gex_cache.set(snapshot).await;
+        let owner = crate::services::capacity_harness::clients::harness_owner_session(&mut state)
+            .expect("owner session")
+            .to_str()
+            .expect("cookie text")
+            .to_owned();
+        (crate::routes::router(state).expect("route graph"), owner)
+    }
+
+    async fn get(app: &axum::Router, owner: &str, uri: &str) -> (StatusCode, Value) {
+        let request = Request::builder()
+            .uri(uri)
+            .header(header::COOKIE, owner)
+            .body(Body::empty())
+            .expect("request");
+        let response = app.clone().oneshot(request).await.expect("response");
+        let status = response.status();
+        let bytes = to_bytes(response.into_body(), 1 << 22).await.expect("body");
+        (status, serde_json::from_slice(&bytes).expect("JSON body"))
+    }
+
+    /// `[best-effort-isolated-or-null]`: an added block the wire cannot hold (here a number that is
+    /// not finite) is served as null, an unfit dark-pool confluence row is dropped, and the read
+    /// still answers 200. The same blocks are served whole when they fit, and every other added
+    /// block is served as it is when clean.
+    #[tokio::test]
+    async fn an_added_block_the_wire_cannot_hold_never_fails_the_read() {
+        let port = MarketDataPort::fixture(load_fixture_dir(&fixture_dir()).expect("SYN fixture"));
+        let params = AnalyticsComputeParams::default();
+        let mut clean = compute_from_port(&port, "SYN", None, &params, None)
+            .await
+            .expect("SYN analytics");
+        clean.off_exchange = Some(quant_engine::OffExchange {
+            ratio_pct: Some(40.0),
+            offex_shares: 400,
+            total_shares: 1_000,
+            levels: vec![quant_engine::OffExLevel {
+                price: 105.0,
+                shares: 400,
+                share_of_offex_pct: 100.0,
+                proximity_pct: 5.0,
+            }],
+            blocks: Vec::new(),
+            block_min_shares: 10_000,
+            note: "off-exchange context".into(),
+        });
+        let fit_row = DarkPoolMatch {
+            off_exchange_price: 105.0,
+            coincides_with: "call_wall".into(),
+            level: 105.0,
+        };
+        let signals = clean.signals.as_mut().expect("SYN signals");
+        signals.dark_pool_confluence = Some(vec![fit_row.clone()]);
+
+        let mut unfit = clean.clone();
+        let vng = unfit
+            .vol_normalized_gex
+            .as_mut()
+            .expect("SYN vol-normalized GEX");
+        vng.net_gex = f64::NAN;
+        unfit.off_exchange.as_mut().expect("off-exchange").levels[0].price = f64::NAN;
+        let rows = unfit
+            .signals
+            .as_mut()
+            .and_then(|s| s.dark_pool_confluence.as_mut());
+        rows.expect("confluence rows").push(DarkPoolMatch {
+            off_exchange_price: f64::INFINITY,
+            ..fit_row.clone()
+        });
+
+        let (clean_app, clean_owner) = app(clean).await;
+        let (unfit_app, unfit_owner) = app(unfit).await;
+        let fit_rows = serde_json::to_value(vec![fit_row]).expect("rows");
+        let others = [
+            "iv_skew",
+            "term_structure",
+            "dealer_flow_projection",
+            "market_context",
+            "iv_rank",
+            "straddle_move",
+        ];
+        for uri in [
+            "/api/ticker/SYN?dark_pool=true",
+            "/api/market-data?ticker=SYN",
+            "/api/signals?ticker=SYN&dark_pool=true",
+        ] {
+            let (clean_status, served) = get(&clean_app, &clean_owner, uri).await;
+            let (status, degraded) = get(&unfit_app, &unfit_owner, uri).await;
+            assert_eq!(clean_status, StatusCode::OK, "{uri}: {served}");
+            assert_eq!(status, StatusCode::OK, "{uri}: {degraded}");
+            // The bundle nests its slices; the slice routes answer one of them at the top.
+            let bundle = uri.starts_with("/api/ticker/");
+            let part = |body: &Value, key: &str| {
+                if bundle {
+                    body[key].clone()
+                } else {
+                    body.clone()
+                }
+            };
+            if !uri.starts_with("/api/signals") {
+                let (fit, unfit) = (
+                    part(&served, "market_state"),
+                    part(&degraded, "market_state"),
+                );
+                assert!(fit["vol_normalized_gex"].is_object(), "{uri}");
+                assert!(unfit["vol_normalized_gex"].is_null(), "{uri}");
+                for block in others {
+                    assert_eq!(unfit[block], fit[block], "{uri}: {block}");
+                }
+            }
+            if !uri.starts_with("/api/market-data") {
+                let rows = |body: &Value| part(body, "signals")["dark_pool_confluence"].clone();
+                assert_eq!(rows(&served), fit_rows, "{uri}");
+                assert_eq!(rows(&degraded), fit_rows, "{uri}");
+            }
+            if bundle {
+                assert!(served["off_exchange"]["levels"].is_array(), "{uri}");
+                assert!(degraded["off_exchange"].is_null(), "{uri}");
+            }
+        }
+    }
 }
