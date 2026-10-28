@@ -7,7 +7,9 @@ boards landed in `13c3073d` (43 boards and 8 spec cards); the frontend steps cit
 the build works from it._
 
 _Revised the same day by the review fold: an adversarial review raised 25 findings, and the
-section "Review fold (2026-10-28)" at the end says where each one landed. D9 is answered._
+section "Review fold (2026-10-28)" at the end says where each one landed. D9 is answered. A second
+review of the fold raised 29 more, S1 to S29; the same section's "Second review" list says where
+each one landed._
 
 **Sources.** The spec is `docs/product/specs/2026-10-26/08-trade-journal.md` at `52339683`.
 Code citations are `file:line` at `adda4054` (HEAD while this was first written), except where a
@@ -15,7 +17,9 @@ line says "HEAD": the review fold re-checked every anchor it touched at `0d6c17c
 commits that landed during the fold, up to `704e0ec9`, moved none of them. The FE lane's
 owner-gate work, uncommitted when this was first written, landed as `e86ab538` and `4471cb0b`
 (`convexa.ts`, `app.tsx`, `features/auth/*`, `PositionsPage.tsx`, the new `ownerGate.ts` and
-`server-error-codes.spec.ts`), so lines in those files are cited at HEAD.
+`server-error-codes.spec.ts`), so lines in those files are cited at HEAD. The second review's fixes
+cite the anchors they add at `4ce1acdd`, where each was checked; of the files cited above, only
+`tools/verify.mjs` moved after `704e0ec9` (`40709185`, S23).
 
 **How to use it.** Section 1 says what 1a is. Sections 2 to 4 are the contract the build must
 meet: the wire, the storage and the facts. Section 5 is the ordered steps, each with its files,
@@ -123,9 +127,11 @@ Closed error codes for the journal routes:
 | 7 | `GET /api/journal/suspicions` | none | 200 `JournalSuspicionsBody` | 403, 500, 503 | `get_suspicions` |
 | 8 | `PUT /api/journal/suspicions` | `JournalSuspicionsPutBody` | 200 `JournalSuspicionsBody` | 403, 422, 500, 503 | `put_suspicions` |
 
-`GET /api/journal/entries` with no ring answers **200** `{ storage: "not_set_up", entries: [] }`,
-so the timeline can draw "Storage not set up"; `GET /api/journal/suspicions` likewise. Every write,
-and the single-entry read, answers 503 `storage_not_set_up` and writes nothing.
+`GET /api/journal/entries` with no ring answers **200** `{ storage: "not_set_up", entries: [],
+facts_state: "computed" }`, so the timeline can draw "Storage not set up";
+`GET /api/journal/suspicions` likewise. Every write, and the single-entry read, answers 503
+`storage_not_set_up` and writes nothing. The composer and quick capture read that `storage` and
+refuse Save with the same words (F3, F5, F6; criterion 24, S17).
 
 Response enums (`IntoResponses`, one per row; rows 4 and 5 share one):
 `JournalListResponse`, `JournalCreateResponse`, `JournalEntryResponse`, `JournalAppendResponse`,
@@ -140,9 +146,10 @@ since an unreadable entry now comes back as a stub, those three can't answer 500
 - `storage`: `JournalStorage` = `ready` | `not_set_up`
 - `entries`: `JournalEntryBody[]`, ordered by `written_at` descending, then `id` descending. The
   browser re-sorts for About order.
-- `facts`: `JournalFactsState` = `computed` | `withheld`. `withheld` when any entry is unreadable:
-  then every snapshot's `facts` is null, because a figure or an amount that can't be read could
-  move every later fact (section 3.3, finding 15).
+- `facts_state`: `JournalFactsState` = `computed` | `withheld`. `withheld` when any entry is
+  unreadable: then every snapshot's `facts` is null, because a figure or an amount that can't be
+  read could move every later fact (section 3.3, finding 15). (The fold named this field `facts`;
+  S25 renamed it, since every `JournalEntryBody` now carries it too.)
 
 `JournalEntryBody`
 - `id`: string · `client_id`: string
@@ -163,9 +170,14 @@ since an unreadable entry now comes back as a stub, those three can't answer 500
 - `snapshot`: `JournalSnapshotBody` or null · `money`: `JournalMoneyBody` or null
 - `notes`: `JournalNoteBody[]` (by `written_at`) · `corrections`: `JournalCorrectionBody[]` (by
   `written_at`)
+- `facts_state`: the list's `JournalFactsState`, on every answer that carries an entry (the list,
+  the single read, create, notes, corrections and the tombstone). So the entry page and the
+  composer tell facts withheld from a snapshot that has none (S13, S25).
 - `unreadable`: boolean. True on a stub: an entry with any stored envelope that fails to open. A
-  stub carries `id`, `client_id`, `kind`, `written_at`, `written_on`, `about_date` and
-  `effective_about_date` (all plaintext); every other field is null, false, 0 or empty.
+  stub carries `id`, `client_id`, `kind`, `written_at`, `written_on` and `about_date` (all
+  plaintext), and `effective_about_date`, which is null when an About-date correction of it can't
+  be opened (its date is in `value_ct`; S25); `recalled` is derived from those, and false when
+  `effective_about_date` is null. Every other field is null, false, 0 or empty.
 
 A tombstone is `kind: "deleted"` with `id`, `client_id`, `written_at`, `written_on` and
 `deleted_at`; every other field is null, false, 0 or empty. (`client_id` stays so a late retry of
@@ -178,18 +190,22 @@ the same save finds the tombstone and writes nothing.)
 - `figures`: `JournalFiguresBody` with `account_value`, `cash`, `margin_loan`,
   `maintenance_requirement`, `buying_power`, `call_amount` (each `JournalFigureBody`) and `due_by`
   (`JournalDueByBody`)
-- `facts`: `JournalAccountFactsBody` (section 4)
+- `facts`: `JournalAccountFactsBody` (section 4), or null while `facts_state` is `withheld` (S25)
 
 `JournalFigureBody`: `cents` (effective, after corrections; null when not recorded) ·
-`provenance`: `JournalProvenance` = `typed` | `carried` | `not_recorded` · `carried_from`: snapshot
-id or null · `carried_as_of`: the source snapshot's effective `as_of` when the copy was made (an
-instant, sealed with the copy, so "Carried from {date}" still reads after the source is withdrawn;
-finding 18) or null · `original_cents`: the value before any correction.
+`provenance`: `JournalProvenance` = `typed` | `carried` | `not_recorded`, the effective one: a
+figure a correction set reads `typed` · `original_provenance`: the provenance sealed at insert
+(S14) · `carried_from`: snapshot id or null · `carried_as_of`: the source snapshot's effective
+`as_of` when the copy was made (an instant, sealed with the copy, so "Carried from {date}" still
+reads after the source is withdrawn; finding 18) or null; when the source's figure was itself a
+copy, both name the snapshot where the number was typed (S8) · `original_cents`: the value before
+any correction. `carried_from` and `carried_as_of` are always as sealed.
 `JournalDueByBody`: the same with `at` (instant) and `at_et` in place of `cents`, and `original_at`.
 
 `JournalAccountFactsBody` (at this snapshot, over the whole corrected series)
 - `in_chain`: boolean (false when this snapshot's account value is not typed, so it is skipped:
-  not recorded, or carried; section 4.1)
+  not recorded, or carried; its margin used and excess liquidity then read `not recorded` too;
+  section 4.1, S3)
 - `margin_used`: ratio fact · `excess_liquidity`: cents fact
 - `change`: `{ since_snapshot_id: string | null, cents: cents fact, ratio: ratio fact }`
 - `index`: ratio fact (`I₀ = 1`) · `below_high`: ratio fact · `account_value_alone`: ratio fact
@@ -227,18 +243,22 @@ the order he wrote them).
 - `wrong_if`: string or null, at most 2,000 characters · `exit_price_cents`: cents or null ·
   `no_exit_set`: boolean. An exit price with `no_exit_set: true` is 422. Not on `margin_call`.
 - `closed_by`: `JournalClosedBy` or null; only on `trimmed` and `closed`.
-- `revisit_on`: ET date or null; not before `written_on`.
+- `revisit_on`: ET date or null, any date. One before `written_on` is simply due at once, so a
+  save that waits in the outbox past midnight is never refused for it (S10).
 - `snapshot`: `JournalSnapshotInputBody` or null.
 - `money`: `JournalMoneyInputBody` or null; required on `money`, allowed on any kind (one per entry).
 - An entry with a blank body, no snapshot and no money is 422.
 
 `JournalSnapshotInputBody`
-- `as_of_et`: ET wall time or null. The composer always sends it, frozen when he presses Save
-  (D33): the moment of Save when About is today, else 4:00 PM ET on `about_date` unless he changed
-  it (the composer shows "As of Aug 14, 4:00 PM · Change"). So a save that waits in the outbox
-  keeps the time he typed it, not the time it arrives. Null (any other caller) means `written_at`.
-  An `as_of` after `written_at` by at most 5 minutes (a browser clock ahead of the server's) is
-  clamped to `written_at`; later than that is 422.
+- `as_of_et`: ET wall time or null. The composer always sends it (D33): when About is today, the
+  moment he last typed a figure (the draft keeps it); else 4:00 PM ET on `about_date` unless he
+  changed it (the composer shows "As of Aug 14, 4:00 PM · Change"). It comes from his typing,
+  never from delivery, so a save that waits in the outbox, or a draft saved the next day, keeps
+  the time of its numbers (S2). Null (any other caller: tests, the demo transport, a later
+  restore or import) takes `default_as_of(written_at, about_date)` (3.5): `written_at` when About
+  is today, else 4:00 PM ET on `about_date`, as the spec's Tables say (S16; the fold had written
+  "means `written_at`" for every About date). An `as_of` after `written_at` by at most 5 minutes
+  (a browser clock ahead of the server's) is clamped to `written_at`; later than that is 422.
 - `source`: `broker_screen` | `statement` | `memory` (`import` arrives with slice 5).
 - Six `JournalFigureInputBody` fields and `due_by`: each `{ provenance, cents | at_et,
   carried_from }`. `typed` needs a value; `carried` needs `carried_from` and no value; `not_recorded`
@@ -247,18 +267,31 @@ the order he wrote them).
   it would only repeat older numbers (D34).
 - A `carried` figure names one of his snapshots, not deleted, whose effective `as_of` is at or
   before this one. The server copies that snapshot's effective value for the field, and its
-  effective `as_of` as `carried_as_of`, at save time and seals both (section 7, D8). Anything else
-  is 422. A carried account value is shown, but it is never an observation: the facts skip it
-  (section 4.1, D34).
+  effective `as_of` as `carried_as_of`, at save time and seals both (section 7, D8). When the
+  source's figure is itself a copy that no correction replaced, the new copy takes the source's
+  own `carried_from` and `carried_as_of`, so both always name the snapshot where the number was
+  typed (S8). A source whose figure is not recorded, or whose envelope can't be opened, is 422,
+  as is anything else (S8, S25). A carried account value is shown, but it is never an
+  observation: the facts skip it, and margin used and excess liquidity read `not recorded` beside
+  it (section 4.1, D34, S3).
 
 The composer sends `snapshot: null` when the numbers are "Unchanged", and quick capture's
 "Numbers: carried from Oct 6 (1 day) · Update" line sends no snapshot unless he picks Update (D34).
 In margin-call mode the three numbers (call amount, due by, account value now) are typed or not
 recorded, never carried; the loan and maintenance requirement under "More numbers" are carried.
+In every mode, a snapshot with no typed figure goes as `snapshot: null`, so the composer never
+sends one the server refuses (S11).
 
-`JournalMoneyInputBody`: `direction` · `amount_cents` (> 0) · `occurred_at_et`. The composer always
-sends it, frozen at Save when he left the time as shown (D33). Null (any other caller) means
-`written_at`; the same 5-minute clamp applies, and a later time is 422.
+`JournalMoneyInputBody`: `direction` · `amount_cents` (> 0) · `occurred_at_et`: ET wall time or
+null. The composer always sends the date and time its field shows. The field defaults from About,
+as `as_of` does: the moment he opens Money in or out when About is today, else 4:00 PM ET on
+`about_date` (S1). Null (any other caller) takes `default_as_of(written_at, about_date)` as well,
+never `written_at` alone: a deposit recalled on Oct 7 about Sep 30 and timed at its save would
+land after every snapshot up to Oct 6, and the worked example's Sep 30 step would read +5.8% and
+Oct 6 −38.3% for −42.6% (S1; reproduced, `tmp/followups-2026-10-28/plan-fixup/repro_times.py`,
+exit 0). The same 5-minute clamp applies, and a later time is 422. Money has no correction target
+in 1a, and B2 freezes the target CHECK (3.1), so a wrong money time can only be withdrawn with its
+entry, words included; a money target needs a later migration. That is why the default matters.
 
 `JournalNoteCreateBody`: `client_id` · `body` (not blank, at most 20,000 characters) ·
 `ai_context`: boolean.
@@ -368,7 +401,8 @@ CREATE TABLE IF NOT EXISTS journal_entries (
     CONSTRAINT journal_entries_tombstone_empty CHECK (kind <> 'deleted' OR (
         body_ct IS NULL AND confidence_ct IS NULL AND wrong_if_ct IS NULL AND exit_price_ct IS NULL
         AND closed_by_ct IS NULL AND decision_label_ct IS NULL AND seal_tag IS NULL
-        AND source IS NULL AND about_date IS NULL AND revisit_on IS NULL AND body_chars = 0))
+        AND source IS NULL AND about_date IS NULL AND revisit_on IS NULL AND body_chars = 0
+        AND no_exit_set = FALSE AND ai_excluded = FALSE))
 );
 CREATE INDEX IF NOT EXISTS journal_entries_user_written_idx
     ON journal_entries (user_id, written_at DESC);
@@ -468,24 +502,50 @@ CREATE TABLE IF NOT EXISTS journal_suspicions (
 );
 CREATE INDEX IF NOT EXISTS journal_suspicions_active_idx
     ON journal_suspicions (user_id) WHERE retired_at IS NULL;
+
+-- Snapshots, money, notes, corrections and details are append-only: nothing updates a row. The
+-- tombstone deletes them instead. (journal_suspicions is left out: a replace sets retired_at.)
+CREATE OR REPLACE FUNCTION journal_append_only() RETURNS trigger LANGUAGE plpgsql AS $append$
+BEGIN
+    RAISE EXCEPTION '% is append-only: no row is ever updated', TG_TABLE_NAME;
+END
+$append$;
+DROP TRIGGER IF EXISTS journal_snapshots_append_only ON journal_snapshots;
+CREATE TRIGGER journal_snapshots_append_only BEFORE UPDATE ON journal_snapshots
+    FOR EACH ROW EXECUTE FUNCTION journal_append_only();
+DROP TRIGGER IF EXISTS journal_money_append_only ON journal_money;
+CREATE TRIGGER journal_money_append_only BEFORE UPDATE ON journal_money
+    FOR EACH ROW EXECUTE FUNCTION journal_append_only();
+DROP TRIGGER IF EXISTS journal_later_notes_append_only ON journal_later_notes;
+CREATE TRIGGER journal_later_notes_append_only BEFORE UPDATE ON journal_later_notes
+    FOR EACH ROW EXECUTE FUNCTION journal_append_only();
+DROP TRIGGER IF EXISTS journal_corrections_append_only ON journal_corrections;
+CREATE TRIGGER journal_corrections_append_only BEFORE UPDATE ON journal_corrections
+    FOR EACH ROW EXECUTE FUNCTION journal_append_only();
+DROP TRIGGER IF EXISTS journal_details_append_only ON journal_details;
+CREATE TRIGGER journal_details_append_only BEFORE UPDATE ON journal_details
+    FOR EACH ROW EXECUTE FUNCTION journal_append_only();
 ```
 
 Notes on the DDL:
-- `figures_ct` holds the JSON `{ "figures": {...}, "positions": [] }` with `schema_version` 1.
-  Each figure carries `provenance`, its value, `carried_from` and `carried_as_of`. 1a always writes
-  `positions: []`; 1b fills it with `RealLeg[]`, so no data migration follows. The plaintext is
-  padded before encryption (section 3.4, D32).
+- `figures_ct` holds the JSON `{"schema_version":1,"figures":{…},"positions":[]}`, written with
+  no whitespace, its seven figures in the seal message's order and shape (3.3, item 11): each
+  carries `provenance`, its value (`cents`, or `at` for `due_by`), `carried_from` and
+  `carried_as_of`. 1a always writes `positions: []`; 1b fills it with `RealLeg[]`, so no data
+  migration follows. The plaintext is padded before encryption (section 3.4, D32), and 3.3's
+  padded `figures_ct` vector pins the result (S5).
 - The migration body is frozen once it has run on any database that isn't disposable (his local
   Postgres, or production after a push): the ledger matches only version and name
   (`db/schema_verifier.rs:36-53`), so an edited body would go unnoticed. B2 and B3 land in one
   push, and until B3's T16 passes, B2's migration runs only on disposable databases. A change
   after that is a new migration (finding 21).
-- The splitter keeps `$seal$` bodies whole (`migrations.rs:677-699` tests `$body$`). This is the
-  schema's first plpgsql function.
+- The splitter keeps `$seal$` and `$append$` bodies whole (`migrations.rs:677-699` tests
+  `$body$`). These are the schema's first plpgsql functions.
 - `schema_verifier.rs:65-81` gains one `LIMIT 0` probe per table (the spec does not mention the
   verifier; section 7, C6).
 - A version pin test in the file's own pattern (`migrations.rs:709-808`) asserts the name, the
-  version, `UNIQUE (user_id, client_id)` and the trigger.
+  version, `UNIQUE (user_id, client_id)`, the tombstone CHECK with its two flags (S6) and all six
+  triggers (S7).
 - `journal_rules`, `journal_review` and `journal_ai` come with slices 2, 3 and 4. `journal_review`
   adds `prompt` and `rule_check_id` to `journal_later_notes`.
 
@@ -522,7 +582,8 @@ pub enum Inserted { New(StoredEntry), Replayed(StoredEntry) }
   could otherwise commit between its steps), then deletes the entry's snapshot, money, notes,
   corrections and details, then sets
   `kind = 'deleted'`, `deleted_at = now`, every `_ct` column, `seal_tag`, `source`, `about_date` and
-  `revisit_on` to null, and `body_chars` to 0. The row keeps `id`, `user_id`, `client_id`,
+  `revisit_on` to null, `body_chars` to 0, and `no_exit_set` and `ai_excluded` to false, so the row
+  no longer says he checked "No exit set" (S6). The row keeps `id`, `user_id`, `client_id`,
   `written_at`, `deleted_at` and `kind` (spec: "keeps only id, written_at, deleted_at and kind
   deleted"; `user_id` and `client_id` are keys, not content). A second call returns the same
   tombstone and writes nothing.
@@ -579,14 +640,17 @@ The spec's dev key, `openssl rand -base64 32 | tr '+/' '-_' | tr -d '='`, makes 
   `from_env_prefixed("JOURNAL_ENCRYPTION")` (finding 9). The rules live in `parse_ring`
   (`runtime_guardrails/config.rs:240-349`, HEAD): key ids match `[A-Za-z0-9_-]{1,32}`, no
   duplicate id, no duplicate key material, no placeholder text, a map that isn't empty, and an
-  active id that is in the map. B1 extracts them into one shared function that `parse_ring` keeps
-  calling with its violations unchanged. The lax parse `from_env` uses (`crypto.rs:94-109`)
+  active id that is in the map. B1 extracts them into one shared function that returns every rule
+  broken, in `parse_ring`'s order, and `parse_ring` keeps calling it, so startup's report still
+  lists every violation at once (S22). The lax parse `from_env` uses (`crypto.rs:94-109`)
   accepts a key id holding `.`, which writes a five-part envelope that the four-part decrypt
   refuses: every save would succeed and every read would fail.
-- It also refuses (None) a ring that shares a key with the AI-key ring: the spec's reason for a
-  separate ring, enforced. `from_env` returns a ring whose active id is missing from its map and
-  only fails on each encrypt (`crypto.rs:118-122`, `:126-129`); the journal says "Not set up" at
-  boot instead.
+- It also refuses (None) a ring that shares key bytes with any other key the server loads: the
+  AI-key ring and its legacy key (`crypto.rs:94-117`), and the session-signing ring and its legacy
+  key (`services/auth/cookies.rs:51-68`, at `4ce1acdd`). That is the spec's reason for a separate
+  ring, enforced, and widened to the session ring by S9. `from_env` returns a ring whose active id
+  is missing from its map and only fails on each encrypt (`crypto.rs:118-122`, `:126-129`); the
+  journal says "Not set up" at boot instead.
 - At boot it logs one line: `journal storage: ready (n keys)` or `journal storage: not set up
   (reason)`, never key material. The journal ring is not added to the production startup
   guardrails (`server.rs:174-196`), so a missing journal key can never stop the site; the journal
@@ -643,27 +707,70 @@ entries or records why not. A v1 tag is never recomputed, since it has no writer
 
 Restore (1b) recomputes the message from the export, which carries each of these fields (the
 original `as_of` and `original_cents`, not the corrected ones), with the restoring account's
-`user_id`. An entry whose tag doesn't verify lands as Imported, written now.
+`user_id`. An entry whose tag doesn't verify lands as Imported, written now. The export is built
+from the stored rows, not from `JournalEntryBody`: the body shows effective values (a corrected
+figure's `provenance` reads `typed`, and from slice 4 D23's correction moves `ai_excluded`), so
+1b's export carries every sealed field as stored: each figure's `original_provenance`,
+`original_cents` or `original_at`, `carried_from` and `carried_as_of`, the original `as_of`, and
+`ai_excluded` as inserted (S14).
 
-**Known-answer vectors** (T13 and T14). Both use the test key of bytes `0x00` to `0x1f` under key
-id `k1`, user `0123456789abcdef0123456789abcdef` and entry id
-`00000000-0000-4000-8000-000000000001`; the other ids follow the same pattern and end in `0002`
-(the client id), `0003` (the snapshot) and `0004` (the carried figure's source).
-- The seal: client id `…0002`, `written_at` `2026-09-29T18:14:00.000000Z`, kind `margin_call`,
-  source `typed`, About null, body "Illustrative test body.", both flags false, every other entry
-  field null; snapshot `…0003` at the same instant from `broker_screen`: account value typed
-  3404700, cash typed 0, margin loan carried 5000250 from `…0004` as of
-  `2026-09-25T20:00:00.000000Z`, maintenance typed 3679700, buying power not recorded, call typed
-  275000, due by typed `2026-10-01T20:00:00.000000Z`, no positions; no money. The message is 1,403
-  bytes with SHA-256 `f2e9b7d54bb0c88e8b4bf7c7598f60c40fa6016ef6d90d889c48aed1e56fc053`, and the
-  tag is `v1.k1.CDn9gDX6re4DwUJKfPe9suLUVKR0VSFhV2cMkEmzxq4`. Python's standard library and the
-  API crate's own `serde_json` (`preserve_order`), `hmac` and `sha2` give the same bytes and the
-  same tag (`tmp/followups-2026-10-28/plan/seal_kat.py` and `seal-kat/`, scratch).
-- The envelope: nonce bytes `0x00` to `0x0b`, AAD
-  `journal.v1|0123456789abcdef0123456789abcdef|journal_entries|00000000-0000-4000-8000-000000000001|body_ct|k1`,
-  plaintext "Illustrative test body.":
-  `v1.k1.AAECAwQFBgcICQoL.Dm66braRsHr5KOHukZ0dHvf25VuUAnFutIbvhoUFk2ab5svVI8v4` (`aes-gcm 0.10.3`).
-  The same envelope under an AAD that names `wrong_if_ct` fails to open.
+**Known-answer vectors** (T13 and T14). All use the test key of bytes `0x00` to `0x1f` under key
+id `k1` and user `0123456789abcdef0123456789abcdef`. Ids follow one pattern,
+`00000000-0000-4000-8000-0000000000NN`, written `…NN` below. One vector per path pins little: a
+builder that wrote `about_date` as an instant, `confidence` as a string, another `closed_by`
+spelling or money's keys in another order would pass a vector where those are null (S5). So
+three seals cover every field 1a writes, and three envelopes go through `JournalCrypto`'s own
+context builder.
+- Seal 1, kind `margin_call`: entry `…01`, client id `…02`, `written_at`
+  `2026-09-29T18:14:00.000000Z`, source `typed`, About null, body "Illustrative test body.", both
+  flags false, every other entry field null; snapshot `…03` at the same instant from
+  `broker_screen`: account value typed 3404700, cash typed 0, margin loan carried 5000250 from
+  `…04` as of `2026-09-25T20:00:00.000000Z`, maintenance typed 3679700, buying power not
+  recorded, call typed 275000, due by typed `2026-10-01T20:00:00.000000Z`, no positions; no
+  money. The message is 1,403 bytes with SHA-256
+  `f2e9b7d54bb0c88e8b4bf7c7598f60c40fa6016ef6d90d889c48aed1e56fc053`, and the tag is
+  `v1.k1.CDn9gDX6re4DwUJKfPe9suLUVKR0VSFhV2cMkEmzxq4`.
+- Seal 2, kind `entered`, with every field that kind takes in 1a (S5): entry `…11`, client id
+  `…12`, `written_at` `2026-10-02T20:30:00.000000Z`, source `typed`, About `2026-10-01`, body
+  "Illustrative entered body.", `ai_excluded` true, confidence 70, "I'm wrong if…" "Illustrative
+  wrong-if text.", exit price 800, `no_exit_set` false, `revisit_on` `2026-10-09`, no snapshot;
+  money `…15` in, 250000, at `2026-10-01T20:00:00.000000Z` (4:00 PM ET on its About date). The
+  message is 728 bytes with SHA-256
+  `289cc59c906f0593763af717a86b357ca60a1e6ba0ca872878a2238360669d79`, and the tag is
+  `v1.k1.GsvOBq5cvHMTOsdfLMJRiVNyjAhZxBn1IjWmNIK3wTc`.
+- Seal 3, kind `closed` (S5): entry `…21`, client id `…22`, `written_at`
+  `2026-10-06T20:00:00.000000Z`, source `paste`, About null, body "Illustrative closed body.",
+  `ai_excluded` false, "I'm wrong if…" as in seal 2, no exit price, `no_exit_set` true, closed by
+  `broker_liquidation`; snapshot `…23` at the same instant from `statement`: account value typed
+  3160900, cash not recorded, margin loan typed 2911220, maintenance carried 3679700 from `…03` as
+  of `2026-09-29T18:14:00.000000Z`, buying power typed 0, call not recorded, due by not recorded
+  (`"at":null`); no money. The message is 1,458 bytes with SHA-256
+  `b47755a415d788206ff079e83e97042873a1689eb7b3bbc31421da97c574099b`, and the tag is
+  `v1.k1.6VzmOBx_68z9QYmKTtnt9nJWArs-QLQeZ7PnjKkXlBE`.
+- The contexts: the builder's 13 strings for row `…01`, one per encrypted column of
+  `journal_core`, are a frozen list in T13: `journal_entries` `body_ct`, `confidence_ct`,
+  `wrong_if_ct`, `exit_price_ct`, `closed_by_ct` and `decision_label_ct`; `journal_snapshots`
+  `figures_ct`; `journal_money` `amount_ct`; `journal_later_notes` `body_ct`;
+  `journal_corrections` `value_ct` and `reason_ct`; `journal_details` `value_ct`; and
+  `journal_suspicions` `text_ct`. Each reads `journal.v1|{user}|{table}|{row}|{column}`.
+- Envelope 1, `body_ct` of entry `…01`: nonce bytes `0x00` to `0x0b`, plaintext "Illustrative test
+  body.": `v1.k1.AAECAwQFBgcICQoL.Dm66braRsHr5KOHukZ0dHvf25VuUAnFutIbvhoUFk2ab5svVI8v4`. Its AAD
+  is
+  `journal.v1|0123456789abcdef0123456789abcdef|journal_entries|00000000-0000-4000-8000-000000000001|body_ct|k1`.
+- Envelope 2, a padded `amount_ct` (D32) of money `…15`: nonce bytes `0x10` to `0x1b`, plaintext
+  `0000000000250000`:
+  `v1.k1.EBESExQVFhcYGRob.Tc6oJnn5CoP6RTooP0lZY8AgGJDD-7uDZO8AxPI6piQ`.
+- Envelope 3, a padded `figures_ct` (D32) of snapshot `…03`: nonce bytes `0x20` to `0x2b`,
+  plaintext seal 1's seven figures as 3.1 writes them (785 bytes) and 239 spaces, 1,024 bytes with
+  SHA-256 `849618429078a8097f423b4d8037de3efa613e6be65f5b57ca83ebdeb104b544`. The envelope is 1,410
+  characters with SHA-256 `05dc495eba3bc70ae6303e7d87e54642fb1658333e8f5fbaac14680294bd007d`; T13
+  holds it in full.
+
+Each envelope fails to open under any of the other 12 contexts. Python's standard library and the
+API crate's own `serde_json` (`preserve_order`), `hmac` and `sha2` give the same three messages
+and tags; the crate's `aes-gcm 0.10.3` and Node's `crypto` give the same three envelopes
+(`tmp/followups-2026-10-28/plan-fixup/kat/`, scratch: `seal_vectors.py`, `rs/` and
+`envelope_check.mjs`, each exit 0). Seal 1 and envelope 1 are the fold's, unchanged.
 
 **No key, no writes.** With no ring, every write answers 503 `storage_not_set_up` and nothing is
 written; the list answers `storage: "not_set_up"`. The journal never writes plaintext, and never
@@ -671,20 +778,27 @@ writes under a key that dies with the process.
 
 **Key rotation.** Add a key id to `JOURNAL_ENCRYPTION_KEYS_JSON` and point
 `JOURNAL_ENCRYPTION_ACTIVE_KEY_ID` at it. New rows use it; old rows still decrypt under the key
-their envelope names. A retired key stays in the map for as long as any row uses it; removing it
-makes those rows unreadable (500 `journal_unreadable`, "Couldn't load"). Unlike the AI-key ring,
-the journal never re-encrypts on read: that rewrap writes ciphertext back
-(`services/auth/service.rs:300`), and a sealed row has no writer for it. Re-encrypting old rows
-after a compromised key would need a tool of its own, outside the three writers (section 7, C4).
+their envelope names. Unlike the AI-key ring, the journal never re-encrypts on read: that rewrap
+writes ciphertext back (`services/auth/service.rs:300`), and a sealed row has no writer for it.
+Re-encrypting old rows after a compromised key would need a tool of its own, outside the three
+writers (section 7, C4). A retired key stays in the map while any envelope uses it, and while any
+live entry's `seal_tag` names it, which for a sealed entry means for good: the seal key derives
+from the key the tag names, and a tag is never rewritten. So such a tool frees no key, and
+removing one turns those entries' envelopes into stubs with the facts withheld ("Couldn't load",
+below) and every later export of them into an Imported restore (S9, S25). A compromised key voids
+the seals made under it, since its holder can forge them for those entries (R5).
 
 **Unreadable rows** (D12, finding 15). If any stored envelope of an entry (the entry, its
 snapshot, money, notes or corrections) fails to decrypt or authenticate, the reads still answer
 200: that entry comes back as a stub (`unreadable: true`, its plaintext keys and dates only), and
-the list's `facts` is `withheld`, so no account fact is computed from a series with a hole in it.
+`facts_state` is `withheld`, so no account fact is computed from a series with a hole in it.
 The page shows the stub as "Couldn't load" with "Delete entry…", and the account frame in its
-"Couldn't load" state. A repeated create whose `client_id` finds an unreadable entry gets its stub
-with 200. A note or a correction on a stub answers 500 `journal_unreadable` and writes nothing;
-`DELETE` works, because a tombstone needs no decryption. A suspicion that can't be
+"Couldn't load" state. The composer, which runs `facts.ts` over the same series, shows "Couldn't
+load" in place of every fact it would compute from the series while `facts_state` is `withheld`
+(S13). A repeated create whose `client_id` finds an unreadable entry gets its stub with 200; a
+create whose `carried_from` names a snapshot that can't be opened is 422, since there is no value
+to copy (S25). A note or a correction on a stub answers 500 `journal_unreadable` and writes
+nothing; `DELETE` works, because a tombstone needs no decryption. A suspicion that can't be
 opened makes both suspicion routes answer 500 `journal_unreadable`. Every failure logs
 `journal.decrypt_failed` with the table, row, column and failure kind (`CryptoFailure::as_str`,
 `crypto.rs:72-82`), never content.
@@ -711,7 +825,8 @@ zero-padded decimals (`0000000000250000`; a later negative value keeps the width
 `decision_label_ct` are right-padded with spaces to 24 bytes. The figures JSON is right-padded with
 spaces to the next multiple of 1,024 bytes (JSON allows trailing whitespace). The service strips
 the padding after it decrypts. Free text keeps its length; `body_chars` is plaintext anyway. The
-format is fixed at the first owner row, like the seal: sealed rows are never re-encrypted.
+format is fixed at the first owner row, like the seal: sealed rows are never re-encrypted. 3.3's
+envelopes 2 and 3 pin a padded amount and a padded figures JSON (S5).
 
 ### 3.5 Dates and recalled, derived in the store
 
@@ -719,7 +834,8 @@ Pure functions in `store.rs`, where the spec puts them ("one function in
 `services/journal/store.rs` decides it on every read"):
 - `et_date(instant)` and `et_wall(instant)`; `parse_et_wall(text)` (gap → error, overlap → earlier).
 - `default_as_of(written_at, about_date)`: `written_at` when About is today, else 4:00 PM ET on the
-  date.
+  date. It is the default for a null `as_of_et` and for a null `occurred_at_et` alike (2.4; S1,
+  S16).
 - `effective_about_date(about_date, corrections, written_on)`.
 - `is_recalled(kind, written_on, effective_about_date)`: true when the kind is `imported`, or the
   effective About date is before `written_on`. Saved at 9:30 PM ET on Sep 29 (01:30Z on Sep 30)
@@ -743,9 +859,21 @@ position value, P/L), R, where the money went and the computed rule checks come 
 - **Valued snapshots** are those whose effective account value is typed: typed at save, or set by
   a correction (a correction is his typed value). A snapshot whose account value is not recorded
   or carried is skipped by the index, the high and the change, and its chain facts (the change,
-  the index, below the high, account value alone, lost since the high) read `not recorded`. Its
-  margin used and excess liquidity still come from its effective figures, typed or carried, as the
-  composer's Computed box and the margin-call cross-check need (D34).
+  the index, below the high, account value alone, lost since the high) read `not recorded`.
+- **Margin used and excess liquidity need a typed account value** too (S3, D34). The loan and the
+  maintenance requirement beside it may be typed or carried, so margin-call mode's carried "More
+  numbers" still give the cross-check: it needs a carried maintenance requirement beside a typed
+  account value, never a carried account value. A snapshot whose account value is carried reads
+  `not recorded` for both. The fold had let both use a carried value, which divides a fresh loan
+  by an old value: a 10:06 AM money-in snapshot carrying Sep 29's $34,047 beside the loan the
+  $2,500 deposit paid down ($47,555.40) read 140%, where the account held at least $36,547, which
+  gives 130% (`repro_times.py`). The spec's table derived both from "two typed figures" (spec
+  lines 533-534); the loan and maintenance half of that is relaxed, and spec 08's appendix says
+  so.
+- **The mapping lives in the service** (S4). The service passes a carried account value that no
+  correction replaced as `None` to `facts.rs` (4.4), so the pure function never sees a copy and
+  `FactSnapshot` needs no provenance; `facts.ts`'s `factInputs` does the same in the browser
+  (4.5). The rule is tested where it lives, through the service (T2b).
 - **Why a carried value is skipped** (finding 1, critical). A carried account value repeats an
   older observation. Counted as a new one, it puts any money between the two in its step. A
   money-in entry saved at 10:06 AM on Sep 30 that carried Sep 29's $34,047 would read −38.4% below
@@ -762,8 +890,8 @@ position value, P/L), R, where the money went and the computed rule checks come 
 
 | Fact | Formula (cents in, f64 out) | `not recorded` | `—` (dash) |
 |---|---|---|---|
-| Margin used | `loan ÷ V` | loan or V missing | V ≤ 0, or past a chain break |
-| Excess liquidity | `V − maint` (cents) | V or maintenance missing | never; dollars carry on past a break |
+| Margin used | `loan ÷ V` | loan missing, or V not typed (S3) | V ≤ 0, or past a chain break |
+| Excess liquidity | `V − maint` (cents) | maintenance missing, or V not typed (S3) | never; dollars carry on past a break |
 | Change, dollars | `Vₖ − Vₖ₋₁ − Fₖ` | first valued snapshot, or V not typed | never |
 | Change, percent | `(Vₖ − Fₖ) ÷ Vₖ₋₁ − 1` | as dollars | `Vₖ₋₁ ≤ 0`, or past a break |
 | Chain-linked index | `I₀ = 1`; `Iₖ = Iₖ₋₁ × stepₖ` | V not typed | at and past a break |
@@ -811,12 +939,21 @@ pub fn round_half_away(x: f64, decimals: u32) -> f64;
 ```
 
 Pure, with no I/O and no clock. The service builds the inputs from decrypted, corrected rows and
-maps `SnapshotFacts` onto `JournalAccountFactsBody`.
+maps `SnapshotFacts` onto `JournalAccountFactsBody`. `account_value` is `Some` only when the
+effective value is typed (typed at save, or set by a correction); a carried one is `None`, so the
+function gives it no margin used, no excess liquidity and no place in the chain (4.1, S4).
 
 ### 4.5 The pinned TypeScript copy: `libs/api/src/lib/journal/facts.ts`
 
 The same two functions with the same inputs. Instants compare as their canonical strings, so the
-TypeScript copy does no time-zone work. It adds two browser-only helpers the server never needs:
+TypeScript copy does no time-zone work, and it refuses (throws on) any instant that isn't the
+27-character `YYYY-MM-DDTHH:MM:SS.ffffffZ`: `toISOString()` writes three fractional digits, and
+`2026-09-30T14:05:00.000Z` sorts after `2026-09-30T14:05:00.000000Z` (checked in Node), so a
+deposit and a snapshot in the same minute would fall into different steps (S12). Instants made in
+the browser come from F1's one helper in `et.ts`. It also exports `factInputs(entries)`, the
+browser's copy of the service's mapping: it skips tombstones and stubs, applies corrections, and
+passes a carried account value as null (4.1, S4). The composer's preview and the demo transport
+both build their inputs with it. It adds two browser-only helpers the server never needs:
 - `sanityMove(prevCents, nextCents)`: `{ direction, ratio }` when `|next − prev| ÷ prev > 0.40`
   ("This is {90}% below your {Sep 25} snapshot ({$36,146}). Keep it?"), else null. No question when
   the previous value is missing or 0.
@@ -831,11 +968,12 @@ holds named cases:
 - `worked_example`: the spec's 12 snapshots, with the Sep 29 snapshot at 2:14 PM ET, the Sep 30
   snapshot at 3:40 PM ET, the $2,500 in at 10:05 AM ET on Sep 30, the others at 4:00 PM ET, and the
   Aug 4 statement written on Aug 21. Its Aug 4 account value alone is 0.0% (C9).
-- Edge cases: `missing_value_bridged`, `carried_value_is_not_an_observation` (a deposit, then a
-  snapshot whose account value is carried: every typed snapshot's index equals the no-deposit run
-  with the end value lower by the deposit; finding 1), `zero_value_breaks_chain`,
-  `deposit_last_step_before`, `deposit_last_step_after_previous`, `no_deposit_baseline`
-  (criterion 7), `recalled_high` and `high_tie`.
+- Edge cases: `missing_value_bridged`, `zero_value_breaks_chain`, `deposit_last_step_before`,
+  `deposit_last_step_after_previous`, `no_deposit_baseline` (criterion 7), `recalled_high` and
+  `high_tie`. (The fold's `carried_value_is_not_an_observation` is gone from the fixture: its
+  inputs have no provenance, so a carried value reaches `facts.rs` as a missing one, and
+  `missing_value_bridged` already covers that. The rule is the service's mapping, tested as T2b;
+  S4.)
 - `rounding_edges`.
 - Per case, `expect_display` holds the spec's own figures ("23%", "−42.6%", $22,142, −$2,750,
   +$1,121), and `expect_exact` holds each unrounded value as a string: the text `serde_json`
@@ -859,8 +997,10 @@ with the formula. The TypeScript test, `libs/api/src/lib/journal/facts.spec.ts`,
 two blocks. Both copies are pinned to one fixture, and the fixture is in both tests' Nx inputs, so
 neither can drift unnoticed (finding 3): it sits in `@convexa/api`'s own root, so `nx affected`
 schedules `facts.spec.ts` when it changes, and B3 adds it to `api:test`'s inputs
-(`apps/api/project.json`, beside `libs/api/src/generated/**/*`) and to `rustScope` in
-`tools/verify.mjs:131-132`. Nx 23 counts a file in a target's inputs as affecting that project:
+(`apps/api/project.json`, beside `libs/api/src/generated/**/*`). That input alone brings T1 into
+`npm run verify`: since `40709185`, verify runs each project whose test inputs list a changed
+file (`tools/verify.mjs:1-9`, `planProjects` at `:168-194`), and the `rustScope` this plan once
+edited is gone (S23). Nx 23 counts a file in a target's inputs as affecting that project:
 `nx show projects --affected --files=libs/api/src/generated/schema.ts` lists `api`, while the
 same query for a file under `libs/api/src/lib/` does not, and one under
 `apps/api/tests/fixtures/` lists only `api`. So at the spec's path, a Rust formula change that
@@ -897,25 +1037,34 @@ uncached contract check first (`libs/api/package.json` `dependsOn`), which runs 
 - Files: `apps/api/src/services/auth/crypto.rs`, `apps/api/src/runtime_guardrails/config.rs`.
 - Follows `from_env` and `encrypt`/`decrypt` (`crypto.rs:93-199`).
 - Extracts `parse_ring`'s key-map rules (`runtime_guardrails/config.rs:240-349`) into one pure
-  function that returns the keys or the first rule broken; `parse_ring` calls it and pushes the
-  same violations as before, so its refusal tests (`signing_ring_complete_refusal_matrix` and the
-  rest of that file's tests) pass unchanged. `JournalCrypto` (B3) uses it (finding 9).
+  function that returns the keys and every rule broken, in `parse_ring`'s order. `parse_ring`
+  pushes them all in one pass today (`:280-337`: a bad key id, duplicate material and a missing
+  active id come out together), and a first-fault function would drop all but one from startup's
+  report (S22). `parse_ring` calls it, adds its own legacy check (`:338-343`), and pushes the same
+  violations as before, so its refusal tests (`signing_ring_complete_refusal_matrix` and the rest
+  of that file's tests) pass unchanged. `JournalCrypto` (B3) uses it and treats any violation as
+  "not set up" (finding 9).
 - Tests (T12): `from_values` and `from_env_prefixed` return None when either variable is missing,
   on malformed JSON and on a 31-byte key, and never pick up a legacy or ephemeral key; an AAD
   round trip; and a wrong context fails with `Authentication`.
 - Env tests use a unique prefix per test, so tests running in parallel never race on the process
   environment.
+- The refusal matrix gains one case with two faults at once, a key id holding `.` and an active
+  id missing from the map, asserting both violations. Its other cases feed one fault each and
+  assert with `.any()` (`:608-662`), so none of them can see a lost violation (S22).
 - Check: `cargo test -p api-rust --lib services::auth::crypto` and
   `cargo test -p api-rust --lib runtime_guardrails::config` exit 0, and so do the rewrap tests in
-  `services::auth::service`. Mutation: make `from_env_prefixed` fall back to the module's
-  ephemeral key, and one test goes red.
+  `services::auth::service`. Mutations: make `from_env_prefixed` fall back to the module's
+  ephemeral key, and one test goes red; make the extracted function stop at its first rule, and
+  the two-fault case goes red.
 
 **B2. Migration `journal_core` and the verifier probes.** S.
 - Files: `apps/api/src/db/migrations.rs` (the entry and a pin test), `apps/api/src/db/schema_verifier.rs`.
 - Follows `migrations.rs:310-328` and its pin tests (`:709-808`).
 - Check: `cargo test -p api-rust --lib db::migrations` exits 0. Then create a disposable database
   under `TEST_DATABASE_URL` and run the real `postgres-migrate` on it twice: both exit 0, the second
-  is a no-op, and `psql -c '\d journal_entries'` shows the trigger and the constraints (the pattern
+  is a no-op, and `psql -c '\d journal_entries'` shows the trigger and the constraints, and `\d` of
+  each of the five child tables shows its append-only trigger (S7; the pattern
   of `tests/chain_snapshot_export_postgres.rs:15-60`). Postgres listens on `:5432` locally; never
   point it at a shared database.
 - B2 lands in the same push as B3, and its migration runs on no database but a disposable one
@@ -935,26 +1084,33 @@ no route exists yet, so the contract does not move.
   `services/session_chain_archive/audit.rs:329` and `tests/batch_backtest_cli.rs:65`, as
   `3d6a9c80` edited the same six files for its own field.
 - Also edited, for the fixture's Nx inputs (finding 3): `apps/api/project.json` (`api:test` gains
-  `{workspaceRoot}/libs/api/src/lib/journal/worked-example.json` in `inputs`) and
-  `tools/verify.mjs` (`rustScope` at `:131-132` gains that path, so `--exclude=api` is not added
-  when only the fixture changed). Changing a `project.json` makes `npm run verify` run its task
-  graph check (`checkContractGateWiring`), which must still exit 0. At the fold another lane held
-  an uncommitted rework of `tools/verify.mjs` that drops `rustScope` and schedules every project
-  whose test inputs list a changed file. If it has landed by B3, the `rustScope` edit is moot: the
-  `api:test` input alone brings T1 in. Build on it only once it is committed.
+  `{workspaceRoot}/libs/api/src/lib/journal/worked-example.json` in `inputs`). That input alone
+  brings T1 into `npm run verify`, which since `40709185` runs each project whose test inputs list
+  a changed file (`tools/verify.mjs:1-9`, `planProjects` at `:168-194`); `rustScope` is gone, and
+  B3 doesn't touch `tools/verify.mjs` (S23). Changing a `project.json` makes `npm run verify` run
+  its task graph check (`checkContractGateWiring`), which must still exit 0.
+- Also edited: `apps/api/tests/production_runtime_guardrails_isolation.rs`. The guard against
+  secrets in `.env.example`, `docs/ENVIRONMENTS.md` and the Dockerfile matches
+  `auth_session_keys_json={` and `ai_key_encryption_keys_json={` (`:106-123`), and gains
+  `journal_encryption_keys_json={`, a key map just as secret, with one canary assert beside the
+  others (`:140-143`) to show it bites (S28).
 - `mod.rs` holds `JournalService`. It validates (2.4), resolves carried figures, mints ids and
   `written_at` from an injectable clock, seals, calls the store, opens, derives recalled and the
   facts, and returns domain values for the routes.
 - Follows `services/auth/store.rs:590-611` (enum dispatch), `:136-186` (the JSON file), and
   `db/pg_auth.rs` (placement), without its `block_in_place`.
-- Tests: T1 (with T2 to T6 and T8 as its cases), T7, T9 to T11, T13 to T16, T26.
-- Check: `cargo test -p api-rust --lib services::journal` exits 0;
+- Tests: T1 (with T2 to T6 and T8 as its cases), T2b, T7, T9 to T11, T12's
+  `journal_ring_is_strict`, T13 to T16, T26. The file `services/journal/crypto.rs` exists only
+  from B3, so B1 can't write T12's journal half; B3 owns it (S21).
+- Check: `cargo test -p api-rust --lib services::journal` and
+  `cargo test -p api-rust --test production_runtime_guardrails_isolation` exit 0 (S28);
   `cargo check -p api-rust --features postgres` exits 0 (no other check compiles `pg_journal.rs`;
   finding 12). Then
   `TEST_DATABASE_URL=… cargo test -p api-rust --features postgres --test journal_store_postgres`
   exits 0; that test never skips (the house rule at
   `tests/postgres_release_safety_postgres.rs:3`, `:20-21`). Each owed test is broken once on
-  purpose and seen red (section 6).
+  purpose and seen red (section 6); for T12's journal half, put back the lax parse, and its `.`
+  key-id case goes red (S21).
 
 **B4. The routes and the contract, in one commit.** L. Routes without regenerated artifacts would
 fail the contract check, and PROJECT_CONTEXT's `[route-growth-repins-api-artifact-oracle]`
@@ -1015,7 +1171,14 @@ fail the contract check, and PROJECT_CONTEXT's `[route-growth-repins-api-artifac
    `--test capacity_identity` now catches a missed re-pin._
 9. `.spire/clusters/tech/state/conformance/owner-gated.json`: two envelope rows,
    `GET /api/journal/entries` (`storage` string, `entries` array) and `GET /api/journal/suspicions`,
-   as `3d6a9c80` added conformance rows for its routes.
+   as `3d6a9c80` added conformance rows for its routes. And the refusal rows every owner-only
+   operation has (S27): eight non-owner 403 rows in `auth-gated.json` (`auth: true`, the
+   `*_non_owner_refused` shape) and eight signed-out 403 rows in `public-surface.json` (the
+   `*_signed_out_refused` shape), each with `expect_status: 403` and `error` and `message` strings.
+   The POST and PUT rows send a small body, as `rec_post_*_refused` does, and the `{id}` rows use
+   `00000000-0000-4000-8000-000000000000`; the runner sends any method
+   (`.claude/tools/interface_conformance.mjs:339`). The 14 owner-only operations have both rows
+   today. The suite is inert while CI is off, so the rows cost no minutes.
 
 - Check, in this order:
   1. `npm run api:contract:check` exits 0, and so does
@@ -1081,8 +1244,15 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
 - Files: `libs/api/src/lib/journal/{api,facts,et}.ts`, `facts.spec.ts`, `libs/api/src/index.ts`
   (exports), `libs/api/src/lib/client.ts:22-28`, `libs/api/src/lib/convexa.ts` (export
   `ownerGateRefusal`), `libs/api/src/lib/server-error-codes.spec.ts` (T25).
-- `et.ts` holds `Intl`-based formatters (`timeZone: 'America/New_York'`) and, for the demo only, a
-  wall-time-to-instant helper.
+- `et.ts` holds `Intl`-based formatters (`timeZone: 'America/New_York'`) and the browser's one
+  pair of instant helpers (S12): `instantText(ms)` writes the 27-character
+  `YYYY-MM-DDTHH:MM:SS.ffffffZ` (never `toISOString()`, which writes three digits), and
+  `etWallToInstant(wall)` turns an ET wall time into that form. The composer's preview needs them
+  to place the draft among the server's instants, so they serve it and the demo alike. Every time
+  the browser takes for the journal reads `appNowMs()` (`demo/workspace.ts:194-197`, at
+  `4ce1acdd`): the demo's scenario clock on a demo build (anchored at `2026-10-07T18:30:00Z`,
+  `:26`), the wall clock on a live one (S12, S29).
+- `facts.ts` holds 4.5's two functions, `factInputs`, `sanityMove` and `crossCheck`.
 - Follows the facade pattern of HEAD `convexa.ts:2121-2142` (`getBook`/`putBook`) and the error
   handling of 2.5: `ownerGateRefusal` first, so a refused journal call throws the same
   `AuthError` the rest of the client throws, then the journal's own `error` code on `ApiError`.
@@ -1097,7 +1267,9 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
 - Tests: T20, T25.
 - Check: `NX_DAEMON=false npx nx test @convexa/api` exits 0, then `npx nx typecheck @convexa/api`
   exits 0. Mutations: change the step's evaluation order in `facts.ts`, and the exact block goes
-  red; make the facade throw `ApiError` on a 403, and T25 goes red.
+  red; make the facade throw `ApiError` on a 403, and T25 goes red; let `factInputs` pass a carried
+  account value through, or let `facts.ts` accept a three-digit instant, and T20 goes red (S4,
+  S12).
 
 **F2. The demo transport and the 1a seed.** M.
 - Files: `libs/api/src/lib/demo/journal.ts` (new: the seed and the handlers),
@@ -1125,7 +1297,11 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
     differences are this plan's: the sample prints "—" for Aug 4's account value alone (it
     mirrors the spec's cell; the seed computes 0.0%, C9), and the seed carries no snapshot
     whose account value is carried (D34).
-  - Visitor writes land in demo storage, with written times from the demo clock (`appNowMs`).
+  - Visitor writes land in demo storage, with written times from the demo clock (`appNowMs`),
+    written by `et.ts`'s `instantText`. The transport applies 2.4's time rules, the 5-minute clamp
+    included; the composer takes its times from the same clock, so a visitor's save is never
+    refused for its time nor sorted weeks after it (S12). Its facts come from `factInputs` and
+    `facts.ts`, as the composer's preview does.
 - Check:
   - criterion 26's scratch script over `demo/journal.ts` and the catalog seeds
     (`demo/catalog/shared.ts:205-230` closes, `:7` `EXPIRIES`, HEAD; the spec's `:6` is off by
@@ -1153,57 +1329,81 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
   `convexa.journal.drafts.v1`: `{ schema_version: 1, user_id, draft, unsent: [{ client_id,
   request, queued_at, last_error }] }`. Every read and write is wrapped in try/catch. An unsent entry
   leaves only on a 200 or 201; a retry reuses its `client_id` and sends the stored request as it
-  was, so the `as_of_et` and `occurred_at_et` frozen at Save travel with it (finding 6); another
-  user's entries are never sent.
-- A refusal that can't change on a retry stops the retries (finding 16). On a 409 (`entry_deleted`:
-  a note on an entry he has since withdrawn) or a 422, the item goes back to the composer as a
-  draft, with the server's message inline, and is never dropped. If a draft is already held, the
-  item waits, unsent and not retried, until that draft is saved or discarded. A network error, a
-  403 or a 5xx keeps it queued with retries.
+  was, so its `as_of_et` and `occurred_at_et` travel with it (finding 6); another user's entries
+  are never sent.
+- The draft keeps the times of what he typed (S2): `figures_at`, the moment he last typed a
+  figure, and the money's date and time as its field shows them, each read from `appNowMs()`.
+  `requestFromDraft(draft)` in `outbox.ts` builds the request from them (2.4): a Today snapshot
+  takes `figures_at`, never the moment of Save, so figures typed at 2:30 PM into a draft saved the
+  next morning keep 2:30 PM. Stamped at Save instead, after a 10:05 AM deposit, that draft's step
+  reads −7.8% and Oct 6 −42.9% for −42.6% (reproduced, `repro_times.py`).
+- A refusal that can't change on a retry stops the retries (finding 16):
+  - a 409 (`entry_deleted`: a note on an entry he has since withdrawn) or a 422: the item goes back
+    to the composer as a draft, with the server's message inline, and is never dropped. It keeps
+    its request's `as_of_et` and `occurred_at_et` unless he edits a figure or the money's time
+    (S2). If a draft is already held, the item waits, unsent and not retried, until that draft is
+    saved or discarded;
+  - a 503 `storage_not_set_up`: the same, with "Journal storage isn't set up on this server, so
+    nothing can be saved yet." as its message. It is never retried, so the text never sits in the
+    unsent queue, and sign-out never warns about it (criterion 24, S17);
+  - a 403 (`auth_required` or `owner_only`): the item stays queued, unsent. The send goes through
+    `ownerOnlyRead`, so the refusal is recorded for the session, and the queue isn't retried while
+    `useOwnerGate()` holds it. A sign-in or sign-out starts a new session and lets it try again
+    (`features/auth/ownerGate.ts:3-6`: the answer belongs to the session, and asking again under
+    the same session can't change it; S17).
+- A network error, a 503 `store_unavailable` or another 5xx keeps the item queued with retries.
 - Tests: T21 to T24.
 - Check: `NX_DAEMON=false npx nx test @convexa/dashboard` exits 0 (the inferred `@nx/vitest`
   target; this plan does not assume it forwards a file filter), and the four specs above are in its
   output. Criterion 19's `git grep` still prints nothing and exits 1 (it did at `adda4054`). The
   moved code adds no "journal" text to `riskInputs.ts`.
 
-**F4. Section tabs and the routes.** M. The boards have landed.
+**F4. Section tabs and the wall's words.** S. The boards have landed.
 - Files:
   - `apps/dashboard/src/app/shared/ui/SectionTabs.tsx` (new), generalised from
     `pages/research/ResearchTabs.tsx:25-111` (the file has 111 lines; the earlier `:25-115` was
     off), and `ResearchTabs` rebuilt on it;
-  - `pages/positions/PositionsTabs.tsx` (new): Book `/positions`, current only on exactly
-    `/positions`; Journal `/positions/journal`, current on any `/positions/journal` path;
-  - `pages/positions/PositionsPage.tsx`: the band above its column (HEAD `:351-356`, the page
-    column `Box`), as the Research pages place theirs (`pages/research/MarketsPage.tsx:110-113`);
-  - `apps/dashboard/src/app/app.tsx` (HEAD): three `routeLoaders` rows (`:68-94`), three `lazy`
-    pages (`:105-165`), and three routes before the catch-all (`:367`): `/positions/journal`,
-    `/positions/journal/new` and `/positions/journal/:entryId`. Each sits in
-    `RequireAuth surface="your journal" demoPath="/positions/journal" docTitle="Journal — Convexa"`
-    around `lazyRoute(...)`, like `/positions` (`:328-339`);
   - `features/auth/RequireAuth.tsx`: `wallCopy` (HEAD `:81-108`) gains a branch for a surface
     that includes `journal`, whose owner sentence is the spec's own, "This journal is private to
     the account that owns this Convexa.", with the region name "Private journal" (the boards' wall
     names it so) and no tag. Without it, "your journal" falls to the default "This page is
     private…".
+- Each route lands with its page, never ahead of it (S26). F5 adds `/positions/journal` with
+  `PositionsTabs` and the band, so the Journal tab and its route arrive together; F6 adds
+  `/positions/journal/new`; F7 adds `/positions/journal/:entryId`. The first version put all three
+  rows here, whose lazy imports name page modules F5 to F7 create, so F4 alone failed its own
+  typecheck ("cannot find module"); a placeholder page would have been a state standing in for a
+  surface not yet built. Every row follows one pattern in `app.tsx` (HEAD): a `routeLoaders` row
+  (`:68-94`), a `lazy` page (`:105-165`), and a route before the catch-all (`:367`), inside
+  `RequireAuth surface="your journal" demoPath="/positions/journal" docTitle="Journal — Convexa"`
+  around `lazyRoute(...)`, like `/positions` (`:328-339`).
 - The walls need nothing else: `RequireAuth` already puts every journal route inside
   `OwnerGateBoundary`, so a recorded `owner_only` shows `OwnerOnlyWall` with "See it on the demo →"
   and a recorded `auth_required` the sign-in wall (C14 and R2 closed; F5 to F7 record refusals
   through `ownerOnlyRead`).
 - `TopNav` needs no change (`shell/TopNav.tsx:96-100` already lights Positions for
   `/positions/*`).
-- Boards: the tab band on every `FJournalTimeline*` board (`FJournalTimelineStaging` is the
-  reference), the not-the-owner wall on `FJournalTimelineStates`, and the canon's section-tabs row
+- Boards: the not-the-owner wall on `FJournalTimelineStates`, and the canon's section-tabs row
   (`DESIGN_SYSTEM.md:273`).
-- Check: `npx nx typecheck @convexa/dashboard` exits 0 (`route-boundaries.structural.spec.ts`
-  passes, every route bounded). By observation: the Research tabs look as they did, at 1440 and
-  390, and Positions shows Book · Journal.
+- Check: `NX_DAEMON=false npx nx test @convexa/dashboard --skip-nx-cache` and
+  `npx nx typecheck @convexa/dashboard` both exit 0. `typecheck` runs `tsc` alone (inferred by
+  `nx.json`'s `@nx/js/typescript` and `@nx/vite` plugins), so it never runs
+  `route-boundaries.structural.spec.ts`, whose test asserts that every route is bounded
+  (`:66-72`); only `nx test` does. The first version named `typecheck` alone (S18). By
+  observation: the Research tabs look as they did, at 1440 and 390. F5, F6 and F7 each run both
+  commands too, since each adds a route.
 
 **F5. The timeline.** L.
 - Files:
   - `pages/positions/journal/JournalTimelinePage.tsx` and its parts: `QuickCapture`, `DayGroups`,
     `EntryCard`, `AccountFrame`, `JournalFilters`, `FirstRun`, `JournalPhoneBar`;
   - `features/journal/{useJournal,copy,format}.ts`;
-  - `shared/ui/PenIcon.tsx` (new).
+  - `shared/ui/PenIcon.tsx` (new);
+  - `pages/positions/PositionsTabs.tsx` (new): Book `/positions`, current only on exactly
+    `/positions`; Journal `/positions/journal`, current on any `/positions/journal` path;
+  - `pages/positions/PositionsPage.tsx`: the band above its column (HEAD `:351-356`, the page
+    column `Box`), as the Research pages place theirs (`pages/research/MarketsPage.tsx:110-113`);
+  - `app.tsx`: the `/positions/journal` row, in F4's pattern (S26).
 - `PenIcon` copies the geometry of the `edit` icon that step 0 adds to `design/src/lib.mjs`
   (`currentColor`, stroke-width 1.75, round caps and joins, `aria-hidden`). The app has no
   stroke-icon set, only MUI icons and one-off SVGs such as `shell/ConvexaMark.tsx`
@@ -1225,67 +1425,116 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
   - the header with the one amber "Write entry";
   - quick capture (text, kind chips, the numbers line, an outlined Save, "Open full editor"). Its
     "Numbers: carried from Oct 6 (1 day) · Update" line saves no snapshot unless he picks Update
-    and types a figure (D34);
-  - "Order by: Written · About", with day groups by `written_on` or `effective_about_date`;
+    and types a figure (D34). While the list says `storage` is `not_set_up`, its Save is refused
+    under "Journal storage isn't set up on this server, so nothing can be saved yet." (criterion
+    24, S17);
+  - "Order by: Written · About", with day groups by `written_on` or `effective_about_date`. A
+    day's snapshot line ("Account value $34,047 · margin used 147% · call $2,750") reads that
+    day's latest snapshot in the chain, and is not drawn on a day that has none, so a carried
+    account value never shows as that day's (S3);
   - cards: time, kind pill, body, and the footer's recalled dates, note count and "Corrected {date}";
     a stub (`unreadable`) reads "Couldn't load" with "Delete entry…" (section 3.3);
   - the rail's account frame and the filters (search, kind, written from memory, kept out of AI
-    reads, has later notes). The frame shows its "Couldn't load" state while `facts` is
-    `withheld`;
+    reads, has later notes). The frame and its figure strip read the latest snapshot in the chain,
+    never one whose account value is carried (S3), and the frame shows its "Couldn't load" state
+    while `facts_state` is `withheld`;
   - the first run with "Write about an earlier day" and "What do you think your downfalls are?".
     Its body ends "Nothing is sent to an AI." in 1a; "until you turn AI reads on" names slice 4's
     toggle and returns with it (D22, finding 20);
-  - the phone bar (amber "Write entry" and an outlined 44px "Margin call").
+  - the phone bar (amber "Write entry" and an outlined 44px "Margin call");
+  - the phone's account peek row as a plain line, "Account value $31,609 · margin used 92% ·
+    Oct 6": not a button, no "›", and nothing opens. Its sheet is the Path, which is 1b (S15).
 - Not drawn in 1a: ticker chips and the ticker filter (no symbols before 1b and 3), the AI status,
   this week's focus, the Rulebook and Review minis, plan answers, and R and the label on trims.
-- Boards: `FJournalTimelineStaging` (demo account), `FJournalTimelineFirstRun`,
+  Nor the 1b parts of the account frame the boards draw (S15): its Leverage figure, its sparkline
+  and "Open the account path" (`FJournalTimelineStaging`), and the peek row's "›" and Path sheet
+  (`FJournalTimelinePhone`). Spec 08's slice table adds "Open the account path" and leverage in 1b
+  (line 3133), the frame has "the figure strip only" before it (lines 770-771), and a surface whose
+  slice hasn't shipped is not drawn, with no state standing in for it (line 3126). The boards'
+  own `FJournalTimelineSpec` card lists the link and leverage under 1b.
+- Boards: the tab band on every `FJournalTimeline*` board (`FJournalTimelineStaging` is the
+  reference), `FJournalTimelineStaging` (demo account), `FJournalTimelineFirstRun`,
   `FJournalTimelineProduction` (signed out), `FJournalTimelineIllustrative`,
   `FJournalTimelinePhone`, `FJournalTimelineLight` and `FJournalTimelineStates`, with the row's
   card `FJournalTimelineSpec`; the filters' bottom sheet is on `FJournalOverlaysPhone`. Of the
   States board's seven, 1a draws them all: loading skeletons, Couldn't load, Not on your account
   yet, sign-out with an unsent entry, Storage not set up, Not the owner, and the staging marking.
   The boards draw every slice, so their first-run sentence keeps its slice-4 clause.
-- Check: section 6's probes for this route.
+- Check: section 6's probes for this route, and F4's two Nx commands exit 0. Mutation: drop
+  `lazyRoute` from the journal route, and `route-boundaries.structural.spec.ts` goes red under
+  `nx test` (S18). By observation: Positions shows Book · Journal.
 
 **F6. The composer and margin-call mode.** L.
 - Files: `pages/positions/journal/JournalComposerPage.tsx` and its parts: `SnapshotColumn`,
-  `MoneyFields`, `MarginCallRow`, `ComputedBox`, `UpdateNumbersSheet`.
+  `MoneyFields`, `MarginCallRow`, `ComputedBox`, `UpdateNumbersSheet`; and `app.tsx`'s
+  `/positions/journal/new` row, in F4's pattern (S26).
 - Query parameters `?kind=` (all but `plan`) and `?about=`.
 - Drafts autosave through `outbox.ts`. The 9-digit warning comes from `accountNumberScan.ts`, inline
   and never blocking. The Computed box, the sanity question and the cross-check come from `facts.ts`
-  over the server's snapshots plus the draft. The box shows "Since {date}" only when the draft's
-  account value is typed: a carried one is not a new observation (D34).
+  over `factInputs` of the server's entries plus the draft. Margin used, excess liquidity and
+  "Since {date}" show only when the draft's account value is typed: a carried one is not a new
+  observation (D34, S3).
+- While `facts_state` is `withheld`, every fact the box would compute from the series ("Since
+  {date}" and the sanity question's comparison) reads "Couldn't load"; margin used and excess
+  liquidity from the draft's own typed figures still show (S13).
+- While the list says `storage` is `not_set_up`, Save is refused under "Journal storage isn't set
+  up on this server, so nothing can be saved yet.", and nothing is queued (criterion 24, S17).
 - "Unchanged" saves no snapshot (`snapshot: null`). "Update numbers" sends the fields he typed as
-  `typed` and the ones he left as they were as `carried` with `carried_from`; at least one figure
-  is typed, or nothing is sent (D34, finding 1).
+  `typed` and the ones he left as they were as `carried` with `carried_from`; with no typed figure,
+  in any mode, it sends `snapshot: null` (D34, finding 1, S11). A field whose source value is not
+  recorded goes as `not_recorded`, never carried (S8). On an earlier About it carries only from the
+  latest snapshot at or before that As of, a field with no such source goes as `not_recorded`, and
+  the "was $36,146 on Sep 25" lines name that snapshot. Carrying from the latest snapshot, later
+  than the 4:00 PM As of, would be 422 (S11).
 - Due by is one native `datetime-local`, sent as `at_et`. "One thing you want to remember from
   today" is appended to the body.
-- At Save the composer freezes the snapshot's `as_of_et` and the money's `occurred_at_et` as ET
-  wall times and puts them in the request, so a save that waits in the outbox keeps the times he
-  typed it with (D33, finding 6).
+- Times (D33; S1, S2, S12, S29). Every time the composer takes reads `appNowMs()`, the clock F2's
+  demo writes use, and goes through `et.ts`:
+  - About today: the snapshot's As of is the moment he last typed a figure (the draft's
+    `figures_at`), and the Money in or out field's date and time fill with the moment he opens it;
+  - an earlier day: both default to 4:00 PM ET on the About date ("As of Aug 14, 4:00 PM ·
+    Change", and the money field's own value), and he can change either;
+  - a restored draft shows its As of line ("As of {Sep 29}, {2:30 PM} · Change", the About
+    strip's words), so the time its numbers carry is in view (S2);
+  - the "Counted before your {time} numbers · Change" line names the snapshot whose step the
+    money lands in, with that snapshot's date when it isn't the money's own day (S1). On the
+    worked example, $2,500 recalled about Sep 30 at the default 4:00 PM reads "Counted before your
+    Oct 2, 4:00 PM numbers · Change", because Sep 30's numbers are at 3:40 PM. Changed to
+    10:05 AM, Oct 6 reads −42.6%; left at the default, −42.8% (`repro_times.py`). No default
+    knows the hour; the line shows which side it landed on;
+  - the request carries both times from his typing, never from delivery (2.4, F3).
 - Save goes through the outbox, so a failed or offline save stays queued with its `client_id`. The
   composer shows the spec's "Couldn't save to your account. Your text is kept in this browser until
   it goes through." with "Try again", inline and never as a toast, and the timeline's card carries
-  "Not on your account yet…" until it lands. A 409 or 422 comes back as a draft with the
-  server's message (F3, finding 16).
+  "Not on your account yet…" until it lands. A 409, a 422 or a 503 `storage_not_set_up` comes back
+  as a draft with the server's message, and a 403 waits for a new session (F3, finding 16, S17).
 - Saved: back to the timeline with the card focused and "Saved · {date, time}".
 - Margin-call mode: the reduced page, Call amount autofocused, the info strip, "More numbers" (loan
   and maintenance carried), the two neutral cross-check lines and the after-save line (the
   timeline's review sentence after it is held until slice 3, D22). The three numbers are typed or
-  `not recorded`, never carried. No decision label in any slice.
-- Boards: `FJournalComposeStaging` (normal day, without the sale row and the label, which are 1b),
-  `FJournalComposeMarginCall`, `FJournalComposePhoneCall`, `FJournalComposeLight` and
-  `FJournalComposeStates`, with the row's card `FJournalComposeSpec`; the phone's Update numbers
-  sheet is on `FJournalOverlaysPhone`. 1a draws 12 of the 15 states: Blank, Draft restored, No
-  earlier snapshot, Carried and old, Validating, Sanity question, Account-number warning, Saving,
-  Save failed, Offline, Cross-check mismatch and Money timing. `FJournalComposePlan`,
-  `FJournalComposePhonePlan`, and the Stale snapshot strip, No rules and Reason missing states are
-  slice 2.
-- Check: the probes, plus criterion 4's interaction count (at most 6) and criterion 25's walk.
+  `not recorded`, never carried; with none of them typed and nothing typed under "More numbers",
+  the entry goes with `snapshot: null`, never with a snapshot of carried and empty figures that
+  the server refuses (S11). No decision label in any slice.
+- Not drawn in 1a (S15): the Positions block and its "Edit positions", which
+  `FJournalComposeStaging` draws in the snapshot column and `FJournalComposeMarginCall` as the
+  "Positions · Unchanged since …" line under "More numbers". Spec 08 makes "Edit positions" 1b
+  (lines 880-881), `FJournalComposeSpec` lists it under 1b, and the 1a wire carries no positions
+  (D17).
+- Boards: `FJournalComposeStaging` (normal day, without the sale row, the label and the Positions
+  block, which are 1b), `FJournalComposeMarginCall`, `FJournalComposePhoneCall`,
+  `FJournalComposeLight` and `FJournalComposeStates`, with the row's card `FJournalComposeSpec`;
+  the phone's Update numbers sheet is on `FJournalOverlaysPhone`. 1a draws 12 of the 15 states:
+  Blank, Draft restored, No earlier snapshot, Carried and old, Validating, Sanity question,
+  Account-number warning, Saving, Save failed, Offline, Cross-check mismatch and Money timing.
+  `FJournalComposePlan`, `FJournalComposePhonePlan`, and the Stale snapshot strip, No rules and
+  Reason missing states are slice 2.
+- Check: the probes, plus criterion 4's interaction count (at most 6) and criterion 25's walk, and
+  F4's two Nx commands exit 0.
 
 **F7. The entry page.** M.
 - Files: `pages/positions/journal/JournalEntryPage.tsx` and its parts: `SnapshotPanel`,
-  `CorrectFigureForm`, `LaterNotes`, `DeleteEntry`.
+  `CorrectFigureForm`, `LaterNotes`, `DeleteEntry`; and `app.tsx`'s `/positions/journal/:entryId`
+  row, in F4's pattern (S26).
 - Meta, the recalled strip, the body, later notes with "Add a later note" and its "Context for the
   AI" mark (stored as `ai_context`; like the composer's keep-out box, it is set before any read
   exists), the snapshot panel with Stored here and Computed lines, and "Correct a figure" (field,
@@ -1299,7 +1548,8 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
   from 1b that line moves into the Result panel, never drawn twice. A carried figure reads
   "Carried from {carried_as_of date}".
 - `useJournal`'s entry read goes through `ownerOnlyRead`, like the timeline's (finding 7). A stub
-  shows "Couldn't load" and "Delete entry…" only.
+  shows "Couldn't load" and "Delete entry…" only. While the answer's `facts_state` is `withheld`,
+  the panel's Computed lines read "Couldn't load", which a missing snapshot never does (S25).
 - The foot's "Delete entry…" with its inline confirm, and the tombstone page state. In 1a the
   confirm reads "Delete this entry's words and numbers? The timeline keeps a line saying an entry
   was deleted on {date}. Numbers carried into later entries stay in those entries.", then the
@@ -1308,13 +1558,16 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
   under its terms." waits for slice 4 (D22).
 - Boards: `FJournalEntryRecalled` (the strip, the Statement snapshot, the Aug 22 correction),
   `FJournalEntryStaging` (the Sep 29 call: body, later note, snapshot with call and Computed lines,
-  foot; not Details found, the AI read or Rules), `FJournalEntryPhone` (the Numbers accordion,
+  foot; not Details found, the AI read or Rules, and not the 1b and slice-4 parts it also draws:
+  no Leverage line among the Computed lines, no positions table, and no "Keep this entry out of
+  AI reads" toggle in the foot, which D23 moves to slice 4 although the row's card lists it under
+  1a; S15), `FJournalEntryPhone` (the Numbers accordion,
   without the What's sent sheet) and `FJournalEntryStates` (Deleted tombstone, Loading, Couldn't
   load and the delete inline confirm), with the row's card `FJournalEntrySpec`.
   `FJournalEntryLight` draws the 1b Result panel; use the recalled board in light instead.
 - Before the delete copy ships, the owner reads Railway's backup setting, and its true sentence
   goes into the confirm (spec, Export and delete; section 9).
-- Check: the probes, and criterion 22's database read (B5).
+- Check: the probes, and criterion 22's database read (B5), and F4's two Nx commands exit 0.
 
 **F8. Sign-out with an unsent entry, and /privacy.** S.
 - Files: `features/auth/AuthContext.tsx` (`signOut`, HEAD `:207-218`, checks the outbox first, as
@@ -1352,36 +1605,37 @@ seen red once on purpose (the mutation column), at the cheapest layer that prove
 |---|---|---|---|---|
 | T1 | `facts_fixture_cases` (`services/journal/facts.rs`): one table-driven test over every named case of the fixture, each checked against its `expect_display` and its `expect_exact` strings (finding 24); T2 to T6 and T8 are its cases | money | the 12 snapshots' account facts, $22,142, −$2,750, +$1,121, and Aug 4's account value alone 0.0% (C9) | the deposit is left in the step (seen: −38.3% for −42.6%) |
 | T2 | case `missing_value_bridged` of T1 | money | a skipped snapshot reads `not recorded`, and money across it lands in the next step | missing is treated as 0, or its flow is dropped |
-| T2b | case `carried_value_is_not_an_observation` of T1 (finding 1) | money | a deposit, then a snapshot whose account value is carried: every typed snapshot's index equals the no-deposit run with the end value lower by the deposit | a carried value counted as valued (the deposit then reads as a loss: −38.4% at the copy, −42.9% at Oct 6) |
+| T2b | `carried_value_is_not_an_observation` (`services/journal/mod.rs`, service level over the memory store, beside T26; finding 1, S4) | money | through the service: the worked example, then a $2,500 deposit at 10:05 AM on Sep 30 and a 10:06 AM snapshot whose account value is carried and whose loan is typed. Every typed snapshot's facts equal the worked example's, and the copy reads `not recorded` for its chain facts, margin used and excess liquidity (S3) | the service passes a carried value to `facts.rs` as `Some` (the deposit then reads as a loss: −38.4% at the copy, −42.9% at Oct 6), or margin used divides the fresh loan by the copy (140% for 130%) |
 | T3 | case `zero_value_breaks_chain` of T1 | money | percents read `—` from the break; dollars carry on | a division by ≤ 0, or dollars blanked too |
 | T4 | cases `deposit_last_step_before`, `deposit_last_step_after_previous` and `no_deposit_baseline` of T1 (criterion 7) | money | equal drawdown with a $D deposit and an end value +$D, the deposit on the last snapshot's day before it and on the previous snapshot's day after it | flows assigned by date rather than instant |
 | T5 | case `worked_example` of T1 (criterion 27) | money, dates | the Aug 4 statement written Aug 21 sorts at Aug 4 | order by `written_at` |
-| T6 | cases `recorded_high` and `high_tie` of T1 | money | a recalled point can be the high; a tie keeps the earlier | `>=` in place of `>` |
+| T6 | cases `recalled_high` and `high_tie` of T1 (4.5 names the first so; this row read `recorded_high`) | money | a recalled point can be the high; a tie keeps the earlier | `>=` in place of `>` |
 | T7 | `display_rounding_is_half_away_from_zero` (both languages) | money | −24.85 → −24.9, −42.6056 → −42.6, ±0.5 | the guard removed (−24.85 → −24.8) |
 | T8 | the exact half of T1 | parity | each `expect_exact` string is `serde_json::to_string` of the Rust output (finding 2) | any formula change without regenerating the fixture |
 | T9 | `et_dates_at_both_sides_of_utc_midnight` (`store.rs`, criterion 27) | dates | 9:30 PM ET is the same day; 12:30 AM ET is recalled | the UTC date used for `written_on` |
 | T10 | `about_date_correction_flips_recalled_never_moves_as_of` | dates, writes | a correction flips recalled, a later one flips it back, and `as_of` stays | an About correction moves `as_of` |
 | T11 | `default_as_of_and_et_wall_times` | parsers | today → `written_at`; earlier → 4:00 PM ET (EDT and EST); gap → error; overlap → earlier | a fixed −4h offset |
-| T12 | `from_env_prefixed_*`, `aad_round_trip` (`services/auth/crypto.rs`); `journal_ring_is_strict` (`services/journal/crypto.rs`) | encryption | None without either variable or on a bad key; no legacy or ephemeral key; a wrong context fails; the journal refuses a key id with a `.`, a duplicate id or key, placeholder text, an empty map and a missing active id (finding 9) | an ephemeral fallback, the AAD dropped, or the lax parse back |
-| T13 | `aad_binds_user_table_row_and_column`, `envelope_known_answer` (`services/journal/crypto.rs`, criterion 3) | encryption | an envelope moved to another row, column or user fails to open; 3.3's frozen envelope opens through `decrypt_with_aad` and through `aes-gcm` with the literal AAD bytes (finding 5); two amounts of different lengths encrypt to one length (D32) | the AAD reverts to `v1.{kid}` (`crypto.rs:133`), or its parts change order or text |
-| T14 | `seal_tag_verifies_and_detects_each_edit` and `seal_known_answer` | writes | the builder writes 3.3's message for the known-answer entry (SHA-256 `f2e9b7d5…c053`) and its tag `v1.k1.CDn9…xq4` byte for byte; the tag verifies, and fails after a change to any field of the message (findings 4 and 5) | a field left out, a key reordered, an instant or a number written another way, or another derivation |
+| T12 | `from_env_prefixed_*`, `aad_round_trip` (`services/auth/crypto.rs`, B1); `journal_ring_is_strict` (`services/journal/crypto.rs`, B3, S21) | encryption | None without either variable or on a bad key; no legacy or ephemeral key; a wrong context fails; the journal refuses a key id with a `.`, a duplicate id or key, placeholder text, an empty map, a missing active id (finding 9), and a key whose bytes the AI-key ring, the session-signing ring or either's legacy key also holds (S9) | an ephemeral fallback, the AAD dropped, the lax parse back, or one of the shared-key checks dropped |
+| T13 | `aad_binds_user_table_row_and_column`, `envelope_known_answers` (`services/journal/crypto.rs`, criterion 3) | encryption | an envelope moved to another row, column or user fails to open; 3.3's three frozen envelopes (`body_ct`, a padded `amount_ct`, a padded `figures_ct`) open through `JournalCrypto`'s own context builder, never a literal AAD, and each fails under the other 12 contexts; the builder's 13 context strings equal 3.3's frozen list; the padding writes the vectors' plaintexts, so two amounts of different lengths encrypt to one length (finding 5, D32, S5) | the AAD reverts to `v1.{kid}` (`crypto.rs:133`); a table or column constant renamed, or the builder's parts reordered (every stored row of that column would become a stub); the padding changed |
+| T14 | `seal_tag_verifies_and_detects_each_edit` and `seal_known_answers` | writes | the builder writes 3.3's three messages (a margin call, an Entered entry with every field it takes and a money row, a Closed entry) and their tags byte for byte; each tag verifies, and fails after a change to any field of its message (findings 4 and 5, S5) | a field left out, a key reordered, an instant or a number written another way: `about_date` as an instant, `confidence` as a string, another `closed_by` spelling, money's keys in another order, or another derivation |
 | T15 | `store_contract_on_the_json_store` (`store.rs`, criterion 2) | writes | see the list below this table | a fourth writer; an upsert on conflict; a swallowed write error |
-| T16 | `journal_store_postgres.rs` (`--features postgres`, `TEST_DATABASE_URL`) | writes, auth | T15's suite on Postgres, plus the trigger, the cross-user query and the probes | the trigger dropped; a query without `user_id` |
+| T16 | `journal_store_postgres.rs` (`--features postgres`, `TEST_DATABASE_URL`) | writes, auth | T15's suite on Postgres, plus the triggers, the cross-user query and the probes | a trigger dropped; a query without `user_id` |
 | T17 | `journal_routes.rs` (hermetic, memory store) | writes, auth | see the list below this table | each rule removed in turn |
 | T18 | `owner_only_routes_answer_the_owner_alone`, `owner_only_routes_fail_closed_without_owner_emails` (extended) and the owner marking test (HEAD `api_contract_parity.rs:1324-1341`) | auth | criterion 1 for all eight operations, the KELVIN SIGN lookalike included | a journal row missing from `OWNER_ONLY_OPERATIONS`; `AuthUser` in place of `OwnerUser` |
 | T19 | `API_CONTRACT_EXECUTE_EVIDENCE=1 npm run api:contract:check` and the parity and router tests | contract | representatives for every boundary; the widened probe | the probe back to GET-only (the direct evidence goes red; the harness test doesn't, B4 check 6) |
-| T20 | `facts.spec.ts` (`libs/api`) | parity, money | `facts.ts` equals both fixture blocks (`Object.is(Number(text), value)` for the exact strings), plus `sanityMove` at 40% and `crossCheck` at $1 | a reordered evaluation; `> 0.4` written as `>=` |
+| T20 | `facts.spec.ts` (`libs/api`) | parity, money | `facts.ts` equals both fixture blocks (`Object.is(Number(text), value)` for the exact strings), plus `sanityMove` at 40% and `crossCheck` at $1; `factInputs` passes a carried account value as null (S4); `instantText` writes 27 characters, and `facts.ts` refuses a 24-character instant (S12) | a reordered evaluation; `> 0.4` written as `>=`; a carried value passed through; `toISOString()` in place of `instantText` |
 | T21 | `money.spec.ts` (`features/journal`) | parsers | "41,210.50" → 4121050, "$41,210.50", "41210" and "4.35" → 435; refused: "1,50", "0,500", "12.345", "1e3", "0x10", ".5", "", "-5" | float conversion with truncation ("4.35" → 434), or three decimals allowed |
 | T22 | `accountNumberScan.spec.ts` | parsers | "Acct 123456789" and "1234567890" warn; "$41,210.50", "123456789.50" and "12,345,678,901" don't | the decimal exclusion dropped |
-| T23 | `outbox.spec.ts` (added by this plan) | writes | an unsent entry survives a network error, 403 and 503 and is retried; leaves only on 200 or 201; keeps its `client_id` and the times frozen at Save (queued 2:14 PM, sent 5 PM, still 2:14 PM; finding 6); on 409 or 422 goes back as a draft with the server's message, never dropped or retried (finding 16); another user's entries are never sent | removal on any error; a time set at delivery; a retry loop on 422 |
+| T23 | `outbox.spec.ts` (added by this plan) | writes | an unsent entry survives a network error and a 503 `store_unavailable` and is retried; leaves only on 200 or 201; keeps its `client_id` and the times of its typing (queued 2:14 PM, sent 5 PM, still 2:14 PM; finding 6); on 409, 422 or 503 `storage_not_set_up` goes back as a draft with the server's message, never dropped or retried (finding 16, S17); on a 403 stays queued and isn't retried until the session changes (S17); `requestFromDraft` gives a restored draft's Today snapshot the time its figures were typed (2:30 PM on Sep 29, saved 11:00 AM on Sep 30, still 2:30 PM), and a draft F3 returned keeps its request's `as_of_et` and `occurred_at_et` until a figure or the money's time is edited (S2); another user's entries are never sent | removal on any error; a time set at delivery or at Save; a retry loop on 422 or on `storage_not_set_up` |
 | T24 | the existing `riskInputs.spec.tsx`, unchanged | parsers | the moved grammar behaves as before | the move changes a regex |
 | T25 | `server-error-codes.spec.ts`, its `OWNER_ONLY_CALLS` table gaining the eight journal facade calls (`libs/api`, finding 7) | auth | on each journal call, a 403 `auth_required` and a 403 `owner_only` each map to their own kind | the facade throws `ApiError` on a 403, or folds `owner_only` into `auth_required` |
-| T26 | `corrections_reach_the_facts` (`services/journal/mod.rs`, service level over the memory store, finding 8) | money, writes | a correction of the Sep 30 account value moves the index and the Oct 6 headline; an `as_of` correction moves the snapshot in the chain; a figure carried after a correction holds the corrected value (D8) | the service feeds `facts.rs` the original figures, orders by the original `as_of`, or copies the original value |
+| T26 | `corrections_reach_the_facts` (`services/journal/mod.rs`, service level over the memory store, finding 8) | money, writes | a correction of the Sep 30 account value moves the index and the Oct 6 headline; an `as_of` correction moves the snapshot in the chain; a figure carried after a correction holds the corrected value (D8); a figure carried from a copy names the snapshot where it was typed, in `carried_from` and `carried_as_of` (S8) | the service feeds `facts.rs` the original figures, orders by the original `as_of`, copies the original value, or names the copy as the source |
 
 T15 and T16 check, on each store:
 - the trait's writers are exactly `insert`, `append` and `tombstone`: a source scan of the trait
   block, and of every SQL write naming `journal_entries`;
-- after a tombstone every `_ct` column is null, `written_at` is unchanged and the children are gone;
+- after a tombstone every `_ct` column is null, `no_exit_set` and `ai_excluded` are false (an
+  entry saved with both true; S6), `written_at` is unchanged and the children are gone;
 - a repeated `client_id` returns the stored row and never changes its body;
 - `append` never touches the entry row;
 - reopening the file returns the same entries;
@@ -1391,6 +1645,12 @@ T15 and T16 check, on each store:
 
 T16 adds:
 - a raw `UPDATE … SET body_ct = …` is refused by the trigger;
+- one raw `UPDATE` per child table is refused (`journal_snapshots.as_of`, `journal_money.direction`,
+  `journal_later_notes.ai_context`, `journal_corrections.written_at` and
+  `journal_details.status`): those plaintext columns drive the facts or the record, and no
+  envelope's AAD covers them, so without the triggers flipping a $2,500 deposit's direction would
+  move its step by $5,000 and nothing would fail (S7);
+- a raw tombstone `UPDATE` that leaves `no_exit_set` true is refused by the CHECK (S6);
 - one user's rows are invisible to another's queries (the owner list can hold two emails);
 - the verifier's probes pass on a migrated database;
 - an append that starts while a tombstone holds the entry's lock waits, then answers 409
@@ -1405,10 +1665,18 @@ T17 checks through the routes:
 - each 422 rule in 2.4, a snapshot with no typed figure included (finding 1);
 - an `as_of` or a money time up to 5 minutes after `written_at` is clamped to it, and a later one
   is 422 (finding 6);
+- a null `as_of_et` and a null `occurred_at_et` on an entry about an earlier day are both stored
+  at 4:00 PM ET on that day, and on an entry about today at `written_at` (S1, S16). T11 tests
+  `default_as_of` alone, so it stays green whichever rule the service applies; this case is the
+  one that sees the service;
+- a carried figure whose source is itself a copy stores the original's `carried_from` and
+  `carried_as_of`, and one whose source value is not recorded, or can't be opened, is 422 (S8,
+  S25);
 - another owner's id is 404;
-- a tampered envelope gives a stub in the list and on its own read (200, `unreadable`), the list's
-  `facts` is `withheld`, a note on it is 500 `journal_unreadable` with nothing written, and its
-  `DELETE` works (finding 15);
+- a tampered envelope gives a stub in the list and on its own read (200, `unreadable`),
+  `facts_state` is `withheld` on the list and on every entry answer, with each snapshot's `facts`
+  null, a note on it is 500 `journal_unreadable` with nothing written, and its `DELETE` works
+  (finding 15, S25);
 - a suspicions `PUT` that changes one line keeps the other rows' ids (finding 17).
 
 T23 is beyond the spec's list. It is owed by the same risk rule: a dropped queue entry is lost text
@@ -1427,10 +1695,13 @@ live build and the demo build, recorded with the slice, never committed; every s
 | 18 | demo build: every journal route answers from the transport; one "Demo · sample data"; each frame has `data-provenance="sample"` and one "Sample" mark. On staging after deploy, read-only |
 | 19 | the `git grep` prints nothing and exits 1 |
 | 21 | at 390 and 393, both schemes: `scrollWidth == clientWidth`, and no interactive element under 44px with a coarse pointer |
+| 24 | on a local API without `JOURNAL_ENCRYPTION_*`: the composer's and quick capture's Save show "Journal storage isn't set up on this server, so nothing can be saved yet.", and `localStorage['convexa.journal.drafts.v1']` holds no unsent item (S17) |
 | 25 | "Acct 123456789" warns before save and saves with "Keep it"; "$41,210.50" doesn't warn |
+| money timing (S1) | "Write about an earlier day" with Money in: the date and time default to 4:00 PM ET on that day, and on the demo's Sep 30 the line reads "Counted before your Oct 2, 4:00 PM numbers · Change" |
+| composer requests (S11) | "Update numbers" on an earlier About sends only `carried` sources at or before its As of, and `not_recorded` otherwise; margin-call mode with nothing typed sends `snapshot: null`; neither save comes back as a draft (the request read from the network panel) |
 | 26 | the seed script (F2) |
 | 34 | an empty local journal: the downfalls prompt saves up to 5 lines and the `GET` returns them; Skip leaves writing alone; the prompt sits under the only card, goes when a second saves, and never follows a margin-call entry |
-| 1, 3, 22, 24 | B5's `curl`, `pg_dump` and `psql` reads |
+| 1, 3, 22, 24 | B5's `curl`, `pg_dump` and `psql` reads (24's Save line is the row above) |
 
 ---
 
@@ -1455,8 +1726,13 @@ live build and the demo build, recorded with the slice, never committed; every s
   spec's file list (`services/journal/{mod,store,facts,crypto}.rs`) has no Postgres file; put it at
   `db/pg_journal.rs` with the other Postgres stores.
 - **D5. The seal in the database too.** A `BEFORE UPDATE` trigger plus CHECK constraints refuse any
-  update but the tombstone. The cost is about 15 lines of plpgsql, the schema's first. The gain is
-  that the seal holds against any later code path or hand-written SQL.
+  update of `journal_entries` but the tombstone, and a second trigger function refuses every
+  `UPDATE` of the five append-only child tables (S7; the first version guarded `journal_entries`
+  alone, so a snapshot's `as_of` or a deposit's direction could be changed by hand and nothing
+  would fail). The cost is about 35 lines of plpgsql, the schema's first. The gain is that no
+  later code path or hand-written SQL can change a sealed row in place. A `DELETE` stays
+  possible, because the tombstone and the account's `ON DELETE CASCADE` need it; deleting a row is
+  a withdrawal, not an edit.
 - **D6. UUID columns, bound as text.** sqlx has no `uuid` feature here (`Cargo.toml:48`) and
   `Cargo.lock` has no `uuid` crate. Ids are minted from `rand`, canonical lowercase, because the AAD
   binds their text.
@@ -1467,7 +1743,9 @@ live build and the demo build, recorded with the slice, never committed; every s
   `carried(from)`. Each entry stays self-contained, so withdrawing an old entry can't erase later
   snapshots' numbers, and "Carried from {date}" still has its date (finding 18). The tradeoff: a
   later correction of the source doesn't move the copy; he corrects the copy too if he wants it
-  changed. A carried account value is never an observation in the facts (D34).
+  changed. A copy of a copy names the snapshot where the number was typed, never the copy it came
+  through, and a source with no value is 422 (S8). A carried account value is never an
+  observation in the facts (D34).
 - **D9. The seal covers every field the insert writes.** _Answered 2026-10-28 under the owner's
   standing instruction for the trade journal, take every recommendation (spec 08, "Owner
   answers", where questions 17 to 19 were answered the same way); he did not answer D9 himself,
@@ -1480,21 +1758,27 @@ live build and the demo build, recorded with the slice, never committed; every s
   About date, or "How sure" raised from 30 to 90, and still read "written at the time" (finding 4).
   The tag is fixed at insert and can't be widened without a fourth writer, so a v1 row keeps its
   v1 tag; a later slice that seals more uses `journal.seal.v2` for new entries. Known-answer
-  vectors pin the message, the tag and the row-bound envelope (T13, T14; finding 5). If he
+  vectors pin three messages and their tags, which between them set every field 1a writes, and
+  three envelopes through the context builder (T13, T14; finding 5, S5). If he
   reverses it before B3, the seal covers exactly the spec's list, and T14's vector is recomputed
   from that list.
-- **D10. Key rotation is add-only**, with no rewrap on read (3.3).
+- **D10. Key rotation is add-only**, with no rewrap on read (3.3). A key any sealed entry's tag
+  names stays in the ring for good (S9).
 - **D11. Ring checks.** `from_env_prefixed` parses exactly as `from_env` does. The journal checks
   its two variables first with the production rings' strict key-map rules, extracted from
-  `parse_ring` (finding 9), so it also refuses a ring whose active id is missing from its map or
-  whose key ids can't sit in an envelope; and it refuses one that shares a key with the AI-key
-  ring. It logs its presence at boot. It is not a production startup requirement.
+  `parse_ring` with every violation kept (finding 9, S22), so it also refuses a ring whose active
+  id is missing from its map or whose key ids can't sit in an envelope; and it refuses one that
+  shares key bytes with the AI-key ring, the session-signing ring or either's legacy key (S9). It
+  logs its presence at boot. It is not a production startup requirement.
 - **D12. An unreadable entry comes back as a stub, and the facts are withheld** (finding 15). The
   first version failed the whole read with 500, which left the page no id to delete. Now the
   reads answer 200: the stub carries the entry's plaintext keys and dates and reads "Couldn't load"
-  with "Delete entry…", and no account fact is computed while any stub exists (`facts:
+  with "Delete entry…", and no account fact is computed while any stub exists (`facts_state:
   "withheld"`), because a figure or an amount that can't be read could move every later fact.
-  Notes and corrections on a stub are 500; `DELETE` works.
+  Notes and corrections on a stub are 500; `DELETE` works. Every entry answer carries
+  `facts_state`, a snapshot's `facts` is null while it is `withheld`, a stub's
+  `effective_about_date` is null when its correction can't be opened, and a carry from a stub is
+  422 (S25).
 - **D13. No ring:** the list is 200 `not_set_up`, and writes are 503.
 - **D14. Errors** use the existing `WireError` and the closed codes of 2.1. A `JournalJson<T>`
   extractor makes body rejections JSON.
@@ -1512,14 +1796,16 @@ live build and the demo build, recorded with the slice, never committed; every s
   the user id.
 - **D21. The demo seed** is written by `initializeDemoWorkspace` in both branches, with a seed
   version.
-- **D22. Copy held back.** Three 1a strings name surfaces that don't exist yet. Hold back
-  "What was already sent to your AI provider is under its terms." (Delete entry) until slice 4,
-  "When you're ready, a review can look at the weeks before this call. Nothing runs until you ask."
-  (after a margin call) until slice 3, and the first run's "until you turn AI reads on", which
-  points at slice 4's toggle, until slice 4, by the spec's own rule ("Copy that names a later
-  surface is held back with it", the same kind of pointer as "Turn reads on in Settings ›
-  Journal"). The first run ships "Nothing is sent to an AI." in 1a, which is true from 1a (finding
-  20; the first version of this plan kept the whole sentence).
+- **D22. Copy held back.** Four 1a strings name surfaces that don't exist yet (three until S20
+  counted the fourth). Hold back "What was already sent to your AI provider is under its terms."
+  (Delete entry) until slice 4, "When you're ready, a review can look at the weeks before this
+  call. Nothing runs until you ask." (after a margin call) until slice 3, the first run's "until
+  you turn AI reads on", which points at slice 4's toggle, until slice 4, and the /privacy egress
+  row, which names triggers that ship with slice 4, until slice 4 (F8; the spec lists it with the
+  1a store rows at lines 2672-2673). That is the spec's own rule ("Copy that names a later surface
+  is held back with it", the same kind of pointer as "Turn reads on in Settings › Journal"). The
+  first run ships "Nothing is sent to an AI." in 1a, which is true from 1a (finding 20; the first
+  version of this plan kept the whole sentence).
 - **D23. The entry page's "Keep this entry out of AI reads" toggle moves to slice 4**, built as an
   append (a correction with target `ai_excluded`), never an `UPDATE`. 1a ships the composer's
   checkbox, which is set at insert. Nothing reads entries before slice 4.
@@ -1533,27 +1819,37 @@ live build and the demo build, recorded with the slice, never committed; every s
 - **D29. Contract pins move from 60 to 68 operations**, and from 227 to 268 boundaries if the
   declared responses are exactly 2.2's (271 before the review fold dropped three 500s, finding 15).
   The regenerated `parity-coverage.json` is the authority.
-- **D30. Two conformance rows** are added to `owner-gated.json` (B4.9).
-- **D31. The tombstone nulls plaintext content too** (About date, revisit date, body length), per
-  "keeps only id, written_at, deleted_at and kind".
+- **D30. Eighteen conformance rows**: two envelope rows in `owner-gated.json`, and the eight
+  non-owner and eight signed-out refusals in `auth-gated.json` and `public-surface.json`, as every
+  owner-only operation has (B4.9; the first version added only the two, S27).
+- **D31. The tombstone nulls plaintext content too** (About date, revisit date, body length), and
+  sets `no_exit_set` and `ai_excluded` to false (S6), per "keeps only id, written_at, deleted_at
+  and kind".
 - **D32. Every `_ct` value that isn't free text is fixed-width before encryption** (3.4, finding
   22): amounts and the confidence as 16-character zero-padded decimals, `closed_by` and the label
   padded to 24 bytes, the figures JSON padded to a multiple of 1,024 bytes. Otherwise a reader of
   the database sees a deposit's digit count, or which "Closed by" was picked. Like the seal, it is
   fixed at the first owner row.
-- **D33. The composer freezes times at Save** (2.4, finding 6). The snapshot's `as_of_et` and the
-  money's `occurred_at_et` are sent explicitly, so a save delivered late by the outbox keeps the
-  times he typed it with; otherwise a snapshot typed at 2:14 PM and delivered at 5 PM, after a
-  3 PM deposit, would put the deposit in its step. The server clamps a time up to 5 minutes after
-  `written_at` to `written_at` (a browser clock ahead of the server's) and refuses a later one.
+- **D33. The composer sends the times he typed** (2.4, F6; finding 6, S1, S2). The snapshot's
+  `as_of_et` and the money's `occurred_at_et` are sent explicitly, so a save delivered late by the
+  outbox keeps its times; otherwise a snapshot typed at 2:14 PM and delivered at 5 PM, after a
+  3 PM deposit, would put the deposit in its step. The fold froze them at Save; now they come from
+  his typing (the draft's `figures_at` and the money field), so a draft saved the next morning
+  keeps its numbers' time too (S2). About an earlier day, both default to 4:00 PM ET on that day,
+  and a null from any other caller takes the same default (S1, S16). Every time comes from
+  `appNowMs()` (S12, S29). The server clamps a time up to 5 minutes after `written_at` to
+  `written_at` (a browser clock ahead of the server's) and refuses a later one.
 - **D34. A carried account value is never an observation** (4.1, 2.4, finding 1). The facts skip a
   snapshot whose account value is carried, as one with no value; "Unchanged" and quick capture's
   carried numbers line save no snapshot; a snapshot needs at least one typed figure. Margin used and
-  excess liquidity still use carried figures, which the margin-call cross-check needs.
+  excess liquidity need a typed account value too: the loan and the maintenance requirement may
+  be carried, which the margin-call cross-check needs, but a carried account value gives both
+  `not recorded` (S3; the fold had let them use it). The service maps a carried value to `None`,
+  and `factInputs` to null (S4).
 - **D35. The shared fixture lives in `libs/api`, with its exact values as strings** (4.5, findings
-  2 and 3): `libs/api/src/lib/journal/worked-example.json`, in `api:test`'s inputs and `verify`'s
-  `rustScope`, owned by the backend lane. It supersedes the spec's
-  `apps/api/tests/fixtures/journal/` path.
+  2 and 3): `libs/api/src/lib/journal/worked-example.json`, in `api:test`'s inputs, owned by the
+  backend lane. It supersedes the spec's `apps/api/tests/fixtures/journal/` path. (The fold also
+  listed it in `verify`'s `rustScope`, which `40709185` removed; S23.)
 
 ### Where the code contradicts the spec (both cited)
 
@@ -1609,7 +1905,10 @@ live build and the demo build, recorded with the slice, never committed; every s
   `UPDATE`. Resolved by D23.
 - **C11.** The 1a seed row says "12 snapshots with their leg facts precomputed", but "no slice
   ships data that no screen shows", and leverage first shows in 1b. Seed the positions (criterion
-  26 needs them for its sum) and defer the leg facts to 1b's seed row.
+  26 needs them for its sum) and defer the leg facts to 1b's seed row. The positions are an
+  exception to that rule, kept only because criterion 26 sums them: no 1a screen shows them (the
+  boards' positions table, Positions block and Leverage line are 1b, F5 to F7), and the 1a wire
+  carries none (D17; S15).
 - **C12.** "An account value at or below $0" is unreachable below $0 by typing: money inputs take
   unsigned plain decimals (owner, 2026-10-16). The facts still handle ≤ 0 for restore and import.
 - **C13.** The Delete entry copy and the after-call line name later surfaces, against the hold-back
@@ -1648,9 +1947,11 @@ live build and the demo build, recorded with the slice, never committed; every s
 - **R4. Memory.** The contract tool, cargo and Nx each load the workspace, and Nx once ran out of
   memory. One at a time, `NX_DAEMON=false`.
 - **R5. Seal coverage (D9) is the one decision that can't be undone** once the first owner entry is
-  written. It is answered (D9) and pinned by T14's known-answer vector; it stays reversible until
-  B3 builds the seal. The fixed-width plaintexts (D32) and the AAD format (T13's vector) are just
-  as final once an owner row exists.
+  written. It is answered (D9) and pinned by T14's known-answer vectors; it stays reversible until
+  B3 builds the seal. The fixed-width plaintexts (D32) and the AAD format (T13's vectors) are just
+  as final once an owner row exists. A compromised journal key voids every seal made under it,
+  since its holder can forge them for those entries, and a key a seal names can never leave the
+  ring (3.3, S9).
 
 ---
 
@@ -1666,8 +1967,8 @@ live build and the demo build, recorded with the slice, never committed; every s
 | 6 | F3 pure browser modules | own commit | — (may go first) |
 | 7 | F1 facade and facts parity | own commit | B4 (the types and the fixture) |
 | 8 | F2 demo transport and seed | own commit | F1; the boards' sample data (landed, `13c3073d`) |
-| 9 | F4 tabs and routes | own commit | — (the boards, `13c3073d`, and the owner gate, `e86ab538` and `4471cb0b`, have landed) |
-| 10 | F5, F6, F7, F8 | one commit each | F4 |
+| 9 | F4 section tabs and the wall's words | own commit | — (the boards, `13c3073d`, and the owner gate, `e86ab538` and `4471cb0b`, have landed) |
+| 10 | F5, F6, F7, F8 | one commit each; F5 to F7 each add their own route (S26) | F4 |
 | 11 | F9 verification | none (evidence) | F8 |
 
 Every commit is path-limited, with the author `Rodrigo Arias <rodrigoarias4@gmail.com>`, and
@@ -1676,8 +1977,9 @@ Every commit is path-limited, with the author `Rodrigo Arias <rodrigoarias4@gmai
 **Backend lane may touch:** `apps/api/**` except `apps/api/.env.example` (`apps/api/project.json`
 included, for the fixture input); `apps/api/openapi/**`; `libs/api/src/generated/schema.ts`
 (through `api:contract:generate` only); `libs/api/src/lib/journal/worked-example.json` (the shared
-fixture, D35); `tools/api-contract.mjs`; `tools/verify.mjs` (`rustScope` only, finding 3);
-`.spire/clusters/tech/state/conformance/owner-gated.json`.
+fixture, D35); `tools/api-contract.mjs`; and `owner-gated.json`, `auth-gated.json` and
+`public-surface.json` under `.spire/clusters/tech/state/conformance/` (B4.9, S27). The fold's
+`tools/verify.mjs` edit is gone (S23).
 **It must not touch:** the rest of `libs/api/src/lib/**`, `apps/dashboard/**`, `design/**`, any
 `.env*`, or `docs/product/ai-analyst/DESIGN.md`.
 
@@ -1690,7 +1992,8 @@ imports from `features/trading/tradeEntry` (rule 10, `DESIGN_SYSTEM.md:165`). No
 writes the word "journal" into criterion 19's files.
 
 **Neither lane:** `design/**` and `tmp/journal-boards/**` (the boards workflow);
-`apps/api/.env.example` (the owner's); `eslint.config.mjs`, `nx.json`, `package.json` (no 1a need).
+`apps/api/.env.example` (the owner's); `eslint.config.mjs`, `nx.json`, `package.json` and
+`tools/verify.mjs` (no 1a need).
 
 ---
 
@@ -1796,3 +2099,74 @@ Reproduced before folding (scratch under `tmp/followups-2026-10-28/plan/`, gitig
     `:25-115`), the owner marking test at `api_contract_parity.rs:1324-1341`,
     `executeDirectEvidence` at `api-contract.mjs:2240-2286`, and the lines that moved in
     `convexa.ts`, `app.tsx`, `PositionsPage.tsx`, `RequireAuth.tsx` and `AuthContext.tsx`.
+
+### Second review (2026-10-28)
+
+A second review read the fold at `0e063c18`: 29 findings, S1 to S29 in its order (1 critical,
+8 major, 20 minor). All are applied, one in part (S10). Spec 08's appendix gains dated corrections
+inside items 1, 3, 5, 6, 7, 8, 12 and 13, and items 15 to 17. Reproduced first (scratch under
+`tmp/followups-2026-10-28/plan-fixup/`, gitignored): `repro_times.py` (exact fractions over the
+worked example, exit 0) for S1 to S3; `kat/` for S5, where Python's standard library and the
+crate's own `serde_json`, `hmac` and `sha2` agree on three seals, and its `aes-gcm` and Node's
+`crypto` on three envelopes (each exit 0); and a scratch copy of `ledger_tally` for S24.
+
+- S1, critical. A recalled entry's money took its save time. Now it defaults from About, 4:00 PM
+  ET on that day, and a null time takes `default_as_of` (2.4, 3.5, F6, T17, probes, D33; spec
+  item 15). At the save time, Oct 6 read −38.3% for −42.6%.
+- S2, major. A restored draft took the time of Save. Now the draft keeps `figures_at` (2.4, F3,
+  F6, T23, D33).
+- S3, major. Margin used and excess used a carried account value. Now both need a typed one, and
+  the frame and day lines read the chain (2.3, 4.1, 4.2, F5, F6, T2b, D34; spec item 16).
+- S4, major. The rule lived where `FactSnapshot` can't see it. Now the service maps a carried
+  value to `None`, `factInputs` mirrors it, and T2b is a service test (4.1, 4.4, 4.5, F1, T20).
+- S5, major. One vector per path. Now three seals, three envelopes through the context builder,
+  and the 13 contexts (3.1, 3.3, 3.4, T13, T14, D9, R5).
+- S6. The tombstone kept two flags. Now both read false, and the CHECK says so (3.1, 3.2, T15,
+  T16, D31).
+- S7. Only `journal_entries` refused an `UPDATE`. Now the five child tables do too (3.1, B2, T16,
+  D5).
+- S8. A copy of a copy named the copy. Now it names the original; a source with no value is 422
+  (2.3, 2.4, F6, T17, T26, D8).
+- S9. Seal keys and the session ring. A key a seal names stays for good, a compromised key voids
+  its seals, and the session ring joins the shared-key refusal (3.3, T12, D10, D11, R5).
+- S10. A past `revisit_on` is accepted (2.4). Declined in part: no T23 case, since with the rule
+  gone a queued save can't be refused for it, so the case could never fail.
+- S11. Two composer paths sent refused requests. Now an earlier About carries only from at or
+  before its As of, and nothing typed sends `snapshot: null` (2.4, F6, probes).
+- S12 and S29. The clock and the instant format. Every time reads `appNowMs()`, one `et.ts`
+  helper writes 27 characters, and `facts.ts` refuses any other (4.5, F1, F2, F6, T20, D33).
+- S13. The composer ignored withheld facts. Now it shows "Couldn't load" for series facts (2.3,
+  3.3, F6).
+- S14. A body can't rebuild a seal. Now the export reads stored rows, and the body adds
+  `original_provenance` (2.3, 3.3).
+- S15, major. The boards draw 1b parts that 1a never excluded. Named now: Leverage, the sparkline,
+  the path link, the peek row's sheet, the positions table, the Positions block and the entry
+  page's AI toggle (F5, F6, F7, C11; spec item 12).
+- S16, major. The fold wrote a null `as_of_et` as `written_at` for every About. Restored to
+  `default_as_of` (2.4, 3.5, T17, D33; spec item 5).
+- S17, major. Criterion 24 had no step. Now a 503 `storage_not_set_up` is never retried, Save is
+  refused while storage isn't set up, and a 403 waits for a new session (F3, F5, F6, T23, probe).
+- S18, major. F4's check never ran the route-boundary spec. Now F4 to F7 run `nx test` too, with
+  a mutation (F4, F5).
+- S19. Spec item 6 misquoted the spec. A dated correction says what it said.
+- S20. Four supersessions were missing from the appendix: the /privacy egress row, more plaintext
+  columns, `journal_details.supersedes_id`, and the entry page's sealed lines. Added (spec items
+  3, 7, 8, 13 and 17), and D22 counts four strings.
+- S21. No step owned `journal_ring_is_strict`. B3 does (B3, T12).
+- S22. B1's extraction kept only the first fault. Now it keeps every violation, with a two-fault
+  case (3.3, B1, D11).
+- S23. `rustScope` is gone (`40709185`). The edit and the fence are dropped (4.5, B3, section 8,
+  D35).
+- S24. The ledger row's feature cell read `trade-journal (spec 08, slice 1a plan)`. It is
+  normalized in place to `trade-journal (spec 08)`, before its first push. A correcting row would
+  itself have counted a second feature: in a scratch copy, one more binding row for the key made
+  it graduate at 2.
+- S25. The stub rule was half applied. Now `facts` is nullable, every entry answer carries
+  `facts_state`, a stub's About can be null, a carry from a stub is 422, and 3.3's rotation
+  sentence says stubs (2.3, 3.3, F7, T17, D12).
+- S26. F4's lazy imports named pages that F5 to F7 create. Each route now lands with its page
+  (F4 to F7, section 8).
+- S27. The journal lacked the 16 refusal rows every owner-only operation has. Added (B4.9, D30,
+  section 8).
+- S28. The secrets guard missed the journal ring. B3 adds its needle and a canary.
+- Found while editing: T6 named `recorded_high`, where 4.5 names the case `recalled_high`. Fixed.

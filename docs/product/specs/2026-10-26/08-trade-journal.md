@@ -3512,6 +3512,8 @@ plan's section 7.
    (critical). Counted as new, a copy of Sep 29's $34,047 saved just after the $2,500 deposit read
    −38.4% below the high and moved Oct 6 to −42.9%: a deposit shown as a loss, against
    criterion 7.
+   Corrected 2026-10-28 (second review, S3): margin used and excess liquidity no longer use a
+   carried account value; item 16 says how.
 2. **Aug 4's "Account value alone" is 0.0%.** The worked example printed "—" in that cell
    (line 628). Now 0.0%. Why: C9. The spec's own definition, `Vₖ ÷ V_high − 1` (line 543), gives
    exactly 0 when Aug 4 is its own recorded high, as Aug 21's row shows for the same case, and
@@ -3527,6 +3529,11 @@ plan's section 7.
    an edited export change figures, money or a stated confidence and still read "written at the
    time". Answered 2026-10-28 under the owner's standing instruction for the trade journal (ledger
    `trade-journal-seal-message`); reversible until backend step B3 builds the seal.
+   Corrected 2026-10-28 (second review, S20): read "every column the insert writes" as the plan's
+   section 3.3 has it, every field the insert writes except `seal_tag`, `deleted_at`, `body_chars`
+   and `schema_version`; and "each figure's provenance and source" as each figure's provenance,
+   `carried_from` and `carried_as_of`, with `source` the snapshot's. Three known-answer messages
+   pin it (S5), and 1b's export carries every sealed field as stored, not as corrected (S14).
 4. **The shared fixture moves to `libs/api`, with its exact values as strings.** The spec named
    `apps/api/tests/fixtures/journal/worked-example.json` (lines 584 and 3111). Now it is
    `libs/api/src/lib/journal/worked-example.json`, listed in `api:test`'s Nx inputs (and in
@@ -3540,10 +3547,21 @@ plan's section 7.
    server clamps a time up to 5 minutes after `written_at` to `written_at` and refuses a later
    one. Why: finding 6. A snapshot typed at 2:14 PM and delivered at 5 PM, after a 3 PM deposit,
    would have taken the deposit into its step.
+   Corrected 2026-10-28 (second review, S1, S2, S16): the composer sends the times he typed, not
+   the time he pressed Save. A Today snapshot's `as_of` is when he last typed a figure, so a draft
+   saved the next morning keeps its numbers' time; stamped at Save after a deposit, it moved Oct 6
+   to −42.9% (reproduced). A null `as_of` from any other caller keeps the spec's default
+   (line 2460): `written_at` when About is today, else 4:00 PM ET of `about_date`. The fold's plan
+   had written `written_at` for every About date. The money's time follows item 15.
 6. **Journal keys rotate add-only.** The spec said the journal ring reads the AI ring's pair "so
    keys rotate the same way" (line 2529), and the AI ring rewraps on read, which is a write. Now a
    new journal key is added and made active, old rows keep the key their envelope names, and
    nothing is re-encrypted on read. Why: C4: a sealed row has no writer for a rewrap.
+   Corrected 2026-10-28 (second review, S19, S9): the spec gave the journal its own pair, in the
+   AI ring's shape, "so keys rotate the same way" (line 2529); it never said the journal reads the
+   AI ring's pair. The AI ring rotates by rewrapping on read, which is a write, so the rule above
+   stands. And a key that any sealed entry's tag names stays in the ring for good, because the
+   seal key derives from it and a tag is never rewritten.
 7. **More plaintext metadata, and fixed-width ciphertext.** The spec's "Plaintext metadata, on
    purpose" list (line 2546) left out what the Tables draw as plaintext. Now it also covers a
    snapshot's `as_of` and `source`, money's `direction` and `occurred_at`, and a correction's
@@ -3552,6 +3570,9 @@ plan's section 7.
    values as 24 bytes, the figures JSON in 1,024-byte blocks. Why: C8, and finding 22: AES-GCM
    keeps the plaintext's length, so a deposit's digit count, or which "Closed by" was picked, would
    show to anyone who can read the database.
+   Corrected 2026-10-28 (second review, S20): the plaintext list also covers a detail's `field`,
+   span offsets, `origin`, `status` and `decided_at`, and a suspicion's `created_at` and
+   `retired_at`, as the Tables draw them (lines 2478-2486).
 8. **More columns on two tables, and the carried figure's date.** The spec listed
    `journal_corrections` as `id`, `target`, `value_ct`, `reason_ct`, `written_at` and
    `supersedes_id` (line 2467), `journal_later_notes` without `user_id` or `client_id`
@@ -3561,6 +3582,10 @@ plan's section 7.
    is keyed by `user_id`, a figure correction must name its entry, and a retried append must not
    land twice) and finding 18 (after the source is withdrawn, "Carried from {date}" still has its
    date).
+   Corrected 2026-10-28 (second review, S20, S8): `journal_details` also gains `supersedes_id`,
+   which the Tables leave out (they say only "superseded by a new row", line 2480); the new row
+   names the one it supersedes. And a copy of a copy names the snapshot where the number was
+   typed, in both `carried_from` and its date.
 9. **The tombstone keeps its keys.** The spec said the tombstone row "keeps only `id`,
    `written_at`, `deleted_at` and kind `deleted`" (line 2647). Now it also keeps `user_id` and
    `client_id`: keys, not content, so a late retry of the same save finds the tombstone and writes
@@ -3577,6 +3602,10 @@ plan's section 7.
     leg facts precomputed" (line 2689). Now the 12 snapshots carry their typed positions, which
     criterion 26 sums, and the leg facts are seeded with slice 1b, the first slice that shows
     them. Why: C11, under the spec's rule that no slice ships data that no screen shows.
+    Corrected 2026-10-28 (second review, S15): the positions are themselves an exception to that
+    rule, kept only because criterion 26 sums them. No 1a screen shows them: the entry page's
+    positions table, the composer's Positions block and the Leverage line are 1b, and the 1a wire
+    carries no positions.
 13. **Copy held back with its surface, and one sentence added.** The first run's "Nothing is sent
     to an AI until you turn AI reads on." (lines 800 and 2211) ships in 1a as "Nothing is sent to
     an AI."; the clause returns with slice 4's toggle. "What was already sent to your AI provider
@@ -3586,5 +3615,39 @@ plan's section 7.
     entries.", which the owner can strike before the entry page ships. Why: the spec's rule that
     copy naming a later surface is held back with it (line 3148), C13, finding 20, and finding 18
     (a withdrawn entry's figures live on as sealed copies in later entries).
+    Corrected 2026-10-28 (second review, S20): a fourth piece is held back, the /privacy egress
+    row (lines 2672-2673, and the 1a row's "The /privacy rows and key", line 3111), which names
+    triggers that ship with slice 4. 1a ships the two store rows and the key.
 14. **`EXPIRIES` is at `shared.ts:7`.** The spec cited `shared.ts:6` (lines 597 and 2862). Now
     `shared.ts:7`, where it has been at `e0236051`, `52339683` and HEAD. Why: finding 25.
+
+Added 2026-10-28 by a second review of the plan's fold, whose findings the plan's "Second review"
+list numbers S1 to S29: the dated corrections inside items 1, 3, 5, 6, 7, 8, 12 and 13, and items
+15 to 17 below. Where a correction and its item disagree, the correction holds.
+
+15. **The money's time follows About.** The spec said the composer "defaults the time to the save
+    time" (line 569) and "the time defaults to now" (line 896). Now, on an entry about an earlier
+    day, the money's date and time default to 4:00 PM ET on that day, as the snapshot's `as_of`
+    does, and a null time from any other caller takes the same default; about today, the field
+    still fills with the moment he opens it. The line "Counted before your {3:40 PM} numbers ·
+    Change" (lines 570, 896-897 and 2217) names the date of the snapshot it counts before when
+    that isn't the money's own day: "Counted before your Oct 2, 4:00 PM numbers · Change". Why: S1
+    (critical). A deposit recalled on Oct 7 about Sep 30 and timed at its save sat after every
+    snapshot up to Oct 6, so Sep 30's step read +5.8% and Oct 6 −38.3% for −42.6%: the deposit
+    hid the loss, against criterion 7 (reproduced). Money has no correction target, so a wrong
+    time could only be undone by withdrawing the entry.
+16. **Margin used and excess liquidity need a typed account value.** The spec derived both from
+    "two typed figures" (lines 533-534), and item 1 let them use a carried value. Now the account
+    value must be typed, or set by a correction, while the margin loan and the maintenance
+    requirement may be carried; a snapshot whose account value is carried reads `not recorded`
+    for both. This supersedes lines 533-534 for the loan and the maintenance requirement only.
+    Why: S3. A carried account value divided a fresh loan by an old value: 140%, where the account
+    held enough for 130% (reproduced). The margin-call cross-check needs only a carried
+    maintenance requirement beside a typed account value.
+17. **The entry page shows what he sealed.** Screen 5 (lines 1011-1028) draws the meta, the
+    recalled strip, the body, later notes and the Snapshot panel. Now, under the body, it also
+    shows each sealed field that was set, in the composer's own words: "How sure are you this
+    works out?" with his number, "I'm wrong if…" with his text and "Exit at $8.00" or "No exit
+    set", "Closed by: Me", and "Revisit on…" with its date; and a carried figure reads "Carried
+    from {date}". Why: S20, which found the plan had added these lines (its finding 19: he can
+    read back what he sealed) without an item here.
