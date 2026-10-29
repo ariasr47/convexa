@@ -985,19 +985,19 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
 
 ## 2026-10-29 · The chunk-reload key, two board texts gone stale, and spec 07's stress gauge
 
-- **What, Privacy** (`1317ab8f`): the page and its boards list `convexa.chunk-reload.v1` (`RELOAD_FLAG`,
+- **What, Privacy** (`b7219a56`): the page and its boards list `convexa.chunk-reload.v1` (`RELOAD_FLAG`,
   `apps/dashboard/src/reloadOnce.ts`), the flag both sites set once per tab when a page's code fails to load. It is
   session storage, and the demo leaves it unprefixed (`main.tsx:8` passes `window.sessionStorage` itself), so the live
   table's "local storage" sentence names it as the exception, the demo's "each under the prefix" reads "each but one",
   and its demo row says "(no prefix)". The Privacy spec card said "the demo's four own keys": five, and its key-table
   source now names `positions.owner` and the flag.
-- **What, two stale texts** (`8ce65322`): the Blog card's 2026-10-15 row said index.html's `<noscript>` links the plain
+- **What, two stale texts** (`c8a7fcb7`): the Blog card's 2026-10-15 row said index.html's `<noscript>` links the plain
   copy's `.html` address; a dated row supersedes it with the bare address (`ab8c4a80`). The card's built rows are now
   `&lt;`-escaped: since `7144bb37` the literal `<noscript>` in one had opened a real element and hidden the rest of the
   card (four rows, Rulings, Code). The operator's three metrics boards say where the page renders since `97e58d8d`: a
   dev server or the Docker stack, while production answers `/_ops/metrics` with the site's 404; the spec card's
   production lines say the same. Row ids and board bodies are unchanged.
-- **What, spec 07 step 0** (`18e48c43`): a built row, Research · Markets · Stress (since Convexa 1.0.0), with its spec
+- **What, spec 07 step 0** (`4bdf3293`): a built row, Research · Markets · Stress (since Convexa 1.0.0), with its spec
   card, staging, production, phone and states, drawn from `StressSection.tsx` and `stressRead.ts`. Production draws the
   spec's worked example on the real files of 2026-10-22 (Neutral 50), staging the authored sample (Fear 38). The rail
   gains Stress and both page feet take the shipped disclaimer; the Markets boards point to the row instead of drawing
@@ -1017,7 +1017,7 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
 
 ## 2026-10-29 · Spec cards read a placeholder as written
 
-- **What** (`8d5e0771`): ten strings on eight spec cards lost a placeholder such as `research/<TICKER>/*.md`, which
+- **What** (`2032a4f9`): ten strings on eight spec cards lost a placeholder such as `research/<TICKER>/*.md`, which
   the browser read as an element and dropped, on the site page and the canvas board alike. The card now escapes a `<`
   that would open a tag in every string it shows (`specText`, `spec.mjs`), so they read as written:
   `research/<TICKER>/` (five strings, on Research tab · note, Research · Notes, Research · Scorecard and Planned ·
@@ -1027,8 +1027,7 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
 - **How:** only a `<` before a letter, `/`, `!` or `?` is escaped; any other `<` and every `&` pass as written, so
   entry 34's escapes by hand (the Blog and operator cards' `&lt;`) and Markets' `&amp;` read as before, and no card
   string holds markup to lose (3,698 strings on 42 cards). The board map and the tracker show card text through the
-  same function instead of stripping anything tag-shaped; their boards are unchanged. Entry 34's `8ce65322` is
-  `c8a7fcb7` on `main` (the same patch).
+  same function instead of stripping anything tag-shaped; their boards are unchanged.
 - **Why:** the card writes its strings into the page as HTML. Entry 34 escaped the Blog and operator cards by hand,
   and eight more had the same bug. A scan of every string in `design/src`, and of every element the parser builds from
   `design/site` and `design/canvas`, found these ten and nothing else read as markup.
