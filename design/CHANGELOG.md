@@ -815,3 +815,44 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
   sets both at 13px (`fontSize: 13`, `wallFootSx`). Same on the Scanner, Positions and journal walls. Spec 08's state
   table (`08-trade-journal.md:808`) still gives Not the owner without the folded operator line the slice 1a plan's F4
   adds; that file is not design/'s.
+
+## 2026-10-28 · The boards' footer shows Convexa's version, as the app's does
+
+- **What:** every Final board's copyright line now names Convexa's version, “v1.0.0” in Mono, as the app's footer has
+  since `8edf043d`; the boards drew the line without it. It reads “© 2026 Convexa v1.0.0. All rights reserved.”
+  where it read “© 2026 Convexa. All rights reserved.” (the footer review of `8edf043d` found it). `FINAL_COPYRIGHT`
+  (`src/lib.mjs`) takes the number from `CONVEXA_VERSION` (`src/screens/final/changelog.mjs`), the root `package.json`
+  version read when the boards render, so it is never typed and a bump redraws the line.
+- **Drawn as `Footer.tsx` draws it:** “v1.0.0” in IBM Plex Mono (`.mono`; canon rule 23, Convexa's own figure) at the
+  line's 12px and steel. It is `aria-hidden`, and a visually hidden, unselectable “version 1.0.0” follows it (the
+  app's `visuallyHidden` box plus `user-select: none`), so Chrome reads the line as “© 2026 Convexa version 1.0.0. All
+  rights reserved.” and a selection copies it as drawn. The hidden part is drawn, not left out: the canon has no board
+  rule against it, and the boards already carry the app's accessible structure where it has one (the demo bar's
+  `aria-hidden` separators, the journal's visually hidden “Write an entry” label).
+- **Which boards:** the 144 Final boards that draw the footer, on 10 pages, 146 lines (Global shell · States and
+  Journal · Tidy up and import · Phone draw two each). Among them are the Shell row's three page boards and its
+  States board's two footer cells; the shell's phone boards draw the drawer over a page with no footer and are
+  unchanged. The Shell spec card's footer lines (the Footer widget, “the disclaimer and the copyright”, the round-3
+  line) don't quote the line, so the card is unchanged.
+- **Left as drawn:** the v2 `footer()` (`src/lib.mjs:385`, “© 2026 Convexa” in steel-2 beside Lab and a scheme
+  switch) draws only the nine v2 pages of the static site, off the canvas since 2026-10-25, and stays as history. The
+  year stays 2026 on the boards: the build never reads the clock (two builds are byte-identical), while the app
+  prints the current year.
+- **A version bump now redraws 144 more boards:** `node design/src/build.mjs` rewrites these board files and their
+  144 site pages with the version notes, so commit the rebuild with the bump. `emit-project.mjs` renders from source,
+  so a stale `canvas/` never publishes the old number; it lists those boards as stale.
+- **Heights:** none of the 254 Final boards changed with the line (it stays one 18px line); FChangelogEntries 2542 →
+  2631 at 28 entries. A second measurement of all 254 changed 0.
+- **Checked:** build 0, a second run byte-identical; verify-tokens 0. Every footer board was rendered from source in its
+  own scheme and the other, at 16px and 20px default font sizes (576 loads, 584 lines), against the footer lane's 16
+  renders of the app (dark and light, 1440 and 390, 16px and 20px roots). The results: one 18px line everywhere, as
+  the app keeps it; “v1.0.0” in IBM Plex Mono (Chrome's platform font for its 6 glyphs), 12px/18px, weight 400, in the
+  line's colour (dark rgb(138, 155, 180) on ink, 6.78:1; light rgb(90, 107, 133), 5.00:1; the app's), 92.25px into
+  the line (the app 92.28) and 43.2 × 15 (the app's). Chrome's accessibility tree reads “© 2026 Convexa version 1.0.0.
+  All rights reserved.” and a selection copies “© 2026 Convexa v1.0.0. All rights reserved.”, as in the app; on the 7
+  boards that draw a dialog open, the page behind it is `aria-hidden`, so the line is out of the tree there, as at
+  HEAD. Every footer and line box equals HEAD's within 0.5px. Four mutations (the version in Sans, the hidden part
+  selectable, the line wrapped, the version spoken) each fail that check. App and board line screenshots at 2x
+  differ only in antialiasing once aligned (largest channel difference 40 of 255). The sweep of the 145 changed boards
+  found 0 overflow, 0 text under 11px and no change at a 20px default font; its 49 clipped and 27 split reports are
+  HEAD's, board for board. NUL 0, CR 0.

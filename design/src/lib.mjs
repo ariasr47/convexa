@@ -6,6 +6,7 @@ export const FONT_LINK =
 
 import tokens from '../tokens/tokens.json' with { type: 'json' };
 import { SPY } from './data/index.mjs';
+import { CONVEXA_VERSION } from './screens/final/changelog.mjs';
 export { tokens, SPY };
 const cssName = (k) => '--' + k.replace(/([A-Z])/g, '-$1').replace(/(\d)/g, '-$1').toLowerCase();
 function schemeBlock(mode) {
@@ -675,7 +676,12 @@ export function finalDemoNotice({ extra = '', phone = false } = {}) {
  *  inline in the 12px line and become 44px-tall inline boxes under a coarse pointer (canon rule 7), as the app's.
  *  Production has no author line. */
 export const FINAL_AUTHOR = '<style>@media (pointer: coarse) { .fd-auth a { display: inline-flex; align-items: center; min-height: 44px; } }</style><p class="fd-auth" style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">Built by Rodrigo Arias · <a href="/blog/how-convexa-is-built" style="color: var(--steel);">How it’s built</a> · <a href="https://github.com/ariasr47/convexa" target="_blank" rel="noopener noreferrer" style="color: var(--steel);">GitHub ↗</a></p>';
-export const FINAL_COPYRIGHT = '<p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p>';
+/** The copyright line (Footer.tsx `footer-copyright`; owner, 2026-10-28): it names Convexa's version, the root
+ *  package.json's, read when the boards render (changelog.mjs CONVEXA_VERSION), never typed. "v<version>" is Convexa's
+ *  own figure, so Mono (canon rule 23), at the line's 12px and steel. As in the app, the drawn "v<version>" is
+ *  aria-hidden and a visually hidden, unselectable "version <version>" follows it (shared/a11y/visuallyHidden.ts), so a
+ *  screen reader hears "Convexa version 1.0.0" and a copied line reads as drawn. One 18px line at every board width. */
+export const FINAL_COPYRIGHT = `<p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa <span class="mono" aria-hidden="true">v${CONVEXA_VERSION}</span><span style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; -webkit-user-select: none; user-select: none;">version ${CONVEXA_VERSION}</span>. All rights reserved.</p>`;
 /** The footer's seam (shell/Footer.tsx, shared/ui/ArcDivider.tsx): the canon's arc section divider, a 20px box whose
  *  1px `line` stroke bows 8 units over a 1200-wide chord at y17 (apex 4px up), stretched to the page width with a
  *  non-scaling stroke. Owner, 2026-10-25, after fidelity round 2: keep the arc and draw it on the boards (they had a
