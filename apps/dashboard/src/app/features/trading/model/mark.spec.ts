@@ -5,7 +5,7 @@
  * arithmetic would be invisible in review — the UI would keep rendering plausible numbers.
  */
 import { resolveMarketFill } from '@/features/trading/positions/entry';
-import type { TrackedContract } from '@convexa/api';
+import type { OptionRight, TrackedContract } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import { bsPrice, computeMark, pl, RISK_FREE_RATE, type MarkInputs } from './mark';
 
@@ -151,54 +151,94 @@ describe('bsPrice — theoretical pricing sanity', () => {
   });
 });
 
+/** A contract with no quote: only the theoretical rung (Black-Scholes from the cached IV) prices it. */
+interface NoQuote {
+  right: OptionRight;
+  S: number;
+  K: number;
+  dte: number;
+  iv: number;
+}
+
+/** At the money, S = K = 20, with ten days left unless `dte` says otherwise. */
+const atm = (right: OptionRight, iv: number, dte = 10): NoQuote => ({
+  right,
+  S: 20,
+  K: 20,
+  dte,
+  iv,
+});
+
+/**
+ * Prices each row through every caller of `theoreticalMark`: the snapshot anchor, the live step and
+ * the market-entry fill. Each must give null where `want` is null, and otherwise a price within TOL
+ * of `want`. Returns the live step's price for each priced row.
+ *
+ * `want` is an independent Black-Scholes (Python, exact normal CDF via math.erf, r =
+ * RISK_FREE_RATE). mark.ts's normCdf is within 7.5e-8 of exact, so at S = K = 20 its price is within
+ * (S + K) · 7.5e-8 = 3e-6 of these: TOL = 1e-4.
+ */
+function expectEveryCaller(rows: Array<{ c: NoQuote; want: number | null }>): Map<NoQuote, number> {
+  const TOL = 1e-4;
+  const priced = new Map<NoQuote, number>();
+  for (const { c, want } of rows) {
+    const t = tracked({ strike: c.K, right: c.right, option_quote: null, iv: c.iv, dte: c.dte });
+    const at = (live: boolean) =>
+      inputs({
+        tracked: t,
+        strike: c.K,
+        right: c.right,
+        anchorSpot: c.S,
+        liveUnderlying: live ? c.S : null,
+        isLive: live,
+      });
+    const got = {
+      'snapshot (anchor)': computeMark(at(false)).mark,
+      'live (step 3)': computeMark(at(true)).mark,
+      'market entry': resolveMarketFill(t, c.S, c.right, c.K)?.mark ?? null,
+    };
+    for (const [caller, mark] of Object.entries(got)) {
+      const label = `${c.right} S ${c.S} K ${c.K} dte ${c.dte} iv ${c.iv}, ${caller}: ${mark}`;
+      if (want == null) {
+        expect(mark, label).toBeNull();
+      } else {
+        expect(mark, label).not.toBeNull();
+        expect(Math.abs((mark as number) - want), label).toBeLessThanOrEqual(TOL);
+      }
+    }
+    if (want != null) priced.set(c, got['live (step 3)'] as number);
+  }
+  return priced;
+}
+
 describe('the cached IV is a fraction, the unit ContractWire.iv carries', () => {
   it('an IV over 1.0 prices over 100%, continuously across 1.0, and an unusable IV gives no theoretical mark, through every caller', () => {
     // Risk: this mark is the displayed P/L, the limit-fill check, the order engine's fill and the
     // realized P/L on close. The API sends IV as a fraction (the contract route passes the feed's
     // decimal through), so 1.5 is 150%. Read as 1.5% it priced this call at 0.0345.
-    // `want` is an independent Black-Scholes (Python, exact normal CDF via math.erf, r =
-    // RISK_FREE_RATE) for a call, S = K = 20, dte 10. mark.ts's normCdf is within 7.5e-8 of exact,
-    // so its price is within (S + K) · 7.5e-8 = 3e-6 of these: TOL = 1e-4.
-    const TOL = 1e-4;
-    const rows: Array<{ iv: number; want: number | null }> = [
-      { iv: 1.5, want: 1.9870535390908675 },
-      { iv: 0.999, want: 1.3293915245131167 },
-      { iv: 1.001, want: 1.3320221350270796 },
+    const below = atm('call', 0.999);
+    const above = atm('call', 1.001);
+    const priced = expectEveryCaller([
+      { c: atm('call', 1.5), want: 1.9870535390908675 },
+      { c: below, want: 1.3293915245131167 },
+      { c: above, want: 1.3320221350270796 },
+      // Real chains carry IVs far above 1.5: libs/quant-engine/tests/fixtures/gex_NVDA.json has 389
+      // over 1, up to 6.19. A percent guess that came back above some threshold, or for one right
+      // only, must fail here: both rights, well above 1.5.
+      { c: atm('call', 2.5), want: 3.2885797670671373 },
+      { c: atm('put', 2.5), want: 3.2639374264258514 },
+      { c: atm('call', 6.19), want: 7.838513378701784 },
+      { c: atm('put', 6.19), want: 7.813871038060497 },
       // No usable IV: the caller falls through as for a null IV, never a number built from it.
-      { iv: 0, want: null },
-      { iv: -0.2, want: null },
-      { iv: Number.NaN, want: null },
-      { iv: Number.POSITIVE_INFINITY, want: null },
-    ];
-    const noQuote = (iv: number) => tracked({ strike: 20, option_quote: null, iv, dte: 10 });
-    const at = (iv: number, live: boolean) =>
-      inputs({
-        tracked: noQuote(iv),
-        strike: 20,
-        anchorSpot: 20,
-        liveUnderlying: live ? 20 : null,
-        isLive: live,
-      });
-    const priced: Record<string, number> = {};
-    for (const { iv, want } of rows) {
-      const got = {
-        'snapshot (anchor)': computeMark(at(iv, false)).mark,
-        'live (step 3)': computeMark(at(iv, true)).mark,
-        'market entry': resolveMarketFill(noQuote(iv), 20, 'call', 20)?.mark ?? null,
-      };
-      for (const [caller, mark] of Object.entries(got)) {
-        const label = `iv ${iv}, ${caller}: ${mark}`;
-        if (want == null) {
-          expect(mark, label).toBeNull();
-        } else {
-          expect(mark, label).not.toBeNull();
-          expect(Math.abs((mark as number) - want), label).toBeLessThanOrEqual(TOL);
-        }
-      }
-      if (want != null) priced[String(iv)] = got['live (step 3)'] as number;
-    }
+      { c: atm('call', 0), want: null },
+      { c: atm('call', -0.2), want: null },
+      { c: atm('call', Number.NaN), want: null },
+      { c: atm('call', Number.POSITIVE_INFINITY), want: null },
+    ]);
     // Continuous across 1.0: 0.002 of vol moves this price by about 0.0026. The percent guess
     // jumped from 1.33 to 0.03 there.
-    expect(Math.abs(priced['1.001'] - priced['0.999'])).toBeLessThan(0.01);
+    expect(Math.abs((priced.get(above) as number) - (priced.get(below) as number))).toBeLessThan(
+      0.01,
+    );
   });
 });
