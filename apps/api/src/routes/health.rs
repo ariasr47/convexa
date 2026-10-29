@@ -247,6 +247,9 @@ fn health_wire_from_body(body: Value) -> HealthWire {
     wire
 }
 
+// The Pages proxy lets a browser keep this answer for 30 s (API-CACHE, functions/api/[[path]].ts),
+// so it must be the same for every caller: no session, no cookie (public_data.rs tests it). A `//`
+// comment, not a doc comment, which would become the operation's public description.
 #[utoipa::path(get, path = "/api/health", operation_id = "api_health")]
 pub async fn api_health(State(state): State<AppState>) -> HealthResponse {
     let Json(body) = health(State(state)).await;

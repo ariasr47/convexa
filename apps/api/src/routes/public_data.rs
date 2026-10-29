@@ -2,8 +2,10 @@
 //! positioning, short data, SEC filings and facts), read-only and cached server-side.
 //!
 //! Every answer is 200 with a `state` (`live`, `off`, `not_configured`, `unavailable`); a
-//! failing source never fails the request. Only a malformed ticker is a 422. No cache headers:
-//! caching is the server's job here, not the browser's.
+//! failing source never fails the request. Only a malformed ticker is a 422. The API sends no
+//! cache headers; the Pages proxy lets a browser keep a 200 for 30 s (API-CACHE,
+//! functions/api/[[path]].ts). So every answer here is the same for every caller: no session,
+//! no owner gate, no cookie (tested below).
 //!
 //! Each answer also carries `sources`: one row per upstream source it read, in the P-2 words
 //! (`updated`, `delayed`, `last_good`, `source_down`, `not_set_up`, `off`). The legacy `state`
@@ -2255,5 +2257,75 @@ mod tests {
             });
             assert_eq!(serde_json::to_value(wire.reason).unwrap(), word);
         }
+    }
+
+    /// API-CACHE: the Pages proxy lets a browser keep these reads for 30 s
+    /// (functions/api/[[path]].ts, `isPublicRead`), so each must answer the owner exactly as it
+    /// answers a stranger, and set no cookie.
+    #[tokio::test]
+    async fn the_reads_a_browser_may_keep_answer_the_owner_as_they_answer_a_stranger() {
+        use axum::body::Body;
+        use axum::http::{header, Request};
+        use tower::ServiceExt;
+        const OWNER: &str = "public-cache-owner@example.test";
+        let mut state = AppState::for_runtime_guardrail_tests("public-cache-test".into())
+            .await
+            .unwrap();
+        let mut config = (*state.config).clone();
+        config.owner_emails = crate::config::OwnerEmails::from_raw(Some(OWNER));
+        state.config = std::sync::Arc::new(config);
+        let app = crate::routes::router(state).unwrap();
+        let send = |request: Request<Body>| {
+            let app = app.clone();
+            async move {
+                let response = app.oneshot(request).await.unwrap();
+                let status = response.status();
+                let cookie = response.headers().get(header::SET_COOKIE).cloned();
+                let body = to_bytes(response.into_body(), 1 << 22).await.unwrap();
+                (status, cookie, body)
+            }
+        };
+        let (status, cookie, _) = send(
+            Request::post("/api/auth/signup")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(format!(
+                    r#"{{"email":"{OWNER}","password":"runtime-password-123","display_name":"Owner"}}"#
+                )))
+                .unwrap(),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK);
+        let cookie = cookie.expect("signup sets the session cookie");
+        let session = cookie
+            .to_str()
+            .unwrap()
+            .split(';')
+            .next()
+            .unwrap()
+            .to_owned();
+        let get = |path: &str, session: Option<&str>| {
+            let mut request = Request::get(path);
+            if let Some(session) = session {
+                request = request.header(header::COOKIE, session);
+            }
+            send(request.body(Body::empty()).unwrap())
+        };
+        for path in [
+            "/api/health",
+            "/api/public-data/markets",
+            "/api/public-data/filings?tickers=SPY,QQQ",
+            "/api/public-data/tickers/SPY",
+        ] {
+            let stranger = get(path, None).await;
+            assert_eq!(
+                (stranger.0, stranger.1.is_none()),
+                (StatusCode::OK, true),
+                "{path}"
+            );
+            assert_eq!(get(path, Some(&session)).await, stranger, "{path}");
+        }
+        // The session is the owner's: an owner-only read refuses the stranger and serves it.
+        assert_eq!(get("/api/scan", None).await.0, StatusCode::FORBIDDEN);
+        assert_eq!(get("/api/scan", Some(&session)).await.0, StatusCode::OK);
     }
 }

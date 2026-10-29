@@ -9,8 +9,14 @@
 //
 // SSE-safe: we return the upstream Response BODY UNBUFFERED
 // (`new Response(upstream.body, ...)`) so text/event-stream flushes event-by-event
-// edge-to-client. We do NOT read/await the body, do NOT rewrite Cache-Control, and
-// preserve the upstream headers (incl. Content-Type and X-Accel-Buffering: no).
+// edge-to-client. We do NOT read/await the body, leave an event stream's Cache-Control as
+// the upstream set it, and preserve the upstream headers (incl. Content-Type and
+// X-Accel-Buffering: no).
+//
+// Caching (API-CACHE, site audit 2026-10-25): every other answer gets a Cache-Control here.
+// Only an identity-free public read (/api/health, /api/public-data/*: GET or HEAD, 200, no
+// Set-Cookie) may be kept, briefly, and the API answers those the same for every caller;
+// everything else, sessions and owner-only reads included, is no-store.
 //
 // Backend origin comes from the Pages env var API_ORIGIN (e.g.
 // https://<service>.up.railway.app) — set in the Pages dashboard, NEVER committed and
@@ -54,6 +60,49 @@ const CLIENT_ADDRESS = new Set([
   'x-convexa-proxy-secret',
 ]);
 
+// Edge defence-in-depth (the static SPA gets the same from public/_headers), on every answer,
+// the edge's own included. An upstream value wins; Content-Type and Set-Cookie are never touched.
+const DEFENCE_HEADERS: ReadonlyArray<[string, string]> = [
+  ['X-Content-Type-Options', 'nosniff'],
+  ['X-Frame-Options', 'DENY'],
+  ['Referrer-Policy', 'strict-origin-when-cross-origin'],
+  ['Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload'],
+];
+
+function withDefenceHeaders(headers: Headers): Headers {
+  for (const [name, value] of DEFENCE_HEADERS) {
+    if (!headers.has(name)) headers.set(name, value);
+  }
+  return headers;
+}
+
+// An answer the edge gives itself: defended, and never cached.
+function edgeAnswer(body: string, status: number): Response {
+  const headers = withDefenceHeaders(new Headers({ 'Cache-Control': 'no-store' }));
+  return new Response(body, { status, headers });
+}
+
+// A browser may keep a public read 30 s, and reuse it up to 5 minutes more while it refetches.
+const PUBLIC_READ_CACHE = 'public, max-age=30, stale-while-revalidate=300';
+
+// The reads the API answers the same for every caller: no session, no owner gate, no cookie.
+// tools/pages-proxy.spec.mjs fails if one of them stops being anonymous in the API contract.
+function isPublicRead(method: string, pathname: string): boolean {
+  return (
+    (method === 'GET' || method === 'HEAD') &&
+    (pathname === '/api/health' || pathname.startsWith('/api/public-data/'))
+  );
+}
+
+function applyCachePolicy(method: string, pathname: string, status: number, headers: Headers) {
+  if ((headers.get('content-type') ?? '').toLowerCase().startsWith('text/event-stream')) return;
+  if (status === 200 && isPublicRead(method, pathname) && !headers.has('set-cookie')) {
+    if (!headers.has('cache-control')) headers.set('Cache-Control', PUBLIC_READ_CACHE);
+    return;
+  }
+  headers.set('Cache-Control', 'no-store');
+}
+
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -65,12 +114,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     url.pathname === '/api/_research' ||
     url.pathname.startsWith('/api/_research/')
   ) {
-    return new Response('Not Found', { status: 404 });
+    return edgeAnswer('Not Found', 404);
   }
 
   const origin = (env.API_ORIGIN || '').replace(/\/+$/, '');
   if (!origin) {
-    return new Response('API_ORIGIN is not configured', { status: 502 });
+    return edgeAnswer('API_ORIGIN is not configured', 502);
   }
 
   // Preserve the full /api/* path + query string against the Railway origin.
@@ -114,21 +163,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (HOP_BY_HOP.has(key.toLowerCase())) continue;
     respHeaders.set(key, value);
   }
-
-  // Edge defence-in-depth (static SPA also gets these via public/_headers).
-  // Do not override Content-Type / Set-Cookie from upstream.
-  if (!respHeaders.has('X-Content-Type-Options')) {
-    respHeaders.set('X-Content-Type-Options', 'nosniff');
-  }
-  if (!respHeaders.has('X-Frame-Options')) {
-    respHeaders.set('X-Frame-Options', 'DENY');
-  }
-  if (!respHeaders.has('Referrer-Policy')) {
-    respHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  }
-  if (!respHeaders.has('Strict-Transport-Security')) {
-    respHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  }
+  withDefenceHeaders(respHeaders);
+  applyCachePolicy(request.method, url.pathname, upstream.status, respHeaders);
 
   return new Response(upstream.body, {
     status: upstream.status,

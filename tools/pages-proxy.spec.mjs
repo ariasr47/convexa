@@ -5,6 +5,7 @@
 // the real onRequest (Node strips its type annotations) with a faked upstream fetch.
 // Replaces the source-text scans in batch-backtest-cli.structural.spec.ts.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, test } from 'node:test';
 import { onRequest } from '../functions/api/[[path]].ts';
 
@@ -12,13 +13,15 @@ const ORIGIN = 'https://convexa-api.up.railway.app';
 const realFetch = globalThis.fetch;
 let calls;
 let sent;
+let upstreamAnswer;
 beforeEach(() => {
   calls = [];
   sent = [];
+  upstreamAnswer = () => new Response('upstream body', { status: 418 });
   globalThis.fetch = async (url, init) => {
     calls.push(String(url));
     sent.push(new Headers(init?.headers));
-    return new Response('upstream body', { status: 418 });
+    return upstreamAnswer();
   };
 });
 afterEach(() => {
@@ -129,4 +132,128 @@ test('without a Cloudflare address, no client address is forwarded at all', asyn
     'x-convexa-client-ip': null,
     'x-convexa-proxy-secret': SECRET,
   });
+});
+
+// API-CACHE: the edge's own answers carry the defence headers, and only an identity-free public
+// read may be kept by a browser; sessions, owner-only reads and errors are no-store.
+const DEFENCE = {
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+};
+const PUBLIC_READ = 'public, max-age=30, stale-while-revalidate=300';
+const COOKIE = 'gf_session=signed; Path=/; HttpOnly; SameSite=Lax; Secure';
+const json = (status, headers = {}) =>
+  new Response(status === 204 ? null : '{}', {
+    status,
+    headers: { 'content-type': 'application/json', ...headers },
+  });
+const keptAs = async (method, path, upstream) => {
+  upstreamAnswer = () => upstream;
+  const request = new Request(`https://convexa.pages.dev${path}`, {
+    method,
+    headers: { cookie: 'gf_session=owner' },
+  });
+  const res = await onRequest({ request, env: { API_ORIGIN: ORIGIN } });
+  return res.headers.get('cache-control');
+};
+
+test("the edge's own 404 and 502 carry the defence headers and are never cached", async () => {
+  for (const [path, env, status] of [
+    ['/api/_metrics', undefined, 404],
+    ['/api/_research/session-books/2026-10-08', undefined, 404],
+    ['/api/ticker/SPY', {}, 502],
+  ]) {
+    const res = await call(path, env);
+    const seen = Object.fromEntries(
+      [...Object.keys(DEFENCE), 'cache-control'].map((name) => [name, res.headers.get(name)]),
+    );
+    assert.deepEqual(
+      { status: res.status, ...seen },
+      { status, ...DEFENCE, 'cache-control': 'no-store' },
+      path,
+    );
+  }
+});
+
+test('a browser may keep only an identity-free public read: GET or HEAD, 200, no cookie', async () => {
+  for (const [method, path, upstream, expected] of [
+    ['GET', '/api/health', json(200), PUBLIC_READ],
+    ['HEAD', '/api/health', json(200), PUBLIC_READ],
+    ['GET', '/api/public-data/markets', json(200), PUBLIC_READ],
+    ['GET', '/api/public-data/filings?tickers=SPY,QQQ', json(200), PUBLIC_READ],
+    ['GET', '/api/public-data/tickers/SPY', json(200), PUBLIC_READ],
+    // The API's own stricter word on a public read stands.
+    ['GET', '/api/public-data/markets', json(200, { 'cache-control': 'no-store' }), 'no-store'],
+    // An error is never kept.
+    ['GET', '/api/public-data/tickers/%21%21', json(422), 'no-store'],
+    ['GET', '/api/health', json(500), 'no-store'],
+    // A response that sets a cookie is never kept, even on a public path.
+    ['GET', '/api/health', json(200, { 'set-cookie': COOKIE }), 'no-store'],
+    // Sessions and owner-only reads are never kept, whatever the upstream says.
+    ['GET', '/api/auth/session', json(200, { 'set-cookie': COOKIE }), 'no-store'],
+    ['GET', '/api/auth/session', json(200), 'no-store'],
+    ['POST', '/api/auth/login', json(200, { 'set-cookie': COOKIE }), 'no-store'],
+    ['POST', '/api/auth/logout', json(204), 'no-store'],
+    ['GET', '/api/ticker/SPY', json(200, { 'cache-control': 'public, max-age=60' }), 'no-store'],
+    ['GET', '/api/scan/all', json(200), 'no-store'],
+    ['GET', '/api/scan', json(403), 'no-store'],
+    ['POST', '/api/recommendation/SPY', json(200), 'no-store'],
+    ['GET', '/api/book', json(200), 'no-store'],
+    ['GET', '/api/broker/book', json(200), 'no-store'],
+    // Not a read, and look-alikes of the public paths.
+    ['POST', '/api/public-data/markets', json(200), 'no-store'],
+    ['GET', '/api/healthz', json(200), 'no-store'],
+    ['GET', '/api/public-database', json(200), 'no-store'],
+    ['GET', '/api/public-data', json(200), 'no-store'],
+  ]) {
+    assert.equal(await keptAs(method, path, upstream), expected, `${method} ${path}`);
+  }
+});
+
+test('an event stream keeps the Cache-Control its upstream set, and gets none added', async () => {
+  const stream = (headers) =>
+    new Response('data: 1\n\n', {
+      status: 200,
+      headers: { 'content-type': 'text/event-stream', ...headers },
+    });
+  assert.equal(
+    await keptAs('GET', '/api/stream/SPY', stream({ 'cache-control': 'no-cache' })),
+    'no-cache',
+  );
+  assert.equal(await keptAs('GET', '/api/ticker/SPY/progressive', stream({})), null);
+});
+
+test('every operation a browser may keep is anonymous and cookie-free in the API contract', async () => {
+  const contract = JSON.parse(
+    readFileSync(new URL('../apps/api/openapi/convexa.openapi.json', import.meta.url), 'utf8'),
+  );
+  const kept = [];
+  for (const [template, item] of Object.entries(contract.paths)) {
+    for (const [method, operation] of Object.entries(item)) {
+      if (!['get', 'post', 'put', 'delete'].includes(method)) continue;
+      const path = template.replace(/\{[^}]+\}/g, 'SPY');
+      const key = `${method.toUpperCase()} ${template}`;
+      if ((await keptAs(method.toUpperCase(), path, json(200))) !== PUBLIC_READ) continue;
+      kept.push(key);
+      assert.deepEqual(
+        {
+          security: operation.security,
+          mode: operation['x-convexa-security'],
+          owner: operation['x-convexa-access'] ?? null,
+          setsCookie: Object.values(operation.responses).some((r) => r.headers?.['Set-Cookie']),
+        },
+        { security: [], mode: 'public', owner: null, setsCookie: false },
+        key,
+      );
+    }
+  }
+  // Adding a public read is a decision: it lands here and in isPublicRead together.
+  assert.deepEqual(kept.sort(), [
+    'GET /api/health',
+    'GET /api/public-data/filings',
+    'GET /api/public-data/markets',
+    'GET /api/public-data/tickers/{ticker}',
+  ]);
 });
