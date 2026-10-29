@@ -1,8 +1,10 @@
 // The pre-push hook's release-version check (CLAUDE.md "Versions"; ledger row
 // convexa-version-semver-per-push). A push to main is a release, and staging is fast-forwarded to
 // main. Once v<version> tags a commit, a push of either branch at another commit would deploy new
-// code under that released version, and with CI off nothing else would catch it (footer review,
-// 2026-10-28). Each case builds a repository and a bare remote `origin` in a temporary directory
+// code under that released version. So would a push of main at the version the remote's main
+// already carries: a release pushed but not tagged yet, or tagged only on the remote. With CI off
+// nothing else would catch either (footer review and guard review, 2026-10-28).
+// Each case builds a repository and a bare remote `origin` in a temporary directory
 // and pushes from one to the other, so git itself writes the hook's stdin; one case writes the ref
 // lines itself, to choose their order. The hook's later checks are stubs that log their calls
 // (gitleaks and npx on PATH, the research-notes check in the scratch tree), so the cases also show
@@ -31,10 +33,19 @@ const HOOK = fileURLToPath(new URL('./pre-push', import.meta.url));
 const ZERO = '0'.repeat(40);
 // What the hook runs after its version check passes, in order: research notes, gitleaks, Nx.
 const ALLOWED = { status: 0, said: [], checks: ['research-notes', 'gitleaks', 'npx'] };
+// Refused because v<version> tags another commit.
 const refused = (version, commit) => ({
   status: 1,
   said: [
-    `pre-push: the version is already released as v${version} at ${commit}, so bump the root package.json version (see CLAUDE.md "Versions").`,
+    `pre-push: v${version} already tags ${commit}, so bump the root package.json version, or move the tag if ${commit} was never pushed (see CLAUDE.md "Versions").`,
+  ],
+  checks: [],
+});
+// Refused because the remote's main already carries the version at another commit.
+const refusedOnMain = (version, commit) => ({
+  status: 1,
+  said: [
+    `pre-push: the remote's main already carries version ${version}, at ${commit}, so bump the root package.json version (see CLAUDE.md "Versions").`,
   ],
   checks: [],
 });
@@ -131,6 +142,12 @@ function scratch(t) {
     },
     tag: (name, commit, { annotated }) =>
       annotated ? git('tag', '-a', '-m', name, name, commit) : git('tag', name, commit),
+    // A tag made on the remote only, as a release on GitHub or from another clone would be.
+    tagOnRemote: (name, commit) =>
+      execFileSync('git', ['--git-dir', remote, 'tag', '-a', '-m', name, name, commit], {
+        env,
+        stdio: 'ignore',
+      }),
     // `git push -q origin <refspecs>`: git runs the hook and writes its stdin.
     push: (...refspecs) => run('git', ['push', '-q', 'origin', ...refspecs]),
     // The hook run directly, as git runs it, with these ref lines on stdin.
@@ -166,8 +183,11 @@ describe('pre-push refuses a push of main or staging that reuses a released vers
     // Tagged before the push. An annotated tag is its own object: the hook compares its commit.
     s.tag('v1.1.0', b, { annotated: true });
     assert.deepEqual(s.push('main'), ALLOWED);
-    // After the release, staging is fast-forwarded to it.
-    assert.deepEqual(s.push('main:staging'), ALLOWED);
+    // After the release, staging is fast-forwarded to it, here with HEAD on later work: the hook
+    // compares the tag with the pushed commit, not with HEAD.
+    s.git('switch', '-q', '-c', 'next');
+    s.commit('1.2.0', 'C: later work');
+    assert.deepEqual(s.push(`${b}:refs/heads/staging`), ALLOWED);
     assert.equal(s.remote('refs/heads/main'), b);
     assert.equal(s.remote('refs/heads/staging'), b);
   });
@@ -177,18 +197,43 @@ describe('pre-push refuses a push of main or staging that reuses a released vers
     const a = s.commit('1.0.0', 'A');
     s.push('main', 'main:staging');
     s.tag('v1.0.0', a, { annotated: true });
-    s.commit('1.0.0', 'B: new code, not bumped');
+    const b = s.commit('1.0.0', 'B: new code, not bumped');
     for (const refspec of ['main', 'main:staging']) {
       assert.deepEqual(s.push(refspec), refused('1.0.0', s.short(a)), refspec);
     }
     assert.equal(s.remote('refs/heads/main'), a);
     assert.equal(s.remote('refs/heads/staging'), a);
-    // A lightweight tag counts the same.
     const c = s.commit('1.0.1', 'C: bumped');
+    // Git lists main before staging. Main at C is allowed; the refused staging line after it still
+    // fails the push, and neither branch moves.
+    assert.deepEqual(s.push('main', `${b}:refs/heads/staging`), refused('1.0.0', s.short(a)));
+    assert.equal(s.remote('refs/heads/main'), a);
+    assert.equal(s.remote('refs/heads/staging'), a);
+    // A lightweight tag counts the same.
     assert.deepEqual(s.push('main'), ALLOWED);
     s.tag('v1.0.1', c, { annotated: false });
     s.commit('1.0.1', 'D: new code, not bumped');
     assert.deepEqual(s.push('main'), refused('1.0.1', s.short(c)));
+    assert.equal(s.remote('refs/heads/main'), c);
+  });
+
+  it('refuses a push of main at the version the remote main already carries at another commit', (t) => {
+    const s = scratch(t);
+    const a = s.commit('1.0.0', 'A');
+    s.push('main');
+    // v1.0.0 made only on the remote (a release on GitHub, or from another clone), not fetched.
+    s.tagOnRemote('v1.0.0', a);
+    s.commit('1.0.0', 'B: new code, not bumped');
+    assert.deepEqual(s.push('main'), refusedOnMain('1.0.0', s.short(a)));
+    assert.equal(s.remote('refs/heads/main'), a);
+    // A release pushed and not tagged yet: CLAUDE.md tags it after the push.
+    const c = s.commit('1.0.1', 'C: bumped');
+    assert.deepEqual(s.push('main'), ALLOWED);
+    const d = s.commit('1.0.1', 'D: new code, not bumped');
+    assert.deepEqual(s.push('main'), refusedOnMain('1.0.1', s.short(c)));
+    // Tagging the new commit here does not make it the release: C already went out as 1.0.1.
+    s.tag('v1.0.1', d, { annotated: false });
+    assert.deepEqual(s.push('main'), refusedOnMain('1.0.1', s.short(c)));
     assert.equal(s.remote('refs/heads/main'), c);
   });
 

@@ -723,7 +723,7 @@ const T = [
       'build-dashboard.mjs:9-57',
       'api-contract.mjs:2064-2281',
       'verify.mjs:15-78',
-      'hooks/pre-push:6-16',
+      'hooks/pre-push:20-58',
       'check-dashboard-bundle.mjs:41-233',
     ],
     go: '#nx',
