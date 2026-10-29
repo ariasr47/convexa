@@ -205,7 +205,9 @@ function SectionBlocks({ section }: { section: MethodSection }) {
 }
 
 export function MethodologyPage() {
-  useDocumentTitle('How Convexa works — methodology');
+  // Ends in ' — Convexa' like every page's title (useDocumentTitle.ts); "Methodology" is the name
+  // the site and the boards give this page (site audit 2026-10-25, SEO-3).
+  useDocumentTitle('Methodology — Convexa');
 
   // GATE Z I-1 (AC-M1) — a FRESH `/methodology#id` load: the browser's own scroll-to-fragment
   // step already ran, before React had rendered this lazy route's sections, so it found nothing.
