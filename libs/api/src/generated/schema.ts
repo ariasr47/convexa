@@ -1659,33 +1659,21 @@ export interface components {
       public_per_min: number;
     };
     HealthScanner: {
-      board: components['schemas']['HealthBoard'];
-      embedded: boolean;
       enabled: boolean;
-      market_hours_only: boolean;
       universe_size: number;
     };
     HealthWarm: {
-      concurrency: number;
       enabled: boolean;
-      /** Format: int64 */
-      interval_secs: number;
-      symbols: string[];
     };
     HealthWire: {
-      ai_meter: components['schemas']['HealthAiMeter'];
       data_feed: string;
       durable_store: string;
-      gex_cache: components['schemas']['HealthCacheMetrics'];
-      gex_kernel: string;
       /**
        * @description `"live"` | `"paused"` | `"not_live"`: `MARKET_DATA_MODE`, read once at boot (SPEC B3).
        *     Paused with no vendor key reports `not_live` (no feed exists to resume; canon P-1).
        */
       market_data: string;
       metrics_auth: string;
-      price_cache: string;
-      rate_limit: components['schemas']['HealthRateLimit'];
       /** @description Deployed git revision, or null when the runtime cannot determine it. */
       release?: string | null;
       scanner: components['schemas']['HealthScanner'];
@@ -2180,13 +2168,20 @@ export interface components {
     };
     MetricsOperator: {
       ai_meter_scope: string;
+      gex_kernel: string;
       history_samples: number;
+      price_cache: string;
       /** Format: int64 */
       request_count: number;
       scan_rows: number;
+      scanner_market_hours_only: boolean;
       size_desc: string;
       /** Format: int64 */
       uptime_seconds: number;
+      warm_concurrency: number;
+      /** Format: int64 */
+      warm_interval_secs: number;
+      warm_symbols: string[];
     };
     MetricsRateLimitHeadroom: {
       /** Format: int64 */
@@ -2236,6 +2231,7 @@ export interface components {
       min_rate_limit_headroom?: null | components['schemas']['MetricsRateLimitHeadroom'];
     };
     MetricsWire: {
+      ai_meter: components['schemas']['HealthAiMeter'];
       gex_cache: components['schemas']['HealthCacheMetrics'];
       global: components['schemas']['MetricsScope'];
       instrumentation_enabled: boolean;
@@ -2244,7 +2240,9 @@ export interface components {
       per_ticker: {
         [key: string]: components['schemas']['MetricsScope'];
       };
+      rate_limit: components['schemas']['HealthRateLimit'];
       recent_traces: components['schemas']['RecentTrace'][];
+      scanner_board: components['schemas']['HealthBoard'];
       session_archive_coverage: components['schemas']['SessionArchiveCoverageWire'];
       window: string;
     };

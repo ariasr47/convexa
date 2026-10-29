@@ -12,6 +12,11 @@ use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use utoipa::{IntoResponses, ToSchema};
 
+// The public readout (SEC-4, site audit 2026-10-25): liveness, the deployed release, the data mode
+// and feed, and the deploy checks the conformance suites pin (durable_store, metrics_auth,
+// scanner.enabled, scanner.universe_size, warm.enabled). Operating detail, meaning the scanner
+// board, the rate limit, the AI meter, the cache counters and the warm, cache and kernel settings,
+// is on the token-gated `/api/_metrics` (`MetricsWire`), which the Pages edge does not serve.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct HealthWire {
     pub status: String,
@@ -26,16 +31,11 @@ pub struct HealthWire {
     // plumbing there means every change to the plumbing churns the generated artifacts.
     /// Deployed git revision, or null when the runtime cannot determine it.
     pub release: Option<String>,
-    pub price_cache: String,
     pub durable_store: String,
     pub data_feed: String,
-    pub gex_kernel: String,
     pub scanner: HealthScanner,
-    pub rate_limit: HealthRateLimit,
-    pub ai_meter: HealthAiMeter,
     pub metrics_auth: String,
     pub warm: HealthWarm,
-    pub gex_cache: HealthCacheMetrics,
     /// `"live"` | `"paused"` | `"not_live"`: `MARKET_DATA_MODE`, read once at boot (SPEC B3).
     /// Paused with no vendor key reports `not_live` (no feed exists to resume; canon P-1).
     pub market_data: String,
@@ -43,11 +43,9 @@ pub struct HealthWire {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct HealthScanner {
     pub enabled: bool,
-    pub embedded: bool,
-    pub market_hours_only: bool,
     pub universe_size: usize,
-    pub board: HealthBoard,
 }
+// The scanner board readout, served on `/api/_metrics` since SEC-4 (it kept its name).
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct HealthBoard {
     pub rows: usize,
@@ -80,9 +78,6 @@ pub struct HealthAiMeter {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct HealthWarm {
     pub enabled: bool,
-    pub symbols: Vec<String>,
-    pub interval_secs: u64,
-    pub concurrency: usize,
 }
 
 #[derive(Debug, IntoResponses)]
@@ -111,57 +106,14 @@ fn contract_representative_wire() -> HealthWire {
         status: "ok".into(),
         service: "api-rust".into(),
         release: None,
-        price_cache: "memory".into(),
         durable_store: "json".into(),
         data_feed: "fixture".into(),
-        gex_kernel: "contract".into(),
         scanner: HealthScanner {
             enabled: false,
-            embedded: true,
-            market_hours_only: false,
             universe_size: 0,
-            board: HealthBoard {
-                rows: 0,
-                by_status: BTreeMap::new(),
-                priced: 0,
-                scored: 0,
-                history_samples: 0,
-                history_backend: "json".into(),
-                history_symbols: 0,
-                history_top: Vec::new(),
-                sweep_last_completed: None,
-                heartbeat_updated_at: None,
-            },
-        },
-        rate_limit: HealthRateLimit {
-            public_per_min: 0,
-            enabled: false,
-        },
-        ai_meter: HealthAiMeter {
-            scope: "contract".into(),
-            daily_cap: 0,
-            note: "contract".into(),
         },
         metrics_auth: "open".into(),
-        warm: HealthWarm {
-            enabled: false,
-            symbols: Vec::new(),
-            interval_secs: 0,
-            concurrency: 0,
-        },
-        gex_cache: HealthCacheMetrics {
-            hits: 0,
-            misses: 0,
-            sets: 0,
-            expirations: 0,
-            warm_refreshes: 0,
-            warm_errors: 0,
-            hit_rate: 0.0,
-            entries: 0,
-            warm_symbols: Vec::new(),
-            ttl_default_secs: 0,
-            ttl_liquid_secs: 0,
-        },
+        warm: HealthWarm { enabled: false },
         market_data: "live".into(),
     }
 }
@@ -295,6 +247,10 @@ pub struct MetricsWire {
     pub per_ticker: BTreeMap<String, MetricsScope>,
     pub recent_traces: Vec<RecentTrace>,
     pub gex_cache: HealthCacheMetrics,
+    // These three were on the public `/api/health` until SEC-4.
+    pub scanner_board: HealthBoard,
+    pub rate_limit: HealthRateLimit,
+    pub ai_meter: HealthAiMeter,
     pub operator: MetricsOperator,
     pub metrics_auth: String,
     pub session_archive_coverage: SessionArchiveCoverageWire,
@@ -437,6 +393,13 @@ pub struct MetricsOperator {
     pub request_count: u64,
     pub size_desc: String,
     pub uptime_seconds: u64,
+    // The settings below were on the public `/api/health` until SEC-4.
+    pub price_cache: String,
+    pub gex_kernel: String,
+    pub scanner_market_hours_only: bool,
+    pub warm_symbols: Vec<String>,
+    pub warm_interval_secs: u64,
+    pub warm_concurrency: usize,
 }
 
 fn contract_metrics_scope() -> MetricsScope {
@@ -483,6 +446,27 @@ fn contract_metrics_response() -> Response {
             ttl_default_secs: 0,
             ttl_liquid_secs: 0,
         },
+        scanner_board: HealthBoard {
+            rows: 0,
+            by_status: BTreeMap::new(),
+            priced: 0,
+            scored: 0,
+            history_samples: 0,
+            history_backend: "json".into(),
+            history_symbols: 0,
+            history_top: Vec::new(),
+            sweep_last_completed: None,
+            heartbeat_updated_at: None,
+        },
+        rate_limit: HealthRateLimit {
+            public_per_min: 0,
+            enabled: false,
+        },
+        ai_meter: HealthAiMeter {
+            scope: "contract".into(),
+            daily_cap: 0,
+            note: "contract".into(),
+        },
         operator: MetricsOperator {
             scan_rows: 0,
             history_samples: 0,
@@ -490,6 +474,12 @@ fn contract_metrics_response() -> Response {
             request_count: 0,
             size_desc: "empty".into(),
             uptime_seconds: 0,
+            price_cache: "memory".into(),
+            gex_kernel: "contract".into(),
+            scanner_market_hours_only: false,
+            warm_symbols: Vec::new(),
+            warm_interval_secs: 0,
+            warm_concurrency: 0,
         },
         metrics_auth: "required".into(),
         session_archive_coverage: empty_coverage_wire(&CoveragePolicy::production().unwrap()),
@@ -519,8 +509,55 @@ pub async fn metrics_contract(
 }
 
 pub async fn health(State(state): State<AppState>) -> Json<Value> {
-    let metrics = state.gex_cache.metrics_snapshot().await;
-    // Operator board readout: proves whether durable scan rows exist beyond the FE view.
+    #[cfg(feature = "postgres")]
+    let durable_store = if state.pg.is_some() {
+        "postgres"
+    } else {
+        "json"
+    };
+    #[cfg(not(feature = "postgres"))]
+    let durable_store = "json";
+    // Public (SEC-4): what a deploy check needs and nothing about how the server runs. The
+    // operating detail is `cache_metrics`, behind the operator token. This body reads no store,
+    // so a caller hammering this exempt, public path costs the database nothing.
+    Json(json!({
+        "status": "ok",
+        "service": "api-rust",
+        // The deployed revision, so "did my merge actually ship?" is one request instead of an
+        // archaeology session. On 2026-09-02 a failed container build left production serving a
+        // six-day-old image while Deploy smoke passed against it — every endpoint it probes
+        // already existed. Null when unknown, which is honest rather than pretending to know.
+        "release": deployed_revision(),
+        "durable_store": durable_store,
+        "data_feed": state.config.data_feed.as_str(),
+        "scanner": {
+            // Paused ⇒ never sweeping regardless of SCAN_ENABLED (B1/B3): the scanner is not
+            // started at all in that mode (server.rs), so this stays honest even without a
+            // fresh sweep to prove it.
+            "enabled": state.config.scan_enabled && state.config.market_data_mode.is_live(),
+            "universe_size": state.universe.as_ref().map(|u| u.universe.len()).unwrap_or(0),
+        },
+        "metrics_auth": metrics_auth_label(&state),
+        "warm": {
+            // Paused ⇒ never running regardless of WARM_ENABLED (B1/B3): the warmer is not
+            // spawned at all in that mode (server.rs).
+            "enabled": state.config.warm_enabled && state.config.market_data_mode.is_live(),
+        },
+        "market_data": state.config.market_data_state(),
+    }))
+}
+
+fn metrics_auth_label(state: &AppState) -> &'static str {
+    if state.config.metrics_secret_token.is_some() {
+        "required"
+    } else {
+        "open"
+    }
+}
+
+/// The scanner board readout: whether durable scan rows exist beyond the FE view, and the
+/// structure history behind them.
+async fn scanner_board(state: &AppState) -> Value {
     let scan_rows = state.scan.read_rows(None).await;
     let mut by_status: BTreeMap<String, usize> = BTreeMap::new();
     let mut priced = 0usize;
@@ -535,83 +572,26 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
         }
     }
     let hb = state.scan.read_heartbeat().await;
-    let history_samples = state.scan.count_structure_samples().await;
-    let history_backend = state.scan.backend_label();
     let history_top = state.scan.structure_history_symbol_counts(12).await;
-    let history_symbols = history_top.len();
-    let history_top_json: Vec<Value> = history_top
-        .into_iter()
-        .map(|(symbol, n)| json!({ "symbol": symbol, "n": n }))
-        .collect();
-    #[cfg(feature = "postgres")]
-    let durable_store = if state.pg.is_some() {
-        "postgres"
-    } else {
-        "json"
-    };
-    #[cfg(not(feature = "postgres"))]
-    let durable_store = "json";
-    Json(json!({
-        "status": "ok",
-        "service": "api-rust",
-        // The deployed revision, so "did my merge actually ship?" is one request instead of an
-        // archaeology session. On 2026-09-02 a failed container build left production serving a
-        // six-day-old image while Deploy smoke passed against it — every endpoint it probes
-        // already existed. Null when unknown, which is honest rather than pretending to know.
-        "release": deployed_revision(),
-        "price_cache": state.prices.backend_name(),
-        "durable_store": durable_store,
-        "data_feed": state.config.data_feed.as_str(),
-        "gex_kernel": quant_engine::gex_kernel_name(),
-        "scanner": {
-            // Paused ⇒ never sweeping regardless of SCAN_ENABLED (B1/B3): the scanner is not
-            // started at all in that mode (server.rs), so this stays honest even without a
-            // fresh sweep to prove it.
-            "enabled": state.config.scan_enabled && state.config.market_data_mode.is_live(),
-            "embedded": true,
-            "market_hours_only": state.config.scan_market_hours_only,
-            "universe_size": state.universe.as_ref().map(|u| u.universe.len()).unwrap_or(0),
-            "board": {
-                "rows": scan_rows.len(),
-                "by_status": by_status,
-                "priced": priced,
-                "scored": scored,
-                "history_samples": history_samples,
-                "history_backend": history_backend,
-                "history_symbols": history_symbols,
-                "history_top": history_top_json,
-                "sweep_last_completed": hb.as_ref().and_then(|h| h.sweep_last_completed),
-                "heartbeat_updated_at": hb.as_ref().map(|h| h.updated_at),
-            },
-        },
-        "rate_limit": {
-            "public_per_min": state.config.public_rate_limit_per_min,
-            "enabled": state.config.public_rate_limit_per_min > 0,
-        },
-        "ai_meter": {
-            "scope": crate::services::recommendation::meter_scope_label(),
-            "daily_cap": 50,
-            "note": "Process-local daily AI-rec cap; correct for a single api replica",
-        },
-        "metrics_auth": if state.config.metrics_secret_token.is_some() {
-            "required"
-        } else {
-            "open"
-        },
-        "warm": {
-            // Paused ⇒ never running regardless of WARM_ENABLED (B1/B3): the warmer is not
-            // spawned at all in that mode (server.rs).
-            "enabled": state.config.warm_enabled && state.config.market_data_mode.is_live(),
-            "symbols": state.config.warm_symbols,
-            "interval_secs": state.config.warm_interval_secs,
-            "concurrency": state.config.warm_concurrency,
-        },
-        "gex_cache": metrics,
-        "market_data": state.config.market_data_state(),
-    }))
+    json!({
+        "rows": scan_rows.len(),
+        "by_status": by_status,
+        "priced": priced,
+        "scored": scored,
+        "history_samples": state.scan.count_structure_samples().await,
+        "history_backend": state.scan.backend_label(),
+        "history_symbols": history_top.len(),
+        "history_top": history_top
+            .into_iter()
+            .map(|(symbol, n)| json!({ "symbol": symbol, "n": n }))
+            .collect::<Vec<Value>>(),
+        "sweep_last_completed": hb.as_ref().and_then(|h| h.sweep_last_completed),
+        "heartbeat_updated_at": hb.as_ref().map(|h| h.updated_at),
+    })
 }
 
-/// Operator readout for cache hit/miss (same payload nested under health).
+/// Operator readout: the GEX cache, the scanner board, the rate limit, the AI meter and the
+/// server's settings, beside the session-archive coverage.
 ///
 /// When `METRICS_SECRET_TOKEN` is set, require `Authorization: Bearer <token>` or
 /// `X-Metrics-Token: <token>`. Pages edge already 404s `/api/_metrics`; this is
@@ -625,18 +605,22 @@ pub async fn cache_metrics(
     }
     let metrics = state.gex_cache.metrics_snapshot().await;
     let coverage = coverage_wire(&state).await;
-    let board = {
-        let scan_rows = state.scan.read_rows(None).await;
-        let history_samples = state.scan.count_structure_samples().await;
-        json!({
-            "scan_rows": scan_rows.len(),
-            "history_samples": history_samples,
-            "ai_meter_scope": crate::services::recommendation::meter_scope_label(),
-            "request_count": 0,
-            "size_desc": "unknown",
-            "uptime_seconds": 0,
-        })
-    };
+    let board = scanner_board(&state).await;
+    let config = &state.config;
+    let operator = json!({
+        "scan_rows": board["rows"],
+        "history_samples": board["history_samples"],
+        "ai_meter_scope": crate::services::recommendation::meter_scope_label(),
+        "request_count": 0,
+        "size_desc": "unknown",
+        "uptime_seconds": 0,
+        "price_cache": state.prices.backend_name(),
+        "gex_kernel": quant_engine::gex_kernel_name(),
+        "scanner_market_hours_only": config.scan_market_hours_only,
+        "warm_symbols": config.warm_symbols,
+        "warm_interval_secs": config.warm_interval_secs,
+        "warm_concurrency": config.warm_concurrency,
+    });
     Json(json!({
         // Instrumentation is intentionally disabled until the bounded trace collector is enabled;
         // the closed empty scope still gives operators a stable, typed response.
@@ -646,8 +630,18 @@ pub async fn cache_metrics(
         "per_ticker": {},
         "recent_traces": [],
         "gex_cache": metrics,
-        "operator": board,
-        "metrics_auth": if state.config.metrics_secret_token.is_some() { "required" } else { "open" },
+        "scanner_board": board,
+        "rate_limit": {
+            "public_per_min": config.public_rate_limit_per_min,
+            "enabled": config.public_rate_limit_per_min > 0,
+        },
+        "ai_meter": {
+            "scope": crate::services::recommendation::meter_scope_label(),
+            "daily_cap": 50,
+            "note": "Process-local daily AI-rec cap; correct for a single api replica",
+        },
+        "operator": operator,
+        "metrics_auth": metrics_auth_label(&state),
         "session_archive_coverage": coverage,
     }))
     .into_response()
@@ -995,5 +989,34 @@ mod wire_divergence_tests {
         assert_eq!(body["market_data"], "not_live");
         assert_eq!(body["warm"]["enabled"], false);
         assert_eq!(body["scanner"]["enabled"], false);
+    }
+
+    /// SEC-4 moved the operating detail off the public health and onto `/api/_metrics`, whose body
+    /// is built untyped. It must be its closed wire field for field: every `MetricsWire` field
+    /// present (the moved ones included), nothing outside it, nothing changed by the round trip.
+    #[tokio::test]
+    async fn the_metrics_body_is_its_closed_wire_moved_fields_included() {
+        let mut state = crate::state::AppState::for_tests(
+            crate::services::chain_snapshot::ChainSnapshotStore::memory(),
+            crate::services::session_chain_archive::SessionChainArchive::memory(),
+        )
+        .await
+        .unwrap();
+        let mut cfg = (*state.config).clone();
+        cfg.public_rate_limit_per_min = 30;
+        cfg.warm_symbols = vec!["SPY".into()];
+        state.config = std::sync::Arc::new(cfg);
+        let response =
+            super::cache_metrics(axum::extract::State(state), axum::http::HeaderMap::new()).await;
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let bytes = axum::body::to_bytes(response.into_body(), 1 << 22)
+            .await
+            .unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let wire: super::MetricsWire =
+            serde_json::from_value(body.clone()).expect("the metrics body is a MetricsWire");
+        assert_eq!(serde_json::to_value(&wire).unwrap(), body);
+        assert_eq!(wire.rate_limit.public_per_min, 30);
+        assert_eq!(wire.operator.warm_symbols, ["SPY"]);
     }
 }

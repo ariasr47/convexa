@@ -105,6 +105,12 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // its hash and four artifacts move to their bytes at `9176a3b8` (ledger
 // `route-growth-repins-api-artifact-oracle`). `tests/capacity_identity.rs` now compares every pin
 // with the file on disk, so `cargo test` fails on the next skipped re-pin.
+// Re-pinned 2026-10-29 (SEC-4, site audit 2026-10-25): the public `HealthWire` keeps status,
+// service, release, durable_store, data_feed, scanner.{enabled,universe_size}, metrics_auth,
+// warm.enabled and market_data; the scanner board, rate limit and AI meter move to `MetricsWire`,
+// and the cache, kernel, scanner-hours and warm settings to `MetricsOperator`. Zero new
+// operations, so `precutover-operation-baseline.json` keeps its hash and four artifacts move
+// (ledger `route-growth-repins-api-artifact-oracle`).
 pub const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -112,19 +118,19 @@ pub const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "5e80d25c5fa4b29a88b7e7aebdefb49271242fc89e773a33f57477157da1916f",
+        "e6df919d05be8f91e81d399ebd280de93cbe00613977c84dce11c6e92f4f0c2f",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "0216b1e4d98cb149b53f51b45b77718dd8a9a4765a46ae43ca57bc8252ddfefe",
+        "1a7273de95ce674d564f252ab6d219431341a041cac39c89c66043dc31cc8ffb",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "6de1531bc5b93fb5832f794f49eb5dd2ae196a66e4dce8d67bb9154028fe11ab",
+        "2d71ab26e5eea1aeb2626bd260508b6701dd157ad0c2dea60a9ebf57e4f38bcf",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "7836e4a865e9a6031c076e243e3108e3b739d9d20f857702380d254b23eab80c",
+        "c4a210d935ff4a3292eac69a656680aeee5feee6c9f2eb9bacb9f81bba883adb",
     ),
 ];
 

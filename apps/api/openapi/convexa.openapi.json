@@ -2267,16 +2267,7 @@
       },
       "HealthScanner": {
         "properties": {
-          "board": {
-            "$ref": "#/components/schemas/HealthBoard"
-          },
-          "embedded": {
-            "type": "boolean"
-          },
           "enabled": {
-            "type": "boolean"
-          },
-          "market_hours_only": {
             "type": "boolean"
           },
           "universe_size": {
@@ -2284,48 +2275,24 @@
             "type": "integer"
           }
         },
-        "required": ["enabled", "embedded", "market_hours_only", "universe_size", "board"],
+        "required": ["enabled", "universe_size"],
         "type": "object"
       },
       "HealthWarm": {
         "properties": {
-          "concurrency": {
-            "minimum": 0,
-            "type": "integer"
-          },
           "enabled": {
             "type": "boolean"
-          },
-          "interval_secs": {
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "symbols": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
           }
         },
-        "required": ["enabled", "symbols", "interval_secs", "concurrency"],
+        "required": ["enabled"],
         "type": "object"
       },
       "HealthWire": {
         "properties": {
-          "ai_meter": {
-            "$ref": "#/components/schemas/HealthAiMeter"
-          },
           "data_feed": {
             "type": "string"
           },
           "durable_store": {
-            "type": "string"
-          },
-          "gex_cache": {
-            "$ref": "#/components/schemas/HealthCacheMetrics"
-          },
-          "gex_kernel": {
             "type": "string"
           },
           "market_data": {
@@ -2334,12 +2301,6 @@
           },
           "metrics_auth": {
             "type": "string"
-          },
-          "price_cache": {
-            "type": "string"
-          },
-          "rate_limit": {
-            "$ref": "#/components/schemas/HealthRateLimit"
           },
           "release": {
             "description": "Deployed git revision, or null when the runtime cannot determine it.",
@@ -2361,16 +2322,11 @@
         "required": [
           "status",
           "service",
-          "price_cache",
           "durable_store",
           "data_feed",
-          "gex_kernel",
           "scanner",
-          "rate_limit",
-          "ai_meter",
           "metrics_auth",
           "warm",
-          "gex_cache",
           "market_data"
         ],
         "type": "object"
@@ -3768,9 +3724,15 @@
           "ai_meter_scope": {
             "type": "string"
           },
+          "gex_kernel": {
+            "type": "string"
+          },
           "history_samples": {
             "minimum": 0,
             "type": "integer"
+          },
+          "price_cache": {
+            "type": "string"
           },
           "request_count": {
             "format": "int64",
@@ -3781,6 +3743,9 @@
             "minimum": 0,
             "type": "integer"
           },
+          "scanner_market_hours_only": {
+            "type": "boolean"
+          },
           "size_desc": {
             "type": "string"
           },
@@ -3788,6 +3753,21 @@
             "format": "int64",
             "minimum": 0,
             "type": "integer"
+          },
+          "warm_concurrency": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "warm_interval_secs": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "warm_symbols": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -3796,7 +3776,13 @@
           "ai_meter_scope",
           "request_count",
           "size_desc",
-          "uptime_seconds"
+          "uptime_seconds",
+          "price_cache",
+          "gex_kernel",
+          "scanner_market_hours_only",
+          "warm_symbols",
+          "warm_interval_secs",
+          "warm_concurrency"
         ],
         "type": "object"
       },
@@ -3942,6 +3928,9 @@
       },
       "MetricsWire": {
         "properties": {
+          "ai_meter": {
+            "$ref": "#/components/schemas/HealthAiMeter"
+          },
           "gex_cache": {
             "$ref": "#/components/schemas/HealthCacheMetrics"
           },
@@ -3966,11 +3955,17 @@
             },
             "type": "object"
           },
+          "rate_limit": {
+            "$ref": "#/components/schemas/HealthRateLimit"
+          },
           "recent_traces": {
             "items": {
               "$ref": "#/components/schemas/RecentTrace"
             },
             "type": "array"
+          },
+          "scanner_board": {
+            "$ref": "#/components/schemas/HealthBoard"
           },
           "session_archive_coverage": {
             "$ref": "#/components/schemas/SessionArchiveCoverageWire"
@@ -3986,6 +3981,9 @@
           "per_ticker",
           "recent_traces",
           "gex_cache",
+          "scanner_board",
+          "rate_limit",
+          "ai_meter",
           "operator",
           "metrics_auth",
           "session_archive_coverage"
