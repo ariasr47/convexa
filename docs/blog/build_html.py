@@ -10,7 +10,8 @@ shell at /blog/<slug> (apps/dashboard/src/app/pages/blog/posts.ts reads the same
 time; tools/write-blog-heads.mjs gives that address its own title and share tags). This script
 writes the PLAIN copy for readers without JavaScript (index.html's <noscript> links to it): here
 in docs/blog/ and into apps/dashboard/public/blog/plain/. It is noindex, and its canonical is the
-in-shell address.
+in-shell address. The post's text is one <article>: tools/write-blog-heads.mjs copies it into the
+in-shell page's #root, so a reader or crawler without JavaScript gets the post there too.
 Never write a page to public/blog/<slug>.html itself: a static file there would win over the
 in-shell route and the post would lose the site's bar, nav and footer.
 """
@@ -198,7 +199,9 @@ TEMPLATE = """<!DOCTYPE html>
 <body>
 <main>
 <a class="backlink" href="/blog">&#8592; All posts</a>
+<article>
 {body}
+</article>
 </main>
 </body>
 </html>
