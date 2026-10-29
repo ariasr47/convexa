@@ -861,12 +861,12 @@
       "x": 0,
       "y": 2627,
       "w": 760,
-      "h": 1924,
+      "h": 1985,
       "page": "account"
     },
     {
       "file": "FOperatorProduction.dc.html",
-      "title": "Operator · Production · /_ops/metrics",
+      "title": "Operator · Dev server or Docker stack · /_ops/metrics",
       "x": 880,
       "y": 2627,
       "w": 1440,
@@ -896,7 +896,7 @@
     },
     {
       "file": "FOperatorPhone.dc.html",
-      "title": "Operator · Phone · production metrics",
+      "title": "Operator · Phone · metrics, dev server or Docker stack",
       "x": 5560,
       "y": 2627,
       "w": 390,
@@ -905,7 +905,7 @@
     },
     {
       "file": "FOperatorLight.dc.html",
-      "title": "Operator · Light · production metrics",
+      "title": "Operator · Light · metrics, dev server or Docker stack",
       "x": 6070,
       "y": 2627,
       "w": 1440,
@@ -1241,7 +1241,7 @@
       "x": 0,
       "y": 14028,
       "w": 760,
-      "h": 1177,
+      "h": 1774,
       "page": "site"
     },
     {
