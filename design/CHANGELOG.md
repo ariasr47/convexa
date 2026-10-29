@@ -982,3 +982,35 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
 - **Heights:** FPrivacyStaging 2382 → 2467. FChangelogEntries 2945 → 3034 at 33 entries; a second measurement changed 0.
 - **Checked:** build 0, and a second run byte-identical; verify-tokens 0; the five Privacy boards measured with 0
   overflow and 0 text under 11px. NUL 0, CR 0.
+
+## 2026-10-29 · The chunk-reload key, two board texts gone stale, and spec 07's stress gauge
+
+- **What, Privacy** (`1317ab8f`): the page and its boards list `convexa.chunk-reload.v1` (`RELOAD_FLAG`,
+  `apps/dashboard/src/reloadOnce.ts`), the flag both sites set once per tab when a page's code fails to load. It is
+  session storage, and the demo leaves it unprefixed (`main.tsx:8` passes `window.sessionStorage` itself), so the live
+  table's "local storage" sentence names it as the exception, the demo's "each under the prefix" reads "each but one",
+  and its demo row says "(no prefix)". The Privacy spec card said "the demo's four own keys": five, and its key-table
+  source now names `positions.owner` and the flag.
+- **What, two stale texts** (`8ce65322`): the Blog card's 2026-10-15 row said index.html's `<noscript>` links the plain
+  copy's `.html` address; a dated row supersedes it with the bare address (`ab8c4a80`). The card's built rows are now
+  `&lt;`-escaped: since `7144bb37` the literal `<noscript>` in one had opened a real element and hidden the rest of the
+  card (four rows, Rulings, Code). The operator's three metrics boards say where the page renders since `97e58d8d`: a
+  dev server or the Docker stack, while production answers `/_ops/metrics` with the site's 404; the spec card's
+  production lines say the same. Row ids and board bodies are unchanged.
+- **What, spec 07 step 0** (`18e48c43`): a built row, Research · Markets · Stress (since Convexa 1.0.0), with its spec
+  card, staging, production, phone and states, drawn from `StressSection.tsx` and `stressRead.ts`. Production draws the
+  spec's worked example on the real files of 2026-10-22 (Neutral 50), staging the authored sample (Fear 38). The rail
+  gains Stress and both page feet take the shipped disclaimer; the Markets boards point to the row instead of drawing
+  it, since its real dates postdate theirs. /credits gains the OFR card and the CFTC card's new lines; /methodology the
+  Fear–greed gauge section and What's live as `copy.ts` has it, with Net liquidity and the release dates, which had
+  never reached the board; its phone board splits in two under the 8,000px cap. chart-kit's twin takes ChartFrame's
+  `{ text }` cell.
+- **Spec and code differ**, and the boards follow the code: a row's score is the mirror of its half-up percentile
+  (`wholeScore`), not "round(score)" (spec Copy › Rows), which is what gives the spec's own 21, 49 and 69; at 390 the
+  gauge row keeps "7 of 7 inputs counted · as of Oct 19", where the phone sketch shortens it.
+- **Why:** lanes B3, B6 and B7 and spec 07's frontend landed on `main` on 2026-10-29 ahead of the design source.
+- **Heights:** as each commit lists them; the largest: FBlogSpec 1177 → 1774, FMethodologyPhone 7495 → 5535 plus
+  FMethodologyPhone2 3808, five new FResearchStress boards. FChangelogEntries 3034 → 3123 at 34 entries; a second
+  measurement changed 0.
+- **Checked:** build 0, and a second run byte-identical, after each commit; verify-tokens 0; every board a build
+  changed was measured, with 0 overflow and 0 text under 11px. NUL 0, CR 0.
