@@ -15,6 +15,7 @@ import { dataMode, DEMO_NOTE_PRICED, type PublicMarkets } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha, useTheme, type Theme } from '@mui/material/styles';
 import { useId, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { researchIndex } from 'virtual:convexa-research';
 import { ComingUpSection, MarketsSectionHead } from './ComingUpSection';
 import {
@@ -314,6 +315,10 @@ function JumpRail({
       (j.id !== 'liquidity' || liquidity) &&
       (j.id !== 'coming-up' || comingUp),
   );
+  // index.html declares <base href="/">, which resolves a bare "#stress" to "/#stress", the landing;
+  // the page's own path keeps it a same-document fragment, native and without a reload (the
+  // methodology index's fix, MethodologyPage.tsx).
+  const { pathname } = useLocation();
   return (
     <Box
       component="nav"
@@ -339,7 +344,7 @@ function JumpRail({
         <Box
           key={j.id}
           component="a"
-          href={`#${j.id}`}
+          href={`${pathname}#${j.id}`}
           // 44px under a coarse pointer (32 before); the links draw no fill, so nothing visible
           // changes but the row's height (spec 2026-10-21/02, part (b)).
           sx={{
