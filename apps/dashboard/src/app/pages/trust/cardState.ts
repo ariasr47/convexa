@@ -2,7 +2,8 @@
  * What each /credits card says about its source right now: a P-2 state word, the detail after it
  * (a date) and the line under it. Pure, so the decisions that can mislead silently are pinned in
  * cardState.spec.ts: a source the site keeps off reading as working, an Updated without a date, a
- * summary that counts some cards as if it counted all of them.
+ * summary that counts some cards as if it counted all of them, and one malformed field taking every
+ * card down with the page.
  *
  * Design: design/src/screens/final/trust-pages.mjs (sourceCard, legend, creditsStates).
  */
@@ -190,6 +191,169 @@ export function schedulesState(rows: PublicSource[]): CardState {
     .filter((s) => s.card.tag !== 'updated')
     .map((s) => s.row.detail ?? `${s.row.name}: ${s.card.note}`);
   return { tag: worst.card.tag, detail: worst.card.detail, note: behind.join(' ') };
+}
+
+// ---- reading an answer ---------------------------------------------------------------------
+// The answers are typed by the contract, but nothing checks them on the way in. A field that was
+// missing, null where the contract promises a value, or of the wrong type threw in a date helper
+// or in the tag, and the route's error page replaced every card (found by lane B3, 2026-10-29).
+// So each part a card reads is checked here first.
+
+/** A read that failed, or a part of its answer this page can't read. */
+export const COULDNT: CardState = { tag: 'couldntLoad', note: 'Couldn’t check this source.' };
+
+/** The API's rows behind the one Release schedules card. */
+const SCHEDULE_ROWS = ['fed-fomc', 'bls', 'bea', 'treasury-qr'] as const;
+
+type Part = Record<string, unknown>;
+const isPart = (v: unknown): v is Part => typeof v === 'object' && v !== null && !Array.isArray(v);
+const isText = (v: unknown): v is string => typeof v === 'string';
+/** YYYY-MM-DD, as the API writes a date. */
+const isDay = (v: unknown): v is string => isText(v) && /^\d{4}-\d{2}-\d{2}$/.test(v);
+/** RFC 3339, as the API writes a time. */
+const isTime = (v: unknown): v is string =>
+  isText(v) && /^\d{4}-\d{2}-\d{2}T/.test(v) && !Number.isNaN(Date.parse(v));
+const PART_STATES: readonly unknown[] = [
+  'live',
+  'off',
+  'not_configured',
+  'unavailable',
+] satisfies PublicDataState[];
+const isPartState = (v: unknown): v is PublicDataState => PART_STATES.includes(v);
+
+/** An answer's rows by id, or null when its `sources` isn't a list. A row with a field the card
+ *  reads of the wrong type is kept as null, so its card can't fall back to the old reading. An
+ *  entry with no id names no card and is left out. */
+function rowsOf(answer: Part): Map<string, PublicSource | null> | null {
+  // A server from before 2026-10-15 sends no rows.
+  const list = answer.sources ?? [];
+  if (!Array.isArray(list)) return null;
+  const rows = new Map<string, PublicSource | null>();
+  for (const v of list) {
+    if (!isPart(v) || !isText(v.id)) continue;
+    const readable =
+      isText(v.name) &&
+      isText(v.state) &&
+      (v.as_of == null || isDay(v.as_of)) &&
+      (v.checked_at == null || isTime(v.checked_at)) &&
+      (v.detail == null || isText(v.detail));
+    rows.set(v.id, readable ? (v as unknown as PublicSource) : null);
+  }
+  return rows;
+}
+
+/** A part of an older server's answer: `none` when it is null (its source had nothing), the card
+ *  `read` makes of it, or Couldn't load when it isn't a part `read` can use. */
+function fromPart(value: unknown, none: CardState, read: (p: Part) => CardState | null): CardState {
+  if (value == null) return none;
+  return (isPart(value) && read(value)) || COULDNT;
+}
+
+/** A card's state worked out from the answer itself, as this page did before the rows existed. */
+function fromAnswer(id: SourceId, a: Part): CardState {
+  const down: CardState = { tag: 'sourceDown', note: DOWN };
+  // Markets: the answer's own state first, then the card's part. FINRA and SEC: each part has its
+  // own state.
+  const markets = (value: unknown, read: (p: Part) => CardState | null): CardState =>
+    !isPartState(a.state)
+      ? COULDNT
+      : (notLiveState(a.state, NOT_SET) ?? fromPart(value, down, read));
+  const ticker = (state: unknown, live: () => CardState): CardState =>
+    !isPartState(state) ? COULDNT : (notLiveState(state, SEC_NOT_SET) ?? live());
+  switch (id) {
+    case 'treasury':
+      return markets(a.rates, (r) =>
+        isDay(r.as_of) && isTime(r.fetched_at)
+          ? {
+              tag: 'updated',
+              detail: formatShortDate(r.as_of),
+              note: `Rates for ${longDate(r.as_of)} · checked ${utcTime(r.fetched_at)} UTC.`,
+            }
+          : null,
+      );
+    case 'cftc':
+      return markets(a.futures, (f) =>
+        isDay(f.report_date)
+          ? {
+              tag: 'delayed',
+              detail: `as of ${formatShortDate(f.report_date)}`,
+              note: `Positions as of ${longDate(f.report_date)}. The CFTC publishes each week’s positions the Friday after.`,
+            }
+          : null,
+      );
+    case 'fed-h41':
+    case 'treasury-dts':
+    case 'nyfed-rrp':
+      return markets(a.liquidity, (l) => (isDay(l.as_of) ? liquidityLine(id, l.as_of) : null));
+    // A server from before the OFR reader (2026-10-25) sends no `ofr` row.
+    case 'ofr':
+      return isPartState(a.state)
+        ? { tag: 'notSetUp', note: 'This site’s server doesn’t read the OFR index yet.' }
+        : COULDNT;
+    case 'schedules':
+      return isPartState(a.state)
+        ? { tag: 'notSetUp', note: 'This site’s server doesn’t read the release schedules yet.' }
+        : COULDNT;
+    case 'finra-si':
+      return ticker(a.short_interest_state, () =>
+        fromPart(
+          a.short_interest,
+          { tag: 'delayed', note: 'FINRA answered; it has no report for the ticker checked.' },
+          (si) =>
+            isDay(si.settlement_date)
+              ? {
+                  tag: publicDataWord('live', { delayed: true }),
+                  detail: `settled ${formatShortDate(si.settlement_date)}`,
+                  note: `Settlement of ${longDate(si.settlement_date)}. FINRA publishes about a week after each settlement.`,
+                }
+              : null,
+        ),
+      );
+    case 'finra-shvol':
+      return ticker(a.short_volume_state, () =>
+        fromPart(
+          a.short_volume,
+          { tag: 'updated', note: 'FINRA answered; it has no file for the ticker checked.' },
+          (sv) =>
+            isDay(sv.date)
+              ? {
+                  tag: 'updated',
+                  detail: `${formatShortDate(sv.date)} file`,
+                  note: `The file for ${longDate(sv.date)}.`,
+                }
+              : null,
+        ),
+      );
+    case 'sec':
+      return ticker(a.filings_state, () => ({
+        tag: 'updated',
+        note: 'Convexa checks filings every hour and company facts every 24 hours.',
+      }));
+    default:
+      // TradingView and Massive: no read carries their state.
+      return COULDNT;
+  }
+}
+
+/**
+ * One card's state once the read that carries it has settled (/markets for the Markets sources,
+ * /tickers/SPY for FINRA and SEC); `answer` is null when that read failed. The card reads its own
+ * row in the answer's `sources`, or, from a server before the rows, its own part of the answer, and
+ * nothing else: a part that is missing or of the wrong type makes this card Couldn't load, as a
+ * failed read does, and leaves every other card as it is.
+ */
+export function answeredState(id: SourceId, answer: unknown): CardState {
+  if (!isPart(answer)) return COULDNT;
+  const rows = rowsOf(answer);
+  if (!rows) return COULDNT;
+  if (id === 'schedules') {
+    const own = SCHEDULE_ROWS.filter((r) => rows.has(r)).map((r) => rows.get(r) ?? null);
+    if (!own.length) return fromAnswer(id, answer);
+    return own.every((r): r is PublicSource => r !== null) ? schedulesState(own) : COULDNT;
+  }
+  if (!rows.has(id)) return fromAnswer(id, answer);
+  const row = rows.get(id);
+  return row ? fromRow(id, row) : COULDNT;
 }
 
 /** The legend: how many cards draw each state, in first-seen order, and how many are still being

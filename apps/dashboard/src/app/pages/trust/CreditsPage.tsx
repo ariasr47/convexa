@@ -19,33 +19,17 @@
  * Design: design/src/screens/final/trust.mjs (credits row), trust-pages.mjs (creditsArticle).
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import { publicDataWord } from '@/shared/dataState/vocabulary';
 import { isDemoBuild, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { coarseFloor, standaloneLinkSx } from '@/shared/ui/touch';
-import type { PublicDataState, PublicSource } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { formatShortDate } from '../research/format';
 import { usePublicMarkets, usePublicTicker } from '../research/publicData';
 import { ProvenanceChip } from '../research/publicUi';
-import {
-  DOWN,
-  fromRow,
-  legendCounts,
-  liquidityLine,
-  longDate,
-  NOT_SET,
-  notLiveState,
-  schedulesState,
-  SEC_NOT_SET,
-  switchedOff,
-  utcTime,
-  type CardState,
-} from './cardState';
+import { answeredState, COULDNT, legendCounts, switchedOff, type CardState } from './cardState';
 import { DocPage, DocTable, FinraNotice, H2, Lead, linkSx, Para } from './DocPage';
 import { SOURCES, TYPEFACES, type Source, type SourceId } from './sources';
 
@@ -67,8 +51,16 @@ const FROM_MARKETS: readonly SourceId[] = [
   'schedules',
 ];
 const FROM_TICKER: readonly SourceId[] = ['finra-si', 'finra-shvol', 'sec'];
-/** The API's rows behind the one Release schedules card. */
-const SCHEDULE_ROWS = ['fed-fomc', 'bls', 'bea', 'treasury-qr'] as const;
+const FIXED: Partial<Record<SourceId, CardState>> = {
+  tradingview: {
+    tag: 'thirdParty',
+    note: 'Loads when you open the view. Convexa can’t see whether TradingView is up.',
+  },
+  massive: {
+    tag: 'notLive',
+    note: 'Nothing built from the options chain is live on this site. Each of those panels says so and links to the same screen on the demo.',
+  },
+};
 
 function useLiveStates(enabled: boolean): {
   states: Record<SourceId, CardState>;
@@ -78,7 +70,6 @@ function useLiveStates(enabled: boolean): {
   const markets = usePublicMarkets(enabled);
   const spy = usePublicTicker(enabled ? 'SPY' : '');
   const checking: CardState = { tag: 'loading', note: 'Checking this source…' };
-  const couldnt: CardState = { tag: 'couldntLoad', note: 'Couldn’t check this source.' };
 
   // The page's first check lands all at once: until both reads have answered, every card they
   // decide stays Checking. Their answers come tens of milliseconds apart, and the page drawn
@@ -93,100 +84,15 @@ function useLiveStates(enabled: boolean): {
 
   const m = markets.data;
   const t = spy.data;
-  // Rows by id. A server from before 2026-10-15 sends none: each card then falls back to working
-  // its state out from the answer itself, as this page did before the rows existed.
-  const rows = new Map<string, PublicSource>(
-    [...(m?.sources ?? []), ...(t?.sources ?? [])].map((row) => [row.id, row]),
-  );
-
-  // ---- the fallback for an older server ----------------------------------------------------
-  const treasury: CardState = !m
-    ? couldnt
-    : (notLiveState(m.state, NOT_SET) ??
-      (m.rates
-        ? {
-            tag: 'updated',
-            detail: formatShortDate(m.rates.as_of),
-            note: `Rates for ${longDate(m.rates.as_of)} · checked ${utcTime(m.rates.fetched_at)} UTC.`,
-          }
-        : { tag: 'sourceDown', note: DOWN }));
-  const cftc: CardState = !m
-    ? couldnt
-    : (notLiveState(m.state, NOT_SET) ??
-      (m.futures
-        ? {
-            tag: 'delayed',
-            detail: `as of ${formatShortDate(m.futures.report_date)}`,
-            note: `Positions as of ${longDate(m.futures.report_date)}. The CFTC publishes each week’s positions the Friday after.`,
-          }
-        : { tag: 'sourceDown', note: DOWN }));
-  const liquidity: CardState | null = !m
-    ? couldnt
-    : (notLiveState(m.state, NOT_SET) ?? (m.liquidity ? null : { tag: 'sourceDown', note: DOWN }));
-  const tickerPart = (
-    state: PublicDataState | undefined,
-    live: () => CardState,
-    notConfiguredNote = SEC_NOT_SET,
-  ): CardState => (!t || !state ? couldnt : (notLiveState(state, notConfiguredNote) ?? live()));
-  const si = t?.short_interest;
-  const sv = t?.short_volume;
-  const legacy: Record<SourceId, CardState> = {
-    treasury,
-    cftc,
-    // A server from before the OFR reader (2026-10-25) sends no `ofr` row.
-    ofr: { tag: 'notSetUp', note: 'This site’s server doesn’t read the OFR index yet.' },
-    'fed-h41': liquidity ?? liquidityLine('fed-h41', m?.liquidity?.as_of ?? ''),
-    'treasury-dts': liquidity ?? liquidityLine('treasury-dts', m?.liquidity?.as_of ?? ''),
-    'nyfed-rrp': liquidity ?? liquidityLine('nyfed-rrp', m?.liquidity?.as_of ?? ''),
-    schedules: {
-      tag: 'notSetUp',
-      note: 'This site’s server doesn’t read the release schedules yet.',
-    },
-    'finra-si': tickerPart(t?.short_interest_state, () =>
-      si
-        ? {
-            tag: publicDataWord('live', { delayed: true }),
-            detail: `settled ${formatShortDate(si.settlement_date)}`,
-            note: `Settlement of ${longDate(si.settlement_date)}. FINRA publishes about a week after each settlement.`,
-          }
-        : { tag: 'delayed', note: 'FINRA answered; it has no report for the ticker checked.' },
-    ),
-    'finra-shvol': tickerPart(t?.short_volume_state, () =>
-      sv
-        ? {
-            tag: 'updated',
-            detail: `${formatShortDate(sv.date)} file`,
-            note: `The file for ${longDate(sv.date)}.`,
-          }
-        : { tag: 'updated', note: 'FINRA answered; it has no file for the ticker checked.' },
-    ),
-    sec: tickerPart(t?.filings_state, () => ({
-      tag: 'updated',
-      note: 'Convexa checks filings every hour and company facts every 24 hours.',
-    })),
-    tradingview: {
-      tag: 'thirdParty',
-      note: 'Loads when you open the view. Convexa can’t see whether TradingView is up.',
-    },
-    massive: {
-      tag: 'notLive',
-      note: 'Nothing built from the options chain is live on this site. Each of those panels says so and links to the same screen on the demo.',
-    },
-  };
-
   const stateOf = (id: SourceId): CardState => {
     const off = switchedOff(id);
     if (off) return off;
     const read = FROM_MARKETS.includes(id) ? markets : FROM_TICKER.includes(id) ? spy : null;
-    if (!read) return legacy[id];
+    if (!read) return FIXED[id] ?? COULDNT;
     if (holding || read.loading) return checking;
-    if (!read.data) return couldnt;
-    if (id === 'schedules') {
-      const own = SCHEDULE_ROWS.map((r) => rows.get(r)).filter((r): r is PublicSource => !!r);
-      return own.length ? schedulesState(own) : legacy.schedules;
-    }
-    const row = rows.get(id);
-    return row ? fromRow(id, row) : legacy[id];
+    // Each card reads only its own row, or on a server from before the rows (2026-10-15) its own
+    // part of the answer, checked first: a malformed one makes that card Couldn't load, no other.
+    return answeredState(id, read.data);
   };
 
   return {
