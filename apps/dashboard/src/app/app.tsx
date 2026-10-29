@@ -8,6 +8,8 @@
  * Route shape (the binding table):
  *  - `/_ops/metrics`         → <OperatorMetrics/>   OUTSIDE the shell, declared FIRST so `/*` can't
  *                                                    shadow it, own AppBar, NOT linked (AC-Inv-7).
+ *                                                    Not declared by a live build on a Pages host,
+ *                                                    whose proxy refuses /api/_metrics: the 404 there.
  *  - `/_ops/research`        → <OperatorSessionArchive/> same first group (operator routes — metrics
  *                                                    + this surface). Off-shell, URL-only, NOT linked.
  *  - <AppShell/> (parent)    → persistent layout via <Outlet/> — mounts once, does not remount across
@@ -47,6 +49,7 @@ import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
 import { DemoOperatorUnavailable } from '@/pages/operator-metrics/DemoOperatorUnavailable';
+import { documentHostIsPages } from '@/pages/operator-session-archive/sittingBase';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
@@ -267,16 +270,32 @@ function BlogPostRoute() {
   return <BlogPostPage file={file} notFound={<NotFound />} />;
 }
 
+/**
+ * Whether this origin can serve `/_ops/metrics`. The page polls a same-origin GET /api/_metrics,
+ * which the Pages proxy answers 404 on every Pages host, by design (functions/api/[[path]].ts: the
+ * operator reads the API's own address). There the live build doesn't declare the route, so the
+ * address gets the site's 404 instead of a page that can only fail and log a 404 every five seconds
+ * (site audit 2026-10-25, SEC-7). The demo's notice stays; a dev server or a local stack, whose /api
+ * reaches the API itself, keeps the page.
+ */
+const OPS_METRICS_SERVED =
+  dataMode === 'demo' ||
+  !documentHostIsPages(typeof window === 'undefined' ? '' : window.location.host);
+
 /** The route table only (ARCHITECTURE §1.2). Must render UNDER a Router + the auth/theme providers
  *  (supplied by <App/>). */
 export function AppRoutes() {
   return (
     <Routes>
       {/* Operator routes — off the trader shell, unlinked. FIRST so `/*` never shadows them. */}
-      <Route
-        path="/_ops/metrics"
-        element={dataMode === 'demo' ? <DemoOperatorUnavailable /> : lazyRoute(<OperatorMetrics />)}
-      />
+      {OPS_METRICS_SERVED && (
+        <Route
+          path="/_ops/metrics"
+          element={
+            dataMode === 'demo' ? <DemoOperatorUnavailable /> : lazyRoute(<OperatorMetrics />)
+          }
+        />
+      )}
       <Route
         path="/_ops/research"
         element={
