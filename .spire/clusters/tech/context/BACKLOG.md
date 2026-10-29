@@ -61,6 +61,9 @@ and commit messages.
 - **`credits-malformed-public-data`** *(FE, pre-existing)* — a malformed public-data answer sends `/credits` to
   its error page, though its header says a failed state check never blanks the page (`CreditsPage.tsx:6-7`).
   Found by the B3 lane; not reproduced here.
+  Closed 2026-10-29 by `88aa6283`: each card reads only its own row or part, type-checked first
+  (`cardState.ts` `answeredState`); a bad one shows the card's existing "Couldn't load" state. Reproduced
+  first: 12 malformed answers each brought up the route error page; `cardState.spec.ts` covers 11 of them.
 - **`desk-legend-late-read`** *(FE, PERF-04 remainder)* — the public desk's legend still grows when the public
   read lands after the first paint: phone CLS 0.0957 → 0.1039 with the read held 3 s (`4dba4f77`). Keeping room
   for it would mean guessing the read's states before it answers.
