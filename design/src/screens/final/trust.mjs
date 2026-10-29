@@ -102,11 +102,11 @@ export const ROWS = [
       job: 'What the site stores and where, what leaves the visitor’s browser and to whom, what Convexa doesn’t do, and how to clear it — read from the code, not from a template.',
       env: {
         production: 'The live site’s storage keys, the account’s server-side record (only for invited accounts), the third parties (hosts, TradingView, the AI provider only with the user’s own key), what Convexa never does, and how to clear it signed out and signed in. Google sign-in isn’t configured on this site and Convexa doesn’t contact Webull yet (saved keys stay encrypted), so neither is listed as a recipient.',
-        staging: 'Opens “This is the demo. Nothing you do here leaves this browser.” Lists the same keys under the convexa.demo.v1. prefix plus the demo’s four own keys, the in-browser demo account, “Nothing” under what leaves, and Reset demo data as the way to clear it.',
+        staging: 'Opens “This is the demo. Nothing you do here leaves this browser.” Lists the same keys under the convexa.demo.v1. prefix (all but the chunk-reload flag, which keeps its name) plus the demo’s five own keys, the in-browser demo account, “Nothing” under what leaves, and Reset demo data as the way to clear it.',
       },
       widgets: [
         { name: 'The short version', source: 'static; CSP connect-src ’self’ and no analytics code (apps/dashboard/public/_headers)', production: 'Static', staging: 'demo' },
-        { name: 'In this browser (key table)', source: 'localStorage keys read from the stores: uiprefs, theme-paint, positions.v3, positions.touch_at, orders, alerts, personas, recent-tickers; demo prefix convexa.demo.v1.', production: ['local', 'Stored here'], staging: 'demo' },
+        { name: 'In this browser (key table)', source: 'localStorage keys read from the stores: uiprefs, theme-paint, positions.v3, positions.touch_at, positions.owner, orders, alerts, personas, recent-tickers; demo prefix convexa.demo.v1. One sessionStorage key on both sites, unprefixed: convexa.chunk-reload.v1 (reloadOnce.ts)', production: ['local', 'Stored here'], staging: 'demo' },
         { name: 'If you have an account', source: 'apps/api auth store: UserRecord, SessionRecord, SettingsRecord, CredentialRecord (AES-256-GCM), /api/book blob', production: 'Static', staging: 'demo' },
         { name: 'What leaves your browser', source: 'static; Cloudflare Pages + Railway hosts, TradingView, AI providers (llm_catalog.rs: Anthropic, OpenAI, xAI, Gemini)', production: 'Static', staging: 'demo' },
         { name: 'How to clear it', source: 'static; resetDemoWorkspace() removes convexa.demo.v1.* keys', production: 'Static', staging: 'demo' },
@@ -133,7 +133,7 @@ export const ROWS = [
         FOOTER_BUILT,
       ],
       rulings: ['P-2', 'P-4', 'P-13', 'P-14', 'Env 2026-10-14'],
-      code: [`${APP}app.tsx (new route /privacy)`, `${APP}features/auth/localPrefs.ts`, `${APP}features/auth/firstPaintTheme.ts`, `${APP}features/trading/positions/{store,bookSync}.ts`, `${APP}features/trading/orders/store.ts`, `${APP}features/alerts/types.ts`, `${APP}features/personas/store.ts`, `${APP}pages/ticker/recentTickers/store.ts`, 'libs/api/src/lib/demo/workspace.ts', `${API}services/auth/{store,crypto,passwords,service}.rs`, `${API}routes/{auth,book,broker}.rs`, `${API}services/llm.rs`, 'apps/dashboard/public/_headers'],
+      code: [`${APP}app.tsx (new route /privacy)`, `${APP}features/auth/localPrefs.ts`, `${APP}features/auth/firstPaintTheme.ts`, `${APP}features/trading/positions/{store,bookSync}.ts`, `${APP}features/trading/orders/store.ts`, `${APP}features/alerts/types.ts`, `${APP}features/personas/store.ts`, `${APP}pages/ticker/recentTickers/store.ts`, 'apps/dashboard/src/reloadOnce.ts', 'libs/api/src/lib/demo/workspace.ts', `${API}services/auth/{store,crypto,passwords,service}.rs`, `${API}routes/{auth,book,broker}.rs`, `${API}services/llm.rs`, 'apps/dashboard/public/_headers'],
     },
     boards: [
       { id: 'staging', title: 'Staging · demo account', w: 1440, h: 2204, body: privacyBoard('staging') },

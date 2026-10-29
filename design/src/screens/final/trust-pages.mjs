@@ -289,6 +289,8 @@ export function creditsStates({ minHeight = 0, scheme = 'dark' } = {}) {
 // Privacy (/privacy)
 // ================================================================================================
 const PRIVACY_TOC = [['short', 'The short version'], ['browser', 'In this browser'], ['account', 'If you have an account'], ['leaves', 'What leaves your browser'], ['never', 'What Convexa doesn’t do'], ['clear', 'How to clear it'], ['changes', 'Changes']];
+// Session storage, not local, and unprefixed in the demo (RELOAD_FLAG, apps/dashboard/src/reloadOnce.ts).
+const RELOAD_KEY = 'convexa.chunk-reload.v1';
 const KEYS = [
   ['convexa.uiprefs.v1', 'Your theme and default ticker, while you’re signed out.', 'When you change either'],
   ['convexa.theme-paint', 'The theme to paint before the page loads, so it doesn’t flash.', 'When the theme changes'],
@@ -299,6 +301,7 @@ const KEYS = [
   ['convexa.alerts.v1', 'Your alerts.', 'When you add or remove one'],
   ['convexa.personas.v1', 'The AI personas you made, and which one is active.', 'When you edit a persona'],
   ['convexa.recent-tickers.v1', 'The last tickers you opened, for the ⌘K jump box.', 'When you open a ticker'],
+  [RELOAD_KEY, 'That this tab already reloaded once after a page’s code failed to load; it goes when you close the tab.', 'Once per tab, when a page’s code fails to load'],
 ];
 const SERVER_ROWS = [
   ['Your sign-in', 'Your email address and display name. Your password as an argon2 hash — never the password itself. When the account was made and when you last signed in.'],
@@ -315,8 +318,8 @@ function privacyArticle(env) {
     ? `<p class="lead"><strong>This is the demo. Nothing you do here leaves this browser.</strong> The demo has no account, calls no server and loads no third party. What you change is kept in this browser under the convexa.demo.v1. prefix until you reset it.</p>`
     : `<p class="lead">Convexa runs no ads, no analytics and no tracking scripts. If you don’t sign in, what you do here stays in this browser. A few things do leave it, and this page names each one.</p>`;
   const browser = stg
-    ? `${P('The demo keeps the same things the live site keeps, each under the <strong>convexa.demo.v1.</strong> prefix, so it never touches a live site’s data in the same browser. It adds five of its own: the demo account’s settings, its scanner view, its book’s fills, a marker that says the sample book has been set up, and which version of the sample alerts this browser was given.')}${tbl(['Key (after the prefix)', 'What it holds'], [...KEYS.map(([k, w]) => [k, k === 'convexa.uiprefs.v1' ? 'The demo account’s theme and default ticker.' : w]), ['convexa.demo.auth.settings.v1', 'The demo account’s settings and risk inputs.'], ['convexa.demo.scan.view.v1', 'The demo scanner’s saved view.'], ['convexa.demo.book.v1', 'The demo book’s fills and marks.'], ['convexa.demo.workspace.initialized.v1', 'That the sample book has been set up.'], ['convexa.demo.alerts.seed.v', 'Which version of the sample alerts this browser was given.']], 'tr-keys')}`
-    : `${P('These live in your browser’s local storage for this site. Nothing reads them but this site’s own pages, and none of them is sent anywhere unless you sign in (see below). Signed in, your settings come from your account instead.')}${tbl(['Key', 'What it holds', 'Written'], KEYS, 'tr-keys')}${P('Exporting your positions saves a file, convexa-archive-<em>date</em>.json, to your own device. Convexa keeps no copy of it.')}`;
+    ? `${P('The demo keeps the same things the live site keeps, each but one under the <strong>convexa.demo.v1.</strong> prefix, so it never touches a live site’s data in the same browser. It adds five of its own: the demo account’s settings, its scanner view, its book’s fills, a marker that says the sample book has been set up, and which version of the sample alerts this browser was given.')}${tbl(['Key (after the prefix)', 'What it holds'], [...KEYS.map(([k, w]) => [k === RELOAD_KEY ? `${k} (no prefix)` : k, k === 'convexa.uiprefs.v1' ? 'The demo account’s theme and default ticker.' : w]), ['convexa.demo.auth.settings.v1', 'The demo account’s settings and risk inputs.'], ['convexa.demo.scan.view.v1', 'The demo scanner’s saved view.'], ['convexa.demo.book.v1', 'The demo book’s fills and marks.'], ['convexa.demo.workspace.initialized.v1', 'That the sample book has been set up.'], ['convexa.demo.alerts.seed.v', 'Which version of the sample alerts this browser was given.']], 'tr-keys')}`
+    : `${P(`These live in your browser’s local storage for this site, except ${RELOAD_KEY}, which is in session storage. Nothing reads them but this site’s own pages, and none of them is sent anywhere unless you sign in (see below). Signed in, your settings come from your account instead.`)}${tbl(['Key', 'What it holds', 'Written'], KEYS, 'tr-keys')}${P('Exporting your positions saves a file, convexa-archive-<em>date</em>.json, to your own device. Convexa keeps no copy of it.')}`;
   const account = stg
     ? `${P('The demo is always signed in to one shared demo account, and that account lives in this browser, not on a server. There’s no sign-out; <strong>Reset demo data</strong> in the bar puts it back as it started.')}`
     : `${P('Accounts are by invitation while Convexa is in private testing; sign-ups are closed. If you have one, Convexa’s server keeps the following, and nothing else about you:')}${tbl(['What', 'What’s kept'], SERVER_ROWS)}`;

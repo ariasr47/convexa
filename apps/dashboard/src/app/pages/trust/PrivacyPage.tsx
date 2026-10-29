@@ -7,7 +7,9 @@
  *   alerts/store, personas/store, recentTickers/store); `positions.v2` and `ghost-trade.v1` are only
  *   read, as migration sources, so they aren't listed. The demo adds five keys of its own (re-checked
  *   2026-10-29): three from libs/api/src/lib/demo/transport.ts writeStored, and the set-up marker
- *   and the sample alerts' version from workspace.ts initializeDemoWorkspace.
+ *   and the sample alerts' version from workspace.ts initializeDemoWorkspace. One key is session
+ *   storage: RELOAD_FLAG (src/reloadOnce.ts), which main.tsx sets on both sites under its own name,
+ *   never the demo prefix.
  * - the account: apps/api/src/services/auth/store.rs; sessions 7 days idle, 30 at most (service.rs,
  *   no override set on production). Google sign-in isn't configured on this site, so it isn't named.
  * - third parties: CSP connect-src 'self' plus TradingView's script and frames (public/_headers);
@@ -41,6 +43,9 @@ const TOC = [
   ['clear', 'How to clear it'],
   ['changes', 'Changes'],
 ] as const;
+
+/** Session storage, not local, and unprefixed in the demo (RELOAD_FLAG in src/reloadOnce.ts). */
+const RELOAD_KEY = 'convexa.chunk-reload.v1';
 
 const KEYS: [string, string, string][] = [
   [
@@ -79,6 +84,11 @@ const KEYS: [string, string, string][] = [
     'convexa.recent-tickers.v1',
     'The last tickers you opened, for the ⌘K jump box.',
     'When you open a ticker',
+  ],
+  [
+    RELOAD_KEY,
+    'That this tab already reloaded once after a page’s code failed to load; it goes when you close the tab.',
+    'Once per tab, when a page’s code fails to load',
   ],
 ];
 
@@ -186,7 +196,7 @@ export function PrivacyPage() {
       {demo ? (
         <>
           <Para>
-            The demo keeps the same things the live site keeps, each under the{' '}
+            The demo keeps the same things the live site keeps, each but one under the{' '}
             <strong>convexa.demo.v1.</strong> prefix, so it never touches a live site’s data in the
             same browser. It adds five of its own: the demo account’s settings, its scanner view,
             its book’s fills, a marker that says the sample book has been set up, and which version
@@ -197,7 +207,7 @@ export function PrivacyPage() {
             head={['Key (after the prefix)', 'What it holds']}
             rows={[
               ...KEYS.map(([k, w]) => [
-                k,
+                k === RELOAD_KEY ? `${k} (no prefix)` : k,
                 k === 'convexa.uiprefs.v1' ? 'The demo account’s theme and default ticker.' : w,
               ]),
               ...DEMO_KEYS,
@@ -207,9 +217,10 @@ export function PrivacyPage() {
       ) : (
         <>
           <Para>
-            These live in your browser’s local storage for this site. Nothing reads them but this
-            site’s own pages, and none of them is sent anywhere unless you sign in (see below).
-            Signed in, your settings come from your account instead.
+            These live in your browser’s local storage for this site, except {RELOAD_KEY}, which is
+            in session storage. Nothing reads them but this site’s own pages, and none of them is
+            sent anywhere unless you sign in (see below). Signed in, your settings come from your
+            account instead.
           </Para>
           <DocTable monoFirst head={['Key', 'What it holds', 'Written']} rows={KEYS} />
           <Para>
