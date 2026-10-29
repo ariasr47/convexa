@@ -5,8 +5,21 @@
  * license, all three faces SIL OFL 1.1 — verified at vendoring). No external font host, ever
  * (deploy CSP / no-external-host discipline; enforced by shared/theme/fonts.spec.ts).
  *
- * - Archivo (display): the VARIABLE face (wght 100–900 + wdth 62–125%), so the SemiExpanded
- *   width treatment is a real `font-stretch` axis — NEVER a faux transform: scaleX (§10-1a).
+ * - Archivo (display): the VARIABLE face, so the SemiExpanded width treatment is a real
+ *   `font-stretch` axis — NEVER a faux transform: scaleX (§10-1a). The file is fontsource's latin
+ *   `standard` face as vendored in f86a4241 (wght 100–900, wdth 62–125%, 90,104 bytes), cut to the
+ *   half of each axis the app renders: wght 600–900, wdth 100–125% (43,656 bytes; site audit
+ *   2026-10-25, PERF-09). The app renders Archivo at wght 600/700/800, wdth 112.5% (the display
+ *   stretch) and 125% (the CONVEXA lockup). Same 230 code points, every layout feature, identical
+ *   advances and kerning; Chrome draws it pixel for pixel like the full file at those four
+ *   combinations. A weight under 600 or a width under 100% renders clamped to 600 / 100%, so
+ *   widen the cut before using one. It rebuilds byte for byte from the vendored file
+ *   (`git show f86a4241:apps/dashboard/public/fonts/archivo/archivo-latin-standard-normal.woff2`)
+ *   with fontTools 4.68.0 and brotli 1.2.1 (`uv run --no-project --with fonttools==4.68.0 --with
+ *   brotli==1.2.1 …`) and SOURCE_DATE_EPOCH=1793232000:
+ *     fonttools varLib.instancer -q -o cut.woff2 vendored.woff2 wght=600:900 wdth=100:125
+ *     pyftsubset cut.woff2 --unicodes='*' --layout-features='*' --name-IDs='*'
+ *       --name-languages='*' --notdef-outline --flavor=woff2 --output-file=<this file>
  * - IBM Plex Sans (body/UI): static 400/500/600/700.
  * - IBM Plex Mono (data/tape): static 400/500/600; tabular figures by construction.
  *
@@ -34,8 +47,8 @@ html[data-theme='light'] body {
   font-family: 'Archivo';
   font-style: normal;
   font-display: swap;
-  font-weight: 100 900;
-  font-stretch: 62% 125%;
+  font-weight: 600 900;
+  font-stretch: 100% 125%;
   src: url('/fonts/archivo/archivo-latin-standard-normal.woff2') format('woff2-variations');
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
