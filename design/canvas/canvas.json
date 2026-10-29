@@ -60,7 +60,7 @@
       "x": 0,
       "y": 0,
       "w": 1440,
-      "h": 4792,
+      "h": 4760,
       "page": "start",
       "expand": "fill"
     },
@@ -70,7 +70,7 @@
       "x": 1560,
       "y": 0,
       "w": 1440,
-      "h": 7499,
+      "h": 7487,
       "page": "start",
       "expand": "fill"
     },
@@ -80,7 +80,7 @@
       "x": 0,
       "y": 0,
       "w": 760,
-      "h": 2999,
+      "h": 3020,
       "page": "scanner"
     },
     {
@@ -157,7 +157,7 @@
       "x": 0,
       "y": 0,
       "w": 760,
-      "h": 5964,
+      "h": 6069,
       "page": "ticker"
     },
     {
@@ -205,7 +205,7 @@
       "x": 6070,
       "y": 0,
       "w": 1440,
-      "h": 3255,
+      "h": 3836,
       "page": "ticker",
       "expand": "fill"
     },
@@ -213,16 +213,16 @@
       "file": "FAiReadSpec.dc.html",
       "title": "AI read · spec",
       "x": 0,
-      "y": 6324,
+      "y": 6429,
       "w": 760,
-      "h": 3116,
+      "h": 3158,
       "page": "ticker"
     },
     {
       "file": "FAiReadStaging.dc.html",
       "title": "AI read · Staging · full analysis drawer",
       "x": 880,
-      "y": 6324,
+      "y": 6429,
       "w": 1440,
       "h": 1520,
       "page": "ticker",
@@ -232,7 +232,7 @@
       "file": "FAiReadExport.dc.html",
       "title": "AI read · Staging · sample export drawer",
       "x": 2440,
-      "y": 6324,
+      "y": 6429,
       "w": 1440,
       "h": 1240,
       "page": "ticker",
@@ -242,7 +242,7 @@
       "file": "FAiReadPeek.dc.html",
       "title": "AI read · Phone · staging · peek row",
       "x": 4000,
-      "y": 6324,
+      "y": 6429,
       "w": 390,
       "h": 920,
       "page": "ticker"
@@ -251,7 +251,7 @@
       "file": "FAiReadSheet.dc.html",
       "title": "AI read · Phone · staging · sheet open",
       "x": 4510,
-      "y": 6324,
+      "y": 6429,
       "w": 390,
       "h": 1044,
       "page": "ticker"
@@ -260,7 +260,7 @@
       "file": "FAiReadProduction.dc.html",
       "title": "AI read · Production · Not live",
       "x": 5020,
-      "y": 6324,
+      "y": 6429,
       "w": 1440,
       "h": 1296,
       "page": "ticker",
@@ -270,7 +270,7 @@
       "file": "FAiReadStates.dc.html",
       "title": "AI read · States",
       "x": 6580,
-      "y": 6324,
+      "y": 6429,
       "w": 1440,
       "h": 3347,
       "page": "ticker",
@@ -280,7 +280,7 @@
       "file": "FTechnicalSpec.dc.html",
       "title": "Technical tab · spec",
       "x": 0,
-      "y": 10031,
+      "y": 10136,
       "w": 760,
       "h": 2516,
       "page": "ticker"
@@ -289,7 +289,7 @@
       "file": "FTechnicalStaging.dc.html",
       "title": "Technical tab · Staging · demo account",
       "x": 880,
-      "y": 10031,
+      "y": 10136,
       "w": 1440,
       "h": 1554,
       "page": "ticker",
@@ -299,7 +299,7 @@
       "file": "FTechnicalProduction.dc.html",
       "title": "Technical tab · Production",
       "x": 2440,
-      "y": 10031,
+      "y": 10136,
       "w": 1440,
       "h": 1300,
       "page": "ticker",
@@ -309,7 +309,7 @@
       "file": "FTechnicalPhone.dc.html",
       "title": "Technical tab · Phone · production",
       "x": 4000,
-      "y": 10031,
+      "y": 10136,
       "w": 390,
       "h": 1794,
       "page": "ticker"
@@ -318,7 +318,7 @@
       "file": "FTechnicalLight.dc.html",
       "title": "Technical tab · Light · production",
       "x": 4510,
-      "y": 10031,
+      "y": 10136,
       "w": 1440,
       "h": 1300,
       "page": "ticker",
@@ -328,7 +328,7 @@
       "file": "FTechnicalStates.dc.html",
       "title": "Technical tab · States",
       "x": 6070,
-      "y": 10031,
+      "y": 10136,
       "w": 1440,
       "h": 2258,
       "page": "ticker",
@@ -338,7 +338,7 @@
       "file": "FNoteSpec.dc.html",
       "title": "Research tab · note · spec",
       "x": 0,
-      "y": 12907,
+      "y": 13012,
       "w": 760,
       "h": 4028,
       "page": "ticker"
@@ -347,7 +347,7 @@
       "file": "FNoteStaging.dc.html",
       "title": "Research tab · note · Staging · demo account",
       "x": 880,
-      "y": 12907,
+      "y": 13012,
       "w": 1440,
       "h": 4945,
       "page": "ticker",
@@ -357,7 +357,7 @@
       "file": "FNoteProduction.dc.html",
       "title": "Research tab · note · Production",
       "x": 2440,
-      "y": 12907,
+      "y": 13012,
       "w": 1440,
       "h": 7957,
       "page": "ticker",
@@ -367,7 +367,7 @@
       "file": "FNotePhone.dc.html",
       "title": "Research tab · note · Phone · production",
       "x": 4000,
-      "y": 12907,
+      "y": 13012,
       "w": 390,
       "h": 7893,
       "page": "ticker"
@@ -376,7 +376,7 @@
       "file": "FNoteLight.dc.html",
       "title": "Research tab · note · Light · production",
       "x": 4510,
-      "y": 12907,
+      "y": 13012,
       "w": 1440,
       "h": 7957,
       "page": "ticker",
@@ -386,7 +386,7 @@
       "file": "FNoteStates.dc.html",
       "title": "Research tab · note · States",
       "x": 6070,
-      "y": 12907,
+      "y": 13012,
       "w": 1440,
       "h": 2503,
       "page": "ticker",
@@ -509,10 +509,58 @@
       "expand": "fill"
     },
     {
+      "file": "FPlannedLiquiditySpec.dc.html",
+      "title": "Research · Markets · Liquidity · spec",
+      "x": 0,
+      "y": 13113,
+      "w": 760,
+      "h": 2087,
+      "page": "research"
+    },
+    {
+      "file": "FPlannedLiquidityStaging.dc.html",
+      "title": "Research · Markets · Liquidity · Staging · demo account",
+      "x": 880,
+      "y": 13113,
+      "w": 1440,
+      "h": 1588,
+      "page": "research",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedLiquidityProduction.dc.html",
+      "title": "Research · Markets · Liquidity · Production",
+      "x": 2440,
+      "y": 13113,
+      "w": 1440,
+      "h": 1562,
+      "page": "research",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedLiquidityPhone.dc.html",
+      "title": "Research · Markets · Liquidity · Phone · production",
+      "x": 4000,
+      "y": 13113,
+      "w": 390,
+      "h": 2401,
+      "page": "research"
+    },
+    {
+      "file": "FPlannedLiquidityStates.dc.html",
+      "title": "Research · Markets · Liquidity · States",
+      "x": 4510,
+      "y": 13113,
+      "w": 1440,
+      "h": 1843,
+      "page": "research",
+      "expand": "fill"
+    },
+    {
       "file": "FResearchFilingsSpec.dc.html",
       "title": "Research · Filings · spec",
       "x": 0,
-      "y": 13113,
+      "y": 15874,
       "w": 760,
       "h": 2625,
       "page": "research"
@@ -521,7 +569,7 @@
       "file": "FResearchFilingsStaging.dc.html",
       "title": "Research · Filings · Staging · demo account",
       "x": 880,
-      "y": 13113,
+      "y": 15874,
       "w": 1440,
       "h": 1407,
       "page": "research",
@@ -531,7 +579,7 @@
       "file": "FResearchFilingsProduction.dc.html",
       "title": "Research · Filings · Production",
       "x": 2440,
-      "y": 13113,
+      "y": 15874,
       "w": 1440,
       "h": 1592,
       "page": "research",
@@ -541,7 +589,7 @@
       "file": "FResearchFilingsPhone.dc.html",
       "title": "Research · Filings · Phone · production",
       "x": 4000,
-      "y": 13113,
+      "y": 15874,
       "w": 390,
       "h": 3358,
       "page": "research"
@@ -550,7 +598,7 @@
       "file": "FResearchFilingsLight.dc.html",
       "title": "Research · Filings · Light · production",
       "x": 4510,
-      "y": 13113,
+      "y": 15874,
       "w": 1440,
       "h": 1592,
       "page": "research",
@@ -560,7 +608,7 @@
       "file": "FResearchFilingsStates.dc.html",
       "title": "Research · Filings · States",
       "x": 6070,
-      "y": 13113,
+      "y": 15874,
       "w": 1440,
       "h": 1847,
       "page": "research",
@@ -570,7 +618,7 @@
       "file": "FResearchScorecardSpec.dc.html",
       "title": "Research · Scorecard · spec",
       "x": 0,
-      "y": 16831,
+      "y": 19592,
       "w": 760,
       "h": 2221,
       "page": "research"
@@ -579,7 +627,7 @@
       "file": "FResearchScorecardStaging.dc.html",
       "title": "Research · Scorecard · Staging · demo account",
       "x": 880,
-      "y": 16831,
+      "y": 19592,
       "w": 1440,
       "h": 2040,
       "page": "research",
@@ -589,7 +637,7 @@
       "file": "FResearchScorecardProduction.dc.html",
       "title": "Research · Scorecard · Production",
       "x": 2440,
-      "y": 16831,
+      "y": 19592,
       "w": 1440,
       "h": 2095,
       "page": "research",
@@ -599,7 +647,7 @@
       "file": "FResearchScorecardPhone.dc.html",
       "title": "Research · Scorecard · Phone · production",
       "x": 4000,
-      "y": 16831,
+      "y": 19592,
       "w": 390,
       "h": 4944,
       "page": "research"
@@ -608,7 +656,7 @@
       "file": "FResearchScorecardLight.dc.html",
       "title": "Research · Scorecard · Light · production",
       "x": 4510,
-      "y": 16831,
+      "y": 19592,
       "w": 1440,
       "h": 2095,
       "page": "research",
@@ -618,7 +666,7 @@
       "file": "FResearchScorecardStates.dc.html",
       "title": "Research · Scorecard · States",
       "x": 6070,
-      "y": 16831,
+      "y": 19592,
       "w": 1440,
       "h": 1265,
       "page": "research",
@@ -630,7 +678,7 @@
       "x": 0,
       "y": 0,
       "w": 760,
-      "h": 2396,
+      "h": 2417,
       "page": "positions"
     },
     {
@@ -979,7 +1027,7 @@
       "x": 0,
       "y": 5927,
       "w": 760,
-      "h": 2512,
+      "h": 2535,
       "page": "overlays"
     },
     {
@@ -1608,7 +1656,7 @@
       "x": 0,
       "y": 0,
       "w": 760,
-      "h": 3652,
+      "h": 3673,
       "page": "journal"
     },
     {
@@ -1684,7 +1732,7 @@
       "file": "FJournalComposeSpec.dc.html",
       "title": "Journal · New entry · spec",
       "x": 0,
-      "y": 4012,
+      "y": 4033,
       "w": 760,
       "h": 4030,
       "page": "journal"
@@ -1693,7 +1741,7 @@
       "file": "FJournalComposeStaging.dc.html",
       "title": "Journal · New entry · Staging · normal day",
       "x": 880,
-      "y": 4012,
+      "y": 4033,
       "w": 1440,
       "h": 1592,
       "page": "journal",
@@ -1703,7 +1751,7 @@
       "file": "FJournalComposeMarginCall.dc.html",
       "title": "Journal · New entry · Margin call mode",
       "x": 2440,
-      "y": 4012,
+      "y": 4033,
       "w": 1440,
       "h": 1560,
       "page": "journal",
@@ -1713,7 +1761,7 @@
       "file": "FJournalComposePlan.dc.html",
       "title": "Journal · New entry · Plan a trade",
       "x": 4000,
-      "y": 4012,
+      "y": 4033,
       "w": 1440,
       "h": 1909,
       "page": "journal",
@@ -1723,7 +1771,7 @@
       "file": "FJournalComposePhoneCall.dc.html",
       "title": "Journal · New entry · Phone · margin call",
       "x": 5560,
-      "y": 4012,
+      "y": 4033,
       "w": 390,
       "h": 1190,
       "page": "journal"
@@ -1732,7 +1780,7 @@
       "file": "FJournalComposePhonePlan.dc.html",
       "title": "Journal · New entry · Phone · plan a trade",
       "x": 6070,
-      "y": 4012,
+      "y": 4033,
       "w": 390,
       "h": 1321,
       "page": "journal"
@@ -1741,7 +1789,7 @@
       "file": "FJournalComposeLight.dc.html",
       "title": "Journal · New entry · Light · staging",
       "x": 6580,
-      "y": 4012,
+      "y": 4033,
       "w": 1440,
       "h": 1592,
       "page": "journal",
@@ -1751,7 +1799,7 @@
       "file": "FJournalComposeStates.dc.html",
       "title": "Journal · New entry · States",
       "x": 8140,
-      "y": 4012,
+      "y": 4033,
       "w": 1440,
       "h": 3019,
       "page": "journal",
@@ -1761,7 +1809,7 @@
       "file": "FJournalEntrySpec.dc.html",
       "title": "Journal · Entry · spec",
       "x": 0,
-      "y": 8402,
+      "y": 8423,
       "w": 760,
       "h": 3230,
       "page": "journal"
@@ -1770,7 +1818,7 @@
       "file": "FJournalEntryStaging.dc.html",
       "title": "Journal · Entry · Staging · the Sep 29 call",
       "x": 880,
-      "y": 8402,
+      "y": 8423,
       "w": 1440,
       "h": 2478,
       "page": "journal",
@@ -1780,7 +1828,7 @@
       "file": "FJournalEntryRecalled.dc.html",
       "title": "Journal · Entry · Staging · recalled entry",
       "x": 2440,
-      "y": 8402,
+      "y": 8423,
       "w": 1440,
       "h": 1372,
       "page": "journal",
@@ -1790,7 +1838,7 @@
       "file": "FJournalEntryPhone.dc.html",
       "title": "Journal · Entry · Phone · staging",
       "x": 4000,
-      "y": 8402,
+      "y": 8423,
       "w": 390,
       "h": 3100,
       "page": "journal"
@@ -1799,7 +1847,7 @@
       "file": "FJournalEntryLight.dc.html",
       "title": "Journal · Entry · Light · staging",
       "x": 4510,
-      "y": 8402,
+      "y": 8423,
       "w": 1440,
       "h": 1963,
       "page": "journal",
@@ -1809,7 +1857,7 @@
       "file": "FJournalEntryStates.dc.html",
       "title": "Journal · Entry · States",
       "x": 6070,
-      "y": 8402,
+      "y": 8423,
       "w": 1440,
       "h": 3319,
       "page": "journal",
@@ -1819,7 +1867,7 @@
       "file": "FJournalReviewSpec.dc.html",
       "title": "Journal · Weekly review · spec",
       "x": 0,
-      "y": 12081,
+      "y": 12102,
       "w": 760,
       "h": 3688,
       "page": "journal"
@@ -1828,7 +1876,7 @@
       "file": "FJournalReviewStaging.dc.html",
       "title": "Journal · Weekly review · Staging · Oct 7 review",
       "x": 880,
-      "y": 12081,
+      "y": 12102,
       "w": 1440,
       "h": 5908,
       "page": "journal",
@@ -1838,7 +1886,7 @@
       "file": "FJournalReviewAiOff.dc.html",
       "title": "Journal · Weekly review · Production · AI off",
       "x": 2440,
-      "y": 12081,
+      "y": 12102,
       "w": 1440,
       "h": 4078,
       "page": "journal",
@@ -1848,7 +1896,7 @@
       "file": "FJournalReviewFromMemory.dc.html",
       "title": "Journal · Weekly review · Production · mostly from memory",
       "x": 4000,
-      "y": 12081,
+      "y": 12102,
       "w": 1440,
       "h": 4794,
       "page": "journal",
@@ -1858,7 +1906,7 @@
       "file": "FJournalReviewPhone.dc.html",
       "title": "Journal · Weekly review · Phone · staging",
       "x": 5560,
-      "y": 12081,
+      "y": 12102,
       "w": 390,
       "h": 7985,
       "page": "journal"
@@ -1867,7 +1915,7 @@
       "file": "FJournalReviewLight.dc.html",
       "title": "Journal · Weekly review · Light · staging",
       "x": 6070,
-      "y": 12081,
+      "y": 12102,
       "w": 1440,
       "h": 5908,
       "page": "journal",
@@ -1877,7 +1925,7 @@
       "file": "FJournalReviewStates.dc.html",
       "title": "Journal · Weekly review · States",
       "x": 7630,
-      "y": 12081,
+      "y": 12102,
       "w": 1440,
       "h": 3710,
       "page": "journal",
@@ -1887,16 +1935,16 @@
       "file": "FJournalRulebookSpec.dc.html",
       "title": "Journal · Rulebook · spec",
       "x": 0,
-      "y": 20426,
+      "y": 20447,
       "w": 760,
-      "h": 3330,
+      "h": 3351,
       "page": "journal"
     },
     {
       "file": "FJournalRulebookStaging.dc.html",
       "title": "Journal · Rulebook · Staging · rulebook",
       "x": 880,
-      "y": 20426,
+      "y": 20447,
       "w": 1440,
       "h": 2218,
       "page": "journal",
@@ -1906,7 +1954,7 @@
       "file": "FJournalRulebookRule.dc.html",
       "title": "Journal · Rulebook · Staging · rule R2",
       "x": 2440,
-      "y": 20426,
+      "y": 20447,
       "w": 1440,
       "h": 1992,
       "page": "journal",
@@ -1916,7 +1964,7 @@
       "file": "FJournalRulebookPhone.dc.html",
       "title": "Journal · Rulebook · Phone · staging",
       "x": 4000,
-      "y": 20426,
+      "y": 20447,
       "w": 390,
       "h": 3930,
       "page": "journal"
@@ -1925,7 +1973,7 @@
       "file": "FJournalRulebookLight.dc.html",
       "title": "Journal · Rulebook · Light · staging",
       "x": 4510,
-      "y": 20426,
+      "y": 20447,
       "w": 1440,
       "h": 2218,
       "page": "journal",
@@ -1935,7 +1983,7 @@
       "file": "FJournalRulebookStates.dc.html",
       "title": "Journal · Rulebook · States",
       "x": 6070,
-      "y": 20426,
+      "y": 20447,
       "w": 1440,
       "h": 5092,
       "page": "journal",
@@ -1945,16 +1993,16 @@
       "file": "FJournalTidyImportSpec.dc.html",
       "title": "Journal · Tidy up and import · spec",
       "x": 0,
-      "y": 25878,
+      "y": 25899,
       "w": 760,
-      "h": 3080,
+      "h": 3101,
       "page": "journal"
     },
     {
       "file": "FJournalTidyImportTidy.dc.html",
       "title": "Journal · Tidy up and import · Staging · Tidy",
       "x": 880,
-      "y": 25878,
+      "y": 25899,
       "w": 1440,
       "h": 1737,
       "page": "journal",
@@ -1964,7 +2012,7 @@
       "file": "FJournalTidyImportImport.dc.html",
       "title": "Journal · Tidy up and import · Staging · Import",
       "x": 2440,
-      "y": 25878,
+      "y": 25899,
       "w": 1440,
       "h": 1470,
       "page": "journal",
@@ -1974,7 +2022,7 @@
       "file": "FJournalTidyImportPhone.dc.html",
       "title": "Journal · Tidy up and import · Phone · staging",
       "x": 4000,
-      "y": 25878,
+      "y": 25899,
       "w": 390,
       "h": 4391,
       "page": "journal"
@@ -1983,7 +2031,7 @@
       "file": "FJournalTidyImportStates.dc.html",
       "title": "Journal · Tidy up and import · States",
       "x": 4510,
-      "y": 25878,
+      "y": 25899,
       "w": 1440,
       "h": 1875,
       "page": "journal",
@@ -1993,7 +2041,7 @@
       "file": "FJournalOverlaysSpec.dc.html",
       "title": "Journal · Drawers and sheets · spec",
       "x": 0,
-      "y": 30629,
+      "y": 30650,
       "w": 760,
       "h": 2966,
       "page": "journal"
@@ -2002,7 +2050,7 @@
       "file": "FJournalOverlaysFinding.dc.html",
       "title": "Journal · Drawers and sheets · Finding drawer · staging",
       "x": 880,
-      "y": 30629,
+      "y": 30650,
       "w": 1440,
       "h": 1180,
       "page": "journal",
@@ -2012,7 +2060,7 @@
       "file": "FJournalOverlaysWhatsSent.dc.html",
       "title": "Journal · Drawers and sheets · What’s sent drawer · staging",
       "x": 2440,
-      "y": 30629,
+      "y": 30650,
       "w": 1440,
       "h": 980,
       "page": "journal",
@@ -2022,7 +2070,7 @@
       "file": "FJournalOverlaysEditPositions.dc.html",
       "title": "Journal · Drawers and sheets · Edit positions dialog · staging",
       "x": 4000,
-      "y": 30629,
+      "y": 30650,
       "w": 1440,
       "h": 1430,
       "page": "journal",
@@ -2032,7 +2080,7 @@
       "file": "FJournalOverlaysPath.dc.html",
       "title": "Journal · Drawers and sheets · Account path drawer · staging",
       "x": 5560,
-      "y": 30629,
+      "y": 30650,
       "w": 1440,
       "h": 1460,
       "page": "journal",
@@ -2042,7 +2090,7 @@
       "file": "FJournalOverlaysPhone.dc.html",
       "title": "Journal · Drawers and sheets · Phone · bottom sheets",
       "x": 7120,
-      "y": 30629,
+      "y": 30650,
       "w": 390,
       "h": 6721,
       "page": "journal"
@@ -2051,7 +2099,7 @@
       "file": "FJournalOverlaysStates.dc.html",
       "title": "Journal · Drawers and sheets · States",
       "x": 7630,
-      "y": 30629,
+      "y": 30650,
       "w": 1440,
       "h": 2161,
       "page": "journal",
@@ -2061,7 +2109,7 @@
       "file": "FJournalSettingsSpec.dc.html",
       "title": "Journal · Settings panel · spec",
       "x": 0,
-      "y": 37710,
+      "y": 37731,
       "w": 760,
       "h": 3063,
       "page": "journal"
@@ -2070,7 +2118,7 @@
       "file": "FJournalSettingsStaging.dc.html",
       "title": "Journal · Settings panel · Staging · demo account",
       "x": 880,
-      "y": 37710,
+      "y": 37731,
       "w": 1440,
       "h": 1876,
       "page": "journal",
@@ -2080,7 +2128,7 @@
       "file": "FJournalSettingsPhone.dc.html",
       "title": "Journal · Settings panel · Phone · production",
       "x": 2440,
-      "y": 37710,
+      "y": 37731,
       "w": 390,
       "h": 2496,
       "page": "journal"
@@ -2089,65 +2137,17 @@
       "file": "FJournalSettingsStates.dc.html",
       "title": "Journal · Settings panel · States",
       "x": 2950,
-      "y": 37710,
+      "y": 37731,
       "w": 1440,
       "h": 2098,
       "page": "journal",
       "expand": "fill"
     },
     {
-      "file": "FPlannedLiquiditySpec.dc.html",
-      "title": "Planned · Liquidity · spec",
-      "x": 0,
-      "y": 0,
-      "w": 760,
-      "h": 2069,
-      "page": "tools"
-    },
-    {
-      "file": "FPlannedLiquidityStaging.dc.html",
-      "title": "Planned · Liquidity · Staging · demo account",
-      "x": 880,
-      "y": 0,
-      "w": 1440,
-      "h": 1588,
-      "page": "tools",
-      "expand": "fill"
-    },
-    {
-      "file": "FPlannedLiquidityProduction.dc.html",
-      "title": "Planned · Liquidity · Production · as it would ship",
-      "x": 2440,
-      "y": 0,
-      "w": 1440,
-      "h": 1562,
-      "page": "tools",
-      "expand": "fill"
-    },
-    {
-      "file": "FPlannedLiquidityPhone.dc.html",
-      "title": "Planned · Liquidity · Phone · production",
-      "x": 4000,
-      "y": 0,
-      "w": 390,
-      "h": 2401,
-      "page": "tools"
-    },
-    {
-      "file": "FPlannedLiquidityStates.dc.html",
-      "title": "Planned · Liquidity · States",
-      "x": 4510,
-      "y": 0,
-      "w": 1440,
-      "h": 1843,
-      "page": "tools",
-      "expand": "fill"
-    },
-    {
       "file": "FPlannedCalendarSpec.dc.html",
       "title": "Planned · Calendar · spec",
       "x": 0,
-      "y": 2761,
+      "y": 0,
       "w": 760,
       "h": 2583,
       "page": "tools"
@@ -2156,7 +2156,7 @@
       "file": "FPlannedCalendarStaging.dc.html",
       "title": "Planned · Calendar · Staging · demo account",
       "x": 880,
-      "y": 2761,
+      "y": 0,
       "w": 1440,
       "h": 1387,
       "page": "tools",
@@ -2166,7 +2166,7 @@
       "file": "FPlannedCalendarProduction.dc.html",
       "title": "Planned · Calendar · Production · as it would ship",
       "x": 2440,
-      "y": 2761,
+      "y": 0,
       "w": 1440,
       "h": 1690,
       "page": "tools",
@@ -2176,7 +2176,7 @@
       "file": "FPlannedCalendarPhone.dc.html",
       "title": "Planned · Calendar · Phone · production",
       "x": 4000,
-      "y": 2761,
+      "y": 0,
       "w": 390,
       "h": 3128,
       "page": "tools"
@@ -2185,7 +2185,7 @@
       "file": "FPlannedCalendarStates.dc.html",
       "title": "Planned · Calendar · States",
       "x": 4510,
-      "y": 2761,
+      "y": 0,
       "w": 1440,
       "h": 1545,
       "page": "tools",
@@ -2195,7 +2195,7 @@
       "file": "FPlannedOtcSpec.dc.html",
       "title": "Planned · Off-exchange volume · spec",
       "x": 0,
-      "y": 6249,
+      "y": 3488,
       "w": 760,
       "h": 1539,
       "page": "tools"
@@ -2204,7 +2204,7 @@
       "file": "FPlannedOtcStaging.dc.html",
       "title": "Planned · Off-exchange volume · Staging · demo account",
       "x": 880,
-      "y": 6249,
+      "y": 3488,
       "w": 1440,
       "h": 1340,
       "page": "tools",
@@ -2214,7 +2214,7 @@
       "file": "FPlannedOtcProduction.dc.html",
       "title": "Planned · Off-exchange volume · Production · as it would ship",
       "x": 2440,
-      "y": 6249,
+      "y": 3488,
       "w": 1440,
       "h": 1332,
       "page": "tools",
@@ -2224,7 +2224,7 @@
       "file": "FPlannedOtcPhone.dc.html",
       "title": "Planned · Off-exchange volume · Phone · production",
       "x": 4000,
-      "y": 6249,
+      "y": 3488,
       "w": 390,
       "h": 1837,
       "page": "tools"
@@ -2233,7 +2233,7 @@
       "file": "FPlannedOtcStates.dc.html",
       "title": "Planned · Off-exchange volume · States",
       "x": 4510,
-      "y": 6249,
+      "y": 3488,
       "w": 1440,
       "h": 1800,
       "page": "tools",
@@ -2243,7 +2243,7 @@
       "file": "FPlannedClustersSpec.dc.html",
       "title": "Planned · Insider clusters · spec",
       "x": 0,
-      "y": 8446,
+      "y": 5685,
       "w": 760,
       "h": 1992,
       "page": "tools"
@@ -2252,7 +2252,7 @@
       "file": "FPlannedClustersStaging.dc.html",
       "title": "Planned · Insider clusters · Staging · demo account",
       "x": 880,
-      "y": 8446,
+      "y": 5685,
       "w": 1440,
       "h": 1324,
       "page": "tools",
@@ -2262,7 +2262,7 @@
       "file": "FPlannedClustersProduction.dc.html",
       "title": "Planned · Insider clusters · Production · as it would ship",
       "x": 2440,
-      "y": 8446,
+      "y": 5685,
       "w": 1440,
       "h": 1316,
       "page": "tools",
@@ -2272,7 +2272,7 @@
       "file": "FPlannedClustersPhone.dc.html",
       "title": "Planned · Insider clusters · Phone · production",
       "x": 4000,
-      "y": 8446,
+      "y": 5685,
       "w": 390,
       "h": 1831,
       "page": "tools"
@@ -2281,7 +2281,7 @@
       "file": "FPlannedClustersStates.dc.html",
       "title": "Planned · Insider clusters · States",
       "x": 4510,
-      "y": 8446,
+      "y": 5685,
       "w": 1440,
       "h": 1463,
       "page": "tools",
@@ -2291,7 +2291,7 @@
       "file": "FPlannedHoldersSpec.dc.html",
       "title": "Planned · Fund holdings (13F) · spec",
       "x": 0,
-      "y": 10798,
+      "y": 8037,
       "w": 760,
       "h": 1708,
       "page": "tools"
@@ -2300,7 +2300,7 @@
       "file": "FPlannedHoldersStaging.dc.html",
       "title": "Planned · Fund holdings (13F) · Staging · demo account",
       "x": 880,
-      "y": 10798,
+      "y": 8037,
       "w": 1440,
       "h": 1360,
       "page": "tools",
@@ -2310,7 +2310,7 @@
       "file": "FPlannedHoldersProduction.dc.html",
       "title": "Planned · Fund holdings (13F) · Production · as it would ship",
       "x": 2440,
-      "y": 10798,
+      "y": 8037,
       "w": 1440,
       "h": 1420,
       "page": "tools",
@@ -2320,7 +2320,7 @@
       "file": "FPlannedHoldersPhone.dc.html",
       "title": "Planned · Fund holdings (13F) · Phone · production",
       "x": 4000,
-      "y": 10798,
+      "y": 8037,
       "w": 390,
       "h": 2049,
       "page": "tools"
@@ -2329,7 +2329,7 @@
       "file": "FPlannedHoldersStates.dc.html",
       "title": "Planned · Fund holdings (13F) · States",
       "x": 4510,
-      "y": 10798,
+      "y": 8037,
       "w": 1440,
       "h": 1643,
       "page": "tools",
@@ -2339,7 +2339,7 @@
       "file": "FPlannedXbrlSpec.dc.html",
       "title": "Planned · Figures against the filing · spec",
       "x": 0,
-      "y": 13207,
+      "y": 10446,
       "w": 760,
       "h": 2088,
       "page": "tools"
@@ -2348,7 +2348,7 @@
       "file": "FPlannedXbrlStaging.dc.html",
       "title": "Planned · Figures against the filing · Staging · demo account",
       "x": 880,
-      "y": 13207,
+      "y": 10446,
       "w": 1440,
       "h": 1580,
       "page": "tools",
@@ -2358,7 +2358,7 @@
       "file": "FPlannedXbrlProduction.dc.html",
       "title": "Planned · Figures against the filing · Production · as it would ship",
       "x": 2440,
-      "y": 13207,
+      "y": 10446,
       "w": 1440,
       "h": 1704,
       "page": "tools",
@@ -2368,7 +2368,7 @@
       "file": "FPlannedXbrlPhone.dc.html",
       "title": "Planned · Figures against the filing · Phone · production",
       "x": 4000,
-      "y": 13207,
+      "y": 10446,
       "w": 390,
       "h": 2654,
       "page": "tools"
@@ -2377,7 +2377,7 @@
       "file": "FPlannedXbrlStates.dc.html",
       "title": "Planned · Figures against the filing · States",
       "x": 4510,
-      "y": 13207,
+      "y": 10446,
       "w": 1440,
       "h": 1371,
       "page": "tools",
@@ -2387,7 +2387,7 @@
       "file": "FPlannedPeersSpec.dc.html",
       "title": "Planned · Peers · spec",
       "x": 0,
-      "y": 16221,
+      "y": 13460,
       "w": 760,
       "h": 1516,
       "page": "tools"
@@ -2396,7 +2396,7 @@
       "file": "FPlannedPeersStaging.dc.html",
       "title": "Planned · Peers · Staging · demo account",
       "x": 880,
-      "y": 16221,
+      "y": 13460,
       "w": 1440,
       "h": 1237,
       "page": "tools",
@@ -2406,7 +2406,7 @@
       "file": "FPlannedPeersProduction.dc.html",
       "title": "Planned · Peers · Production · as it would ship",
       "x": 2440,
-      "y": 16221,
+      "y": 13460,
       "w": 1440,
       "h": 1229,
       "page": "tools",
@@ -2416,7 +2416,7 @@
       "file": "FPlannedPeersPhone.dc.html",
       "title": "Planned · Peers · Phone · production",
       "x": 4000,
-      "y": 16221,
+      "y": 13460,
       "w": 390,
       "h": 1677,
       "page": "tools"
@@ -2425,7 +2425,7 @@
       "file": "FPlannedPeersStates.dc.html",
       "title": "Planned · Peers · States",
       "x": 4510,
-      "y": 16221,
+      "y": 13460,
       "w": 1440,
       "h": 1247,
       "page": "tools",
@@ -2435,7 +2435,7 @@
       "file": "FPlannedSignalsSpec.dc.html",
       "title": "Planned · Signal track record · spec",
       "x": 0,
-      "y": 18258,
+      "y": 15497,
       "w": 760,
       "h": 1390,
       "page": "tools"
@@ -2444,7 +2444,7 @@
       "file": "FPlannedSignalsStaging.dc.html",
       "title": "Planned · Signal track record · Staging · demo account",
       "x": 880,
-      "y": 18258,
+      "y": 15497,
       "w": 1440,
       "h": 1220,
       "page": "tools",
@@ -2454,7 +2454,7 @@
       "file": "FPlannedSignalsProduction.dc.html",
       "title": "Planned · Signal track record · Production · design target (blocked)",
       "x": 2440,
-      "y": 18258,
+      "y": 15497,
       "w": 1440,
       "h": 1210,
       "page": "tools",
@@ -2464,7 +2464,7 @@
       "file": "FPlannedSignalsPhone.dc.html",
       "title": "Planned · Signal track record · Phone · production design target",
       "x": 4000,
-      "y": 18258,
+      "y": 15497,
       "w": 390,
       "h": 2072,
       "page": "tools"
@@ -2473,7 +2473,7 @@
       "file": "FPlannedSignalsStates.dc.html",
       "title": "Planned · Signal track record · States",
       "x": 4510,
-      "y": 18258,
+      "y": 15497,
       "w": 1440,
       "h": 1560,
       "page": "tools",
@@ -2483,7 +2483,7 @@
       "file": "FPlannedTaSpec.dc.html",
       "title": "Planned · Technical readings · spec",
       "x": 0,
-      "y": 20690,
+      "y": 17929,
       "w": 760,
       "h": 1679,
       "page": "tools"
@@ -2492,7 +2492,7 @@
       "file": "FPlannedTaStaging.dc.html",
       "title": "Planned · Technical readings · Staging · demo account",
       "x": 880,
-      "y": 20690,
+      "y": 17929,
       "w": 1440,
       "h": 1925,
       "page": "tools",
@@ -2502,7 +2502,7 @@
       "file": "FPlannedTaProduction.dc.html",
       "title": "Planned · Technical readings · Production · design target (blocked)",
       "x": 2440,
-      "y": 20690,
+      "y": 17929,
       "w": 1440,
       "h": 1513,
       "page": "tools",
@@ -2512,7 +2512,7 @@
       "file": "FPlannedTaPhone.dc.html",
       "title": "Planned · Technical readings · Phone · production design target",
       "x": 4000,
-      "y": 20690,
+      "y": 17929,
       "w": 390,
       "h": 2614,
       "page": "tools"
@@ -2521,7 +2521,7 @@
       "file": "FPlannedTaStates.dc.html",
       "title": "Planned · Technical readings · States",
       "x": 4510,
-      "y": 20690,
+      "y": 17929,
       "w": 1440,
       "h": 1456,
       "page": "tools",
@@ -2553,7 +2553,7 @@
       "x": 0,
       "y": 0,
       "w": 1440,
-      "h": 2371,
+      "h": 2542,
       "page": "changelog",
       "expand": "fill"
     }
@@ -2575,7 +2575,7 @@
       "y": 0,
       "w": 1500,
       "size": "l",
-      "text": "Convexa Desk Redesign: every screen of Convexa in its current, ruled design, on 13 pages (organized by app area 2026-10-28).\n\nPages: the app in its navigation order, Scanner (the ranked read of the whole universe) · Ticker desk (the desk, its AI read, and the Technical and Research tabs) · Research (Notes, Markets, Filings and Scorecard) · Positions & alerts (the simulated book, and alerts on public data) · Settings & operator (Settings, and the operator’s unlinked pages) · Dialogs & overlays (every dialog, drawer and sheet) · Public site (landing, methodology, blog, sources and credits, privacy, terms and the 404) · Shell & foundations (the shell, data states and charts, and the token and component library); then the planned work and the unruled prototypes, Planned · Trade journal (spec 08, eight screens under Positions) · Planned · Public-data tools (the nine tools from public data) · Prototypes · not ruled (F2, a year of the curve, and F3, calibration); and Changelog (design changes by Convexa version).\n\nEach row is one screen, left to right: its spec card (purpose, where every number comes from, states, acceptance, what is built), then staging (the demo account, all sample), production where it differs, phone, light, and its states.\n\nVersions: each release of Convexa has a version, the root package.json’s (the first, 1.0.0, is the first push after 2026-10-28), and the version card states the version and commit this canvas shows. Each built row’s title names the version it shipped in, and the Changelog page lists design changes by version. To see the design as of any release, build design/ at its tag (a worktree at v1.0.0, then node design/src/build.mjs there).\n\nRuled questions, fixed issues and the earlier rounds (v2–v5 directions, audits and before/after boards) are off the canvas: the record is git, design/CHANGELOG.md and DESIGN_SYSTEM.md Amendments."
+      "text": "Convexa Desk Redesign: every screen of Convexa in its current, ruled design, on 13 pages (organized by app area 2026-10-28).\n\nPages: the app in its navigation order, Scanner (the ranked read of the whole universe) · Ticker desk (the desk, its AI read, and the Technical and Research tabs) · Research (Notes, Markets with its Liquidity section, Filings and Scorecard) · Positions & alerts (the simulated book, and alerts on public data); then the pages around it, Settings & operator (Settings, and the operator’s unlinked pages) · Dialogs & overlays (every dialog, drawer and sheet) · Public site (landing, methodology, blog, sources and credits, privacy, terms and the 404) · Shell & foundations (the shell, data states and charts, and the token and component library); then the planned work and the unruled prototypes, Planned · Trade journal (spec 08: seven screens under Positions, and its panel in Settings) · Planned · Public-data tools (the eight planned tools from public data) · Prototypes · not ruled (F2, a year of the curve, and F3, calibration); and Changelog (design changes up to each Convexa version).\n\nEach row is one screen, left to right: its spec card (purpose, where every number comes from, states, acceptance, what is built), then staging (the demo account, all sample), production where it differs, phone, light, and its states.\n\nVersions: each release of Convexa has a version, the root package.json’s (the first, 1.0.0, is the first push after 2026-10-28), and the version card states the version and commit this canvas shows. Each built row’s title and spec card name the version it first shipped in (“since Convexa 1.0.0”), and the Changelog page lists the design changes up to each version. To see the design as of any release, build design/ at its tag (a worktree at v1.0.0, then node design/src/build.mjs there).\n\nRuled questions, fixed issues and the earlier rounds (v2–v5 directions, audits and before/after boards) are off the canvas: the record is git, design/CHANGELOG.md and DESIGN_SYSTEM.md Amendments."
     },
     {
       "id": "page-start",
@@ -2584,7 +2584,7 @@
       "y": -1407,
       "w": 800,
       "size": "l",
-      "text": "Start here · Convexa 1.0.0\n\nThe board map (every screen by page: what’s built, and the Convexa version it shipped in) and the screen tracker (what’s open on each screen, and why); the version card and the guide sit to their right."
+      "text": "Start here · Convexa 1.0.0\n\nThe board map (every screen by page: what’s built, and the Convexa version it first shipped in) and the screen tracker (what’s open on each screen, and why); the version card and the guide sit to their right."
     },
     {
       "id": "page-scanner",
@@ -2611,7 +2611,7 @@
       "y": -1407,
       "w": 800,
       "size": "l",
-      "text": "Research · Convexa 1.0.0\n\nThe Research section: the Notes index, Markets, Filings and the Scorecard.\n\nRead each row left to right: the spec card, then staging, production where it differs, phone, light and states."
+      "text": "Research · Convexa 1.0.0\n\nThe Research section: the Notes index, Markets and its Liquidity section, Filings and the Scorecard. A single note (/ticker/:symbol/research, which the nav also lights as Research) is on Ticker desk, as the ticker’s Research tab.\n\nRead each row left to right: the spec card, then staging, production where it differs, phone, light and states."
     },
     {
       "id": "page-positions",
@@ -2665,7 +2665,7 @@
       "y": -1407,
       "w": 800,
       "size": "l",
-      "text": "Planned · Trade journal\n\nThe trade journal (spec 08): eight screens under Positions’ tabs, from the timeline to its Settings panel. Designed but in no Convexa release yet; this canvas shows Convexa 1.0.0.\n\nRead each row left to right: the spec card, then staging, production where it differs, phone, light and states."
+      "text": "Planned · Trade journal\n\nThe trade journal (spec 08): seven screens under Positions’ tabs, from the timeline on, and its panel in Settings. Designed but in no Convexa release yet; this canvas shows Convexa 1.0.0.\n\nRead each row left to right: the spec card, then staging, production where it differs, phone, light and states."
     },
     {
       "id": "page-tools",
@@ -2674,7 +2674,7 @@
       "y": -1407,
       "w": 800,
       "size": "l",
-      "text": "Planned · Public-data tools\n\nThe nine tools from public data, each with its spec card. Designed but in no Convexa release yet as screens of their own (parts of several already ship inside their host pages; the board map shows how much); this canvas shows Convexa 1.0.0.\n\nRead each row left to right: the spec card, then staging, production where it differs, phone, light and states."
+      "text": "Planned · Public-data tools\n\nThe eight planned tools from public data, each with its spec card. Liquidity, which shipped inside Markets, is on the Research page. Designed but in no Convexa release yet as screens of their own (parts of several already ship inside their host pages; the board map shows how much); this canvas shows Convexa 1.0.0.\n\nRead each row left to right: the spec card, then staging, production where it differs, phone, light and states."
     },
     {
       "id": "page-prototypes",
@@ -2692,7 +2692,7 @@
       "y": -1407,
       "w": 800,
       "size": "l",
-      "text": "Changelog · Convexa 1.0.0\n\nEvery design/CHANGELOG.md entry, newest first, under the Convexa version it shipped in."
+      "text": "Changelog · Convexa 1.0.0\n\nEvery design/CHANGELOG.md entry, newest first, as the design changes up to each Convexa version. A change up to a version is in the canvas that version’s tag builds; it doesn’t say the screen it draws ships (the planned pages say which don’t)."
     },
     {
       "id": "row-progress",
@@ -2710,7 +2710,7 @@
       "y": -300,
       "kind": "title1",
       "maxW": 9580,
-      "text": "Scanner · /scanner · Convexa 1.0.0"
+      "text": "Scanner · /scanner · since Convexa 1.0.0"
     },
     {
       "id": "row-desk",
@@ -2719,34 +2719,34 @@
       "y": -300,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Ticker desk · /ticker/:ticker · Convexa 1.0.0"
+      "text": "Ticker desk · /ticker/:ticker · since Convexa 1.0.0"
     },
     {
       "id": "row-ai-read",
       "page": "ticker",
       "x": 0,
-      "y": 6024,
+      "y": 6129,
       "kind": "title1",
       "maxW": 8020,
-      "text": "AI read · /ticker/:ticker · Convexa 1.0.0"
+      "text": "AI read · /ticker/:ticker · since Convexa 1.0.0"
     },
     {
       "id": "row-technical",
       "page": "ticker",
       "x": 0,
-      "y": 9731,
+      "y": 9836,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Technical tab · /ticker/:symbol/technical-analysis · Convexa 1.0.0"
+      "text": "Technical tab · /ticker/:symbol/technical-analysis · since Convexa 1.0.0"
     },
     {
       "id": "row-note",
       "page": "ticker",
       "x": 0,
-      "y": 12607,
+      "y": 12712,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Research tab · note · /ticker/:symbol/research · Convexa 1.0.0"
+      "text": "Research tab · note · /ticker/:symbol/research · since Convexa 1.0.0"
     },
     {
       "id": "row-research-index",
@@ -2755,7 +2755,7 @@
       "y": -300,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Research · Notes · /research · Convexa 1.0.0"
+      "text": "Research · Notes · /research · since Convexa 1.0.0"
     },
     {
       "id": "row-research-markets",
@@ -2764,25 +2764,34 @@
       "y": 6500,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Research · Markets · /research/markets · Convexa 1.0.0"
+      "text": "Research · Markets · /research/markets · since Convexa 1.0.0"
+    },
+    {
+      "id": "row-planned-liquidity",
+      "page": "research",
+      "x": 0,
+      "y": 12813,
+      "kind": "title1",
+      "maxW": 5950,
+      "text": "Research · Markets · Liquidity · /research/markets#liquidity · since Convexa 1.0.0"
     },
     {
       "id": "row-research-filings",
       "page": "research",
       "x": 0,
-      "y": 12813,
+      "y": 15574,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Research · Filings · /research/filings · Convexa 1.0.0"
+      "text": "Research · Filings · /research/filings · since Convexa 1.0.0"
     },
     {
       "id": "row-research-scorecard",
       "page": "research",
       "x": 0,
-      "y": 16531,
+      "y": 19292,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Research · Scorecard · /research/scorecard · Convexa 1.0.0"
+      "text": "Research · Scorecard · /research/scorecard · since Convexa 1.0.0"
     },
     {
       "id": "row-positions",
@@ -2791,7 +2800,7 @@
       "y": -300,
       "kind": "title1",
       "maxW": 8020,
-      "text": "Positions · /positions · Convexa 1.0.0"
+      "text": "Positions · /positions · since Convexa 1.0.0"
     },
     {
       "id": "row-alerts",
@@ -2800,7 +2809,7 @@
       "y": 2952,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Alerts · /alerts · Convexa 1.0.0"
+      "text": "Alerts · /alerts · since Convexa 1.0.0"
     },
     {
       "id": "row-settings",
@@ -2809,7 +2818,7 @@
       "y": -300,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Settings · /settings · Convexa 1.0.0"
+      "text": "Settings · /settings · since Convexa 1.0.0"
     },
     {
       "id": "row-operator",
@@ -2818,7 +2827,7 @@
       "y": 2327,
       "kind": "title1",
       "maxW": 9070,
-      "text": "Operator · /_ops/metrics and /_ops/research (unlinked) · Convexa 1.0.0"
+      "text": "Operator · /_ops/metrics and /_ops/research (unlinked) · since Convexa 1.0.0"
     },
     {
       "id": "row-dialogs",
@@ -2827,7 +2836,7 @@
       "y": -300,
       "kind": "title1",
       "maxW": 13750,
-      "text": "Overlays · dialogs, drawer and sheets on every route · Convexa 1.0.0"
+      "text": "Overlays · dialogs, drawer and sheets on every route · since Convexa 1.0.0"
     },
     {
       "id": "row-overlays",
@@ -2836,7 +2845,7 @@
       "y": 5627,
       "kind": "title1",
       "maxW": 13750,
-      "text": "More overlays · dialogs on /positions, /ticker/:ticker, /alerts; /account/reset and /account/invite (proposed) · Convexa 1.0.0"
+      "text": "More overlays · dialogs on /positions, /ticker/:ticker and /alerts · since Convexa 1.0.0"
     },
     {
       "id": "row-landing",
@@ -2845,7 +2854,7 @@
       "y": -300,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Landing · / · Convexa 1.0.0"
+      "text": "Landing · / · since Convexa 1.0.0"
     },
     {
       "id": "row-methodology",
@@ -2854,7 +2863,7 @@
       "y": 5873,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Methodology · /methodology (deep link /methodology#data) · Convexa 1.0.0"
+      "text": "Methodology · /methodology (deep link /methodology#data) · since Convexa 1.0.0"
     },
     {
       "id": "row-blog",
@@ -2863,7 +2872,7 @@
       "y": 13728,
       "kind": "title1",
       "maxW": 7510,
-      "text": "Blog · /blog and /blog/how-we-read-dealer-structure.html · Convexa 1.0.0"
+      "text": "Blog · /blog and /blog/how-we-read-dealer-structure.html · since Convexa 1.0.0"
     },
     {
       "id": "row-credits",
@@ -2872,7 +2881,7 @@
       "y": 17037,
       "kind": "title1",
       "maxW": 8020,
-      "text": "Data sources and credits · /credits (proposed; deep links /credits#treasury, #cftc, #finra-si, #finra-shvol, #sec, #tradingview, #massive) · Convexa 1.0.0"
+      "text": "Data sources and credits · /credits (deep links /credits#treasury, #cftc, #finra-si, #finra-shvol, #sec, #tradingview, #massive) · since Convexa 1.0.0"
     },
     {
       "id": "row-privacy",
@@ -2881,7 +2890,7 @@
       "y": 24000,
       "kind": "title1",
       "maxW": 5950,
-      "text": "Privacy · /privacy (proposed) · Convexa 1.0.0"
+      "text": "Privacy · /privacy · since Convexa 1.0.0"
     },
     {
       "id": "row-terms",
@@ -2890,7 +2899,7 @@
       "y": 29146,
       "kind": "title1",
       "maxW": 5950,
-      "text": "Terms and disclaimer · /terms (proposed) · Convexa 1.0.0"
+      "text": "Terms and disclaimer · /terms · since Convexa 1.0.0"
     },
     {
       "id": "row-not-found",
@@ -2899,7 +2908,7 @@
       "y": 32949,
       "kind": "title1",
       "maxW": 5950,
-      "text": "404 and route fallback · * (any unmatched path inside the shell) · Convexa 1.0.0"
+      "text": "404 and route fallback · * (any unmatched path inside the shell) · since Convexa 1.0.0"
     },
     {
       "id": "row-shell",
@@ -2908,7 +2917,7 @@
       "y": -300,
       "kind": "title1",
       "maxW": 8020,
-      "text": "Global shell · every route inside the shell · Convexa 1.0.0"
+      "text": "Global shell · every route inside the shell · since Convexa 1.0.0"
     },
     {
       "id": "row-foundations",
@@ -2917,7 +2926,7 @@
       "y": 4437,
       "kind": "title1",
       "maxW": 8780,
-      "text": "Foundations · every route · Convexa 1.0.0"
+      "text": "Foundations · every route · since Convexa 1.0.0"
     },
     {
       "id": "row-library",
@@ -2926,7 +2935,7 @@
       "y": 11881,
       "kind": "title1",
       "maxW": 4560,
-      "text": "Library · tokens, components and their React mapping · Convexa 1.0.0"
+      "text": "Library · tokens, components and their React mapping · since Convexa 1.0.0"
     },
     {
       "id": "row-journal-timeline",
@@ -2941,7 +2950,7 @@
       "id": "row-journal-compose",
       "page": "journal",
       "x": 0,
-      "y": 3712,
+      "y": 3733,
       "kind": "title1",
       "maxW": 9580,
       "text": "Journal · New entry · /positions/journal/new"
@@ -2950,7 +2959,7 @@
       "id": "row-journal-entry",
       "page": "journal",
       "x": 0,
-      "y": 8102,
+      "y": 8123,
       "kind": "title1",
       "maxW": 7510,
       "text": "Journal · Entry · /positions/journal/:entryId"
@@ -2959,7 +2968,7 @@
       "id": "row-journal-review",
       "page": "journal",
       "x": 0,
-      "y": 11781,
+      "y": 11802,
       "kind": "title1",
       "maxW": 9070,
       "text": "Journal · Weekly review · /positions/review"
@@ -2968,7 +2977,7 @@
       "id": "row-journal-rulebook",
       "page": "journal",
       "x": 0,
-      "y": 20126,
+      "y": 20147,
       "kind": "title1",
       "maxW": 7510,
       "text": "Journal · Rulebook · /positions/rulebook"
@@ -2977,7 +2986,7 @@
       "id": "row-journal-tidy-import",
       "page": "journal",
       "x": 0,
-      "y": 25578,
+      "y": 25599,
       "kind": "title1",
       "maxW": 5950,
       "text": "Journal · Tidy up and import · /positions/journal/tidy"
@@ -2986,7 +2995,7 @@
       "id": "row-journal-overlays",
       "page": "journal",
       "x": 0,
-      "y": 30329,
+      "y": 30350,
       "kind": "title1",
       "maxW": 9070,
       "text": "Journal · Drawers and sheets · /positions/review/:reviewId?finding=:id"
@@ -2995,25 +3004,16 @@
       "id": "row-journal-settings",
       "page": "journal",
       "x": 0,
-      "y": 37410,
+      "y": 37431,
       "kind": "title1",
       "maxW": 4390,
       "text": "Journal · Settings panel · /settings#journal"
     },
     {
-      "id": "row-planned-liquidity",
-      "page": "tools",
-      "x": 0,
-      "y": -300,
-      "kind": "title1",
-      "maxW": 5950,
-      "text": "Planned · Liquidity · /research/markets#liquidity (proposed)"
-    },
-    {
       "id": "row-planned-calendar",
       "page": "tools",
       "x": 0,
-      "y": 2461,
+      "y": -300,
       "kind": "title1",
       "maxW": 5950,
       "text": "Planned · Calendar · /research/markets#coming-up (proposed)"
@@ -3022,7 +3022,7 @@
       "id": "row-planned-otc",
       "page": "tools",
       "x": 0,
-      "y": 5949,
+      "y": 3188,
       "kind": "title1",
       "maxW": 5950,
       "text": "Planned · Off-exchange volume · /ticker/:symbol/research"
@@ -3031,7 +3031,7 @@
       "id": "row-planned-clusters",
       "page": "tools",
       "x": 0,
-      "y": 8146,
+      "y": 5385,
       "kind": "title1",
       "maxW": 5950,
       "text": "Planned · Insider clusters · /ticker/:symbol/research"
@@ -3040,7 +3040,7 @@
       "id": "row-planned-holders",
       "page": "tools",
       "x": 0,
-      "y": 10498,
+      "y": 7737,
       "kind": "title1",
       "maxW": 5950,
       "text": "Planned · Fund holdings (13F) · /ticker/:symbol/research"
@@ -3049,7 +3049,7 @@
       "id": "row-planned-xbrl",
       "page": "tools",
       "x": 0,
-      "y": 12907,
+      "y": 10146,
       "kind": "title1",
       "maxW": 5950,
       "text": "Planned · Figures against the filing · /ticker/:symbol/research"
@@ -3058,7 +3058,7 @@
       "id": "row-planned-peers",
       "page": "tools",
       "x": 0,
-      "y": 15921,
+      "y": 13160,
       "kind": "title1",
       "maxW": 5950,
       "text": "Planned · Peers · /ticker/:symbol/research"
@@ -3067,7 +3067,7 @@
       "id": "row-planned-signals",
       "page": "tools",
       "x": 0,
-      "y": 17958,
+      "y": 15197,
       "kind": "title1",
       "maxW": 5950,
       "text": "Planned · Signal track record · /research/scorecard#signals"
@@ -3076,7 +3076,7 @@
       "id": "row-planned-ta",
       "page": "tools",
       "x": 0,
-      "y": 20390,
+      "y": 17629,
       "kind": "title1",
       "maxW": 5950,
       "text": "Planned · Technical readings · /ticker/:symbol/technical-analysis"

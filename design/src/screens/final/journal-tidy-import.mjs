@@ -278,7 +278,7 @@ export const ROW = {
       { tag: null, when: `Duplicates skipped: “N rows were already in your journal.”, N being the paste’s own count (${PASTE.rows.length} when the sample paste is filed twice).` },
       { tag: null, when: `Parse failed: “${PARSE_FAILED}”` },
       { tag: ['local', 'Stored here'], when: `Saved: the Imported entry, “${importedLine()}” on the sample, then “${AFTER_IMPORT}”` },
-      { tag: 'locked', when: 'Signed out (production): the Positions private-testing wall, “Sign in to open your journal”, “See it on the demo →”. Not the owner: “This journal is private to the account that owns this Convexa.”, no tag.' },
+      { tag: 'locked', when: 'Signed out (production): the Positions private-testing wall, “Sign in to open your journal”, “See it on the demo →”. Not the owner: “This journal is private to the account that owns this Convexa.” and “See it on the demo →”, and “For the site’s operator”, folded, as OwnerOnlyWall ships; no tag.' },
       { tag: 'sample', when: 'Staging: Sample on Tidy; on Import, a sample paste, prefilled. The demo bar once; each frame dashed with the 8px hatch band and one “Sample journal” chip.' },
     ],
     phone: 'Tidy: one card per entry; each row stacks field and origin over its value, and Keep, Fix and Not right share a row of 44px buttons; the recalled-wording choices stack full width. Import: the same three steps stacked; the preview table becomes one card per row with its labels, and “Save entry” is full width at 44px. No sideways scroll.',

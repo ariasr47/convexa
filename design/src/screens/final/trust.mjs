@@ -22,7 +22,7 @@ export const ROWS = [
     specH: 3291,
     spec: {
       title: 'Data sources and credits',
-      route: '/credits (proposed; deep links /credits#treasury, #cftc, #finra-si, #finra-shvol, #sec, #tradingview, #massive)',
+      route: '/credits (deep links /credits#treasury, #cftc, #finra-si, #finra-shvol, #sec, #tradingview, #massive)',
       job: 'Every source the site reads in one place: who owns it, what Convexa reads, how often and how late it publishes, the terms it is shown under, a link to it, and whether it is working on this site right now.',
       env: {
         production: 'Seven source cards with their live state today: Treasury Updated, CFTC Delayed by source, FINRA short interest and FINRA short-sale volume Off (with the reason: until FINRA’s terms for showing its data here are confirmed), SEC EDGAR Updated, TradingView Live · TradingView, the Massive options feed Not live (with the way to the demo). An “On this page” legend counts each state (P-1). FINRA’s required notice sits on both FINRA cards. Then the typefaces and what Convexa makes itself.',
@@ -98,7 +98,7 @@ export const ROWS = [
     specH: 2099,
     spec: {
       title: 'Privacy',
-      route: '/privacy (proposed)',
+      route: '/privacy',
       job: 'What the site stores and where, what leaves the visitor’s browser and to whom, what Convexa doesn’t do, and how to clear it — read from the code, not from a template.',
       env: {
         production: 'The live site’s storage keys, the account’s server-side record (only for invited accounts), the third parties (hosts, TradingView, the AI provider only with the user’s own key), what Convexa never does, and how to clear it signed out and signed in. Google sign-in isn’t configured on this site and Convexa doesn’t contact Webull yet (saved keys stay encrypted), so neither is listed as a recipient.',
@@ -151,7 +151,7 @@ export const ROWS = [
     specH: 1448,
     spec: {
       title: 'Terms and disclaimer',
-      route: '/terms (proposed)',
+      route: '/terms',
       job: 'The long form of the footer’s disclaimer: an analysis tool, not investment advice, no buy or sell calls, simulated trades only, a read-only brokerage connection, data that can be late or wrong, and the third-party terms the data comes with.',
       env: {
         production: 'The terms, dated, in nine short sections, ending with the footer’s disclaimer sentence verbatim.',

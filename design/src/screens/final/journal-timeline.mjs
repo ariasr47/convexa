@@ -278,7 +278,7 @@ export const ROW = {
       { tag: null, when: 'Signing out with an unsent entry: “1 entry hasn’t reached your account yet. Signing out deletes it from this browser.” + “Try sending now” · “Sign out and delete it” · “Stay signed in”.' },
       { tag: 'notConfigured', when: 'Storage not set up (no journal encryption key on the server): “Journal storage isn’t set up on this server, so nothing can be saved yet.”' },
       { tag: 'locked', when: 'Signed out (production): the Positions private-testing wall, “Sign in to open your journal”, sign-ups closed, “See it on the demo →”.' },
-      { tag: null, when: 'Not the owner (API 403 owner_only): “This journal is private to the account that owns this Convexa.” + “See it on the demo →”, with no tag (open question 12).' },
+      { tag: null, when: 'Not the owner (API 403 owner_only): “This journal is private to the account that owns this Convexa.” + “See it on the demo →”, and “For the site’s operator”, folded, as OwnerOnlyWall ships, with no tag (open question 12).' },
       { tag: 'sample', when: 'Staging: “Demo · sample data · Oct 7, 2026” once, in the bar; frames dashed with the hatch band and the “Sample journal” chip, once per frame; the day groups sit in one such frame, so the cards carry no tag.' },
     ],
     phone: `h1 at 30px and the tab rail. An account peek row, “${STRINGS.peek}”, opens the Path and its table twin in a bottom sheet, with the week’s focus line under it. No quick-capture box: the sticky, safe-area-padded bottom bar carries the amber “Write entry” and the outlined 44px “Margin call” with the warning glyph, and the header’s action hides. Cards are full width with a 3-line clamp; filters open in a bottom sheet. No horizontal overflow at 390 or 393.`,

@@ -17,7 +17,9 @@ const WALL_H1 = '.ac-wall h1 { margin: 0; font-size: 28px; letter-spacing: -0.01
 const WALL_P = '.ac-wall p { margin: 0; line-height: 1.6; }';
 const WALL_BTNS = '.ac-wbtns { display: flex; flex-wrap: wrap; gap: 10px; } .ac-wall .ac-wbtns .btn { min-height: 44px; }';
 const WALL_PHONE = '.ac-wall { margin: 24px 0; padding: 22px; } .ac-wall .btn { flex: 1 1 100%; min-height: 44px; }';
-export const WALL_CSS = [WALL_BOX, WALL_H1, WALL_P, WALL_BTNS, `@media (max-width: 599px) { ${WALL_PHONE} }`].join('\n');
+// The sign-in wall's tag keeps its own width (wallPanelSx alignItems flex-start); ACCT_CSS has it in a combined rule.
+const WALL_TAG = '.ac-wall > .stag { align-self: flex-start; }';
+export const WALL_CSS = [WALL_BOX, WALL_TAG, WALL_H1, WALL_P, WALL_BTNS, `@media (max-width: 599px) { ${WALL_PHONE} }`].join('\n');
 
 export const ACCT_CSS = `
   .ap-h.ac-scanh { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 32px; row-gap: 12px; align-items: start; }
@@ -131,8 +133,20 @@ export const scanNotLive = () => P('Scanner', stateTag('notLive'), `<p class="dl
 // owner, so it is a neutral outlined 44px button, second in the row, not a 24px link in the closing sentence; that
 // sentence keeps its words without the link. Sign in stays the wall's one amber action (ruling A). Every button is 44px
 // at every width (minHeight 44 in the app); under 600px they stack full width. The free path opens /ticker, as shipped.
-export const wallButtons = (path) => `<div class="ac-wbtns"><a href="#signin" class="btn primary">Sign in</a><a href="${DEMO}${path}" class="btn secondary">See it on the demo →</a><a href="/ticker" class="btn secondary">Open a ticker desk</a></div>`;
-export const scannerWall = () => `<div class="ac-wall" role="region" aria-label="Sign in to open the scanner">${stateTag('locked', 'Private testing')}<h1 class="display">Sign in to open the scanner</h1><p class="steel">See ranked dealer-gamma setups across the universe, then jump into any name for walls, flip and flow.</p>${wallButtons('/scanner')}<p class="dline">Invited accounts only; new sign-ups are closed while Convexa is in private testing. Research, rates, positioning and short data are open to everyone.</p><p class="dline" style="border-top: 1px solid var(--line); padding-top: 12px;">Want to see a scan? The demo account runs one, on sample data.</p></div>`;
+// `free` is the route's free path (RequireAuth.tsx WallProps freePath): "Open a ticker desk" unless the wall stands on a
+// desk, where that would lead back to itself (the desk's is its ticker's research).
+export const wallButtons = (path, free = { to: '/ticker', label: 'Open a ticker desk' }) => `<div class="ac-wbtns"><a href="#signin" class="btn primary">Sign in</a><a href="${DEMO}${path}" class="btn secondary">See it on the demo →</a><a href="${free.to}" class="btn secondary">${free.label}</a></div>`;
+/** RequireAuth.tsx WALL_POLICY: sign-ups are closed, and what stays open. */
+const WALL_POLICY = 'Invited accounts only; new sign-ups are closed while Convexa is in private testing. Research, rates, positioning and short data are open to everyone.';
+export const scannerWall = () => `<div class="ac-wall" role="region" aria-label="Sign in to open the scanner">${stateTag('locked', 'Private testing')}<h1 class="display">Sign in to open the scanner</h1><p class="steel">See ranked dealer-gamma setups across the universe, then jump into any name for walls, flip and flow.</p>${wallButtons('/scanner')}<p class="dline">${WALL_POLICY}</p><p class="dline" style="border-top: 1px solid var(--line); padding-top: 12px;">Want to see a scan? The demo account runs one, on sample data.</p></div>`;
+// The desk's sign-in wall (e86ab538, 2026-10-28): signed out where the feed runs, the full desk's reads answer 403
+// auth_required and OwnerGateBoundary (app.tsx TickerDeskRoute) puts RequireAuth.tsx SignInWall in the desk's place,
+// for the surface "the <T> desk": wallCopy()'s default lines, the demo's same symbol (or /ticker for one it lacks),
+// and the ticker's research as the free path. The app review drew it signed out (tmp/parallel-2026-10-28/fe-review,
+// count.log line 4). `standalone` brings WALL_CSS for the desk's row, which doesn't load ACCT_CSS.
+export function deskSignInWall(t, { standalone = false } = {}) {
+  return `${standalone ? `<style>${WALL_CSS}</style>` : ''}<div class="ac-wall" role="region" aria-label="Sign in to open the ${t} desk">${stateTag('locked', 'Private testing')}<h1 class="display">Sign in to open the ${t} desk</h1><p class="steel">This area is limited to invited accounts while Convexa is in private testing.</p>${wallButtons(`/ticker/${t}`, { to: `/ticker/${t}/research`, label: `Read ${t} research` })}<p class="dline">${WALL_POLICY}</p><p class="dline" style="border-top: 1px solid var(--line); padding-top: 12px;">The demo account shows this screen on sample data.</p></div>`;
+}
 // The owner gate's wall (RequireAuth.tsx OwnerOnlyWall; e86ab538, 4471cb0b, 2026-10-28): a signed-in account the API
 // refuses with 403 owner_only. Spec 08's "Not the owner" (journal-kit.mjs jrNotOwner draws the journal's) adapted to the
 // tool: the surface's sentence as the title, 24px, a step under the sign-in wall's 28px; "See it on the demo →" as a
@@ -160,10 +174,15 @@ export function ownerWall(surface, { demoPath, freePath = null, standalone = fal
   const free = freePath ? `<a href="${freePath.to}" class="btn secondary">${freePath.label}</a>` : '';
   return `<style>${standalone ? `${WALL_CSS}\n` : ''}${OWNER_OP_CSS}</style><div class="ac-wall" role="region" aria-label="${c.label}"><h1 class="display" style="font-size: 24px; text-wrap: wrap;">${c.sentence}</h1><div class="ac-wbtns"><a href="${DEMO}${demoPath}" class="btn secondary">See it on the demo →</a>${free}</div><details class="ac-op"><summary>For the site’s operator</summary><span class="mono">If this is your Convexa, add your account’s email to OWNER_EMAILS on the API.</span></details></div>`;
 }
-/** The states boards' "Not the owner" cell: when it happens, in the boards' words. A build with the options feed is
- *  the only place the wall can show: without one, the scanner explains itself, Positions marks say Not live and the
- *  desk is the public desk, and none of them asks an owner-only route (app.tsx, PositionsPage.tsx markFeed). */
-export const ownerWhen = (gives) => `Only on a build with the options feed (neither site today). Signed in, but not the owner: the API answers 403 owner_only, as it does for every account while OWNER_EMAILS is unset. ${gives} No P-2 word exists for this, so the wall has no tag (open question 12).`;
+/** Where a surface asks its owner-only routes, so where its walls can show (2026-10-28 review): wherever the options
+ *  feed runs, and wherever /api/health can't say, since an unknown mode keeps the full surface (libs/api convexa.ts
+ *  getMarketDataMode; marketDataOff is true only for paused and not_live). The desk and Positions give way to the
+ *  public desk and Not live marks when the feed is paused; the scanner keeps its board under the paused banner and
+ *  asks /api/scan (app.tsx TickerDeskRoute, ScannerRoute; PositionsPage.tsx markFeed). Neither site does today:
+ *  production says not_live, and staging is the demo build, which asks no route. */
+export const ownerWhere = (surface) => `where the options feed is ${surface === 'scanner' ? 'live or paused' : 'live'}, or where the health read can’t say (so neither site today, unless /api/health fails)`;
+/** The states boards' "Not the owner" cell: when it happens, in the boards' words. */
+export const ownerWhen = (surface, gives) => `Only ${ownerWhere(surface)}. Signed in, but not the owner: the API answers 403 owner_only, as it does for every account while OWNER_EMAILS is unset. ${gives} No P-2 word exists for this, so the wall has no tag (open question 12).`;
 export function scannerProduction({ minHeight = 0, scheme = 'dark' } = {}) {
   return finalPage({ scheme, minHeight, active: 'scanner', label: 'Scanner', main: `<div class="wrap ap">${scannerWall()}</div>` });
 }
@@ -176,7 +195,7 @@ export function scannerStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const warn = (t, d, btn = '') => `<div class="dwarn">${icon('warn', 14)}<div style="display: flex; flex-direction: column; gap: 4px;"><strong style="font-size: 13px;">${t}</strong>${d ? `<span class="dline">${d}</span>` : ''}${btn}</div></div>`;
   const items = [
     { name: 'Signed out (production)', tag: ['locked'], id: 'SCN-01', when: 'Production visitors: the private-testing wall. Sign-ups closed; one way in; the button to the same screen on the demo, second in the row, and a free path to a ticker desk (owner ruling 2026-10-14; spec 02 (b)).', html: scannerWall().replace('margin: 56px auto', 'margin: 0'), wide: true },
-    { name: 'Not the owner', tag: null, when: ownerWhen('The scan gives way to this wall and stops polling.'), html: ownerWall('scanner', { demoPath: '/scanner' }), wide: true },
+    { name: 'Not the owner', tag: null, when: ownerWhen('scanner', 'The scan gives way to this wall and stops polling.'), html: ownerWall('scanner', { demoPath: '/scanner' }), wide: true },
     { name: 'Not live (production, signed in)', tag: ['notLive'], when: 'The owner, signed in: the explain panel, the outline of the table, and the link to the same screen on the demo. Signing in can’t make it work; the score reads the options chain.', html: scanNotLive(), wide: true },
     { name: 'Sample scan (staging)', tag: ['demo'], when: 'The demo account’s six names on the Oct 7 scenario. Dashed frame and hatch; no price flash; chips say “shaped like”.', html: dataCell({ fam: 'table', state: 'demo', w: '100%', h: 'auto' }) },
     { name: 'Loading', tag: ['loading'], when: 'Rows held at their final height while the sweep answers.', html: dataCell({ fam: 'table', state: 'loading', w: '100%', h: 'auto' }) },
@@ -215,14 +234,14 @@ export function positionsStaging({ minHeight = 0, scheme = 'dark' } = {}) {
   const main = `<div class="wrap ap">${H('Positions', 'Your simulated book, paper only. Saved in this browser’s demo workspace; marks come from the sample chain.', `<a href="#open" class="btn primary">${icon('plus', 16)}Open simulated position</a>`)}${strip}<div class="ap-bar">${seg(['Simulated', 'Broker'], 'Simulated')}${seg(['Open · 1', 'Pending · 1', 'History · 1'], 'Open · 1')}<span style="flex: 1;"></span>${seg(['Table', 'Cards'], 'Table')}</div>${table}${cards}<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px;">${orders}${track}</div>${families}</div>`;
   return finalPage({ scheme, minHeight, active: 'positions', demo: true, label: 'Positions', main });
 }
-export const positionsWall = () => `<div class="ac-wall" role="region" aria-label="Sign in to open your positions">${stateTag('locked', 'Private testing')}<h1 class="display">Sign in to open your positions</h1><p class="steel">Track simulated positions, saved views and P&amp;L so you can practise the plan after you read the structure. Positions are paper only.</p>${wallButtons('/positions')}<p class="dline">Invited accounts only; new sign-ups are closed while Convexa is in private testing. Research, rates, positioning and short data are open to everyone.</p><p class="dline" style="border-top: 1px solid var(--line); padding-top: 12px;">Want to see a book? The demo account has one, on sample data.</p></div>`;
+export const positionsWall = () => `<div class="ac-wall" role="region" aria-label="Sign in to open your positions">${stateTag('locked', 'Private testing')}<h1 class="display">Sign in to open your positions</h1><p class="steel">Track simulated positions, saved views and P&amp;L so you can practise the plan after you read the structure. Positions are paper only.</p>${wallButtons('/positions')}<p class="dline">${WALL_POLICY}</p><p class="dline" style="border-top: 1px solid var(--line); padding-top: 12px;">Want to see a book? The demo account has one, on sample data.</p></div>`;
 export function positionsProduction({ minHeight = 0, scheme = 'dark' } = {}) {
   return finalPage({ scheme, minHeight, active: 'positions', label: 'Positions', main: `<div class="wrap ap">${positionsWall()}</div>` });
 }
 export function positionsStates({ minHeight = 0, scheme = 'dark' } = {}) {
   const items = [
     { name: 'Signed out (production)', tag: ['locked'], id: 'POS-03', when: 'Production visitors: the private-testing wall. Sign-ups closed; one way in; the demo button, second in the row, and a free path.', html: positionsWall().replace('margin: 56px auto', 'margin: 0'), wide: true },
-    { name: 'Not the owner', tag: null, when: ownerWhen('The book gives way to this wall; its marks and orders stop asking.'), html: ownerWall('positions', { demoPath: '/positions' }), wide: true },
+    { name: 'Not the owner', tag: null, when: ownerWhen('positions', 'The book gives way to this wall; its marks and orders stop asking.'), html: ownerWall('positions', { demoPath: '/positions' }), wide: true },
     { name: 'Signed in, production: marks', tag: ['notLive', 'Mark not live'], when: 'The owner’s book on production. Records and P&L from user-entered prices work; option marks need the feed, so each says Not live, never a blank.', html: `<div class="drows"><div style="grid-template-columns: minmax(0, 1fr) auto auto;"><span><strong>NVDA 200 C · Nov 20</strong><br><span class="dline">1 × entry 6.80 · user-entered</span></span>${stateTag('notLive', 'Mark not live')}<span class="mono steel">—</span></div></div>` },
     { name: 'Marks name their basis', tag: ['sample', 'Sample mark'], id: 'POS-01', when: 'Every mark says where it came from: the sample chain (staging), user-entered, the last good copy with its time, or closed.', html: `<div style="display: flex; flex-wrap: wrap; gap: 8px;">${stateTag('sample', 'Sample mark · 2:30 PM')}<span class="stag k-solid">${icon('edit', 12)}user-entered</span>${stateTag('stale', 'Last good copy · 2:41 PM')}<span class="stag k-solid">${icon('check', 12)}closed Oct 7</span></div>` },
     { name: 'Empty book', tag: ['empty'], when: 'No positions yet. Teaches the first step.', html: `<div class="hd-p" style="border-style: dashed; align-items: flex-start;"><strong>No simulated positions yet.</strong><span class="dline">Open one to start your book.</span><a href="#open" class="btn primary">Open simulated position</a></div>` },

@@ -34,7 +34,7 @@ const AI_READ = {
     { tag: 'No trade', when: 'A4: a complete answer, same weight; the action becomes “Alert me at …”.' },
     { tag: ['stale', 'Older snapshot'], when: 'A5 over any produced read: a newer snapshot arrived; burnt orange strip with Refresh analysis.' },
     { tag: 'Cooldown · daily limit', when: 'A6a / A6b: the last read stays pinned; the wait or the reset time in words.' },
-    { tag: 'locked', when: 'A7, feed build, signed out: “Sign in to ask the AI for a read.”; the export link stays.' },
+    { tag: 'locked', when: 'A7, signed out: “Sign in to ask the AI for a read.”; the export link stays. Unreachable while the whole desk is owner-gated (e86ab538): signed out where the feed runs, the desk gives way to the private-testing wall (Ticker desk · states), so no read shows.' },
     { tag: ['notConfigured', 'Add a key'], when: 'A8: eight powering reasons, one frame, never collapsed.' },
     { tag: 'error', when: 'A10: the request failed; cause + Retry; a pinned read is never evicted by a failed refresh.' },
   ],
@@ -64,7 +64,7 @@ const AI_READ = {
 
 const OVERLAYS = {
   title: 'More overlays',
-  route: 'dialogs on /positions, /ticker/:ticker, /alerts; /account/reset and /account/invite (proposed)',
+  route: 'dialogs on /positions, /ticker/:ticker and /alerts',
   job: 'The smaller decisions that happen over a page: copying a reassessment request for a real holding, importing a track-record archive, reading one widget large, saving a positions view, letting alerts notify, and getting back into an invited account.',
   env: {
     production: 'Signed out visitors reach only the notification ask (Alerts on public data) and account recovery. Reassessment, archive and views sit on Positions, behind the private-testing wall; signed in they work as on staging, with a real Webull holding. Recovery exists only here.',
@@ -76,7 +76,7 @@ const OVERLAYS = {
     { name: 'Expanded widget', source: 'Any desk widget’s own body (Widget.tsx)', production: 'Its widget’s state', staging: 'sample' },
     { name: 'View dialogs (name, rename, delete)', source: 'Positions customization store (this browser)', production: ['locked', 'Sign in · then Stored here'], staging: 'local' },
     { name: 'Browser notification ask', source: 'Notification API · the alerts store’s notifyBrowser flag', production: 'local', staging: 'local' },
-    { name: 'Password reset / invitation', source: 'Proposed: POST /api/auth/reset, /api/auth/reset/confirm, /api/auth/invite/accept · needs an email sender', production: 'locked', staging: '— (none)' },
+    { name: 'Password reset / invitation', source: 'Proposed: the pages /account/reset and /account/invite, over POST /api/auth/reset, /api/auth/reset/confirm, /api/auth/invite/accept · needs an email sender', production: 'locked', staging: '— (none)' },
   ],
   states: [
     { tag: 'local', when: 'Archive, views and the notification setting live in this browser; the toasts say so.' },
@@ -103,7 +103,7 @@ const OVERLAYS = {
     { status: 'shipped', what: 'Reassessment on the demo: source “demo_sample” and a synthetic basis (“on the demo book as of Oct 7, 2026 · 2:30 PM ET · synthetic”), the Sample tag and Copied (reassess.tsx, 2026-10-15).' },
     { status: 'shipped', what: 'Notifications: Convexa’s ask before the browser prompt, “Browser notifications on” with Turn off (no browser prompt; off holds across a reload), and blocked / unavailable with nothing to press (BrowserNotifyControl.tsx, 2026-10-15).' },
     { status: 'shipped', what: 'Delete view: outlined burnt orange with the word (CustomizationToolbar.tsx, 2026-10-15).' },
-    { status: 'todo', waits: 'parked', what: 'Account recovery and invitation acceptance: no reset endpoint, no token store, no email sender. The sign-in dialog has only log in / sign up today. Parked by owner (2026-10-14): the privacy page says to ask the owner.' },
+    { status: 'todo', waits: 'parked', what: 'Account recovery and invitation acceptance, on the proposed pages /account/reset and /account/invite (neither route exists in app.tsx): no reset endpoint, no token store, no email sender. The sign-in dialog has only log in / sign up today. Parked by owner (2026-10-14): the privacy page says to ask the owner.' },
   ],
   rulings: ['P-2', 'P-3', 'P-4', 'P-8', 'P-12', 'P-13', 'Amber spent', ENV],
   code: [`${D}features/trading/broker/reassess.tsx · BrokerTabPanel.tsx`, `${D}features/trading/outcomes/ArchiveBlock.tsx · copy.ts · archive.ts`, `${D}shared/ui/Widget/Widget.tsx`, `${D}features/trading/positions/CustomizationToolbar.tsx · labels.ts`, `${D}features/alerts/useAlerts.ts · pages/alerts/AlertsPage.tsx`, `${D}features/auth/AuthDialog.tsx · copy.ts · apps/api/src/routes/auth.rs`, 'design/src/screens/final/deep-overlays.mjs'],

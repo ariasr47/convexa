@@ -7,9 +7,10 @@
 import { mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FONT_LINK, TOKENS_CSS, shell, tokens } from './lib.mjs';
+import { FONT_LINK, TOKENS_CSS, tokens } from './lib.mjs';
 import { screens } from './screens/index.mjs';
 import { artboards, canvasJson, CANVAS_URL, CONVEXA_VERSION, pages as canvasPages } from './canvas.config.mjs';
+import { renderArtboard } from './boards.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const CANVAS = join(here, '..', 'canvas');
@@ -17,27 +18,10 @@ const SITE = join(here, '..', 'site');
 mkdirSync(CANVAS, { recursive: true });
 mkdirSync(SITE, { recursive: true });
 
-const STATIC = 'class Component extends DCLogic {}';
-const propsAttr = (props) => JSON.stringify(props).replace(/&/g, '&amp;').replace(/'/g, '&#39;');
-// type="text/x-dc": the canvas runtime reads the logic by `script[data-dc-script]` textContent; the type keeps the
-// browser from also executing it as a classic script inside the artboard frame (DCLogic is not a global there).
-const scriptTag = (props, code) => `<script type="text/x-dc" data-dc-script data-props='${propsAttr(props || {})}'>\n${code || STATIC}\n</script>`;
-
 // ---- 1. canvas ------------------------------------------------------------------------------
 const keep = new Set(artboards.map((a) => `${a.name}.dc.html`));
 for (const f of readdirSync(CANVAS)) if (f.endsWith('.dc.html') && !keep.has(f)) unlinkSync(join(CANVAS, f));
-for (const a of artboards) {
-  const scr = screens[a.screen];
-  if (!scr) throw new Error(`artboard ${a.name}: unknown screen ${a.screen}`);
-  const opts = { minHeight: a.h, ...(a.opts || {}) };
-  const inner = scr.body(opts);
-  const props = scr.interactive ? scr.interactive.props({ width: a.w, height: a.h, ...(a.opts || {}) }) : { $preview: { width: a.w, height: a.h } };
-  const code = scr.interactive ? scr.interactive.script : STATIC;
-  if (!scr.interactive && /\{\{/.test(inner)) throw new Error(`${a.name}: static screen contains template holes`);
-  const html = shell(inner, { script: scriptTag(props, code), extraCss: scr.css || '', title: a.title });
-  if (Buffer.from(html).includes(0)) throw new Error(`${a.name}: NUL byte`);
-  writeFileSync(join(CANVAS, `${a.name}.dc.html`), html);
-}
+for (const a of artboards) writeFileSync(join(CANVAS, `${a.name}.dc.html`), renderArtboard(a));
 writeFileSync(join(CANVAS, 'canvas.json'), JSON.stringify(canvasJson(), null, 2) + '\n');
 console.log(`canvas: Convexa ${CONVEXA_VERSION}, ${artboards.length} artboards on ${canvasPages.length} pages + canvas.json → design/canvas/`);
 

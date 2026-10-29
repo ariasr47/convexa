@@ -425,7 +425,7 @@ export const ROW = {
       { tag: null, when: 'Loading: skeletons at their final height; no tag in the product.' },
       { tag: ['error', JR_ERROR_WORD], when: `Couldn’t load: “${CANT_LOAD}” and “Try again”, as on the timeline.` },
       { tag: 'locked', when: 'Signed out (production): the Positions private-testing wall, “Sign in to open your journal”, “See it on the demo →”.' },
-      { tag: null, when: 'Not the owner: “This journal is private to the account that owns this Convexa.” and “See it on the demo →”; no tag (open question 12).' },
+      { tag: null, when: 'Not the owner: “This journal is private to the account that owns this Convexa.” and “See it on the demo →”, and “For the site’s operator”, folded, as OwnerOnlyWall ships; no tag (open question 12).' },
       { tag: 'sample', when: 'Staging: the demo bar once; each frame dashed with the 8px hatch band and one “Sample journal” chip; cards and rows untagged.' },
       { tag: null, when: 'Rule page: Active · Paused (Resume, refused at 7 active) · Retired (its reason and date) · Declined draft (read-only, with his reason) · Building counts (dots below 20, “rates start at 20”) · Staging.' },
     ],

@@ -1,13 +1,14 @@
 // Final · Planned — spec cards for the nine planned public-data tools. Sources, delays and status words
 // are docs/public-data/CANDIDATES.md's (2026-10-13); routes and API fields are proposed (none of this
 // is built: checked against apps/api/src/services/public_data/ and apps/dashboard/src/app/pages/ on
-// 2026-10-14). The status word sits only here, under Built so far (P-4).
+// 2026-10-14). The status word sits only here, under Built so far (P-4). Liquidity's card describes a shipped
+// section since 2026-10-28 (its row is built, on the Research page): its route and code name what shipped.
 const STAGING = (what) => `Signed in to the demo account on the Oct 7, 2026 scenario. ${what} Every frame dashed with the hatch stripe, chips “Demo · shaped like …”; no request leaves the browser (sample fixtures in the demo transport).`;
 const CORE = ['P-2', 'P-4', 'P-8', 'P-9', 'P-10', 'P-11', 'P-13', 'Env 2026-10-14'];
 
 export const LIQUIDITY_SPEC = {
   title: 'Liquidity',
-  route: '/research/markets#liquidity (proposed)',
+  route: '/research/markets#liquidity',
   job: 'Show how much money the Fed’s balance sheet leaves in the system after the Treasury’s cash and reverse repo, beside the curve every note’s valuation starts from.',
   env: {
     production: 'Live public data: the H.4.1 Wednesday, the Treasury’s cash account and reverse repo for the same day, netted by Convexa. Weekly, after the Thursday release. No mocks.',
@@ -45,7 +46,7 @@ export const LIQUIDITY_SPEC = {
     { status: 'shipped', what: 'The host page (/research/markets: Treasury curve, CFTC positioning) and its state words.', host: true },
   ],
   rulings: ['P-1', ...CORE],
-  code: ['apps/api/src/services/public_data/{fed_h41,fiscal_dts,nyfed}.rs (new)', 'apps/api/src/routes/public_data.rs · PublicMarketsWire.liquidity (new)', 'apps/dashboard/src/app/pages/research/MarketsPage.tsx', 'libs/api/src/lib/demo/public-data.ts (sample fixture)'],
+  code: ['apps/api/src/services/public_data/liquidity.rs', 'apps/api/src/routes/public_data.rs · PublicMarketsWire.liquidity', 'apps/dashboard/src/app/pages/research/{LiquiditySection,MarketsPage}.tsx · liquidityCalendar.ts · fomc.ts', 'libs/api/src/lib/demo/public-data.ts (sample fixture)'],
 };
 
 export const CALENDAR_SPEC = {

@@ -7,8 +7,9 @@ and declare their states, screen modules that compose those components over samp
 registry that says which screens render at which widths. A build regenerates everything else: the
 Claude Design canvas, the static site, the library page, `tokens.css` and `tokens.json`.
 
-**The canvas, "Convexa Desk Redesign": https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe** — one file per board (`project/<Name>.dc.html` + `project/canvas.json`), published by `node design/src/emit-project.mjs <out>` after a build.
-Since 2026-10-25 it holds only the current, ruled design, on eight pages: **Start here** (the board map, which is the entry board `Main`, and the screen tracker), **Ticker desk**, **Research**, **Scanner & account**, **Dialogs & overlays**, **Site & shell**, **Foundations** (with the library) and **Planned · not built**. Which row sits on which page: `PAGE_ROWS` in `src/screens/final/index.mjs`; a row with no page fails the build.
+**The canvas, "Convexa Desk Redesign": https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe** — one file per board (`project/<Name>.dc.html` + `project/canvas.json`), published by `node design/src/emit-project.mjs <out>` once the build is committed.
+Since 2026-10-25 it holds only the current, ruled design; since 2026-10-28 it has 13 pages by app area: **Start here** (the board map, which is the entry board `Main`, the screen tracker, the version card and the guide); the app in its navigation order, **Scanner**, **Ticker desk**, **Research** and **Positions & alerts**; the pages around it, **Settings & operator**, **Dialogs & overlays**, **Public site** and **Shell & foundations** (with the library); **Planned · Trade journal**, **Planned · Public-data tools** and **Prototypes · not ruled**; and **Changelog**. Each page opens with a header note that names it and the version. Which row sits on which page: `PAGE_ROWS` in `src/screens/final/index.mjs`; the build fails on a row with no page or two, and on a row whose spec card says Built on a planned page.
+**Versions:** the canvas states Convexa's one version, the root `package.json` "version" (1.0.0 is the first release). Each built row's title and spec card name the release it first shipped in ("since Convexa 1.0.0"), set once in `SHIPPED_IN` (`src/screens/final/tracker-data.mjs`); the board map and the tracker show it as Since. The build fails when a row on a built page has no entry, a planned row has one, or an entry is a prerelease, before 1.0.0 or after `package.json`. The Changelog page lists every `CHANGELOG.md` entry as the design changes up to a version, from the `v*` tags. `emit-project.mjs` stamps the version card in the published index only: the version, the release status from the tags, the commit and its date, and the commits not yet on origin/main.
 The earlier rounds (v2 pages, v4 and v5 pages, the Q-5 page, Directions B and C) are off the canvas; their screen modules still build the static site, and git keeps the boards (`git show af9822f8:design/canvas/canvas.json`). The old single-page v2–v4 canvas https://claude.ai/code/artifact/82be651e-c9a1-4ad4-a672-886626f8cf73 now points here; its last full version is `canvas/convexa-desk-redesign.html`. The research canvas https://claude.ai/artifact/HxZArSCsbrjQCx8VBbYRw7 stays as history.
 
 ```
@@ -21,7 +22,8 @@ design/
     data/index.mjs        ← every sample number and string; change data here, not in screens
     canvas.config.mjs     ← which screens become artboards, at which widths, on which canvas page
     build.mjs             ← writes canvas/ and site/
-    emit-project.mjs      ← lays canvas/ out as the files-based canvas's project/ folder + publish batches
+    boards.mjs            ← renders one artboard's file (build.mjs and emit-project.mjs both use it)
+    emit-project.mjs      ← renders every board from source as the files-based canvas's project/ folder, stamps the version card, + publish batches
     verify-tokens.mjs     ← checks tokens.json against apps/dashboard tokens.ts; lists the additions
     seed.sh               ← seeds the canvas file from the artboards (needs the Claude Design helper)
   canvas/                 ← generated: *.dc.html artboards, canvas.json, convexa-desk-redesign.html (self-contained viewer)
@@ -52,10 +54,19 @@ design/
 | Another width or a light render of a screen | one line in `canvas.config.mjs` | build |
 | A colour, radius, breakpoint | `tokens/tokens.json` | build; then `verify-tokens.mjs` tells you what to change in `tokens.ts` |
 
-After a build, `node design/src/emit-project.mjs <out>` writes `<out>/project/` (the index and one file per board)
-and `<out>/batches.json`; publishing those files to the canvas URL above updates the editable canvas. The v4
+After the build is committed, `node design/src/emit-project.mjs <out>` renders every board again from the committed
+source into `<out>/project/` (the index and one file per board; the Changelog board reads the release tags present
+then) and writes `<out>/batches.json`; publishing those files to the canvas URL above updates the editable canvas. It
+refuses (exit 1) while `design/` or `package.json` has uncommitted changes, and it lists any board whose render differs
+from the committed `canvas/`: a stale build to rebuild and commit, or the Changelog board after a release tag. The v4
 single-file viewer `canvas/convexa-desk-redesign.html` (made by `seed.sh`) is frozen at v4 and no longer regenerated.
 `canvas/` and `site/` are generated: do not hand-edit them.
+
+**When you append to `CHANGELOG.md`** (every design commit does), the Changelog board grows by a line or two, so
+re-measure it in the same commit: `node tmp/journal-boards/heights.mjs --only '^FChangelogEntries$' --write`, then set
+`"FChangelogEntries.entries"` in `src/screens/final/heights.json` to the new number of entries, and build again. The
+build fails while that count differs from the file's, rather than cut the oldest entries off. (`heights.mjs` is a
+gitignored tool in the main tree's `tmp/`: it renders each Final board at its width and writes its natural height + 20.)
 
 ## What the design is
 

@@ -1,6 +1,8 @@
 // Final · Convexa v1 — the Planned section: one row per planned public-data tool, in the order of
 // docs/public-data/CANDIDATES.md and design/src/data/tools.mjs (liquidity, calendar, off-exchange volume,
-// insider clusters, 13F holders, XBRL figures, peers, signal track record, technical readings). Each row:
+// insider clusters, 13F holders, XBRL figures, peers, signal track record, technical readings). Liquidity shipped
+// inside Markets (2026-10-15), so since 2026-10-28 its row is a built row on the Research page, "Research · Markets ·
+// Liquidity", with no planned section; its key keeps the planned- prefix, so no board file is renamed. Each row:
 // the spec card (./planned-spec.mjs), staging (the demo account, sample), production as it would ship
 // (live public data; for a blocked tool its design target, labelled), phone, and every state. The tools
 // are recomposed per tool from the v5 charted forms (screens/v5/tools-v5.mjs) on their host pages.
@@ -25,7 +27,7 @@ const B = (id, title, w, h, body, opts) => ({ id, title, w, h, body, ...(opts ? 
 // 1 · Liquidity — /research/markets
 // =================================================================================================
 export const liqSection = (e) => section({ id: 'liquidity', title: 'Liquidity', lead: 'How much money the Fed’s balance sheet leaves in the system after the Treasury’s cash account and overnight reverse repo. When the Treasury rebuilds its cash, it drains reserves the same way the Fed shrinking would.', tag: e.demo ? '' : stateTag('computed', 'Computed · week to Oct 7'), body: `${liquidityStrip(e)}${liquidityChart(e)}` });
-const liqBody = (e) => (o) => marketsHost(e, { ...o, on: 'liquidity', body: liqSection(e), note: e.demo ? DEMO_NOTE : `<b>New section on /research/markets</b>, under Positioning (Rates and Positioning are on the Research · Markets row). ${PLAUSIBLE}` });
+const liqBody = (e) => (o) => marketsHost(e, { ...o, on: 'liquidity', body: liqSection(e), note: e.demo ? DEMO_NOTE : `<b>The Liquidity section of /research/markets</b>, under Positioning (Rates and Positioning are on the Research · Markets row). ${PLAUSIBLE}` });
 function liqStates(o) {
   const M = 'Net liquidity, weekly';
   const items = [
@@ -208,9 +210,10 @@ function taStates(o) {
 // =================================================================================================
 const P = 'planned';
 export const ROWS = [
-  { key: 'planned-liquidity', section: P, label: 'Planned · Liquidity', css: PL_CSS, specH: 1737, spec: LIQUIDITY_SPEC, boards: [
+  // Shipped (LiquiditySection.tsx on /research/markets): a built row on the Research page, after Markets.
+  { key: 'planned-liquidity', label: 'Research · Markets · Liquidity', css: PL_CSS, specH: 1737, spec: LIQUIDITY_SPEC, boards: [
     B('staging', 'Staging · demo account', 1440, 1412, liqBody(DEMO)),
-    B('production', 'Production · as it would ship', 1440, 1424, liqBody(PROD)),
+    B('production', 'Production', 1440, 1424, liqBody(PROD)),
     B('phone', 'Phone · production', 390, 2215, liqBody(PROD)),
     B('states', 'States', 1440, 1845, liqStates),
   ] },

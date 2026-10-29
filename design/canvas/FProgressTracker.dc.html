@@ -803,11 +803,11 @@
   .tk td.ver .none { color: var(--steel); }
 </style>
 </helmet>
-<div class="v4" data-scheme="dark" style="width: 100%; min-height: 7499px; background: var(--ink); color: var(--phosphor);"><article class="tk" aria-label="Screen tracker">
+<div class="v4" data-scheme="dark" style="width: 100%; min-height: 7487px; background: var(--ink); color: var(--phosphor);"><article class="tk" aria-label="Screen tracker">
       <header>
         <div class="eyebrow">Start here · screen tracker · Convexa 1.0.0</div>
         <h1 class="display">Screen tracker</h1>
-        <p class="lead">Every screen, the Convexa release it shipped in (or Planned), every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>; this board shows only what is still open, and the file keeps every answer and fix as the record. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
+        <p class="lead">Every screen, the Convexa release it first shipped in (Since, or Planned), every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>; this board shows only what is still open, and the file keeps every answer and fix as the record. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
       </header>
       <div class="tiles">
       <div class="tile"><span class="h">Screens · 41</span><div class="nums">
@@ -841,7 +841,7 @@
         <div class="grp-h"><h2>Scanner</h2><span class="c">1 screen · 0 open items · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Scanner</strong><span class="route">/scanner</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
@@ -854,7 +854,7 @@
         <div class="grp-h"><h2>Ticker desk</h2><span class="c">4 screens · 0 open items · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Ticker desk</strong><span class="route">/ticker/:ticker · Overview</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
@@ -882,10 +882,10 @@
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Research</h2><span class="c">4 screens · 1 open item · 0 known issues open</span></div>
+        <div class="grp-h"><h2>Research</h2><span class="c">5 screens · 1 open item · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Research · Notes</strong><span class="route">/research</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
@@ -898,6 +898,12 @@
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="9 shipped, 0 partly built, 0 designed, of 9"><i class="s" style="width: 100%;"></i></div><div class="counts">9/9 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
             <td><span class="none">None open · 5 fixed or closed</span></td>
+          </tr><tr>
+            <td class="name"><strong>Research · Markets · Liquidity</strong><span class="route">/research/markets#liquidity</span></td>
+            <td class="ver"><span class="v">1.0.0</span></td>
+            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
+            <td><span class="none">Nothing open</span></td>
+            <td><span class="none">None known</span></td>
           </tr><tr>
             <td class="name"><strong>Research · Filings</strong><span class="route">/research/filings</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
@@ -916,7 +922,7 @@
         <div class="grp-h"><h2>Positions & alerts</h2><span class="c">2 screens · 1 open item · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Positions</strong><span class="route">/positions</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
@@ -935,7 +941,7 @@
         <div class="grp-h"><h2>Settings & operator</h2><span class="c">2 screens · 1 open item · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Settings</strong><span class="route">/settings</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
@@ -954,7 +960,7 @@
         <div class="grp-h"><h2>Dialogs & overlays</h2><span class="c">2 screens · 2 open items · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Overlays</strong><span class="route">dialogs, drawer and sheets on every route</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
@@ -962,10 +968,10 @@
             <td><ul><li><span class="chip w-decided">Left out on purpose</span><span class="t">Not adopted: ACC-11’s Market fill selected by default and its “within” cap verdict in the dialog’s strip (fidelity audit 2026-10-25). Owner, 2026-10-25, after round 2: Manual stays the default, as the specs and eight spec files …</span></li></ul></td>
             <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
-            <td class="name"><strong>More overlays</strong><span class="route">dialogs on /positions, /ticker/:ticker, /alerts; /account/reset and /account/invite (proposed)</span></td>
+            <td class="name"><strong>More overlays</strong><span class="route">dialogs on /positions, /ticker/:ticker and /alerts</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 1 designed, of 5"><i class="s" style="width: 80%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">4/5 shipped</div></td>
-            <td><ul><li><span class="chip w-parked">Parked by you</span><span class="t">Account recovery and invitation acceptance: no reset endpoint, no token store, no email sender. The sign-in dialog has only log in / sign up today. Parked by owner (2026-10-14): the privacy page says to ask the owner.</span></li></ul></td>
+            <td><ul><li><span class="chip w-parked">Parked by you</span><span class="t">Account recovery and invitation acceptance, on the proposed pages /account/reset and /account/invite (neither route exists in app.tsx): no reset endpoint, no token store, no email sender. The sign-in dialog has only log in / sign …</span></li></ul></td>
             <td><span class="none">None known</span></td>
           </tr></tbody>
         </table>
@@ -973,7 +979,7 @@
         <div class="grp-h"><h2>Public site</h2><span class="c">7 screens · 2 open items · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Landing</strong><span class="route">/</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
@@ -993,19 +999,19 @@
             <td><span class="none">Nothing open</span></td>
             <td><span class="none">None known</span></td>
           </tr><tr>
-            <td class="name"><strong>Data sources and credits</strong><span class="route">/credits (proposed; deep links /credits#treasury, #cftc, #finra-si, #finra-shvol, #sec, #tradingview, #massive)</span></td>
+            <td class="name"><strong>Data sources and credits</strong><span class="route">/credits (deep links /credits#treasury, #cftc, #finra-si, #finra-shvol, #sec, #tradingview, #massive)</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="8 shipped, 1 partly built, 0 designed, of 9"><i class="s" style="width: 88.88888888888889%;"></i><i class="p" style="width: 11.11111111111111%;"></i></div><div class="counts">8/9 shipped</div></td>
             <td><ul><li><span class="chip w-decided">Left out on purpose</span><span class="t">No separate GET /api/public-data/sources: a new operation grows the frozen precutover operation baseline, so the rows ride the two answers the page already reads.</span></li></ul></td>
             <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
-            <td class="name"><strong>Privacy</strong><span class="route">/privacy (proposed)</span></td>
+            <td class="name"><strong>Privacy</strong><span class="route">/privacy</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="4 shipped, 0 partly built, 1 designed, of 5"><i class="s" style="width: 80%;"></i><i class="t" style="width: 20%;"></i></div><div class="counts">4/5 shipped</div></td>
             <td><ul><li><span class="chip w-parked">Parked by you</span><span class="t">No self-serve account deletion exists (no endpoint in routes/auth.rs); the page says to ask the owner. Parked by owner (2026-10-14): the privacy page says to ask the owner.</span></li></ul></td>
             <td><span class="none">None open · 1 fixed or closed</span></td>
           </tr><tr>
-            <td class="name"><strong>Terms and disclaimer</strong><span class="route">/terms (proposed)</span></td>
+            <td class="name"><strong>Terms and disclaimer</strong><span class="route">/terms</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
             <td><span class="st built">Built</span><div class="bar" role="img" aria-label="3 shipped, 0 partly built, 0 designed, of 3"><i class="s" style="width: 100%;"></i></div><div class="counts">3/3 shipped</div></td>
             <td><span class="none">Nothing open</span></td>
@@ -1022,7 +1028,7 @@
         <div class="grp-h"><h2>Shell & foundations</h2><span class="c">2 screens · 1 open item · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Global shell</strong><span class="route">every route inside the shell</span></td>
             <td class="ver"><span class="v">1.0.0</span></td>
@@ -1041,7 +1047,7 @@
         <div class="grp-h"><h2>Planned · Trade journal</h2><span class="c">8 screens · 43 open items · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
             <td class="name"><strong>Journal · Timeline</strong><span class="route">/positions/journal</span></td>
             <td class="ver"><span class="none">Planned</span></td>
@@ -1093,17 +1099,11 @@
           </tr></tbody>
         </table>
       </section><section class="grp">
-        <div class="grp-h"><h2>Planned · Public-data tools</h2><span class="c">9 screens · 8 open items · 0 known issues open</span></div>
+        <div class="grp-h"><h2>Planned · Public-data tools</h2><span class="c">8 screens · 8 open items · 0 known issues open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody><tr>
-            <td class="name"><strong>Planned · Liquidity</strong><span class="route">/research/markets#liquidity (proposed)</span></td>
-            <td class="ver"><span class="none">Planned</span></td>
-            <td><span class="st built">Built</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 0 designed, of 5"><i class="s" style="width: 100%;"></i></div><div class="counts">5/5 shipped</div></td>
-            <td><span class="none">Nothing open</span></td>
-            <td><span class="none">None known</span></td>
-          </tr><tr>
             <td class="name"><strong>Planned · Calendar</strong><span class="route">/research/markets#coming-up (proposed) · review triggers on /research and each note</span></td>
             <td class="ver"><span class="none">Planned</span></td>
             <td><span class="st progress">In progress</span><div class="bar" role="img" aria-label="5 shipped, 0 partly built, 1 designed, of 6"><i class="s" style="width: 83.33333333333334%;"></i><i class="t" style="width: 16.666666666666664%;"></i></div><div class="counts">5/6 shipped</div></td>
@@ -1156,7 +1156,7 @@
       </section>
     </article></div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":7499}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":7487}}'>
 class Component extends DCLogic {}
 </script>
 </body>

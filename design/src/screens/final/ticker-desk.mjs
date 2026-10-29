@@ -10,7 +10,7 @@ import { chartFrame, dataTable, fmt, plot, rangeBar, sparkline, stateBody, ticks
 import { dataCell, gexBars, provChip, stateTag } from '../../components/data-states.mjs';
 import { thirdPartyFrame } from '../../components/charts.mjs';
 import { statesBoard } from '../v4/kit.mjs';
-import { ownerWall, ownerWhen } from './account-pages.mjs';
+import { deskSignInWall, ownerWall, ownerWhen, ownerWhere } from './account-pages.mjs';
 
 export const TK_CSS = `
   /* chart-kit declares the chart roles on :root and [data-scheme="dark"] only, so inside a light board they keep
@@ -316,11 +316,14 @@ export function deskStatesBoardBody({ minHeight = 0, scheme = 'dark' } = {}) {
     { name: 'Not set up', tag: ['notConfigured'], when: 'If SEC_USER_AGENT is unset: filings and insider trades say so; the FINRA panels are unaffected.', html: dataCell({ fam: 'feed', state: 'notConfigured', w: '100%', h: 'auto' }) },
     { name: 'Off', tag: ['off'], when: 'PUBLIC_DATA=off on the API: the public zone collapses to one line; nothing retries.', html: `<div class="hd-p"><div class="ph"><h3>Live from public data</h3>${stateTag('off')}</div><span class="dline">Public data is switched off on this server. The TradingView chart and the note link stay; positioning and filings are hidden until it is on.</span></div>` },
     { name: 'TradingView blocked or timed out', tag: null, when: 'A content blocker or the network stopped TradingView’s script, or 12 s passed without the frame. Information, not a failure of ours; resets when the symbol changes.', html: thirdPartyFrame({ ticker: 'NVDA', state: 'blocked' }) },
-    { name: 'AI read · Sign in', tag: ['locked'], when: 'Only on a build with the options feed (neither site today): signed out, the read says what is behind the wall and offers the one way in.', html: dataCell({ fam: 'ai', state: 'locked', w: '100%', h: 'auto' }) },
-    { name: 'AI read · no key', tag: ['notConfigured', 'Add a key'], when: 'Same build, signed in without a provider key: reads run on the reader’s own key.', html: dataCell({ fam: 'ai', state: 'notConfigured', w: '100%', h: 'auto' }) },
-    // The full desk's owner wall (app.tsx TickerDeskRoute): SPY, as the app's measurements drew it; its free path is
-    // the ticker's research, which reads no licensed data.
-    { name: 'Not the owner', tag: null, when: ownerWhen('The desk gives way to this wall and stops polling; its free path is the ticker’s research.'), html: ownerWall('desk', { demoPath: '/ticker/SPY', freePath: { to: '/ticker/SPY/research', label: 'Read SPY research' }, standalone: true }), wide: true },
+    // Canon rule 16's signed-out read (A7). Since e86ab538 the whole desk is owner-gated, so a signed-out visitor meets
+    // the sign-in wall below instead; drawn until the owner rules whether rule 16 keeps the state (2026-10-28 review).
+    { name: 'AI read · Sign in', tag: ['locked'], when: 'Unreachable while the whole desk is owner-gated (e86ab538): signed out, the desk gives way to the private-testing wall below, so the read never asks. Kept for canon rule 16 until the owner rules on it.', html: dataCell({ fam: 'ai', state: 'locked', w: '100%', h: 'auto' }) },
+    { name: 'AI read · no key', tag: ['notConfigured', 'Add a key'], when: 'Where the feed runs, the owner signed in without a provider key: reads run on the reader’s own key.', html: dataCell({ fam: 'ai', state: 'notConfigured', w: '100%', h: 'auto' }) },
+    // The full desk's two walls (app.tsx TickerDeskRoute's OwnerGateBoundary, e86ab538): SPY, as the app's review and
+    // measurements drew them; the free path is the ticker's research, which reads no licensed data.
+    { name: 'Signed out (build with the feed)', tag: ['locked'], when: `Only ${ownerWhere('desk')}. Signed out, the desk’s reads answer 403 auth_required, and the desk gives way to the private-testing wall: Sign in, “See it on the demo →” and “Read SPY research”, then the policy line. The AI read’s own Sign in never shows.`, html: deskSignInWall('SPY', { standalone: true }), wide: true },
+    { name: 'Not the owner', tag: null, when: ownerWhen('desk', 'The desk gives way to this wall and stops polling; its free path is the ticker’s research.'), html: ownerWall('desk', { demoPath: '/ticker/SPY', freePath: { to: '/ticker/SPY/research', label: 'Read SPY research' }, standalone: true }), wide: true },
     { name: 'Demo · sample data', tag: ['demo'], when: 'Staging, always: the demo bar is up, the account is the seed demo account, every options panel runs the Oct 7 scenario in a dashed, hatched frame, and every source chip says “shaped like”.', html: `${finalDemoNotice()}<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">${P(`${head('Sample analysis · SPY', stateTag('sample', 'Sample read'))}<p class="tk-verdict" style="font-size: 20px;">No trade · sit this one out</p><span class="dline">This is an authored example. No model was called.</span><div style="margin-top: auto;">${provChip('Sample · shaped like an AI read', 'dashed')}</div>`, { sample: true })}${positionPanel()}</div>` },
     { name: 'Ticker outside the demo', tag: ['empty', 'Not in the demo'], when: 'Staging, a symbol beyond SPY, QQQ, AAPL, MSFT, NVDA and TSLA: the scenario has no data for it, so the desk says so and offers the six.', html: `<div class="hd-p"><div class="ph"><h3>RKLB isn’t in the demo scenario</h3></div><span class="dline">The demo runs on six symbols. Pick one to see the whole desk on sample data.</span>${quick(DEMO_SYMS, '')}</div>` },
   ];

@@ -21,7 +21,9 @@ export const WAITS = {
  * The rule: every row on a built page has an entry, the version of the release it first shipped in, set once;
  * a later change to a shipped row is a design/CHANGELOG.md entry, not a new value here. A row on a planned page
  * or the prototypes page has none until the release that moves it to a built page. The build fails on a
- * missing, extra or non-SemVer entry, or one after the package.json version (index.mjs).
+ * missing, extra or non-SemVer entry, on a prerelease or build suffix, on one before 1.0.0 (the first release),
+ * or on one after the package.json version (index.mjs). A row on a planned page whose card says every item
+ * shipped fails too: it belongs on a built page, with an entry here.
  */
 export const SHIPPED_IN = {
   scanner: '1.0.0',
@@ -31,6 +33,9 @@ export const SHIPPED_IN = {
   note: '1.0.0',
   'research-index': '1.0.0',
   'research-markets': '1.0.0',
+  // Liquidity, a section of Markets (LiquiditySection.tsx, shipped 2026-10-15); its row sat on the planned tools page
+  // until 2026-10-28, reading Planned beside Built 5/5.
+  'planned-liquidity': '1.0.0',
   'research-filings': '1.0.0',
   'research-scorecard': '1.0.0',
   positions: '1.0.0',

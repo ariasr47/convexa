@@ -189,8 +189,8 @@ export function marketsBody({ demo = false, scheme = 'dark', minHeight = 0, phon
     ${foot(demo ? 'Demo · sample data shaped like the Federal Reserve’s, the Treasury’s, the CFTC’s, the BLS’s and the BEA’s files; nothing on this page is a real observation. Research and tools, not investment advice.' : 'Federal Reserve, U.S. Treasury, CFTC, BLS, BEA and SEC data are public record; Convexa’s arithmetic is marked Computed. Research and tools, not investment advice.')}
   </div>`;
   // At 390 Liquidity and Coming up would take the board past the canvas's 8,000px frame; both are drawn at 390 on
-  // the Planned · Liquidity and Planned · Calendar phone boards, so this board stops after Positioning.
-  return (phone ? boardNote(scheme, '<b>Phone board:</b> after Positioning the page continues with Liquidity and Coming up, drawn at 390 on the Planned · Liquidity and Planned · Calendar rows.') : '') + page({ scheme, minHeight, active: 'research', tabs: 'Markets', demo, label: 'Markets', main });
+  // the Research · Markets · Liquidity and Planned · Calendar phone boards, so this board stops after Positioning.
+  return (phone ? boardNote(scheme, '<b>Phone board:</b> after Positioning the page continues with Liquidity and Coming up, drawn at 390 on the Research · Markets · Liquidity and Planned · Calendar rows.') : '') + page({ scheme, minHeight, active: 'research', tabs: 'Markets', demo, label: 'Markets', main });
 }
 
 // =================================================================================================

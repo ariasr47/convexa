@@ -747,3 +747,71 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
 - **Open:** Planned · Liquidity reads Built (5 of 5 shipped, inside Markets) yet carries no version, because planned
   rows have none; moving it to Research would give it 1.0.0. `design/README.md` still describes the eight pages of
   2026-10-25; it is outside this change.
+
+## 2026-10-28 · Review fixes: the pages, the version tether and the owner-only state
+
+- **What two reviews of `1a6c304a` and `bd8e9962` found:** Liquidity shipped but read Planned, the publish step copied
+  whatever build was committed, every spec card said "Convexa v1", and the desk drew no sign-in wall though the app
+  shows one.
+- **Supersedes** in the 13-pages entry above: "Each built row's title ends '· Convexa 1.0.0'" and "a Version column"
+  (now "since Convexa 1.0.0" and a Since column: the value is set once, and after a bump the page header names a newer
+  version); "under the version it shipped in" (now the design changes up to a version); and the app "in its navigation
+  order" for all eight built pages (the top nav is Scanner, Ticker, Research, Positions, Alerts; the other four are the
+  pages around it). In the owner-only entry: "only on a build with the options feed, so neither site today", and its
+  "Left as found" line on the desk's sign-in wall. Nothing above is edited.
+- **Liquidity is a built row:** it shipped inside Markets (`LiquiditySection.tsx`, 2026-10-15; its card: 5 of 5
+  shipped), so it moves from Planned · Public-data tools to Research, after Markets, as "Research · Markets ·
+  Liquidity", with `SHIPPED_IN` 1.0.0 and no planned section. Its route loses "(proposed)", its Code names the files
+  that shipped (`liquidity.rs`, `LiquiditySection.tsx`, `liquidityCalendar.ts`, `fomc.ts`; the card named three `(new)`
+  files that never existed), its production board is "Production" (was "as it would ship") and its board note says
+  "The Liquidity section of /research/markets" (was "New section"). The key stays `planned-liquidity`, so no board file
+  is renamed. The build now fails when a row on a planned page is Built (every item on its card shipped).
+- **Publish renders, never copies:** `emit-project.mjs` renders every board from the committed source (`boards.mjs`,
+  which `build.mjs` now uses too) instead of copying `design/canvas/`, so a source change committed without a rebuild
+  still publishes, and the Changelog board groups its entries by the tags present at publish, as the stamp does. It
+  lists any board whose render differs from the committed `canvas/` (`differsFromCommitted` in `batches.json`).
+- **Spec cards:** the eyebrow comes from the row: "Spec · since Convexa 1.0.0", or "Spec · Planned" on the 16 planned
+  cards (it read "Final · Convexa v1 · spec · Oct 14, 2026" on all 41, the journal's included).
+- **Version checks:** a `SHIPPED_IN` entry with a prerelease or build suffix, or before 1.0.0, fails the build. The
+  Changelog board's height is recorded beside the number of entries it was measured at (`"FChangelogEntries.entries"`
+  in `heights.json`); a different count fails the build, and `design/README.md` says how to re-measure. A measured
+  height over the 8,000px frame cap fails the build instead of being cut to 8,000.
+- **Routes:** Privacy, Terms and Data sources and credits lose "(proposed)" (all three ship, `app.tsx`); More overlays'
+  route no longer names `/account/reset` and `/account/invite`, which don't exist; its card names them as proposed.
+- **Changelog lines:** an opening "Supersedes …" sentence gives way to what follows (its remainder after a semicolon,
+  or the next sentence), so the five entries that open with one show what they did.
+- **Notes:** the guide calls only Scanner to Positions & alerts the navigation order, then "the pages around it"; the
+  Research header says the single note is on Ticker desk, as the ticker's Research tab (the nav lights Research for
+  it); the journal header says seven screens under Positions' tabs, and its panel in Settings; the tools header says
+  eight, and that Liquidity is on Research.
+- **The desk's sign-in wall:** `FDeskStates` gains a wide "Signed out (build with the feed)" cell, before Not the
+  owner: since `e86ab538` a signed-out visitor's desk reads answer 403 `auth_required`, and `OwnerGateBoundary` puts
+  `SignInWall` in the desk's place: Private testing, "Sign in to open the SPY desk", "This area is limited to invited
+  accounts while Convexa is in private testing.", Sign in · "See it on the demo →" · "Read SPY research", the policy
+  line and "The demo account shows this screen on sample data." (the app review drew it, `fe-review` count.log line
+  4). Drawn with the Scanner wall's rules: 600 × 324.16 at 1440, against the app crop's 600 × 328. The desk card's
+  States and Built lines say so. AI read · Sign in, and the AI read row's Signed out (A7), are re-captioned as
+  unreachable while the whole desk is owner-gated.
+- **When the walls show:** where the options feed is live (the Scanner also when paused, since it keeps its board),
+  or where `/api/health` can't say, since an unknown mode keeps the full surface; so on neither site today unless the
+  health read fails. Caption and cards say so per surface.
+- **Small:** three journal cards add "For the site's operator", folded, to Not the owner; the Scanner card cites
+  `app.tsx:226-231 (ScannerRoute)` (it cited ResearchRoute's lines), and the Technical and Research tab cards cite
+  235-247 and 252-261.
+- **Heights:** 13 stems changed. FProgressMap 4792 → 4760, FProgressTracker 7499 → 7487, FScannerSpec 2999 → 3020,
+  FDeskSpec 5964 → 6069, FDeskStates 3255 → 3836, FAiReadSpec 3116 → 3158, FPlannedLiquiditySpec 2069 → 2087,
+  FPositionsSpec 2396 → 2417, FOverlaysSpec 2512 → 2535, FJournalTimelineSpec 3652 → 3673, FJournalRulebookSpec
+  3330 → 3351, FJournalTidyImportSpec 3080 → 3101, FChangelogEntries 2371 → 2542 (at 27 entries). A second
+  measurement of all 254 Final boards changed 0.
+- **Checked:** build 0, and a second run byte-identical; verify-tokens 0; the sweep of the 53 changed boards 0 (0
+  overflow, 0 text under 11px, no change at a 20px default font; its 4 "clipped" and 3 "split" reports are the same at
+  HEAD: a board note above a page held at the frame's height, and the Liquidity chart's end label); note geometry 0
+  (60 notes; the guide renders about 1,630px of its 2,000); 21 of 21 mutations of the page, version, entry-count and
+  frame-cap rules behave as expected; the emitter refuses the dirty tree (exit 1) and, with `--allow-dirty`, renders
+  all 259 boards identical to `canvas/`; NUL 0, CR 0.
+- **Open, for the owner:** canon rule 16 names a signed-out state for the ticker's AI read. While the whole desk is
+  owner-gated nobody signed out reaches the read; does rule 16 keep that state?
+- **Left as found:** on the boards the sign-in walls' policy and foot lines are 12px (`.dline`); `RequireAuth.tsx`
+  sets both at 13px (`fontSize: 13`, `wallFootSx`). Same on the Scanner, Positions and journal walls. Spec 08's state
+  table (`08-trade-journal.md:808`) still gives Not the owner without the folded operator line the slice 1a plan's F4
+  adds; that file is not design/'s.

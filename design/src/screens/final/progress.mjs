@@ -6,8 +6,9 @@
 // partly built, and Designed when none are. Items marked `host: true` (the page a planned tool sits
 // on) never count toward a status.
 //
-// Since 2026-10-28 both boards carry a Version column: the Convexa release a screen shipped in
-// (tracker-data.mjs SHIPPED_IN), or Planned for a screen on a planned page.
+// Since 2026-10-28 both boards carry a Since column: the Convexa release a screen first shipped in
+// (tracker-data.mjs SHIPPED_IN, set once), or Planned for a screen on a planned page. It was headed Version until
+// the review the same day: a set-once value under the canvas's own version read as the version the canvas shows.
 
 import { ISSUES, OPEN_QUESTIONS, SHIPPED_IN, WAITS } from './tracker-data.mjs';
 
@@ -100,7 +101,7 @@ const clip = (s, max = 190) => {
   return `${t.slice(0, cut > 80 ? cut : max)} …`;
 };
 
-/** A screen's Version cell: the Convexa release it shipped in (Mono, a figure), or Planned (Sans, a word). */
+/** A screen's Since cell: the Convexa release it first shipped in (Mono, a figure), or Planned (Sans, a word). */
 const versionCell = (r) => (SHIPPED_IN[r.key] ? `<span class="v">${SHIPPED_IN[r.key]}</span>` : '<span class="none">Planned</span>');
 
 /**
@@ -156,7 +157,7 @@ export function progressBoard(groups, { version } = {}) {
         <div class="grp-h"><h2>${g.label}</h2><span class="c">${g.rows.length} screen${g.rows.length === 1 ? '' : 's'} · ${gs.shipped}/${gs.total} items shipped</span></div>
         <table>
           <colgroup><col style="width: 19%;"><col style="width: 6%;"><col style="width: 8%;"><col style="width: 14%;"><col style="width: 17%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Items</th><th>Boards in its row</th><th>Next open item</th></tr></thead>
           <tbody>${body}</tbody>
         </table>
       </section>`;
@@ -166,7 +167,7 @@ export function progressBoard(groups, { version } = {}) {
       <header>
         <div class="eyebrow">Start here · board map${version ? ` · Convexa ${version}` : ''}</div>
         <h1 class="display">What’s built</h1>
-        <p class="lead">Every screen on this canvas, grouped by the page it sits on (the page list, top left), read from its own spec card’s “Built so far” each time the design builds; nothing on this board is typed by hand. <strong>Version</strong> is the Convexa release a screen shipped in, from <code>tracker-data.mjs</code>; a screen on a planned page has none yet and reads <strong>Planned</strong>. A screen is <strong>Built</strong> when every item on its card is shipped, <strong>In progress</strong> when some are shipped or partly built, and <strong>Designed</strong> when none are. A planned tool’s status counts only its own items, not the page it sits on. Board names are the ones in its row, left to right.</p>
+        <p class="lead">Every screen on this canvas, grouped by the page it sits on (the page list, top left), read from its own spec card’s “Built so far” each time the design builds; nothing on this board is typed by hand. <strong>Since</strong> is the Convexa release a screen first shipped in, from <code>tracker-data.mjs</code>, set once; a screen on a planned page has none yet and reads <strong>Planned</strong>. A screen is <strong>Built</strong> when every item on its card is shipped, <strong>In progress</strong> when some are shipped or partly built, and <strong>Designed</strong> when none are. A planned tool’s status counts only its own items, not the page it sits on. Board names are the ones in its row, left to right.</p>
       </header>
       ${totals}
       ${groups.map(group).join('')}
@@ -342,7 +343,7 @@ export function trackerBoard(groups, { version } = {}) {
         <div class="grp-h"><h2>${g.label}</h2><span class="c">${g.rows.length} screen${g.rows.length === 1 ? '' : 's'} · ${nOpen} open item${nOpen === 1 ? '' : 's'} · ${nIss} known issue${nIss === 1 ? '' : 's'} open</span></div>
         <table>
           <colgroup><col style="width: 15%;"><col style="width: 6%;"><col style="width: 11%;"><col style="width: 39%;"><col></colgroup>
-          <thead><tr><th>Screen</th><th>Version</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
+          <thead><tr><th>Screen</th><th>Since</th><th>Status</th><th>Open items and why</th><th>Known issues</th></tr></thead>
           <tbody>${body}</tbody>
         </table>
       </section>`;
@@ -352,7 +353,7 @@ export function trackerBoard(groups, { version } = {}) {
       <header>
         <div class="eyebrow">Start here · screen tracker${version ? ` · Convexa ${version}` : ''}</div>
         <h1 class="display">Screen tracker</h1>
-        <p class="lead">Every screen, the Convexa release it shipped in (or Planned), every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>; this board shows only what is still open, and the file keeps every answer and fix as the record. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
+        <p class="lead">Every screen, the Convexa release it first shipped in (Since, or Planned), every item still open on its spec card and why it is open, and the known issues checks found on it. Items and statuses come from the spec cards each time the design builds. Open questions and known issues come from <code>tracker-data.mjs</code>; this board shows only what is still open, and the file keeps every answer and fix as the record. Reasons: <strong>To build</strong> is buildable now; <strong>Waiting on you</strong> needs an answer (its question id is beside it); <strong>Parked by you</strong> and <strong>Needs paid data</strong> are blocked by a ruling or a licence; <strong>Left out on purpose</strong> is deliberate.</p>
       </header>
       ${tiles}
       ${qTable}

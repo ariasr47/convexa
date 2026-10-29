@@ -2,8 +2,9 @@
 //
 // Convexa has one product version: the root package.json "version", in SemVer (1.0.0, the first push after
 // 2026-10-28, tagged v1.0.0). The canvas states it on every page header and the version card; each built row's
-// title names the version it shipped in (tracker-data.mjs SHIPPED_IN); and the Changelog page lists every
-// design/CHANGELOG.md entry under the version it shipped in, worked out from git at build time:
+// title names the version it first shipped in (tracker-data.mjs SHIPPED_IN); and the Changelog page lists every
+// design/CHANGELOG.md entry as the design changes up to a version, worked out from git each time the boards render
+// (the build, and the publish step, which renders them again from the tags present then):
 //   1. the commit that added the entry's heading line (git log on design/CHANGELOG.md, oldest first);
 //   2. the earliest v* tag that contains that commit, which names the version;
 //   3. with no such tag, the root package.json version, marked "not released yet" while no tag v<version> exists.
@@ -72,24 +73,74 @@ const MAX_SENTENCE = 280;
 /** Markdown inline to plain text: bold and links lose their marks; code keeps its backticks. */
 const unmark = (s) => s.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
 
-/** The first sentence of an entry's first bullet or paragraph, cut at a word near MAX_SENTENCE. */
-export function firstSentence(raw) {
+/** A block's sentences, in order: each ends at . ! or ? (a closing quote or bracket may follow) before a capital, a
+ *  quote, a bracket, a code span or the end; "e.g." and the like don't end one. Text with no such end is one sentence,
+ *  a closing colon made a full stop. */
+function sentences(raw) {
   const t = unmark(raw).trim();
   const end = /[.!?]["”’)]?(?=\s+[A-Z“"(`]|\s*$)/g;
-  let s = null, m;
+  const out = [];
+  let from = 0, m;
   while ((m = end.exec(t))) {
     if (/\b(?:e\.g|i\.e|vs|etc|cf|No)\.$/.test(t.slice(0, m.index + 1))) continue;
-    s = t.slice(0, m.index + m[0].length);
-    break;
+    out.push(t.slice(from, m.index + m[0].length).trim());
+    from = m.index + m[0].length;
   }
-  s = (s ?? t.replace(/:\s*$/, '.')).trim();
+  const rest = t.slice(from).trim();
+  if (!out.length) return rest ? [rest.replace(/:\s*$/, '.').trim()] : [];
+  if (rest) out.push(rest);
+  return out;
+}
+
+/** A sentence cut at a word near MAX_SENTENCE, with " …". */
+function cut(s) {
   if (s.length > MAX_SENTENCE) {
-    const cut = s.lastIndexOf(' ', MAX_SENTENCE);
-    let head = s.slice(0, cut > 120 ? cut : MAX_SENTENCE).replace(/[\s,;:(—–-]+$/, '');
+    const at = s.lastIndexOf(' ', MAX_SENTENCE);
+    let head = s.slice(0, at > 120 ? at : MAX_SENTENCE).replace(/[\s,;:(—–-]+$/, '');
     if ((head.match(/`/g) || []).length % 2) head += '`'; // close a code span the cut opened
-    s = `${head} …`;
+    return `${head} …`;
   }
   return s;
+}
+
+/** The first sentence of an entry's first bullet or paragraph, cut at a word near MAX_SENTENCE. */
+export function firstSentence(raw) {
+  return cut(sentences(raw)[0] ?? '');
+}
+
+/**
+ * The line the board shows for an entry, from its first blocks (paragraphs or bullets): the first sentence, cut near
+ * MAX_SENTENCE. An opening "Supersedes …" sentence is about the file's own history, and on a newest-first board its
+ * "above" points the wrong way (2026-10-28 review: five entries showed only that), so it gives way to what follows:
+ * its own remainder after a semicolon when that says something ("Supersedes nothing above; repairs four
+ * regressions …"), else the next sentence, in its block or the next one.
+ */
+export function entryLine(blocks) {
+  const all = blocks.flatMap((b) => sentences(b));
+  let s = all[0] ?? '';
+  if (/^Supersedes\b/.test(s)) {
+    const rest = /;\s+(\S.*)$/.exec(s);
+    s = rest && !/^nothing above\b/i.test(rest[1]) ? rest[1].replace(/^./, (c) => c.toUpperCase()) : all[1] ?? '';
+  }
+  return cut(s);
+}
+
+/** The first `max` blocks after line `j`: a paragraph, or one bullet with its wrapped lines; a heading ends them. */
+function blocksFrom(lines, j, max = 2) {
+  const out = [];
+  let k = j;
+  while (out.length < max) {
+    while (k < lines.length && !lines[k].trim()) k++;
+    if (k >= lines.length || lines[k].startsWith('#')) break;
+    const block = [lines[k].replace(/^\s*- /, '').trim()];
+    for (k += 1; k < lines.length; k++) {
+      const l = lines[k];
+      if (!l.trim() || /^\s*- /.test(l) || l.startsWith('#')) break;
+      block.push(l.trim());
+    }
+    out.push(block.join(' '));
+  }
+  return out;
 }
 
 /** design/CHANGELOG.md's entries in file order (oldest first): one per "## " heading. `title` is the heading
@@ -101,23 +152,15 @@ export function parseChangelog(text) {
     if (!lines[i].startsWith('## ')) continue;
     const heading = lines[i];
     const m = /^## (\d{4}-\d{2}-\d{2})(?:\s*·\s*(.+))?$/.exec(heading);
-    let j = i + 1;
-    while (j < lines.length && !lines[j].trim()) j++;
-    const first = [];
-    for (let k = j; k < lines.length; k++) {
-      const l = lines[k];
-      if (k > j && (!l.trim() || /^\s*- /.test(l) || l.startsWith('#'))) break;
-      if (k === j && l.startsWith('#')) break;
-      first.push(l.replace(/^\s*- /, '').trim());
-    }
-    const body = first.join(' ');
+    const blocks = blocksFrom(lines, i + 1);
+    const body = blocks[0] ?? '';
     const lead = /^\*\*(.+?)\*\*/.exec(body);
     out.push({
       heading,
       line: i + 1,
       date: m ? m[1] : null,
       title: (m ? m[2] : heading.slice(3)) ?? (lead ? lead[1].replace(/[.:]$/, '') : ''),
-      sentence: body ? firstSentence(body) : '',
+      sentence: body ? entryLine(blocks) : '',
     });
   }
   return out;
@@ -221,14 +264,16 @@ const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, 
 /** Plain text with `code` spans as <code>. */
 const inline = (s) => s.split('`').map((part, i) => (i % 2 ? `<code>${esc(part)}</code>` : esc(part))).join('');
 
+// A group is the design changes committed up to a version's tag, not what that version ships: the trade journal's
+// boards are a change up to 1.0.0, and the journal is in no release (2026-10-28 review).
 const STATUS = {
-  released: (g) => ({ chip: `Released · v${g.version}`, cls: 'released', label: `Convexa <span class="v">${esc(g.version)}</span>` }),
-  unreleased: (g) => ({ chip: 'Not released yet', cls: '', label: `Convexa <span class="v">${esc(g.version)}</span>` }),
-  after: (g) => ({ chip: `Not released yet · after v${g.version}`, cls: '', label: `After Convexa <span class="v">${esc(g.version)}</span>` }),
-  nogit: (g) => ({ chip: 'Release unknown · no git history', cls: '', label: `Convexa <span class="v">${esc(g.version)}</span>` }),
+  released: (g) => ({ chip: `Released · v${g.version}`, cls: 'released', label: `Design changes up to Convexa <span class="v">${esc(g.version)}</span>` }),
+  unreleased: (g) => ({ chip: 'Not released yet', cls: '', label: `Design changes up to Convexa <span class="v">${esc(g.version)}</span>` }),
+  after: (g) => ({ chip: `Not released yet · after v${g.version}`, cls: '', label: `Design changes after Convexa <span class="v">${esc(g.version)}</span>` }),
+  nogit: (g) => ({ chip: 'Release unknown · no git history', cls: '', label: `Design changes up to Convexa <span class="v">${esc(g.version)}</span>` }),
 };
 
-/** The board: every entry, newest first, under the version it shipped in. */
+/** The board: every entry, newest first, grouped as the design changes up to each version. */
 export function changelogBoard() {
   return ({ scheme = 'dark', minHeight = 0 } = {}) => {
     const m = changelogModel();
@@ -245,7 +290,7 @@ export function changelogBoard() {
       <header>
         <div class="eyebrow">Changelog · by Convexa version</div>
         <h1 class="display">Design changelog</h1>
-        <p class="lead">Every entry in <code>design/CHANGELOG.md</code>, newest first, under the Convexa version it shipped in: the earliest <code>v*</code> tag that holds the commit that added its heading, or, before that tag exists, the root <code>package.json</code> version, marked not released yet. Each line is the entry’s date, its title and its first sentence (cut near two lines); the file keeps every entry in full. Built from git each time the design builds; nothing here is typed by hand.</p>
+        <p class="lead">Every entry in <code>design/CHANGELOG.md</code>, newest first, grouped as the design changes up to each Convexa version: the earliest <code>v*</code> tag that holds the commit that added the entry’s heading, or, before that tag exists, the root <code>package.json</code> version, marked not released yet. A change up to a version is in the canvas that version’s tag builds; it doesn’t say the screen it draws ships in that version (the trade journal and the planned tools don’t). Each line is the entry’s date, its title and its first sentence (cut near two lines; an opening “Supersedes …” gives way to what follows); the file keeps every entry in full. Built from git each time the boards render, at build and again at publish; nothing here is typed by hand.</p>
       </header>
       ${m.groups.map(group).join('')}
     </article></div>`;
