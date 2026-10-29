@@ -30,6 +30,54 @@
 
 ---
 
+## Harvest — 2026-10-29 (overnight site-audit lanes)
+Loose ends from the overnight lanes on the site audit (`docs/quality/2026-10-25/SITE-AUDIT.md`, whose IDs these
+are). Batches B3 and B5 to B8 landed on local `main`, unreleased. Filed by the docs lane from the lanes' reports
+and commit messages.
+- **`seo-10-web-manifest`** *(FE, optional)* — a 512 px icon from `apps/dashboard/tools/generate-brand-assets.mts`
+  (today it emits favicon.svg, favicon.ico, the 180 px apple-touch icon and og-image.png), then
+  `public/manifest.webmanifest` and its `<link rel="manifest">`. B6 stopped at the icon. Since B5 the manifest
+  probe paths get the 404 page, the audit's other fix.
+- **`sec-3-tradingview-iframe`** *(owner question to TradingView)* — ask TradingView before rendering its widget
+  iframe directly, as the audit's fix proposes (from the URL TradingView's loader builds). Until then keep
+  `s.tradingview.com` in `frame-src` (`apps/dashboard/public/_headers:17`).
+- **`sec-8-private-vulnerability-reporting`** *(owner to-do, GitHub setting)* — enable private vulnerability
+  reporting on `ariasr47/convexa`, then commit B7's drafts from the gitignored
+  `tmp/overnight-2026-10-29/b7-drafts/` (`SECURITY.md`, `apps/dashboard/public/.well-known/security.txt`).
+- **`sec-9-csp-report-only`** *(edge + FE)* — a report-only Trusted Types policy
+  (`Content-Security-Policy-Report-Only` with `require-trusted-types-for 'script'`) plus a Pages Function that
+  answers the reports 204. The Privacy page would then mention the reports. Enforce only after a clean run.
+- **`atlas-health-fields`** *(tooling)* — `tools/atlas/run.mjs:465` reads `rate_limit` from production's
+  `/api/health`, and `HEALTH_FIELDS` (`:59`) reads `price_cache` and `gex_kernel`. All three moved to the
+  token-gated `/api/_metrics` in `1658fb69`, so they read null once it deploys.
+- **`health-deploy-check-fields`** *(owner decision, contract)* — drop the five fields public `/api/health` keeps
+  only because four conformance specs pin them as deploy checks? They are `durable_store`, `metrics_auth`,
+  `scanner.enabled`, `scanner.universe_size` and `warm.enabled` (`apps/api/src/routes/health.rs:15-17`). The
+  specs: public-surface, production-runtime-guardrails, postgres-release-safety, no-vendor-production-posture.
+- **`pages-proxy-secret`** *(owner to-do, Pages + Railway settings)* — set `PAGES_PROXY_SECRET` (one value, 32+
+  characters) as a Pages secret first, then on Railway. Until both hold it, the per-IP limits still count
+  Cloudflare's egress address, as before SEC-2 (`229b59bb`). The variable tables in
+  `docs/CLOUDFLARE_PAGES_SETUP.md` don't list it yet.
+- **`credits-malformed-public-data`** *(FE, pre-existing)* — a malformed public-data answer sends `/credits` to
+  its error page, though its header says a failed state check never blanks the page (`CreditsPage.tsx:6-7`).
+  Found by the B3 lane; not reproduced here.
+- **`desk-legend-late-read`** *(FE, PERF-04 remainder)* — the public desk's legend still grows when the public
+  read lands after the first paint: phone CLS 0.0957 → 0.1039 with the read held 3 s (`4dba4f77`). Keeping room
+  for it would mean guessing the read's states before it answers.
+- **`tradingview-daily-head-wrap`** *(FE)* — `TradingViewDaily.tsx`'s head row wraps when its tag arrives: 0.0053
+  of the phone desk's remaining 0.0068 CLS (`4dba4f77`).
+- **`trailing-slash-404`** *(post-deploy check)* — after B5 deploys, curl `/research/` and the other routes with
+  a trailing slash. With no `/*` fallback they may now 404; `tools/build-dashboard.spec.mjs` models Pages that
+  way, and nobody has checked Pages itself.
+- **`deploy-smoke-board-check`** *(ops workflow, inert while Actions is off)* — the "Health + scanner board" step
+  (`.github/workflows/deploy-smoke.yml:43-67`) reads `scanner.board` from `/api/health`. Since `1658fb69` it is
+  absent, so the step prints its notice and skips the scored check.
+- **`e2e-health-fixture`** *(e2e)* — `pausedProductionHealth`
+  (`apps/dashboard-e2e/src/quality/fixtures/scenarios.ts:220-287`) still mirrors the body from before
+  `1658fb69`, though its comment says its keys are the closed `HealthWire`. Trim it to the 9 keys where the
+  quality gates can run: the compatibility gate needs Firefox and WebKit, not installed on this machine. No
+  result depends on it today: the SPA reads `market_data` alone (`libs/api/src/lib/convexa.ts:1250`).
+
 ## Harvest — 2026-10-29 (artifact triage: loose ends from pages being deleted)
 Three items that lived only on claude.ai pages or in chat. The owner is deleting the pages (the 2026-10-28
 triage), so the items live here now.
