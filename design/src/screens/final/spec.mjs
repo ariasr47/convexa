@@ -40,7 +40,15 @@ export const SPEC_CSS = `
 `;
 
 const BUILT = { shipped: 'Shipped', partial: 'Partly built', todo: 'Designed, not built' };
-const one = (t) => (Array.isArray(t) ? stateTag(t[0], t[1]) : stateTag(t) || `<span>${t}</span>`);
+
+/** A card's strings are text, never markup (2026-10-29). The card writes them into the page as HTML, so a placeholder
+ *  such as research/<TICKER>/*.md or /credits#<source> was parsed as an element and vanished, and the Blog card's
+ *  <noscript> hid the rest of that card until c8a7fcb7 escaped it in the source. A `<` that would open a tag (before
+ *  a letter, `/`, `!` or `?`) is escaped here; any other `<`, and every `&`, pass as written, so an entity (&amp;, the
+ *  Blog card's &lt;slug&gt;) still reads as one, and escaping twice changes nothing. progress.mjs shows the same
+ *  strings on the board map and the tracker through this function. */
+export const specText = (s) => String(s).replace(/<(?=[A-Za-z/!?])/g, '&lt;');
+const one = (t) => (Array.isArray(t) ? stateTag(t[0], t[1] && specText(t[1])) : stateTag(t) || `<span>${specText(t)}</span>`);
 const tags = (s) => (s == null ? '<span class="steel">—</span>' : Array.isArray(s) && Array.isArray(s[0]) ? s.map(one).join(' ') : one(s));
 
 /**
@@ -53,28 +61,29 @@ const tags = (s) => (s == null ? '<span class="steel">—</span>' : Array.isArra
  *   built: [{ status: 'shipped' | 'partial' | 'todo', what }],
  *   acceptance: ['an observable check', ...],
  * }
+ * Every string is text (specText): write a placeholder as it reads, research/<TICKER>/*.md; an entity still reads as one.
  * State keys: current (Updated), delayed, stale (Last good copy), loading, empty, error (Couldn't load),
  * unavailable (Source down), notConfigured (Not set up), off, paused, notLive, sample, demo, locked
  * (Sign in), computed, thirdParty (Live · TradingView), local (Stored here).
  */
 export function specBody(spec, { scheme = 'dark', minHeight = 0, eyebrow = 'Spec' } = {}) {
   const w = spec.widgets?.length
-    ? `<section><h2>Widgets and their data</h2><table><thead><tr><th>Widget</th><th>Source · delay</th><th>Production</th><th>Staging</th></tr></thead><tbody>${spec.widgets.map((x) => `<tr><td>${x.name}</td><td class="steel">${x.source}</td><td>${tags(x.production)}</td><td>${tags(x.staging)}</td></tr>`).join('')}</tbody></table></section>`
+    ? `<section><h2>Widgets and their data</h2><table><thead><tr><th>Widget</th><th>Source · delay</th><th>Production</th><th>Staging</th></tr></thead><tbody>${spec.widgets.map((x) => `<tr><td>${specText(x.name)}</td><td class="steel">${specText(x.source)}</td><td>${tags(x.production)}</td><td>${tags(x.staging)}</td></tr>`).join('')}</tbody></table></section>`
     : '';
   const st = spec.states?.length
-    ? `<section><h2>States</h2><div class="states">${spec.states.map((x) => `<span class="w">${tags(x.tag)}</span><span>${x.when}</span>`).join('')}</div></section>`
+    ? `<section><h2>States</h2><div class="states">${spec.states.map((x) => `<span class="w">${tags(x.tag)}</span><span>${specText(x.when)}</span>`).join('')}</div></section>`
     : '';
   const built = spec.built?.length
-    ? `<section><h2>Built so far</h2><div class="built">${spec.built.map((b) => `<span class="bs ${b.status}">${BUILT[b.status]}</span><span>${b.what}${b.status !== 'shipped' ? `<span class="why">· ${WAITS[b.waits ?? 'build'].word}${b.ask ? ` (${b.ask})` : ''}</span>` : ''}</span>`).join('')}</div></section>`
+    ? `<section><h2>Built so far</h2><div class="built">${spec.built.map((b) => `<span class="bs ${b.status}">${BUILT[b.status]}</span><span>${specText(b.what)}${b.status !== 'shipped' ? `<span class="why">· ${WAITS[b.waits ?? 'build'].word}${b.ask ? ` (${specText(b.ask)})` : ''}</span>` : ''}</span>`).join('')}</div></section>`
     : '';
   return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><article class="fs" aria-label="${spec.title} · spec">
-    <header><div class="eyebrow">${eyebrow}</div><h1 class="display">${spec.title}</h1>${spec.route ? `<span class="route">${spec.route}</span>` : ''}<p class="job">${spec.job}</p></header>
-    <section><h2>Production and staging</h2><div class="env"><div><strong>${icon('notlive', 13)}Production · convexa.pages.dev</strong><span>${spec.env.production}</span></div><div class="stg"><strong>${icon('sample', 13)}Staging · the demo account</strong><span>${spec.env.staging}</span></div></div></section>
+    <header><div class="eyebrow">${eyebrow}</div><h1 class="display">${specText(spec.title)}</h1>${spec.route ? `<span class="route">${specText(spec.route)}</span>` : ''}<p class="job">${specText(spec.job)}</p></header>
+    <section><h2>Production and staging</h2><div class="env"><div><strong>${icon('notlive', 13)}Production · convexa.pages.dev</strong><span>${specText(spec.env.production)}</span></div><div class="stg"><strong>${icon('sample', 13)}Staging · the demo account</strong><span>${specText(spec.env.staging)}</span></div></div></section>
     ${w}${st}
-    ${spec.phone ? `<section><h2>Phone (390)</h2><p style="margin: 0;">${spec.phone}</p></section>` : ''}
-    ${spec.acceptance?.length ? `<section><h2>Acceptance</h2><ul class="ac">${spec.acceptance.map((a) => `<li>${a}</li>`).join('')}</ul></section>` : ''}
+    ${spec.phone ? `<section><h2>Phone (390)</h2><p style="margin: 0;">${specText(spec.phone)}</p></section>` : ''}
+    ${spec.acceptance?.length ? `<section><h2>Acceptance</h2><ul class="ac">${spec.acceptance.map((a) => `<li>${specText(a)}</li>`).join('')}</ul></section>` : ''}
     ${built}
-    ${spec.rulings?.length ? `<section><h2>Rulings it carries</h2><div class="chips">${spec.rulings.map((r) => `<span class="rule">${r}</span>`).join('')}</div></section>` : ''}
-    ${spec.code?.length ? `<section><h2>Code</h2><div class="code">${spec.code.join('<br>')}</div></section>` : ''}
+    ${spec.rulings?.length ? `<section><h2>Rulings it carries</h2><div class="chips">${spec.rulings.map((r) => `<span class="rule">${specText(r)}</span>`).join('')}</div></section>` : ''}
+    ${spec.code?.length ? `<section><h2>Code</h2><div class="code">${spec.code.map((c) => specText(c)).join('<br>')}</div></section>` : ''}
   </article></div>`;
 }

@@ -11,6 +11,7 @@
 // the review the same day: a set-once value under the canvas's own version read as the version the canvas shows.
 
 import { ISSUES, OPEN_QUESTIONS, SHIPPED_IN, WAITS } from './tracker-data.mjs';
+import { specText } from './spec.mjs';
 
 const STATUS = {
   built: { word: 'Built', cls: 'built' },
@@ -92,10 +93,10 @@ const bar = ({ shipped, partial, todo, total }) =>
     .map(([k, n]) => `<i class="${k}" style="width: ${(n / Math.max(1, total)) * 100}%;"></i>`)
     .join('')}</div>`;
 
-// Plain text from a spec item (they may hold <code> and the like), cut at a word near `max`.
-const plain = (s) => s.replace(/<[^>]+>/g, '');
+// A spec item's text, cut at a word near `max`. Card strings are text, as on the card (spec.mjs specText,
+// 2026-10-29); until then this stripped anything tag-shaped, so research/<TICKER>/*.md would have read research//*.md.
 const clip = (s, max = 190) => {
-  const t = plain(s);
+  const t = specText(s);
   if (t.length <= max) return t;
   const cut = t.lastIndexOf(' ', max);
   return `${t.slice(0, cut > 80 ? cut : max)} …`;
@@ -144,7 +145,7 @@ export function progressBoard(groups, { version } = {}) {
           const names = [...(r.spec ? ['Spec'] : []), ...r.boards.map((b) => pascal(b.id))];
           const next = p.open[0];
           return `<tr>
-            <td class="name"><strong>${r.label}</strong>${r.spec?.route ? `<span class="route">${r.spec.route}</span>` : ''}</td>
+            <td class="name"><strong>${r.label}</strong>${r.spec?.route ? `<span class="route">${specText(r.spec.route)}</span>` : ''}</td>
             <td class="ver">${versionCell(r)}</td>
             <td><span class="st ${s.cls}">${s.word}</span></td>
             <td>${bar(p)}<div class="counts">${p.shipped}/${p.total} shipped${p.partial ? ` · ${p.partial} partly` : ''}${p.todo ? ` · ${p.todo} not built` : ''}</div></td>
@@ -241,7 +242,7 @@ const waitOf = (b) => b.waits ?? 'build';
 /** An open item's gap: a partly built item usually says what shipped first and what's left after a
  *  marker ("Left:", "Not yet:", …); show the gap, not the part that shipped. */
 const gapText = (b) => {
-  const t = plain(b.what);
+  const t = specText(b.what);
   const m = b.status === 'partial' ? t.match(/(?:Left to build|Left|Not yet|Still not built|Not reachable yet)\s*:\s*/) : null;
   return clip(m ? t.slice(m.index + m[0].length).replace(/^./, (c) => c.toUpperCase()) : t, 230);
 };
@@ -324,14 +325,14 @@ export function trackerBoard(groups, { version } = {}) {
         .map(({ r, p, issues }) => {
           const s = STATUS[p.status];
           const items = p.open.length
-            ? `<ul>${p.open.map((b) => `<li><span class="chip w-${waitOf(b)}">${WAITS[waitOf(b)].word}</span><span class="t">${gapText(b)}${b.ask ? ` <span class="ask">${b.ask}</span>` : ''}</span></li>`).join('')}</ul>`
+            ? `<ul>${p.open.map((b) => `<li><span class="chip w-${waitOf(b)}">${WAITS[waitOf(b)].word}</span><span class="t">${gapText(b)}${b.ask ? ` <span class="ask">${specText(b.ask)}</span>` : ''}</span></li>`).join('')}</ul>`
             : '<span class="none">Nothing open</span>';
           const openIss = issues.filter((i) => !closedIssue(i));
           const iss = openIss.length
             ? `<ul>${openIss.map((i) => `<li><span class="chip sv-${i.sev}">${i.id}</span><span class="t">${i.title}<span class="env">${i.env}${issueState(i)}</span></span></li>`).join('')}</ul>`
             : `<span class="none">${issues.length ? `None open · ${issues.length} fixed or closed` : 'None known'}</span>`;
           return `<tr>
-            <td class="name"><strong>${r.label}</strong>${r.spec?.route ? `<span class="route">${r.spec.route}</span>` : ''}</td>
+            <td class="name"><strong>${r.label}</strong>${r.spec?.route ? `<span class="route">${specText(r.spec.route)}</span>` : ''}</td>
             <td class="ver">${versionCell(r)}</td>
             <td><span class="st ${s.cls}">${s.word}</span>${bar(p)}<div class="counts">${p.shipped}/${p.total} shipped${issues.some((i) => !closedIssue(i)) ? ` · ${issues.filter((i) => !closedIssue(i)).length} issue${issues.filter((i) => !closedIssue(i)).length === 1 ? '' : 's'} open` : ''}</div></td>
             <td>${items}</td>
