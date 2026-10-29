@@ -3679,6 +3679,15 @@ in review). Items 18 and 19 settle them.
     entries; two summaries fewer only lower it, so the worst case stays ≤ $0.76. Why: the boards
     review, whose recommendation was 24 summaries. Answered 2026-10-28 under the owner's standing
     instruction for the trade journal: take every recommendation.
+    Corrected 2026-10-28 (a review of items 18 and 19): the offer counts the entries neither kept
+    out nor already read, that is, with no J1 digest yet (line 1740). It is made when he turns
+    reads on (line 1719), and at that first offer no entry has been read, so at the sample's size
+    it counts every entry not kept out: the 32 at ≈ $0.17 above are that first offer. By the
+    Oct 7 review's month nothing is left to offer: that review read the 8 new entries ("Read 8
+    entries", line 1219), and each of the 24 older ones went as its J1 digest (line 1820). Drawn
+    beside the month line, the first offer has "This month: $0.00 of $5.00 · 0 reviews · 0 entry
+    reads", never the Oct 7 month's "This month: $0.31 of $5.00 · 1 review · 8 entry reads"
+    (line 2275): "32 entries haven’t been read" beside "8 entry reads" counts 40 of 34 entries.
 19. **Oct 2's maintenance requirement reads `not recorded` because he cleared it.** The worked
     example prints it as `not recorded` (line 638). But on that day "A normal day" has him change
     Account value and Margin loan, "and the other fields carry over with their dates" (lines

@@ -9,7 +9,8 @@ the build works from it._
 _Revised the same day by the review fold: an adversarial review raised 25 findings, and the
 section "Review fold (2026-10-28)" at the end says where each one landed. D9 is answered. A second
 review of the fold raised 29 more, S1 to S29; the same section's "Second review" list says where
-each one landed._
+each one landed. Spec 08's items 18 and 19 then added two rules for the seed and the composer;
+the list "Spec items 18 and 19" at the end says where._
 
 **Sources.** The spec is `docs/product/specs/2026-10-26/08-trade-journal.md` at `52339683`.
 Code citations are `file:line` at `adda4054` (HEAD while this was first written), except where a
@@ -1285,6 +1286,11 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
   (`apps/dashboard/vite.config.mts:24`, `demo/mode.ts:49-54`).
 - The seed (spec, Staging, 1a row):
   - 34 entries: 26 written at the time, 5 recalled, 3 imported; the 2 plan entries are cards only;
+  - 2 of those 26 saved with `ai_excluded` true, "the 2 entries you kept out" (spec item 18): two
+    older entries the spec doesn't describe, written before Sep 28 (so before the Sep 28 review),
+    with no snapshot, money, detail, note or correction (the boards' `u02` and `u03`). The
+    timeline's "Kept out of AI reads" filter then finds 2, and slice 4's What's sent counts 24
+    older summaries, not 26;
   - 12 snapshots with their typed positions;
   - 1 money-in entry;
   - 5 later notes;
@@ -1293,7 +1299,8 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
     C11).
   - Sample strings are copied from the boards' `design/src/data/journal-sample.mjs` (landed in
     `13c3073d`), never imported: `libs/api` cannot depend on `design/`. Its typed inputs match
-    the seed's shape: 34 entries, 12 snapshots, and a money-in entry with no snapshot. Two
+    the seed's shape: 34 entries, 12 snapshots, a money-in entry with no snapshot, and the 2
+    entries kept out of AI reads (`aiExcluded` on `u02` and `u03`, since `a50e7e20`). Two
     differences are this plan's: the sample prints "—" for Aug 4's account value alone (it
     mirrors the spec's cell; the seed computes 0.0%, C9), and the seed carries no snapshot
     whose account value is carried (D34).
@@ -1313,6 +1320,10 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
     with the fixture's `worked_example` `expect_display`, so a seed whose snapshot or deposit time
     differs from the fixture's can't show other numbers on staging while every test is green
     (criterion 6 "on the sample seed"; finding 23);
+  - the same script counts the entries saved with `ai_excluded` true: exactly 2, both written
+    before Sep 28, neither holding a snapshot, money, note or correction (spec item 18). A seed
+    without them gives the staging filter 0 entries, and a What's sent computed from it 26
+    summaries;
   - `npx nx test @convexa/api` exits 0;
   - with the demo build, all eight routes answer and none answers `demo_unavailable`.
 
@@ -1481,11 +1492,15 @@ each checked for both refusals. F1, F4 and F5 to F7 use these as below (finding 
   up on this server, so nothing can be saved yet.", and nothing is queued (criterion 24, S17).
 - "Unchanged" saves no snapshot (`snapshot: null`). "Update numbers" sends the fields he typed as
   `typed` and the ones he left as they were as `carried` with `carried_from`; with no typed figure,
-  in any mode, it sends `snapshot: null` (D34, finding 1, S11). A field whose source value is not
-  recorded goes as `not_recorded`, never carried (S8). On an earlier About it carries only from the
-  latest snapshot at or before that As of, a field with no such source goes as `not_recorded`, and
-  the "was $36,146 on Sep 25" lines name that snapshot. Carrying from the latest snapshot, later
-  than the 4:00 PM As of, would be 422 (S11).
+  in any mode, it sends `snapshot: null` (D34, finding 1, S11). Update prefills each field with its
+  carried value; a field he empties goes as `not_recorded`, never carried (spec item 19: on Oct 2
+  he empties the maintenance requirement; carried, it would make excess liquidity −$297).
+  `requestFromDraft` (F3) maps each field: changed is `typed`, left as it was `carried`, emptied
+  `not_recorded` (T23). A field whose source value is not recorded goes as `not_recorded`, never
+  carried (S8). On an earlier About it carries only from the latest snapshot at or before that As
+  of, a field with no such source goes as `not_recorded`, and the "was $36,146 on Sep 25" lines
+  name that snapshot. Carrying from the latest snapshot, later than the 4:00 PM As of, would be
+  422 (S11).
 - Due by is one native `datetime-local`, sent as `at_et`. "One thing you want to remember from
   today" is appended to the body.
 - Times (D33; S1, S2, S12, S29). Every time the composer takes reads `appNowMs()`, the clock F2's
@@ -1626,7 +1641,7 @@ seen red once on purpose (the mutation column), at the cheapest layer that prove
 | T20 | `facts.spec.ts` (`libs/api`) | parity, money | `facts.ts` equals both fixture blocks (`Object.is(Number(text), value)` for the exact strings), plus `sanityMove` at 40% and `crossCheck` at $1; `factInputs` passes a carried account value as null (S4); `instantText` writes 27 characters, and `facts.ts` refuses a 24-character instant (S12) | a reordered evaluation; `> 0.4` written as `>=`; a carried value passed through; `toISOString()` in place of `instantText` |
 | T21 | `money.spec.ts` (`features/journal`) | parsers | "41,210.50" → 4121050, "$41,210.50", "41210" and "4.35" → 435; refused: "1,50", "0,500", "12.345", "1e3", "0x10", ".5", "", "-5" | float conversion with truncation ("4.35" → 434), or three decimals allowed |
 | T22 | `accountNumberScan.spec.ts` | parsers | "Acct 123456789" and "1234567890" warn; "$41,210.50", "123456789.50" and "12,345,678,901" don't | the decimal exclusion dropped |
-| T23 | `outbox.spec.ts` (added by this plan) | writes | an unsent entry survives a network error and a 503 `store_unavailable` and is retried; leaves only on 200 or 201; keeps its `client_id` and the times of its typing (queued 2:14 PM, sent 5 PM, still 2:14 PM; finding 6); on 409, 422 or 503 `storage_not_set_up` goes back as a draft with the server's message, never dropped or retried (finding 16, S17); on a 403 stays queued and isn't retried until the session changes (S17); `requestFromDraft` gives a restored draft's Today snapshot the time its figures were typed (2:30 PM on Sep 29, saved 11:00 AM on Sep 30, still 2:30 PM), and a draft F3 returned keeps its request's `as_of_et` and `occurred_at_et` until a figure or the money's time is edited (S2); another user's entries are never sent | removal on any error; a time set at delivery or at Save; a retry loop on 422 or on `storage_not_set_up` |
+| T23 | `outbox.spec.ts` (added by this plan) | writes, money | an unsent entry survives a network error and a 503 `store_unavailable` and is retried; leaves only on 200 or 201; keeps its `client_id` and the times of its typing (queued 2:14 PM, sent 5 PM, still 2:14 PM; finding 6); on 409, 422 or 503 `storage_not_set_up` goes back as a draft with the server's message, never dropped or retried (finding 16, S17); on a 403 stays queued and isn't retried until the session changes (S17); `requestFromDraft` gives a restored draft's Today snapshot the time its figures were typed (2:30 PM on Sep 29, saved 11:00 AM on Sep 30, still 2:30 PM), and a draft F3 returned keeps its request's `as_of_et` and `occurred_at_et` until a figure or the money's time is edited (S2); an Update field he emptied goes as `not_recorded`, never `carried`: Oct 2's draft, with account value and margin loan typed and the maintenance requirement emptied, sends `typed`, `typed` and `not_recorded`, and each field he left as it was `carried` from Sep 30 (spec item 19); another user's entries are never sent | removal on any error; a time set at delivery or at Save; a retry loop on 422 or on `storage_not_set_up`; an emptied field sent as `carried` (Oct 2's excess liquidity then reads −$297, not `not recorded`) |
 | T24 | the existing `riskInputs.spec.tsx`, unchanged | parsers | the moved grammar behaves as before | the move changes a regex |
 | T25 | `server-error-codes.spec.ts`, its `OWNER_ONLY_CALLS` table gaining the eight journal facade calls (`libs/api`, finding 7) | auth | on each journal call, a 403 `auth_required` and a 403 `owner_only` each map to their own kind | the facade throws `ApiError` on a 403, or folds `owner_only` into `auth_required` |
 | T26 | `corrections_reach_the_facts` (`services/journal/mod.rs`, service level over the memory store, finding 8) | money, writes | a correction of the Sep 30 account value moves the index and the Oct 6 headline; an `as_of` correction moves the snapshot in the chain; a figure carried after a correction holds the corrected value (D8); a figure carried from a copy names the snapshot where it was typed, in `carried_from` and `carried_as_of` (S8) | the service feeds `facts.rs` the original figures, orders by the original `as_of`, copies the original value, or names the copy as the source |
@@ -2170,3 +2185,21 @@ crate's own `serde_json`, `hmac` and `sha2` agree on three seals, and its `aes-g
   section 8).
 - S28. The secrets guard missed the journal ring. B3 adds its needle and a canary.
 - Found while editing: T6 named `recorded_high`, where 4.5 names the case `recalled_high`. Fixed.
+
+### Spec items 18 and 19 (2026-10-28)
+
+Spec 08's Corrections items 18 and 19 (`014b1c71`) settled two places where the spec disagreed
+with itself, after this plan was written. A review of them found that the plan didn't follow
+either yet. Both are applied, each in place:
+
+- Item 18, major. The item says the demo seed sets "Keep this entry out of AI reads" on the 2
+  entries kept out, from slice 1a, so the timeline's "Kept out of AI reads" filter finds them.
+  F2's seed named none: a seed built to it gave that filter 0 entries, and a What's sent computed
+  from it 26 summaries where the item has 24. F2 now seeds 2 older undescribed entries with
+  `ai_excluded` true (the boards' `u02` and `u03`), its shape sentence lists them, and criterion
+  26's script counts them (F2).
+- Item 19, minor. The item has him clear Oct 2's carried maintenance requirement, which then goes
+  as `not_recorded`. F6 mapped only typed fields and fields left as they were, and no test pinned
+  an emptied one; sent as carried, Oct 2's excess liquidity would read −$297. F6 now says Update
+  prefills each field with its carried value and an emptied field goes as `not_recorded`, and
+  T23 gains the case (F6, T23).
