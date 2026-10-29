@@ -2203,3 +2203,10 @@ either yet. Both are applied, each in place:
   an emptied one; sent as carried, Oct 2's excess liquidity would read −$297. F6 now says Update
   prefills each field with its carried value and an emptied field goes as `not_recorded`, and
   T23 gains the case (F6, T23).
+
+## Owner confirmations (2026-10-29)
+
+- **D9, confirmed.** The owner answered D9 themselves on 2026-10-29: yes, the seal covers every field
+  the insert writes (3.3, `journal.seal.v1`). It no longer waits on section 9's item 1, and B3 builds
+  the seal to it. Ledger: `trade-journal-seal-message`, the 2026-10-29 row. Nothing above is edited;
+  this line supersedes "reversible until B3" in D9, R5, section 8's row 3 and section 9's item 1.
