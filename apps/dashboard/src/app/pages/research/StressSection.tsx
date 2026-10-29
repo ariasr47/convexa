@@ -114,10 +114,11 @@ export function StressSection({
   const cause = published ? null : withheldCause(ofrRow, stress);
   const ofrInputs = stress.components.filter((c) => c.source === 'ofr');
   const cftcInputs = stress.components.filter((c) => c.source === 'cftc');
-  // The OFR's date: the gauge's own (its oldest counted OFR input, rule 9), else the newest day the
-  // OFR copy holds. The CFTC's: its oldest input with data, so the line never claims a newer one.
-  const ofrDate = stress.as_of ?? ofrRow?.as_of ?? datesOf(ofrInputs).at(-1) ?? null;
-  const cftcDate = datesOf(cftcInputs)[0] ?? null;
+  // The foot dates each source's copy: its `sources` row's as-of (the newest day the OFR file holds,
+  // the CFTC report's Tuesday), else its inputs' newest. Each row still shows its own date, and the
+  // gauge row and tag the gauge's (its oldest counted OFR input, rule 9).
+  const ofrDate = ofrRow?.as_of ?? datesOf(ofrInputs).at(-1) ?? null;
+  const cftcDate = rowOf('cftc')?.as_of ?? datesOf(cftcInputs).at(-1) ?? null;
   const asOfLine = [
     ofrDate && `OFR as of ${formatShortDate(ofrDate)}`,
     cftcDate && `CFTC positions ${formatShortDate(cftcDate)}`,
@@ -207,7 +208,7 @@ export function StressSection({
             cause={cause}
             line={withheldLine(cause, {
               counted: stress.counted,
-              ends: ofrRow?.as_of ?? datesOf(ofrInputs).at(-1) ?? null,
+              ends: ofrDate,
               since: ofrRow?.checked_at ?? null,
             })}
             onRetry={cause === 'delayed' ? undefined : onRetry}
