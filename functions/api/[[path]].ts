@@ -20,9 +20,17 @@
 // capture AC-16): they are NOT proxied through the public trader origin — we return 404 so
 // they are unreachable via *.pages.dev. The operator reads them via the Railway URL directly.
 // Token gate alone is not the _metrics posture.
+//
+// The visitor's address (SEC-2, site audit 2026-10-25): the API's per-IP limits need it, and only
+// this Function knows it. Railway's edge sets X-Real-IP, and overwrites X-Forwarded-For, to the
+// address that connected to it, here a Cloudflare egress address, so the visitor's address travels
+// in X-Convexa-Client-IP, and PAGES_PROXY_SECRET vouches that this Function set it. The API trusts
+// the header only beside that secret (apps/api/src/middleware/rate_limit.rs, client_key). Set the
+// same value as a Pages secret first, then on the API. Unset sends no secret.
 
 interface Env {
   API_ORIGIN: string;
+  PAGES_PROXY_SECRET?: string;
 }
 
 // Hop-by-hop headers that must not be forwarded across the proxy (RFC 7230 §6.1).
@@ -35,6 +43,15 @@ const HOP_BY_HOP = new Set([
   'trailer',
   'transfer-encoding',
   'upgrade',
+]);
+
+// Client-address headers a visitor can send. None is forwarded as sent: the ones the API reads are
+// set below from Cloudflare's CF-Connecting-IP, which a visitor cannot set.
+const CLIENT_ADDRESS = new Set([
+  'x-forwarded-for',
+  'x-real-ip',
+  'x-convexa-client-ip',
+  'x-convexa-proxy-secret',
 ]);
 
 export const onRequest: PagesFunction<Env> = async (context) => {
@@ -64,9 +81,18 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   const headers = new Headers();
   for (const [key, value] of request.headers) {
     const k = key.toLowerCase();
-    if (HOP_BY_HOP.has(k) || k === 'host' || k === 'content-length') continue;
+    if (HOP_BY_HOP.has(k) || k === 'host' || k === 'content-length' || CLIENT_ADDRESS.has(k))
+      continue;
     headers.set(key, value);
   }
+  const visitor = request.headers.get('cf-connecting-ip')?.trim();
+  if (visitor) {
+    headers.set('X-Forwarded-For', visitor);
+    headers.set('X-Real-IP', visitor);
+    headers.set('X-Convexa-Client-IP', visitor);
+  }
+  const secret = env.PAGES_PROXY_SECRET?.trim();
+  if (secret) headers.set('X-Convexa-Proxy-Secret', secret);
 
   const init: RequestInit = {
     method: request.method,
