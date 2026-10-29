@@ -2,7 +2,29 @@
 # Pre-push: Nx lint and typecheck for the projects affected since the merge base with origin/main.
 # Install once per clone: git config core.hooksPath tools/hooks. Skip once: git push --no-verify.
 # The fuller local check (adds the affected tests) is `npm run verify`; CI runs everything on dispatch.
-# Research notes first: milliseconds, and a bad note would otherwise only fail the Pages build.
+# Release version first (CLAUDE.md "Versions"): a push to main is a release, and staging is
+# fast-forwarded to main. Once v<version> tags a commit, a push of either branch at another commit
+# would deploy new code under that released version, so it fails until the root package.json
+# version is bumped. The version is read at the pushed commit, not the working tree. A version no
+# tag names yet (its first push) passes, as does a push of the tagged commit itself. Git writes one
+# line per ref on stdin: <local ref> <local sha> <remote ref> <remote sha>. Tags, other branches
+# and deletes (an all-zero local sha) pass. It runs first, so nothing else reads stdin before it.
+# Proof: tools/hooks/pre-push.spec.mjs, in `npm run test:tools`.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case $remote_ref in refs/heads/main | refs/heads/staging) ;; *) continue ;; esac
+  case $local_sha in *[!0]*) ;; *) continue ;; esac
+  version=$(git cat-file blob "$local_sha:package.json" 2>/dev/null |
+    node -e 'let v; try { v = JSON.parse(require("fs").readFileSync(0, "utf8")).version } catch {} if (typeof v === "string" && /^\S+$/.test(v)) console.log(v)')
+  if [ -z "$version" ]; then
+    echo "pre-push: no version in the root package.json at $(git rev-parse --short "$local_sha"); not pushing $remote_ref." >&2
+    exit 1
+  fi
+  released=$(git rev-parse -q --verify "refs/tags/v$version^{}") || continue
+  [ "$released" = "$local_sha" ] && continue
+  echo "pre-push: the version is already released as v$version at $(git rev-parse --short "$released"), so bump the root package.json version (see CLAUDE.md \"Versions\")." >&2
+  exit 1
+done
+# Research notes next: milliseconds, and a bad note would otherwise only fail the Pages build.
 node tools/research-notes/check.mjs || exit 1
 base=$(git merge-base HEAD origin/main 2>/dev/null || git rev-parse HEAD~1)
 # Secrets: scan the commits this push adds, with the repo's .gitleaks.toml and .gitleaksignore.
