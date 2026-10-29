@@ -145,13 +145,20 @@ export const boardNote = (scheme, html) => `<div class="v4" data-scheme="${schem
 export const section = ({ id, title, lead = '', tag = '', body }) => `<section class="pl-sec" id="${id}" aria-labelledby="${id}-h"><header><div class="row"><h2 id="${id}-h">${title}</h2>${tag}</div>${lead ? `<p class="sl">${lead}</p>` : ''}</header>${body}</section>`;
 
 // ---- host pages ------------------------------------------------------------------------------------
+/** The Markets page's disclaimer, MarketsPage.tsx's word for word (spec 2026-10-21/07, Copy › Page disclaimer): staging
+ *  opens "Sample data", the demo bar being the page's one "Demo · sample data" (owner decision D1). */
+export const MARKETS_FOOT = {
+  demo: 'Sample data shaped like the Federal Reserve’s, the Treasury’s, the OFR’s, the CFTC’s, the BLS’s and the BEA’s files; nothing on this page is a real observation. Research and tools, not investment advice.',
+  prod: 'Rates: U.S. Department of the Treasury, Daily Treasury Par Yield Curve and Par Real Yield Curve Rates. Positioning: CFTC Commitments of Traders, Traders in Financial Futures. Liquidity: Federal Reserve H.4.1, Treasury Daily Treasury Statement and NY Fed reverse repo operations. Stress: Office of Financial Research, OFR Financial Stress Index, and CFTC Commitments of Traders (TFF); the percentiles and the gauge are Convexa’s arithmetic. Research and tools, not investment advice.',
+};
 const tabCounts = (html, demo) => (demo ? html.replace('<span class="cnt">14</span>', '<span class="cnt">6</span>').replace('<span class="cnt">77 open</span>', '<span class="cnt">34 open</span>') : html);
 const jump = (items, on) => `<nav class="pl-jump" aria-label="On this page"><span class="lbl">On this page</span>${items.map(([id, n]) => `<a href="#${id}"${id === on ? ' aria-current="true"' : ''}>${n}</a>`).join('')}</nav>`;
 
-/** /research/markets with the planned section added (Rates, Positioning: the Research · Markets row). */
+/** /research/markets with one section drawn (Rates, Positioning: the Research · Markets row). The rail and the page's
+ *  disclaimer are MarketsPage.tsx's (JUMPS; the Disclaimer, spec 2026-10-21/07 Copy › Page disclaimer). */
 export function marketsHost(e, { scheme = 'dark', minHeight = 0, on, body, note }) {
   const lead = 'Rates, positioning and the money behind them, from public sources, refreshed each business day. The 10-year on this page is the risk-free rate every note’s valuation starts from.';
-  const main = `<div class="wrap pl-page"><div class="pl-h"><h1 class="display">Markets</h1><p class="lead">${lead}</p></div>${jump([['rates', 'Rates'], ['positioning', 'Positioning'], ['liquidity', 'Liquidity'], ['coming-up', 'Coming up']], on)}${body}<p class="pl-foot">${e.demo ? 'Demo · sample data shaped like the Federal Reserve’s, the Treasury’s, the BLS’s and the BEA’s files; nothing on this page is a real observation. Research and tools, not investment advice.' : 'Federal Reserve, U.S. Treasury, BLS, BEA and SEC data are public record; Convexa’s arithmetic is marked Computed. Research and tools, not investment advice.'}</p></div>`;
+  const main = `<div class="wrap pl-page"><div class="pl-h"><h1 class="display">Markets</h1><p class="lead">${lead}</p></div>${jump([['rates', 'Rates'], ['positioning', 'Positioning'], ['stress', 'Stress'], ['liquidity', 'Liquidity'], ['coming-up', 'Coming up']], on)}${body}<p class="pl-foot">${e.demo ? MARKETS_FOOT.demo : MARKETS_FOOT.prod}</p></div>`;
   return boardNote(scheme, note) + tabCounts(finalPage({ scheme, minHeight, active: 'research', tabs: 'Markets', demo: e.demo, label: 'Markets', main }), e.demo);
 }
 

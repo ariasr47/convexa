@@ -33,6 +33,9 @@ export const SHIPPED_IN = {
   note: '1.0.0',
   'research-index': '1.0.0',
   'research-markets': '1.0.0',
+  // Stress, a section of Markets (StressSection.tsx, spec 07, landed 2026-10-29): 1.0.0, the first versioned release,
+  // not yet pushed.
+  'research-stress': '1.0.0',
   // Liquidity, a section of Markets (LiquiditySection.tsx, shipped 2026-10-15); its row sat on the planned tools page
   // until 2026-10-28, reading Planned beside Built 5/5.
   'planned-liquidity': '1.0.0',

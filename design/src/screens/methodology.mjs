@@ -16,7 +16,7 @@ export const METHOD_CSS = `
 `;
 
 export function methodologyBody({ minHeight = 2300 } = {}) {
-  const toc = ['Two data speeds', 'Dealer structure', 'Flip vs walls', 'Score and tier', 'Advisory reads', 'AI read and grounding', 'Simulation', 'Where the read is weak', 'What Convexa never does', 'Vocabulary'];
+  const toc = ['Two data speeds', 'Dealer structure', 'Flip vs walls', 'Score and tier', 'Advisory reads', 'AI read and grounding', 'Simulation', 'Fear–greed gauge', 'Where the read is weak', 'What Convexa never does', 'Vocabulary'];
   return `<div style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);">
     ${nav({ active: '' })}
     <section class="wrap" style="padding-top: 32px;">
@@ -51,6 +51,12 @@ export function methodologyBody({ minHeight = 2300 } = {}) {
           <p class="muted">What leaves the machine, on demand, is the computed snapshot, the candidate contracts, your two risk numbers, the open-positions digest for the ticker, the persona prompt and the field glossary — reviewable in full from “What’s sent”. No other ticker, no identity, no broker data and no key ever leave.</p>
           <h2 class="display">Simulation</h2>
           <p>Simulated trades and orders are paper. Fills model at the mid with no slippage and no partial fills; a sim order triggers and fills only while a live stream for that ticker is open in your browser. Sim P/L uses a mark ladder (snapshot → modeled → theoretical → last known); last known is frozen when the stream is offline and never framed as live.</p>
+          <h2 class="display">Fear–greed gauge</h2>
+          <p>The fear–greed gauge in the Stress section of Research → Markets is built only from inputs Convexa may show. The familiar fear gauges (Cboe’s VIX and put/call ratios, CNN’s Fear & Greed) need a licence to show, so none is used.</p>
+          <p>Seven inputs: the five category series of the Office of Financial Research’s Financial Stress Index (volatility, credit, safe assets, equity valuation and funding) and two weekly CFTC series, leveraged funds’ net VIX futures and asset managers’ net E-mini S&P 500 futures, each as a share of open interest.</p>
+          <p>Each input is ranked against its own last three years: its percentile is the share of those days or weeks it sits above. Inputs where a higher value means more fear are flipped, so for every input 0 is extreme fear and 100 extreme greed: high stress reads low. The gauge is the plain average of the unrounded scores of the inputs that are fresh: a daily input counts for 5 weekdays after its date, holidays included, a weekly one for 14 days. With fewer than 5 of 7 fresh, no reading is published.</p>
+          <p>Bands are Convexa’s own: 0–24 Extreme Fear, 25–44 Fear, 45–55 Neutral, 56–75 Greed, 76–100 Extreme Greed. An edge belongs to the calmer band.</p>
+          <p class="muted">The cost: five of the seven inputs come from one OFR file, so one method and one outage drive most of the gauge, and in practice it publishes exactly when that file is fresh. The OFR’s categories are blends of 33 market variables worldwide (OFR working paper 17-04), not raw prices, and the file runs about two business days behind, so each row shows its own date. The gauge is research, not a signal, and not investment advice.</p>
           <h2 class="display">Where the read is weak</h2>
           <p>Evidence is strongest on liquid index and megacap names. Thin single names can show structure that is noise — the desk shows a single-name caveat when the symbol is outside the curated universe. Outside regular hours structure still ages honestly, but spot basis and chain freshness matter more. Missing chain data, a failed symbol or a building first pass shows as unavailable or building — never a fabricated zero.</p>
           <h2 class="display">What Convexa never does</h2>

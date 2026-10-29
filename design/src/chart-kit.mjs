@@ -274,10 +274,13 @@ export function plot({ height = 220, pl = 46, pr = 120, prn = 64, pt = 18, pb = 
   return `<div class="cx"${id ? ` id="${id}"` : ''}${kb} style="height: ${height}px; --pl: ${pl}px; --pr: ${pr}px; --prn: ${prn}px; --pt: ${pt}px; --pb: ${pb}px;"><div class="pa"><svg class="ln" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">${svg.join('')}</svg>${html.join('')}${extra}</div></div>`;
 }
 
-/** The data table twin of a chart: native <details>, a labelled focusable scroll box, header cells. */
+/** The data table twin of a chart: native <details>, a labelled focusable scroll box, header cells. A cell is a
+ *  figure (a string or number, Mono), `{ t }` (HTML in the body Sans), or ChartFrame's text cell `{ text }`
+ *  (TableTwinText, spec 07): a word or a not-a-number member ("—", "unavailable") in Sans, never a figure. */
+const twinCell = (c) => (typeof c === 'object' && c && c.t ? `<td class="t">${c.t}</td>` : typeof c === 'object' && c && typeof c.text === 'string' && !c.href ? `<td class="t">${c.text}</td>` : `<td>${c}</td>`);
 const twinRegion = ({ caption, cols, rows }) => {
   const head = `<thead><tr>${cols.map((c) => `<th scope="col">${c}</th>`).join('')}</tr></thead>`;
-  const body = `<tbody>${rows.map((r) => `<tr>${r.map((c, i) => (i === 0 ? `<th scope="row" class="t" style="font-weight: 500; color: var(--phosphor);">${c}</th>` : typeof c === 'object' && c && c.t ? `<td class="t">${c.t}</td>` : `<td>${c}</td>`)).join('')}</tr>`).join('')}</tbody>`;
+  const body = `<tbody>${rows.map((r) => `<tr>${r.map((c, i) => (i === 0 ? `<th scope="row" class="t" style="font-weight: 500; color: var(--phosphor);">${c}</th>` : twinCell(c))).join('')}</tr>`).join('')}</tbody>`;
   return `<div class="cf-tw" tabindex="0" role="region" aria-label="${esc(caption)}"><table><caption>${caption}</caption>${head}${body}</table></div>`;
 };
 export function dataTable({ caption, cols, rows, summary = 'Show the numbers', open = false }) {

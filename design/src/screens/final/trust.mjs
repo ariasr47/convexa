@@ -55,7 +55,7 @@ export const ROWS = [
       ],
       phone: `${SHELL_PHONE} Each card’s label column moves above its text; the state tag wraps under the source’s name; links stack.`,
       acceptance: [
-        'Production: eleven source cards in the order Treasury, CFTC, Fed H.4.1, Treasury DTS, NY Fed reverse repo, release schedules, FINRA short interest, FINRA short-sale volume, SEC EDGAR, TradingView, Massive; each names its owner, what Convexa reads, cadence and delay, terms, where it shows, and links to the source.',
+        'Production: twelve source cards in the order Treasury, CFTC, OFR, Fed H.4.1, Treasury DTS, NY Fed reverse repo, release schedules, FINRA short interest, FINRA short-sale volume, SEC EDGAR, TradingView, Massive; each names its owner, what Convexa reads, cadence and delay, terms, where it shows, and links to the source.',
         'Both FINRA cards carry “Data owned and provided by FINRA” and the notice “FINRA owns and is the source of … please don’t redistribute it”, word for word as NotePublicPanels ships it.',
         'The TradingView card says Convexa reads nothing from the chart, that the visitor’s IP address and page address go to TradingView, and keeps the attribution “Chart by TradingView”.',
         'The legend’s counts equal the cards’ states; no card says Updated without a source date; TradingView never says Updated.',
@@ -72,6 +72,7 @@ export const ROWS = [
         { status: 'partial', waits: 'decided', what: 'No separate GET /api/public-data/sources: a new operation grows the frozen precutover operation baseline, so the rows ride the two answers the page already reads.' },
         { status: 'shipped', what: 'The credits it gathers exist on their cards today: FINRA’s notice and owner line (NotePublicPanels), TradingView’s chip, attribution and privacy line (TechnicalAnalysisLive), Treasury/CFTC/SEC source chips.' },
         { status: 'shipped', what: 'The API tells a last good copy from a fresh fetch (2026-10-15): each source row, and each section’s `source_state`, says updated, delayed, last_good, source_down, not_set_up or off; delayed comes from the API for CFTC and FINRA short interest. Tested fresh → failed fetch serving the last good copy → recovery. The legacy `state` still says live for both.' },
+        { status: 'shipped', what: 'The OFR card (2026-10-29, spec 07; 6d6449b0): after the CFTC’s, reading Delayed by source while fresh, since the OFR publishes about two business days late (cardState.ts, its ofr case); both Stress chips open it (anchor.ts). The CFTC card now names leveraged funds’ VIX futures position and shows in Positioning and Stress.' },
         { status: 'shipped', what: 'FINRA Off on production (owner, 2026-10-15): both FINRA cards say Off with the reason, whatever the API’s row says, while FINRA_ON_PRODUCTION in shared/dataState/finraSwitch.ts is false (pages/trust/cardState.ts switchedOff, tested).' },
         { status: 'shipped', what: 'Dates and counts (2026-10-15): the release-schedules and SEC cards are dated by Convexa’s last read; the H.4.1 line says its date once; the two daily liquidity inputs say they carry the H.4.1 Wednesday’s figure; the legend says how many cards are still being checked (cardState.ts legendCounts, tested).' },
         FOOTER_BUILT,
@@ -84,7 +85,7 @@ export const ROWS = [
       { id: 'production', title: 'Production', w: 1440, h: 4611, body: creditsBoard('production') },
       // Eleven cards at 390 pass the canvas's 8,000px frame limit, so the phone page is drawn in two boards.
       { id: 'phone', title: 'Phone · production · 1 of 2 (head and the first six cards)', w: 390, h: 6278, body: creditsBoard('production', 1) },
-      { id: 'phone-2', title: 'Phone · production · 2 of 2 (the last five cards, typefaces, what Convexa makes)', w: 390, h: 4000, body: creditsBoard('production', 2) },
+      { id: 'phone-2', title: 'Phone · production · 2 of 2 (the last six cards, typefaces, what Convexa makes)', w: 390, h: 4000, body: creditsBoard('production', 2) },
       { id: 'light', title: 'Light · production', w: 1440, h: 4611, body: creditsBoard('production'), opts: light },
       { id: 'states', title: 'States', w: 1440, h: 2016, body: creditsStates },
     ],

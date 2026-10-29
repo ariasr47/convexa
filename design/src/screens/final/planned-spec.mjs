@@ -6,6 +6,50 @@
 const STAGING = (what) => `Signed in to the demo account on the Oct 7, 2026 scenario. ${what} Every frame dashed with the hatch stripe, chips “Demo · shaped like …”; no request leaves the browser (sample fixtures in the demo transport).`;
 const CORE = ['P-2', 'P-4', 'P-8', 'P-9', 'P-10', 'P-11', 'P-13', 'Env 2026-10-14'];
 
+// Stress shipped on 2026-10-29 (spec docs/product/specs/2026-10-21/07-stress-gauge.md): its card describes the
+// shipped section, from StressSection.tsx and stressRead.ts.
+export const STRESS_SPEC = {
+  title: 'Stress',
+  route: '/research/markets#stress',
+  job: 'A fear–greed gauge built only from data Convexa may show: five parts of the OFR’s stress index and two CFTC positioning series, each ranked against its own last three years, averaged into one reading with all seven inputs in view.',
+  env: {
+    production: 'Live public data: the OFR’s fsi.csv (daily, about two business days late) and the CFTC’s weekly TFF report, scored by Convexa’s API (stress.rs); the page only says what the markets answer’s stress holds. Published only when 5 of 7 inputs are fresh. No mocks.',
+    staging: STAGING('The same section on the authored sample: OFR inputs as of Oct 5, CFTC as of Oct 6; scores 18, 12, 41, 44, 47, 53 and 51, gauge 38, Fear. No head tag: the source chip is the frame’s one mark.'),
+  },
+  widgets: [
+    { name: 'Gauge row (Fear–greed, the figure, its band word)', source: 'PublicMarkets.stress: gauge, band, counted and as_of (its oldest counted OFR input)', production: ['computed', 'Computed · as of Oct 19'], staging: 'demo' },
+    { name: 'Seven input rows (raw value, bar, score and band word, sentence, credit)', source: 'stress.components in table order; each row’s state is its source’s sources row (ofr, cftc)', production: ['computed', 'Computed'], staging: 'demo' },
+    { name: 'Table twin (Show the numbers)', source: 'The same answer to one decimal; the gauge row’s mean cut to two; words and dashes in Sans text cells', production: ['computed', 'Computed'], staging: 'demo' },
+  ],
+  states: [
+    { tag: ['computed', 'Computed · as of Oct 19'], when: '5 or more of 7 inputs fresh; the title is the finding.' },
+    { tag: ['stale', 'Last good copy'], when: 'The ofr sources row is last_good: the head says so with the gauge’s date, and the OFR rows beside theirs.' },
+    { tag: 'loading', when: 'First paint; the frame keeps its head, sub and note, and a 621px body at 1440.' },
+    { tag: ['unavailable', 'Source down'], when: 'Withheld: the OFR didn’t answer and nothing is kept; the line and Try again, no number, band or finding.' },
+    { tag: ['stale', 'Last good copy'], when: 'Withheld: the OFR’s kept copy is too old to count; the line and Try again.' },
+    { tag: ['delayed', 'Delayed by source'], when: 'Withheld: the OFR answered, but its file ends more than 5 weekdays ago; no Try again.' },
+    { tag: 'error', when: 'Convexa’s API didn’t answer: the page’s own message; no section.' },
+    { tag: 'off', when: 'PUBLIC_DATA=off on this server: the page’s own message; no section.' },
+    { tag: 'demo', when: 'Staging.' },
+  ],
+  phone: 'Each row stacks: the name beside its score and band word, then the raw value and its date, the bar at full width, the sentence and the credit line. The axis keeps only Fear and Greed, 0 and 100, and the score header drops (P-13). No horizontal overflow.',
+  acceptance: [
+    'The title is the finding, worked out from the counted inputs; withheld, it is the metric, Fear–greed gauge, and no number, band or finding shows anywhere.',
+    'Every score sits beside its band word; the bars are aria-hidden, and each score’s accessible name says it (“score 21 of 100, Extreme Fear”).',
+    'The rows keep table order, never re-sorted by score.',
+    'Nothing green or red, and no amber: fear and greed are carried by position and words.',
+    'Staging: no head tag; “Demo · shaped like OFR and CFTC data” is the frame’s one mark, and the rows’ credit lines say “Shaped like …”.',
+  ],
+  built: [
+    { status: 'shipped', what: 'API (spec 07 steps 1–4): VIX futures and open interest on the one CFTC read, the OFR reader and its cache, the pure scoring (stress.rs) and stress with its mean on the markets answer (f27fb912, c9467409, ea80a6c4, 13d603f4).' },
+    { status: 'shipped', what: 'The section on /research/markets (StressSection.tsx, stressRead.ts, 8b6066a5): the gauge row, the axis, seven rows in table order, the withheld form, the table twin with its Sans text cells (ChartFrame’s TableTwinText), the rail’s Stress link and the disclaimer’s Stress sentence; the foot dates each source by its sources row (5d1ed436).' },
+    { status: 'shipped', what: 'The demo’s authored sample (demo/public-data.ts demoStress, 4dfb735d): 38, Fear.' },
+    { status: 'shipped', what: 'The OFR card on /credits, which both Stress chips open (sources.ts, anchor.ts), and the fear–greed gauge on /methodology with its What’s live row (copy.ts; 6d6449b0).' },
+  ],
+  rulings: [...CORE, 'D1'],
+  code: ['apps/dashboard/src/app/pages/research/StressSection.tsx', 'apps/dashboard/src/app/pages/research/stressRead.ts', 'apps/dashboard/src/app/pages/research/MarketsPage.tsx', 'apps/dashboard/src/app/shared/charts/frame/ChartFrame.tsx', 'libs/api/src/lib/demo/public-data.ts', 'apps/api/src/services/public_data/stress.rs', 'apps/api/src/services/public_data/ofr.rs'],
+};
+
 export const LIQUIDITY_SPEC = {
   title: 'Liquidity',
   route: '/research/markets#liquidity',

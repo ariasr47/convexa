@@ -9,10 +9,11 @@
 import { icon } from '../../lib.mjs';
 import { provChip, stateTag } from '../../components/data-states.mjs';
 import { thirdPartyFrame } from '../../components/charts.mjs';
+import { chartFrame, dataTable } from '../../chart-kit.mjs';
 import { statesBoard } from '../v4/kit.mjs';
 import { PL_CSS, env, frameState, retry, demoLink, section, boardNote, marketsHost, noteHost, scorecardHost, techHost } from './planned-kit.mjs';
 import { calendarChart, checkTag, clusterStats, clustersChart, holdersChart, liquidityChart, liquidityStrip, otcChart, otcData, peersChart, signalsChart, taReadings, xbrlCheck, xbrlHistory } from './planned-charts.mjs';
-import { CALENDAR_SPEC, CLUSTERS_SPEC, HOLDERS_SPEC, LIQUIDITY_SPEC, OTC_SPEC, PEERS_SPEC, SIGNALS_SPEC, TA_SPEC, XBRL_SPEC } from './planned-spec.mjs';
+import { CALENDAR_SPEC, CLUSTERS_SPEC, HOLDERS_SPEC, LIQUIDITY_SPEC, OTC_SPEC, PEERS_SPEC, SIGNALS_SPEC, STRESS_SPEC, TA_SPEC, XBRL_SPEC } from './planned-spec.mjs';
 import { sampleTaChart } from './ticker-tech.mjs';
 
 const PROD = env('prod'), DEMO = env('demo'), TARGET = env('target');
@@ -22,6 +23,162 @@ const msg = (metric, state, text, cause = '', action = '', stateText = '') => fr
 const nc = (what) => `<strong style="font-size: 13px;">SEC filings aren’t set up on this site yet.</strong><span class="dline">${what} EDGAR asks every program that reads it to identify itself with a contact address; this site hasn’t been given one.</span><details class="dop"><summary>For the site’s operator</summary><span class="mono" style="font-size: 11px; color: var(--steel);">Set SEC_USER_AGENT on the API</span></details>`;
 const offFrame = (metric, src) => msg(metric, 'off', 'Public data is switched off on this server.', `${src} come through Convexa’s API, which has public data turned off.`);
 const B = (id, title, w, h, body, opts) => ({ id, title, w, h, body, ...(opts ? { opts } : {}) });
+
+// =================================================================================================
+// Stress — /research/markets#stress, between Positioning and Liquidity (shipped 2026-10-29: StressSection.tsx and
+// stressRead.ts, spec 2026-10-21/07). One frame: the gauge row over the seven inputs in table order, never a dial.
+// The words are stressRead.ts's, worked out here by the same rules (half-up percentiles, the score as their mirror,
+// band edges to the calmer band). Production draws spec 07's worked example on the real OFR and CFTC files of
+// 2026-10-22 (OFR as of Oct 19, CFTC Oct 13); staging, the authored sample (demo/public-data.ts demoStress).
+// =================================================================================================
+const STRESS_CSS = `
+  .st-body { display: grid; gap: 16px; min-width: 0; }
+  .st-gauge { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; min-width: 0; }
+  .st-gauge .cap { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--steel); }
+  .st-gauge .v { font: 500 28px/1.1 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .st-gauge .v.na { font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; }
+  .st-gauge .m { font-size: 13px; color: var(--steel); } .st-gauge .m b { font-weight: 600; color: var(--phosphor); }
+  .st-list { list-style: none; margin: 0; padding: 0; display: grid; min-width: 0; }
+  .st-grid { display: grid; column-gap: 16px; row-gap: 4px; min-width: 0; grid-template-columns: 176px 216px minmax(0, 1fr) 136px minmax(0, 1fr); }
+  .st-axis { grid-template-areas: ". . bar score ."; padding-bottom: 6px; }
+  .st-row { grid-template-areas: "label raw bar score sent" "label cred cred cred sent"; align-items: start; padding: 10px 0; border-top: 1px solid var(--line); }
+  .st-row > * { min-width: 0; }
+  .st-lab { grid-area: label; display: grid; gap: 2px; line-height: 1.4; } .st-lab b { font-size: 14px; font-weight: 600; } .st-lab span { font-size: 12px; color: var(--steel); }
+  .st-raw { grid-area: raw; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: 12px; line-height: 1.4; color: var(--steel); }
+  .st-raw .f { font: 400 13px 'IBM Plex Mono', monospace; color: var(--phosphor); } .st-raw .d { font: 400 11px 'IBM Plex Mono', monospace; }
+  .st-raw .na { font-size: 13px; color: var(--phosphor); }
+  .st-bar { grid-area: bar; align-self: center; position: relative; height: 16px; margin: 0 2px; }
+  .st-bar i { position: absolute; display: block; }
+  .st-bar .tk { left: 0; right: 0; top: 7px; height: 2px; border-radius: 1px; background: var(--c-grid); }
+  .st-bar .nb { left: 45%; width: 10%; top: 2px; height: 12px; box-sizing: border-box; background: var(--c-band); border-left: 1px solid var(--c-edge); border-right: 1px solid var(--c-edge); }
+  .st-bar .ed { top: 2px; height: 12px; border-left: 1px dotted var(--c-edge); }
+  .st-bar .en { top: 3px; height: 10px; border-left: 1px solid var(--c-axis); }
+  .st-bar .mk { top: 0; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: var(--c-emph); box-shadow: 0 0 0 2px var(--panel); }
+  .st-bar .mk.un { background: var(--c-ctx2); }
+  .st-score { grid-area: score; white-space: nowrap; line-height: 1.4; } .st-score .n { font: 500 15px 'IBM Plex Mono', monospace; } .st-score .w { font-size: 12px; } .st-score .na { font-size: 15px; }
+  .st-sent { grid-area: sent; display: grid; gap: 2px; font-size: 12.5px; line-height: 1.45; color: var(--steel); text-wrap: pretty; } .st-sent p { margin: 0; } .st-sent .nc { color: var(--phosphor); }
+  .st-cred { grid-area: cred; font-size: 11.5px; line-height: 1.4; color: var(--steel); }
+  .st-row.un .st-raw, .st-row.un .st-raw .f, .st-row.un .st-sent p:first-child { color: var(--steel-2); }
+  .st-ax { grid-area: bar; min-width: 0; }
+  .st-ax .bn, .st-ax .tc { position: relative; height: 16px; } .st-ax .tc { height: 15px; }
+  .st-ax .bn span { position: absolute; transform: translateX(-50%); font-size: 11px; color: var(--steel); white-space: nowrap; }
+  .st-ax .tc span { position: absolute; font: 400 11px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .st-ax .ph { display: none; grid-template-columns: 1fr 1fr; font-size: 11px; color: var(--steel); } .st-ax .ph .r { text-align: right; } .st-ax .ph .m { font-family: 'IBM Plex Mono', monospace; }
+  .st-sh { grid-area: score; align-self: end; font-size: 11px; font-weight: 600; line-height: 1.35; color: var(--steel); }
+  .st-held { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); }
+  .st-held p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--steel); text-wrap: pretty; }
+  .st-held .btn { min-height: 44px; }
+  @media (min-width: 768px) and (max-width: 1299px) {
+    .st-grid { grid-template-columns: minmax(0, 220px) minmax(0, 1fr) 136px; }
+    .st-axis { grid-template-areas: ". bar score"; }
+    .st-row { grid-template-areas: "label bar score" "raw sent sent" "cred cred cred"; }
+  }
+  @media (max-width: 767px) {
+    .st-grid { grid-template-columns: minmax(0, 1fr) auto; }
+    .st-axis { grid-template-areas: "bar bar"; }
+    .st-row { grid-template-areas: "label score" "raw raw" "bar bar" "sent sent" "cred cred"; }
+    .st-score { text-align: right; }
+    .st-ax .bn, .st-ax .tc, .st-sh { display: none; } .st-ax .ph { display: grid; }
+  }
+`;
+const STRESS_METRIC = 'Fear–greed gauge';
+const STRESS_LEAD = 'A fear–greed gauge built only from data Convexa may show: five parts of the Office of Financial Research’s stress index and two CFTC positioning series, each ranked against its own last three years. 0 is extreme fear and 100 extreme greed, so high stress reads low. The familiar fear gauges need a licence to show, so none is used here.';
+const STRESS_SUB = 'Seven public inputs · each a percentile of its own last 3 years · 0 = extreme fear, 100 = extreme greed · equal weights · published only when 5 of 7 are fresh';
+const STRESS_NOTE = 'Five of the seven inputs come from one OFR file: one method and one outage drive most of this gauge, and without a fresh file it publishes nothing. The OFR’s categories are blends of 33 market variables worldwide, not raw prices. The percentiles are Convexa’s own arithmetic. Research, not a signal.';
+const STRESS_CAPTION = 'Fear–greed gauge inputs: raw value, 3-year percentile and the 0–100 score averaged into the gauge (one decimal shown; the gauge averages the unrounded scores)';
+// stressRead.ts INPUTS and CREDIT: name, what it is, the sentence's subject, and the source.
+const ST_INPUTS = {
+  volatility: ['Volatility', 'OFR FSI · Volatility', 'Volatility stress', 'ofr'],
+  credit: ['Credit', 'OFR FSI · Credit', 'Credit stress', 'ofr'],
+  safe_assets: ['Safe haven', 'OFR FSI · Safe assets', 'Safe-haven stress', 'ofr'],
+  equity_valuation: ['Equity stress', 'OFR FSI · Equity valuation', 'Equity valuation stress', 'ofr'],
+  funding: ['Funding', 'OFR FSI · Funding', 'Funding stress', 'ofr'],
+  vol_positioning: ['Vol positioning', 'CFTC TFF · VIX futures, leveraged funds', 'Leveraged funds’ net VIX position', 'cftc'],
+  equity_positioning: ['Equity positioning', 'CFTC TFF · E-mini S&P 500, asset managers', 'Asset managers’ net E-mini S&P position', 'cftc'],
+};
+const ST_CREDIT = { ofr: { live: 'Source: Office of Financial Research, OFR Financial Stress Index', demo: 'Shaped like OFR Financial Stress Index data' }, cftc: { live: 'Source: CFTC Commitments of Traders (TFF)', demo: 'Shaped like CFTC TFF data' } };
+const ST_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const stShort = (d) => `${ST_MON[Number(d.slice(5, 7)) - 1]} ${Number(d.slice(8))}`;
+const stLong = (d) => `${stShort(d)}, ${d.slice(0, 4)}`;
+const stBand = (s) => (s <= 24 ? 'Extreme Fear' : s <= 44 ? 'Fear' : s <= 55 ? 'Neutral' : s <= 75 ? 'Greed' : 'Extreme Greed');
+const stHalfUp = (x) => Math.floor((Math.round(x * 10) + 5) / 10);
+const stWholeP = (p) => (p >= 50 ? stHalfUp(p) : 100 - stHalfUp(100 - p));
+const stWhole = (c) => (c.pct == null ? null : c.hm === 'fear' ? 100 - stWholeP(c.pct) : stWholeP(c.pct));
+const stSigned = (v, dp) => { const t = Math.abs(v).toFixed(dp); return Number(t) === 0 ? t : `${v < 0 ? '−' : '+'}${t}`; };
+/** One input: [id, raw, percentile, score, higher means], dated by its source; `not` says why it isn't counted. */
+const stComp = (d, [id, raw, pct, score, hm], over = {}) => ({ id, src: ST_INPUTS[id][3], raw, pct, score, hm, asOf: d[ST_INPUTS[id][3]], win: d.win[ST_INPUTS[id][3]], counted: true, ...over });
+const ST_PROD = { ofr: '2026-10-19', cftc: '2026-10-13', win: { ofr: 781, cftc: 157 }, gauge: 50, mean: 50.1557, rows: [
+  ['volatility', -0.007, 78.5, 21.5, 'fear'], ['credit', -0.947, 50.5, 49.5, 'fear'], ['safe_assets', -0.294, 36.6, 63.4, 'fear'], ['equity_valuation', -0.503, 19.9, 80.1, 'fear'], ['funding', -0.142, 41.5, 58.5, 'fear'],
+  ['vol_positioning', 0.00247, 91.0, 9.0, 'fear'], ['equity_positioning', 0.4741, 69.2, 69.2, 'greed'],
+], finding: 'The fear–greed gauge reads Neutral (50): vol positioning pulls toward fear, equity stress toward greed' };
+const ST_DEMO = { ofr: '2026-10-05', cftc: '2026-10-06', win: { ofr: 781, cftc: 157 }, gauge: 38, mean: 38, rows: [
+  ['volatility', 0.412, 82, 18, 'fear'], ['credit', 0.268, 88, 12, 'fear'], ['safe_assets', 0.071, 59, 41, 'fear'], ['equity_valuation', 0.046, 56, 44, 'fear'], ['funding', 0.019, 53, 47, 'fear'],
+  ['vol_positioning', -0.084, 47, 53, 'fear'], ['equity_positioning', 0.462, 51, 51, 'greed'],
+], finding: 'In the sample, the fear–greed gauge reads Fear (38): credit and volatility lead, positioning is neutral' };
+const stData = (e) => (e.demo ? ST_DEMO : ST_PROD);
+const stComps = (e) => { const d = stData(e); return d.rows.map((r) => stComp(d, r)); };
+function stRaw(c) {
+  if (c.raw == null) return null;
+  if (c.src === 'ofr') return [stSigned(c.raw, 3), ' · 0 = average stress'];
+  return [`${stSigned(c.raw * 100, 1)}%`, ` of open interest${c.raw > 0 ? ', net long' : c.raw < 0 ? ', net short' : ''}`];
+}
+const stSentence = (c) => (c.pct == null ? null : `${ST_INPUTS[c.id][2]} is ${c.pct >= 50 ? `higher than ${stWholeP(c.pct)}` : `lower than ${100 - stWholeP(c.pct)}`}% of the last 3 years.`);
+const stAxis = () => `<div class="st-grid st-axis"><div class="st-ax" aria-hidden="true"><div class="bn">${[['Extreme Fear', 12.5], ['Fear', 35], ['Neutral', 50], ['Greed', 65], ['Extreme Greed', 87.5]].map(([w, x]) => `<span style="left: ${x}%;">${w}</span>`).join('')}</div><div class="tc">${[0, 25, 45, 55, 75, 100].map((t) => `<span style="left: ${t}%;${t === 0 ? '' : t === 100 ? ' transform: translateX(-100%);' : ' transform: translateX(-50%);'}">${t}</span>`).join('')}</div><div class="ph"><span>Fear</span><span class="r">Greed</span><span class="m">0</span><span class="m r">100</span></div></div><div class="st-sh">Score · 0 fear – 100 greed</div></div>`;
+const stBar = (c) => (c.score == null ? '' : `<div class="st-bar" aria-hidden="true"><i class="tk"></i><i class="nb"></i><i class="ed" style="left: 25%;"></i><i class="ed" style="left: 75%;"></i><i class="en" style="left: 0;"></i><i class="en" style="left: 100%;"></i><i class="mk${c.counted ? '' : ' un'}" style="left: ${Math.min(100, Math.max(0, c.score))}%;"></i></div>`);
+function stRow(e, c, { lastGood = false } = {}) {
+  const [name, what] = ST_INPUTS[c.id];
+  const raw = stRaw(c); const whole = c.counted ? stWhole(c) : null; const sent = stSentence(c);
+  const rawHtml = `${raw ? `<span><span class="f">${raw[0]}</span>${raw[1]}</span>` : '<span class="na">unavailable</span>'}${c.asOf ? `<span class="d">as of ${stShort(c.asOf)}</span>` : ''}${lastGood ? stateTag('stale', 'Last good copy') : ''}`;
+  const score = whole == null ? '<span class="na">—</span>' : `<span aria-hidden="true"><span class="n">${whole}</span> <span class="w">${stBand(whole)}</span></span><span class="sr-only">score ${whole} of 100, ${stBand(whole)}</span>`;
+  return `<li class="st-grid st-row${c.counted ? '' : ' un'}"><div class="st-lab"><b>${name}</b><span>${what}</span></div><div class="st-raw">${rawHtml}</div>${c.score == null ? '<div class="st-bar" aria-hidden="true"></div>' : stBar(c)}<div class="st-score">${score}</div><div class="st-sent">${sent ? `<p>${sent}</p>` : ''}${c.not ? `<p class="nc">${c.not}</p>` : ''}</div><div class="st-cred">${e.demo ? ST_CREDIT[c.src].demo : ST_CREDIT[c.src].live}</div></li>`;
+}
+/** The gauge row: published, the figure and its band; withheld, a dash and the count (stressRead.ts, GaugeRow). */
+const stGauge = ({ gauge = null, band = '', counted = 7, asOf = '' }) => `<div class="st-gauge"><span class="cap">Fear–greed</span>${gauge == null ? `<span class="v na">—</span><span class="m">${counted} of 7 inputs counted, 5 needed</span>` : `<span class="v">${gauge}</span><span class="m"><b>${band}</b> · ${counted} of 7 inputs counted · as of ${asOf}</span>`}</div>`;
+/** A withheld reading's one quiet form: the P-2 word, the line, Try again where a fetch failed. */
+const stHeld = (tag, line, again) => `<div class="st-held" role="status">${tag}<p>${line}</p>${again ? '<button class="btn secondary sm" type="button">Try again</button>' : ''}</div>`;
+function stTwin(e, comps, d) {
+  const t = (text) => ({ text }); const dash = t('—');
+  const rows = comps.map((c) => {
+    const whole = c.counted ? stWhole(c) : null;
+    const raw = c.raw == null ? t('unavailable') : c.src === 'ofr' ? stSigned(c.raw, 3) : `${stSigned(c.raw * 100, 2)}% of OI`;
+    return [ST_INPUTS[c.id][0], t(c.src === 'ofr' ? 'OFR' : 'CFTC'), c.asOf ? stLong(c.asOf) : dash, raw, c.asOf ? c.win.toLocaleString('en-US') : dash, c.pct == null ? dash : c.pct.toFixed(1), t(c.hm), c.counted && c.score != null ? c.score.toFixed(1) : dash, whole == null ? dash : t(stBand(whole)), t(c.counted ? 'yes' : 'no')];
+  });
+  const mean = (Math.floor(Math.round(d.mean * 1e9) / 1e7) / 100).toFixed(2);
+  rows.push(['Gauge', t('Convexa'), stLong(d.ofr), dash, dash, dash, dash, `${mean} → ${d.gauge}`, t(stBand(d.gauge)), `${comps.filter((c) => c.counted).length} of 7`]);
+  return dataTable({ caption: STRESS_CAPTION, cols: ['Input', 'Source', 'As of', 'Raw', 'Window', 'Percentile', 'Higher means', 'Score', 'Band', 'Counted'], rows });
+}
+/** The section as shipped: one frame, the gauge row, the axis once, the seven rows in table order. */
+export function stressChart(e) {
+  const d = stData(e); const comps = stComps(e);
+  const body = `<div class="st-body">${stGauge({ gauge: d.gauge, band: stBand(d.gauge), asOf: stShort(d.ofr) })}<div style="display: grid; min-width: 0;">${stAxis()}<ol class="st-list" role="list" aria-label="The seven inputs">${comps.map((c) => stRow(e, c)).join('')}</ol></div></div>`;
+  return chartFrame({
+    claim: d.finding, sub: STRESS_SUB, body, note: STRESS_NOTE,
+    kind: e.kind, source: e.demo ? 'Demo · shaped like OFR and CFTC data' : 'OFR Financial Stress Index · CFTC TFF', sourceKind: e.sk, sourceHref: e.demo ? '' : 'https://www.financialresearch.gov/financial-stress-index/',
+    asof: e.demo ? 'Scenario · Oct 7, 2026' : `OFR as of ${stShort(d.ofr)} · CFTC positions ${stShort(d.cftc)}`,
+    // On the demo the frame wears no head tag; its source chip is its one Sample mark (owner decision D1).
+    state: e.demo ? '' : 'computed', stateText: e.demo ? '' : `Computed · as of ${stShort(d.ofr)}`,
+    table: stTwin(e, comps, d),
+  });
+}
+export const stressSection = (e) => section({ id: 'stress', title: 'Stress', lead: STRESS_LEAD, body: stressChart(e) });
+const stressBody = (e) => (o) => marketsHost(e, { ...o, on: 'stress', body: stressSection(e), note: e.demo ? DEMO_NOTE : '<b>The Stress section of /research/markets</b>, between Positioning and Liquidity (Rates and Positioning are on the Research · Markets row). Values: spec 07’s worked example on the real OFR and CFTC files of 2026-10-22 (OFR as of Oct 19, CFTC Oct 13).' });
+function stressStates(o) {
+  const P = stComps(PROD);
+  const two = 'only 2 of 7';
+  const items = [
+    { name: 'Loading · final size', tag: ['loading'], when: 'First paint while /api/public-data/markets answers: the frame keeps the ready head, sub and note, and its body holds 621px at 1440 (MarketsLoading).', html: frameState('loading', { metric: STRESS_METRIC, sub: STRESS_SUB, height: 150 }) },
+    { name: 'Computed', tag: ['computed', 'Computed · as of Oct 19'], when: '5 or more of 7 inputs fresh. The title is the finding, worked out from the counted inputs; the date is the gauge’s, its oldest counted OFR input.', html: stGauge({ gauge: 50, band: 'Neutral', asOf: 'Oct 19' }) },
+    { name: 'Last good copy', tag: ['stale', 'Last good copy · as of Oct 19'], wide: true, when: 'The ofr sources row is last_good and its copy is still fresh enough to count: the head says so with the gauge’s date, and each OFR row says it beside its own date.', html: `<ol class="st-list" role="list" aria-label="One input">${stRow(PROD, P[0], { lastGood: true })}</ol>` },
+    { name: '6 of 7 counted', tag: null, wide: true, when: 'An input past its limit (a daily one 5 weekdays, a weekly one 14 days) or with less than a year of history keeps its value and date, dimmed; its score is “—” and its marker steps down to the second context role. The gauge counts the rest.', html: `<ol class="st-list" role="list" aria-label="One input">${stRow(PROD, { ...P[5], counted: false, asOf: '2026-10-06', not: 'Not counted: 16 days old, past the 14-day limit.' })}</ol>` },
+    { name: 'No data · one input', tag: null, wide: true, when: 'The source answered nothing for an input and keeps no copy: “unavailable” in Sans, no bar, no score.', html: `<ol class="st-list" role="list" aria-label="One input">${stRow(PROD, { ...P[6], raw: null, pct: null, score: null, asOf: null, counted: false, not: 'Not counted: the CFTC didn’t answer and no earlier copy is kept.' })}</ol>` },
+    { name: 'Withheld · Source down', tag: ['unavailable', 'Source down'], when: 'Fewer than 5 of 7 fresh because the OFR didn’t answer and nothing is kept. The frame stays ready: its title is the metric, and no number, band or finding shows anywhere.', html: `${stHeld(stateTag('unavailable', 'Source down'), 'No reading today. The OFR didn’t answer and there is no earlier copy, so only 2 of the 7 inputs are fresh; the gauge needs 5.', true)}${stGauge({ counted: 2 })}` },
+    { name: 'Withheld · Last good copy', tag: ['stale', 'Last good copy'], when: 'The OFR hasn’t answered, and the copy kept is too old to count.', html: `${stHeld(stateTag('stale', 'Last good copy'), `No reading today. The OFR hasn’t answered since Oct 15, 14:05 UTC; its last copy ends Oct 13, too old to count, so ${two} inputs are fresh.`, true)}${stGauge({ counted: 2 })}` },
+    { name: 'Withheld · Delayed by source', tag: ['delayed', 'Delayed by source'], when: 'The OFR answered, but its file’s newest day is more than 5 weekdays old. No Try again: asking again changes nothing.', html: `${stHeld(stateTag('delayed', 'Delayed by source'), `No reading today. The OFR’s file ends Oct 12, more than 5 weekdays ago, so ${two} inputs are fresh.`, false)}${stGauge({ counted: 2 })}` },
+    { name: 'Not drawn', tag: null, when: 'An API from before the gauge sends no stress: no section and no rail link. Couldn’t load and Off are the page’s own (“Rates and positioning didn’t load.”, “Public data is switched off on this server.”), above every section.', html: `<span class="dline">No Stress section, and On this page lists Rates, Positioning, Liquidity, Coming up.</span>` },
+    { name: 'Demo', tag: ['demo'], when: 'Staging: the dashed, hatched frame with no head tag; the chip “Demo · shaped like OFR and CFTC data” is its one mark, the rows’ credit lines say “Shaped like …”, and the foot says “Scenario · Oct 7, 2026”.', html: `${stGauge({ gauge: 38, band: 'Fear', asOf: 'Oct 5' })}<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">${provChip('Demo · shaped like OFR and CFTC data', 'dashed')}<span class="mono steel" style="font-size: 11px;">Scenario · Oct 7, 2026</span></div>` },
+  ];
+  return statesBoard({ ...o, title: 'Stress · states', lead: 'Seven public inputs averaged into one reading, published only when 5 are fresh. A withheld reading keeps the frame and the rows and says why in one quiet form; nothing is green, red or amber.', trace: 'Spec 2026-10-21/07', items });
+}
 
 // =================================================================================================
 // 1 · Liquidity — /research/markets
@@ -210,6 +367,14 @@ function taStates(o) {
 // =================================================================================================
 const P = 'planned';
 export const ROWS = [
+  // Shipped 2026-10-29 (StressSection.tsx on /research/markets, spec 07): a built row on the Research page, between
+  // Markets and Liquidity, as the page orders its sections. Its key needs no planned- prefix: it was never planned here.
+  { key: 'research-stress', label: 'Research · Markets · Stress', css: `${PL_CSS}${STRESS_CSS}`, specH: 2100, spec: STRESS_SPEC, boards: [
+    B('staging', 'Staging · demo account', 1440, 1500, stressBody(DEMO)),
+    B('production', 'Production', 1440, 1500, stressBody(PROD)),
+    B('phone', 'Phone · production', 390, 2600, stressBody(PROD)),
+    B('states', 'States', 1440, 1900, stressStates),
+  ] },
   // Shipped (LiquiditySection.tsx on /research/markets): a built row on the Research page, after Markets.
   { key: 'planned-liquidity', label: 'Research · Markets · Liquidity', css: PL_CSS, specH: 1737, spec: LIQUIDITY_SPEC, boards: [
     B('staging', 'Staging · demo account', 1440, 1412, liqBody(DEMO)),

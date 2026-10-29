@@ -201,7 +201,8 @@ export const ROWS = [
     boards: [
       { id: 'production', title: 'Production', w: 1440, h: 5426, body: methodologyBoard('production') },
       { id: 'staging', title: 'Staging · demo account', w: 1440, h: 4590, body: methodologyBoard('staging') },
-      { id: 'phone', title: 'Phone · production', w: 390, h: 7397, body: methodologyBoard('production') },
+      { id: 'phone', title: 'Phone · production · 1 of 2 (What’s live and the first four sections)', w: 390, h: 4500, body: methodologyBoard('production', 1) },
+      { id: 'phone-2', title: 'Phone · production · 2 of 2 (Advisory reads to the end)', w: 390, h: 4500, body: methodologyBoard('production', 2) },
       { id: 'light', title: 'Light · production', w: 1440, h: 5426, body: methodologyBoard('production'), opts: light },
       { id: 'states', title: 'States', w: 1440, h: 1918, body: methodologyStates },
     ],

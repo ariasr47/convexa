@@ -95,16 +95,28 @@ export const SOURCES = [
   },
   {
     id: 'cftc', toc: 'CFTC', name: 'Traders in Financial Futures', owner: 'Commodity Futures Trading Commission (CFTC)',
-    reads: 'Net positions of asset managers and leveraged funds in 10-year T-note, E-mini S&P 500 and E-mini Nasdaq-100 futures.',
+    reads: 'Net positions of asset managers and leveraged funds in 10-year T-note, E-mini S&P 500 and E-mini Nasdaq-100 futures, and leveraged funds’ net position in VIX futures.',
     cadence: 'Weekly. Positions as of Tuesday, published Friday afternoon. Convexa checks every 12 hours.',
     terms: 'U.S. government data, free to show on a public site, credited to the CFTC.',
-    where: 'Research → Markets, and the positioning card under each ticker’s note.',
+    where: 'Research → Markets (Positioning and Stress), and the positioning card under each ticker’s note.',
     link: ['CFTC Commitments of Traders', 'https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm'],
     prod: ['delayed', 'Delayed by source · as of Oct 6'], prodNote: 'Positions as of Tuesday, Oct 6, published Friday, Oct 9. The next report is due Friday, Oct 16.',
     shaped: 'the CFTC’s weekly report',
   },
+  // The OFR, after the CFTC (2026-10-29, spec 07; pages/trust/sources.ts). Fresh, its sources row is delayed by design, so
+  // the card reads Delayed by source (cardState.ts case 'ofr'), dated by the newest day the file holds on this board's Oct 14.
+  {
+    id: 'ofr', toc: 'OFR', name: 'OFR Financial Stress Index', owner: 'Office of Financial Research, U.S. Department of the Treasury',
+    reads: 'The index’s five category series (credit, equity valuation, safe assets, funding and volatility), every business day since 2000, from the OFR’s fsi.csv download. Convexa ranks each against its own last three years.',
+    cadence: 'Daily, about two business days late. Convexa checks every 6 hours.',
+    terms: 'Work of a U.S. federal agency: no copyright, and the OFR asks for credit. Convexa credits it on every row that uses it. The OFR presents the index for information only, not for financial decisions and not as investment or financial advice.',
+    where: 'Research → Markets, Stress (the fear–greed gauge).',
+    link: ['OFR Financial Stress Index', 'https://www.financialresearch.gov/financial-stress-index/'],
+    prod: ['delayed', 'Delayed by source · as of Oct 9'], prodNote: 'Values as of Friday, Oct 9, 2026. The OFR publishes each day’s index about two business days later.',
+    shaped: 'the OFR’s daily stress index',
+  },
   // The three liquidity inputs and the four release schedules, shipped 2026-10-15 (pages/trust/sources.ts;
-  // fidelity SITE-16, 2026-10-25): eleven cards in the app's order. Their dates follow cardState.ts: the
+  // fidelity SITE-16, 2026-10-25), and the OFR since 2026-10-29: twelve cards in the app's order. Their dates follow cardState.ts: the
   // liquidity inputs are dated by the Wednesday they are netted for.
   {
     id: 'fed-h41', toc: 'Fed H.4.1', name: 'Factors Affecting Reserve Balances (H.4.1)', owner: 'Board of Governors of the Federal Reserve System',
@@ -239,7 +251,8 @@ const TYPE_ROWS = [
   ['Archivo', 'Copyright 2020 The Archivo Project Authors', 'SIL OFL 1.1', '/fonts/archivo/OFL.txt'],
 ];
 /** part: 0 the whole page; 1 and 2 split it for the phone board, which would pass the canvas's 8,000px frame
- *  limit with eleven cards (2026-10-25): 1 is the head and the first six cards, 2 the last five and the rest. */
+ *  limit with eleven cards (2026-10-25): 1 is the head and the first six cards, 2 the other six (five until the OFR's card,
+ *  2026-10-29) and the rest. */
 function creditsArticle(env, part = 0) {
   const stg = env === 'staging';
   const intro = stg
