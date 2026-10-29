@@ -39,6 +39,31 @@
     <meta name="twitter:image" content="https://convexa.pages.dev/og-image.png" />
     <meta name="twitter:image:alt" content="Convexa — dealer-gamma analytics" />
 
+    <!-- Structured data (schema.org): the site and the brand that publishes it, the same on every
+         page. A data block, not a script: script-src 'self' does not apply to it. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://convexa.pages.dev/#website",
+            "url": "https://convexa.pages.dev/",
+            "name": "Convexa",
+            "inLanguage": "en",
+            "publisher": { "@id": "https://convexa.pages.dev/#organization" }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://convexa.pages.dev/#organization",
+            "url": "https://convexa.pages.dev/",
+            "name": "Convexa",
+            "logo": "https://convexa.pages.dev/apple-touch-icon.png"
+          }
+        ]
+      }
+    </script>
+
     <!-- The arc-X monogram (redesign-stage-2 §3.4): SVG first, .ico fallback, apple-touch 180. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
