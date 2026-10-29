@@ -23,8 +23,9 @@
  * - IBM Plex Sans (body/UI): static 400/500/600/700.
  * - IBM Plex Mono (data/tape): static 400/500/600; tabular figures by construction.
  *
- * `font-display: swap` on every face; Plex Sans 400 + Plex Mono 400 are preloaded from
- * index.html (the first-paint body + data faces). Values consumed via
+ * `font-display: swap` on every face; Archivo, Plex Sans 400 + Plex Mono 400 are preloaded from
+ * index.html (the first-paint display, body + data faces; Archivo's preload costs its own transfer
+ * on first paint and saves the swap after it, PERF-09). Values consumed via
  * shared/theme/tokens.ts `typographyTokens` — components never name a face directly.
  *
  * First-paint canvas: anonymous / no-JS stays ink (AC-A3). `html[data-theme=light]` is set

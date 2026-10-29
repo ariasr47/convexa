@@ -43,7 +43,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <!-- Self-hosted first-paint faces (same-origin only): body sans + data mono, 400. -->
+    <!-- Self-hosted first-paint faces (same-origin only): the display face (the CONVEXA lockup
+         and every heading, the landing's LCP h1 among them), then body sans + data mono, 400. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/archivo/archivo-latin-standard-normal.woff2"
+      crossorigin
+    />
     <link
       rel="preload"
       as="font"
