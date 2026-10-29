@@ -14,9 +14,15 @@
  * On the staging demo only, an author line sits above the copyright: who built it, the engineering
  * post and the public repository (spec 01, Behaviour › Footer (staging); owner answer S1-Q3,
  * 2026-10-25: the repository, not the profile). Production's footer has no such line.
+ *
+ * The copyright line names Convexa's version in both builds (owner, 2026-10-28): the root
+ * package.json's, inlined at build time (shared/lib/version.ts).
  */
+import { visuallyHidden } from '@/shared/a11y/visuallyHidden';
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
+import { MONO_FACE } from '@/shared/figure/figureFace';
 import { isDemoBuild } from '@/shared/lib/demoSite';
+import { CONVEXA_VERSION } from '@/shared/lib/version';
 import { ArcDivider } from '@/shared/ui/ArcDivider';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
 import { coarseFloor } from '@/shared/ui/touch';
@@ -186,7 +192,19 @@ export function Footer() {
           sx={{ ...lineSx, flex: '1 1 100%' }}
           data-testid="footer-copyright"
         >
-          © {new Date().getFullYear()} Convexa. All rights reserved.
+          © {new Date().getFullYear()} Convexa{' '}
+          {/* The version is Convexa's own figure, so Mono (canon rule 23), at the line's size and
+              colour. A screen reader hears "Convexa version" and the number, not "v" and the
+              number: an aria-label on a role-less span is prohibited and ignored (NotFound.tsx's
+              ⌘K), so the drawn "v…" is hidden from it and a visually hidden "version …" is read.
+              That one is unselectable, so a copied line reads as drawn. */}
+          <Box component="span" aria-hidden sx={MONO_FACE} data-testid="footer-version">
+            v{CONVEXA_VERSION}
+          </Box>
+          <Box component="span" sx={{ ...visuallyHidden, userSelect: 'none' }}>
+            version {CONVEXA_VERSION}
+          </Box>
+          . All rights reserved.
         </Typography>
       </Box>
     </Box>

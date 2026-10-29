@@ -74,6 +74,9 @@ function assertResolvedBuildIdentity(project) {
     '!{workspaceRoot}/tools/research-notes/**/*.spec.mjs',
     '{workspaceRoot}/docs/blog/posts.json',
     '{workspaceRoot}/docs/blog/*.md',
+    // vite.config.mts inlines the root package.json "version" (the footer's), and reads no other
+    // field of it, so only a version change misses the cache.
+    { json: '{workspaceRoot}/package.json', fields: ['version'] },
   ]);
   assert.deepEqual(project.targets.build.outputs, [
     '{projectRoot}/dist',

@@ -26,7 +26,11 @@
           "{workspaceRoot}/tools/research-notes/**/*.mjs",
           "!{workspaceRoot}/tools/research-notes/**/*.spec.mjs",
           "{workspaceRoot}/docs/blog/posts.json",
-          "{workspaceRoot}/docs/blog/*.md"
+          "{workspaceRoot}/docs/blog/*.md",
+          {
+            "json": "{workspaceRoot}/package.json",
+            "fields": ["version"]
+          }
         ],
         "outputs": ["{projectRoot}/dist", "{projectRoot}/sourcemaps-private/current"],
         "configurations": {
@@ -54,7 +58,11 @@
           "!{workspaceRoot}/tools/research-notes/**/*.spec.mjs",
           "{workspaceRoot}/docs/blog/posts.json",
           "{workspaceRoot}/docs/blog/*.md",
-          "{workspaceRoot}/libs/quant-engine/src/signals.rs"
+          "{workspaceRoot}/libs/quant-engine/src/signals.rs",
+          {
+            "json": "{workspaceRoot}/package.json",
+            "fields": ["version"]
+          }
         ]
       },
       "precompress": {

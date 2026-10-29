@@ -1,6 +1,7 @@
 /// <reference types='vitest' />
 import react from '@vitejs/plugin-react';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import type { PluginOption } from 'vite';
@@ -11,6 +12,26 @@ import { convexaResearch } from '../../tools/research-notes/vite-plugin.mjs';
 
 /** Set ANALYZE=1 for a production build that writes dist/stats.html (treemap). */
 const analyze = process.env.ANALYZE === '1' || process.env.ANALYZE === 'true';
+
+/** SemVer 2.0.0, from semver.org: the pattern design/src/screens/final/changelog.mjs checks too. */
+const SEMVER =
+  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
+
+/**
+ * Convexa's one product version: the root package.json "version" (e20082aa), not this app's own
+ * workspace version. `define` hands it to the app as `__CONVEXA_VERSION__` (declared in
+ * src/app/shared/lib/version.ts): inlined in the build, and a global that the dev server's client
+ * and Vitest set before any app module runs. The footer shows it. That field is a build and test
+ * input (apps/dashboard/package.json), so a version bump misses their Nx cache.
+ */
+function readConvexaVersion(): string {
+  const file = path.resolve(import.meta.dirname, '../../package.json');
+  const { version } = JSON.parse(readFileSync(file, 'utf8')) as { version?: unknown };
+  if (typeof version !== 'string' || !SEMVER.test(version)) {
+    throw new Error(`Invalid version ${JSON.stringify(version)} in ${file}; expected SemVer`);
+  }
+  return version;
+}
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
@@ -136,6 +157,8 @@ export default defineConfig(({ mode }) => {
     cacheDir: '../../node_modules/.vite/apps/dashboard',
     // `@/*` → the app-code root (src/app). Keeps cross-folder imports depth-independent.
     resolve: { alias: { '@': path.resolve(import.meta.dirname, 'src/app') } },
+    // A JSON string literal: `define` replaces the identifier with this expression, verbatim.
+    define: { __CONVEXA_VERSION__: JSON.stringify(readConvexaVersion()) },
     server: {
       port: 4200,
       host: 'localhost',
