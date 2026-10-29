@@ -20,7 +20,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { NOT_FOUND_COPY } from './copy';
 
@@ -66,9 +66,31 @@ function paletteShortcut(): ReactNode {
   );
 }
 
+/** Says noindex while the 404 is up, and puts the page's robots tag back after (site audit SEO-4).
+ *  A fresh load of an unknown address already gets 404.html, noindex, with status 404; this covers
+ *  the shell that was served for another address, such as an in-app link to one that doesn't exist
+ *  or a post address under /blog/ that names no post. */
+function useNoindex() {
+  useEffect(() => {
+    const existing = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    const tag = existing ?? document.createElement('meta');
+    const previous = tag.content;
+    if (!existing) {
+      tag.name = 'robots';
+      document.head.appendChild(tag);
+    }
+    tag.content = 'noindex';
+    return () => {
+      if (existing) tag.content = previous;
+      else tag.remove();
+    };
+  }, []);
+}
+
 export function NotFound() {
   const shortcut = paletteShortcut();
   useDocumentTitle('Nothing at this address — Convexa');
+  useNoindex();
 
   return (
     <Box data-testid="not-found-page" sx={pageColumnSx}>
