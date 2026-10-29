@@ -261,4 +261,16 @@ describe('the theoretical mark is null where Black-Scholes cannot price the cont
       { c: atm('call', 0.27, 1), want: 0.11398980614766785 },
     ]);
   });
+
+  it('a spot or strike that is not a positive finite number gives no theoretical mark, through every caller', () => {
+    // Risk: bsPrice returns exactly 0 for a spot or strike of 0 or below, and NaN for a NaN one. The
+    // trade dialog's spot is 0 until the ticker's bundle loads, and its strike is Number(strike):
+    // a contract with no quote would market-fill at $0.00, labeled theoretical.
+    expectEveryCaller([
+      { c: { right: 'call', S: 0, K: 20, dte: 10, iv: 0.27 }, want: null },
+      { c: { right: 'call', S: Number.NaN, K: 20, dte: 10, iv: 0.27 }, want: null },
+      { c: { right: 'put', S: 20, K: 0, dte: 10, iv: 0.27 }, want: null },
+      { c: { right: 'put', S: 20, K: Number.NaN, dte: 10, iv: 0.27 }, want: null },
+    ]);
+  });
 });

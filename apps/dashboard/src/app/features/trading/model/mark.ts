@@ -57,6 +57,9 @@ export function bsPrice(
  * through to its next rung: a withheld null mark, or no market fill.
  *  - An IV that is null, not finite, zero or negative is no IV: bsPrice would return 0 for a zero IV
  *    and NaN for a NaN one, a number nobody quoted.
+ *  - A spot or strike that is not a positive finite number is unknown, for the same reason: bsPrice
+ *    would return 0 for one of 0 or below and NaN for a NaN one. The trade dialog's spot is 0 until
+ *    the ticker's bundle loads (`spot={m?.price ?? 0}`), and its strike is `Number(strike)`.
  *  - A contract in its last day (dte below 1) gets no model price. The route counts dte in whole UTC
  *    days, so it is 0 from the evening before expiry. bsPrice floors T at one day, but the feed
  *    solves a same-day IV from the hours actually left, and that IV over a whole day prices far
@@ -74,6 +77,7 @@ export function theoreticalMark(
   iv: number | null | undefined,
 ): number | null {
   if (iv == null || !Number.isFinite(iv) || iv <= 0) return null;
+  if (!Number.isFinite(S) || S <= 0 || !Number.isFinite(K) || K <= 0) return null;
   if (!Number.isFinite(dte) || dte < 1) return null;
   return bsPrice(right, S, K, dte, iv);
 }
@@ -142,8 +146,9 @@ export function computeMark(i: MarkInputs): MarkResult {
     }
   }
   // 4) Not live (cold/loading/quiet-but-open feed), or live with a quote but a missing greek →
-  //    the snapshot anchor. Live with no quote, on a contract theoreticalMark cannot price, lands
-  //    here too: its anchor is a null mark, withheld.
+  //    the snapshot anchor. Live with no quote, when theoreticalMark cannot price off the live
+  //    underlying, lands here too: the anchor's price off the snapshot's spot, or a null mark,
+  //    withheld.
   return { mark: anchor.mark, basis: anchor.basis, frozen: false };
 }
 
