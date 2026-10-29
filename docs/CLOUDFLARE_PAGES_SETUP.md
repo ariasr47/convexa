@@ -48,7 +48,7 @@ Prefer **`npm run build:dashboard`** over a raw `nx build @…/dashboard` string
 The repo already includes:
 
 - `functions/api/[[path]].ts` — proxies `/api/*` (SSE-safe, blocks `/api/_metrics`; adds nosniff / frame / HSTS on the proxy response)
-- `apps/dashboard/public/_redirects` — SPA fallback so `/scanner`, `/ticker/...` work
+- `tools/write-blog-heads.mjs` — run by `npm run build:dashboard` after the Nx build, it writes the routing into `apps/dashboard/dist`: a page per static route (`/scanner` is `scanner.html`), `_redirects` rewrites (200) for the dynamic paths such as `/ticker/...`, a top-level `404.html` (noindex) that every other path gets with status 404, and on live builds `sitemap.xml`. Nothing in `public/` routes any more; there is no `/*` SPA fallback.
 - `apps/dashboard/public/_headers` — CSP, HSTS, `X-Frame-Options: DENY`, nosniff (Cloudflare Pages static headers)
 
 ## Step 2 — Note your Pages URL
@@ -101,8 +101,9 @@ Useful for deploys without the dashboard after the project exists:
 npx wrangler login
 # one-time browser OAuth
 
-# Deploy a prebuilt dist (run build first)
-npx nx build @convexa/dashboard --configuration=production
+# Deploy a prebuilt dist (run build first). build:dashboard is the Nx build plus the routing
+# step; a bare `nx build` leaves dist with no _redirects, 404.html, route heads or sitemap.
+npm run build:dashboard
 npx wrangler pages deploy apps/dashboard/dist --project-name=convexa
 ```
 
@@ -127,7 +128,7 @@ Git-connected deploys (push to `main`) are usually enough; Wrangler is optional.
 | SPA loads, `/api/*` → 502 `API_ORIGIN is not configured` | Env var not set on **Production** environment, or not redeployed after add |
 | `/api/*` → 502 / connection errors | Wrong `API_ORIGIN`, Railway sleeping/down, or typo in URL |
 | Login works then immediately logged out | Cookie `Secure` over HTTP; use HTTPS Pages URL; check `AUTH_COOKIE_SECURE=true` on API |
-| Hard refresh deep link 404 | Missing `_redirects` SPA rule (should ship from `public/`) |
+| Hard refresh deep link 404 | The address is outside the route table the build serves (`STATIC_ROUTES` and `DYNAMIC_RULES` in `tools/write-blog-heads.mjs`), and every such address gets `404.html` with status 404 by design (since `e73eafb8`). Add the route there; `tools/build-dashboard.spec.mjs` fails when `app.tsx` has one the table does not serve. A trailing slash (`/research/`) may also 404: not yet checked on Pages. |
 | CORS errors in console | Railway `ALLOWED_ORIGINS` missing your Pages origin |
 
 ## What not to do

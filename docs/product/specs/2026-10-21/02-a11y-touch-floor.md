@@ -305,6 +305,8 @@ Titles:
 | `/settings` | Settings — Convexa |
 | `/methodology`, `/credits`, `/privacy`, `/terms`, `/blog`, `/blog/:post`, 404 | unchanged |
 
+_Status, 2026-10-29: `/methodology` did not stay unchanged. Its title is now 'Methodology — Convexa', where it was 'How Convexa works — methodology': the page sets it since `86af63fb` (site audit 2026-10-25, SEO-3, batch B3), and its served head carries it since `e73eafb8` (batch B5). Neither commit was released on this date. The row's other routes keep their titles._
+
 ## Design
 
 Tokens and components come from `DESIGN_SYSTEM.md` and `shared/ui`. Nothing on the Banned list is used. The SIMULATED chip stops being a green status chip. Every hover `<title>` on the insider dots keeps a tap and keyboard path through the twin (rule 20, `DESIGN_SYSTEM.md:177`), and chip text stays ≥11px.

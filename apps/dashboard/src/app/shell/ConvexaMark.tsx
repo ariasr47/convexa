@@ -30,7 +30,7 @@ interface Props {
 /** Shared letter treatment: Archivo Expanded 700 caps with slight positive tracking. */
 const LETTERS = {
   fontFamily: typographyTokens.displayFontFamily,
-  // The lockup wants full Expanded — the vendored Archivo variable file carries wdth 62–125%
+  // The lockup wants full Expanded — the vendored Archivo variable file carries wdth 100–125%
   // (styles.css @font-face), so 125% is a REAL width, never a faux transform stretch (§3.2;
   // §10-4 n/a — the axis ceiling IS 125%).
   fontStretch: '125%',

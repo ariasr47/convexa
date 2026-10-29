@@ -57,7 +57,9 @@ CI runs these without Massive.
 
 1. Scanner running → samples append on every slow-lane ok.  
 2. **Verify durable diary** (not just board scores):
-   - `GET /api/health` → `scanner.board.history_samples` > 0,  
+   - `GET /api/_metrics` on the Railway origin, with `Authorization: Bearer <METRICS_SECRET_TOKEN>`
+     (Pages answers 404; `scanner.board` left the public `/api/health` in `1658fb69`)
+     → `scanner_board.history_samples` > 0,  
      `history_backend` is `postgres` (prod) or `json` (local),  
      `history_top` lists symbols with counts (e.g. SPY).  
    - `GET /api/scan/SPY/history?limit=5` → `stored_count` > 0 **and** non-empty `samples`  

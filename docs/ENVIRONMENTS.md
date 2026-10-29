@@ -99,7 +99,7 @@ scanner slow-lane → structure samples (scan store)
 | score-lab | Can run fully offline once outcomes file exists |
 
 **Prod anomaly to fix before trusting research against prod:**  
-`history_samples > 0` on `/api/health` but `/api/scan/SPY/history` returns `samples: []`.  
+`scanner_board.history_samples > 0` on the token-gated `/api/_metrics` (on the public `/api/health` until `1658fb69`) but `/api/scan/SPY/history` returns `samples: []`.  
 Same `read_structure_history` path is used by `join-outcomes`. Investigate Postgres read errors / symbol keys before burning vendor quota.
 
 ## Rollout discipline (minimal)
