@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { CONVEXA_VERSION, FINAL_PAGES, canvasLayout } from './screens/final/index.mjs';
+import { CANVAS_NAME, CONVEXA_VERSION, FINAL_PAGES, canvasLayout } from './screens/final/index.mjs';
 // Canvas registry — which screens become artboards, at which widths, on which page.
 //
 // Since 2026-10-25 the canvas holds only the current, ruled design. Since 2026-10-28 it has 13 pages by app area
@@ -49,7 +49,9 @@ export function canvasJson({ stamp = null } = {}) {
 // the index `project/canvas.json` (format v3), so size is per file, not per page. The v2–v4 canvas
 // (artifact 82be651e, one self-contained 13.5 MB page) and the research canvas stay as history.
 export const CANVAS_URL = 'https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe';
-export const CANVAS_TITLE = 'Convexa Desk Redesign';
+// The name and the version the canvas shows ("Convexa Design v<version>"), so a version bump renames the canvas the
+// next time it is published: the index carries the title, and every publish sends the index.
+export const CANVAS_TITLE = `${CANVAS_NAME} v${CONVEXA_VERSION}`;
 // Written once when the index was first created on files; the type asks that it never change after.
 export const CREATED_ON_FILES = { v: 1, at: '2026-10-14T04:05:17Z' };
 

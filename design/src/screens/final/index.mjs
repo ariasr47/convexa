@@ -275,9 +275,13 @@ export function versionCardText(stamp = null) {
     : `Convexa ${CONVEXA_VERSION}\n\nThe version this canvas shows (the root package.json’s). The publish step adds the commit, the date and the release status.`;
 }
 
+/** The canvas's name ("Convexa Desk Redesign" until 2026-10-28). Its title adds the version the canvas shows
+ *  (canvas.config.mjs CANVAS_TITLE). */
+export const CANVAS_NAME = 'Convexa Design';
+
 const pageList = (pick) => PAGE_ROWS.filter(pick).map((pg) => `${pg.name} (${pg.blurb})`).join(' · ');
 const GUIDE_TEXT = [
-  `Convexa Desk Redesign: every screen of Convexa in its current, ruled design, on ${PAGE_ROWS.length} pages (organized by app area 2026-10-28).`,
+  `${CANVAS_NAME}: every screen of Convexa in its current, ruled design, on ${PAGE_ROWS.length} pages (organized by app area 2026-10-28).`,
   `Pages: the app in its navigation order, ${pageList((pg) => pg.nav)}; then the pages around it, ${pageList((pg) => pg.kind === 'built' && !pg.nav)}; then the planned work and the unruled prototypes, ${pageList((pg) => pg.kind === 'planned' || pg.kind === 'prototype')}; and ${pageList((pg) => pg.kind === 'log')}.`,
   'Each row is one screen, left to right: its spec card (purpose, where every number comes from, states, acceptance, what is built), then staging (the demo account, all sample), production where it differs, phone, light, and its states.',
   `Versions: each release of Convexa has a version, the root package.json’s (the first, 1.0.0, is the first push after 2026-10-28), and the version card states the version and commit this canvas shows. Each built row’s title and spec card name the version it first shipped in (“since Convexa 1.0.0”), and the Changelog page lists the design changes up to each version. To see the design as of any release, build design/ at its tag (a worktree at v${CONVEXA_VERSION}, then node design/src/build.mjs there).`,

@@ -953,3 +953,19 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
   measurement of all 254 Final boards changed 0.
 - **Checked:** build 0, and a second run byte-identical; verify-tokens 0. The sweep of the changed boards found 0
   overflow and 0 text under 11px. NUL 0, CR 0.
+
+## 2026-10-28 · The canvas is named Convexa Design, and its name carries the version
+
+- **Owner ask:** add the version number to the name "Convexa Desk Redesign", and is that the most apt name?
+- **What:** the canvas is now "Convexa Design v1.0.0": its name, "Convexa Design" (`CANVAS_NAME`,
+  `src/screens/final/index.mjs`), then "v" and the version it shows, the root package.json's (`CANVAS_TITLE`,
+  `src/canvas.config.mjs`), written as the app's footer writes it. The published index carries the title
+  (`emit-project.mjs`; the committed `canvas/canvas.json` has none), so a version bump renames the canvas the next
+  time it is published. The Start here guide opens with the new name. The URL is unchanged.
+- **Why the name changed:** "Desk" named one of its 13 pages, and "Redesign" the September project that started it.
+  Since 2026-10-25 the canvas holds only the current, ruled design of every screen, and since 2026-10-28 it is
+  versioned with the app, so it is Convexa's design rather than a redesign of the desk.
+- **Supersedes** the name "Convexa Desk Redesign" in the entries above, which keep it as written. The frozen v4
+  viewer (`canvas/convexa-desk-redesign.html`, made by `seed.sh`) keeps its name.
+- **Heights:** FChangelogEntries 2877 → 2945 at 32 entries. A second measurement changed 0.
+- **Checked:** build 0, and a second run byte-identical; verify-tokens 0. NUL 0, CR 0.
