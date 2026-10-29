@@ -52,6 +52,8 @@ import {
   StaleNote,
 } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
+import { STRESS_LEAD, STRESS_METRIC, STRESS_NOTE, STRESS_SUB } from './stressRead';
+import { STRESS_HEIGHT, StressSection } from './StressSection';
 import { MONO, PANEL_SX } from './ui';
 import { useWidth } from './useWidth';
 
@@ -180,6 +182,8 @@ function MarketsBody() {
 
           {(read.loading || (data && data.state !== 'off')) && (
             <JumpRail
+              // An API from before the gauge sends no `stress`: no section, so no link to it.
+              stress={!data || data.stress != null}
               liquidity={!data || data.liquidity !== undefined}
               comingUp={!data || data.calendar !== undefined}
             />
@@ -235,6 +239,14 @@ function MarketsBody() {
                   />
                 )}
               </MarketsSection>
+              {/* The fear–greed gauge (spec 2026-10-21/07). Absent (an API from before it): no
+                section, as Liquidity. The API sends `null` only with public data off, which the
+                page answers above. */}
+              {data.stress && (
+                <MarketsSection id="stress" title="Stress" lead={STRESS_LEAD}>
+                  <StressSection stress={data.stress} sources={data.sources} onRetry={read.retry} />
+                </MarketsSection>
+              )}
               {/* `null`: the sources failed with nothing cached. Absent (an API from before
                 liquidity existed): nothing to say, so nothing drawn. */}
               {data.liquidity !== undefined && (
@@ -262,10 +274,12 @@ function MarketsBody() {
 
           <ComingUpSection read={read} />
 
+          {/* The demo bar is the page's one "Demo · sample data" (owner decision D1), so the
+              staging line says "Sample data" (spec 2026-10-21/07, Copy › Page disclaimer). */}
           <Disclaimer>
             {dataMode === 'demo'
-              ? 'Demo · sample data shaped like the Federal Reserve’s, the Treasury’s, the CFTC’s, the BLS’s and the BEA’s files; nothing on this page is a real observation. Research and tools, not investment advice.'
-              : 'Rates: U.S. Department of the Treasury, Daily Treasury Par Yield Curve and Par Real Yield Curve Rates. Positioning: CFTC Commitments of Traders, Traders in Financial Futures. Liquidity: Federal Reserve H.4.1, Treasury Daily Treasury Statement and NY Fed reverse repo operations. Research and tools, not investment advice.'}
+              ? 'Sample data shaped like the Federal Reserve’s, the Treasury’s, the OFR’s, the CFTC’s, the BLS’s and the BEA’s files; nothing on this page is a real observation. Research and tools, not investment advice.'
+              : 'Rates: U.S. Department of the Treasury, Daily Treasury Par Yield Curve and Par Real Yield Curve Rates. Positioning: CFTC Commitments of Traders, Traders in Financial Futures. Liquidity: Federal Reserve H.4.1, Treasury Daily Treasury Statement and NY Fed reverse repo operations. Stress: Office of Financial Research, OFR Financial Stress Index, and CFTC Commitments of Traders (TFF); the percentiles and the gauge are Convexa’s arithmetic. Research and tools, not investment advice.'}
           </Disclaimer>
         </Box>
       </ResearchColumn>
@@ -279,14 +293,26 @@ const LIQUIDITY_LEAD =
 const JUMPS: { id: string; name: string }[] = [
   { id: 'rates', name: 'Rates' },
   { id: 'positioning', name: 'Positioning' },
+  { id: 'stress', name: 'Stress' },
   { id: 'liquidity', name: 'Liquidity' },
   { id: 'coming-up', name: 'Coming up' },
 ];
 
-/** "On this page": the page's four sections (design: planned-kit marketsHost jump rail). */
-function JumpRail({ liquidity, comingUp }: { liquidity: boolean; comingUp: boolean }) {
+/** "On this page": the page's five sections (design: planned-kit marketsHost jump rail). */
+function JumpRail({
+  stress,
+  liquidity,
+  comingUp,
+}: {
+  stress: boolean;
+  liquidity: boolean;
+  comingUp: boolean;
+}) {
   const shown = JUMPS.filter(
-    (j) => (j.id !== 'liquidity' || liquidity) && (j.id !== 'coming-up' || comingUp),
+    (j) =>
+      (j.id !== 'stress' || stress) &&
+      (j.id !== 'liquidity' || liquidity) &&
+      (j.id !== 'coming-up' || comingUp),
   );
   return (
     <Box
@@ -2035,6 +2061,20 @@ function MarketsLoading() {
           300,
         )}
         {frame('Positioning by trader group', '10-year T-note · weekly, three years', 280)}
+      </MarketsSection>
+      <MarketsSection id="stress" title="Stress" lead={STRESS_LEAD}>
+        {frame(
+          STRESS_METRIC,
+          STRESS_SUB,
+          STRESS_HEIGHT,
+          // The ready head and note at their usual length, held so the frame keeps its height.
+          {
+            finding:
+              'The fear–greed gauge reads Neutral (50): vol positioning pulls toward fear, equity stress toward greed',
+            tag: { state: 'computed', detail: 'as of Oct 19' },
+            note: STRESS_NOTE,
+          },
+        )}
       </MarketsSection>
       <MarketsSection id="liquidity" title="Liquidity" lead={LIQUIDITY_LEAD}>
         {frame(

@@ -14,8 +14,9 @@
  * - A state tag sits beside the title (Updated Oct 13, Computed, Demo · sample data…).
  * - The foot carries the source chip, in the frame's provenance, and the as-of line.
  * - "Show the numbers" opens the table twin: the same values as text, for every chart. A chart may
- *   give several tables under the one disclosure, and a cell may link out (TableTwinLink). The
- *   tables are built only while it is open, so a closed twin carries no rows.
+ *   give several tables under the one disclosure, and a cell may link out (TableTwinLink) or be a
+ *   word rather than a figure (TableTwinText, Sans). The tables are built only while it is open, so
+ *   a closed twin carries no rows.
  * - In loading and message states the body keeps the chart's final height (no layout shift); a
  *   message sits on a faint ghost grid, a failure marked in the warning colour, never green or red.
  *   Loading draws the same ghost grid (the board's `.cskel`) and keeps the frame's rows, so the frame
@@ -78,13 +79,25 @@ export interface TableTwinLink {
   label: string;
 }
 
-/** A figure (a string or number, Mono) or a link cell. */
-export type TableTwinCell = string | number | TableTwinLink;
+/**
+ * A twin cell in the body Sans, not a figure (spec 2026-10-21/07, Copy › Table twin): a word ("fear",
+ * "yes", a band name, a source) or a member of the closed not-a-number set ("—", "unavailable"),
+ * which never renders in the figure register (canon rules 23 and 24). It has no `href`, which is how
+ * the renderer tells it from a link cell.
+ */
+export interface TableTwinText {
+  text: string;
+  href?: undefined;
+}
+
+/** A figure (a string or number, Mono), a link cell or a text cell (Sans). */
+export type TableTwinCell = string | number | TableTwinLink | TableTwinText;
 
 export interface TableTwinData {
   caption: string;
   cols: string[];
-  /** The first cell of each row is its header (a date, a maturity); the rest are figures. */
+  /** The first cell of each row is its header (a date, a maturity); the rest are figures, unless a
+   *  cell says otherwise (a link or a text cell). */
   rows: TableTwinCell[][];
 }
 
@@ -670,6 +683,11 @@ function TwinTable({ caption, cols, rows }: TableTwinData) {
           '& th:first-of-type, & td:first-of-type': { textAlign: 'left' },
           '& thead th': { fontWeight: 600, color: 'text.secondary', bgcolor: extrasFor(t).well },
           '& td': { fontFamily: MONO, fontVariantNumeric: 'tabular-nums' },
+          // A text cell is a word, not a figure: the body Sans (rules 23 and 24).
+          '& td[data-cell="text"]': {
+            fontFamily: t.typography.fontFamily,
+            fontVariantNumeric: 'normal',
+          },
           '& tbody th': { fontWeight: 500, color: 'text.primary' },
         })}
       >
@@ -692,7 +710,9 @@ function TwinTable({ caption, cols, rows }: TableTwinData) {
                     {cellContent(c)}
                   </th>
                 ) : (
-                  <td key={j}>{cellContent(c)}</td>
+                  <td key={j} data-cell={typeof c === 'object' && !c.href ? 'text' : undefined}>
+                    {cellContent(c)}
+                  </td>
                 ),
               )}
             </tr>

@@ -5,6 +5,7 @@ export {
   type TableTwinCell,
   type TableTwinData,
   type TableTwinLink,
+  type TableTwinText,
 } from './ChartFrame';
 export { frameTitle, type ChartStatus } from './frameTitle';
 export { chartRoles, type ChartRoles } from './roles';
