@@ -1014,3 +1014,27 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
   measurement changed 0.
 - **Checked:** build 0, and a second run byte-identical, after each commit; verify-tokens 0; every board a build
   changed was measured, with 0 overflow and 0 text under 11px. NUL 0, CR 0.
+
+## 2026-10-29 · Spec cards read a placeholder as written
+
+- **What** (`8d5e0771`): ten strings on eight spec cards lost a placeholder such as `research/<TICKER>/*.md`, which
+  the browser read as an element and dropped, on the site page and the canvas board alike. The card now escapes a `<`
+  that would open a tag in every string it shows (`specText`, `spec.mjs`), so they read as written:
+  `research/<TICKER>/` (five strings, on Research tab · note, Research · Notes, Research · Scorecard and Planned ·
+  Figures against the filing) and `research/<T>/` (Ticker desk and the note) had read `research//`; Scanner's "Open
+  the `<symbol>` desk" read "Open the desk"; Positions' "Sample mark · `<scenario time>`" read "Sample mark · "; and
+  Data sources and credits' `/credits#<source>` read `/credits#`.
+- **How:** only a `<` before a letter, `/`, `!` or `?` is escaped; any other `<` and every `&` pass as written, so
+  entry 34's escapes by hand (the Blog and operator cards' `&lt;`) and Markets' `&amp;` read as before, and no card
+  string holds markup to lose (3,698 strings on 42 cards). The board map and the tracker show card text through the
+  same function instead of stripping anything tag-shaped; their boards are unchanged. Entry 34's `8ce65322` is
+  `c8a7fcb7` on `main` (the same patch).
+- **Why:** the card writes its strings into the page as HTML. Entry 34 escaped the Blog and operator cards by hand,
+  and eight more had the same bug. A scan of every string in `design/src`, and of every element the parser builds from
+  `design/site` and `design/canvas`, found these ten and nothing else read as markup.
+- **Heights:** FScannerSpec 3020 → 3041, FPositionsSpec 2417 → 2437; the other six cards keep theirs.
+  FChangelogEntries 3123 → 3212 at 35 entries; a second measurement changed 0.
+- **Checked:** build 0, and a second run byte-identical, after each commit; verify-tokens 0; each rebuilt file differs
+  from its committed copy only by the ten escapes and the two heights; Chromium reads all 14 placeholder strings as
+  written on both renders (28 of 28; 20 missing before); the eight cards measured with 0 overflow and 0 text under
+  11px. NUL 0, CR 0.
