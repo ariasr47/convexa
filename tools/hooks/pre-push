@@ -1,7 +1,7 @@
 #!/bin/sh
 # Pre-push: Nx lint and typecheck for the projects affected since the merge base with origin/main.
 # Install once per clone: git config core.hooksPath tools/hooks. Skip once: git push --no-verify.
-# The fuller local check (adds the affected tests) is `npm run verify`; CI runs everything on dispatch.
+# The fuller local check (adds the affected tests) is `npm run verify`; CI is off (CLAUDE.md, CI mode).
 # Release version first (CLAUDE.md "Versions"): a push to main is a release, and staging is
 # fast-forwarded to main, so neither may deploy new code under a version that is already out. Git
 # writes one line per ref on stdin: <local ref> <local sha> <remote ref> <remote sha>. A push of
