@@ -969,3 +969,16 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
   viewer (`canvas/convexa-desk-redesign.html`, made by `seed.sh`) keeps its name.
 - **Heights:** FChangelogEntries 2877 → 2945 at 32 entries. A second measurement changed 0.
 - **Checked:** build 0, and a second run byte-identical; verify-tokens 0. NUL 0, CR 0.
+
+## 2026-10-29 · The Privacy boards list the demo's fifth key, and the page's new date
+
+- **What:** the Privacy page now lists the demo's fifth key of its own, `convexa.demo.alerts.seed.v`: which version
+  of the sample alerts a browser was given (`DEMO_ALERTS_SEED_VERSION_KEY`, `libs/api/src/lib/demo/alerts.ts:114`,
+  written by `initializeDemoWorkspace`). It says "It adds five of its own" and reads "Last updated Oct 29, 2026"
+  (`PrivacyPage.tsx`). The Privacy boards follow: the staging board's sentence and key table, and the date on all
+  four.
+- **Why:** the key arrived on 2026-10-15 (`7cc8d4d0`), twelve minutes after the page last changed, and the page's
+  list never caught up. Found while re-checking the repo atlas on 2026-10-29.
+- **Heights:** FPrivacyStaging 2382 → 2467. FChangelogEntries 2945 → 3034 at 33 entries; a second measurement changed 0.
+- **Checked:** build 0, and a second run byte-identical; verify-tokens 0; the five Privacy boards measured with 0
+  overflow and 0 text under 11px. NUL 0, CR 0.

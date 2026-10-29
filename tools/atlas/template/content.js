@@ -1921,7 +1921,7 @@ const SEC = [
   [
     'process',
     'Privacy',
-    'No analytics, no error reporting, no service worker. Every key the live site stores is listed on the Privacy page. The demo never talks to a server.',
+    'No analytics, no error reporting, no service worker. Every key either site stores is listed on the Privacy page. The demo never talks to a server.',
   ],
   [
     'source',

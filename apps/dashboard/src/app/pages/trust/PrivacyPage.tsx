@@ -5,8 +5,9 @@
  * Every claim is read from the code (checked 2026-10-14), not from a template:
  * - storage keys: the shipped stores (localPrefs, firstPaintTheme, positions/store, orders/store,
  *   alerts/store, personas/store, recentTickers/store); `positions.v2` and `ghost-trade.v1` are only
- *   read, as migration sources, so they aren't listed. The demo adds four keys of its own
- *   (libs/api/src/lib/demo/transport.ts writeStored).
+ *   read, as migration sources, so they aren't listed. The demo adds five keys of its own (re-checked
+ *   2026-10-29): three from libs/api/src/lib/demo/transport.ts writeStored, and the set-up marker
+ *   and the sample alerts' version from workspace.ts initializeDemoWorkspace.
  * - the account: apps/api/src/services/auth/store.rs; sessions 7 days idle, 30 at most (service.rs,
  *   no override set on production). Google sign-in isn't configured on this site, so it isn't named.
  * - third parties: CSP connect-src 'self' plus TradingView's script and frames (public/_headers);
@@ -29,7 +30,7 @@ import { DocBox, DocPage, DocTable, H2, Lead, linkSx, Para } from './DocPage';
  *  answer of 2026-10-15, question 3). null: the page says to ask the site's owner. */
 export const PRIVACY_CONTACT: string | null = 'https://github.com/ariasr47';
 
-export const PRIVACY_UPDATED = 'Last updated Oct 15, 2026';
+export const PRIVACY_UPDATED = 'Last updated Oct 29, 2026';
 
 const TOC = [
   ['short', 'The short version'],
@@ -86,6 +87,7 @@ const DEMO_KEYS: [string, string][] = [
   ['convexa.demo.scan.view.v1', 'The demo scanner’s saved view.'],
   ['convexa.demo.book.v1', 'The demo book’s fills and marks.'],
   ['convexa.demo.workspace.initialized.v1', 'That the sample book has been set up.'],
+  ['convexa.demo.alerts.seed.v', 'Which version of the sample alerts this browser was given.'],
 ];
 
 const SERVER_ROWS: [string, string][] = [
@@ -186,8 +188,9 @@ export function PrivacyPage() {
           <Para>
             The demo keeps the same things the live site keeps, each under the{' '}
             <strong>convexa.demo.v1.</strong> prefix, so it never touches a live site’s data in the
-            same browser. It adds four of its own: the demo account’s settings, its scanner view,
-            its book’s fills, and a marker that says the sample book has been set up.
+            same browser. It adds five of its own: the demo account’s settings, its scanner view,
+            its book’s fills, a marker that says the sample book has been set up, and which version
+            of the sample alerts this browser was given.
           </Para>
           <DocTable
             monoFirst
