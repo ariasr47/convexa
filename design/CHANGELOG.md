@@ -936,3 +936,20 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
   HEAD, the footer line among them); their screenshots are byte-identical to HEAD's at 16px and 20px default fonts,
   animations stopped. On the journal boards pixels differ only on the changed lines, and on the Settings spec card
   below its longer bulk state. The two counts render in IBM Plex Mono (IBM Plex Sans at HEAD). NUL 0, CR 0.
+
+## 2026-10-28 · The Shell spec card names the footer's version, and its seven links
+
+- **What:** the Global shell row's spec card now says what the footer's copyright has carried since `8edf043d`. A new
+  built line reads “The copyright names Convexa’s version …”, and the footer's acceptance line ends “… the disclaimer
+  and the copyright, which names Convexa’s version.”
+- **Seven links:** that acceptance line said the footer has “five links (Settings among them)”. It has seven:
+  research, methodology, blog, Settings, credits, privacy and terms (`Footer.tsx:91-147`), as the card's own built
+  line and the States board's footer cell say.
+- **Supersedes** in “The boards' footer shows Convexa's version, as the app's does”: “The Shell spec card's footer
+  lines … don't quote the line, so the card is unchanged.” Nothing above is edited.
+- **Counts:** the board map reads 228 of 287 items shipped (was 227 of 286) and Shell & foundations 24/25; the tracker's
+  In progress group reads 18/19.
+- **Heights:** FShellSpec 3783 → 3893 (one more built line). FChangelogEntries 2808 → 2877 at 31 entries. A second
+  measurement of all 254 Final boards changed 0.
+- **Checked:** build 0, and a second run byte-identical; verify-tokens 0. The sweep of the changed boards found 0
+  overflow and 0 text under 11px. NUL 0, CR 0.

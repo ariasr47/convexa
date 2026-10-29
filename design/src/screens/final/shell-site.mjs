@@ -49,7 +49,7 @@ export const ROWS = [
         'Production: opening ⌘K sends no request to /api/scan (network panel); tickers list A–Z with “Scores aren’t live on this site, so tickers list A–Z.”',
         '⌘K opens with ⌘K / Ctrl+K anywhere, traps focus, closes on Esc and returns focus to where it was.',
         'The skip link is the first tab stop on every page and moves focus to main.',
-        'The footer appears under every in-shell page with five links (Settings among them), the disclaimer and the copyright.',
+        'The footer appears under every in-shell page with seven links (Settings among them), the disclaimer and the copyright, which names Convexa’s version.',
         'If /api/health fails, the bar says “Couldn’t check what’s live right now.” and nothing claims everything is live.',
       ],
       built: [
@@ -71,6 +71,7 @@ export const ROWS = [
         { status: 'shipped', ask: 'Q-GITHUB-HREF', what: 'Spec 01 step 4, the GitHub link (2026-10-25, 1ded978b; owner S1-Q3: the repository): the staging footer’s author line ends “· GitHub ↗”, which opens https://github.com/ariasr47/convexa in a new tab (rel noopener noreferrer, the ↗ mark, as the Privacy page’s external link); both author-line links are 44px tall under a coarse pointer. Production has no author line (Footer.tsx).' },
         { status: 'shipped', what: 'Fidelity rounds (2026-10-25): nav, both bars, footer and drawer on the page column, the demo bar included (owner NO-2 B, superseding the 1240 column above; 1e30ff95); the palette 620 wide and 132px down on the raised surface (SITE-03b, 9fb036e8); ⌘K Go to in the nav’s order, Research third (owner NO-11 A, 51b0ae57); the selected row on raised2 in dark and on the panel in light, where raised2 under steel measured 4.20:1 (SITE-03b, 46972f63); signed-out “Log in” as the board’s nav sign-in, 13.5px / 600 and 44 tall, so the search box lands on the board’s (SITE-09, c81c0a29).' },
         { status: 'shipped', what: 'Fidelity round 3 (2026-10-25): “Full demo ↗” takes the board’s 10px sides, so the search box lands on the board’s x at 1280, 1440 and 1920 (16db4522). The footer keeps the canon’s 20px arc seam (owner, after round 2), and the Final boards now draw it, with the copyright on production too: the footer is 196 tall on staging and 170 on production at 1440, in the app and on the boards (Footer.tsx, ArcDivider.tsx; design lib.mjs finalFooter).' },
+        { status: 'shipped', what: 'The copyright names Convexa’s version (2026-10-28, 8edf043d): “v” and the root package.json’s version follow “Convexa”, the number in Mono, fixed when the app is built (__CONVEXA_VERSION__, shared/lib/version.ts); a screen reader hears “version” and the number, and a copy reads as drawn. The boards draw the same line from the same file (design lib.mjs FINAL_COPYRIGHT, 1cd2e3ae) (Footer.tsx).' },
       ],
       rulings: ['P-1', 'P-2', 'P-6', 'P-13', 'Env 2026-10-14', 'Amber spent'],
       code: [`${APP}shell/AppShell.tsx`, `${APP}shell/MarketDataNotice.tsx`, `${APP}shell/TopNav.tsx`, `${APP}shell/Footer.tsx`, `${APP}shell/CommandPalette/`, `${APP}features/auth/AccountControl.tsx`, `${APP}shared/dataState/marketData.ts`, `${APP}shared/lib/demoSite.ts`, 'libs/api/src/lib/demo/workspace.ts (resetDemoWorkspace)'],
