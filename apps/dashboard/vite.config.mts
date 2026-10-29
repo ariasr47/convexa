@@ -17,18 +17,25 @@ const analyze = process.env.ANALYZE === '1' || process.env.ANALYZE === 'true';
 const SEMVER =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
 
+/** The root package.json: its "version" is Convexa's one product version (e20082aa). */
+const ROOT_PACKAGE_JSON = path.resolve(import.meta.dirname, '../../package.json');
+
 /**
  * Convexa's one product version: the root package.json "version" (e20082aa), not this app's own
  * workspace version. `define` hands it to the app as `__CONVEXA_VERSION__` (declared in
  * src/app/shared/lib/version.ts): inlined in the build, and a global that the dev server's client
  * and Vitest set before any app module runs. The footer shows it. That field is a build and test
- * input (apps/dashboard/package.json), so a version bump misses their Nx cache.
+ * input (apps/dashboard/package.json), so a version bump misses their Nx cache, and a running dev
+ * server restarts when the file changes (the convexa-version-restart plugin below).
  */
 function readConvexaVersion(): string {
-  const file = path.resolve(import.meta.dirname, '../../package.json');
-  const { version } = JSON.parse(readFileSync(file, 'utf8')) as { version?: unknown };
+  const { version } = JSON.parse(readFileSync(ROOT_PACKAGE_JSON, 'utf8')) as {
+    version?: unknown;
+  };
   if (typeof version !== 'string' || !SEMVER.test(version)) {
-    throw new Error(`Invalid version ${JSON.stringify(version)} in ${file}; expected SemVer`);
+    throw new Error(
+      `Invalid version ${JSON.stringify(version)} in ${ROOT_PACKAGE_JSON}; expected SemVer`,
+    );
   }
   return version;
 }
@@ -137,6 +144,28 @@ export default defineConfig(({ mode }) => {
               injectTo: 'head' as const,
             }));
         },
+      },
+    },
+    {
+      // readConvexaVersion() runs when this config loads. Vite restarts a dev server when this file,
+      // a module it imports or an .env file changes; the root package.json is read, not imported,
+      // so a running dev server kept the old version after a bump: still 1.0.0 with the file at
+      // 1.0.1 (review of 8edf043d). Watch the file and restart on any change to it; the restart
+      // loads this config again and the open page reloads. A version that isn't SemVer fails the
+      // restart, and the server keeps the old one. Builds and Vitest load the config afresh each
+      // run, and under Vitest (a "serve" too) the plugin stays off.
+      name: 'convexa-version-restart',
+      apply: (_config, { command }) => command === 'serve' && !process.env.VITEST,
+      configureServer(server) {
+        server.watcher.add(ROOT_PACKAGE_JSON);
+        server.watcher.on('change', (file) => {
+          if (path.resolve(file) !== ROOT_PACKAGE_JSON) return;
+          const { logger } = server.config;
+          logger.info(`${path.relative(process.cwd(), file)} changed, restarting server...`, {
+            timestamp: true,
+          });
+          server.restart().catch((error: unknown) => logger.error(String(error)));
+        });
       },
     },
   ];
