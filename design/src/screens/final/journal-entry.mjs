@@ -60,7 +60,9 @@ function snapshotPanel(env, sid, { call = false } = {}) {
     row('Account value', usd(s.accountValue)),
     row('Cash', usd(s.cash)),
     row(corr ? corr.label : 'Margin loan', usd(s.marginLoan, { dp: 2 }), { extra: corr ? `<p class="jr-en-corr">${icon('edit', 12)}<span>${figs(STRINGS.correction)}</span></p>` : '' }),
-    s.maint == null ? row('Maintenance requirement', 'not recorded', { gap: true }) : row('Maintenance requirement', usd(s.maint)),
+    // A field he cleared reads `not recorded` like one never typed; a board note says which (Oct 2: spec 08,
+    // Corrections, item 19).
+    s.maint == null ? row('Maintenance requirement', 'not recorded', { gap: true, extra: s.cleared?.includes('maint') ? boardNote(STRINGS.maintCleared) : '' }) : row('Maintenance requirement', usd(s.maint)),
     row('Buying power', 'not recorded', { gap: true }),
     ...(call ? [row('Call amount', usd(CALL.amount)), row('Due by', fmtDateTime(CALL.dueBy))] : []),
   ];
@@ -237,6 +239,7 @@ const EN_CSS = `
   .jr-en-row .v.mono { font-size: 14px; font-variant-numeric: tabular-nums; }
   .jr-en-row .v .jr-gap { font-size: 13.5px; }
   .jr-en-corr { flex: 1 1 100%; display: flex; align-items: flex-start; gap: 6px; margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--phosphor); }
+  .jr-en-row > .jr-en-bn { flex: 1 1 100%; }
   .jr-en-corr .ico { flex: none; margin-top: 3px; color: var(--steel); }
   .jr-en-pos { width: 100%; border-collapse: collapse; font-size: 13px; }
   .jr-en-pos caption { caption-side: top; padding: 4px 0 6px; text-align: left; font-size: 13px; font-weight: 600; color: var(--phosphor); }
@@ -379,7 +382,7 @@ export const ROW = {
     B('staging', 'Staging · the Sep 29 call', 1440, 2478, (o) => callBoard(o)),
     B('recalled', 'Staging · recalled entry', 1440, 1372, (o) => recalledBoard(o)),
     B('phone', 'Phone · staging', 390, 3100, (o) => callPhone(o)),
-    B('light', 'Light · staging', 1440, 1963, (o) => trimBoard(o), LIGHT),
+    B('light', 'Light · staging', 1440, 2089, (o) => trimBoard(o), LIGHT),
     B('states', 'States', 1440, 3319, (o) => states(o)),
   ],
 };

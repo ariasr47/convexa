@@ -122,6 +122,10 @@ const OV_CSS = `
   .jr-ov-cap { padding: 0 16px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
   .jr-ov-cap b { font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 16px; }
   .jr-ov-cap span { font-size: 12px; color: var(--steel); }
+  /* A board note under a sheet's caption (P-4: board only, never product UI), as the Entry row draws one in a panel. */
+  .jr-ov-bn { display: flex; align-items: flex-start; gap: 6px; margin: 0 16px; padding: 6px 10px; border: 1px dashed var(--line-2); border-radius: 8px; background: var(--ink-2); font: 500 12px/1.5 'IBM Plex Mono', monospace; color: var(--steel); }
+  .jr-ov-bn .ico { flex: none; margin-top: 2px; }
+  .jr-ov-bn b { font-weight: 600; color: var(--phosphor); }
   .jr-ov-clamp .jr-peek .t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .jr-ov-sheet .jr-sheet-b { gap: 14px; }
 
@@ -320,9 +324,13 @@ function sheetsBody({ scheme = 'dark', minHeight = 0 } = {}) {
     ['Filters', 'Journal › Filters',
       `<div class="jr-ov-sheet">${jrSheet({ title: 'Filters', tag, body: `${fld('Search', '<span class="jr-gap" style="font-weight: 400;">Search your entries</span>', { mono: false })}<div><span class="jr-ov-l">Kind</span>${jrChips(KINDS, null)}</div><div><span class="jr-ov-l">Ticker</span>${jrChips(['NVDA', 'MSFT', 'TSLA', 'QQQ', 'SPY'], null, { label: 'Ticker' })}</div>${['Written from memory', 'Kept out of AI reads', 'Has later notes'].map((t) => `<label class="jr-ov-row"><span>${t}</span>${sw(false, t)}</label>`).join('')}`, actions: [touch('Done')] })}</div>`],
     ['Update numbers', 'New entry › Numbers: carried · Update',
-      `<div class="jr-ov-sheet">${jrSheet({ title: 'Update numbers', sub: `Carried from ${fmtDate(s30.asOf)} · ${daysBetween(s30.asOf, s02.asOf)} days old`, tag, body: `<div>${jrSeg(['Broker screen', 'Statement', 'Memory'], 'Broker screen', { size: 32, label: 'Source' })}</div>${numField('Account value', s02.accountValue, s30.accountValue)}${numField('Cash', s02.cash, s30.cash)}${numField('Margin loan', s02.marginLoan, s30.marginLoan)}${numField('Maintenance requirement', s02.maint, s30.maint)}${numField('Buying power', null, null)}<div>${jrBtn('+ Margin call', { kind: 'link' })}</div>`, actions: [touch('Done')] })}</div>`],
+      `<div class="jr-ov-sheet">${jrSheet({ title: 'Update numbers', sub: `Carried from ${fmtDate(s30.asOf)} · ${daysBetween(s30.asOf, s02.asOf)} days old`, tag, body: `<div>${jrSeg(['Broker screen', 'Statement', 'Memory'], 'Broker screen', { size: 32, label: 'Source' })}</div>${numField('Account value', s02.accountValue, s30.accountValue)}${numField('Cash', s02.cash, s30.cash)}${numField('Margin loan', s02.marginLoan, s30.marginLoan)}${numField('Maintenance requirement', s02.maint, s30.maint)}${numField('Buying power', null, null)}<div>${jrBtn('+ Margin call', { kind: 'link' })}</div>`, actions: [touch('Done')] })}</div>`,
+      // Oct 2's maintenance requirement reads `not recorded` under "was … on Sep 30" because he cleared it (spec 08,
+      // Corrections, item 19); the board note under the caption says so.
+      s02.cleared?.includes('maint') ? STRINGS.maintCleared : ''],
   ];
-  const html = `${finalDemoNotice({ phone: true })}<header class="jr-ov-shh"><h1 class="display">Bottom sheets</h1><p>Below 600px every journal overlay is a bottom sheet: a grab handle, a peek row, the body, and its actions stacked at 44px. It opens in 320 ms; Escape closes it and returns focus to its opener.</p></header>${sheets.map(([t, from, sheet]) => `<section class="jr-ov-ss" aria-label="${t}"><div class="jr-ov-cap"><b>${t}</b><span>${from}</span></div>${jrSheetStage(sheet)}</section>`).join('')}`;
+  const note = (html) => (html ? `<p class="jr-ov-bn" role="note">${icon('info', 12)}<span><b>Board</b> ${html}</span></p>` : '');
+  const html = `${finalDemoNotice({ phone: true })}<header class="jr-ov-shh"><h1 class="display">Bottom sheets</h1><p>Below 600px every journal overlay is a bottom sheet: a grab handle, a peek row, the body, and its actions stacked at 44px. It opens in 320 ms; Escape closes it and returns focus to its opener.</p></header>${sheets.map(([t, from, sheet, bn]) => `<section class="jr-ov-ss" aria-label="${t}"><div class="jr-ov-cap"><b>${t}</b><span>${from}</span></div>${note(bn)}${jrSheetStage(sheet)}</section>`).join('')}`;
   return jrNote(scheme, JR_NOTES.staging) + jrSurface({ scheme, minHeight, gap: 28, html });
 }
 
@@ -416,7 +424,7 @@ export const ROW = {
     B('whats-sent', 'What’s sent drawer · staging', 1440, VIEW.whatsSent + 20, whatsSentBoard),
     B('edit-positions', 'Edit positions dialog · staging', 1440, VIEW.positions + 20, positionsBoard),
     B('path', 'Account path drawer · staging', 1440, VIEW.path + 20, pathBoard),
-    B('phone', 'Phone · bottom sheets', 390, 6721, sheetsBody),
+    B('phone', 'Phone · bottom sheets', 390, 6851, sheetsBody),
     B('states', 'States', 1440, 2161, statesBody),
   ],
 };

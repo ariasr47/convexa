@@ -64,7 +64,8 @@ const readOnSave = () => sec(`${switchRow('Read each entry right after I save it
 /** The caps, his figures, and "This month" summed from the runs (computed). `capped`: the cap line in its place. */
 const caps = ({ capped = false } = {}) => sec(`<div class="jr-st-two">${fieldBox('Monthly cost cap for the journal', AI.caps.month, { mono: true })}${fieldBox('Limit per run', AI.caps.run, { mono: true })}</div>${capped ? jrStrip('info', `<span>${figs(W.capLine)}</span>`) : `<p class="jr-st-month"><span>${figs(AI.month)}</span>${jrTag('computed')}</p>`}`);
 /** The bulk read of older entries (slice 5): the egress sentence above "Read them now", with the count and the
- *  estimate in Mono, from the sample's own line ("34 entries haven’t been read. Read them now · ≈ $0.18"). */
+ *  estimate in Mono, from the sample's own line ("32 entries haven’t been read. Read them now · ≈ $0.17": every
+ *  entry but the 2 kept out, spec 08, Corrections, item 18). */
 const BULK = AI.bulk.text.split(' Read them now · ');
 if (BULK.length !== 2) throw new Error('journal-settings: the bulk read line drifted from “… Read them now · ≈ …”');
 const bulkRead = () => sec(`<p class="jr-st-eg sm">${W.bulk}</p><div class="jr-st-bulk"><span>${figs(BULK[0])}</span>${jrBtn('Read them now')}<span class="jr-st-est">${figs(BULK[1])}</span></div>`);

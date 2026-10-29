@@ -856,3 +856,43 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
   differ only in antialiasing once aligned (largest channel difference 40 of 255). The sweep of the 145 changed boards
   found 0 overflow, 0 text under 11px and no change at a 20px default font; its 49 clipped and 27 split reports are
   HEAD's, board for board. NUL 0, CR 0.
+
+## 2026-10-28 · Spec 08's What's sent counts and Oct 2's maintenance requirement, settled
+
+- **What:** spec 08's Corrections items 18 and 19 (`docs/product/specs/2026-10-26/08-trade-journal.md`) settle the two
+  contradictions the step-0 review left on the boards (“Declined in review” under “Spec 08, step 0”), and the boards
+  follow them. Both were answered under the owner's standing instruction for the trade journal: take every
+  recommendation.
+- **What's sent (item 18):** the 2 entries he kept out are two older entries the spec doesn't describe, so What's sent
+  counts 8 new texts, “Short summaries of older entries: 24” (was 26) and the 2 kept out: 8 + 24 + 2 = 34. The sample
+  marks u02 and u03 `aiExcluded`, and its new `SENT` counts each line from the entries and the review's window, so no
+  board types them. Neither is among the 8 new, which hold the call, the money, both trims, both plans and four
+  snapshots, so “AI figures leave out 2 entries you kept out” and every Review board are unchanged.
+- **The bulk read offer** counts every entry not kept out: “32 entries haven’t been read. Read them now · ≈ $0.17” (was
+  34 and ≈ $0.18), and its egress sentence sends “the full text of 32 entries”. `bulkEstimate` sums it as the spec's
+  cost model does: one cold read at $0.0198 and the rest warm at $0.0106, halved at batch price. For 34 entries it
+  gives the spec's ≈ $0.37, $0.18 and $0.34.
+- **Oct 2's maintenance requirement (item 19):** he cleared it, because Sep 30's $34,900 was set before the Oct 2 trim.
+  So it reads `not recorded`, and so does excess liquidity, as the worked example prints; Oct 6 has nothing to carry.
+  Carried, it would read −$297 on Oct 2 and −$3,291 on Oct 6. No figure changes. The sample records the cleared field
+  (`cleared: ['maint']` on `s-oct02`), and one P-4 board note, `STRINGS.maintCleared`, says why wherever the field is
+  drawn: Compose · Staging and Light under the snapshot's fields, Entry · Light under the Maintenance requirement row,
+  and Drawers and sheets · Phone under the Update numbers sheet's caption.
+- **Which boards:** 20 journal boards and their 20 site pages. Content: What's sent (the drawer, the phone sheet, and
+  the AI off and after-a-run states), Settings · Phone and the Settings spec card, Compose · Staging and Light, and
+  Entry · Light. The other 12 compose, entry and overlays boards change only in their row's CSS (the board-note class).
+- **Heights:** FJournalComposeStaging and FJournalComposeLight 1592 → 1726, FJournalEntryLight 1963 → 2089 and
+  FJournalOverlaysPhone 6721 → 6851 (the rows' declared heights follow), FChangelogEntries 2631 → 2719 at 29 entries.
+  A second measurement of all 254 Final boards changed 0.
+- **Checked:** `node design/src/build.mjs` 0, and a second run is byte-identical (625 files); verify-tokens 0;
+  `tmp/journal-boards/check-sample.mjs` 0 (371 of 371, 19 more than before: the kept-out pair, the What's sent and
+  bulk counts, the cleared field and its note). Six mutants of the sample fail it: a kept-out entry moved into the
+  window; none kept out; Oct 2's cleared mark dropped; a cleared mark added on Sep 30; and Oct 2 given Sep 30's value,
+  with the mark or without it (the two without a mark stop at the sample's own error). The worked example, recomputed
+  with exact fractions under both readings of Oct 2, differs only in Oct 2's and Oct 6's excess liquidity, and two
+  mutated tables fail that script. The sweep of the 20 changed journal boards 0 (0 overflow, 0 text under 11px, no
+  change at a 20px default font); its 6 "clipped" reports are HEAD's, board for board and by the same number of
+  pixels: a board note above a page held at the frame's height. NUL 0, CR 0.
+- **Left as found:** item 17's “Carried from {date}” on the entry page is drawn on no Entry board. Oct 2's cash, which
+  step 3 carries, reads $0 with no such line: the sample records no figure's provenance but Oct 2's cleared field, and
+  the spec doesn't say where the cash was last typed.

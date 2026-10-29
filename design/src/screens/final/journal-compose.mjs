@@ -152,9 +152,12 @@ function computedBox(s, prev) {
 /** "Account snapshot" (Stored here): staging dashed with its one "Sample journal" chip; production solid. */
 const snapshotFrame = (env, body) => jrFrame({ env, title: 'Account snapshot', tag: jrTag('stored'), body, foot: W.snapFoot, label: 'Account snapshot' });
 
+/** A board note inside a panel (P-4: board only, never product UI), as the Entry row draws one. */
+const boardNote = (html) => `<p class="jr-cp-bn" role="note">${icon('info', 12)}<span><b>Board</b> ${html}</span></p>`;
 /** The normal day's snapshot column: carried from Sep 30, Update open, the fields with their previous values, source,
- *  positions and the Computed box. Account value and margin loan are retyped; the maintenance requirement reads
- *  `not recorded`, as the sample's Oct 2 snapshot records it. */
+ *  positions and the Computed box. Account value and margin loan are retyped; he cleared the maintenance
+ *  requirement, so it reads `not recorded` under its "was" line, and a board note under the fields says why (spec 08,
+ *  Corrections, item 19). */
 function daySnapshot(env) {
   const fields = `<div class="jr-cp-fields">${[
     field({ label: 'Account value', value: bare(DAY_S.accountValue), was: wasLine(DAY_PREV.accountValue, DAY_PREV) }),
@@ -163,7 +166,8 @@ function daySnapshot(env) {
     field({ label: 'Maintenance requirement', value: DAY_S.maint == null ? '' : bare(DAY_S.maint), was: DAY_PREV.maint == null ? '' : wasLine(DAY_PREV.maint, DAY_PREV) }),
     field({ label: 'Buying power', opt: 'optional' }),
   ].join('')}</div>`;
-  const body = `${carriedRow(carriedText(DAY_PREV, DAY_S.asOf), true)}${fields}<div>${rv('+ Margin call')}</div>${sourceSeg(DAY_S.source)}${positions(DAY_S)}${computedBox(DAY_S, DAY_PREV)}`;
+  const cleared = DAY_S.cleared?.includes('maint') ? boardNote(STRINGS.maintCleared) : '';
+  const body = `${carriedRow(carriedText(DAY_PREV, DAY_S.asOf), true)}${fields}${cleared}<div>${rv('+ Margin call')}</div>${sourceSeg(DAY_S.source)}${positions(DAY_S)}${computedBox(DAY_S, DAY_PREV)}`;
   return snapshotFrame(env, body);
 }
 
@@ -389,7 +393,10 @@ const CP_CSS = `
   .jr-cp-xc { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; line-height: 1.5; color: var(--phosphor); }
   .jr-q.jr-cp-sp { gap: 12px; }
 
-  /* ---- board insets (P-4: a board annotation, never product UI) ---------------------------------------------- */
+  /* ---- board notes and insets (P-4: a board annotation, never product UI) ------------------------------------- */
+  .jr-cp-bn { display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 6px 10px; border: 1px dashed var(--line-2); border-radius: 8px; background: var(--ink-2); font: 500 12px/1.5 'IBM Plex Mono', monospace; color: var(--steel); }
+  .jr-cp-bn .ico { flex: none; margin-top: 2px; }
+  .jr-cp-bn b { font-weight: 600; color: var(--phosphor); }
   .jr-cp-inset { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 14px 16px 16px; border: 1px dashed var(--line-2); border-radius: 14px; background: var(--ink-2); }
   .jr-cp-inset-h { margin: 0; font: 500 12px/1.5 'IBM Plex Mono', monospace; color: var(--steel); }
   .jr-cp-focus { outline: 2px solid var(--amber-text); outline-offset: 2px; }
@@ -499,12 +506,12 @@ export const ROW = {
     ],
   },
   boards: [
-    B('staging', 'Staging · normal day', 1440, 1592, (o) => dayPage(o)),
+    B('staging', 'Staging · normal day', 1440, 1726, (o) => dayPage(o)),
     B('margin-call', 'Margin call mode', 1440, 1560, (o) => callPage(o)),
     B('plan', 'Plan a trade', 1440, 1909, (o) => planPage(o)),
     B('phone-call', 'Phone · margin call', 390, 1190, (o) => callPhone(o)),
     B('phone-plan', 'Phone · plan a trade', 390, 1321, (o) => planPhone(o)),
-    B('light', 'Light · staging', 1440, 1592, (o) => dayPage(o), LIGHT),
+    B('light', 'Light · staging', 1440, 1726, (o) => dayPage(o), LIGHT),
     B('states', 'States', 1440, 3019, (o) => states(o)),
   ],
 };

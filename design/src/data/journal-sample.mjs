@@ -14,7 +14,7 @@
 // Where the spec prints a count without listing its members (34 entries, 5 later notes, row 9's 3 figures,
 // 4 stated confidences, 14 details waiting in Tidy), the members it describes are listed in full and the
 // rest are carried as undescribed placeholders, so counts reconcile and boards never invent them. GAPS (at
-// the end) lists every such hole and one inconsistency in the spec's own figures.
+// the end) lists every such hole.
 
 // ---- exact fractions --------------------------------------------------------------------------------
 const gcd = (a, b) => {
@@ -220,7 +220,10 @@ export const CONFIDENCES = {
 /** Snapshots as typed. Account value, margin loan and maintenance requirement in cents (null = `not recorded`);
  *  cash is $0 throughout (the loan absorbs it). `asOfTime` is ET; null where the spec prints none (the
  *  snapshot then sorts at 4:00 PM ET, which moves nothing: no money falls on those days). The Aug 4
- *  statement's loan was typed $11,890 and corrected on Aug 22 (CORRECTIONS); `marginLoan` is the typed value. */
+ *  statement's loan was typed $11,890 and corrected on Aug 22 (CORRECTIONS); `marginLoan` is the typed value.
+ *  `cleared`: a field he emptied under Update numbers, so it reads `not recorded` where it would have carried
+ *  the previous snapshot's value. Oct 2's maintenance requirement is the one (spec 08, Corrections, item 19):
+ *  Sep 30's figure was set before the Oct 2 trim. Every other `not recorded` figure has nothing earlier to carry. */
 const SNAPSHOT_INPUTS = [
   { id: 's-aug04', entry: 'e-aug04', asOf: '2026-08-04', asOfTime: '16:00', source: 'statement', accountValue: 5102100, marginLoan: 1189000, maint: null },
   { id: 's-aug21', entry: 'e-aug21', asOf: '2026-08-21', asOfTime: null, source: 'broker', accountValue: 5125100, marginLoan: 1203360, maint: null },
@@ -232,7 +235,7 @@ const SNAPSHOT_INPUTS = [
   { id: 's-sep25', entry: 'e-sep25', asOf: '2026-09-25', asOfTime: null, source: 'broker', accountValue: 3614600, marginLoan: 5000250, maint: null },
   { id: 's-sep29', entry: 'e-sep29', asOf: '2026-09-29', asOfTime: '14:14', source: 'broker', accountValue: 3404700, marginLoan: 5005540, maint: 3679700 },
   { id: 's-sep30', entry: 'e-sep30-trim', asOf: '2026-09-30', asOfTime: '15:40', source: 'broker', accountValue: 3602100, marginLoan: 3561290, maint: 3490000 },
-  { id: 's-oct02', entry: 'e-oct02', asOf: '2026-10-02', asOfTime: null, source: 'broker', accountValue: 3460300, marginLoan: 2908170, maint: null },
+  { id: 's-oct02', entry: 'e-oct02', asOf: '2026-10-02', asOfTime: null, source: 'broker', accountValue: 3460300, marginLoan: 2908170, maint: null, cleared: ['maint'] },
   { id: 's-oct06', entry: 'e-oct06', asOf: '2026-10-06', asOfTime: null, source: 'broker', accountValue: 3160900, marginLoan: 2911220, maint: null },
 ];
 /** The source segment's words. */
@@ -255,12 +258,13 @@ export const ANSWER_WORD = { yes: 'Yes', no: 'No', doesnt_apply: 'Doesn’t appl
 export const LABEL_WORD = { sound: 'Sound', mixed: 'Mixed', poor: 'Poor' };
 export const CLOSED_BY_WORD = { me: 'Me', broker: 'Broker (liquidation)', expiry: 'Expiry', assignment: 'Assignment' };
 
-const E = (id, o) => ({ id, described: true, kind: null, about: null, writtenAt: null, cls: 'at_time', source: 'typed', tickers: [], body: null, spans: [], snapshot: null, trade: null, ...o });
+const E = (id, o) => ({ id, described: true, kind: null, about: null, writtenAt: null, cls: 'at_time', source: 'typed', tickers: [], body: null, spans: [], snapshot: null, trade: null, aiExcluded: false, ...o });
 /** The 34 entries (26 written at the time, 5 recalled, 3 imported). `described`: true when the spec describes the
  *  entry; 'snapshot' when only its snapshot is known (a Broker-screen snapshot is typed on an entry written that
  *  day, about today); false for the members of the spec's counts it never describes. `body` is his whole text
  *  where the spec quotes it whole; `spans` are exact substrings it quotes from a body it doesn't print;
- *  `versionOf` is wording the spec says the body carries "a version of" (never quote it as his exact words). */
+ *  `versionOf` is wording the spec says the body carries "a version of" (never quote it as his exact words).
+ *  `aiExcluded`: "Keep this entry out of AI reads", set when the entry is saved. */
 export const ENTRIES = [
   // ---- imported (3): bought before the catalog's history begins (Jul 16); written date not printed
   E('e-imp-nvda', { cls: 'imported', kind: 'imported', source: 'paste', about: '2026-07-02', tickers: ['NVDA'], trade: 't-nvda-imp' }),
@@ -289,7 +293,10 @@ export const ENTRIES = [
   E('e-oct06', { described: 'snapshot', writtenAt: '2026-10-06', about: '2026-10-06', snapshot: 's-oct06' }),
   // ---- undescribed members of the spec's counts: 10 at the time (one written in the Oct 7 review's window),
   // 4 recalled. Kinds outside every counted row (no Entered, Added, Trimmed, Closed, plan, call or money).
-  ...Array.from({ length: 14 }, (_, i) => E(`u${String(i + 1).padStart(2, '0')}`, { described: false, cls: i < 10 ? 'at_time' : 'recalled', window: i === 0 ? 'review' : 'older' })),
+  // u02 and u03 are "the 2 entries you kept out" (spec 08, Corrections, item 18): older than the Sep 28 review,
+  // with no snapshot, money, detail, plan answer, correction or context note, so What's sent loses only their
+  // summaries. The spec describes neither, so which two is the sample's choice.
+  ...Array.from({ length: 14 }, (_, i) => E(`u${String(i + 1).padStart(2, '0')}`, { described: false, cls: i < 10 ? 'at_time' : 'recalled', window: i === 0 ? 'review' : 'older', aiExcluded: i === 1 || i === 2 })),
 ];
 export const ENTRY = Object.fromEntries(ENTRIES.map((e) => [e.id, e]));
 
@@ -707,7 +714,29 @@ export const QUESTIONS = [
 /** The event, as the review phrases it (the spec's sentence; its figures are EVENT's). */
 export const EVENT_TEXT = 'The Sep 29 margin call. From Sep 25 to Sep 30, account value went from $36,146 to $36,021, with $2,500 put in on Sep 30: −$2,625, 11.9% of the $22,142 lost since the Aug 21 high. It’s one event, so it isn’t counted as a pattern.';
 
-/** AI-run figures the spec authors (cost model, What's sent, Settings), printed as given. */
+/** What the Oct 7 review sends (Screens → 12; The AI interaction → Packages): the full text of each entry written in
+ *  its window, a short summary of each older one, and nothing of an entry he kept out. The 2 kept out are older, so
+ *  the 8 new texts stand and 24 summaries go: 8 + 24 + 2 = 34 (spec 08, Corrections, item 18). `readable` is what
+ *  the bulk read offer counts: every entry not kept out. */
+export const SENT = (() => {
+  const side = (e, cutoff) => {
+    const b = writtenBefore(e, cutoff);
+    if (b == null) throw new Error(`SENT: ${e.id} has no known side of ${cutoff}`);
+    return b;
+  };
+  const isNew = (e) => side(e, REVIEW_CUTOFF.oct7) && !side(e, REVIEW_CUTOFF.sep28);
+  const kept = ENTRIES.filter((e) => e.aiExcluded);
+  const sent = ENTRIES.filter((e) => !e.aiExcluded);
+  return { newTexts: sent.filter(isNew).length, olderSummaries: sent.filter((e) => !isNew(e)).length, keptOut: kept.length, keptOutNew: kept.filter(isNew).length, readable: sent.length };
+})();
+/** The bulk read's estimate, summed as Models, cost and caching sums the first bulk read: one cold J1 read at
+ *  $0.0198 and the rest warm at $0.0106, halved at the Batch API's price (with no cache hit, every read is cold).
+ *  Micro-dollars in, cents out (a Q): 34 entries give the spec's ≈ $0.37, $0.18 and $0.34. */
+const J1_MICROS = { cold: 19800, warm: 10600 };
+export const bulkEstimate = (n, { batch = true, cache = true } = {}) => q(cache ? J1_MICROS.cold + (n - 1) * J1_MICROS.warm : n * J1_MICROS.cold, batch ? 20000 : 10000);
+
+/** AI-run figures the spec authors (cost model, What's sent, Settings), printed as given; the What's sent counts and
+ *  the bulk read come from SENT. */
 export const AI = {
   entryRead: { at: '2026-10-07T06:58:00-04:00', model: 'Sonnet 5.5', head: 'AI · read Oct 7, 6:58 AM · Sonnet 5.5 on your key' },
   howThisRan: ['Read 8 entries · Sonnet 5.5 · $0.09', 'Findings · Opus 5.5 · 17,400 in · 6,900 out · $0.21', 'Number check passed · 31 figures'],
@@ -717,10 +746,10 @@ export const AI = {
   month: 'This month: $0.31 of $5.00 · 1 review · 8 entry reads',
   caps: { month: '$5.00', run: '$1.00', perDay: '3 reviews and 60 entry reads' },
   models: { entry: 'Sonnet 5.5', review: 'Opus 5.5' },
-  bulk: { entries: 34, text: '34 entries haven’t been read. Read them now · ≈ $0.18' },
+  bulk: { entries: SENT.readable, text: `${SENT.readable} entries haven’t been read. Read them now · ≈ ${usd(bulkEstimate(SENT.readable), { dp: 2 })}` },
   whatsSent: [
-    'Text of entries written since the last review: 8 entries, 2,090 words',
-    'Short summaries of older entries: 26',
+    `Text of entries written since the last review: ${SENT.newTexts} entries, 2,090 words`,
+    `Short summaries of older entries: ${SENT.olderSummaries}`,
     'Later notes marked as context: 1',
     'Snapshots: 12 (account value, cash, margin loan, maintenance requirement, margin call and due date, money in or out, positions and marks)',
     'Computed figures: 31',
@@ -728,7 +757,7 @@ export const AI = {
     'Active rules: 2, with your plan answers and reasons',
     'Your corrections: 1',
   ],
-  keptOut: 2,
+  keptOut: SENT.keptOut,
 };
 /** Tidy's count, as printed ("14 details in 6 entries"; the Review rail's "Tidy up · 14 details waiting"). */
 export const TIDY = { details: 14, entries: 6 };
@@ -796,6 +825,13 @@ export const STRINGS = {
   rulesCount: `${RULES.filter((r) => r.status === 'active').length} active · 7 at most`,
   correction: `Margin loan ${usd(1189000)} → corrected to ${usd(1198000)} on Aug 22: “the statement says 11,980”`,
   callCross: [`Your broker’s call: ${usd(CALL.amount)}`, `Your numbers compute excess liquidity of ${signedUsd(S['s-sep29'].excessLiquidity)}. That matches the call.`],
+  /** A board note (P-4) for the boards that draw Oct 2's cleared maintenance requirement (spec 08, Corrections, item 19). */
+  maintCleared: (() => {
+    const s = SNAPSHOTS.find((x) => x.cleared?.includes('maint'));
+    if (!s) throw new Error('journal-sample: no snapshot has a cleared maintenance requirement (spec 08, Corrections, item 19)');
+    const prev = SNAPSHOTS[s.k - 1];
+    return `On ${fmtDate(s.asOf)} he cleared the maintenance requirement: ${fmtDate(prev.asOf)}’s figure was set before that day’s trim. A cleared field reads not recorded, and excess liquidity with it; fields he leaves as they were carry over (spec 08, Corrections item 19).`;
+  })(),
 };
 /** Rule asks as printed: "Asked in 2 plans · Yes 0 · No 1 · Doesn’t apply 1 · Not answered 0". */
 export const asksLine = (ruleId, { short = false } = {}) => { const c = RULE_COUNTS[ruleId]; return `${short ? `asked ${c.asked}` : `Asked in ${c.asked} plans`} · Yes ${c.yes} · No ${c.no} · Doesn’t apply ${c.doesnt_apply} · Not answered ${c.not_answered}`; };
@@ -817,7 +853,7 @@ export const COUNTS = {
   rulesActive: RULES.filter((r) => r.status === 'active').length,
 };
 
-/** Holes and one inconsistency in the spec's sample, recorded so no board papers over them. */
+/** Holes in the spec's sample, recorded so no board papers over them. */
 export const GAPS = [
   'Entries: the spec describes 20 of its 34 (16 at the time, of which 5 only by their snapshot; 1 recalled; 3 imported); 14 are undescribed members of its counts (10 at the time, one of them in the Oct 7 window; 4 recalled). Imported entries print no written date.',
   'Bodies: printed whole for the Sep 29 call, the Sep 30 NVDA trim, the Oct 2 TSLA trim and the Oct 5 plan; Sep 18 has two exact spans; Sep 4, 11 and 18 carry “a version of” “it has to roll over” (not exact words); every other body is unprinted.',
@@ -826,6 +862,6 @@ export const GAPS = [
   'R2’s answer on the Oct 1 plan is unprinted; Doesn’t apply is derived (the only answer consistent with “1 rule answered No” that is also true).',
   'The Sep 21 and Sep 28 reviews print no time; their cutoffs here are 7:00 AM on the day. Their row 9 is unknown, and the Sep 21 memory row too.',
   'Findings 3 and 4 (rows 2 and 3) have no printed wording; theirs is composed from facts the spec states. The spec prints no 60-word digest for any entry.',
-  'Inconsistency: What’s sent counts 8 new entries and 26 older summaries (34, every entry) yet also says “the 2 entries you kept out” are never sent; the sample can’t have both. Recorded as printed (AI.keptOut = 2); which entries are kept out is unprinted.',
+  'Kept out: the spec never says which 2 entries are kept out of AI reads. Here they are u02 and u03, two undescribed entries older than the Sep 28 review, so What’s sent reads 8 new texts and 24 older summaries (spec 08, Corrections, item 18).',
   'Tidy’s “14 details in 6 entries” is printed; the details themselves are not.',
 ];

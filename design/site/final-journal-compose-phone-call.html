@@ -804,7 +804,10 @@
   .jr-cp-xc { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; line-height: 1.5; color: var(--phosphor); }
   .jr-q.jr-cp-sp { gap: 12px; }
 
-  /* ---- board insets (P-4: a board annotation, never product UI) ---------------------------------------------- */
+  /* ---- board notes and insets (P-4: a board annotation, never product UI) ------------------------------------- */
+  .jr-cp-bn { display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 6px 10px; border: 1px dashed var(--line-2); border-radius: 8px; background: var(--ink-2); font: 500 12px/1.5 'IBM Plex Mono', monospace; color: var(--steel); }
+  .jr-cp-bn .ico { flex: none; margin-top: 2px; }
+  .jr-cp-bn b { font-weight: 600; color: var(--phosphor); }
   .jr-cp-inset { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 14px 16px 16px; border: 1px dashed var(--line-2); border-radius: 14px; background: var(--ink-2); }
   .jr-cp-inset-h { margin: 0; font: 500 12px/1.5 'IBM Plex Mono', monospace; color: var(--steel); }
   .jr-cp-focus { outline: 2px solid var(--amber-text); outline-offset: 2px; }

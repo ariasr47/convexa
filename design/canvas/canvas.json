@@ -1743,7 +1743,7 @@
       "x": 880,
       "y": 4033,
       "w": 1440,
-      "h": 1592,
+      "h": 1726,
       "page": "journal",
       "expand": "fill"
     },
@@ -1791,7 +1791,7 @@
       "x": 6580,
       "y": 4033,
       "w": 1440,
-      "h": 1592,
+      "h": 1726,
       "page": "journal",
       "expand": "fill"
     },
@@ -1849,7 +1849,7 @@
       "x": 4510,
       "y": 8423,
       "w": 1440,
-      "h": 1963,
+      "h": 2089,
       "page": "journal",
       "expand": "fill"
     },
@@ -2092,7 +2092,7 @@
       "x": 7120,
       "y": 30650,
       "w": 390,
-      "h": 6721,
+      "h": 6851,
       "page": "journal"
     },
     {
@@ -2109,7 +2109,7 @@
       "file": "FJournalSettingsSpec.dc.html",
       "title": "Journal · Settings panel · spec",
       "x": 0,
-      "y": 37731,
+      "y": 37861,
       "w": 760,
       "h": 3063,
       "page": "journal"
@@ -2118,7 +2118,7 @@
       "file": "FJournalSettingsStaging.dc.html",
       "title": "Journal · Settings panel · Staging · demo account",
       "x": 880,
-      "y": 37731,
+      "y": 37861,
       "w": 1440,
       "h": 1876,
       "page": "journal",
@@ -2128,7 +2128,7 @@
       "file": "FJournalSettingsPhone.dc.html",
       "title": "Journal · Settings panel · Phone · production",
       "x": 2440,
-      "y": 37731,
+      "y": 37861,
       "w": 390,
       "h": 2496,
       "page": "journal"
@@ -2137,7 +2137,7 @@
       "file": "FJournalSettingsStates.dc.html",
       "title": "Journal · Settings panel · States",
       "x": 2950,
-      "y": 37731,
+      "y": 37861,
       "w": 1440,
       "h": 2098,
       "page": "journal",
@@ -2553,7 +2553,7 @@
       "x": 0,
       "y": 0,
       "w": 1440,
-      "h": 2631,
+      "h": 2719,
       "page": "changelog",
       "expand": "fill"
     }
@@ -3004,7 +3004,7 @@
       "id": "row-journal-settings",
       "page": "journal",
       "x": 0,
-      "y": 37431,
+      "y": 37561,
       "kind": "title1",
       "maxW": 4390,
       "text": "Journal · Settings panel · /settings#journal"
