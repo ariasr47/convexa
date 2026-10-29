@@ -8,6 +8,11 @@
  * This page never calls the endpoints that need the feed (the ticker bundle, the stream, the AI read,
  * the scan): app.tsx mounts it instead of TickerDashboard, so those hooks never run.
  *
+ * Its public read gets a head start (site audit 2026-10-25, PERF-05 and PERF-04): app.tsx starts it
+ * with the /api/health read, before this chunk has loaded, and hands it over as `headStart`. When the
+ * answer is already in at the first render, the cards draw from it at once, so they don't move the
+ * page when it lands.
+ *
  * Design: design/src/screens/final/ticker-desk.mjs (Final · Convexa v1, "Ticker desk" row).
  */
 import {
@@ -20,7 +25,7 @@ import {
 } from '@/pages/research/NotePublicPanels';
 import { filedSince } from '@/pages/research/filings';
 import { formatNoteDate, formatShortDate } from '@/pages/research/format';
-import { usePublicTicker } from '@/pages/research/publicData';
+import { useRead, type Read } from '@/pages/research/publicData';
 import { Caps, SourceProblem } from '@/pages/research/publicUi';
 import { notSecFiler, tickerSecStale } from '@/pages/research/secState';
 import { DISPLAY, FreshnessLine, MONO, PANEL_SX } from '@/pages/research/ui';
@@ -39,7 +44,7 @@ import {
 import { demoDeskUrl } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
 import { pageColumnSx } from '@/shared/ui/PageColumn';
-import type { PublicTicker } from '@convexa/api';
+import { getPublicTicker, type PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
@@ -55,14 +60,58 @@ const linkSx = { color: (theme: Parameters<typeof extrasFor>[0]) => extrasFor(th
 /** `not_live`: no feed exists on this site. `paused`: an operator paused one. */
 export type FeedOff = 'not_live' | 'paused';
 
-export function PublicDesk({ feed }: { feed: FeedOff }) {
+/** The public read for `ticker` (uppercase), started by the route before this chunk loaded
+ *  (app.tsx). `data` is filled in when the read answers; a failed read leaves it unset. */
+export type PublicDeskHeadStart = {
+  ticker: string;
+  promise: Promise<PublicTicker>;
+  data?: PublicTicker;
+};
+
+/**
+ * The desk's public read (`useRead`, so an answer still belongs to its ticker). The route's head start
+ * serves the desk's first ticker, once: its promise is that ticker's first read, and while that read
+ * hasn't settled, an answer the head start already holds is the read's data, so the first render
+ * draws the cards and the legend as they will stay. A retry, another ticker, and a return to the first
+ * one later all read afresh.
+ */
+export function useDeskRead(
+  ticker: string,
+  headStart: PublicDeskHeadStart | null,
+): Read<PublicTicker> {
+  const mountTicker = useRef(ticker);
+  const [moved, setMoved] = useState(false);
+  useEffect(() => {
+    if (ticker !== mountTicker.current) setMoved(true);
+  }, [ticker]);
+  const head = !moved && headStart?.ticker === ticker ? headStart : null;
+  const taken = useRef<PublicDeskHeadStart | null>(null);
+  const read = useRead(() => {
+    if (head && taken.current !== head) {
+      taken.current = head;
+      return head.promise;
+    }
+    return getPublicTicker(ticker);
+  }, ticker);
+  return !read.data && !read.error && head?.data
+    ? { ...read, data: head.data, loading: false }
+    : read;
+}
+
+export function PublicDesk({
+  feed,
+  headStart = null,
+}: {
+  feed: FeedOff;
+  headStart?: PublicDeskHeadStart | null;
+}) {
   const { ticker: param = 'SPY' } = useParams();
   const ticker = param.toUpperCase();
   const navigate = useNavigate();
   useEffect(() => {
     recordVisit(ticker);
   }, [ticker]);
-  const read = usePublicTicker(ticker);
+  const read = useDeskRead(ticker, headStart);
   const note = researchIndex.find((r) => r.ticker === ticker) ?? null;
   const demoUrl = demoDeskUrl(ticker);
   const zonesRef = useRef<HTMLDivElement>(null);
@@ -275,7 +324,7 @@ function PublicZone({
   note,
 }: {
   ticker: string;
-  read: ReturnType<typeof usePublicTicker>;
+  read: Read<PublicTicker>;
   note: Note | null;
 }) {
   const d = read.data;

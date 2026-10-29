@@ -50,6 +50,7 @@ import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
 import { DemoOperatorUnavailable } from '@/pages/operator-metrics/DemoOperatorUnavailable';
 import { documentHostIsPages } from '@/pages/operator-session-archive/sittingBase';
+import type { PublicDeskHeadStart } from '@/pages/ticker/public-desk/PublicDesk';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
@@ -58,8 +59,8 @@ import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { PageColumn } from '@/shared/ui/PageColumn';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { AppShell } from '@/shell/AppShell';
-import { dataMode } from '@convexa/api';
-import { lazy, Suspense, type ReactElement } from 'react';
+import { dataMode, getPublicTicker, type MarketDataMode } from '@convexa/api';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactElement } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 
 /**
@@ -191,6 +192,53 @@ function DefaultTickerRedirect() {
   return <Navigate to={`/ticker/${encodeURIComponent(effective.defaultTicker)}`} replace />;
 }
 
+/** The market-data mode this page load has seen. A server's mode is fixed at its boot
+ *  (useMarketDataMode), so a desk mounted again already knows which desk it will show. */
+let seenMode: MarketDataMode | null = null;
+
+/** Starts `symbol`'s public read for the public desk; `data` is filled in when it answers. */
+function startPublicRead(symbol: string): PublicDeskHeadStart {
+  const head: PublicDeskHeadStart = { ticker: symbol, promise: getPublicTicker(symbol) };
+  head.promise.then(
+    (data) => {
+      head.data = data;
+    },
+    // A failure is the desk's to show, when it takes the promise; here it only must not go unhandled.
+    () => undefined,
+  );
+  return head;
+}
+
+/**
+ * The public desk's head start (site audit 2026-10-25, PERF-05). The desk route waits for
+ * /api/health to know which desk to mount, and the public desk's chunk and its public read then
+ * followed it one after the other: three trips in a row, 6.2 s to a phone's desk in the audit.
+ * While the health read is out, this starts the chunk and the read alongside it, and the public
+ * desk takes the read when it mounts (`headStart`). Not on the demo, which mounts the full desk,
+ * nor once this page load has seen a feed that runs: the full desk reads nothing public, so only a
+ * first mount, before any answer, can start them for nothing.
+ */
+function usePublicDeskHeadStart(
+  symbol: string,
+  mode: MarketDataMode | null,
+): PublicDeskHeadStart | null {
+  const [head, setHead] = useState<PublicDeskHeadStart | null>(null);
+  // One head start per symbol per mount, however often the effect runs (StrictMode runs it twice).
+  const started = useRef<PublicDeskHeadStart | null>(null);
+  useEffect(() => {
+    if (mode !== null) seenMode = mode;
+  }, [mode]);
+  useEffect(() => {
+    if (dataMode === 'demo' || mode !== null || !symbol) return;
+    if (seenMode !== null && !marketDataOff(seenMode)) return;
+    if (started.current?.ticker === symbol) return;
+    void routeLoaders.PublicDesk().catch(() => undefined);
+    started.current = startPublicRead(symbol);
+    setHead(started.current);
+  }, [symbol, mode]);
+  return head;
+}
+
 /** The ticker desk. A live build whose options feed is off (/api/health says `not_live` or
  *  `paused`) mounts the public desk instead, which never calls the endpoints that need the feed;
  *  waiting for the health read is what keeps the full desk's requests from starting. Demo builds and
@@ -202,13 +250,15 @@ function TickerDeskRoute() {
   const { ticker = '' } = useParams();
   const mode = useMarketDataMode();
   const symbol = ticker.toUpperCase();
+  const headStart = usePublicDeskHeadStart(symbol, mode);
   // The route's one title, set before any branch (spec 2026-10-21/02, part (e)).
   useDocumentTitle(`${symbol} — Convexa`);
   const demoCovers = (STAGING_DEMO_SYMBOLS as readonly string[]).includes(symbol);
   if (dataMode === 'demo')
     return demoCovers ? <TickerDashboard /> : <DemoSymbolMissing ticker={ticker} />;
   if (mode === null) return <RouteFallback />;
-  if (marketDataOff(mode)) return <PublicDesk feed={mode === 'paused' ? 'paused' : 'not_live'} />;
+  if (marketDataOff(mode))
+    return <PublicDesk feed={mode === 'paused' ? 'paused' : 'not_live'} headStart={headStart} />;
   return (
     <OwnerGateBoundary
       surface={`the ${symbol} desk`}
