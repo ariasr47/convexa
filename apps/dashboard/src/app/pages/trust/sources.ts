@@ -6,7 +6,8 @@
  *
  * The design's seven cards keep their order; the three liquidity inputs (2026-10-15) and the
  * release schedules behind Coming up (2026-10-15) were added after it, beside the other Markets
- * sources.
+ * sources, and the OFR's stress index behind the fear–greed gauge (spec 2026-10-21/07) after the
+ * CFTC, the gauge's other source.
  *
  * Design: design/src/screens/final/trust-pages.mjs (SOURCES). Copy is a draft for the owner to
  * review; not legal advice.
@@ -63,16 +64,34 @@ export const SOURCES: readonly Source[] = [
     name: 'Traders in Financial Futures',
     owner: 'Commodity Futures Trading Commission (CFTC)',
     reads:
-      'Net positions of asset managers and leveraged funds in 10-year T-note, E-mini S&P 500 and E-mini Nasdaq-100 futures.',
+      'Net positions of asset managers and leveraged funds in 10-year T-note, E-mini S&P 500 and E-mini Nasdaq-100 futures, and leveraged funds’ net position in VIX futures.',
     cadence:
       'Weekly. Positions as of Tuesday, published Friday afternoon. Convexa checks every 12 hours.',
     terms: 'U.S. government data, free to show on a public site, credited to the CFTC.',
-    where: 'Research → Markets, and the positioning card under each ticker’s note.',
+    where:
+      'Research → Markets (Positioning and Stress), and the positioning card under each ticker’s note.',
     link: [
       'CFTC Commitments of Traders',
       'https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm',
     ],
     shaped: 'the CFTC’s weekly report',
+  },
+  {
+    id: 'ofr',
+    toc: 'OFR',
+    name: 'OFR Financial Stress Index',
+    owner: 'Office of Financial Research, U.S. Department of the Treasury',
+    reads:
+      'The index’s five category series (credit, equity valuation, safe assets, funding and volatility), every business day since 2000, from the OFR’s fsi.csv download. Convexa ranks each against its own last three years.',
+    cadence: 'Daily, about two business days late. Convexa checks every 6 hours.',
+    terms:
+      'Work of a U.S. federal agency: no copyright, and the OFR asks for credit. Convexa credits it on every row that uses it. The OFR presents the index for information only, not for financial decisions and not as investment or financial advice.',
+    where: 'Research → Markets, Stress (the fear–greed gauge).',
+    link: [
+      'OFR Financial Stress Index',
+      'https://www.financialresearch.gov/financial-stress-index/',
+    ],
+    shaped: 'the OFR’s daily stress index',
   },
   {
     id: 'fed-h41',

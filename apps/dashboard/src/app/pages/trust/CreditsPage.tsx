@@ -6,7 +6,8 @@
  * Only each card's state tag is live; its text is static and renders at once, so a failed state check
  * never blanks the page. The states are the API's own `sources` rows, one per source in the P-2
  * words, carried by the two public-data reads the research pages already make (/markets for
- * Treasury, CFTC, the liquidity inputs and the release schedules; /tickers/SPY for FINRA and SEC).
+ * Treasury, CFTC, the OFR, the liquidity inputs and the release schedules; /tickers/SPY for FINRA
+ * and SEC).
  * Only the API knows whether the copy it serves came from this cycle's fetch, so only its row can
  * say Last good copy. A server from before the rows existed is still read the old way. The legend
  * counts the same states the cards draw, and says how many are still being checked, on the line
@@ -59,6 +60,7 @@ const TOC = [
 const FROM_MARKETS: readonly SourceId[] = [
   'treasury',
   'cftc',
+  'ofr',
   'fed-h41',
   'treasury-dts',
   'nyfed-rrp',
@@ -131,6 +133,8 @@ function useLiveStates(enabled: boolean): {
   const legacy: Record<SourceId, CardState> = {
     treasury,
     cftc,
+    // A server from before the OFR reader (2026-10-25) sends no `ofr` row.
+    ofr: { tag: 'notSetUp', note: 'This site’s server doesn’t read the OFR index yet.' },
     'fed-h41': liquidity ?? liquidityLine('fed-h41', m?.liquidity?.as_of ?? ''),
     'treasury-dts': liquidity ?? liquidityLine('treasury-dts', m?.liquidity?.as_of ?? ''),
     'nyfed-rrp': liquidity ?? liquidityLine('nyfed-rrp', m?.liquidity?.as_of ?? ''),

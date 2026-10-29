@@ -14,7 +14,10 @@
  * none of the retired v1 wording this module used to carry survives anywhere here. The one
  * exception is the illustrative panel inside "Two data speeds" (`methodology.mjs:32`, a
  * `chip live` + dot + `levels as-of 42s`) — it does not ship: both are banned on a page with no
- * stream (AC-L5), and the state matrix commissions no instrument on this page.
+ * stream (AC-L5), and the state matrix commissions no instrument on this page. One section has
+ * another source for now: `fear-greed-gauge`, and the What's live rows that name the gauge, are
+ * copied byte-for-byte from spec docs/product/specs/2026-10-21/07-stress-gauge.md (Copy ›
+ * /methodology) until that spec's step 0 adds them to the design source.
  *
  * SIX NAMED DELTAS (quoted, so AC-C1 pins them — the quote governs where it deviates from the
  * source line named beside it):
@@ -209,6 +212,28 @@ const SECTIONS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'fear-greed-gauge',
+    h: 'Fear–greed gauge',
+    blocks: [
+      {
+        kind: 'prose',
+        body: [
+          'The fear–greed gauge in the Stress section of Research → Markets is built only from inputs Convexa may show. The familiar fear gauges (Cboe’s VIX and put/call ratios, CNN’s Fear & Greed) need a licence to show, so none is used.',
+          'Seven inputs: the five category series of the Office of Financial Research’s Financial Stress Index (volatility, credit, safe assets, equity valuation and funding) and two weekly CFTC series, leveraged funds’ net VIX futures and asset managers’ net E-mini S&P 500 futures, each as a share of open interest.',
+          'Each input is ranked against its own last three years: its percentile is the share of those days or weeks it sits above. Inputs where a higher value means more fear are flipped, so for every input 0 is extreme fear and 100 extreme greed: high stress reads low. The gauge is the plain average of the unrounded scores of the inputs that are fresh: a daily input counts for 5 weekdays after its date, holidays included, a weekly one for 14 days. With fewer than 5 of 7 fresh, no reading is published.',
+          'Bands are Convexa’s own: 0–24 Extreme Fear, 25–44 Fear, 45–55 Neutral, 56–75 Greed, 76–100 Extreme Greed. An edge belongs to the calmer band.',
+        ],
+      },
+      {
+        kind: 'prose',
+        muted: true,
+        body: [
+          'The cost: five of the seven inputs come from one OFR file, so one method and one outage drive most of the gauge, and in practice it publishes exactly when that file is fresh. The OFR’s categories are blends of 33 market variables worldwide (OFR working paper 17-04), not raw prices, and the file runs about two business days behind, so each row shows its own date. The gauge is research, not a signal, and not investment advice.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'where-the-read-is-weak',
     h: 'Where the read is weak',
     blocks: [
@@ -298,6 +323,11 @@ export const WHATS_LIVE = {
         'Weekly: as of Tuesday, out Friday',
       ],
       [
+        'Fear–greed gauge (Markets, Stress)',
+        'Office of Financial Research; CFTC',
+        'Daily, about two business days late; CFTC weekly',
+      ],
+      [
         'Release dates: FOMC, CPI, PPI, jobs, GDP, refunding',
         'Federal Reserve, BLS, BEA, U.S. Treasury',
         'Set months ahead; read twice a day',
@@ -343,7 +373,7 @@ export const WHATS_LIVE = {
     /** Each sample, worded as the demo's chips are: “Demo · shaped like …” (as on /credits). */
     demo: [
       ['Dealer structure, flow, scores, AI reads', 'shaped like the Massive options feed'],
-      ['Rates, positioning, short data', 'shaped like Treasury, CFTC and FINRA'],
+      ['Rates, positioning, stress, short data', 'shaped like Treasury, OFR, CFTC and FINRA'],
       ['Filings and reported figures', 'shaped like SEC EDGAR'],
       ['Research notes', 'six authored sample notes'],
       ['Daily bars and indicators', 'computed from sample bars'],

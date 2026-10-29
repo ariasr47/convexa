@@ -9,6 +9,7 @@
 export type CreditsAnchor =
   | 'treasury'
   | 'cftc'
+  | 'ofr'
   | 'fed-h41'
   | 'treasury-dts'
   | 'nyfed-rrp'
@@ -23,6 +24,9 @@ export type CreditsAnchor =
 const RULES: readonly (readonly [RegExp, CreditsAnchor])[] = [
   [/TradingView/i, 'tradingview'],
   [/Massive/i, 'massive'],
+  // The fear–greed gauge's chips name the OFR and the CFTC, and its owner line names the Treasury:
+  // its card is the OFR's, so this rule sits above both (spec 2026-10-21/07, Other routes).
+  [/\bOFR\b|Financial Stress Index|Office of Financial Research/i, 'ofr'],
   // The calendar's chip names four agencies and SEC EDGAR; its card is the schedules one.
   [/schedules?\b|\bBLS\b|\bBEA\b|FOMC calendar/i, 'schedules'],
   [/Reg SHO|short-sale volume/i, 'finra-shvol'],

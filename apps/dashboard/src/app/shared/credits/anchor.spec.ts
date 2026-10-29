@@ -16,6 +16,11 @@ describe('creditsAnchor', () => {
     ['Fed H.4.1 · Treasury DTS · NY Fed reverse repo', 'fed-h41'],
     ['Fed · BLS · BEA · Treasury schedules · SEC EDGAR', 'schedules'],
     ['Chart by TradingView · US prices delayed', 'tradingview'],
+    // The Stress chips name the CFTC too, and the OFR's owner the Treasury: both go to the OFR card
+    // only because its rule sits above the CFTC and Treasury rules (spec 2026-10-21/07).
+    ['OFR Financial Stress Index · CFTC TFF', 'ofr'],
+    ['Demo · shaped like OFR and CFTC data', 'ofr'],
+    ['Office of Financial Research, U.S. Department of the Treasury', 'ofr'],
     ['Demo · sample data', null],
     ['Convexa research notes · forecasts', null],
   ] as const)('%s → %s', (text, anchor) => {
@@ -27,6 +32,7 @@ describe('creditsAnchor', () => {
     for (const text of [
       'U.S. Treasury',
       'CFTC',
+      'OFR Financial Stress Index',
       'Fed H.4.1',
       'Treasury DTS',
       'NY Fed reverse repo',

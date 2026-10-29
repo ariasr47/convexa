@@ -99,6 +99,15 @@ function answered(id: SourceId, row: PublicSource): { detail?: string; note: str
             note: `Positions as of ${longDate(asOf)}. The CFTC publishes each week’s positions the Friday after.`,
           }
         : { note: `The CFTC answered${checked}.` };
+    // Fresh, the OFR row is `delayed` (the OFR publishes about two business days late by design),
+    // so the card reads "Delayed by source · as of Oct 19" (spec 2026-10-21/07, Other routes).
+    case 'ofr':
+      return asOf
+        ? {
+            detail: `as of ${formatShortDate(asOf)}`,
+            note: `Values as of ${longDate(asOf)}. The OFR publishes each day’s index about two business days later.`,
+          }
+        : { note: `Answered${checked}.` };
     case 'fed-h41':
     case 'treasury-dts':
     case 'nyfed-rrp': {
