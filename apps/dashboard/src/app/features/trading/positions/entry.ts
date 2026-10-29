@@ -5,8 +5,8 @@
  *
  *  - manual : entry = the user's typed price, basis `user_entered`. Succeeds even with no quote/chain.
  *  - market : entry = option_quote.mid (basis `snapshot`) or the theoretical BS mark (basis
- *             `theoretical`); cannot fill when neither resolves (404 / chain unavailable / no
- *             usable IV).
+ *             `theoretical`); cannot fill when neither resolves (404 / chain unavailable / a
+ *             contract `theoreticalMark` cannot price).
  *  - limit  : rests `pending`; fills on a LIVE cross (mark ≤ limit) at the limit price (basis
  *             `limit_fill`). Cross is evaluated elsewhere (useResting…), never here at open time.
  */

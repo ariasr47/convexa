@@ -51,11 +51,20 @@ export function bsPrice(
 }
 
 /**
- * The theoretical mark from a contract's cached IV, or null when that IV cannot price it. An IV that
- * is null, not finite, zero or negative is no IV: bsPrice would return 0 for a zero IV and NaN for a
- * NaN one, a number nobody quoted. This is the one place that rule lives. The snapshot anchor, the
- * live step and the market-entry fill (positions/entry.ts) all price through here, so a contract
- * without a usable IV falls through to its next rung: a withheld null mark, or no market fill.
+ * The theoretical mark from a contract's cached IV, or null when Black-Scholes cannot price the
+ * contract here. This is the one place that rule lives. The snapshot anchor, the live step and the
+ * market-entry fill (positions/entry.ts) all price through here, so a contract it refuses falls
+ * through to its next rung: a withheld null mark, or no market fill.
+ *  - An IV that is null, not finite, zero or negative is no IV: bsPrice would return 0 for a zero IV
+ *    and NaN for a NaN one, a number nobody quoted.
+ *  - A contract in its last day (dte below 1) gets no model price. The route counts dte in whole UTC
+ *    days, so it is 0 from the evening before expiry. bsPrice floors T at one day, but the feed
+ *    solves a same-day IV from the hours actually left, and that IV over a whole day prices far
+ *    above the market: in the owner's captures, nearly every same-day contract with no bid priced
+ *    above its own ask, by up to $18,200 a contract. This module has no clock to count the hours.
+ * Known limit: the mark is not capped at the ask, because the route sends no one-sided quote. With a
+ * day or more left, the feed's IV can still price a far out-of-the-money contract with no bid above
+ * its ask, by a median under $1 a contract in the same captures.
  */
 export function theoreticalMark(
   right: OptionRight,
@@ -65,6 +74,7 @@ export function theoreticalMark(
   iv: number | null | undefined,
 ): number | null {
   if (iv == null || !Number.isFinite(iv) || iv <= 0) return null;
+  if (!Number.isFinite(dte) || dte < 1) return null;
   return bsPrice(right, S, K, dte, iv);
 }
 
@@ -87,7 +97,7 @@ export interface MarkInputs {
 }
 
 /** The anchor mark from the snapshot: NBBO mid if present, else theoretical from cached IV (null
- *  when there is no usable IV). */
+ *  when theoreticalMark cannot price the contract). */
 function anchorMark(i: MarkInputs): { mark: number | null; basis: MarkBasis } {
   const q = i.tracked.option_quote?.mid;
   if (q != null) return { mark: q, basis: 'snapshot' };
@@ -132,8 +142,8 @@ export function computeMark(i: MarkInputs): MarkResult {
     }
   }
   // 4) Not live (cold/loading/quiet-but-open feed), or live with a quote but a missing greek →
-  //    the snapshot anchor. Live with no quote and no usable IV lands here too: its anchor is a
-  //    null mark, withheld.
+  //    the snapshot anchor. Live with no quote, on a contract theoreticalMark cannot price, lands
+  //    here too: its anchor is a null mark, withheld.
   return { mark: anchor.mark, basis: anchor.basis, frozen: false };
 }
 

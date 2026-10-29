@@ -242,3 +242,23 @@ describe('the cached IV is a fraction, the unit ContractWire.iv carries', () => 
     );
   });
 });
+
+describe('the theoretical mark is null where Black-Scholes cannot price the contract', () => {
+  it('a contract in its last day (dte below 1) gets no theoretical mark, and one with a whole day left still prices, through every caller', () => {
+    // Risk: the same money path. bsPrice floors T at one day, but the feed solves a same-day IV from
+    // the hours actually left. This QQQ 673 put is from the owner's capture at 2:23 PM ET on
+    // 2026-09-03, its expiry day: no bid, ask 0.01, IV 1.618. Over the 1.6 hours to the close that
+    // IV prices it at 0.006; over one day, at 7.39: +$689.03 of P/L on a long bought at 0.50, for a
+    // contract worth at most $1.
+    expectEveryCaller([
+      { c: { right: 'put', S: 718.6, K: 673, dte: 0, iv: 1.618461947659542 }, want: null },
+      // The floor overprices at any IV: the same rule below 100%.
+      { c: atm('call', 0.27, 0), want: null },
+      // The route's dte for an expired contract, or for an expiration it cannot parse.
+      { c: atm('call', 0.27, -1), want: null },
+      { c: atm('call', 0.27, Number.NaN), want: null },
+      // A whole day left still prices: the rule withholds the last day only.
+      { c: atm('call', 0.27, 1), want: 0.11398980614766785 },
+    ]);
+  });
+});
