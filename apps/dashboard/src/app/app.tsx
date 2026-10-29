@@ -60,7 +60,15 @@ import { PageColumn } from '@/shared/ui/PageColumn';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { AppShell } from '@/shell/AppShell';
 import { dataMode, getPublicTicker, type MarketDataMode } from '@convexa/api';
-import { lazy, Suspense, useEffect, useRef, useState, type ReactElement } from 'react';
+import {
+  lazy,
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 
 /**
@@ -251,14 +259,21 @@ function TickerDeskRoute() {
   const mode = useMarketDataMode();
   const symbol = ticker.toUpperCase();
   const headStart = usePublicDeskHeadStart(symbol, mode);
+  // The desk is chosen in a deferred render: while its chunk is still loading, this route's fill
+  // stays up instead of the Suspense fallback, whose replacement React holds back until 300 ms
+  // after the fallback showed (FALLBACK_THROTTLE_MS), even once the chunk is in. The desk then
+  // paints as soon as its chunk allows.
+  const shownMode = useDeferredValue(mode);
   // The route's one title, set before any branch (spec 2026-10-21/02, part (e)).
   useDocumentTitle(`${symbol} — Convexa`);
   const demoCovers = (STAGING_DEMO_SYMBOLS as readonly string[]).includes(symbol);
   if (dataMode === 'demo')
     return demoCovers ? <TickerDashboard /> : <DemoSymbolMissing ticker={ticker} />;
-  if (mode === null) return <RouteFallback />;
-  if (marketDataOff(mode))
-    return <PublicDesk feed={mode === 'paused' ? 'paused' : 'not_live'} headStart={headStart} />;
+  if (shownMode === null) return <RouteFallback />;
+  if (marketDataOff(shownMode))
+    return (
+      <PublicDesk feed={shownMode === 'paused' ? 'paused' : 'not_live'} headStart={headStart} />
+    );
   return (
     <OwnerGateBoundary
       surface={`the ${symbol} desk`}
