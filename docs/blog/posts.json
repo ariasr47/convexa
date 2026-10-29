@@ -1,6 +1,7 @@
 [
   {
     "slug": "how-convexa-is-built",
+    "date": "2026-10-16",
     "title": "How Convexa Is Built",
     "description": "Two sites from one codebase, a Rust API with a pinned contract, data that says where it came from, and a design system that drives the build.",
     "tag": "Engineering",
@@ -8,6 +9,7 @@
   },
   {
     "slug": "how-we-read-dealer-structure",
+    "date": "2026-08-10",
     "title": "How We Read Dealer Structure",
     "description": "Walls, the gamma flip, GEX, score, and two data speeds — what Convexa actually computes, on what basis, and where the read is weak.",
     "tag": "Methodology",

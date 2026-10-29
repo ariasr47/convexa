@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { writeBlogHeads } from './write-blog-heads.mjs';
+import { readInputs, writeHeads } from './write-blog-heads.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const explicit = process.env.VITE_DATA_MODE;
@@ -42,17 +41,15 @@ if (result.error) {
 }
 if (result.status !== 0) process.exit(result.status ?? 1);
 
-// Each blog post's address gets its own <title>, canonical and share tags (write-blog-heads.mjs).
-// Here rather than inside the Nx target, so it reads the current docs/blog/posts.json even when Nx
-// restores the dashboard build from its cache.
+// Every address's own head, the edge routing (_redirects, 404.html), the sitemap, and on a demo
+// build the staging rules (write-blog-heads.mjs). Here rather than inside the Nx target, so it reads
+// the current posts.json, research notes and universe even when Nx restores the build from its cache.
 try {
   const dist = path.join(root, 'apps', 'dashboard', 'dist');
-  const postsJson = readFileSync(path.join(root, 'docs', 'blog', 'posts.json'), 'utf8');
-  for (const file of writeBlogHeads(dist, postsJson)) {
-    console.log(`[build-dashboard] wrote ${path.relative(root, file)}`);
-  }
+  const written = writeHeads(dist, { ...(await readInputs(root)), mode: dataMode });
+  console.log(`[build-dashboard] heads: wrote ${written.length} files (${dataMode})`);
 } catch (error) {
-  console.error(`[build-dashboard] blog heads: ${error instanceof Error ? error.message : error}`);
+  console.error(`[build-dashboard] heads: ${error instanceof Error ? error.message : error}`);
   process.exit(1);
 }
 process.exit(0);
