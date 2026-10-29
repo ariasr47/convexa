@@ -16,6 +16,7 @@
  *   {{tests:path}}     test files under a folder (the file index's `test` kind); `a+b` sums
  *   {{v:npm:name}}     a dependency's version from the package.json files (`^19.2.8` → 19.2)
  *   {{v:cargo:name}}   a dependency's version from the Cargo.toml files
+ *   {{version}}        Convexa's version, the root package.json's
  *   {{ops}} {{tracked}} {{nxprojects}} {{crates}} {{node}} {{short}} {{sha}} {{date}}
  * A token that names nothing (a folder that moved, a dependency that left) fails the build
  * rather than print a zero.
@@ -70,6 +71,7 @@ function resolver({ meta, facts, page }) {
     nxprojects: () => String(facts.nxProjects),
     crates: () => String(facts.crates),
     node: () => facts.node,
+    version: () => facts.version,
     short: () => meta.sha.slice(0, 8),
     sha: () => meta.sha,
     date: () => longDate(meta.date),

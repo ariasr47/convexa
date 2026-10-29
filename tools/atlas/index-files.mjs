@@ -266,9 +266,10 @@ function resolveRustMods(files, from, src) {
   return out;
 }
 
+// cargo builds each top-level tests/*.rs as one test target; fixtures and helpers below it are not tests.
 const isTest = (p) =>
   /\.(spec|test)\.[cm]?[tj]sx?$/.test(p) ||
-  /^apps\/api\/tests\/|^libs\/quant-engine\/tests\//.test(p);
+  /^(apps\/api|libs\/quant-engine)\/tests\/[^/]+\.rs$/.test(p);
 
 function tsKind(p, ext, src, test) {
   const base = path.posix.basename(p);
@@ -490,6 +491,8 @@ export function repoFacts(root, paths) {
     nxProjects: projects.size,
     crates,
     node: nodePin ? read(nodePin).trim().replace(/^v/, '') : null,
+    // Convexa's one product version (CLAUDE.md, "Versions"): the page's title and stamp name it.
+    version: JSON.parse(read('package.json')).version,
     versions: { npm, cargo },
   };
 }

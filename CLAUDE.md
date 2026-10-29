@@ -115,6 +115,10 @@ the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
   with the release status, commit and date, and refuses while `design/` or `package.json` has
   uncommitted changes. After tagging a release, emit and republish the canvas so its stamp and
   Changelog read released. To see any release's design, build `design/` at its tag.
+- **The repo atlas is tied to it too** (details in `docs/atlas/README.md`). `npm run atlas` stamps
+  `docs/atlas/index.html` with the version and titles it "Convexa Repo Atlas v<version>". In a
+  release, regenerate it once the bump is committed and commit the page before the push, so the push
+  carries it; after tagging, republish its artifact ("The published copy" in that README).
 
 ## Traps (learned the hard way — read before running these)
 

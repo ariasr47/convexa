@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
-<meta name="description" content="A map of the Convexa repository: every file, what happens on startup and on a click, and how it is built and checked. Generated from {{short}}.">
-<title>Convexa Repo Atlas</title>
+<meta name="description" content="A map of the Convexa repository: every file, what happens on startup and on a click, and how it is built and checked. Convexa v{{version}}, generated from {{short}}.">
+<title>Convexa Repo Atlas v{{version}}</title>
 <!--@FONTS-->
 <!--@CSS-->
 </head>
@@ -13,7 +13,7 @@
 <header class="top">
   <div class="wrap">
     <div class="mark">CONVEXA <span>/</span> REPO ATLAS</div>
-    <div class="snap">generated from <b title="{{sha}}">{{short}}</b> ({{date}}) · every fact cites its file</div>
+    <div class="snap">Convexa <b>v{{version}}</b> · generated from <b title="{{sha}}">{{short}}</b> ({{date}}) · every fact cites its file</div>
     <nav class="chips-nav" aria-label="Chapters">
       <a href="#map">Map</a><a href="#files">Every file</a><a href="#where">Where to look</a><a href="#stack">Stack</a><a href="#startup">Startup</a><a href="#clicks">Follow a click</a><a href="#visit">On the wire</a><a href="#react">Who owns what</a>
       <a href="#data">Data</a><a href="#api">API</a><a href="#nx">Nx</a><a href="#env">Environments</a><a href="#tests">Tests</a><a href="#bundle">Bundle</a><a href="#security">Security</a><a href="#drift">Docs vs code</a><a href="#read">Read next</a>
@@ -64,7 +64,7 @@
         <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L8,4 L0,8 z"/></marker></defs>
       </svg>
     </div>
-    <div class="arch-cap"><span><svg width="26" height="8" aria-hidden="true"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="1.2"/></svg>request or data path</span><span><svg width="26" height="8" aria-hidden="true"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 4"/></svg>off or paused on production today</span><span>dashed box: demo only · dotted box: live only</span></div>
+    <div class="arch-cap"><span><svg width="26" height="8" aria-hidden="true"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="1.2"/></svg>request or data path</span><span><svg width="26" height="8" aria-hidden="true"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 4"/></svg>off or not live on production today</span><span>dashed box: demo only · dotted box: live only</span></div>
   </div>
   <div class="lower">
     <div class="panel tree-wrap">
@@ -209,7 +209,7 @@
   <ul class="rtree" id="rtree"></ul>
   <div class="two">
     <div class="card" data-layer="data"><h3><span class="dot"></span>Stores outside React context</h3>
-      <p>Module-level stores read with <code>useSyncExternalStore</code>, so any component can subscribe without a provider: <code>liveTapeStore</code> (pages/ticker/liveTapeStore.ts:126), positions (usePortfolio.ts:124), orders (useOrders.ts:377), alerts (useAlerts.ts:98). <code>useMarketDataMode</code> keeps one shared promise per page load.</p></div>
+      <p>Module-level stores read with <code>useSyncExternalStore</code>, so any component can subscribe without a provider: <code>liveTapeStore</code> (pages/ticker/liveTapeStore.ts:126), positions (usePortfolio.ts:124), orders (useOrders.ts:377), alerts (useAlerts.ts:98), the owner gate's refusal for the session (features/auth/ownerGate.ts:69) and a research note's filed-since answer (NotePublicPanels.tsx:190). <code>useMarketDataMode</code> keeps one shared promise per page load.</p></div>
     <div class="card" data-layer="client"><h3><span class="dot"></span>No data library</h3>
       <p>No TanStack Query, SWR, Redux or Zustand. Two home-made patterns: <code>usePollingResource</code> keeps the last data on error, pauses while the tab is hidden, aborts on key change, and <code>haltOn</code> stops it for good; <code>useRead</code> reads once per key. shared/hooks/usePollingResource.ts:21-177.</p></div>
   </div>
@@ -246,7 +246,7 @@
         <tr><td><code>convexa.personas.v1</code> · <code>convexa.recent-tickers.v1</code></td><td>personas; ⌘K recents</td></tr>
         <tr><td><code>gf_session</code> (cookie)</td><td>server session, HttpOnly, HMAC-signed</td></tr>
       </tbody></table></div>
-      <p class="note" style="margin-top:10px">In the demo every key gets the prefix <code>convexa.demo.v1.</code> from <code>demoStorageKey</code> (libs/api/src/lib/demo/mode.ts:49-54), so the two sites never share state. The full user-facing list is on the Privacy page (PrivacyPage.tsx:44-98).</p>
+      <p class="note" style="margin-top:10px">In the demo every key gets the prefix <code>convexa.demo.v1.</code> from <code>demoStorageKey</code> (libs/api/src/lib/demo/mode.ts:49-54), so the two sites never share state. The live site's keys are all listed on the Privacy page (PrivacyPage.tsx:44-82).</p>
     </div>
   </div>
 </section>
@@ -256,12 +256,12 @@
   <div class="sec-head">
     <span class="eyebrow">10 · Inside the API</span>
     <h2 id="h-api">From <code>api-rust serve</code> to a listening socket</h2>
-    <p>The Rust service in <button class="folder-link" data-folder="apps/api" data-layer="api"><span class="dot"></span>apps/api</button> is one binary with 21 top-level subcommands; <code>serve</code> is the web API.</p>
+    <p>The Rust service in <button class="folder-link" data-folder="apps/api" data-layer="api"><span class="dot"></span>apps/api</button> is one binary with 22 top-level subcommands; <code>serve</code> is the web API.</p>
   </div>
   <ol class="steps" id="apiSteps"></ol>
   <div class="two">
     <div class="card" data-layer="api"><h3><span class="dot"></span>A request's path through the server</h3>
-      <p><code>TraceLayer</code> → <code>CORS</code> (production: exact origins from <code>ALLOWED_BROWSER_ORIGINS</code>, with credentials) → <code>rate_limit_middleware</code> → handler. Auth is not a layer: each protected handler asks for the signed-in user itself, through the <code>AuthUser</code> extractor, or <code>require_user</code> where its body must parse first (routes/auth.rs:1082-1113). The API adds no compression, timeout or security-header layers; the edge supplies the headers. server.rs:284-374; apps/api/Cargo.toml:53.</p></div>
+      <p><code>TraceLayer</code> → <code>CORS</code> (production: exact origins from <code>ALLOWED_BROWSER_ORIGINS</code>, with credentials) → <code>CatchPanicLayer</code> (a handler that panics answers the closed 500, CORS headers included, not a dropped connection) → <code>rate_limit_middleware</code> → handler. Auth is not a layer: each protected handler asks for the signed-in user itself, through the <code>AuthUser</code> extractor, or <code>require_user</code> where its body must parse first; the 14 operations that serve values computed from the licensed options feed ask for the owner, an account on <code>OWNER_EMAILS</code>, the same way, through <code>OwnerUser</code> or <code>require_owner</code> (routes/auth.rs:1082-1155; the list is <code>OWNER_ONLY_OPERATIONS</code>, routes/mod.rs:2275-2290). The API adds no compression, timeout or security-header layers; the edge supplies the headers. server.rs:288-400; apps/api/Cargo.toml:53.</p></div>
     <div class="card" data-layer="data" id="healthCard"><h3><span class="dot"></span>Production's health, when this page was generated</h3><p id="healthBody"></p></div>
   </div>
   <h3>The {{ops}} operations, by area</h3>
@@ -285,7 +285,7 @@
         <tr><td><code>scope:shared</code></td><td class="no">✕ no</td><td class="yes">✓ yes</td><td class="no">✕ no</td></tr>
         <tr><td><code>scope:backend</code></td><td class="no">✕ no</td><td class="no">✕ no</td><td class="yes">✓ yes</td></tr>
       </tbody></table></div>
-      <p class="note" style="margin-top:10px">Also: apps import only libs, libs only libs, e2e may import apps and libs. Public pages (landing, blog, methodology, 404) may not import <code>@convexa/api</code>, the trading domain, <code>AuthContext</code> or WebGL libraries, and nobody may import the MUI barrel. eslint.config.mjs:68-256.</p>
+      <p class="note" style="margin-top:10px">Also: apps import only libs, libs only libs, e2e may import apps and libs. Public pages (landing, blog, methodology, 404) may not import <code>@convexa/api</code>, the trading domain, <code>AuthContext</code> or WebGL libraries, and nobody may import the MUI barrel. eslint.config.mjs:131-323.</p>
     </div>
     <div>
       <h3 style="margin-bottom:10px"><code>npm run verify</code>, step by step</h3>
@@ -299,7 +299,7 @@
   <div class="sec-head">
     <span class="eyebrow">12 · Environments</span>
     <h2 id="h-env">Five places the app runs, and what each one fakes</h2>
-    <p>The data mode is fixed at build time and baked into the bootstrap script; app code never reads it from <code>import.meta.env</code>. tools/build-dashboard.mjs:9-26; vite.config.mts:17-72.</p>
+    <p>The data mode is fixed at build time and baked into the bootstrap script; app code never reads it from <code>import.meta.env</code>. tools/build-dashboard.mjs:9-26; vite.config.mts:45-101.</p>
   </div>
   <div class="tbl"><table id="envTable"><thead><tr><th>Where</th><th>How it starts</th><th>Data</th><th>Sign-in</th><th>Mocked</th></tr></thead><tbody></tbody></table></div>
   <div class="flowcap"><h3>How a push becomes a deploy</h3><span class="muted" style="font-size:13px">each host builds for itself; there is no CI</span></div>
@@ -360,7 +360,7 @@
     <dl class="gl" id="gloss"></dl>
   </div>
   <div class="foot">
-    <span>Generated by <code>npm run atlas</code> (tools/atlas/run.mjs) from a clean export of <span class="mono">{{sha}}</span>, committed {{date}}. File counts, folder sizes, versions, the operation count, the bundle numbers, the filing and token checks and every recording come from that commit when the page was generated. Recordings ran on local builds of it; live runs read production's <code>/api</code>.</span>
+    <span>Generated by <code>npm run atlas</code> (tools/atlas/run.mjs) from a clean export of <span class="mono">{{sha}}</span> (Convexa v{{version}}), committed {{date}}. File counts, folder sizes, versions, the operation count, the bundle numbers, the filing and token checks and every recording come from that commit when the page was generated. Recordings ran on local builds of it; live runs read production's <code>/api</code>.</span>
     <span>The prose facts nothing derives (line citations, test-case counts, limits and timeouts) are listed in docs/atlas/README.md under “Hand-maintained facts”, each with the date it was last verified.</span>
   </div>
 </section>

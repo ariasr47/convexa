@@ -149,7 +149,7 @@ const ARCH = {
     w: 82,
     h: 104,
     t: 'Options',
-    s: ['Massive', 'feed', 'paused'],
+    s: ['Massive', 'feed', 'not live'],
     k: 'PAID',
     folder: 'apps/api/src/infrastructure',
   },
@@ -244,7 +244,7 @@ const T = [
         L: 'api',
         a: 'apirust',
         d: 'Rust backend, crate api-rust: Axum on Tokio.',
-        more: 'One binary with 21 top-level subcommands; <code>serve</code> is the web API. Production runs it on Railway from a static musl image (<code>FROM scratch</code>, uid 10001). It reads public data, computes dealer structure when the options feed is on, and keeps accounts and the paper book in Postgres.',
+        more: 'One binary with 22 top-level subcommands; <code>serve</code> is the web API. Production runs it on Railway from a static musl image (<code>FROM scratch</code>, uid 10001). It reads public data, computes dealer structure when the options feed is on, and keeps accounts and the paper book in Postgres.',
         runs: 'A Railway container behind the Pages Function. Locally on :8000 via <code>npm run serve:api</code>.',
         libs: [
           'axum {{v:cargo:axum}}',
@@ -265,11 +265,11 @@ const T = [
           '← the Pages Function forwards <code>/api/*</code>',
           '→ Postgres: accounts, sessions, the book',
           '→ public sources: SEC, Treasury, Fed…',
-          '→ Massive options feed (paused in production)',
+          '→ Massive options feed (not live in production)',
         ],
         files: [
-          'src/main.rs:381-460 · mode guard, .env, CLI',
-          'src/server.rs:22-136 · bind, CORS, workers',
+          'src/main.rs:414-493 · mode guard, .env, CLI',
+          'src/server.rs:25-140 · bind, CORS, workers',
           'src/state.rs:266-711 · AppState',
           'src/routes/mod.rs:36-207 · contract router',
           'Dockerfile · ../../railway.json',
@@ -288,8 +288,8 @@ const T = [
               'routes/mod.rs:60-202 · registrations',
               'routes/contract_router.rs:133-214',
               'routes/health.rs:250 · /api/health',
-              'routes/public_data.rs:1301-1328',
-              'routes/stream.rs:405,524 · SSE',
+              'routes/public_data.rs:1494-1521',
+              'routes/stream.rs:420,541 · SSE',
             ],
             go: '#api',
           },
@@ -307,20 +307,20 @@ const T = [
                 c: '{{n:apps/api/src/services/public_data}}',
                 L: 'api',
                 a: 'sources',
-                d: 'Reads SEC, Treasury, the Fed, CFTC, BLS and BEA through caches.',
+                d: 'Reads SEC, Treasury, the OFR, the Fed, CFTC, BLS and BEA through caches.',
                 more: '<code>fetch.rs</code> sets the user agents, 20 s timeouts and size caps, and spaces SEC requests 200 ms apart. <code>cache.rs</code> shares one fetch per key and serves the <b>last good copy</b> when a refresh fails, asking again after 600 s. FINRA stays Off until its display terms are confirmed.',
                 runs: 'Inside api-rust; answers <code>/api/public-data/*</code>.',
                 libs: ['reqwest', 'csv', 'flate2', 'serde_json'],
                 talks: [
                   '→ sec.gov, data.sec.gov',
-                  '→ home.treasury.gov, fiscaldata',
+                  '→ home.treasury.gov, fiscaldata, financialresearch.gov',
                   '→ federalreserve.gov, newyorkfed.org',
                   '→ cftc.gov, bls.gov, bea.gov',
                 ],
                 files: [
                   'fetch.rs:9-165',
                   'cache.rs:59-241',
-                  'mod.rs:172-204 · TTLs',
+                  'mod.rs:177-211 · TTLs',
                   'finra.rs:15-21 · the Off switch',
                 ],
                 go: '#data',
@@ -336,7 +336,7 @@ const T = [
                 files: [
                   'analytics.rs:29-36 · paused gate',
                   'analytics.rs:259-475 · compute',
-                  'config.rs:323-325 · cache TTL',
+                  'config.rs:396-398 · cache TTL',
                 ],
                 go: '#data',
               },
@@ -352,7 +352,7 @@ const T = [
                   'cookies.rs:9,51-66',
                   'throttle.rs:16-19',
                   'google_oauth.rs:33-45',
-                  'routes/auth.rs:845-867,1324-1357',
+                  'routes/auth.rs:845-867,1366-1399',
                 ],
                 go: '#security',
               },
@@ -367,7 +367,7 @@ const T = [
             d: 'Postgres pool, 13 migrations, schema checks, stores.',
             more: 'Migrations run only through <code>api-rust postgres-migrate</code>, which Railway runs before every deploy; the server itself never migrates. With no <code>DATABASE_URL</code> the stores fall back to JSON files.',
             libs: ['sqlx {{v:cargo:sqlx}} (feature postgres)'],
-            files: ['migrations.rs:16-251', 'migration_runner.rs:735,1096', 'postgres.rs:19-75'],
+            files: ['migrations.rs:11-329', 'migration_runner.rs:735,1101', 'postgres.rs:19-75'],
             go: '#api',
           },
           {
@@ -395,7 +395,7 @@ const T = [
             d: 'The byte-identity oracle that pins the contract files.',
             more: 'Five generated contract files are pinned by sha256 here and in a fixture manifest. Any drift fails <code>cargo test --test capacity_identity</code>.',
             files: [
-              'identity.rs:83-104 · the pins',
+              'identity.rs:108-129 · the pins',
               'tests/fixtures/capacity-baseline/v1/identity/manifest.json',
             ],
             go: '#data',
@@ -467,10 +467,10 @@ const T = [
         ],
         files: [
           'index.html:15-76',
-          'vite.config.mts:24-169',
+          'vite.config.mts:52-269',
           'src/main.tsx:5-8',
           'src/mountApp.tsx:9-26',
-          'src/app/app.tsx:62-344',
+          'src/app/app.tsx:68-386',
         ],
         go: '#react',
         kids: [
@@ -481,11 +481,11 @@ const T = [
             L: 'client',
             a: 'spa',
             d: 'Providers and the route table.',
-            more: 'Wraps <code>AuthProvider → AppThemeProvider → AuthDialogProvider → Routes</code>. Every page is <code>React.lazy</code> except Landing, which renders eagerly.',
+            more: 'Wraps <code>AuthProvider → AppThemeProvider → AuthDialogProvider → Routes</code>. Every page is <code>React.lazy</code> except Landing and DemoOperatorUnavailable (what the demo shows for the two <code>/_ops</code> pages), which render eagerly.',
             files: [
-              'app.tsx:62-146 · lazy pages',
-              'app.tsx:236-325 · routes',
-              'app.tsx:341-344 · providers',
+              'app.tsx:68-173 · lazy pages',
+              'app.tsx:274-367 · routes',
+              'app.tsx:383-386 · providers',
             ],
             go: '#react',
           },
@@ -496,7 +496,7 @@ const T = [
             L: 'client',
             a: 'spa',
             d: 'AppShell, TopNav, Footer, ⌘K palette.',
-            files: ['AppShell.tsx:38-231', 'TopNav.tsx:63-102', 'CommandPalette/'],
+            files: ['AppShell.tsx:68-306', 'TopNav.tsx:67-106', 'CommandPalette/'],
             go: '#react',
           },
           {
@@ -514,10 +514,10 @@ const T = [
                 L: 'client',
                 a: 'spa',
                 d: 'The desk, with and without the options feed.',
-                more: '<code>TickerDashboard</code> runs when the options feed is live, and in the demo. On production the feed is paused, so <code>PublicDesk</code> renders instead: filings, insiders, the note and a TradingView daily chart.',
+                more: '<code>TickerDashboard</code> runs in the demo, and behind the owner gate when the options feed is live. On production the options feed is not live (the API holds no vendor key), so <code>PublicDesk</code> renders instead: filings, insiders, the note and a TradingView daily chart.',
                 files: [
-                  'TickerDashboard.tsx:487-1448',
-                  'public-desk/PublicDesk.tsx:58-615',
+                  'TickerDashboard.tsx:499-1471',
+                  'public-desk/PublicDesk.tsx:58-666',
                   'technical-analysis/TradingViewEmbed.tsx:49-100',
                 ],
                 go: '#react',
@@ -530,7 +530,7 @@ const T = [
                 a: 'spa',
                 d: 'The front door; eager; WebGL gamma surface.',
                 more: 'Makes no data calls. The hero starts as an inline SVG poster and upgrades to raw WebGL2 when it can. On idle it prefetches the Ticker and Scanner chunks.',
-                files: ['Landing.tsx:174-558', 'GammaSurfaceHero.tsx:55-498', 'heroGl.ts:6-743'],
+                files: ['Landing.tsx:200-651', 'GammaSurfaceHero.tsx:55-504', 'heroGl.ts:6-743'],
                 go: '#visit',
               },
               {
@@ -547,7 +547,7 @@ const T = [
                 c: '{{n:apps/dashboard/src/app/pages/scanner+apps/dashboard/src/app/pages/positions+apps/dashboard/src/app/pages/alerts}}',
                 L: 'client',
                 a: 'spa',
-                d: 'Signed-in pages on live; open in the demo.',
+                d: 'Scanner and positions are signed-in pages on live, behind the owner gate; alerts are public. All open in the demo.',
               },
               {
                 p: 'apps/dashboard/src/app/pages/operator',
@@ -570,7 +570,7 @@ const T = [
             files: [
               'trading/positions/store.ts:61-437',
               'trading/positions/bookSync.ts:10-41',
-              'auth/AuthContext.tsx:113-231',
+              'auth/AuthContext.tsx:114-249',
             ],
             go: '#data',
           },
@@ -583,7 +583,7 @@ const T = [
             d: 'UI kit, charts, theme tokens, hooks, state words.',
             more: '<code>theme/tokens.ts</code> is the only home of colour values; <code>dataState/vocabulary.ts</code> holds the closed list of state words; <code>hooks/usePollingResource.ts</code> is the polling engine.',
             files: [
-              'theme/tokens.ts:30-340',
+              'theme/tokens.ts:30-345',
               'dataState/vocabulary.ts:32-136',
               'hooks/usePollingResource.ts:21-177',
             ],
@@ -638,7 +638,7 @@ const T = [
         L: 'shared',
         a: 'client',
         d: '@convexa/api: typed client, generated schema, the demo.',
-        more: 'One <code>openapi-fetch</code> client. Cookies go only to the routes that need them; in the demo the same calls are answered by <code>demoFetch</code> instead of the network. Components never call <code>fetch</code> directly.',
+        more: 'One <code>openapi-fetch</code> client. Every call is same-origin, so the session cookie goes with it, as the owner-gated reads need; in the demo the same calls are answered by <code>demoFetch</code> instead of the network. Components never call <code>fetch</code> directly.',
         runs: 'Inside the browser bundle; consumed as TypeScript source, with no build step.',
         libs: [
           'openapi-fetch {{v:npm:openapi-fetch}}',
@@ -671,7 +671,7 @@ const T = [
             d: 'The demo: an authored day, answered in the browser.',
             more: 'Scenario <code>portfolio-2026-10-07-v1</code>: six symbols, time fixed at 2026-10-07 18:30 UTC, a 30-minute playback at 5 s per real second. Unsupported calls answer <code>demo_unsupported</code> (422) instead of reaching a network.',
             runs: 'In the browser, staging build only.',
-            files: ['transport.ts:27-1671', 'workspace.ts:26-75,202-571', 'mode.ts:4,28-54'],
+            files: ['transport.ts:27-1703', 'workspace.ts:26-75,202-574', 'mode.ts:4,28-54'],
             go: '#data',
           },
         ],
@@ -716,13 +716,13 @@ const T = [
     L: 'tool',
     a: 'tools',
     d: 'Scripts for build, contract, verify, notes, supply chain, this atlas.',
-    more: 'The glue Nx calls. <code>build-dashboard.mjs</code> picks demo or live, runs the Nx build and writes blog heads. <code>api-contract.mjs</code> generates and checks the contract. <code>verify.mjs</code> and <code>hooks/pre-push</code> are the local gates. <code>atlas/</code> regenerates this page.',
+    more: 'The glue Nx calls. <code>build-dashboard.mjs</code> picks demo or live, runs the Nx build and writes blog heads. <code>api-contract.mjs</code> generates and checks the contract. <code>verify.mjs</code> and <code>hooks/pre-push</code> are the local gates; the hook also refuses a push of <code>main</code> or <code>staging</code> at a version that is already out. <code>atlas/</code> regenerates this page.',
     runs: 'On your machine and in the Pages builder.',
     libs: ['node:test', 'gitleaks (binary)'],
     files: [
       'build-dashboard.mjs:9-57',
-      'api-contract.mjs:2064-2281',
-      'verify.mjs:15-78',
+      'api-contract.mjs:2081-2298',
+      'verify.mjs:242-421',
       'hooks/pre-push:20-58',
       'check-dashboard-bundle.mjs:41-233',
     ],
@@ -846,7 +846,7 @@ const T = [
     L: 'tool',
     a: 'tools',
     d: 'package.json, nx.json, Cargo.toml, railway.json and friends.',
-    more: '<code>package.json</code> (npm workspaces and every script), <code>nx.json</code>, <code>Cargo.toml</code> (two crates, thin LTO), <code>tsconfig.base.json</code> (strict, nodenext), <code>eslint.config.mjs</code> (module boundaries), <code>railway.json</code> (watch paths, migrate before deploy, health check), <code>.nvmrc</code> (Node {{node}}), <code>docker-compose.yml</code>, <code>LICENSE</code> (MIT).',
+    more: '<code>package.json</code> (npm workspaces, every script and the one product version, which the footer shows), <code>nx.json</code>, <code>Cargo.toml</code> (two crates, thin LTO), <code>tsconfig.base.json</code> (strict, nodenext), <code>eslint.config.mjs</code> (module boundaries), <code>railway.json</code> (watch paths, migrate before deploy, health check), <code>.nvmrc</code> (Node {{node}}), <code>docker-compose.yml</code>, <code>LICENSE</code> (MIT).',
     go: '#nx',
   },
 ];
@@ -878,8 +878,8 @@ const STACK = [
     'client',
     'Recharts',
     '{{v:npm:recharts}}',
-    'SVG charts on research and markets pages; a bundle gate keeps it out of Positions',
-    ['apps/dashboard/src/app/pages/research'],
+    "Only the operator page's latency trend (<code>/_ops/metrics</code>) uses it; research charts are hand-drawn SVG, and a bundle gate keeps Recharts out of Positions",
+    ['apps/dashboard/src/app/pages/operator'],
   ],
   [
     'client',
@@ -928,7 +928,7 @@ const STACK = [
     'api',
     'tower-http',
     '{{v:cargo:tower-http}}',
-    'Two layers only: CORS and request tracing',
+    'Three layers: a panic guard (a handler that panics answers 500), CORS and request tracing',
     ['apps/api'],
   ],
   [
@@ -1089,23 +1089,23 @@ const VISIT = [
   ],
   [
     'The head starts everything at once',
-    'Two font preloads (Plex Sans 400, Plex Mono 400), one small stylesheet, <code>modulepreload</code> for the runtime, shared, mui, router and streams chunks, then the blocking <code>convexa-bootstrap-&lt;hash&gt;.js</code>. It sets <code>window.__CONVEXA_BOOT__ = {mode, key}</code> and <code>data-theme</code> before anything paints, so the theme never flashes.',
-    'index.html:46-76 · vite.config.mts:24-72',
+    'Two font preloads (Plex Sans 400, Plex Mono 400), one small stylesheet, <code>modulepreload</code> for the runtime, shared, mui, router and streams chunks, then the blocking <code>convexa-bootstrap-&lt;hash&gt;.js</code>. It sets <code>window.__CONVEXA_BOOT__ = {mode, key}</code> and <code>data-theme</code> before anything paints, so the theme never flashes. Last, one <code>modulepreload</code> per chunk of the app graph behind <code>mountApp</code>, so the browser fetches the app with the entry instead of after it.',
+    'index.html:46-76 · vite.config.mts:52-148',
   ],
   [
     'main.tsx seeds the demo, then loads the app',
-    "<code>initializeDemoWorkspace()</code> writes the demo's localStorage (a no-op on live). Only then does <code>await import('./mountApp')</code> fetch the app graph: mountApp, react and about 20 small shared chunks.",
+    "<code>initializeDemoWorkspace()</code> writes the demo's localStorage (a no-op on live). Only then does <code>await import('./mountApp')</code> run the app graph: mountApp, react and the small shared chunks they import. The head's preloads started fetching them with the entry, and a preload never runs a module.",
     'main.tsx:5-8',
   ],
   [
     'React mounts the provider stack',
     '<code>createRoot</code> → StrictMode → RootErrorBoundary → BrowserRouter → AuthProvider → AppThemeProvider → AuthDialogProvider → Routes → AppShell. A throw that no inner boundary catches shows the root notice with a Reload button, never a blank page.',
-    'mountApp.tsx:9-26 · app.tsx:341-344',
+    'mountApp.tsx:9-26 · app.tsx:383-386',
   ],
   [
     'Two quiet calls on the live site',
     "AuthProvider asks <code>GET /api/auth/session</code> once and never blocks rendering. AppShell's MarketDataNotice asks <code>GET /api/health</code> for the market-data mode. The demo makes neither: it starts signed in as the demo account.",
-    'AuthContext.tsx:148-151 · useMarketDataMode.ts:5-12',
+    'AuthContext.tsx:149-152 · useMarketDataMode.ts:5-12',
   ],
   [
     'The page paints',
@@ -1137,14 +1137,14 @@ const WF_NOTES = {
   demoTicker:
     "Demo desk: the “static data” requests are the demo's seed files (<code>spy.seed-*.json</code> and friends), bundled at build time and read from the demo's own host. No API and no third party.",
   liveTicker:
-    "Live desk with the feed paused: <code>PublicDesk</code> asks <code>/api/public-data/tickers/NVDA</code> once, then the TradingView widget loads %tv% requests from its own hosts (folded into one row). The largest paint waits for the desk's text.",
+    "Live desk with no options feed (<code>/api/health</code> says <code>not_live</code>): <code>PublicDesk</code> asks <code>/api/public-data/tickers/NVDA</code> once, then the TradingView widget loads %tv% requests from its own hosts (folded into one row). The largest paint waits for the desk's text.",
 };
 
 /* ---------- who owns what ---------- */
 const R = {
   n: 'index.html + bootstrap',
   k: 'boot',
-  f: 'apps/dashboard/index.html:46-76 · vite.config.mts:24-72',
+  f: 'apps/dashboard/index.html:46-76 · vite.config.mts:52-101',
   o: 'Sets <b>window.__CONVEXA_BOOT__</b> (mode, storage-key prefix) and <b>data-theme</b> before React exists.',
   kids: [
     {
@@ -1174,7 +1174,7 @@ const R = {
                     {
                       n: 'AuthProvider',
                       k: 'provider',
-                      f: 'features/auth/AuthContext.tsx:113-215',
+                      f: 'features/auth/AuthContext.tsx:114-233',
                       o: 'Owns <b>ready, authenticated, user, settings, googleAvailable, subsystemDegraded</b>. Reads <b>GET /api/auth/session</b> once on mount (the demo starts signed in). On sign-in it pulls the server book; on sign-out it pushes first.',
                       kids: [
                         {
@@ -1192,37 +1192,37 @@ const R = {
                                 {
                                   n: 'Routes',
                                   k: 'route',
-                                  f: 'app/app.tsx:236-325',
+                                  f: 'app/app.tsx:274-367',
                                   o: '<b>/_ops/*</b> sit outside the shell (unavailable in the demo); everything else nests in AppShell.',
                                   kids: [
                                     {
                                       n: 'AppShell',
                                       k: 'layout',
-                                      f: 'shell/AppShell.tsx:38-231',
+                                      f: 'shell/AppShell.tsx:68-306',
                                       o: 'Skip link · demo banner (demo clock) · <b>MarketDataNotice</b> (live: GET /api/health) · TopNav · ⌘K palette · &lt;main&gt;&lt;Outlet/&gt; · Footer.',
                                       kids: [
                                         {
                                           n: '/  →  Landing',
                                           k: 'page',
-                                          f: 'pages/landing/Landing.tsx:174-558',
+                                          f: 'pages/landing/Landing.tsx:200-651',
                                           o: '<b>Eager.</b> No data calls. Owns the hash-scroll effect and schedules the idle prefetch.',
                                           kids: [
                                             {
                                               n: 'GammaSurfaceHero',
                                               k: 'component',
-                                              f: 'GammaSurfaceHero.tsx:196-498',
+                                              f: 'GammaSurfaceHero.tsx:196-504',
                                               o: 'Owns <b>mode: poster → webgl or fallback</b>. Its model is computed at module load; WebGL2 draws only on demand.',
                                             },
                                             {
                                               n: 'StructureFieldSample · ScoreStripSample · AiReadSample',
                                               k: 'component',
-                                              f: 'Landing.tsx:373-401',
+                                              f: 'Landing.tsx:469-497',
                                               o: 'Static samples, tagged <b>Illustrative sample</b>.',
                                             },
                                             {
                                               n: 'CTA band',
                                               k: 'component',
-                                              f: 'Landing.tsx:484-558',
+                                              f: 'Landing.tsx:576-651',
                                               o: 'Live: <b>See the full demo →</b> to staging. Demo: /ticker.',
                                             },
                                           ],
@@ -1230,19 +1230,19 @@ const R = {
                                         {
                                           n: '/ticker/:ticker  →  TickerDeskRoute',
                                           k: 'route',
-                                          f: 'app.tsx:169-184',
-                                          o: 'Demo: six symbols, else DemoSymbolMissing. Live: waits for the market-data mode, then <b>TickerDashboard</b> (feed live) or <b>PublicDesk</b> (paused or not live).',
+                                          f: 'app.tsx:198-221',
+                                          o: 'Demo: six symbols, else DemoSymbolMissing. Live: waits for the market-data mode, then <b>TickerDashboard</b> (feed live) or <b>PublicDesk</b> (paused or not live); the full desk sits inside the owner gate (<b>OwnerGateBoundary</b>), which swaps it for the sign-in wall (signed out) or the owner-only wall (any other account) once a read is refused.',
                                           kids: [
                                             {
                                               n: 'TickerDashboard',
                                               k: 'page',
-                                              f: 'pages/ticker/TickerDashboard.tsx:487-1448',
+                                              f: 'pages/ticker/TickerDashboard.tsx:499-1471',
                                               o: 'Reads <b>SSE /api/stream/{SYM}</b> into liveTapeStore; <b>GET /api/ticker/{t}</b> every 60 s (stops on market_data_paused); <b>GET /api/scan/{s}/history</b> every 120 s; plus positions, the AI read, alerts and the order engine. The widgets that read only the bundle are memoized, so a tape tick re-renders only what shows the tape.',
                                               kids: [
                                                 {
                                                   n: 'CommandDeck',
                                                   k: 'component',
-                                                  f: 'CommandDeck.tsx:251-371',
+                                                  f: 'CommandDeck.tsx:312-445',
                                                   o: 'Toolbar, <b>TickerHeader</b> (last trade from useLiveTape, freshness ticking each second), QuickSymbols, tabs.',
                                                 },
                                                 {
@@ -1260,13 +1260,13 @@ const R = {
                                                 {
                                                   n: 'AiRecPanel · LiveTape · PositionBrief · OrdersWidget',
                                                   k: 'component',
-                                                  f: 'TickerDashboard.tsx:1115-1159',
+                                                  f: 'TickerDashboard.tsx:1136-1180',
                                                   o: 'The read-and-plan column.',
                                                 },
                                                 {
                                                   n: 'Context band',
                                                   k: 'component',
-                                                  f: 'TickerDashboard.tsx:1208-1281',
+                                                  f: 'TickerDashboard.tsx:1229-1304',
                                                   o: 'StraddleMove, TermStructure, DealerFlowProjection, MarketContext, FreshPositioning, OffExchangeBlocks, Setups, in quiet chrome.',
                                                 },
                                               ],
@@ -1274,7 +1274,7 @@ const R = {
                                             {
                                               n: 'PublicDesk',
                                               k: 'page',
-                                              f: 'pages/ticker/public-desk/PublicDesk.tsx:58-615',
+                                              f: 'pages/ticker/public-desk/PublicDesk.tsx:58-666',
                                               o: 'What production shows today. Reads <b>GET /api/public-data/tickers/{t}</b> once; never calls the bundle, stream, AI or scan endpoints. TradingView daily chart, note, filings, insiders; feed panels say <b>Not live</b>.',
                                             },
                                           ],
@@ -1282,19 +1282,19 @@ const R = {
                                         {
                                           n: '/positions · /scanner  →  RequireAuth',
                                           k: 'route',
-                                          f: 'features/auth/RequireAuth.tsx:70-192',
-                                          o: 'Live: a visible sign-in wall until the session says yes (UX only; the server enforces). Demo: always open. Positions polls every 60 s; Scanner every 30 s, plus SSE prices.',
+                                          f: 'features/auth/RequireAuth.tsx:150-376',
+                                          o: 'Live: a visible sign-in wall until the session says yes, then the owner gate: an account the API refuses with 403 <b>owner_only</b> sees the owner-only wall instead (both UX only; the server enforces). Demo: always open. Positions polls every 60 s; Scanner every 30 s, plus SSE prices.',
                                         },
                                         {
                                           n: '/research/* · /blog/* · /methodology · /alerts · /settings · trust pages',
                                           k: 'page',
-                                          f: 'app.tsx:279-319',
+                                          f: 'app.tsx:317-361',
                                           o: 'All lazy, each wrapped in a route ErrorBoundary and Suspense.',
                                         },
                                         {
                                           n: '*  →  NotFound',
                                           k: 'page',
-                                          f: 'app.tsx:325',
+                                          f: 'app.tsx:367',
                                           o: "The shell's last child, so a 404 keeps the nav and footer.",
                                         },
                                       ],
@@ -1327,7 +1327,7 @@ const FLOWS = [
       [
         'source',
         'Agency endpoint',
-        'SEC EDGAR and XBRL, Treasury, Fed H.4.1, NY Fed RRP, CFTC TFF, BLS, BEA.',
+        'SEC EDGAR and XBRL, Treasury, Fed H.4.1, NY Fed RRP, CFTC TFF, OFR FSI, BLS, BEA.',
         'public_data/*.rs',
       ],
       [
@@ -1346,12 +1346,12 @@ const FLOWS = [
         'api',
         'TtlCache',
         'One fetch per key; on failure keep the last good copy and retry after 600 s. TTLs from 1 h to 30 days.',
-        'cache.rs:194-241 · mod.rs:172-204',
+        'cache.rs:194-241 · mod.rs:177-211',
       ],
       [
         'api',
         'Route',
-        '<code>/api/public-data/{markets | filings | tickers/:t}</code>, always 200; the state is in the body.',
+        '<code>/api/public-data/{markets | filings | tickers/:t}</code>: 200 whatever the sources did, with the state in the body; only bad input is an error (a 422).',
         'routes/public_data.rs:27-92',
       ],
       [
@@ -1364,7 +1364,7 @@ const FLOWS = [
         'shared',
         'Typed client',
         'An openapi-fetch call behind the convexa.ts facade.',
-        'libs/api/src/lib/convexa.ts:2221',
+        'libs/api/src/lib/convexa.ts:2292',
       ],
       [
         'client',
@@ -1375,7 +1375,7 @@ const FLOWS = [
     ],
   },
   {
-    h: 'Dealer structure (needs the paid feed; paused on production)',
+    h: 'Dealer structure (needs the paid feed; not live on production)',
     sub: 'what the full desk runs on when MARKET_DATA_MODE=live',
     st: [
       [
@@ -1396,18 +1396,18 @@ const FLOWS = [
         'GEX = γ × OI × 100 × S² × 0.01; walls; flip on a ±20 % grid; max pain; SIMD.',
         'gex.rs:5-259 · gamma_flip.rs',
       ],
-      ['api', 'GexCache', '10 s, or 20 s for liquid names.', 'config.rs:323-325'],
+      ['api', 'GexCache', '10 s, or 20 s for liquid names.', 'config.rs:396-398'],
       [
         'api',
         'Bundle + stream',
-        '<code>GET /api/ticker/{t}</code> and SSE <code>/api/stream/{t}</code> with a 15 s keep-alive.',
-        'market.rs:781 · stream.rs:524',
+        '<code>GET /api/ticker/{t}</code> and SSE <code>/api/stream/{t}</code> with a 15 s keep-alive; both refuse anyone but the owner (<code>OWNER_EMAILS</code>) with a 403.',
+        'market.rs:958 · stream.rs:541',
       ],
       [
         'client',
         'TickerDashboard',
-        'Polls every 60 s and halts on paused; the stream feeds liveTapeStore; offline after 15 s of silence.',
-        'useTickerBundle.ts:15-107',
+        'Polls every 60 s and halts on paused or an owner-gate 403; the stream feeds liveTapeStore; offline after 15 s of silence.',
+        'useTickerBundle.ts:19-114',
       ],
     ],
   },
@@ -1425,13 +1425,13 @@ const FLOWS = [
         'shared',
         'Workspace seed',
         'Writes localStorage under <code>convexa.demo.v1.</code> before the app loads.',
-        'demo/workspace.ts:202-571',
+        'demo/workspace.ts:202-574',
       ],
       [
         'shared',
         'demoFetch',
         'Answers the same typed calls from scenario <code>portfolio-2026-10-07-v1</code>.',
-        'demo/transport.ts:1191-1671',
+        'demo/transport.ts:1223-1703',
       ],
       [
         'shared',
@@ -1443,7 +1443,7 @@ const FLOWS = [
         'client',
         'Same pages',
         'Every figure tagged <b>Demo · sample data</b>; sign-in walls open.',
-        'RequireAuth.tsx:76',
+        'RequireAuth.tsx:156',
       ],
     ],
   },
@@ -1469,7 +1469,7 @@ const FLOWS = [
         'tool',
         'openapi-typescript',
         'Generates <code>schema.ts</code>; consumers are type-checked against it.',
-        'api-contract.mjs:1880',
+        'api-contract.mjs:1897',
       ],
       [
         'shared',
@@ -1481,7 +1481,7 @@ const FLOWS = [
         'tool',
         'Guards',
         '<code>api:contract:check</code> regenerates and byte-compares; <code>capacity_identity</code> checks five pins.',
-        'identity.rs:83-104',
+        'identity.rs:108-129',
       ],
     ],
   },
@@ -1493,21 +1493,21 @@ const FLOWS = [
         'client',
         'Write',
         'Saves <code>convexa.positions.v3</code>, <code>touch_at</code> and the owner tag.',
-        'positions/store.ts:318-332',
+        'positions/store.ts:317-331',
       ],
-      ['client', 'Wait 800 ms', 'Then <code>pushLocalBook()</code>.', 'store.ts:368-376'],
+      ['client', 'Wait 800 ms', 'Then <code>pushLocalBook()</code>.', 'store.ts:375-383'],
       [
         'edge',
         'PUT /api/book',
         'Through the Pages Function, with the session cookie.',
         'bookSync.ts:26-41',
       ],
-      ['data', 'user_book', 'A latest-wins upsert in Postgres.', 'routes/book.rs:460-492'],
+      ['data', 'user_book', 'A latest-wins upsert in Postgres.', 'routes/book.rs:331-363'],
       [
         'client',
         'Sign-in and sign-out',
         "Sign-in drops another account's book, then pulls if newer. Sign-out pushes, logs out, and clears only if the push succeeded.",
-        'AuthContext.tsx:162-200',
+        'AuthContext.tsx:180-218',
       ],
     ],
   },
@@ -1518,22 +1518,22 @@ const API_STEPS = [
   [
     'Refuse a wrong mode before reading any .env',
     '<code>APP_ENV</code> must be prod, dev, test or staging; unset on Railway or in a release build means no start.',
-    'main.rs:381-460',
+    'main.rs:414-493',
   ],
   [
     'Load .env, then .env.$APP_ENV; start tracing',
     'Logs go to stderr, filtered by <code>RUST_LOG</code>.',
-    'main.rs:344-397',
+    'main.rs:377-430',
   ],
   [
     'Parse the CLI; <code>serve</code> builds Config from the environment',
     '<code>MARKET_DATA_MODE</code> is read before <code>MASSIVE_API_KEY</code>, which is required only when live.',
-    'main.rs:655-678 · config.rs:294-582',
+    'main.rs:689-712 · config.rs:367-657',
   ],
   [
     'Production only: validate the profile',
     'Required keys, a 20 s schema preflight (verify only, never migrate), archive-root probes.',
-    'server.rs:157-269 · preflight.rs:7-51',
+    'server.rs:161-273 · preflight.rs:7-51',
   ],
   [
     'Build AppState',
@@ -1542,20 +1542,20 @@ const API_STEPS = [
   ],
   [
     'Build the router and its layers',
-    'One contract router; TraceLayer → CORS → rate limit.',
-    'server.rs:82,284-299',
+    'One contract router; TraceLayer → CORS → panic guard → rate limit.',
+    'server.rs:86,288-313',
   ],
   [
     'Bind and listen',
     '<code>HTTP_BIND</code>, else <code>0.0.0.0:$PORT</code>, else :8000.',
-    'server.rs:84-94 · config.rs:607-615',
+    'server.rs:88-98 · config.rs:682-690',
   ],
   [
     'Start workers only when the feed is live',
     'Stock WebSocket, day tape, warmer, archive worker, scanner. When paused none start, and a test enforces it.',
-    'server.rs:95-132,580-607',
+    'server.rs:99-136,781-805',
   ],
-  ['Serve until Ctrl-C or SIGTERM', 'Then shut down gracefully.', 'server.rs:133-136,376-395'],
+  ['Serve until Ctrl-C or SIGTERM', 'Then shut down gracefully.', 'server.rs:137-140,402-421'],
 ];
 const ROUTES = [
   [
@@ -1566,25 +1566,33 @@ const ROUTES = [
   [
     'Auth',
     'session · signup · login · logout · settings (GET, PUT) · ai-key (GET, PUT, DELETE) · Google start and callback · Grok start, callback, DELETE',
-    'auth.rs:912-1301',
+    'auth.rs:912-1343',
   ],
   [
     'Structure & market',
-    '<code>/api/ticker/{t}</code> · its SSE <code>/progressive</code> · market-data · signals · strike-profile · personas · contract · candidates · price · prices',
-    'market.rs · ticker.rs · contract.rs · price.rs',
+    '<code>/api/ticker/{t}</code> · its SSE <code>/progressive</code> · market-data · signals · strike-profile · personas · contract · candidates · price · prices; all but personas, price and prices are owner-only (<code>OWNER_EMAILS</code>)',
+    'market.rs · ticker.rs · contract.rs · candidates.rs · price.rs',
   ],
-  ['Scanner', 'scan · scan/{s}/history · scan/view (GET, PUT) · universe · all', 'scan.rs:387-456'],
-  ['Public data', 'markets · filings · tickers/{t}', 'public_data.rs:1301-1328'],
+  [
+    'Scanner',
+    'scan · scan/{s}/history · scan/view (GET, PUT) · universe · all; all but view and universe are owner-only',
+    'scan.rs:415-485',
+  ],
+  ['Public data', 'markets · filings · tickers/{t}', 'public_data.rs:1494-1521'],
   [
     'Book & broker',
     'book (GET, PUT) · broker credential (GET, PUT, DELETE) · broker book · refresh · sim-trade gate',
-    'book.rs · broker.rs · recommendation.rs:635',
+    'book.rs · broker.rs · recommendation.rs:643',
   ],
-  ['AI reads', 'POST recommendation/{t} · export/{t} · status/{t}', 'recommendation.rs:506-608'],
+  [
+    'AI reads (owner only)',
+    'POST recommendation/{t} · export/{t} · status/{t}',
+    'recommendation.rs:513-617',
+  ],
   [
     'Streams',
-    'SSE <code>/api/stream/prices</code> · <code>/api/stream/{t}</code>, 15 s keep-alive',
-    'stream.rs:405,524',
+    'SSE <code>/api/stream/prices</code> · <code>/api/stream/{t}</code> (owner only), 15 s keep-alive',
+    'stream.rs:420,541',
   ],
   [
     'Research (operator token)',
@@ -1644,27 +1652,32 @@ const VERIFY = [
   [
     'Find the base',
     'The merge-base with origin/main, else main, else HEAD~1; untracked files count as changed.',
-    'verify.mjs:15-32',
+    'verify.mjs:242-251,265-274,351-355',
   ],
   [
     "Emit the client's declarations",
     '<code>tsc -p libs/api/tsconfig.lib.json</code>.',
-    'verify.mjs:56',
+    'verify.mjs:390',
   ],
   [
     'Scan new commits for secrets',
     'gitleaks over base..HEAD; a missing gitleaks is a failure.',
-    'verify.mjs:57-66',
+    'verify.mjs:391-401',
+  ],
+  [
+    "Check the contract gate's wiring, when relevant",
+    "Only if a project.json, package.json, nx.json or verify.mjs changed: <code>api:test</code> and the client's typecheck and test must still depend on the uncached <code>api:api-contract-check</code>, which runs exactly <code>node tools/api-contract.mjs check</code>, and no task may run the generator.",
+    'verify.mjs:33-107,368-369,402-408',
   ],
   [
     'Lint, typecheck and test what changed',
-    '<code>nx affected -t lint typecheck test</code>, skipping the Rust project unless a Rust path changed.',
-    'verify.mjs:42-50,69',
+    '<code>nx run-many -t lint typecheck test</code> on the projects Nx calls affected, plus each project whose test inputs list a changed file; the Rust project runs only when a test input other than its dashboard-sources glob changed.',
+    'verify.mjs:109-122,193-240,411-414',
   ],
   [
     'Tool specs and the filing check, when relevant',
-    'Only if tools/, functions/, research/, .github/, .supply-chain/ or package files changed.',
-    'verify.mjs:71-78',
+    'Only if tools/, functions/, research/, apps/dashboard-e2e/tools/, .github/, .supply-chain/ or package files changed.',
+    'verify.mjs:370-372,416-420',
   ],
 ];
 
@@ -1674,7 +1687,7 @@ const ENV = [
     'Local dev',
     '<code>npm run dev</code>: API :8000, Vite :4200 proxying <code>/api</code>',
     'local api-rust; <code>MARKET_DATA_MODE=paused</code> works without a feed',
-    'real cookie; registration open on dev',
+    'real cookie; registration open on dev; owner-only routes answer only the accounts in <code>OWNER_EMAILS</code>',
     'nothing',
   ],
   [
@@ -1695,7 +1708,7 @@ const ENV = [
     'Production (live)',
     'convexa.pages.dev, branch <code>main</code>',
     'Pages Function → Railway api-rust; market data <b>not_live</b> today',
-    'first-party session cookie; sign-ups closed',
+    'first-party session cookie; sign-ups closed; owner-only routes answer only the accounts in <code>OWNER_EMAILS</code>',
     'nothing',
   ],
   [
@@ -1710,7 +1723,7 @@ const DEPLOY = [
   [
     'tool',
     'git push',
-    'The pre-push hook: research check, gitleaks, <code>nx affected -t lint typecheck</code>.',
+    'The pre-push hook: refuses <code>main</code> or <code>staging</code> at a version already out, then the research check, gitleaks, <code>nx affected -t lint typecheck</code>.',
     'tools/hooks/pre-push',
   ],
   [
@@ -1743,7 +1756,7 @@ const DEPLOY = [
 const TESTS = [
   [
     'Vitest · dashboard',
-    2059,
+    2067,
     'client',
     '{{tests:apps/dashboard}} spec files · jsdom',
     'apps/dashboard',
@@ -1751,21 +1764,21 @@ const TESTS = [
   ],
   [
     'cargo test · Rust',
-    1232,
+    1262,
     'api',
-    '61 test binaries: {{tests:apps/api/tests}} integration files plus inline unit tests',
+    '60 test binaries: {{tests:apps/api/tests+libs/quant-engine/tests}} integration files, 4 inline unit-test binaries and 2 doc-test runs',
     'apps/api/tests',
     true,
   ],
   [
     'node --test · tools',
-    217,
+    233,
     'tool',
-    '{{tests:tools+apps/dashboard-e2e/tools}} spec files; two that need the network run apart',
+    '{{tests:tools+apps/dashboard-e2e/tools}} spec files; the two that are not hermetic are left out, and nothing else runs them',
     'tools',
     false,
   ],
-  ['Vitest · libs/api', 86, 'shared', '{{tests:libs/api}} spec files', 'libs/api', true],
+  ['Vitest · libs/api', 88, 'shared', '{{tests:libs/api}} spec files', 'libs/api', true],
   [
     'Playwright',
     67,
@@ -1776,14 +1789,14 @@ const TESTS = [
   ],
 ];
 const TESTS_CHECKED =
-  'Case counts last checked on 22 Oct 2026 at 8ef735c4: the dashboard suite as run for 2cb4c8ef, Rust as run for 8ef735c4, the tool specs as run for f5a8a9d0 and libs/api re-run on a clean export of 791ebd88 (neither changed since), Playwright unchanged since its 16 Oct inventory.';
+  'Case counts last checked on 29 Oct 2026 at d01506ba: all four suites as npm run verify ran them for cadeb45e on 28 Oct (exit 0; libs/api replayed from the Nx cache of the same inputs; d01506ba changed only design/), the Playwright counts, configs and ports unchanged since the 16 Oct inventory, though some specs and fixtures were edited.';
 const TESTS_NOTE =
-  "One scale for all bars. October's lean pass retired 920 tests across 106 files (5,173 → 3,187 cases); each left a RETIRED: line.";
+  'One scale for all bars. The 9 Oct lean pass retired 920 tests across 106 files (5,173 → 3,187 cases); each left a RETIRED: line.';
 const GATES = [
   [
     'tool',
     'Deliberate breaks',
-    'Three critical behaviours were broken on purpose and their catching tests pinned: max loss (maxLoss.spec.ts), session expiry (api_contract_parity plus two), the durable write (15 tests). docs/testing/2026-10/AUDIT.md:24-30.',
+    'Three critical behaviours were broken on purpose and their catching tests pinned: max loss (maxLoss.spec.ts), session expiry (api_contract_parity plus two), the durable write (15 tests). docs/testing/2026-10/AUDIT.md:24-34 and REPORT.md:91-97.',
   ],
   [
     'shared',
@@ -1804,6 +1817,11 @@ const GATES = [
     'tool',
     'Secret scan',
     'gitleaks in verify and pre-push. A full-history scan on 16 Oct 2026 (1,751 commits) found no leaks.',
+  ],
+  [
+    'tool',
+    'Release version',
+    'A push to main is a release, so the pre-push hook refuses a push of main or staging whose version is already tagged on another commit, and a push of main at the version the remote main already carries. It reads the root package.json at the pushed commit and makes no network call. tools/hooks/pre-push:20-45.',
   ],
   [
     'edge',
@@ -1839,7 +1857,7 @@ const BC = [
   [
     'client',
     'How it splits',
-    'Three forced vendor chunks (react, router, mui); every page except Landing is <code>React.lazy</code>; the whole app graph is a dynamic import that waits for the demo seed. Recharts is left to the bundler on purpose: a forced charts chunk once dragged React into every route. vite.config.mts:124-168.',
+    'Three forced vendor chunks (react, router, mui); every page except Landing and DemoOperatorUnavailable is <code>React.lazy</code>; the whole app graph is a dynamic import that waits for the demo seed, but <code>index.html</code> preloads its chunks (<code>modulepreload</code>), so they download with the entry. Recharts is left to the bundler on purpose: a forced charts chunk once dragged React into every route. vite.config.mts:102-148,224-268.',
   ],
   [
     'client',
@@ -1859,7 +1877,7 @@ const BC = [
   [
     'client',
     'Rendering cost',
-    'The WebGL hero draws only on demand and lowers its pixel ratio when frame p95 passes 18 ms. The structure field repaints only on change and pauses off-screen. On the desk, the widgets that read only the bundle are memoized, so a tape tick re-renders only what shows the tape. Widgets use <code>content-visibility: auto</code>.',
+    'The WebGL hero draws only on demand and lowers its pixel ratio when frame p95 while turning passes both 18 ms and 1.5× the median. The structure field repaints only on change and pauses off-screen. On the desk, the widgets that read only the bundle are memoized, so a tape tick re-renders only what shows the tape. Widgets use <code>content-visibility: auto</code>.',
   ],
   [
     'process',
@@ -1878,12 +1896,12 @@ const SEC = [
   [
     'api',
     'Sessions',
-    'The <code>gf_session</code> cookie: HttpOnly, Secure, SameSite, HMAC-signed with a rotating key ring; 7-day idle, 30-day absolute. Cookies go only to the routes that need them. cookies.rs:9-66; client.ts:22-29.',
+    'The <code>gf_session</code> cookie: HttpOnly, Secure, SameSite, HMAC-signed with a rotating key ring; 7-day idle, 30-day absolute. Every API call is same-origin, so the browser sends the cookie with each one and the server decides what it unlocks. cookies.rs:9-66; client.ts:11,22-29.',
   ],
   [
     'api',
     'Sign-in',
-    'argon2 password hashes. Google OAuth with an <code>oauth_state</code> cookie compared in constant time and always cleared. Registration closed by default. auth.rs:845-867,1324-1357.',
+    'argon2 password hashes. Google OAuth with an <code>oauth_state</code> cookie compared in constant time and always cleared. Registration closed by default. auth.rs:845-867,1366-1399.',
   ],
   [
     'api',
@@ -1893,7 +1911,7 @@ const SEC = [
   [
     'api',
     'Fail closed in production',
-    'No start without a mode, exact CORS origins, a verifiable schema and archive roots. Operator routes need a token, and the Pages Function blocks them outright.',
+    'No start without a mode, exact CORS origins, a verifiable schema and archive roots. Operator routes need a token, and the Pages Function blocks them outright. The 14 operations that serve values computed from the licensed options feed (dealer levels among them) answer only the accounts in <code>OWNER_EMAILS</code>, and refuse everyone while it names none.',
   ],
   [
     'tool',
@@ -1903,7 +1921,7 @@ const SEC = [
   [
     'process',
     'Privacy',
-    'No analytics, no error reporting, no service worker. Every browser storage key is listed on the Privacy page. The demo never talks to a server.',
+    'No analytics, no error reporting, no service worker. Every key the live site stores is listed on the Privacy page. The demo never talks to a server.',
   ],
   [
     'source',
@@ -2087,14 +2105,14 @@ const WHERE = [
   [
     'routing',
     'Add a page or change a route',
-    'One route table; every page but Landing is lazy; the shell wraps them all.',
+    'One route table; every page but Landing and DemoOperatorUnavailable is lazy; the shell wraps all but the two <code>/_ops</code> routes.',
     [
       ['apps/dashboard/src/app/app.tsx', 'every route, the lazy imports, the providers'],
       ['apps/dashboard/src/app/shell/AppShell.tsx', 'the layout every page renders inside'],
       ['apps/dashboard/src/app/shell/TopNav.tsx', 'nav items and hover prefetch'],
       [
         'apps/dashboard/src/app/features/auth/RequireAuth.tsx',
-        'the sign-in wall on Scanner and Positions',
+        "the sign-in wall on Scanner and Positions; the owner gate's wall there and on the live desk",
       ],
       ['apps/dashboard/src/app/shared/lib/prefetchRoutes.ts', 'which chunks are warmed early'],
     ],
@@ -2136,13 +2154,23 @@ const WHERE = [
   ],
   [
     'auth',
-    'Change sign-in, sessions or the sign-in wall',
+    'Change sign-in, sessions, the sign-in wall or the owner gate',
     'The client only reflects the session; the server decides.',
     [
       ['apps/dashboard/src/app/features/auth/AuthContext.tsx', 'client session state'],
       ['apps/dashboard/src/app/features/auth/AuthDialog.tsx', 'the sign-in and sign-up dialog'],
-      ['apps/dashboard/src/app/features/auth/RequireAuth.tsx', 'the wall'],
-      ['apps/api/src/routes/auth.rs', 'the auth endpoints and the OAuth state cookie'],
+      [
+        'apps/dashboard/src/app/features/auth/RequireAuth.tsx',
+        "the sign-in wall and the owner gate's wall (OwnerGateBoundary)",
+      ],
+      [
+        'apps/dashboard/src/app/features/auth/ownerGate.ts',
+        "the owner gate's refusal, kept for the session; pollers and streams stop on it",
+      ],
+      [
+        'apps/api/src/routes/auth.rs',
+        'the auth endpoints, the OAuth state cookie and the owner gate (OWNER_EMAILS)',
+      ],
       ['apps/api/src/services/auth/cookies.rs', 'session cookie signing'],
     ],
   ],
@@ -2203,7 +2231,10 @@ const WHERE = [
     'Add or change an API endpoint',
     'Six files, in this order, in one commit.',
     [
-      ['apps/api/src/routes/mod.rs', 'register the route'],
+      [
+        'apps/api/src/routes/mod.rs',
+        'register the route; an owner-only one also joins OWNER_ONLY_OPERATIONS',
+      ],
       ['apps/api/src/routes/contract_router.rs', 'how routes and the OpenAPI doc stay one graph'],
       ['tools/api-contract.mjs', 'generate, then check'],
       ['libs/api/src/generated/schema.ts', 'the generated types (never edit)'],
@@ -2246,7 +2277,7 @@ const WHERE = [
   [
     'errors',
     'Change error handling',
-    'Boundaries in the browser, from the root down; typed errors in the API.',
+    'Boundaries in the browser, from the root down; typed errors and a panic guard in the API.',
     [
       [
         'apps/dashboard/src/app/shared/ui/RootErrorBoundary.tsx',
@@ -2254,6 +2285,7 @@ const WHERE = [
       ],
       ['apps/dashboard/src/app/shared/ui/ErrorBoundary.tsx', 'route and widget boundaries'],
       ['apps/api/src/error.rs', 'API error types and the paused 503'],
+      ['apps/api/src/server.rs', 'the panic guard: a handler that panics answers the closed 500'],
     ],
   ],
   [
@@ -2274,7 +2306,10 @@ const WHERE = [
     'Local gates, then each host builds for itself.',
     [
       ['tools/verify.mjs', 'npm run verify'],
-      ['tools/hooks/pre-push', 'the push gate'],
+      [
+        'tools/hooks/pre-push',
+        'the push gate: the release version, research notes, gitleaks, lint and typecheck',
+      ],
       ['apps/dashboard/src/test-setup.ts', 'Vitest setup'],
       ['apps/dashboard-e2e/playwright.shared.config.ts', 'browser gates'],
       ['railway.json', 'API watch paths, migrate, health check'],
@@ -2292,7 +2327,7 @@ const RUNS_ST = [
   ['demo-positions', 'Demo · /positions'],
 ];
 const OWNS = {
-  App: 'The root of the app: wraps the provider stack around the route table (app.tsx:341-344).',
+  App: 'The root of the app: wraps the provider stack around the route table (app.tsx:383-386).',
   Root: "mountApp's whole tree: StrictMode, the root error boundary, the router and the app.",
   RootErrorBoundary:
     'The last resort: a throw nothing below caught shows a notice with Reload, never a blank page.',
@@ -2301,21 +2336,24 @@ const OWNS = {
   AppThemeProvider:
     'Owns the MUI theme from the effective settings; writes data-theme and convexa.theme-paint.',
   AuthDialogProvider: "Owns the sign-in dialog's state and renders the one AuthDialog.",
-  AppRoutes: 'The route table: maps the URL to a page; every page but Landing is lazy.',
+  AppRoutes:
+    'The route table: maps the URL to a page; every page but Landing and DemoOperatorUnavailable is lazy.',
   AppShell:
-    'The layout: skip link, demo banner, market-data notice, nav, palette, the main outlet, footer.',
+    'The layout: skip link, demo banner, market-data notice, nav, palette, the main outlet, footer. Holds the global keys: ⌘K or / opens the palette, ? the shortcuts sheet, g then a letter goes to a page.',
   MarketDataNotice:
     'Live only: asks GET /api/health for the market-data mode and explains when the feed is off.',
   TopNav: "Navigation; warms a route's chunk on hover or focus.",
-  CommandPalette: 'The ⌘K palette and its global keys.',
+  CommandPalette:
+    'The ⌘K palette: the search, its result rows and the keys inside it (arrows, Enter). AppShell holds the keys that open it.',
   AccountControl: 'The account button: sign in, or the signed-in account.',
   Landing:
     'The front door. Eager, no data calls; schedules the idle prefetch of Ticker and Scanner.',
   GammaSurfaceHero:
     'Owns its mode: an SVG poster first, then WebGL2 or the fallback. Draws only on demand.',
-  RouteFallback: "The Suspense fallback shown while a lazy page's chunk loads.",
+  RouteFallback:
+    "The page-shaped loading fill: the Suspense fallback while a lazy page's chunk loads, and the hold while who-am-I or the market-data read is in flight.",
   TickerDeskRoute:
-    'Picks the full desk or the public desk from the build mode and the market-data mode.',
+    'Picks the full desk or the public desk from the build mode and the market-data mode; on live, the full desk sits behind the owner gate (OwnerGateBoundary).',
   TickerDashboard:
     'The full desk: SSE tape, the bundle every 60 s, history every 120 s, positions, the AI read, alerts, orders.',
   ColdLoadSkeleton: "The placeholder layout until the desk's first bundle arrives.",
@@ -2326,9 +2364,11 @@ const OWNS = {
   ReadStrip: 'Eight read cells computed from the bundle; memoized, so tape ticks pass it by.',
   CommandDeck: 'The desk header: toolbar, ticker header, quick symbols, tabs.',
   LastTradeReadout: 'The last trade, from the live tape store.',
-  RequireAuth: 'The sign-in wall on live; always open in the demo.',
+  RequireAuth:
+    "The sign-in wall on live; signed in, the owner gate's wall once an owner-only read is refused; always open in the demo.",
   PositionsPage: 'The book: the positions store, marks polled every 60 s.',
-  ResetDemoControl: 'Demo only: pause, end or reset the authored day.',
+  ResetDemoControl:
+    "Demo only: Reset demo data, which asks in place, then clears this browser's demo changes and reloads on the seed account.",
   AuthDialog: 'The single sign-in and sign-up dialog.',
 };
 const CK_FLOWS = [
