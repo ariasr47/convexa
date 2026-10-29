@@ -30,6 +30,19 @@
 
 ---
 
+## Harvest — 2026-10-29 (artifact triage: loose ends from pages being deleted)
+Three items that lived only on claude.ai pages or in chat. The owner is deleting the pages (the 2026-10-28
+triage), so the items live here now.
+- **`atlas-public-hosting`** *(owner decision, open since 2026-10-22)* — host the repo atlas at
+  `convexa.pages.dev/atlas`? The Convexa Cheat Sheet asked on 2026-10-22, and nothing answered it (the
+  10-26 "push, all recommended, go" answered a different list). Today the atlas is a committed file
+  opened locally (`docs/atlas/README.md`) plus a private claude.ai artifact.
+- **`github-profile-pin`** *(owner to-do, GitHub setting)* — pin `ariasr47/convexa` on the GitHub profile.
+  The repo has been public since 2026-10-19; the pin is not done.
+- **`trade-journal-explainer-refresh`** *(queued)* — republish the Convexa Trade Journal explainer
+  (https://claude.ai/artifact/5N76FKNuFBrC1agEEHnygK) from spec 08 at HEAD. It predates the owner's
+  2026-10-28 answers, items 18 and 19 and the re-judge grafts. Keep the URL.
+
 ## Last GATE I — 2026-09-08 (phase 4 re-cut → `curvature-v2-landing-and-site`; `curvature-v2-responsive-sweep` pre-registered as its successor)
 <!-- atlas: theme=trust-the-signal horizon=now -->
 Owner 2026-09-08: "continue with the re-design work", after phases 1–3 closed at GATE S and both
