@@ -1,7 +1,16 @@
 import createClient from 'openapi-fetch';
 import type { paths } from '../generated/schema';
 import { dataMode } from './demo/mode';
-import { demoFetch } from './demo/transport';
+
+/**
+ * The demo's in-browser API (demo/transport.ts and the seeds it reads), on a demo build only. A
+ * live build never loads it: as a static import it was half of a chunk every production page loads
+ * first (site audit 2026-10-25, PERF-08). A demo build starts the load here, at boot, beside the
+ * app's own chunks, so its first request does not wait a round trip for it. A failed load fails
+ * the request that awaits it, as a network error would.
+ */
+const demoTransport = dataMode === 'demo' ? import('./demo/transport') : null;
+demoTransport?.catch(() => undefined);
 
 /** The one ordinary-HTTP transport for the public API facade. */
 export const http = createClient<paths>({
@@ -11,7 +20,7 @@ export const http = createClient<paths>({
   credentials: 'same-origin',
   // Preserve the facade's observable fetch seam while openapi-fetch owns request typing.
   fetch: async (request) => {
-    if (dataMode === 'demo') return demoFetch(request);
+    if (demoTransport) return (await demoTransport).demoFetch(request);
     const headers: Record<string, string> = {};
     request.headers.forEach((value, key) => {
       headers[key] = value;
