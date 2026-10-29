@@ -9,6 +9,8 @@ import type {
   PublicPeriodicFiling,
   PublicPositionGroup,
   PublicShortVolume,
+  PublicStress,
+  PublicStressComponent,
   PublicTaggedFact,
   PublicTicker,
   PublicYieldPoint,
@@ -17,7 +19,7 @@ import { DEMO_CALENDAR, DEMO_RESULTS_WINDOWS } from './calendar';
 
 /**
  * Demo answers for the public-data endpoints. Every figure here is authored for the demo — none
- * was fetched from the U.S. Treasury, CFTC, FINRA or SEC — and every answer says so in `detail` and `source`.
+ * was fetched from the U.S. Treasury, the OFR, CFTC, FINRA or SEC — and every answer says so in `detail` and `source`.
  * Nothing in this module makes a request.
  */
 
@@ -266,6 +268,92 @@ function demoLiquidity(): NonNullable<PublicMarkets['liquidity']> {
   };
 }
 
+/**
+ * The fear–greed gauge on the scenario (spec 07 step 5), authored like every figure here. The five
+ * OFR inputs are dated Mon Oct 5: the OFR publishes about two business days late, so the Oct 7
+ * scenario reads Oct 5. The two CFTC inputs carry the sample's own Oct 6 report, so they match its
+ * Positioning section (owner answer S7-Q3). The scores, 18, 12, 41, 44, 47, 53 and 51, sum to 266:
+ * mean 38.0, gauge 38, Fear. Each raw value sits on the side of zero its percentile does. The windows
+ * follow the method: the OFR rows dated after Oct 5, 2023 (781, as the real file has them) and the
+ * CFTC Tuesdays after Oct 6, 2023 (157). Freshness is judged on Oct 7: two weekdays old for the
+ * OFR, one day for the CFTC.
+ */
+function demoStress(): PublicStress {
+  const ofr = (id: PublicStressComponent['id'], raw: number, score: number) =>
+    ({
+      id,
+      source: 'ofr',
+      cadence: 'daily',
+      raw,
+      as_of: '2026-10-05',
+      window: 781,
+      window_from: '2023-10-06',
+      // Every OFR input leans fear (a higher reading is more stress), so its score is the flip.
+      percentile: 100 - score,
+      higher_means: 'fear',
+      score,
+      counted: true,
+      reason: null,
+      age: 2,
+    }) satisfies PublicStressComponent;
+  const cftc = (
+    id: PublicStressComponent['id'],
+    raw: number,
+    higherMeans: PublicStressComponent['higher_means'],
+    score: number,
+  ) =>
+    ({
+      id,
+      source: 'cftc',
+      cadence: 'weekly',
+      raw,
+      as_of: '2026-10-06',
+      window: 157,
+      window_from: '2023-10-10',
+      percentile: higherMeans === 'fear' ? 100 - score : score,
+      higher_means: higherMeans,
+      score,
+      counted: true,
+      reason: null,
+      age: 1,
+    }) satisfies PublicStressComponent;
+  const components = [
+    ofr('volatility', 0.412, 18),
+    ofr('credit', 0.268, 12),
+    ofr('safe_assets', 0.071, 41),
+    ofr('equity_valuation', 0.046, 44),
+    ofr('funding', 0.019, 47),
+    // Leveraged funds net short VIX futures (8.4% of open interest); asset managers net long E-mini
+    // S&P 500 futures (46.2%).
+    cftc('vol_positioning', -0.084, 'fear', 53),
+    cftc('equity_positioning', 0.462, 'greed', 51),
+  ];
+  // The gauge as the API works it out: the plain mean of the counted scores, rounded half up, its
+  // band decided on that integer (each edge to the calmer band).
+  const mean = components.reduce((sum, c) => sum + c.score, 0) / components.length;
+  const gauge = Math.floor(mean + 0.5);
+  const band =
+    gauge <= 24
+      ? 'extreme_fear'
+      : gauge <= 44
+        ? 'fear'
+        : gauge <= 55
+          ? 'neutral'
+          : gauge <= 75
+            ? 'greed'
+            : 'extreme_greed';
+  return {
+    published: true,
+    gauge,
+    mean,
+    band,
+    as_of: '2026-10-05',
+    counted: components.length,
+    judged_on: DEMO_DATE,
+    components,
+  };
+}
+
 export function demoPublicMarkets(): PublicMarkets {
   const daily = demoYields();
   const latest = daily[daily.length - 1];
@@ -308,6 +396,7 @@ export function demoPublicMarkets(): PublicMarkets {
     },
     liquidity: demoLiquidity(),
     calendar: DEMO_CALENDAR,
+    stress: demoStress(),
   };
 }
 
