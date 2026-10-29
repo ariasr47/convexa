@@ -9,7 +9,8 @@
  * Treasury, CFTC, the liquidity inputs and the release schedules; /tickers/SPY for FINRA and SEC).
  * Only the API knows whether the copy it serves came from this cycle's fetch, so only its row can
  * say Last good copy. A server from before the rows existed is still read the old way. The legend
- * counts the same states the cards draw, and says how many are still being checked. FINRA's two
+ * counts the same states the cards draw, and says how many are still being checked, on the line
+ * their tags fill once the first check lands, which it does all at once. FINRA's two
  * cards say Off with the reason while the owner keeps FINRA off (shared/dataState/finraSwitch.ts).
  * The demo build makes no request: every card is dashed sample data, and TradingView is off. The
  * state decisions live in cardState.ts.
@@ -25,6 +26,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { formatShortDate } from '../research/format';
 import { usePublicMarkets, usePublicTicker } from '../research/publicData';
@@ -75,6 +77,17 @@ function useLiveStates(enabled: boolean): {
   const spy = usePublicTicker(enabled ? 'SPY' : '');
   const checking: CardState = { tag: 'loading', note: 'Checking this source…' };
   const couldnt: CardState = { tag: 'couldntLoad', note: 'Couldn’t check this source.' };
+
+  // The page's first check lands all at once: until both reads have answered, every card they
+  // decide stays Checking. Their answers come tens of milliseconds apart, and the page drawn
+  // between them grew the legend by a row and then rearranged it again (site audit 2026-10-25,
+  // PERF-04). A retry afterwards checks only the read that failed, as before.
+  const inFlight = markets.loading || spy.loading;
+  const [firstCheckDone, setFirstCheckDone] = useState(!enabled);
+  useEffect(() => {
+    if (enabled && !inFlight) setFirstCheckDone(true);
+  }, [enabled, inFlight]);
+  const holding = !firstCheckDone && inFlight;
 
   const m = markets.data;
   const t = spy.data;
@@ -162,7 +175,7 @@ function useLiveStates(enabled: boolean): {
     if (off) return off;
     const read = FROM_MARKETS.includes(id) ? markets : FROM_TICKER.includes(id) ? spy : null;
     if (!read) return legacy[id];
-    if (read.loading) return checking;
+    if (holding || read.loading) return checking;
     if (!read.data) return couldnt;
     if (id === 'schedules') {
       const own = SCHEDULE_ROWS.map((r) => rows.get(r)).filter((r): r is PublicSource => !!r);
@@ -177,7 +190,7 @@ function useLiveStates(enabled: boolean): {
       SourceId,
       CardState
     >,
-    failed: (!markets.loading && !m) || (!spy.loading && !t),
+    failed: !holding && ((!markets.loading && !m) || (!spy.loading && !t)),
     retry: () => {
       if (!m) markets.retry();
       if (!t) spy.retry();
@@ -447,7 +460,21 @@ export function CreditsPage() {
           />
         ))}
         {checking > 0 && (
-          <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
+          <Box
+            component="span"
+            sx={{
+              // A line of its own at a tag's height (DataStateTag: 22px, 24 at a coarse pointer):
+              // the row the checked sources' tags fill when they land, so the cards below don't
+              // move then (site audit 2026-10-25, PERF-04).
+              flexBasis: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              minHeight: 22,
+              '@media (pointer: coarse)': { minHeight: 24 },
+              fontSize: 13,
+              color: 'text.secondary',
+            }}
+          >
             {checking === SOURCES.length
               ? 'Checking each source…'
               : `${checking} more still checking…`}
