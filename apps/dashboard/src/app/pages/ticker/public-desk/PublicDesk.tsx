@@ -10,8 +10,9 @@
  *
  * Its public read gets a head start (site audit 2026-10-25, PERF-05 and PERF-04): app.tsx starts it
  * with the /api/health read, before this chunk has loaded, and hands it over as `headStart`. When the
- * answer is already in at the first render, the cards draw from it at once, so they don't move the
- * page when it lands.
+ * answer is already in at the first render, the cards and the legend draw from it at once, so the
+ * page doesn't move when it lands. The legend also keeps the place of TradingView's entry until the
+ * chart's tag is in, so the chart arriving, or failing, doesn't move the page either.
  *
  * Design: design/src/screens/final/ticker-desk.mjs (Final · Convexa v1, "Ticker desk" row).
  */
@@ -50,7 +51,7 @@ import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { freshness, localToday, researchIndex } from 'virtual:convexa-research';
 import { AiReadNotLive, WhatAReadSendsLink } from './AiReadNotLive';
@@ -115,7 +116,7 @@ export function PublicDesk({
   const note = researchIndex.find((r) => r.ticker === ticker) ?? null;
   const demoUrl = demoDeskUrl(ticker);
   const zonesRef = useRef<HTMLDivElement>(null);
-  const counts = useStateCounts(zonesRef);
+  const { counts, chartUntagged } = useStateCounts(zonesRef);
   const theme = useTheme();
   const phone = useMediaQuery(theme.breakpoints.down('sm'));
   const path = `/ticker/${encodeURIComponent(ticker)}`;
@@ -205,7 +206,7 @@ export function PublicDesk({
         />
       </Box>
 
-      <Legend counts={counts} demoUrl={demoUrl} />
+      <Legend counts={counts} chartUntagged={chartUntagged} demoUrl={demoUrl} />
 
       <Box ref={zonesRef} sx={{ display: 'grid', gap: 5 }}>
         <PublicZone ticker={ticker} read={read} note={note} />
@@ -221,11 +222,19 @@ export function PublicDesk({
 
 // ---- The legend: counted from the tags the panels actually show ----------------------------------
 
+/** TradingView's chart (TradingViewDaily's section). Its "Live · TradingView" tag comes only once the
+ *  chart is in, a second or more after the desk paints, and never if the chart fails to load. */
+const TRADINGVIEW_CHART = 'section[aria-labelledby^="tv-"]';
+
 /** Counts every data-state tag inside `ref`, and recounts when the panels change (a read lands, a
- *  source turns out to be down). The legend therefore can't disagree with the page. */
+ *  source turns out to be down). The legend therefore can't disagree with the page. `chartUntagged`:
+ *  TradingView's chart is on the page without its tag (still loading, or failed). The first count
+ *  runs before the first paint (a layout effect), so the desk never paints an empty legend that then
+ *  fills and pushes the page down. */
 function useStateCounts(ref: React.RefObject<HTMLElement | null>) {
   const [counts, setCounts] = useState<[DataStateKey, number][]>([]);
-  useEffect(() => {
+  const [chartUntagged, setChartUntagged] = useState(false);
+  useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     const recount = () => {
@@ -236,6 +245,7 @@ function useStateCounts(ref: React.RefObject<HTMLElement | null>) {
       });
       const order = Object.keys(DATA_STATES) as DataStateKey[];
       setCounts(order.filter((k) => tally.has(k)).map((k) => [k, tally.get(k) as number]));
+      setChartUntagged(!tally.has('thirdParty') && el.querySelector(TRADINGVIEW_CHART) !== null);
     };
     recount();
     const mo = new MutationObserver(recount);
@@ -247,10 +257,52 @@ function useStateCounts(ref: React.RefObject<HTMLElement | null>) {
     });
     return () => mo.disconnect();
   }, [ref]);
-  return counts;
+  return { counts, chartUntagged };
 }
 
-function Legend({ counts, demoUrl }: { counts: [DataStateKey, number][]; demoUrl: string }) {
+/** One legend entry: a state's tag and how many panels show it. */
+function LegendItem({
+  state,
+  n,
+  hidden = false,
+}: {
+  state: DataStateKey;
+  n: number;
+  hidden?: boolean;
+}) {
+  return (
+    <Box
+      component="li"
+      aria-hidden={hidden || undefined}
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 0.75,
+        ...(hidden && { visibility: 'hidden' }),
+      }}
+    >
+      {/* The legend sits outside the counted zones, so its own tags aren't counted. */}
+      <DataStateTag state={state} />
+      <Box
+        component="span"
+        sx={{ ...MONO, fontSize: 13 }}
+        aria-label={hidden ? undefined : `${n} ${DATA_STATES[state].word}`}
+      >
+        {n}
+      </Box>
+    </Box>
+  );
+}
+
+function Legend({
+  counts,
+  chartUntagged,
+  demoUrl,
+}: {
+  counts: [DataStateKey, number][];
+  chartUntagged: boolean;
+  demoUrl: string;
+}) {
   return (
     <Box
       component="section"
@@ -271,22 +323,13 @@ function Legend({ counts, demoUrl }: { counts: [DataStateKey, number][]; demoUrl
         sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}
       >
         {counts.map(([k, n]) => (
-          <Box
-            component="li"
-            key={k}
-            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
-          >
-            {/* The legend sits outside the counted zones, so its own tags aren't counted. */}
-            <DataStateTag state={k} />
-            <Box
-              component="span"
-              sx={{ ...MONO, fontSize: 13 }}
-              aria-label={`${n} ${DATA_STATES[k].word}`}
-            >
-              {n}
-            </Box>
-          </Box>
+          <LegendItem key={k} state={k} n={n} />
         ))}
+        {/* Until TradingView's chart has its tag, the entry's place is kept, unseen and unread. It
+            is the last state this desk can show (Object.keys(DATA_STATES) order), so the tag
+            arriving fills the same box, and a chart that fails leaves the box empty: either way the
+            page below doesn't move (site audit 2026-10-25, PERF-04). */}
+        {chartUntagged && <LegendItem state="thirdParty" n={1} hidden />}
       </Box>
       <Box sx={{ flexGrow: 1 }} />
       <Link href={demoUrl} variant="body2" underline="always" sx={{ ...linkSx, fontSize: 13 }}>
