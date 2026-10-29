@@ -716,8 +716,9 @@ export const EVENT_TEXT = 'The Sep 29 margin call. From Sep 25 to Sep 30, accoun
 
 /** What the Oct 7 review sends (Screens → 12; The AI interaction → Packages): the full text of each entry written in
  *  its window, a short summary of each older one, and nothing of an entry he kept out. The 2 kept out are older, so
- *  the 8 new texts stand and 24 summaries go: 8 + 24 + 2 = 34 (spec 08, Corrections, item 18). `readable` is what
- *  the bulk read offer counts: every entry not kept out. */
+ *  the 8 new texts stand and 24 summaries go: 8 + 24 + 2 = 34 (spec 08, Corrections, item 18). `readable` is every
+ *  entry not kept out: what the bulk read offer counts at its first offer, when reads are turned on and no entry has
+ *  been read yet (the offer counts entries neither kept out nor already read; item 18, as corrected). */
 export const SENT = (() => {
   const side = (e, cutoff) => {
     const b = writtenBefore(e, cutoff);
@@ -735,6 +736,12 @@ export const SENT = (() => {
 const J1_MICROS = { cold: 19800, warm: 10600 };
 export const bulkEstimate = (n, { batch = true, cache = true } = {}) => q(cache ? J1_MICROS.cold + (n - 1) * J1_MICROS.warm : n * J1_MICROS.cold, batch ? 20000 : 10000);
 
+/** The journal's caps as Settings › Journal prints them (his figures; $5.00 and $1.00 are the defaults). */
+const CAPS = { month: '$5.00', run: '$1.00', perDay: '3 reviews and 60 entry reads' };
+/** Settings › Journal's month line, from a month's runs: spend in cents, reviews and entry reads (the Copy table's
+ *  "This month: {$0.31} of {$5.00} · {1} review · {8} entry reads"). */
+export const monthLine = ({ cents, reviews, reads }) => `This month: ${usd(cents, { dp: 2 })} of ${CAPS.month} · ${reviews} review${reviews === 1 ? '' : 's'} · ${reads} entry read${reads === 1 ? '' : 's'}`;
+
 /** AI-run figures the spec authors (cost model, What's sent, Settings), printed as given; the What's sent counts and
  *  the bulk read come from SENT. */
 export const AI = {
@@ -744,9 +751,13 @@ export const AI = {
   estimate: '≈ $0.31 · estimate · up to $0.76',
   ready: '8 new entries since Sep 28 · ≈ $0.31',
   month: 'This month: $0.31 of $5.00 · 1 review · 8 entry reads',
-  caps: { month: '$5.00', run: '$1.00', perDay: '3 reviews and 60 entry reads' },
+  caps: CAPS,
   models: { entry: 'Sonnet 5.5', review: 'Opus 5.5' },
-  bulk: { entries: SENT.readable, text: `${SENT.readable} entries haven’t been read. Read them now · ≈ ${usd(bulkEstimate(SENT.readable), { dp: 2 })}` },
+  /** The bulk read offer counts the entries neither kept out nor already read (no J1 digest yet). It is drawn as first
+   *  offered, when reads are turned on: nothing read, nothing spent, so `month` is that empty month. By the Oct 7
+   *  review's month (`month` above) there is nothing to offer: that review read the 8 new entries and sent a digest
+   *  of each of the 24 older ones (spec 08, Corrections, item 18, as corrected). */
+  bulk: { entries: SENT.readable, text: `${SENT.readable} entries haven’t been read. Read them now · ≈ ${usd(bulkEstimate(SENT.readable), { dp: 2 })}`, month: monthLine({ cents: 0, reviews: 0, reads: 0 }) },
   whatsSent: [
     `Text of entries written since the last review: ${SENT.newTexts} entries, 2,090 words`,
     `Short summaries of older entries: ${SENT.olderSummaries}`,
@@ -830,7 +841,10 @@ export const STRINGS = {
     const s = SNAPSHOTS.find((x) => x.cleared?.includes('maint'));
     if (!s) throw new Error('journal-sample: no snapshot has a cleared maintenance requirement (spec 08, Corrections, item 19)');
     const prev = SNAPSHOTS[s.k - 1];
-    return `On ${fmtDate(s.asOf)} he cleared the maintenance requirement: ${fmtDate(prev.asOf)}’s figure was set before that day’s trim. A cleared field reads not recorded, and excess liquidity with it; fields he leaves as they were carry over (spec 08, Corrections item 19).`;
+    // The note names the trim by its day. "That day's trim" read as the day named just before it, Sep 30, which had a
+    // trim of its own, typed before its figure (the 3:40 PM numbers).
+    if (ENTRY[s.entry]?.kind !== 'trimmed') throw new Error(`journal-sample: the cleared-field note names the ${fmtDate(s.asOf)} trim, but ${s.entry} is not a trim`);
+    return `On ${fmtDate(s.asOf)} he cleared the maintenance requirement: ${fmtDate(prev.asOf)}’s figure was set before the ${fmtDate(s.asOf)} trim. A cleared field reads not recorded, and excess liquidity with it; fields he leaves as they were carry over (spec 08, Corrections item 19).`;
   })(),
 };
 /** Rule asks as printed: "Asked in 2 plans · Yes 0 · No 1 · Doesn’t apply 1 · Not answered 0". */

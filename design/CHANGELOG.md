@@ -896,3 +896,43 @@ Supersedes nothing above except where it names the line it replaces. Measured ag
 - **Left as found:** item 17's “Carried from {date}” on the entry page is drawn on no Entry board. Oct 2's cash, which
   step 3 carries, reads $0 with no such line: the sample records no figure's provenance but Oct 2's cleared field, and
   the spec doesn't say where the cash was last typed.
+
+## 2026-10-28 · Review fixes: the bulk read's first offer, the cleared-field note, two counts in Mono and the page behind ⌘K
+
+- **What a review of `1cd2e3ae`, `014b1c71` and `a50e7e20` found:** the bulk read offer sat beside the Oct 7 month, with
+  nothing left to read, Oct 2's note said “that day’s trim”, two counts were in Sans, and the Shell boards' ⌘K left
+  their page in the accessibility tree.
+- **Supersedes** in the “Spec 08's What's sent counts …” entry: “The bulk read offer counts every entry not kept out”
+  (now the entries neither kept out nor already read, 32 at its first offer). In the footer entry: “on the 7 boards
+  that draw a dialog open” (now 10, with the Shell row's three ⌘K boards). Nothing above is edited.
+- **The bulk read's first offer** (spec 08, Corrections, item 18, corrected in `400ffb76`): the offer counts the entries
+  neither kept out nor already read, so its “32 entries haven’t been read. Read them now · ≈ $0.17” is the first offer,
+  when reads are turned on. By the Oct 7 month that review had read the 8 new entries and the 24 older ones had gone
+  as digests, so beside “1 review · 8 entry reads” the offer counted 40 of 34 entries. Settings · Phone now draws it
+  beside the first offer's month, “This month: $0.00 of $5.00 · 0 reviews · 0 entry reads” (`AI.bulk.month`, from the
+  new `monthLine`, which reproduces the printed Oct 7 line). The Settings spec card's bulk state gives the rule and
+  that month. Staging and the States board keep the Oct 7 month, with no offer.
+- **The cleared-field note** names its trim by the day: “Sep 30’s figure was set before the Oct 2 trim.” It read “before
+  that day’s trim”, and the day named just before it, Sep 30, had its own trim, typed before its $34,900 (the 3:40 PM
+  numbers). The sample now refuses to load if the cleared snapshot's entry isn't a trim. Compose · Staging and Light,
+  Entry · Light and Drawers and sheets · Phone; the note keeps its line count.
+- **Counts in Mono** (canon rule 23): “Sends the full text of 32 entries” on Settings · Phone and “AI figures leave out
+  2 entries you kept out” on Review · Staging, Phone and Light now set the count in IBM Plex Mono, as the lines beside
+  them do; both counts are computed since `a50e7e20`. The Review sentence sits in one span: without it the row's 6px
+  gap widens the spaces around the 2.
+- **The page behind ⌘K:** FShellStaging, FShellProduction and FShellLight wrap the page in `aria-hidden`, as the boards
+  that draw a dialog open do; the app's palette is a MUI Dialog (`CommandPalette.tsx:399`), which hides the page.
+  Chrome's tree no longer reads the footer line there. Their pixels are unchanged.
+- **The slice 1a plan** follows items 18 and 19 in `400ffb76`: F2 seeds the 2 kept-out entries and criterion 26's
+  script counts them, and F6 sends an emptied Update field as `not_recorded` (T23 gains the case).
+- **Heights:** FJournalSettingsSpec 3063 → 3084 (the row's `specH` follows), FChangelogEntries 2719 → 2808 at 30
+  entries. A second measurement of all 254 Final boards changed 0.
+- **Checked:** build 0, and a second run byte-identical; verify-tokens 0; `tmp/journal-boards/check-sample.mjs` 0 (379
+  of 379, 8 more: the note's day and its trim, the month line's formatter against the printed Oct 7 line, the first
+  offer's empty month, and the counts that leave nothing to offer by the Oct 7 month); five mutants of the sample fail
+  it, one at its new guard. The sweep of the 15 changed boards 0 (0 overflow, 0 text under 11px, no change at a 20px
+  default font), and of all 51 journal boards 0, with HEAD's 21 clipped reports board for board. On the three Shell
+  boards Chrome's accessibility tree keeps the ⌘K dialog and its options and names nothing outside it (31 nodes at
+  HEAD, the footer line among them); their screenshots are byte-identical to HEAD's at 16px and 20px default fonts,
+  animations stopped. On the journal boards pixels differ only on the changed lines, and on the Settings spec card
+  below its longer bulk state. The two counts render in IBM Plex Mono (IBM Plex Sans at HEAD). NUL 0, CR 0.

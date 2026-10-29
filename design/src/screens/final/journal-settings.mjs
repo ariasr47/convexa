@@ -15,6 +15,8 @@ import { B, JR_CSS, JR_NOTES, JR_RULINGS, icon, jrBtn, jrNote, jrSampleChip, jrS
 import { AI, SUSPICIONS } from '../../data/journal-sample.mjs';
 
 // ---- words (Copy table, Screen 13, Data and privacy) -----------------------------------------------------------------
+/** The bulk read's egress sentence around its count: the count as text for the spec card, as Mono on the board. */
+const bulkSentence = (n) => `Sends the full text of ${n} entries, once each, with their numbers and your active rules, to Anthropic (${AI.models.entry}, batch price) on your key. Entries you kept out are left out.`;
 const W = {
   egress: 'Turning this on lets Convexa send your journal text, numbers and rules to Anthropic on your key when you run a review, tap Read on an entry or accept a bulk read of older entries, and, if you turn it on below, on each save. Nothing is sent until one of those happens.',
   readOnSave: `With this on, each save sends that entry’s text, its numbers, the summaries of your 5 previous entries and your active rules to Anthropic (${AI.models.entry}) on your key. Margin-call entries are never sent on save.`,
@@ -32,7 +34,7 @@ const W = {
   capLine: `This month’s journal AI cap of ${AI.caps.month} is reached. Change it in Settings.`,
   // The bulk read offer (Copy → Bulk read offer; Data and privacy → Egress, trigger 5; Other flows → Turning on AI
   // reads), slice 5: its own egress sentence above its button.
-  bulk: `Sends the full text of ${AI.bulk.entries} entries, once each, with their numbers and your active rules, to Anthropic (${AI.models.entry}, batch price) on your key. Entries you kept out are left out.`,
+  bulk: bulkSentence(AI.bulk.entries),
   signedOut: 'Sign in to open your journal',
   disclaimer: 'Convexa is an analysis tool. Positions are simulated (paper); a connected brokerage is read-only. Not investment advice.',
 };
@@ -61,14 +63,16 @@ function consent({ state = 'on', refused = false } = {}) {
 const models = () => sec(`<span class="jr-st-h">Models for journal reads</span><div class="jr-st-two"><div class="jr-st-grp"><span class="jr-st-lab">Entry reads</span>${jrSeg([AI.models.entry, AI.models.review], AI.models.entry, { size: 32, label: 'Entry reads' })}</div><div class="jr-st-grp"><span class="jr-st-lab">Reviews</span>${jrSeg([AI.models.review, AI.models.entry], AI.models.review, { size: 32, label: 'Reviews' })}</div></div>`);
 const monday = () => sec(switchRow('Offer the weekly review each Monday', true));
 const readOnSave = () => sec(`${switchRow('Read each entry right after I save it', false)}<p class="jr-st-eg sm">${W.readOnSave}</p>`);
-/** The caps, his figures, and "This month" summed from the runs (computed). `capped`: the cap line in its place. */
-const caps = ({ capped = false } = {}) => sec(`<div class="jr-st-two">${fieldBox('Monthly cost cap for the journal', AI.caps.month, { mono: true })}${fieldBox('Limit per run', AI.caps.run, { mono: true })}</div>${capped ? jrStrip('info', `<span>${figs(W.capLine)}</span>`) : `<p class="jr-st-month"><span>${figs(AI.month)}</span>${jrTag('computed')}</p>`}`);
+/** The caps, his figures, and "This month" summed from the runs (computed). `capped`: the cap line in its place.
+ *  `month`: the month line to draw (the Oct 7 review's month unless given). */
+const caps = ({ capped = false, month = AI.month } = {}) => sec(`<div class="jr-st-two">${fieldBox('Monthly cost cap for the journal', AI.caps.month, { mono: true })}${fieldBox('Limit per run', AI.caps.run, { mono: true })}</div>${capped ? jrStrip('info', `<span>${figs(W.capLine)}</span>`) : `<p class="jr-st-month"><span>${figs(month)}</span>${jrTag('computed')}</p>`}`);
 /** The bulk read of older entries (slice 5): the egress sentence above "Read them now", with the count and the
- *  estimate in Mono, from the sample's own line ("32 entries haven’t been read. Read them now · ≈ $0.17": every
- *  entry but the 2 kept out, spec 08, Corrections, item 18). */
+ *  estimate in Mono, from the sample's own line ("32 entries haven’t been read. Read them now · ≈ $0.17"). It counts
+ *  the entries neither kept out nor already read, so it is drawn as first offered, when reads are turned on: every
+ *  entry but the 2 kept out, beside an empty month (spec 08, Corrections, item 18, as corrected). */
 const BULK = AI.bulk.text.split(' Read them now · ');
 if (BULK.length !== 2) throw new Error('journal-settings: the bulk read line drifted from “… Read them now · ≈ …”');
-const bulkRead = () => sec(`<p class="jr-st-eg sm">${W.bulk}</p><div class="jr-st-bulk"><span>${figs(BULK[0])}</span>${jrBtn('Read them now')}<span class="jr-st-est">${figs(BULK[1])}</span></div>`);
+const bulkRead = () => sec(`<p class="jr-st-eg sm">${bulkSentence(`<span class="mono">${AI.bulk.entries}</span>`)}</p><div class="jr-st-bulk"><span>${figs(BULK[0])}</span>${jrBtn('Read them now')}<span class="jr-st-est">${figs(BULK[1])}</span></div>`);
 /** "Downfalls you suspect": up to 5 lines in his words; the sample's three, then two empty lines. */
 const suspicions = () => sec(`<span class="jr-st-h">Downfalls you suspect</span><p class="jr-st-help">${W.suspicionsNote}</p><div class="jr-st-lines">${Array.from({ length: 5 }, (_, i) => input(SUSPICIONS[i]?.text ?? '', { label: `Downfall ${i + 1}` })).join('')}</div><div>${jrBtn('Save')}</div>`);
 /** Export (a download, with its plaintext warning) beside Restore (merge-only). `busy`: 'export' | 'restore'. */
@@ -82,7 +86,7 @@ const deleteJournal = ({ confirm = false } = {}) => sec(confirm
  *  refused write under the switch; production: solid, no tag while reads are on. */
 function journalPanel(env, { state = 'on', refused = false, bulk = false } = {}) {
   const sample = env === 'staging';
-  const inner = [consent({ state, refused }), models(), monday(), readOnSave(), caps(), bulk ? bulkRead() : '', suspicions(), exportRestore(), deleteJournal()].join('');
+  const inner = [consent({ state, refused }), models(), monday(), readOnSave(), caps(bulk ? { month: AI.bulk.month } : {}), bulk ? bulkRead() : '', suspicions(), exportRestore(), deleteJournal()].join('');
   return P('Journal', sample ? jrSampleChip() : '', inner, 'Journal', `jr-st${sample ? ' is-sample' : ''}`);
 }
 
@@ -98,7 +102,8 @@ function settingsPage({ scheme = 'dark', minHeight = 0, env = 'staging', panel =
 // =========================================================================================================
 const AT_JOURNAL = 'Settings at /settings#journal, scrolled to the panel: it follows AI providers (SettingsPage.tsx:644) in the page’s one 760px column. The panels above it are drawn on the Settings row.';
 const staging = (o) => settingsPage({ ...o, env: 'staging', note: AT_JOURNAL, panel: journalPanel('staging', { state: 'on', refused: true }) });
-/** The production phone panel, reads just turned on: the bulk read of older entries is offered under the caps. */
+/** The production phone panel, reads just turned on: nothing read or spent yet, so the month line is empty, and the bulk
+ *  read of older entries is offered under the caps. */
 const phone = (o) => settingsPage({ ...o, env: 'production', note: JR_NOTES.illustrative, panel: journalPanel('production', { state: 'on', bulk: true }) });
 
 function states({ scheme = 'dark', minHeight = 0 } = {}) {
@@ -164,7 +169,7 @@ export const ROW = {
   label: 'Journal · Settings panel',
   section: 'planned',
   css: JR_CSS + ST_CSS,
-  specH: 3063,
+  specH: 3084,
   spec: {
     title: 'Journal · Settings panel',
     route: '/settings#journal',
@@ -191,7 +196,7 @@ export const ROW = {
       { tag: null, when: 'Restoring: merge-only; a second restore adds nothing (“N rows were already in your journal”).' },
       { tag: null, when: `Delete confirm: “${W.deleteType}”, “Export first”, and what deletion reaches, “${W.deleteReach}”` },
       { tag: null, when: `Read on save, under its switch: “${W.readOnSave}”` },
-      { tag: null, when: `Bulk read (slice 5), once reads are on: “${W.bulk}” sits above “${AI.bulk.text}”; nothing is read until he taps it.` },
+      { tag: null, when: `Bulk read (slice 5), offered when reads are turned on: “${W.bulk}” sits above “${AI.bulk.text}”, counting the entries neither kept out nor already read. At that first offer the month reads “${AI.bulk.month}”. Nothing is read until he taps it.` },
       { tag: 'locked', when: `Signed out (production): “${W.signedOut}”.` },
       { tag: 'sample', when: `Staging: the panel’s one “Sample journal” chip; a refused write reads “${W.refused}”` },
     ],

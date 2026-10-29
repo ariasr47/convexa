@@ -9,11 +9,12 @@ import { HERO_CURVE, aiIll, drawerF, fieldIll, heroPanel, paletteF, scoreIll, si
 // ================================================================================================
 const researchSkeleton = `<div class="wrap" style="padding-top: 32px; display: flex; flex-direction: column; gap: 16px;"><h1 class="display" style="margin: 0; font-size: 44px;">Research</h1><p class="steel" style="margin: 0; max-width: 60ch; font-size: 16px;">Notes on 14 tickers, each with its sources, its freshness and what would change it.</p><div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;">${[0, 1, 2, 3, 4, 5].map(() => '<span class="skel" style="height: 200px;"></span>').join('')}</div></div>`;
 
-/** 1440: the shell around a page, with ⌘K open over it. */
+/** 1440: the shell around a page, with ⌘K open over it. The palette is a modal dialog (the app's is a MUI Dialog,
+ *  CommandPalette.tsx), so the page behind it is aria-hidden, as on the boards that draw a dialog open. */
 export function shellBoard(env) {
   return ({ minHeight = 0, scheme = 'dark' } = {}) => {
     const page = sitePage({ env, scheme, minHeight, active: 'research', tabs: 'Notes', label: 'Research', main: researchSkeleton });
-    return `<div data-scheme="${scheme}" style="position: relative;">${page}<div style="position: absolute; inset: 0; background: var(--scrim); display: flex; justify-content: center; align-items: flex-start; padding: 132px 24px 24px;">${paletteF({ env, state: 'results' })}</div></div>`;
+    return `<div data-scheme="${scheme}" style="position: relative;"><div aria-hidden="true">${page}</div><div style="position: absolute; inset: 0; background: var(--scrim); display: flex; justify-content: center; align-items: flex-start; padding: 132px 24px 24px;">${paletteF({ env, state: 'results' })}</div></div>`;
   };
 }
 

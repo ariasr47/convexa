@@ -364,7 +364,7 @@ function findingCard(f, { actions = true } = {}) {
   const acts = actions ? `<div class="jr-rv-acts">${jrBtn('Show entries', { kind: 'link' })}${hasDraft(f) ? jrBtn('Draft a rule from this', { kind: 'outline' }) : ''}${jrBtn('That’s not right', { kind: 'text' })}</div>` : '';
   return `<article class="jr-rv-fc" aria-label="${x.label} · ${x.side}"><div class="jr-rv-fh"><span class="jr-rv-lab">${x.label}</span><span class="jr-rv-side">${x.side}</span></div><p class="jr-rv-claim">${x.claim}</p><p class="jr-rv-ev">${x.evidence}${sep}${x.count}</p><p class="jr-rv-ev">${x.cut}</p>${acts}</article>`;
 }
-const keptOut = () => `<p class="jr-rv-kept">${icon('info', 14)}AI figures leave out ${AI.keptOut} entries you kept out</p>`;
+const keptOut = () => `<p class="jr-rv-kept">${icon('info', 14)}<span>${figs(`AI figures leave out ${AI.keptOut} entries you kept out`, { ints: true })}</span></p>`;
 const findingsFrame = (env, list) => jrFrame({ env, chipAt: 'foot', label: 'Findings', body: `<div class="jr-rv-fl">${list.map((f) => findingCard(f)).join('')}</div>` });
 
 // ---- 7. Questions your entries raise ---------------------------------------------------------------------------------------
