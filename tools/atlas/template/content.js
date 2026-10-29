@@ -82,7 +82,7 @@ const ARCH = {
     w: 160,
     h: 126,
     t: 'Static site',
-    s: ['dist/ from Vite', '_headers · CSP', '_redirects → SPA', 'assets: 1-year cache'],
+    s: ['dist/ from Vite', '_headers · CSP', 'route pages · 404', 'assets: 1-year cache'],
     k: 'PAGES',
     folder: 'apps/dashboard/public',
   },
@@ -287,8 +287,8 @@ const T = [
             files: [
               'routes/mod.rs:60-202 · registrations',
               'routes/contract_router.rs:133-214',
-              'routes/health.rs:250 · /api/health',
-              'routes/public_data.rs:1494-1521',
+              'routes/health.rs:205 · /api/health',
+              'routes/public_data.rs:1496-1523',
               'routes/stream.rs:420,541 · SSE',
             ],
             go: '#api',
@@ -377,7 +377,7 @@ const T = [
             L: 'source',
             a: 'feed',
             d: 'Massive REST and WebSocket, flat files, price cache.',
-            more: 'REST client for option-chain snapshots, aggregates and trades; a WebSocket for stock prices; SigV4 flat-file reads; a Redis price cache that falls back to memory (production reports <code>memory</code>).',
+            more: 'REST client for option-chain snapshots, aggregates and trades; a WebSocket for stock prices; SigV4 flat-file reads; a price cache in Redis when <code>REDIS_URL</code> is set and answers, else in memory (production reported <code>memory</code> on 29 Oct 2026).',
             libs: ['reqwest', 'tokio-tungstenite', 'redis'],
             files: [
               'massive/rest.rs:69-560',
@@ -395,7 +395,7 @@ const T = [
             d: 'The byte-identity oracle that pins the contract files.',
             more: 'Five generated contract files are pinned by sha256 here and in a fixture manifest. Any drift fails <code>cargo test --test capacity_identity</code>.',
             files: [
-              'identity.rs:108-129 · the pins',
+              'identity.rs:114-135 · the pins',
               'tests/fixtures/capacity-baseline/v1/identity/manifest.json',
             ],
             go: '#data',
@@ -407,11 +407,11 @@ const T = [
             L: 'api',
             a: 'apirust',
             d: 'Checks before bind; the per-IP rate limiter.',
-            more: 'In production the server refuses to start without a valid mode, origins, archive roots and a schema it can verify. The limiter allows 120 public reads and 20 sign-in attempts a minute per IP by default (<code>PUBLIC_RATE_LIMIT_PER_MIN</code>, <code>AUTH_RATE_LIMIT_PER_MIN</code>).',
+            more: 'In production the server refuses to start without a valid mode, origins, archive roots and a schema it can verify. The limiter allows 120 public reads and 20 sign-in attempts a minute per IP by default (<code>PUBLIC_RATE_LIMIT_PER_MIN</code>, <code>AUTH_RATE_LIMIT_PER_MIN</code>). Through the Pages proxy a request counts against its visitor only when the proxy presents <code>PAGES_PROXY_SECRET</code> and the API holds the same value.',
             files: [
               'runtime_guardrails/config.rs:172-191',
               'runtime_guardrails/preflight.rs:7-51',
-              'middleware/rate_limit.rs:21-158',
+              'middleware/rate_limit.rs:24-246',
             ],
             go: '#security',
           },
@@ -466,11 +466,11 @@ const T = [
           '← static files from Pages',
         ],
         files: [
-          'index.html:15-76',
+          'index.html:15-109',
           'vite.config.mts:52-269',
-          'src/main.tsx:5-8',
+          'src/main.tsx:7-16',
           'src/mountApp.tsx:9-26',
-          'src/app/app.tsx:68-386',
+          'src/app/app.tsx:80-470',
         ],
         go: '#react',
         kids: [
@@ -483,9 +483,9 @@ const T = [
             d: 'Providers and the route table.',
             more: 'Wraps <code>AuthProvider → AppThemeProvider → AuthDialogProvider → Routes</code>. Every page is <code>React.lazy</code> except Landing and DemoOperatorUnavailable (what the demo shows for the two <code>/_ops</code> pages), which render eagerly.',
             files: [
-              'app.tsx:68-173 · lazy pages',
-              'app.tsx:274-367 · routes',
-              'app.tsx:383-386 · providers',
+              'app.tsx:80-185 · lazy pages',
+              'app.tsx:354-451 · routes',
+              'app.tsx:467-470 · providers',
             ],
             go: '#react',
           },
@@ -517,7 +517,7 @@ const T = [
                 more: '<code>TickerDashboard</code> runs in the demo, and behind the owner gate when the options feed is live. On production the options feed is not live (the API holds no vendor key), so <code>PublicDesk</code> renders instead: filings, insiders, the note and a TradingView daily chart.',
                 files: [
                   'TickerDashboard.tsx:499-1471',
-                  'public-desk/PublicDesk.tsx:58-666',
+                  'public-desk/PublicDesk.tsx:66-758',
                   'technical-analysis/TradingViewEmbed.tsx:49-100',
                 ],
                 go: '#react',
@@ -529,7 +529,7 @@ const T = [
                 L: 'client',
                 a: 'spa',
                 d: 'The front door; eager; WebGL gamma surface.',
-                more: 'Makes no data calls. The hero starts as an inline SVG poster and upgrades to raw WebGL2 when it can. On idle it prefetches the Ticker and Scanner chunks.',
+                more: 'Makes no data calls. The hero starts as an inline SVG poster and upgrades to raw WebGL2 when it can. On idle it prefetches the desk chunk: the public desk on live, the full desk and the Scanner in the demo.',
                 files: ['Landing.tsx:200-651', 'GammaSurfaceHero.tsx:55-504', 'heroGl.ts:6-743'],
                 go: '#visit',
               },
@@ -595,10 +595,10 @@ const T = [
             c: '{{n:apps/dashboard/public}}',
             L: 'edge',
             a: 'static',
-            d: 'Copied into dist: fonts, _headers, _redirects.',
-            more: 'Self-hosted Archivo and IBM Plex fonts, the CSP and cache headers, the SPA fallback, plain blog pages, icons, robots and sitemap.',
+            d: 'Copied into dist: fonts, _headers, icons, plain blog pages.',
+            more: 'Self-hosted Archivo and IBM Plex fonts, the CSP and cache headers, plain blog pages, icons, the share image and robots. Nothing here routes: after the Nx build, <code>tools/write-blog-heads.mjs</code> writes the routing into dist: a page with its own head per route, <code>_redirects</code> rewrites for the dynamic paths (a page per desk and per note among them), a <code>404.html</code> that every other address gets with status 404, and on live builds the sitemap.',
             runs: 'Served as-is by Cloudflare Pages.',
-            files: ['_headers:10-29', '_redirects:3'],
+            files: ['_headers:10-41', 'tools/write-blog-heads.mjs:3-20 · the routing'],
             go: '#security',
           },
         ],
@@ -610,7 +610,7 @@ const T = [
         L: 'tool',
         a: 'tools',
         d: 'Playwright: five configs, journeys, accessibility and the zero-egress demo.',
-        more: 'Chromium journeys, a three-engine compatibility run, 28 axe scans plus 7 behaviour checks, and the demo journey that blocks and counts every network request. <code>tools/serve-dist.mjs</code> serves a built <code>dist</code> the way Pages does.',
+        more: 'Chromium journeys, a three-engine compatibility run, 28 axe scans plus 7 behaviour checks, and the demo journey that blocks and counts every network request. <code>tools/serve-dist.mjs</code> serves a built <code>dist</code> the way Pages does, except that any path that is not a file gets <code>index.html</code>, as on Pages before the build wrote its own routing.',
         libs: [
           '@playwright/test {{v:npm:@playwright/test}}',
           '@axe-core/playwright {{v:npm:@axe-core/playwright}}',
@@ -638,7 +638,7 @@ const T = [
         L: 'shared',
         a: 'client',
         d: '@convexa/api: typed client, generated schema, the demo.',
-        more: 'One <code>openapi-fetch</code> client. Every call is same-origin, so the session cookie goes with it, as the owner-gated reads need; in the demo the same calls are answered by <code>demoFetch</code> instead of the network. Components never call <code>fetch</code> directly.',
+        more: 'One <code>openapi-fetch</code> client. Every call is same-origin, so the session cookie goes with it, as the owner-gated reads need; in the demo the same calls are answered by <code>demoFetch</code> instead of the network, from a chunk a demo build starts loading at boot and a live build never loads. Components never call <code>fetch</code> directly.',
         runs: 'Inside the browser bundle; consumed as TypeScript source, with no build step.',
         libs: [
           'openapi-fetch {{v:npm:openapi-fetch}}',
@@ -646,7 +646,7 @@ const T = [
         ],
         talks: ['← every page and hook', '→ <code>/api/*</code> (live) or demoFetch (demo)'],
         files: [
-          'src/lib/client.ts:7-41',
+          'src/lib/client.ts:5-50',
           'src/lib/convexa.ts · the facade',
           'src/lib/demo/mode.ts:28-54',
         ],
@@ -683,13 +683,14 @@ const T = [
         L: 'api',
         a: 'quant',
         d: 'Pure Rust math: GEX, walls, gamma flip, max pain.',
-        more: 'No I/O at all. Dollar GEX is γ × OI × 100 × spot² × 0.01 with puts negative. The call wall is the strike with the highest net GEX, the put wall the lowest. The flip is the zero crossing on a 100-point grid across ±20 % of spot. A SIMD kernel runs the heavy loop (production reports <code>avx2-f64x4</code>).',
+        more: 'No I/O at all. Dollar GEX is γ × OI × 100 × spot² × 0.01 with puts negative. The call wall is the strike with the highest net GEX, the put wall the lowest. The flip is the zero crossing on a 100-point grid across ±20 % of spot. A SIMD kernel runs the heavy loop: <code>avx2-f64x4</code> on a CPU with AVX2, an unrolled scalar loop otherwise (production reported <code>avx2-f64x4</code> on 29 Oct 2026).',
         runs: 'Linked into api-rust; called on a blocking thread.',
         libs: ['std only · SIMD (unsafe allowed here only)'],
         files: [
           'src/gex.rs:5-9,233-259',
           'src/gamma_flip.rs:1-21,140',
           'src/max_pain.rs:39,82',
+          'src/simd.rs:270-278 · the kernel',
           'src/signals.rs:282-317 · the "magnet"',
           'tests/money_math_pins.rs',
         ],
@@ -704,9 +705,9 @@ const T = [
     L: 'edge',
     a: 'fn',
     d: 'One Pages Function: /api/* → Railway.',
-    more: "Forwards every <code>/api/*</code> request to <code>API_ORIGIN</code> and streams the body back unbuffered so SSE works. It strips hop-by-hop headers, blocks <code>/api/_metrics</code> and <code>/api/_research</code>, and adds nosniff, DENY and HSTS when the API didn't. The demo build excludes every Function in <code>_routes.json</code>.",
+    more: "Forwards every <code>/api/*</code> request to <code>API_ORIGIN</code> and streams the body back unbuffered so SSE works. It strips hop-by-hop headers, blocks <code>/api/_metrics</code> and <code>/api/_research</code>, and adds nosniff, DENY and HSTS when the API didn't. It lets a browser keep a public read (<code>/api/health</code>, <code>/api/public-data/*</code>) for 30 s and marks every other answer <code>no-store</code>, and it passes on the visitor's address, with <code>PAGES_PROXY_SECRET</code> when set, so the API's per-IP limits can count the visitor. The demo build excludes every Function in <code>_routes.json</code>.",
     runs: "At Cloudflare's edge, live builds only.",
-    files: ['functions/api/[[path]].ts:24-111', 'tools/write-dashboard-routes.mjs:11-19'],
+    files: ['functions/api/[[path]].ts:37-173', 'tools/write-dashboard-routes.mjs:11-19'],
     go: '#env',
   },
   {
@@ -716,11 +717,11 @@ const T = [
     L: 'tool',
     a: 'tools',
     d: 'Scripts for build, contract, verify, notes, supply chain, this atlas.',
-    more: 'The glue Nx calls. <code>build-dashboard.mjs</code> picks demo or live, runs the Nx build and writes blog heads. <code>api-contract.mjs</code> generates and checks the contract. <code>verify.mjs</code> and <code>hooks/pre-push</code> are the local gates; the hook also refuses a push of <code>main</code> or <code>staging</code> at a version that is already out. <code>atlas/</code> regenerates this page.',
+    more: 'The glue Nx calls. <code>build-dashboard.mjs</code> picks demo or live, runs the Nx build, then writes the head of every route and the edge routing (<code>write-blog-heads.mjs</code>). <code>api-contract.mjs</code> generates and checks the contract. <code>verify.mjs</code> and <code>hooks/pre-push</code> are the local gates; the hook also refuses a push of <code>main</code> or <code>staging</code> at a version that is already out. <code>atlas/</code> regenerates this page.',
     runs: 'On your machine and in the Pages builder.',
     libs: ['node:test', 'gitleaks (binary)'],
     files: [
-      'build-dashboard.mjs:9-57',
+      'build-dashboard.mjs:8-54',
       'api-contract.mjs:2081-2298',
       'verify.mjs:242-421',
       'hooks/pre-push:20-58',
@@ -892,7 +893,7 @@ const STACK = [
     'client',
     'Archivo · IBM Plex Sans · IBM Plex Mono',
     'self-hosted',
-    'Display, body and figures; <code>font-display: swap</code>; two faces preloaded; each Plex subset declares its <code>unicode-range</code>',
+    'Display, body and figures; <code>font-display: swap</code>; three faces preloaded; Archivo cut to the half of each axis the app renders (wght 600–900, wdth 100–125 %); each Plex subset declares its <code>unicode-range</code>',
     ['apps/dashboard/public'],
   ],
   [
@@ -984,7 +985,7 @@ const STACK = [
     'data',
     'redis',
     '{{v:cargo:redis}}',
-    'Optional price cache; production runs the in-memory fallback',
+    'Optional price cache; without <code>REDIS_URL</code> the API keeps prices in memory, as production did on 29 Oct 2026',
     ['apps/api/src/infrastructure'],
   ],
   [
@@ -1084,28 +1085,28 @@ const STACK = [
 const VISIT = [
   [
     'Pages answers the document',
-    'Cloudflare serves <code>index.html</code> (%doc% on the wire) with <code>max-age=0, must-revalidate</code>. The same file is the fallback for every route.',
+    'Cloudflare serves <code>index.html</code> (%doc% on the wire) with <code>max-age=0, must-revalidate</code>. Every other route in the table gets a copy of it written at build, most with a head of their own; any other address gets <code>404.html</code> with status 404.',
     'first byte %ttfb% in these local runs',
   ],
   [
     'The head starts everything at once',
-    'Two font preloads (Plex Sans 400, Plex Mono 400), one small stylesheet, <code>modulepreload</code> for the runtime, shared, mui, router and streams chunks, then the blocking <code>convexa-bootstrap-&lt;hash&gt;.js</code>. It sets <code>window.__CONVEXA_BOOT__ = {mode, key}</code> and <code>data-theme</code> before anything paints, so the theme never flashes. Last, one <code>modulepreload</code> per chunk of the app graph behind <code>mountApp</code>, so the browser fetches the app with the entry instead of after it.',
-    'index.html:46-76 · vite.config.mts:52-148',
+    'Three font preloads (Archivo, Plex Sans 400, Plex Mono 400), one small stylesheet, <code>modulepreload</code> for the runtime, shared, mui, router and streams chunks, then the blocking <code>convexa-bootstrap-&lt;hash&gt;.js</code>. It sets <code>window.__CONVEXA_BOOT__ = {mode, key}</code> and <code>data-theme</code> before anything paints, so the theme never flashes. Last, one <code>modulepreload</code> per chunk of the app graph behind <code>mountApp</code>, so the browser fetches the app with the entry instead of after it.',
+    'index.html:71-109 · vite.config.mts:52-148',
   ],
   [
     'main.tsx seeds the demo, then loads the app',
-    "<code>initializeDemoWorkspace()</code> writes the demo's localStorage (a no-op on live). Only then does <code>await import('./mountApp')</code> run the app graph: mountApp, react and the small shared chunks they import. The head's preloads started fetching them with the entry, and a preload never runs a module.",
-    'main.tsx:5-8',
+    "First it arms a one-time reload: a chunk that fails to load, as one a deploy has replaced does, reloads the page once per tab, flagged in sessionStorage. <code>initializeDemoWorkspace()</code> writes the demo's localStorage (a no-op on live). Only then does <code>await import('./mountApp')</code> run the app graph: mountApp, react and the small shared chunks they import. The head's preloads started fetching them with the entry, and a preload never runs a module. A demo build also starts loading the demo transport at boot; a live build never loads it.",
+    'main.tsx:7-16 · reloadOnce.ts:13-27 · client.ts:12-13',
   ],
   [
     'React mounts the provider stack',
     '<code>createRoot</code> → StrictMode → RootErrorBoundary → BrowserRouter → AuthProvider → AppThemeProvider → AuthDialogProvider → Routes → AppShell. A throw that no inner boundary catches shows the root notice with a Reload button, never a blank page.',
-    'mountApp.tsx:9-26 · app.tsx:383-386',
+    'mountApp.tsx:9-26 · app.tsx:467-470',
   ],
   [
     'Two quiet calls on the live site',
-    "AuthProvider asks <code>GET /api/auth/session</code> once and never blocks rendering. AppShell's MarketDataNotice asks <code>GET /api/health</code> for the market-data mode. The demo makes neither: it starts signed in as the demo account.",
-    'AuthContext.tsx:149-152 · useMarketDataMode.ts:5-12',
+    "AuthProvider asks <code>GET /api/auth/session</code> once and never blocks rendering. AppShell's MarketDataNotice asks <code>GET /api/health</code> for the market-data mode. The demo makes neither: it starts signed in as the demo account. On a live desk route the route also starts the public desk's chunk and its read beside the health call, so the desk does not wait for it.",
+    'AuthContext.tsx:149-152 · useMarketDataMode.ts:5-12 · app.tsx:203-248',
   ],
   [
     'The page paints',
@@ -1114,13 +1115,13 @@ const VISIT = [
   ],
   [
     'Fonts fill in as glyphs appear',
-    'Archivo for the headline, then the IBM Plex faces the text uses. Each Plex subset declares its <code>unicode-range</code>, so Greek loads only where a γ is on screen and latin-ext only where one of its characters is.',
+    'The three preloaded faces are already on their way; the other IBM Plex weights and subsets follow as the text needs them. Each Plex subset declares its <code>unicode-range</code>, so Greek loads only where a γ is on screen and latin-ext only where one of its characters is.',
     '%fonts%',
   ],
   [
     'Idle time warms the next pages',
-    "Landing imports the Ticker and Scanner chunks on <code>requestIdleCallback</code>; hovering a nav link or the main button warms its route too. On a desk route the page's own data starts here instead: seed JSON in the demo, <code>/api/public-data/tickers/NVDA</code> and the TradingView widget on live.",
-    'prefetchRoutes.ts:44-70',
+    "On <code>requestIdleCallback</code> Landing imports the desk chunk: the public desk on live, the full desk and the Scanner in the demo. Hovering a nav link or the main button warms its route too. On a desk route the page's own data loads here instead: seed JSON in the demo, the TradingView widget on live, after the public read the route started with the health call.",
+    'prefetchRoutes.ts:24-34,59-85',
   ],
 ];
 const WF_PAGES = [
@@ -1131,27 +1132,27 @@ const WF_PAGES = [
 ];
 const WF_NOTES = {
   liveLanding:
-    'Live landing: its API calls are %api%, made after React mounts. The Ticker and Scanner chunks near the end are the idle prefetch, not something this page needs.',
+    'Live landing: its API calls are %api%, made after React mounts. The public desk chunks near the end are the idle prefetch, not something this page needs.',
   demoLanding:
-    'Demo landing: no <code>/api</code> call at all. The JavaScript is byte-identical to live; only the bootstrap script differs, because its hash includes the mode.',
+    'Demo landing: no <code>/api</code> call at all. Its JavaScript files are byte-identical to live; only the bootstrap script differs, because its hash includes the mode. What loads differs: the demo also fetches its transport, which a live page never asks for, and its idle prefetch warms the full desk and the Scanner.',
   demoTicker:
     "Demo desk: the “static data” requests are the demo's seed files (<code>spy.seed-*.json</code> and friends), bundled at build time and read from the demo's own host. No API and no third party.",
   liveTicker:
-    "Live desk with no options feed (<code>/api/health</code> says <code>not_live</code>): <code>PublicDesk</code> asks <code>/api/public-data/tickers/NVDA</code> once, then the TradingView widget loads %tv% requests from its own hosts (folded into one row). The largest paint waits for the desk's text.",
+    "Live desk with no options feed (<code>/api/health</code> says <code>not_live</code>): the desk route asks <code>/api/public-data/tickers/NVDA</code> once, beside the health call, and <code>PublicDesk</code> takes the answer; then the TradingView widget loads %tv% requests from its own hosts (folded into one row). The largest paint waits for the desk's text.",
 };
 
 /* ---------- who owns what ---------- */
 const R = {
   n: 'index.html + bootstrap',
   k: 'boot',
-  f: 'apps/dashboard/index.html:46-76 · vite.config.mts:52-101',
+  f: 'apps/dashboard/index.html:71-109 · vite.config.mts:52-101',
   o: 'Sets <b>window.__CONVEXA_BOOT__</b> (mode, storage-key prefix) and <b>data-theme</b> before React exists.',
   kids: [
     {
       n: 'main.tsx',
       k: 'boot',
-      f: 'src/main.tsx:5-8',
-      o: '<b>initializeDemoWorkspace()</b> seeds the demo, then <b>await import("./mountApp")</b>.',
+      f: 'src/main.tsx:7-16',
+      o: 'Arms a <b>one-time reload</b> for a chunk that fails to load, then <b>initializeDemoWorkspace()</b> seeds the demo, then <b>await import("./mountApp")</b>.',
       kids: [
         {
           n: 'mountApp.tsx → Root',
@@ -1192,8 +1193,8 @@ const R = {
                                 {
                                   n: 'Routes',
                                   k: 'route',
-                                  f: 'app/app.tsx:274-367',
-                                  o: '<b>/_ops/*</b> sit outside the shell (unavailable in the demo); everything else nests in AppShell.',
+                                  f: 'app/app.tsx:354-451',
+                                  o: '<b>/_ops/*</b> sit outside the shell (unavailable in the demo; on a Pages host a live build declares no /_ops/metrics, whose data its proxy refuses, so that address shows the site 404 page); everything else nests in AppShell.',
                                   kids: [
                                     {
                                       n: 'AppShell',
@@ -1230,8 +1231,8 @@ const R = {
                                         {
                                           n: '/ticker/:ticker  →  TickerDeskRoute',
                                           k: 'route',
-                                          f: 'app.tsx:198-221',
-                                          o: 'Demo: six symbols, else DemoSymbolMissing. Live: waits for the market-data mode, then <b>TickerDashboard</b> (feed live) or <b>PublicDesk</b> (paused or not live); the full desk sits inside the owner gate (<b>OwnerGateBoundary</b>), which swaps it for the sign-in wall (signed out) or the owner-only wall (any other account) once a read is refused.',
+                                          f: 'app.tsx:203-289',
+                                          o: 'Demo: six symbols, else DemoSymbolMissing. Live: waits for the market-data mode, then <b>TickerDashboard</b> (feed live) or <b>PublicDesk</b> (paused or not live), picked in a deferred render so the route fill stays up while the chunk loads. While it waits, a first mount starts the public desk chunk and its <b>GET /api/public-data/tickers/{t}</b> beside the health read. The full desk sits inside the owner gate (<b>OwnerGateBoundary</b>), which swaps it for the sign-in wall (signed out) or the owner-only wall (any other account) once a read is refused.',
                                           kids: [
                                             {
                                               n: 'TickerDashboard',
@@ -1274,8 +1275,8 @@ const R = {
                                             {
                                               n: 'PublicDesk',
                                               k: 'page',
-                                              f: 'pages/ticker/public-desk/PublicDesk.tsx:58-666',
-                                              o: 'What production shows today. Reads <b>GET /api/public-data/tickers/{t}</b> once; never calls the bundle, stream, AI or scan endpoints. TradingView daily chart, note, filings, insiders; feed panels say <b>Not live</b>.',
+                                              f: 'pages/ticker/public-desk/PublicDesk.tsx:66-758',
+                                              o: 'What production shows today. Reads <b>GET /api/public-data/tickers/{t}</b> once, taking over the read the route started; never calls the bundle, stream, AI or scan endpoints. TradingView daily chart, note, filings, insiders; feed panels say <b>Not live</b>.',
                                             },
                                           ],
                                         },
@@ -1288,13 +1289,13 @@ const R = {
                                         {
                                           n: '/research/* · /blog/* · /methodology · /alerts · /settings · trust pages',
                                           k: 'page',
-                                          f: 'app.tsx:317-361',
+                                          f: 'app.tsx:401-445',
                                           o: 'All lazy, each wrapped in a route ErrorBoundary and Suspense.',
                                         },
                                         {
                                           n: '*  →  NotFound',
                                           k: 'page',
-                                          f: 'app.tsx:367',
+                                          f: 'app.tsx:451',
                                           o: "The shell's last child, so a 404 keeps the nav and footer.",
                                         },
                                       ],
@@ -1352,12 +1353,12 @@ const FLOWS = [
         'api',
         'Route',
         '<code>/api/public-data/{markets | filings | tickers/:t}</code>: 200 whatever the sources did, with the state in the body; only bad input is an error (a 422).',
-        'routes/public_data.rs:27-92',
+        'routes/public_data.rs:29-94',
       ],
       [
         'edge',
         'Pages Function',
-        'Forwards, streams back, adds security headers.',
+        'Forwards, streams back, adds security headers; a browser may keep the answer 30 s.',
         'functions/api/[[path]].ts',
       ],
       [
@@ -1419,7 +1420,7 @@ const FLOWS = [
         'tool',
         'Build picks demo',
         '<code>CF_PAGES_BRANCH=staging</code> means demo; the mode is baked into the bootstrap script and its hash.',
-        'build-dashboard.mjs:9-26',
+        'build-dashboard.mjs:8-25',
       ],
       [
         'shared',
@@ -1481,7 +1482,7 @@ const FLOWS = [
         'tool',
         'Guards',
         '<code>api:contract:check</code> regenerates and byte-compares; <code>capacity_identity</code> checks five pins.',
-        'identity.rs:108-129',
+        'identity.rs:114-135',
       ],
     ],
   },
@@ -1578,7 +1579,7 @@ const ROUTES = [
     'scan · scan/{s}/history · scan/view (GET, PUT) · universe · all; all but view and universe are owner-only',
     'scan.rs:415-485',
   ],
-  ['Public data', 'markets · filings · tickers/{t}', 'public_data.rs:1494-1521'],
+  ['Public data', 'markets · filings · tickers/{t}', 'public_data.rs:1496-1523'],
   [
     'Book & broker',
     'book (GET, PUT) · broker credential (GET, PUT, DELETE) · broker book · refresh · sim-trade gate',
@@ -1730,13 +1731,13 @@ const DEPLOY = [
     'edge',
     'Pages builds each branch',
     '<code>npm run build:dashboard</code>: <code>main</code> builds live, <code>staging</code> builds the demo, with the Node in <code>.nvmrc</code>.',
-    'build-dashboard.mjs:16-20',
+    'build-dashboard.mjs:15-19',
   ],
   [
     'edge',
     'Pages serves',
-    'index.html revalidates; /assets are cached a year (immutable); .br and .gz are precompressed.',
-    '_headers:20-29',
+    'index.html revalidates; /assets are cached a year (immutable), fonts 30 days, the share image and favicons a day; .br and .gz are precompressed.',
+    '_headers:20-41',
   ],
   [
     'api',
@@ -1748,7 +1749,7 @@ const DEPLOY = [
     'data',
     'Migrate, then swap',
     '<code>api-rust postgres-migrate</code> runs before deploy; the health check is <code>/api/health</code>, whose <code>release</code> is the commit.',
-    'railway.json:13-14 · health.rs:196-211',
+    'railway.json:13-14 · health.rs:148-163',
   ],
 ];
 
@@ -1756,7 +1757,7 @@ const DEPLOY = [
 const TESTS = [
   [
     'Vitest · dashboard',
-    2067,
+    2089,
     'client',
     '{{tests:apps/dashboard}} spec files · jsdom',
     'apps/dashboard',
@@ -1764,7 +1765,7 @@ const TESTS = [
   ],
   [
     'cargo test · Rust',
-    1262,
+    1267,
     'api',
     '60 test binaries: {{tests:apps/api/tests+libs/quant-engine/tests}} integration files, 4 inline unit-test binaries and 2 doc-test runs',
     'apps/api/tests',
@@ -1772,13 +1773,13 @@ const TESTS = [
   ],
   [
     'node --test · tools',
-    233,
+    242,
     'tool',
     '{{tests:tools+apps/dashboard-e2e/tools}} spec files; the two that are not hermetic are left out, and nothing else runs them',
     'tools',
     false,
   ],
-  ['Vitest · libs/api', 88, 'shared', '{{tests:libs/api}} spec files', 'libs/api', true],
+  ['Vitest · libs/api', 89, 'shared', '{{tests:libs/api}} spec files', 'libs/api', true],
   [
     'Playwright',
     67,
@@ -1789,7 +1790,7 @@ const TESTS = [
   ],
 ];
 const TESTS_CHECKED =
-  'Case counts last checked on 29 Oct 2026 at d01506ba: all four suites as npm run verify ran them for cadeb45e on 28 Oct (exit 0; libs/api replayed from the Nx cache of the same inputs; d01506ba changed only design/), the Playwright counts, configs and ports unchanged since the 16 Oct inventory, though some specs and fixtures were edited.';
+  'Case counts last checked on 29 Oct 2026 at 5a668530: all four suites run the way npm run verify runs them (Vitest for the dashboard and libs/api, cargo test -p api-rust -p quant-engine, and npm run test:tools once the client declarations are emitted), each exit 0; the Playwright counts, configs and ports unchanged since the 16 Oct inventory, though some specs and fixtures were edited.';
 const TESTS_NOTE =
   'One scale for all bars. The 9 Oct lean pass retired 920 tests across 106 files (5,173 → 3,187 cases); each left a RETIRED: line.';
 const GATES = [
@@ -1844,12 +1845,17 @@ const GATES = [
 const BUNDLE = [
   ['mui (MUI + Emotion)', '^mui-', 'vendor-mui', 'first load'],
   ['react + react-dom', '^react-', 'vendor-react', 'first load'],
-  ['TickerDashboard route', 'TickerDashboard', 'route-ticker', 'lazy · prefetched on idle'],
+  [
+    'TickerDashboard route',
+    'TickerDashboard',
+    'route-ticker',
+    'lazy · prefetched on idle in the demo',
+  ],
   ['PositionsPage route', 'PositionsPage', 'route-positions', 'lazy'],
   ['mountApp (app graph)', '^mountApp-', 'any-js-asset', 'first load · any-asset cap'],
   ['streams', '^streams-', 'any-js-asset', 'first load · any-asset cap'],
   ['router', '^router-', 'vendor-router', 'first load'],
-  ['Scanner route', 'Scanner', 'route-scanner', 'lazy · prefetched on idle'],
+  ['Scanner route', 'Scanner', 'route-scanner', 'lazy · prefetched on idle in the demo'],
   ['entry (index)', '^index-', 'entry-index', 'first load'],
   ['operator-metrics', '^operator-metrics-', 'any-js-asset', 'lazy · /_ops only'],
 ];
@@ -1867,12 +1873,12 @@ const BC = [
   [
     'edge',
     'Caching',
-    'Hashed <code>/assets/*</code> are immutable for a year; <code>index.html</code> revalidates every time. Files are precompressed to .br (quality 11) and .gz (level 9) at build, and source maps are moved out of dist.',
+    'Hashed <code>/assets/*</code> are immutable for a year; fonts keep 30 days and the share image and favicons a day, as their names carry no hash; <code>index.html</code> revalidates every time. Files are precompressed to .br (quality 11) and .gz (level 9) at build, and source maps are moved out of dist.',
   ],
   [
     'client',
     'Prefetch',
-    'The landing page prefetches Ticker and Scanner when idle (<code>requestIdleCallback</code>, 2.5 s timeout); nav links and the main button prefetch on hover or focus.',
+    'When idle (<code>requestIdleCallback</code>, 2.5 s timeout) the landing page prefetches the desk: the public desk on live, the full desk and Scanner in the demo. Nav links and the main button prefetch on hover or focus.',
   ],
   [
     'client',
@@ -1896,7 +1902,7 @@ const SEC = [
   [
     'api',
     'Sessions',
-    'The <code>gf_session</code> cookie: HttpOnly, Secure, SameSite, HMAC-signed with a rotating key ring; 7-day idle, 30-day absolute. Every API call is same-origin, so the browser sends the cookie with each one and the server decides what it unlocks. cookies.rs:9-66; client.ts:11,22-29.',
+    'The <code>gf_session</code> cookie: HttpOnly, Secure, SameSite, HMAC-signed with a rotating key ring; 7-day idle, 30-day absolute. Every API call is same-origin, so the browser sends the cookie with each one and the server decides what it unlocks. cookies.rs:9-66; client.ts:20,31-38.',
   ],
   [
     'api',
@@ -1906,7 +1912,7 @@ const SEC = [
   [
     'api',
     'Rate limits',
-    'Per IP, by default: 120 public reads and 20 sign-in attempts a minute (production sets its own public limit; see its health above). Per account: five free attempts per 15 minutes, then one a minute. rate_limit.rs:21-158; throttle.rs:16-19.',
+    'Per IP, by default: 120 public reads and 20 sign-in attempts a minute; <code>PUBLIC_RATE_LIMIT_PER_MIN</code> and <code>AUTH_RATE_LIMIT_PER_MIN</code> change them (production allowed 30 public reads on 29 Oct 2026). Through the Pages proxy each visitor counts alone only when the proxy and the API hold the same <code>PAGES_PROXY_SECRET</code>; without it a proxied request counts against the Cloudflare address that reached the API. Per account: five free attempts per 15 minutes, then one a minute. config.rs:546-548; rate_limit.rs:24-246; throttle.rs:16-19.',
   ],
   [
     'api',
@@ -2105,9 +2111,13 @@ const WHERE = [
   [
     'routing',
     'Add a page or change a route',
-    'One route table; every page but Landing and DemoOperatorUnavailable is lazy; the shell wraps all but the two <code>/_ops</code> routes.',
+    'One route table; every page but Landing and DemoOperatorUnavailable is lazy; the shell wraps all but the <code>/_ops</code> routes. On Pages, a page address outside the routing the build writes answers 404.',
     [
       ['apps/dashboard/src/app/app.tsx', 'every route, the lazy imports, the providers'],
+      [
+        'tools/write-blog-heads.mjs',
+        'the routes the build serves; a path missing from its tables answers 404 on Pages',
+      ],
       ['apps/dashboard/src/app/shell/AppShell.tsx', 'the layout every page renders inside'],
       ['apps/dashboard/src/app/shell/TopNav.tsx', 'nav items and hover prefetch'],
       [
@@ -2327,7 +2337,7 @@ const RUNS_ST = [
   ['demo-positions', 'Demo · /positions'],
 ];
 const OWNS = {
-  App: 'The root of the app: wraps the provider stack around the route table (app.tsx:383-386).',
+  App: 'The root of the app: wraps the provider stack around the route table (app.tsx:467-470).',
   Root: "mountApp's whole tree: StrictMode, the root error boundary, the router and the app.",
   RootErrorBoundary:
     'The last resort: a throw nothing below caught shows a notice with Reload, never a blank page.',
@@ -2347,18 +2357,18 @@ const OWNS = {
     'The ⌘K palette: the search, its result rows and the keys inside it (arrows, Enter). AppShell holds the keys that open it.',
   AccountControl: 'The account button: sign in, or the signed-in account.',
   Landing:
-    'The front door. Eager, no data calls; schedules the idle prefetch of Ticker and Scanner.',
+    'The front door. Eager, no data calls; schedules the idle prefetch of the desk, and of the Scanner in the demo.',
   GammaSurfaceHero:
     'Owns its mode: an SVG poster first, then WebGL2 or the fallback. Draws only on demand.',
   RouteFallback:
     "The page-shaped loading fill: the Suspense fallback while a lazy page's chunk loads, and the hold while who-am-I or the market-data read is in flight.",
   TickerDeskRoute:
-    'Picks the full desk or the public desk from the build mode and the market-data mode; on live, the full desk sits behind the owner gate (OwnerGateBoundary).',
+    'Picks the full desk or the public desk from the build mode and the market-data mode, in a deferred render; on live it starts the public desk and its read while /api/health is out, and the full desk sits behind the owner gate (OwnerGateBoundary).',
   TickerDashboard:
     'The full desk: SSE tape, the bundle every 60 s, history every 120 s, positions, the AI read, alerts, orders.',
   ColdLoadSkeleton: "The placeholder layout until the desk's first bundle arrives.",
   PublicDesk:
-    'The desk without the feed: one read of /api/public-data/tickers/{t}, the TradingView chart, filings, insiders.',
+    'The desk without the feed: one read of /api/public-data/tickers/{t}, which the route started, the TradingView chart, filings, insiders.',
   StructureHeroPanel:
     'The structure view; the one structure widget that reads the live tape itself, for its price trail.',
   ReadStrip: 'Eight read cells computed from the bundle; memoized, so tape ticks pass it by.',

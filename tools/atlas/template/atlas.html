@@ -244,9 +244,10 @@
         <tr><td><code>convexa.positions.v3</code> · <code>.touch_at</code> · <code>.owner</code></td><td>the paper book and whose it is</td></tr>
         <tr><td><code>convexa.orders.v1</code> · <code>convexa.alerts.v1</code></td><td>orders; alerts (checked in the browser)</td></tr>
         <tr><td><code>convexa.personas.v1</code> · <code>convexa.recent-tickers.v1</code></td><td>personas; ⌘K recents</td></tr>
+        <tr><td><code>convexa.chunk-reload.v1</code> (sessionStorage)</td><td>this tab already reloaded once for a chunk that failed to load</td></tr>
         <tr><td><code>gf_session</code> (cookie)</td><td>server session, HttpOnly, HMAC-signed</td></tr>
       </tbody></table></div>
-      <p class="note" style="margin-top:10px">In the demo every key gets the prefix <code>convexa.demo.v1.</code> from <code>demoStorageKey</code> (libs/api/src/lib/demo/mode.ts:49-54), so the two sites never share state. Every key either site stores is listed on the Privacy page (PrivacyPage.tsx:45-91).</p>
+      <p class="note" style="margin-top:10px">In the demo every localStorage key gets the prefix <code>convexa.demo.v1.</code> from <code>demoStorageKey</code> (libs/api/src/lib/demo/mode.ts:49-54), so the two sites never share state. The one sessionStorage key, <code>convexa.chunk-reload.v1</code>, has no prefix on either site (src/reloadOnce.ts:13). Every key either site stores is listed on the Privacy page (PrivacyPage.tsx:47-101).</p>
     </div>
   </div>
 </section>
@@ -299,7 +300,7 @@
   <div class="sec-head">
     <span class="eyebrow">12 · Environments</span>
     <h2 id="h-env">Five places the app runs, and what each one fakes</h2>
-    <p>The data mode is fixed at build time and baked into the bootstrap script; app code never reads it from <code>import.meta.env</code>. tools/build-dashboard.mjs:9-26; vite.config.mts:45-101.</p>
+    <p>The data mode is fixed at build time and baked into the bootstrap script; app code never reads it from <code>import.meta.env</code>. tools/build-dashboard.mjs:8-25; vite.config.mts:45-101.</p>
   </div>
   <div class="tbl"><table id="envTable"><thead><tr><th>Where</th><th>How it starts</th><th>Data</th><th>Sign-in</th><th>Mocked</th></tr></thead><tbody></tbody></table></div>
   <div class="flowcap"><h3>How a push becomes a deploy</h3><span class="muted" style="font-size:13px">each host builds for itself; there is no CI</span></div>

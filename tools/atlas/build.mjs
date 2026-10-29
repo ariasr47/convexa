@@ -28,9 +28,10 @@ import { Script } from 'node:vm';
 
 const TEMPLATE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'template');
 
-/** The faces the page uses, from the dashboard's self-hosted fonts (latin subsets). */
+/** The faces the page uses, from the dashboard's self-hosted fonts (latin subsets). Archivo's
+ *  ranges are the file's own axes, as the dashboard declares them (apps/dashboard/src/styles.css). */
 const FONTS = [
-  ['Archivo', '100 900', 'font-stretch:62% 125%;', 'archivo/archivo-latin-standard-normal.woff2'],
+  ['Archivo', '600 900', 'font-stretch:100% 125%;', 'archivo/archivo-latin-standard-normal.woff2'],
   ['IBM Plex Sans', '400', '', 'ibm-plex-sans/ibm-plex-sans-latin-400-normal.woff2'],
   ['IBM Plex Sans', '500', '', 'ibm-plex-sans/ibm-plex-sans-latin-500-normal.woff2'],
   ['IBM Plex Sans', '600', '', 'ibm-plex-sans/ibm-plex-sans-latin-600-normal.woff2'],

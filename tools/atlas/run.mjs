@@ -56,7 +56,12 @@ const USAGE = 'usage: node tools/atlas/run.mjs [--ref <ref>] [--out <file>] [--o
 const NEVER_PORTS = new Set([8001]); // the owner's pdf-translator
 /** Vite's caches stay out of the farm, so the export's builds write their own. */
 const FARM_SKIP = new Set(['.vite', '.vite-temp', '.cache']);
-const HEALTH_FIELDS = ['status', 'market_data', 'durable_store', 'price_cache', 'gex_kernel'];
+/**
+ * What the page quotes from production's public /api/health. Only fields the public body keeps
+ * (HealthWire, apps/api/src/routes/health.rs): the price cache, the GEX kernel and the rate limit
+ * moved to the token-gated /api/_metrics in 1658fb69, so the template states those from the code.
+ */
+const HEALTH_FIELDS = ['status', 'market_data', 'durable_store'];
 /** Checks cheap enough to run on every generation; the page quotes their verdict and exit code. */
 const CHECKS = {
   filings: { script: 'tools/research-notes/check-filings.mjs', summary: /^filings: .*$/m },
@@ -462,7 +467,6 @@ async function main() {
       if (!res.ok) throw new Error(`${LIVE_API_ORIGIN}/api/health answered ${res.status}`);
       const body = await res.json();
       health = Object.fromEntries(HEALTH_FIELDS.map((k) => [k, body[k] ?? null]));
-      health.public_per_min = body.rate_limit?.public_per_min ?? null;
       log(`production health: ${JSON.stringify(health)}`);
     }
 

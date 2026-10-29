@@ -630,7 +630,7 @@ for (const [a, r, f] of ROUTES)
   );
 const H = D.health;
 $('#healthBody').innerHTML = H
-  ? `<code>/api/health</code> on ${esc(META.liveApi.replace(/^https?:\/\//, ''))}: status <b>${esc(H.status)}</b>, market_data <b>${esc(H.market_data)}</b>${H.market_data === 'not_live' ? ' (no options feed on this site: the API holds no vendor key)' : ''}, durable_store <b>${esc(H.durable_store)}</b>, price_cache <b>${esc(H.price_cache)}</b>, gex_kernel <b>${esc(H.gex_kernel)}</b>${H.public_per_min != null ? `, public reads <b>${esc(H.public_per_min)}</b> a minute per IP` : ''}. Production runs its own deploy, which may be older or newer than this commit.`
+  ? `<code>/api/health</code> on ${esc(META.liveApi.replace(/^https?:\/\//, ''))}: status <b>${esc(H.status)}</b>, market_data <b>${esc(H.market_data)}</b>${H.market_data === 'not_live' ? ' (no options feed on this site: the API holds no vendor key)' : ''}, durable_store <b>${esc(H.durable_store)}</b>. Production runs its own deploy, which may be older or newer than this commit. In this commit the price cache, the GEX kernel and the rate limits are on the token-gated <code>/api/_metrics</code>, which the Pages edge does not serve, so this page states them from the code.`
   : SKIPPED;
 
 /* ---------- Nx ---------- */
