@@ -90,6 +90,26 @@ the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
 | `npm run ci`                      | contract check → lint → typecheck → test → build → bundle budgets       |
 | GitHub Actions                    | Off (see CI mode). `ci.yml` kept as the record: supply-chain, frontend, Rust and capacity-linux jobs |
 
+## Versions
+
+- **One product version:** `version` in the root `package.json`, in SemVer; `package-lock.json`
+  mirrors it in its two root fields. The workspace and crate versions (`0.0.1`, `0.1.0`) are
+  internal: leave them.
+- **A push to `main` is a release** (it deploys production, and staging follows). Before the push,
+  set the version in a commit: minor when it adds something a user can see, patch for fixes only,
+  major for a redesign or a change that breaks saved data. After the push, tag that commit
+  `v<version>` and push the tag. Both need the owner's go, like the push. `1.0.0` is the first
+  versioned release: the first push after 2026-10-28.
+- **The footer shows it.** The dashboard build reads it from the root `package.json`
+  (`__CONVEXA_VERSION__`, `apps/dashboard/vite.config.mts`), and that file is a build input, so a
+  bump never replays a cached build.
+- **The design canvas is tied to it** (details in `design/README.md`). Each built row names the
+  version it first shipped in (`SHIPPED_IN`, `design/src/screens/final/tracker-data.mjs`), and
+  the build fails without one. `node design/src/emit-project.mjs <out>` stamps the version card
+  with the release status, commit and date, and refuses while `design/` or `package.json` has
+  uncommitted changes. After tagging a release, emit and republish the canvas so its stamp and
+  Changelog read released. To see any release's design, build `design/` at its tag.
+
 ## Traps (learned the hard way — read before running these)
 
 - **NEVER run a bare `nx format:write`.** It is **repo-wide**: one bare run reformatted **92
