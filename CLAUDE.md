@@ -97,12 +97,18 @@ the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
   internal: leave them.
 - **A push to `main` is a release** (it deploys production, and staging follows). Before the push,
   set the version in a commit: minor when it adds something a user can see, patch for fixes only,
-  major for a redesign or a change that breaks saved data. After the push, tag that commit
-  `v<version>` and push the tag. Both need the owner's go, like the push. `1.0.0` is the first
-  versioned release: the first push after 2026-10-28.
+  major for a redesign or a change that breaks saved data. Rebuild `design/`
+  (`node design/src/build.mjs`) in that same commit, because the design boards print the version
+  too. After the push, tag that commit `v<version>` and push the tag. Both need the owner's go, like
+  the push. `1.0.0` is the first versioned release: the first push after 2026-10-28.
+- **The pre-push hook holds the bump** (`tools/hooks/pre-push`). It refuses a push of `main` or
+  `staging` whose version is already tagged `v<version>` on another commit, and a push of `main`
+  whose version the remote's `main` already carries at another commit. It reads `package.json` at
+  the pushed commit and makes no network call. `--no-verify` skips it, as it skips gitleaks.
 - **The footer shows it.** The dashboard build reads it from the root `package.json`
   (`__CONVEXA_VERSION__`, `apps/dashboard/vite.config.mts`), and that file is a build input, so a
-  bump never replays a cached build.
+  bump never replays a cached build. Every design board with a footer draws the same line from the
+  same file (`FINAL_COPYRIGHT`, `design/src/lib.mjs`), so a bump redraws those boards.
 - **The design canvas is tied to it** (details in `design/README.md`). Each built row names the
   version it first shipped in (`SHIPPED_IN`, `design/src/screens/final/tracker-data.mjs`), and
   the build fails without one. `node design/src/emit-project.mjs <out>` stamps the version card
