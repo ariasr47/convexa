@@ -3651,3 +3651,51 @@ list numbers S1 to S29: the dated corrections inside items 1, 3, 5, 6, 7, 8, 12 
     set", "Closed by: Me", and "Revisit on…" with its date; and a carried figure reads "Carried
     from {date}". Why: S20, which found the plan had added these lines (its finding 19: he can
     read back what he sealed) without an item here.
+
+Added 2026-10-28 after the step-0 boards review, which found two places where the spec disagrees
+with itself and the boards drew both as printed (`design/CHANGELOG.md`, "Spec 08, step 0", Declined
+in review). Items 18 and 19 settle them.
+
+18. **What's sent: 8 new texts, 24 older summaries, and the 2 entries kept out.** The What's sent
+    drawer counted "Text of entries written since the last review: 8 entries, 2,090 words" and
+    "Short summaries of older entries: 26" (lines 1479-1480), which is all 34 of the sample's
+    entries (line 2689). Yet it says "the 2 entries you kept out" are never sent (line 1490), and
+    the review says "AI figures leave out 2 entries you kept out" (lines 1811-1812 and 2270). The
+    spec never says which 2. Now they are two older entries, written before the Sep 28 review, and
+    the second line reads "Short summaries of older entries: 24": 8 + 24 + 2 = 34. Neither is among
+    the 8 new: keeping one of those out would change "Read 8 entries" (line 1219) and the 8 texts
+    with their 2,090 words, and seven of them also hold the call, the money, a trim, a plan or a
+    snapshot. The 2 are entries the spec doesn't describe, with no snapshot, money, detail, plan
+    answer, correction or context note, so the other categories (12 snapshots, 31 computed figures,
+    1 context note, 2 active rules with his answers and reasons, 1 correction) and every figure of
+    the Oct 7 review stand as printed. "Keep this entry out of AI reads" is set when an entry is
+    saved, so the demo seed sets it on those 2 from slice 1a, where the timeline's "Kept out of AI
+    reads" filter finds them. The bulk read offer counts only entries not kept out. At the sample's
+    size it reads "Sends the full text of 32 entries, …" and "32 entries haven’t been read. Read
+    them now · ≈ $0.17" (lines 1721-1723 and 2276). That is the cost model's own sum (lines
+    2016-2018: one cold read at $0.0198 and the rest warm at $0.0106, which gives its ≈ $0.37,
+    $0.18 and $0.34 for 34 entries): for 32, ≈ $0.35 at the standard price, ≈ $0.17 at batch price
+    and ≈ $0.32 with no cache hits. The J2 token budget (line 2007) stays an estimate at 34
+    entries; two summaries fewer only lower it, so the worst case stays ≤ $0.76. Why: the boards
+    review, whose recommendation was 24 summaries. Answered 2026-10-28 under the owner's standing
+    instruction for the trade journal: take every recommendation.
+19. **Oct 2's maintenance requirement reads `not recorded` because he cleared it.** The worked
+    example prints it as `not recorded` (line 638). But on that day "A normal day" has him change
+    Account value and Margin loan, "and the other fields carry over with their dates" (lines
+    1595-1596), and item 16 lets a maintenance requirement be carried. Carried, Sep 30's $34,900
+    beside his typed $34,603 would read excess liquidity −$297 on Oct 2, and, left as it was
+    again, −$3,291 beside Oct 6's $31,609: a deficit no call followed, from a figure set before the
+    Oct 2 trim. Now step 3 reads: he taps Update, changes Account value and Margin loan, clears
+    Maintenance requirement (Sep 30's figure came before the trim, and he has no new one), and the
+    other fields carry over with their dates. The composer's rules then give the table as printed.
+    A field he leaves as it was is carried from the latest snapshot. A field he clears is empty, so
+    it reads `not recorded` (lines 893-894) under its "was $34,900 on Sep 30" line (line 874) and
+    goes as `not_recorded`. A field whose source has no value goes as `not_recorded`, never carried
+    (the slice 1a plan's F6 and S8), so Oct 6's maintenance requirement is `not recorded` as well.
+    No figure of the worked example changes: excess liquidity reads `not recorded` on Oct 2 and
+    Oct 6, and every other cell is as printed, recomputed with exact fractions from Computed facts
+    and items 1, 2 and 16 (the maintenance requirement enters no fact but excess liquidity). Why:
+    the boards review. Clearing changes one sentence of a flow. Carrying would change the binding
+    table, the shared fixture's expectations (the plan's T1) and every board that draws Oct 2, to
+    show a deficit no call followed. Answered 2026-10-28 under the owner's standing instruction for
+    the trade journal: take every recommendation.
