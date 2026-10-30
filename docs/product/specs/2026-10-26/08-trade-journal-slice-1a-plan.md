@@ -2242,3 +2242,22 @@ either yet. Both are applied, each in place:
   snapshot needs at least one typed figure (2.4, D34), and Due by is one of the seven figures
   (3.1's notes on `figures_ct`; 3.3's vector 3). So a snapshot whose only typed figure is Due by
   is valid. F3's `snapshotRequest` counts it, and B3's 422 rule must agree.
+- **T7's rounding example was wrong** (found by the B3 lane, checked again by the coordinator).
+  Lines 928–929 and 1628 say −24.85 × 10 is −248.49999999999997. In IEEE 754 doubles it is exactly
+  −248.5 (Rust, Python and Node agree), so none of T7's six edges needs the guard, and a guard
+  removed on purpose left T7 green. The fixture
+  (`libs/api/src/lib/journal/worked-example.json`) adds two edges that do need it:
+  - 0.145 × 100 = 14.499999999999998, which shows 15 with the guard and 14 without;
+  - −0.0295 × 100 = −2.9499999999999997, which shows −3.0 with it and −2.9 without.
+
+  T7 now refuses a fixture with no edge that the guard decides (`facts.rs`). F1's TypeScript copy
+  must reproduce both edges.
+- **D37. The journal key may not repeat another key's text either** (S9, widened). _Answered
+  2026-10-29 under the owner's standing instruction for the trade journal. It is reversible._ S9
+  refuses a journal key that shares key bytes with the AI-key ring, the session ring or either's
+  legacy key. But the two legacy keys are not base64: `AI_KEY_ENCRYPTION_KEY` is hashed and
+  `AUTH_SESSION_SIGNING_KEY` is used as its text's bytes. So the same base64 string pasted into one
+  of them and into the journal's key map passes: one secret serving two purposes. The journal ring
+  also refuses a key whose base64 text, trimmed, equals either legacy key's trimmed text. The
+  refusal leaves journal storage "not set up", and its boot line names the variable. A config
+  refused this way loses nothing, since no entry can be written under it. One case is added to T12.
