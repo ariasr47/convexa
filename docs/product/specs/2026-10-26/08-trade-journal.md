@@ -3708,3 +3708,77 @@ in review). Items 18 and 19 settle them.
     table, the shared fixture's expectations (the plan's T1) and every board that draws Oct 2, to
     show a deficit no call followed. Answered 2026-10-28 under the owner's standing instruction for
     the trade journal: take every recommendation.
+
+## Staging sample words (D38, 2026-10-29)
+
+The slice 1a plan's D38 gives words to every staging seed entry that would otherwise hold nothing,
+and to every entry whose words this spec or the boards describe. Before D38, this spec printed
+only 4 of the 34 bodies whole. About 20 entries held no words, snapshot or money, so the server
+would refuse them as blank and staging would draw them as empty cards. _Answered under the
+owner's standing instruction for the trade journal; reversible, since this is demo data. The
+words were drafted against every line of this spec that names an entry, then reviewed by the
+coordinator._ The seed copies them from here.
+
+- **The rules:**
+  - the voice of the four printed bodies;
+  - no figure the seed doesn't hold;
+  - every quoted span verbatim;
+  - each `versionOf` as a version, never as a quote.
+- **Entries left out on purpose:**
+  - Entries holding only a snapshot or money, whose words nothing describes, stay numbers-only:
+    Sep 8, Sep 15, Sep 25, the Sep 30 deposit, and Oct 6.
+  - The three imported entries get no words. Import files the pasted rows as the entry's
+    snapshot (Tidy up and import, "File them"), and those rows arrive with 1b.
+- **Host of the context note:** the Oct 6 context note now sits on the Sep 4 TSLA add, an entry
+  its finding cites ("It's missing context" opens a later note on the cited entry). It used to
+  sit on an undescribed entry.
+
+| Entry | Written (ET) | Kind · tickers | Words |
+| --- | --- | --- | --- |
+| `e-aug04` | Fri Aug 21, 5:00 PM (about Tue Aug 4) | No kind · none | Going by the statement. I held 160 NVDA at 214, and I remember feeling fine about all of it. |
+| `e-aug21` | Fri Aug 21, 4:00 PM | No kind · none | Looking back, I bought 6 TSLA 440 puts at 31 in July. Starting this journal today, while things are calm. |
+| `e-aug26` | Wed Aug 26 | Entered · QQQ | Bought 4 QQQ Dec 18 ’26 600 P at 13.60 as protection for the rest of the account. |
+| `e-aug28` | Fri Aug 28 | Added · NVDA | Added 60 NVDA at 195.50 to bring the average down. Still the name I trust most. |
+| `e-sep04` | Fri Sep 4 | Added · TSLA | Added 3 more TSLA 440 puts at 25.60. TSLA has to roll over from here. |
+| `e-sep11` | Fri Sep 11 | Added · TSLA | Added 3 more TSLA 440 puts at 22.90. It’s got to roll over soon. |
+| `e-sep18` | Fri Sep 18 | Added · TSLA | I added 3 more TSLA 440 puts at 19.80. Margin is around 55%, so there’s room. It still has to roll over. |
+| `e-oct01-plan` | Thu Oct 1 | Plan a trade · TSLA | Selling 5 of the TSLA puts at 13.10 to pay down the loan. |
+| `u01` | Mon Sep 28 | No kind · none | Clearer head after a weekend away from the screen. |
+| `u02` | Mon Aug 24 | No kind · none · kept out of AI reads | Rough day, and not because of the account. Writing it down so it stays here. |
+| `u03` | Tue Sep 1 | No kind · none · kept out of AI reads | Couldn’t sleep, thinking about the account. This entry is just for me. |
+| `u04` | Thu Aug 27 | No kind · none | Habit to build: write here first, check prices after. |
+| `u05` | Wed Sep 2 | No kind · none | Reminder: look at the whole account first, then the positions. |
+| `u06` | Wed Sep 9 | No kind · none | Rule of thumb for me: a slow day doesn’t need a trade. |
+| `u07` | Mon Sep 14 | No kind · none | The account moves more than I expected for what I hold. |
+| `u08` | Wed Sep 16 | No kind · none | Hard to tell a bad week from a bad idea while I’m in it. |
+| `u09` | Tue Sep 22 | No kind · none | Trying to check the account less. It doesn’t change the numbers. |
+| `u10` | Thu Sep 24 | No kind · none | Writing on my phone is slow. Keeping entries short from here. |
+| `u11` | Tue Aug 25 (about Thu Aug 20) | No kind · none · recalled | The day before I started this journal, I watched the screen all day and wrote nothing down. |
+| `u12` | Thu Sep 3 (about Mon Aug 31) | No kind · none · recalled | On Monday I felt sure of everything I held, so I barely looked at the account. |
+| `u13` | Thu Sep 10 (about Tue Sep 8) | No kind · none · recalled | Tuesday I typed in the numbers and wrote nothing else. Didn’t want to think about it. |
+| `u14` | Wed Sep 23 (about Mon Sep 21) | No kind · none · recalled | Spent Monday checking prices and got nothing else done. |
+
+| Later note | Written | On entry | Words |
+| --- | --- | --- | --- |
+| `n-oct06` | Tue Oct 6, marked "Context for the AI" | `e-sep04` (moved from `u04`) | I saw the adds as a position built in steps, not as separate decisions. |
+| `n-u1` | Thu Sep 3 | `u05` (25) | Did it this morning. Slower, but calmer. |
+| `n-u2` | Thu Sep 10 | `u06` (26) | Kept to it today. |
+| `n-u3` | Tue Sep 15 | `u07` (27) | Still true today. |
+
+What these words fix for later slices, found while drafting them:
+
+1. **"around 55%".** It sits beside "Margin" in the Sep 18 TSLA entry, and it is the only figure
+   stated in prose. Keep the tone guide's "down about 40%" out of every body.
+2. **Row 9, the margin question, reads "1 of 3".** Only one of its three figures has words. Over
+   this seed it computes 1 of 1. Slice 3's seed must author the other two, or the row is
+   restated there.
+3. **"8 entries, 2,090 words" (What's sent, Corrections item 18).** These words can't reach it:
+   the window's 8 entries hold 81 words. Slice 4 corrects the figure; the words are not
+   padded.
+4. **Adds name their quantity and price; exits stay sealed fields.** No add names an exit or
+   an "I'm wrong if", so rows 2, 3 and 10 read as printed. The Oct 1 plan names $13.10, so
+   the Oct 2 trim links to it.
+5. **"Looking back" and "160 NVDA at 214".** The phrases the boards' staging Tidy composes sit
+   on Aug 21 and Aug 4. No other body uses the recalled-wording phrases.
+6. **The boards' note "The spec doesn't print this entry's words".** It is stale for every
+   entry above that the boards draw. That is a design follow-up.
