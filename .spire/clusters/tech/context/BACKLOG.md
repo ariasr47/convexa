@@ -120,6 +120,27 @@ and the trade journal's slice 1a lanes, filed by the coordinator.
   - At 900 px wide with a 20 px root font, signed in, the top nav overflows by 25 px on every page.
   - The cause is the session chip that shows the email.
   - The owner browses with a large root font (about 20 px), so they will hit it.
+- **`demo-clock-resumes`** *(FE, demo only; found by the journal's F6 lane, 2026-10-29)*.
+  - The demo clock starts at 2:30 PM ET on every page load (`appNowMs`, anchored at
+    `2026-10-07T18:30:00Z`). It runs at 5 s per real second.
+  - A journal draft whose figures were typed later in an earlier visit therefore comes back on Save
+    with "That time is after the moment of saving." Nothing is lost: the draft returns intact, and
+    changing its As of saves it.
+  - The lane's recommendation: resume the clock from the latest time this browser's demo store
+    holds, and restart it on Reset.
+  - Why it wasn't built in the slice: every demo surface shares the clock, so a clock that resumes
+    after 4:00 PM ET could change what the demo's market-hours states show. Weigh that first.
+- **`owner-pronouns-in-docs`** *(docs and design, open)*.
+  - The journal spec, its plan and the design source call the owner "he". The design source does
+    so about 159 times in 10 files under `design/src/screens/final/journal-*` and
+    `design/src/data/journal-sample.mjs`.
+  - Some of it renders on the published canvas. For example, an annotation on the composer board
+    reads "On Oct 2 he cleared the maintenance requirement".
+  - The cost so far: build lanes copy the wording into code comments. F6 needed a separate commit
+    to reword 29 comment lines.
+  - The slice's code says "the owner" or "they". Whether to reword the spec, the plan and the
+    boards the same way is the owner's call. Rewording the boards means rebuilding `design/` and
+    republishing the canvas.
 
 ## Harvest — 2026-10-29 (artifact triage: loose ends from pages being deleted)
 Three items that lived only on claude.ai pages or in chat. The owner is deleting the pages (the 2026-10-28
