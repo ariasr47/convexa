@@ -2326,3 +2326,20 @@ either yet. Both are applied, each in place:
   Numbers-only entries the spec gives no words stay numbers-only. The words are recorded in
   spec 08 once reviewed, and the seed copies them from there. The boards' annotations go stale
   for the entries they draw (a design follow-up).
+- **Every journal route needs a Pages rule too** (found by the F5 lane). Since the site audit's B5,
+  every path in `app.tsx` needs a row in `tools/write-blog-heads.mjs`. Without one, a live build
+  answers it with the 404 page, and `tools/build-dashboard.spec.mjs:304` fails. F4 and F5 say a
+  route needs only its `app.tsx` row, because this plan predates that rule, and §8's frontend fence
+  doesn't allow `tools/`.
+  - `/positions/journal` got its `STATIC_ROUTES` row from the coordinator, in a separate commit
+    (`sitemap: false`, title "Journal — Convexa").
+  - F6 adds `/positions/journal/new` the same way, as the one `tools/` change its lane may make.
+  - F7's `/positions/journal/:entryId` needs a `DYNAMIC_RULES` row placed so it doesn't catch
+    `/new` first.
+- **D38's words are in the seed** (coordinator). The reviewed words in spec 08's "Staging sample
+  words (D38, 2026-10-29)" were applied mechanically, by a script that refuses an edit that doesn't
+  match exactly once.
+  - Through the demo's own GET: 34 entries; 26 with words; 3 holding nothing (the imports, by
+    D38); 5 notes, all with words.
+  - Criterion 26's script still exits 0. `npm run verify -- --base=main` exits 0 on the branch with
+    F5, the routing row and the words.

@@ -116,6 +116,11 @@ and the trade journal's slice 1a lanes, filed by the coordinator.
   two `release_serve_exact_prefix_*` databases from runs before 2026-10-29. Drop them if they're no longer
   needed; no lane touches them.
 
+- **`top-nav-overflow-large-text`** *(FE, pre-existing)*. The F5 lane found it:
+  - At 900 px wide with a 20 px root font, signed in, the top nav overflows by 25 px on every page.
+  - The cause is the session chip that shows the email.
+  - The owner browses with a large root font (about 20 px), so they will hit it.
+
 ## Harvest — 2026-10-29 (artifact triage: loose ends from pages being deleted)
 Three items that lived only on claude.ai pages or in chat. The owner is deleting the pages (the 2026-10-28
 triage), so the items live here now.
