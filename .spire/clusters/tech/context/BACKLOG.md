@@ -81,6 +81,41 @@ and commit messages.
   quality gates can run: the compatibility gate needs Firefox and WebKit, not installed on this machine. No
   result depends on it today: the SPA reads `market_data` alone (`libs/api/src/lib/convexa.ts:1250`).
 
+## Harvest — 2026-10-29 (evening: the 1.0.0 release, the live re-measure, the journal lanes)
+Loose ends from the release (`v1.0.0` on `3f88a6a9`), the live re-measure (`docs/quality/2026-10-29/REMEASURE.md`)
+and the trade journal's slice 1a lanes, filed by the coordinator.
+- **`trailing-slash-404`** (above): checked at the release. Production `/research/` answers 308 to `/research`,
+  which answers 200.
+- **`contract-evidence-google-state-cookie`** *(contract tooling, pre-existing)*. The direct-evidence contract check
+  fails on `main`:
+  - Command: `API_CONTRACT_EXECUTE_EVIDENCE=1 npm run api:contract:check` exits 1 at `6d65b66b`.
+  - Error: "incomplete contract coverage: direct HTTP evidence http-fragment:GET /api/auth/google/start 307 no-body
+    oauth-state signature".
+  - Cause: since `6a5ed5f0` (2026-10-15), Google sign-in's start sets a state cookie and the callback clears it.
+    Three places weren't updated to match:
+    - the OpenAPI response, which still declares only `Location`;
+    - `tools/api-contract.mjs:283-288`;
+    - `apps/api/tests/fixtures/api_contract/runtime-evidence-auth-research.json:212-227`.
+  - Why nothing caught it: plain `api:contract:check` and `npm run verify` don't run the direct evidence.
+  - Scope: the journal lane listed all 111 outcomes on its branch, and only these two Google fragments differ.
+    Plan line 1185's "check 1 exits 0" is blocked by this, not by the journal.
+- **`phone-first-paint-html`** *(FE, the re-measure's recommendation)* — a phone's first paint (3.7–4.3 s live) waits for
+  401 KB, 312 KB of it script. Paint the first screen from per-route HTML that the app replaces. The cost is a
+  second copy of each first screen to keep in step, at the same size.
+- **`staging-footer-unmount-research`** *(FE, staging only)* — on staging's research pages the site footer is drawn,
+  then removed. /ticker/NVDA/research shifts 0.273 on a phone and 0.209 on a laptop; production's same routes
+  read 0.001–0.029.
+- **`filings-expected-section-shift`** *(FE)* — /research/filings: the "Expected · next …" section moves 44 px down at
+  about 5.2 s (0.170 on a staging phone, 0.029 on production).
+- **`journal-key-recipe`** *(owner to-do, with the `JOURNAL_ENCRYPTION_*` lines)* — the journal ring takes URL-safe,
+  unpadded base64. Make each key with `openssl rand -base64 32 | tr '+/' '-_' | tr -d '='`: plain
+  `openssl rand -base64 32` is refused. Found by the B5 lane.
+- **`s9-boot-line-names`** *(BE, minor)* — when the journal ring refuses a key shared by bytes (S9), the boot line
+  prints the enum name (`AiLegacyKey`). D37's text refusal prints the variable name.
+- **`local-test-databases`** *(owner, local only)* — local Postgres holds `convexa_test`, two `release_fresh_*` and
+  two `release_serve_exact_prefix_*` databases from runs before 2026-10-29. Drop them if they're no longer
+  needed; no lane touches them.
+
 ## Harvest — 2026-10-29 (artifact triage: loose ends from pages being deleted)
 Three items that lived only on claude.ai pages or in chat. The owner is deleting the pages (the 2026-10-28
 triage), so the items live here now.
