@@ -2210,3 +2210,35 @@ either yet. Both are applied, each in place:
   the insert writes (3.3, `journal.seal.v1`). It no longer waits on section 9's item 1, and B3 builds
   the seal to it. Ledger: `trade-journal-seal-message`, the 2026-10-29 row. Nothing above is edited;
   this line supersedes "reversible until B3" in D9, R5, section 8's row 3 and section 9's item 1.
+
+## Build findings (2026-10-29)
+
+- **D36. An entry may have no kind.** _Answered 2026-10-29 under the owner's standing instruction
+  for the trade journal (take every recommendation), so it stays reversible until the first owner
+  entry is written. Ledger: `trade-journal-kind-optional`._ Found by the F3 lane. The spec makes
+  the kind chips optional (spec 08, lines 736 and 826), and the boards' sample gives 20 of its 34
+  entries no kind (`design/src/data/journal-sample.mjs:255`, `:261`; a card with no kind is
+  labelled "Entry", `design/src/screens/final/journal-kit.mjs:381`). But the spec's Objects (line
+  486) and Tables (line 2439), this plan's wire (2.3, 2.4) and 3.1's CHECK all require a kind. The
+  optional chip wins. Requiring a kind would make F2's seed invent one for 20 entries the spec
+  never classifies, and a default kind would print a pill ("Just thinking") the owner never
+  picked. So:
+  - the create body's `kind` is a `JournalWriteKind` or null, and the read body's is a
+    `JournalKind` or null. Null draws no kind pill;
+  - `journal_entries.kind` may be NULL on a live entry. The CHECKs and the trigger that test
+    `kind = 'deleted'` (3.1) test `kind IS NOT DISTINCT FROM 'deleted'` instead, so a NULL kind
+    can neither pass for a tombstone nor skip the live-entry rules. A tombstone still sets `kind`
+    to `deleted`;
+  - the seal message carries `"kind":null` (3.3 already writes null for an empty value);
+  - nothing else keys on a missing kind. Recalled comes from `imported` or the About date. Closed
+    by, margin-call mode and the money requirement apply only when their kind is picked. The facts
+    (4) read no kind;
+  - it is applied in one backend step after B3 and before B4: B2's migration and B3's service
+    change in place, since neither has been pushed. A test shows that a NULL-kind row can't be
+    written as a tombstone without `deleted_at`, or as a live entry without a seal. F3's
+    `requestFromDraft` stops refusing a draft with no kind in F6. How the timeline's kind filter
+    treats an entry with no kind is F5's call, from the boards.
+- **Due by is a figure** (F3 lane's question; settled by this plan's own text, no decision). A
+  snapshot needs at least one typed figure (2.4, D34), and Due by is one of the seven figures
+  (3.1's notes on `figures_ct`; 3.3's vector 3). So a snapshot whose only typed figure is Due by
+  is valid. F3's `snapshotRequest` counts it, and B3's 422 rule must agree.
