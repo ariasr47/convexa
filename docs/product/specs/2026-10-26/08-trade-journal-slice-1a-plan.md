@@ -2261,3 +2261,33 @@ either yet. Both are applied, each in place:
   also refuses a key whose base64 text, trimmed, equals either legacy key's trimmed text. The
   refusal leaves journal storage "not set up", and its boot line names the variable. A config
   refused this way loses nothing, since no entry can be written under it. One case is added to T12.
+- **D36 and D37 as built.** The backend lane built both; the coordinator checked them again.
+  - **Migration 14 now differs from 3.1's block.** `kind` has no `NOT NULL`.
+    `journal_entries_deleted_iff` and `journal_entries_live_sealed` test `kind IS NOT DISTINCT FROM
+    'deleted'`, and `journal_entries_tombstone_empty` tests `kind IS DISTINCT FROM 'deleted'`. The
+    sealed-row trigger raises when `OLD.kind IS NOT DISTINCT FROM 'deleted' OR NEW.kind IS DISTINCT
+    FROM 'deleted'`, or when a kept column changes. The pin test also refuses any plain `=`, `<>`
+    or `!=` comparison of `kind` with `'deleted'` anywhere in migration 14. 3.1's block is
+    superseded on those lines; the code is the reference.
+  - **Why the trigger mattered for every row.** With `NOT NULL` dropped, the old trigger text let a
+    single UPDATE blank a typed live row's kind and change its body at once. The old condition
+    comes out NULL, and plpgsql skips an `IF NULL`. The lane saw `UPDATE 1` under the old text, and
+    T16 now pins the refusal. The coordinator ran a fresh `postgres-migrate` (exit 0, then exit 0
+    with nothing to apply) and probed it with raw SQL. Both of these edits were refused with
+    "journal_entries is sealed: only a tombstone may change a row":
+    - blanking a typed entry's kind while changing its body;
+    - changing the body of an entry with no kind.
+
+    Two inserts were refused by `journal_entries_live_sealed` and `journal_entries_deleted_iff`:
+    - an entry with no kind and no seal;
+    - an entry with no kind and `deleted_at` set.
+  - **Seal 4,** a known-answer vector for an entry with no kind (3.3's recipe, `"kind":null`):
+    - 525 bytes, SHA-256 `1871efd547fbd67447dda82a42c3a65619fdcebc4ef0fffa5e139b9319c55db9`;
+    - tag `v1.k1.G2kwaUFnROoFfrZwpMoHbRWPdgbhYZaLhWLYmzSAp-s`.
+
+    A Python standard-library script, written from 3.3 alone, reproduces seals 1 to 3 as
+    published, and reproduces seal 4 byte for byte as the Rust code writes it. T14 holds it.
+  - **D37's refusal** is its own variant, and it names the variable: `journal storage: not set up
+    (a journal key's text repeats AUTH_SESSION_SIGNING_KEY)`.
+  - **For B4:** `kind` is optional in both the create and the read body. An absent or null kind
+    is valid; an unknown string stays a 422.
