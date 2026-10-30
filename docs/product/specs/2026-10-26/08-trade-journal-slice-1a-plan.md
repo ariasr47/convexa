@@ -2291,3 +2291,38 @@ either yet. Both are applied, each in place:
     (a journal key's text repeats AUTH_SESSION_SIGNING_KEY)`.
   - **For B4:** `kind` is optional in both the create and the read body. An absent or null kind
     is valid; an unknown string stays a 422.
+- **F2's seed starts on first use, not at boot** (the F2 lane's deviation, accepted).
+  `initializeDemoWorkspace` (`workspace.ts`) runs at boot on every build. Its chunk (3.9 KB brotli)
+  is preloaded on every live page, and the journal module alone is 6.9 KB brotli. So the seed
+  writes `convexa.demo.journal.v1` on the journal's first request instead (`demo/journal.ts`,
+  `demo/transport.ts`). The lane checked that the seed is only in the transport chunk of a live
+  build, never in the boot chunks. Reset still clears it.
+- **The demo clock restarts at 2:30 PM ET on every demo page load.** The F2 lane found this:
+  `appNowMs` is anchored at `2026-10-07T18:30:00Z`. A draft typed later in an earlier visit can
+  come back with "That time is after the moment of saving". The outbox returns it as a draft, so
+  nothing is lost. F6 and F9 must know this.
+- **D38. Every seeded entry holds something** (staging only). _Answered 2026-10-29 under the owner's
+  standing instruction for the trade journal; reversible, since this is demo data._ The spec prints
+  4 of the seed's 34 bodies whole.
+  - About 10 of the other 30 hold a snapshot or money. The server accepts them as numbers-only
+    entries.
+  - About 20 hold nothing at all: no words, no snapshot, no money. The server refuses such an
+    entry as blank (422 `validation`), and staging would draw it as an empty card.
+  - The boards hide the gap: they draw only described entries and annotate the rest "The spec
+    doesn't print this entry's words."
+
+  So the seed gives sample words to:
+  - every entry that holds nothing else;
+  - every entry whose words the spec or the boards describe (a quoted span, a `versionOf`, the
+    spec's prose).
+
+  The words follow these rules:
+  - written in the voice of the four printed bodies;
+  - no figure the seed doesn't hold;
+  - every quoted span verbatim;
+  - whatever a later slice says an entry's words contain (for example, slice 3's row 9 reads
+    "around 55%" in the Sep 18 TSLA entry).
+
+  Numbers-only entries the spec gives no words stay numbers-only. The words are recorded in
+  spec 08 once reviewed, and the seed copies them from there. The boards' annotations go stale
+  for the entries they draw (a design follow-up).
